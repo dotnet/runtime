@@ -259,6 +259,37 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
         }
     }
 
+    // If we replaced the argument to a GT_FIELD_LIST element with a GT_LONG node, split that field list
+    // element into two elements: one for each half of the GT_LONG.
+    if ((use.Def()->OperGet() == GT_LONG) && !use.IsDummyUse() && (use.User()->OperGet() == GT_FIELD_LIST))
+    {
+        GenTreeOp* value = use.Def()->AsOp();
+        Range().Remove(value);
+
+        // The node returned by `use.User()` is the head of the field list. We need to find the actual node that uses
+        // the `GT_LONG` so that we can split it.
+        GenTreeFieldList* listNode = use.User()->AsFieldList();
+        for (; listNode != nullptr; listNode = listNode->Rest())
+        {
+            if (listNode->Current() == value)
+            {
+                break;
+            }
+        }
+
+        assert(listNode != nullptr);
+        GenTree* rest = listNode->gtOp2;
+
+        GenTreeFieldList* loNode = listNode;
+        loNode->gtOp1            = value->gtOp1;
+        loNode->gtFieldType      = TYP_INT;
+
+        GenTreeFieldList* hiNode =
+            new (m_compiler, GT_FIELD_LIST) GenTreeFieldList(value->gtOp2, loNode->gtFieldOffset + 4, TYP_INT, loNode);
+
+        hiNode->gtOp2 = rest;
+    }
+
 #ifdef DEBUG
     if (m_compiler->verbose)
     {
