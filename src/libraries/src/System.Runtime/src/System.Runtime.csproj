@@ -35,6 +35,7 @@
     <Compile Include="System\ComponentModel\EditorBrowsableAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\StrongBox.cs" />
     <Compile Condition="'$(TargetGroup)'!='uap101aot'" Include="System\Reflection\AssemblyNameProxy.cs" />
+    <Compile  Include="System\Reflection\RuntimeReflectionExtensions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'!='netcore50aot' And '$(TargetGroup)'!='uap101aot' And '$(TargetGroup)'!='net462' AND '$(TargetGroup)'!='net463'">
     <Compile Include="System\ComponentModel\DefaultValueAttribute.cs" />
