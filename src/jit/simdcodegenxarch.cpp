@@ -1440,6 +1440,59 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
     genConsumeOperands(simdNode);
     regNumber srcReg = op1->gtRegNum;
 
+    // Optimize the case of op1 is in memory and trying to access ith element.
+    if (op1->isMemoryOp())
+    {
+        assert(op1->isContained());
+
+        regNumber baseReg;
+        regNumber indexReg;
+        int       offset = 0;
+
+        if (op1->OperGet() == GT_LCL_FLD)
+        {
+            // There are three parts to the total offset here:
+            // {offset of local} + {offset of SIMD Vector field} + {offset of element within SIMD vector}.
+            bool     isEBPbased;
+            unsigned varNum = op1->gtLclVarCommon.gtLclNum;
+            offset += compiler->lvaFrameAddress(varNum, &isEBPbased);
+            offset += op1->gtLclFld.gtLclOffs;
+
+            baseReg = (isEBPbased) ? REG_EBP : REG_ESP;
+        }
+        else
+        {
+            // Require GT_IND addr to be not contained.
+            assert(op1->OperGet() == GT_IND);
+
+            GenTree* addr = op1->AsIndir()->Addr();
+            assert(!addr->isContained());
+            baseReg = addr->gtRegNum;
+        }
+
+        if (op2->isContainedIntOrIImmed())
+        {
+            indexReg = REG_NA;
+            offset += (int)op2->AsIntConCommon()->IconValue() * genTypeSize(baseType);
+        }
+        else
+        {
+            indexReg = op2->gtRegNum;
+            assert(genIsValidIntReg(indexReg));
+        }
+
+        // Now, load the desired element.
+        getEmitter()->emitIns_R_ARX(ins_Move_Extend(baseType, false), // Load
+                                    emitTypeSize(baseType),           // Of the vector baseType
+                                    targetReg,                        // To targetReg
+                                    baseReg,                          // Base Reg
+                                    indexReg,                         // Indexed
+                                    genTypeSize(baseType),            // by the size of the baseType
+                                    offset);
+        genProduceReg(simdNode);
+        return;
+    }
+
     // SSE2 doesn't have an instruction to implement this intrinsic if the index is not a constant.
     // For the non-constant case, we will use the SIMD temp location to store the vector, and
     // the load the desired element.
