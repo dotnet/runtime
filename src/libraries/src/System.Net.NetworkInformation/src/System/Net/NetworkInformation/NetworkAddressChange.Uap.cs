@@ -9,6 +9,7 @@ namespace System.Net.NetworkInformation
     public class NetworkChange
     {
         //introduced for supporting design-time loading of System.Windows.dll
+        [Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         public static void RegisterNetworkChange(NetworkChange nc) { }
 
         public static event NetworkAddressChangedEventHandler NetworkAddressChanged;
@@ -22,8 +23,8 @@ namespace System.Net.NetworkInformation
 
         private static void NetworkInformation_NetworkStatusChanged(object sender)
         {
-            NetworkAddressChanged.Invoke(null, EventArgs.Empty);
-            NetworkAvailabilityChanged.Invoke(null, new NetworkAvailabilityEventArgs(NetworkInterface.GetIsNetworkAvailable()));
+            NetworkAddressChanged?.Invoke(null, EventArgs.Empty);
+            NetworkAvailabilityChanged?.Invoke(null, new NetworkAvailabilityEventArgs(NetworkInterface.GetIsNetworkAvailable()));
         }
     }
 }
