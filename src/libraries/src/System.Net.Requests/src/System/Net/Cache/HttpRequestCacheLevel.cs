@@ -14,6 +14,6 @@ namespace System.Net.Cache
         Reload = 5,
         NoCacheNoStore = 6,
         CacheOrNextCacheOnly = 7,
-        Refresh = 8,
+        Refresh = 8
     }
 }

@@ -85,7 +85,7 @@ namespace System.Net
         Success = 0,
         Timeout = 14,
         TrustFailure = 9,
-        UnknownError = 16,
+        UnknownError = 16
     }
     public abstract partial class WebRequest
     {
@@ -133,7 +133,7 @@ namespace System.Net.Cache
         MaxAge = 0x2,
         MaxStale = 0x4,
         MaxAgeAndMinFresh = 0x3,
-        MaxAgeAndMaxStale = 0x6,
+        MaxAgeAndMaxStale = 0x6
     }
     public enum HttpRequestCacheLevel
     {
@@ -145,7 +145,7 @@ namespace System.Net.Cache
         Reload = 5,
         NoCacheNoStore = 6,
         CacheOrNextCacheOnly = 7,
-        Refresh = 8,
+        Refresh = 8
     }
     public class HttpRequestCachePolicy : RequestCachePolicy
     {
