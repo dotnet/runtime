@@ -1,7 +1,7 @@
 {
   "dependencies": {
-    "System.Runtime": "4.3.0-beta-24521-07",
-    "System.Text.Encoding": "4.3.0-beta-24521-07"
+    "System.Runtime": "4.3.0-beta-24522-03",
+    "System.Text.Encoding": "4.3.0-beta-24522-03"
   },
   "frameworks": {
     "netstandard1.7": {
