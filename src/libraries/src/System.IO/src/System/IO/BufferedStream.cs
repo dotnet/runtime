@@ -436,7 +436,7 @@ namespace System.IO
             }
         }
 
-        public override int Read(/*[TODO: Enable after System.Private.Interop is built against S.P.CoreLib and not S.Runtime] [In, Out]*/ byte[] array, int offset, int count)
+        public override int Read([In, Out] byte[] array, int offset, int count)
         {
             if (array == null)
                 throw new ArgumentNullException(nameof(array), SR.ArgumentNull_Buffer);
