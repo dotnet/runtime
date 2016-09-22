@@ -1850,7 +1850,7 @@ namespace System.Collections.Generic
                     return default(T);
                 }
 
-                var current = _root;
+                Node current = _root;
                 while (current.Left != null)
                 {
                     current = current.Left;
@@ -1869,7 +1869,7 @@ namespace System.Collections.Generic
                     return default(T);
                 }
 
-                var current = _root;
+                Node current = _root;
                 while (current.Right != null)
                 {
                     current = current.Right;
