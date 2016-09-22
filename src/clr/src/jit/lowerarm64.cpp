@@ -1282,7 +1282,7 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
         else
 #endif // 0
         {
-            // The helper follows the regular AMD64 ABI.
+            // The helper follows the regular ABI.
             dstAddr->gtLsraInfo.setSrcCandidates(l, RBM_ARG_0);
             initVal->gtLsraInfo.setSrcCandidates(l, RBM_ARG_1);
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;
@@ -1447,7 +1447,6 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
                     noway_assert(blkNode->gtOper == GT_STORE_DYN_BLK);
                     blkNode->gtLsraInfo.setSrcCount(3);
                     GenTree* blockSize = blkNode->AsDynBlk()->gtDynamicSize;
-                    assert(!blockSize->IsIconHandle());
                     blockSize->gtLsraInfo.setSrcCandidates(l, RBM_ARG_2);
                 }
                 blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;

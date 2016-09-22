@@ -4339,10 +4339,10 @@ void CodeGen::genCodeForCpBlk(GenTreeBlk* cpBlkNode)
 
     assert(!dstAddr->isContained());
     assert(!srcAddr->isContained());
-    assert(cpBlkNode->gtRsvdRegs == RBM_ARG_2);
 
     if (blockSize != 0)
     {
+        assert(cpBlkNode->gtRsvdRegs == RBM_ARG_2);
 #if 0
     // Enable this when we support cpblk loop unrolling.
 
@@ -4353,7 +4353,7 @@ void CodeGen::genCodeForCpBlk(GenTreeBlk* cpBlkNode)
     }
     else
     {
-        noway_assert(cpBlkNode->gtOper == GT_DYN_BLK);
+        noway_assert(cpBlkNode->gtOper == GT_STORE_DYN_BLK);
         genConsumeRegAndCopy(cpBlkNode->AsDynBlk()->gtDynamicSize, REG_ARG_2);
     }
     genConsumeRegAndCopy(srcAddr, REG_ARG_1);
