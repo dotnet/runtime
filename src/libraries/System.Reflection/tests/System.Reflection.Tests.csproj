@@ -24,7 +24,7 @@
     <Compile Include="ConstructorInfoTests.cs" />
     <Compile Include="EventInfoTests.cs" />
     <Compile Include="FieldInfoTests.cs" />
-    <Compile Include="GetType\GetTypeTests.cs" />
+    <Compile Include="GetTypeTests.cs" />
     <Compile Include="ManifestResourceInfo\ManifestResourceInfo.cs" />
     <Compile Include="MemberInfoTests.cs" />
     <Compile Include="MethodInfoTests.cs" />
