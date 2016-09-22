@@ -186,7 +186,7 @@ struct jit_descriptor __jit_debug_descriptor = { 1, 0, 0, 0 };
 /* Predefined section names */
 const char* SectionNames[] = {
     "", ".text", ".shstrtab", ".debug_str", ".debug_abbrev", ".debug_info",
-    ".debug_pubnames", ".debug_pubtypes", ".debug_line", ".symtab", ".strtab", ""
+    ".debug_pubnames", ".debug_pubtypes", ".debug_line", ".symtab", ".strtab", ".thunks", ""
 };
 
 const int SectionNamesCount = sizeof(SectionNames) / sizeof(SectionNames[0]);
@@ -207,6 +207,7 @@ struct SectionHeader {
     {SHT_PROGBITS, 0},
     {SHT_SYMTAB, 0},
     {SHT_STRTAB, 0},
+    {SHT_PROGBITS, SHF_ALLOC | SHF_EXECINSTR}
 };
 
 /* Static data for .debug_str section */
@@ -265,10 +266,17 @@ struct __attribute__((packed)) DebugInfo
 };
 
 /* static data for symbol strings */
-const char* SymbolNames[] = {
-    "", ""
+struct Elf_Symbol {
+    const char* m_name;
+    int m_off;
+    TADDR m_value;
+    int m_section, m_size;
+    Elf_Symbol() : m_name(nullptr), m_off(0), m_value(0), m_section(0), m_size(0) {}
 };
 
+int SymbolCount = 0;
+NewArrayHolder<Elf_Symbol> SymbolNames;
+TADDR MinCallAddr, MaxCallAddr;
 
 /* Create ELF/DWARF debug info for jitted method */
 void NotifyGdb::MethodCompiled(MethodDesc* MethodDescPtr)
@@ -358,6 +366,15 @@ void NotifyGdb::MethodCompiled(MethodDesc* MethodDescPtr)
 
     if (isUserDebug == FALSE)
         return;
+    
+    CodeHeader* pCH = ((CodeHeader*)(pCode & ~1)) - 1;
+    CalledMethod* pCalledMethods = reinterpret_cast<CalledMethod*>(pCH->GetCalledMethods());
+    /* Collect addresses of thunks called by method */
+    if (!CollectCalledMethods(pCalledMethods))
+    {
+        return;
+    }
+    pCH->SetCalledMethods(NULL);
 
     /* Get debug info for method from portable PDB */
     HRESULT hr = GetDebugInfoFromPDB(MethodDescPtr, &symInfo, symInfoLen);
@@ -409,7 +426,12 @@ void NotifyGdb::MethodCompiled(MethodDesc* MethodDescPtr)
     }
 
     /* Build .strtab section */
-    SymbolNames[1] = methodName;
+     SymbolNames[0].m_name = "";
+     SymbolNames[1].m_name = methodName;
+     SymbolNames[1].m_value = pCode;
+     SymbolNames[1].m_section = 1;
+     SymbolNames[1].m_size = codeSize;
+        
     if (!BuildStringTableSection(sectStrTab))
     {
         return;
@@ -476,6 +498,9 @@ void NotifyGdb::MethodCompiled(MethodDesc* MethodDescPtr)
     pShdr->sh_offset = offset;
     pShdr->sh_size = sectStrTab.MemSize;
     offset += sectStrTab.MemSize;
+    ++pShdr; // .thunks
+    pShdr->sh_addr = MinCallAddr;
+    pShdr->sh_size = (MaxCallAddr - MinCallAddr) + 8;
     
     /* Build ELF header */
     if (!BuildELFHeader(elfHeader))
@@ -910,12 +935,56 @@ bool NotifyGdb::BuildDebugPub(MemBuf& buf, const char* name, uint32_t size, uint
     return true;
 }
 
+/* Store addresses and names of the called methods into symbol table */
+bool NotifyGdb::CollectCalledMethods(CalledMethod* pCalledMethods)
+{
+    int calledCount = 0;
+    CalledMethod* pList = pCalledMethods;
+
+    MinCallAddr = (TADDR)~0; MaxCallAddr = (TADDR)0;
+
+    /* count called methods and find min & max addresses */
+    while (pList != NULL)
+    {
+        calledCount++;
+        TADDR callAddr = (TADDR)pList->GetCallAddr();
+#if defined(_TARGET_ARM_)
+        callAddr &= ~1;
+#endif
+        if(callAddr < MinCallAddr)
+            MinCallAddr = callAddr;
+        if(callAddr > MaxCallAddr)
+            MaxCallAddr = callAddr;
+        pList = pList->GetNext();
+    }
+
+    SymbolCount = 2 + calledCount;
+    SymbolNames = new (nothrow) Elf_Symbol[SymbolCount];
+
+    pList = pCalledMethods;
+    for (int i = 2; i < SymbolCount; ++i)
+    {
+        char buf[256];
+        MethodDesc* pMD = pList->GetMethodDesc();
+        sprintf(buf, "__thunk_%s", pMD->GetName());
+        SymbolNames[i].m_name = new char[strlen(buf)];
+        strcpy((char*)SymbolNames[i].m_name, buf);
+        TADDR callAddr = (TADDR)pList->GetCallAddr();
+        SymbolNames[i].m_value = callAddr - MinCallAddr;
+        CalledMethod* ptr = pList;
+        pList = pList->GetNext();
+        delete ptr;
+    }
+
+    return true;
+}
+
 /* Build ELF .strtab section */
 bool NotifyGdb::BuildStringTableSection(MemBuf& buf)
 {
     int len = 0;
-    for (int i = 0; i < sizeof(SymbolNames) / sizeof(SymbolNames[0]); ++i)
-        len += strlen(SymbolNames[i]) + 1;
+    for (int i = 0; i < SymbolCount; ++i)
+        len += strlen(SymbolNames[i].m_name) + 1;
     len++; // end table with zero-length string
     
     buf.MemSize = len;
@@ -923,10 +992,11 @@ bool NotifyGdb::BuildStringTableSection(MemBuf& buf)
     if (buf.MemPtr == nullptr)
         return false;
     char* ptr = buf.MemPtr;
-    for (int i = 0; i < sizeof(SymbolNames) / sizeof(SymbolNames[0]); ++i)
+    for (int i = 0; i < SymbolCount; ++i)
     {
-        strcpy(ptr, SymbolNames[i]);
-        ptr += strlen(SymbolNames[i]) + 1;
+        SymbolNames[i].m_off = ptr - buf.MemPtr;
+        strcpy(ptr, SymbolNames[i].m_name);
+        ptr += strlen(SymbolNames[i].m_name) + 1;
     }
     buf.MemPtr[buf.MemSize-1] = 0;
     
@@ -936,31 +1006,40 @@ bool NotifyGdb::BuildStringTableSection(MemBuf& buf)
 /* Build ELF .symtab section */
 bool NotifyGdb::BuildSymbolTableSection(MemBuf& buf, PCODE addr, TADDR codeSize)
 {
-    buf.MemSize = 2 * sizeof(Elf_Sym);
+    buf.MemSize = SymbolCount * sizeof(Elf_Sym);
     buf.MemPtr = new (nothrow) char[buf.MemSize];
     if (buf.MemPtr == nullptr)
         return false;
 
     Elf_Sym *sym = reinterpret_cast<Elf_Sym*>(buf.MemPtr.GetValue());
-    sym->st_name = 0;
-    sym->st_info = 0;
-    sym->st_other = 0;
-    sym->st_value = 0;
-    sym->st_size = 0;
-    sym->st_shndx = SHN_UNDEF;
 
-    sym++;
-    //sym = reinterpret_cast<Elf_Sym*>(buf.MemPtr.GetValue() + sizeof(Elf_Sym));
-    sym->st_name = 1;
-    sym->setBindingAndType(STB_GLOBAL, STT_FUNC);
-    sym->st_other = 0;
+    sym[0].st_name = 0;
+    sym[0].st_info = 0;
+    sym[0].st_other = 0;
+    sym[0].st_value = 0;
+    sym[0].st_size = 0;
+    sym[0].st_shndx = SHN_UNDEF;
+    
+    sym[1].st_name = SymbolNames[1].m_off;
+    sym[1].setBindingAndType(STB_GLOBAL, STT_FUNC);
+    sym[1].st_other = 0;
 #ifdef _TARGET_ARM_
-    sym->st_value = 1; // for THUMB code
+    sym[1].st_value = 1; // for THUMB code
 #else    
-    sym->st_value = 0;
+    sym[1].st_value = 0;
 #endif    
-    sym->st_shndx = 1; // .text section index
-    sym->st_size = codeSize;
+    sym[1].st_shndx = 1; // .text section index
+    sym[1].st_size = codeSize;
+
+    for (int i = 2; i < SymbolCount; ++i)
+    {
+        sym[i].st_name = SymbolNames[i].m_off;
+        sym[i].setBindingAndType(STB_GLOBAL, STT_FUNC);
+        sym[i].st_other = 0;
+        sym[i].st_shndx = 11; // .thunks section index
+        sym[i].st_size = 8;
+        sym[i].st_value = SymbolNames[i].m_value;
+    }
     return true;
 }
 
