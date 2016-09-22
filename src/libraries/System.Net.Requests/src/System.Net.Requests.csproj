@@ -34,6 +34,11 @@
     <Compile Include="System\Net\WebHeaderCollection.cs" />
     <Compile Include="System\Net\WebRequest.cs" />
     <Compile Include="System\Net\WebResponse.cs" />
+    <Compile Include="System\Net\Cache\HttpCacheAgeControl.cs" />
+    <Compile Include="System\Net\Cache\HttpRequestCacheLevel.cs" />
+    <Compile Include="System\Net\Cache\HttpRequestCachePolicy.cs" />
+    <Compile Include="System\Net\Cache\RequestCacheLevel.cs" />
+    <Compile Include="System\Net\Cache\RequestCachePolicy.cs" />
     <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
       <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
     </Compile>
