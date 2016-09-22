@@ -934,7 +934,15 @@ arm_patch_full (MonoCompile *cfg, MonoDomain *domain, guint8 *code, guint8 *targ
 {
 	switch (relocation) {
 	case MONO_R_ARM64_B:
-		arm_b (code, target);
+		if (arm_is_bl_disp (code, target)) {
+			arm_b (code, target);
+		} else {
+			gpointer thunk;
+
+			thunk = create_thunk (cfg, domain, code, target);
+			g_assert (arm_is_bl_disp (code, thunk));
+			arm_b (code, thunk);
+		}
 		break;
 	case MONO_R_ARM64_BCC: {
 		int cond;
@@ -966,7 +974,7 @@ arm_patch_full (MonoCompile *cfg, MonoDomain *domain, guint8 *code, guint8 *targ
 
 			thunk = create_thunk (cfg, domain, code, target);
 			g_assert (arm_is_bl_disp (code, thunk));
-			arm_bl (code, thunk);			
+			arm_bl (code, thunk);
 		}
 		break;
 	default:
