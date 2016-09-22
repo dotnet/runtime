@@ -2,68 +2,24 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Reflection.Tests
 {
-    public class GetTypeReflectionTests
+    public class GetTypeTests
     {
-        [Fact]
-        public void GetType1()
-        {
-            Assembly a = typeof(GetTypeReflectionTests).GetTypeInfo().Assembly;
-            String assemblyName = a.FullName;
-
-            PerformTests(null, "NON-EXISTENT-TYPE");
-            PerformTests(typeof(MyClass1));
-            PerformTests(typeof(MyClass1), "System.Reflection.Tests.mYclAss1");
-            PerformTests(null, "System.Reflection.Tests.MyNameSPACe1.MyNAMEspace99.MyClASs3+inNer");
-            PerformTests(null, "System.Reflection.Tests.MyNameSPACe1.MyNAMEspace2.MyClASs399+inNer");
-            PerformTests(null, "System.Reflection.Tests.MyNameSPACe1.MyNAMEspace2.MyClASs3+inNer99");
-            PerformTests(typeof(MyNamespace1.MyNamespace2.MyClass2));
-            PerformTests(typeof(MyNamespace1.MyNamespace2.MyClass2));
-            PerformTests(typeof(MyNamespace1.MyNamespace2.MyClass3.iNner));
-            PerformTests(typeof(MyNamespace1.MyNamespace2.MyClass3.iNner), "System.Reflection.Tests.MyNameSPACe1.MyNAMEspace2.MyClASs3+inNer");
-            PerformTests(typeof(MyNamespace1.MyNaMespace3.Foo));
-            PerformTests(typeof(MyNamespace1.MyNaMespace3.Foo), "System.Reflection.Tests.mynamespace1.mynamespace3.foo");
-            PerformTests(typeof(MyNamespace1.MyNaMespace3.Foo), "System.Reflection.Tests.MYNAMESPACE1.MYNAMESPACE3.FOO");
-
-            {
-                Type g = typeof(MyNamespace1.MynAmespace3.Goo<int>);
-                String fullName = g.FullName;
-
-                PerformTests(g, fullName);
-
-
-                PerformTests(g, fullName.ToUpper());
-                PerformTests(g, fullName.ToLower());
-            }
-        }
 
         [Fact]
-        public void GetTypeFromCoreAssembly()
+        public void GetType_EmptyString()
         {
-            Type typeInt32 = typeof(Int32);
-            Type t;
-
-            t = Type.GetType("System.Int32", throwOnError: true);
-            Assert.Equal(t, typeInt32);
-
-            t = Type.GetType("system.int32", throwOnError: true, ignoreCase: true);
-            Assert.Equal(t, typeInt32);
-        }
-
-        [Fact]
-        public void GetTypeEmptyString()
-        {
-            Assembly a = typeof(GetTypeReflectionTests).GetTypeInfo().Assembly;
+            Assembly a = typeof(GetTypeTests).GetTypeInfo().Assembly;
             Module m = a.ManifestModule;
 
-            String typeName = "";
-            String aqn = ", " + typeof(GetTypeReflectionTests).GetTypeInfo().Assembly.FullName;
+            string typeName = "";
+            string aqn = ", " + typeof(GetTypeTests).GetTypeInfo().Assembly.FullName;
 
+            // Type.GetType
             Assert.Null(Type.GetType(typeName));
             Assert.Null(Type.GetType(aqn));
 
@@ -71,7 +27,7 @@ namespace System.Reflection.Tests
             Assert.Null(Type.GetType(aqn, throwOnError: false));
 
             Assert.Throws<TypeLoadException>(() => Type.GetType(typeName, throwOnError: true));
-            Assert.Throws<ArgumentException>(() => Type.GetType(aqn, throwOnError: true));
+            Assert.Throws<ArgumentException>("typeName@0", () => Type.GetType(aqn, throwOnError: true));
 
             Assert.Null(Type.GetType(typeName, throwOnError: false, ignoreCase: false));
             Assert.Null(Type.GetType(typeName, throwOnError: false, ignoreCase: true));
@@ -80,48 +36,67 @@ namespace System.Reflection.Tests
 
             Assert.Throws<TypeLoadException>(() => Type.GetType(typeName, throwOnError: true, ignoreCase: false));
             Assert.Throws<TypeLoadException>(() => Type.GetType(typeName, throwOnError: true, ignoreCase: true));
-            Assert.Throws<ArgumentException>(() => Type.GetType(aqn, throwOnError: true, ignoreCase: false));
-            Assert.Throws<ArgumentException>(() => Type.GetType(aqn, throwOnError: true, ignoreCase: true));
+            Assert.Throws<ArgumentException>("typeName@0", () => Type.GetType(aqn, throwOnError: true, ignoreCase: false));
+            Assert.Throws<ArgumentException>("typeName@0", () => Type.GetType(aqn, throwOnError: true, ignoreCase: true));
 
-
-            Assert.Throws<ArgumentException>(() => a.GetType(typeName));
+            // Assembly.GetType
+            Assert.Throws<ArgumentException>(null, () => a.GetType(typeName));
             Assert.Null(a.GetType(aqn));
 
-            Assert.Throws<ArgumentException>(() => a.GetType(typeName, throwOnError: false, ignoreCase: false));
-            Assert.Throws<ArgumentException>(() => a.GetType(typeName, throwOnError: false, ignoreCase: true));
+            Assert.Throws<ArgumentException>(null, () => a.GetType(typeName, throwOnError: false, ignoreCase: false));
+            Assert.Throws<ArgumentException>(null, () => a.GetType(typeName, throwOnError: false, ignoreCase: true));
             Assert.Null(a.GetType(aqn, throwOnError: false, ignoreCase: false));
             Assert.Null(a.GetType(aqn, throwOnError: false, ignoreCase: true));
 
-            Assert.Throws<ArgumentException>(() => a.GetType(typeName, throwOnError: true, ignoreCase: false));
-            Assert.Throws<ArgumentException>(() => a.GetType(typeName, throwOnError: true, ignoreCase: true));
-            Assert.Throws<ArgumentException>(() => a.GetType(aqn, throwOnError: true, ignoreCase: false));
-            Assert.Throws<ArgumentException>(() => a.GetType(aqn, throwOnError: true, ignoreCase: true));
+            Assert.Throws<ArgumentException>(null, () => a.GetType(typeName, throwOnError: true, ignoreCase: false));
+            Assert.Throws<ArgumentException>(null, () => a.GetType(typeName, throwOnError: true, ignoreCase: true));
+            Assert.Throws<ArgumentException>("typeName@0", () => a.GetType(aqn, throwOnError: true, ignoreCase: false));
+            Assert.Throws<ArgumentException>("typeName@0", () => a.GetType(aqn, throwOnError: true, ignoreCase: true));
 
-
-            Assert.Throws<ArgumentException>(() => m.GetType(typeName, throwOnError: false, ignoreCase: false));
-            Assert.Throws<ArgumentException>(() => m.GetType(typeName, throwOnError: false, ignoreCase: true));
+            // Module.GetType
+            Assert.Throws<ArgumentException>(null, () => m.GetType(typeName, throwOnError: false, ignoreCase: false));
+            Assert.Throws<ArgumentException>(null, () => m.GetType(typeName, throwOnError: false, ignoreCase: true));
             Assert.Null(m.GetType(aqn, throwOnError: false, ignoreCase: false));
             Assert.Null(m.GetType(aqn, throwOnError: false, ignoreCase: true));
 
-            Assert.Throws<ArgumentException>(() => m.GetType(typeName, throwOnError: true, ignoreCase: false));
-            Assert.Throws<ArgumentException>(() => m.GetType(typeName, throwOnError: true, ignoreCase: true));
-            Assert.Throws<ArgumentException>(() => m.GetType(aqn, throwOnError: true, ignoreCase: false));
-            Assert.Throws<ArgumentException>(() => m.GetType(aqn, throwOnError: true, ignoreCase: true));
+            Assert.Throws<ArgumentException>(null, () => m.GetType(typeName, throwOnError: true, ignoreCase: false));
+            Assert.Throws<ArgumentException>(null, () => m.GetType(typeName, throwOnError: true, ignoreCase: true));
+            Assert.Throws<ArgumentException>("typeName@0", () => m.GetType(aqn, throwOnError: true, ignoreCase: false));
+            Assert.Throws<ArgumentException>("typeName@0", () => m.GetType(aqn, throwOnError: true, ignoreCase: true));
         }
 
-        private static void PerformTests(Type expectedResult, String typeName = null)
+        public static IEnumerable<object[]> GetType_TestData()
         {
-            if (typeName == null)
-                typeName = expectedResult.FullName;
+            yield return new object[] { "non-existent-type", null };
+            yield return new object[] { typeof(MyClass1).FullName, typeof(MyClass1) };
+            yield return new object[] { "System.Reflection.Tests.mYclAss1", typeof(MyClass1) };
+            yield return new object[] { "System.Reflection.Tests.MyNameSPACe1.MyNAMEspace99.MyClASs3+inNer", null };
+            yield return new object[] { "System.Reflection.Tests.MyNameSPACe1.MyNAMEspace2.MyClASs399+inNer", null };
+            yield return new object[] { "System.Reflection.Tests.MyNameSPACe1.MyNAMEspace2.MyClASs3+inNer99", null };
+            yield return new object[] { typeof(MyNamespace1.MyNamespace2.MyClass2).FullName, typeof(MyNamespace1.MyNamespace2.MyClass2) };
+            yield return new object[] { typeof(MyNamespace1.MyNamespace2.MyClass3.iNner).FullName, typeof(MyNamespace1.MyNamespace2.MyClass3.iNner) };
+            yield return new object[] { "System.Reflection.Tests.MyNameSPACe1.MyNAMEspace2.MyClASs3+inNer", typeof(MyNamespace1.MyNamespace2.MyClass3.iNner) };
+            yield return new object[] { typeof(MyNamespace1.MyNamespace3.Foo).FullName, typeof(MyNamespace1.MyNamespace3.Foo) };
+            yield return new object[] { "System.Reflection.Tests.mynamespace1.mynamespace3.foo", typeof(MyNamespace1.MyNamespace3.Foo) };
+            yield return new object[] { "System.Reflection.Tests.MYNAMESPACE1.MYNAMESPACE3.FOO", typeof(MyNamespace1.MyNamespace3.Foo) };
 
+            Type type = typeof(MyNamespace1.MynAmespace3.Goo<int>);
+            yield return new object[] { type.FullName, type };
+            yield return new object[] { type.FullName.ToUpper(), type };
+            yield return new object[] { type.FullName.ToLower(), type };
+        }
 
-            Assembly a = typeof(GetTypeReflectionTests).GetTypeInfo().Assembly;
+        [Theory]
+        [MemberData(nameof(GetType_TestData))]
+        public void GetType(string typeName, Type expectedResult)
+        {
+            Assembly a = typeof(GetTypeTests).GetTypeInfo().Assembly;
             Module m = a.ManifestModule;
 
-            String aqn = typeName + ", " + a.FullName;
-
+            string aqn = typeName + ", " + a.FullName;
             if (expectedResult == null)
             {
+                // Type.GetType
                 Assert.Null(Type.GetType(typeName));
                 Assert.Null(Type.GetType(aqn));
 
@@ -141,7 +116,7 @@ namespace System.Reflection.Tests
                 Assert.Throws<TypeLoadException>(() => Type.GetType(aqn, throwOnError: true, ignoreCase: false));
                 Assert.Throws<TypeLoadException>(() => Type.GetType(aqn, throwOnError: true, ignoreCase: true));
 
-
+                // Assembly.GetType
                 Assert.Null(a.GetType(typeName));
                 Assert.Null(a.GetType(aqn));
 
@@ -152,10 +127,10 @@ namespace System.Reflection.Tests
 
                 Assert.Throws<TypeLoadException>(() => a.GetType(typeName, throwOnError: true, ignoreCase: false));
                 Assert.Throws<TypeLoadException>(() => a.GetType(typeName, throwOnError: true, ignoreCase: true));
-                Assert.Throws<ArgumentException>(() => a.GetType(aqn, throwOnError: true, ignoreCase: false));
-                Assert.Throws<ArgumentException>(() => a.GetType(aqn, throwOnError: true, ignoreCase: true));
+                Assert.Throws<ArgumentException>(null, () => a.GetType(aqn, throwOnError: true, ignoreCase: false));
+                Assert.Throws<ArgumentException>(null, () => a.GetType(aqn, throwOnError: true, ignoreCase: true));
 
-
+                // Module.GetType
                 Assert.Null(m.GetType(typeName, throwOnError: false, ignoreCase: false));
                 Assert.Null(m.GetType(typeName, throwOnError: false, ignoreCase: true));
                 Assert.Null(m.GetType(aqn, throwOnError: false, ignoreCase: false));
@@ -163,13 +138,13 @@ namespace System.Reflection.Tests
 
                 Assert.Throws<TypeLoadException>(() => m.GetType(typeName, throwOnError: true, ignoreCase: false));
                 Assert.Throws<TypeLoadException>(() => m.GetType(typeName, throwOnError: true, ignoreCase: true));
-                Assert.Throws<ArgumentException>(() => m.GetType(aqn, throwOnError: true, ignoreCase: false));
-                Assert.Throws<ArgumentException>(() => m.GetType(aqn, throwOnError: true, ignoreCase: true));
+                Assert.Throws<ArgumentException>(null, () => m.GetType(aqn, throwOnError: true, ignoreCase: false));
+                Assert.Throws<ArgumentException>(null, () => m.GetType(aqn, throwOnError: true, ignoreCase: true));
             }
             else if (expectedResult.FullName == typeName)
             {
                 // Case-sensitive match.
-
+                // Type.GetType
                 Assert.Equal(expectedResult, Type.GetType(typeName));
                 Assert.Equal(expectedResult, Type.GetType(aqn));
 
@@ -189,7 +164,7 @@ namespace System.Reflection.Tests
                 Assert.Equal(expectedResult, Type.GetType(aqn, throwOnError: true, ignoreCase: false));
                 AssertCaseInsensitiveMatch(expectedResult, Type.GetType(aqn, throwOnError: true, ignoreCase: true));
 
-
+                // Assembly.GetType
                 Assert.Equal(expectedResult, a.GetType(typeName));
                 Assert.Null(a.GetType(aqn));
 
@@ -200,10 +175,10 @@ namespace System.Reflection.Tests
 
                 Assert.Equal(expectedResult, a.GetType(typeName, throwOnError: true, ignoreCase: false));
                 AssertCaseInsensitiveMatch(expectedResult, a.GetType(typeName, throwOnError: true, ignoreCase: true));
-                Assert.Throws<ArgumentException>(() => a.GetType(aqn, throwOnError: true, ignoreCase: false));
-                Assert.Throws<ArgumentException>(() => a.GetType(aqn, throwOnError: true, ignoreCase: true));
+                Assert.Throws<ArgumentException>(null, () => a.GetType(aqn, throwOnError: true, ignoreCase: false));
+                Assert.Throws<ArgumentException>(null, () => a.GetType(aqn, throwOnError: true, ignoreCase: true));
 
-
+                // Module.GetType
                 Assert.Equal(expectedResult, m.GetType(typeName, throwOnError: false, ignoreCase: false));
                 AssertCaseInsensitiveMatch(expectedResult, m.GetType(typeName, throwOnError: false, ignoreCase: true));
                 Assert.Null(m.GetType(aqn, throwOnError: false, ignoreCase: false));
@@ -211,13 +186,13 @@ namespace System.Reflection.Tests
 
                 Assert.Equal(expectedResult, m.GetType(typeName, throwOnError: true, ignoreCase: false));
                 AssertCaseInsensitiveMatch(expectedResult, m.GetType(typeName, throwOnError: true, ignoreCase: true));
-                Assert.Throws<ArgumentException>(() => m.GetType(aqn, throwOnError: true, ignoreCase: false));
-                Assert.Throws<ArgumentException>(() => m.GetType(aqn, throwOnError: true, ignoreCase: true));
+                Assert.Throws<ArgumentException>(null, () => m.GetType(aqn, throwOnError: true, ignoreCase: false));
+                Assert.Throws<ArgumentException>(null, () => m.GetType(aqn, throwOnError: true, ignoreCase: true));
             }
             else if (expectedResult.FullName.Equals(typeName, StringComparison.OrdinalIgnoreCase))
             {
                 // Case-insensitive match.
-
+                // Type.GetType
                 Assert.Null(Type.GetType(typeName));
                 Assert.Null(Type.GetType(aqn));
 
@@ -237,7 +212,7 @@ namespace System.Reflection.Tests
                 Assert.Throws<TypeLoadException>(() => Type.GetType(aqn, throwOnError: true, ignoreCase: false));
                 AssertCaseInsensitiveMatch(expectedResult, Type.GetType(aqn, throwOnError: true, ignoreCase: true));
 
-
+                // Assembly.GetType
                 Assert.Null(a.GetType(typeName));
                 Assert.Null(a.GetType(aqn));
 
@@ -248,10 +223,10 @@ namespace System.Reflection.Tests
 
                 Assert.Throws<TypeLoadException>(() => a.GetType(typeName, throwOnError: true, ignoreCase: false));
                 AssertCaseInsensitiveMatch(expectedResult, a.GetType(typeName, throwOnError: true, ignoreCase: true));
-                Assert.Throws<ArgumentException>(() => a.GetType(aqn, throwOnError: true, ignoreCase: false));
-                Assert.Throws<ArgumentException>(() => a.GetType(aqn, throwOnError: true, ignoreCase: true));
+                Assert.Throws<ArgumentException>(null, () => a.GetType(aqn, throwOnError: true, ignoreCase: false));
+                Assert.Throws<ArgumentException>(null, () => a.GetType(aqn, throwOnError: true, ignoreCase: true));
 
-
+                // Module.GetType
                 Assert.Null(m.GetType(typeName, throwOnError: false, ignoreCase: false));
                 AssertCaseInsensitiveMatch(expectedResult, m.GetType(typeName, throwOnError: false, ignoreCase: true));
                 Assert.Null(m.GetType(aqn, throwOnError: false, ignoreCase: false));
@@ -259,13 +234,20 @@ namespace System.Reflection.Tests
 
                 Assert.Throws<TypeLoadException>(() => m.GetType(typeName, throwOnError: true, ignoreCase: false));
                 AssertCaseInsensitiveMatch(expectedResult, m.GetType(typeName, throwOnError: true, ignoreCase: true));
-                Assert.Throws<ArgumentException>(() => m.GetType(aqn, throwOnError: true, ignoreCase: false));
-                Assert.Throws<ArgumentException>(() => m.GetType(aqn, throwOnError: true, ignoreCase: true));
+                Assert.Throws<ArgumentException>(null, () => m.GetType(aqn, throwOnError: true, ignoreCase: false));
+                Assert.Throws<ArgumentException>(null, () => m.GetType(aqn, throwOnError: true, ignoreCase: true));
             }
             else
             {
                 throw new InvalidOperationException("TEST ERROR.");
             }
+        }
+
+        [Fact]
+        public void GetType_CoreAssembly()
+        {
+            Assert.Equal(typeof(int), Type.GetType("System.Int32", throwOnError: true));
+            Assert.Equal(typeof(int), Type.GetType("system.int32", throwOnError: true, ignoreCase: true));
         }
 
         private static void AssertCaseInsensitiveMatch(Type expectedResult, Type actualResult)
@@ -301,6 +283,7 @@ namespace System.Reflection.Tests
         {
             public class Foo { }
         }
+
         namespace MynAmespace3
         {
             public class Foo { }
@@ -309,10 +292,12 @@ namespace System.Reflection.Tests
             public class gOo<T> { }
             public class goO<T> { }
         }
+
         namespace MyNaMespace3
         {
             public class Foo { }
         }
+
         namespace MyNamEspace3
         {
             public class Foo { }
