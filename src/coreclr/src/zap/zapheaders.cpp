@@ -288,16 +288,47 @@ void ZapDebugDirectory::Save(ZapWriter * pZapWriter)
     _ASSERTE(pZapWriter);
 
     if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_NGenEnableCreatePdb)) {
-
         SaveOriginalDebugDirectoryEntry(pZapWriter);
         SaveNGenDebugDirectoryEntry(pZapWriter);
-
     } else {
-
         SaveNGenDebugDirectoryEntry(pZapWriter);
         SaveOriginalDebugDirectoryEntry(pZapWriter);
-
     }
+}
+
+ZapPEExports::ZapPEExports(LPCWSTR dllPath) 
+{
+	m_dllFileName = wcsrchr(dllPath, DIRECTORY_SEPARATOR_CHAR_W);
+	if (m_dllFileName != NULL)
+		m_dllFileName++;
+	else 
+		m_dllFileName = dllPath;
+}
+
+DWORD ZapPEExports::GetSize()
+{
+	return DWORD(sizeof(IMAGE_EXPORT_DIRECTORY) + wcslen(m_dllFileName) + 1);
+}
+
+void ZapPEExports::Save(ZapWriter * pZapWriter)
+{
+	_ASSERTE(pZapWriter);
+
+	IMAGE_EXPORT_DIRECTORY exports;
+	ZeroMemory(&exports, sizeof(exports));
+
+	exports.Name = pZapWriter->GetCurrentRVA() + sizeof(exports);
+
+	// Write out exports header 
+	pZapWriter->Write(&exports, sizeof(exports));
+
+	// Write out string that exports.Name points at.  
+	for (LPCWSTR ptr = m_dllFileName; ; ptr++)
+	{
+		pZapWriter->Write((PVOID) ptr, 1);
+		if (*ptr == 0)
+			break;
+	}
 }
 
 // If the IL image has IMAGE_DIRECTORY_ENTRY_DEBUG with information about the PDB,
