@@ -205,8 +205,7 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
             break;
 
         case GT_STORE_LCL_FLD:
-            assert(tree->gtOp.gtOp1->OperGet() == GT_LONG);
-            NYI("st.lclFld of of TYP_LONG");
+            nextNode = DecomposeStoreLclFld(use);
             break;
 
         case GT_IND:
@@ -340,8 +339,6 @@ GenTree* DecomposeLongs::DecomposeLclVar(LIR::Use& use)
     }
     else
     {
-        noway_assert(varDsc->lvLRACandidate == false);
-
         loResult->SetOper(GT_LCL_FLD);
         loResult->AsLclFld()->gtLclOffs  = 0;
         loResult->AsLclFld()->gtFieldSeq = FieldSeqStore::NotAField();
@@ -407,51 +404,105 @@ GenTree* DecomposeLongs::DecomposeStoreLclVar(LIR::Use& use)
     }
 
     noway_assert(rhs->OperGet() == GT_LONG);
+
     unsigned   varNum = tree->AsLclVarCommon()->gtLclNum;
     LclVarDsc* varDsc = m_compiler->lvaTable + varNum;
+    if (!varDsc->lvPromoted)
+    {
+        // We cannot decompose a st.lclVar that is not promoted because doing so
+        // changes its liveness semantics. For example, consider the following
+        // decomposition of a st.lclVar into two st.lclFlds:
+        //
+        // Before:
+        //
+        //          /--* t0      int
+        //          +--* t1      int
+        //     t2 = *  gt_long   long
+        //
+        //          /--* t2      long
+        //          *  st.lclVar long    V0
+        //
+        // After:
+        //          /--* t0      int
+        //          *  st.lclFld int     V0    [+0]
+        //
+        //          /--* t1      int
+        //          *  st.lclFld int     V0    [+4]
+        //
+        // Before decomposition, the `st.lclVar` is a simple def of `V0`. After
+        // decomposition, each `st.lclFld` is a partial def of `V0`. This partial
+        // def is treated as both a use and a def of the appropriate lclVar. This
+        // difference will affect any situation in which the liveness of a variable
+        // at a def matters (e.g. dead store elimination, live-in sets, etc.). As
+        // a result, we leave these stores as-is and generate the decomposed store
+        // in the code generator.
+        //
+        // NOTE: this does extend the lifetime of the low half of the `GT_LONG`
+        // node as compared to the decomposed form. If we start doing more code
+        // motion in the backend, this may cause some CQ issues and some sort of
+        // decomposition could be beneficial.
+        return tree->gtNext;
+    }
+
+    assert(varDsc->lvFieldCnt == 2);
     m_compiler->lvaDecRefCnts(tree);
 
-    GenTree* loRhs   = rhs->gtGetOp1();
-    GenTree* hiRhs   = rhs->gtGetOp2();
-    GenTree* hiStore = m_compiler->gtNewLclLNode(varNum, TYP_INT);
+    GenTreeOp* value = rhs->AsOp();
+    Range().Remove(value);
 
-    if (varDsc->lvPromoted)
-    {
-        assert(varDsc->lvFieldCnt == 2);
+    const unsigned loVarNum = varDsc->lvFieldLclStart;
+    GenTree*       loStore  = tree;
+    loStore->AsLclVarCommon()->SetLclNum(loVarNum);
+    loStore->gtOp.gtOp1 = value->gtOp1;
+    loStore->gtType     = TYP_INT;
 
-        unsigned loVarNum = varDsc->lvFieldLclStart;
-        unsigned hiVarNum = loVarNum + 1;
-        tree->AsLclVarCommon()->SetLclNum(loVarNum);
-        hiStore->SetOper(GT_STORE_LCL_VAR);
-        hiStore->AsLclVarCommon()->SetLclNum(hiVarNum);
-    }
-    else
-    {
-        noway_assert(varDsc->lvLRACandidate == false);
-
-        tree->SetOper(GT_STORE_LCL_FLD);
-        tree->AsLclFld()->gtLclOffs  = 0;
-        tree->AsLclFld()->gtFieldSeq = FieldSeqStore::NotAField();
-
-        hiStore->SetOper(GT_STORE_LCL_FLD);
-        hiStore->AsLclFld()->gtLclOffs  = 4;
-        hiStore->AsLclFld()->gtFieldSeq = FieldSeqStore::NotAField();
-    }
-
-    // 'tree' is going to steal the loRhs node for itself, so we need to remove the
-    // GT_LONG node from the threading.
-    Range().Remove(rhs);
-
-    tree->gtOp.gtOp1 = loRhs;
-    tree->gtType     = TYP_INT;
-
-    hiStore->gtOp.gtOp1 = hiRhs;
+    const unsigned hiVarNum = loVarNum + 1;
+    GenTree*       hiStore  = m_compiler->gtNewLclLNode(hiVarNum, TYP_INT);
+    hiStore->SetOper(GT_STORE_LCL_VAR);
+    hiStore->gtOp.gtOp1 = value->gtOp2;
     hiStore->gtFlags |= GTF_VAR_DEF;
 
-    m_compiler->lvaIncRefCnts(tree);
+    m_compiler->lvaIncRefCnts(loStore);
     m_compiler->lvaIncRefCnts(hiStore);
 
     Range().InsertAfter(tree, hiStore);
+
+    return hiStore->gtNext;
+}
+
+//------------------------------------------------------------------------
+// DecomposeStoreLclFld: Decompose GT_STORE_LCL_FLD.
+//
+// Arguments:
+//    use - the LIR::Use object for the def that needs to be decomposed.
+//
+// Return Value:
+//    The next node to process.
+//
+GenTree* DecomposeLongs::DecomposeStoreLclFld(LIR::Use& use)
+{
+    assert(use.IsInitialized());
+    assert(use.Def()->OperGet() == GT_STORE_LCL_FLD);
+
+    GenTreeLclFld* store = use.Def()->AsLclFld();
+
+    GenTreeOp* value = store->gtOp1->AsOp();
+    assert(value->OperGet() == GT_LONG);
+    Range().Remove(value);
+
+    // The original store node will be repurposed to store the low half of the GT_LONG.
+    GenTreeLclFld* loStore = store;
+    loStore->gtOp1         = value->gtOp1;
+    loStore->gtType        = TYP_INT;
+    loStore->gtFlags |= GTF_VAR_USEASG;
+
+    // Create the store for the upper half of the GT_LONG and insert it after the low store.
+    GenTreeLclFld* hiStore = m_compiler->gtNewLclFldNode(loStore->gtLclNum, TYP_INT, loStore->gtLclOffs + 4);
+    hiStore->SetOper(GT_STORE_LCL_FLD);
+    hiStore->gtOp1 = value->gtOp2;
+    hiStore->gtFlags |= (GTF_VAR_DEF | GTF_VAR_USEASG);
+
+    Range().InsertAfter(loStore, hiStore);
 
     return hiStore->gtNext;
 }
