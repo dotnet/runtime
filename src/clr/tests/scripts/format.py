@@ -186,14 +186,20 @@ def main(argv):
         jitformat = os.path.join(jitformat, "jit-format")
     elif platform == 'Windows_NT':
         jitformat = os.path.join(jitformat,"jit-format.cmd")
+    errorMessage = ""
 
-    for build in ["Checked", "Debug", "Release"]:
-        for project in ["dll", "standalone", "crossgen"]:
+    builds = ["Checked", "Debug", "Release"]
+    projects = ["dll", "standalone", "crossgen"]
+
+    for build in builds:
+        for project in projects:
             proc = subprocess.Popen([jitformat, "-a", arch, "-b", build, "-o", platform, "-c", coreclr, "--verbose", "--projects", project], env=my_env)
             output,error = proc.communicate()
             errorcode = proc.returncode
 
             if errorcode != 0:
+                errorMessage += "\tjit-format -a " + arch + " -b " + build + " -o " + platform
+                errorMessage += " -c <absolute-path-to-coreclr> --verbose --fix --projects " + project +"\n"
                 returncode = errorcode
 
     os.chdir(current_dir)
@@ -209,6 +215,10 @@ def main(argv):
     if os.path.isfile(bootstrapPath):
         print("Deleting " + bootstrapPath)
         os.remove(bootstrapPath)
+
+    if returncode != 0:
+        print("There were errors in formatting. Please run jit-format locally with: \n")
+        print(errorMessage)
 
     return returncode
 
