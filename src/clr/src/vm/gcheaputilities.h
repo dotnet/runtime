@@ -18,6 +18,8 @@ public:
     // Retrieves the GC heap.
     inline static IGCHeap* GetGCHeap() 
     {
+        LIMITED_METHOD_CONTRACT;
+
         assert(g_pGCHeap != nullptr);
         return g_pGCHeap;
     }
@@ -25,6 +27,8 @@ public:
     // Returns true if the heap has been initialized, false otherwise.
     inline static bool IsGCHeapInitialized()
     {
+        LIMITED_METHOD_CONTRACT;
+
         return g_pGCHeap != nullptr;
     }
 
@@ -99,6 +103,8 @@ public:
     // for a similar reason (the DAC needs to know what kind of heap it's looking at).
     inline static unsigned GetMaxGeneration()
     {
+        WRAPPER_NO_CONTRACT;
+
         return IGCHeap::maxGeneration;
     }
 
