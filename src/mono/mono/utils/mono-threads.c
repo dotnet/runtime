@@ -260,8 +260,6 @@ mono_threads_wait_pending_operations (void)
 
 //Thread initialization code
 
-static void mono_threads_unregister_current_thread (MonoThreadInfo *info);
-
 static inline void
 mono_hazard_pointer_clear_all (MonoThreadHazardPointers *hp, int retain)
 {
@@ -400,6 +398,7 @@ unregister_thread (void *arg)
 	gpointer gc_unsafe_stackdata;
 	MonoThreadInfo *info;
 	int small_id;
+	gboolean result;
 
 	info = (MonoThreadInfo *) arg;
 	g_assert (info);
@@ -415,8 +414,6 @@ unregister_thread (void *arg)
 	THREADS_DEBUG ("unregistering info %p\n", info);
 
 	mono_native_tls_set_value (thread_exited_key, GUINT_TO_POINTER (1));
-
-	mono_threads_platform_unregister (info);
 
 	/*
 	 * TLS destruction order is not reliable so small_id might be cleaned up
@@ -444,7 +441,10 @@ unregister_thread (void *arg)
 	*/
 	if (threads_callbacks.thread_unregister)
 		threads_callbacks.thread_unregister (info);
-	mono_threads_unregister_current_thread (info);
+
+	mono_threads_platform_unregister (info);
+	result = mono_thread_info_remove (info);
+	g_assert (result);
 	mono_threads_transition_detach (info);
 
 	mono_thread_info_suspend_unlock ();
@@ -478,20 +478,6 @@ thread_exited_dtor (void *arg)
 	 */
 	mono_native_tls_set_value (thread_exited_key, GUINT_TO_POINTER (1));
 #endif
-}
-
-/**
- * Removes the current thread from the thread list.
- * This must be called from the thread unregister callback and nowhere else.
- * The current thread must be passed as TLS might have already been cleaned up.
-*/
-static void
-mono_threads_unregister_current_thread (MonoThreadInfo *info)
-{
-	gboolean result;
-	g_assert (mono_thread_info_get_tid (info) == mono_native_thread_id_get ());
-	result = mono_thread_info_remove (info);
-	g_assert (result);
 }
 
 MonoThreadInfo*
