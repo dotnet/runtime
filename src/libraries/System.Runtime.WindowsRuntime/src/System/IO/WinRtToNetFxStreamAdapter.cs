@@ -556,7 +556,7 @@ namespace System.IO
         }
 
 
-        public override Int32 Read([In, Out] Byte[] buffer, Int32 offset, Int32 count)
+        public override Int32 Read(Byte[] buffer, Int32 offset, Int32 count)
         {
             // Arguments validation and not-disposed validation are done in BeginRead.
 

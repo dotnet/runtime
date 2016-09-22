@@ -671,7 +671,7 @@ namespace System.IO
         /// The total number of bytes read into the buffer. This might be less than the number of bytes requested 
         /// if that number of bytes are not currently available, or zero if the end of the stream is reached.
         /// </returns>
-        public override int Read([In, Out] byte[] array, int offset, int count)
+        public override int Read(byte[] array, int offset, int count)
         {
             ValidateReadWriteArgs(array, offset, count);
 

@@ -443,7 +443,7 @@ namespace System.IO
         /// <param name="count">Maximum number of bytes to read.</param>
         /// <returns>Number of bytes actually read.</returns>
         [System.Security.SecuritySafeCritical]  // auto-generated
-        public override int Read([In, Out] byte[] buffer, int offset, int count)
+        public override int Read(byte[] buffer, int offset, int count)
         {
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);

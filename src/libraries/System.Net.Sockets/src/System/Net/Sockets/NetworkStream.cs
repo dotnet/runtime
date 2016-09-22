@@ -385,7 +385,7 @@ namespace System.Net.Sockets
         // Returns:
         // 
         //     Number of bytes we read, or 0 if the socket is closed.
-        public override int Read([In, Out] byte[] buffer, int offset, int size)
+        public override int Read(byte[] buffer, int offset, int size)
         {
 #if DEBUG
             using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Sync))
