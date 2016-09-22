@@ -232,6 +232,15 @@ unsigned  genTreeNsizHistBuckets[] = {1000, 5000, 10000, 50000, 100000, 500000, 
 Histogram genTreeNsizHist(HostAllocator::getHostAllocator(), genTreeNsizHistBuckets);
 #endif // MEASURE_NODE_SIZE
 
+/*****************************************************************************/
+#if MEASURE_MEM_ALLOC
+
+unsigned  memSizeHistBuckets[] = {20, 50, 75, 100, 150, 250, 500, 1000, 5000, 0};
+Histogram memAllocHist(HostAllocator::getHostAllocator(), memSizeHistBuckets);
+Histogram memUsedHist(HostAllocator::getHostAllocator(), memSizeHistBuckets);
+
+#endif // MEASURE_MEM_ALLOC
+
 /*****************************************************************************
  *
  *  Variables to keep track of total code amounts.
@@ -1437,6 +1446,16 @@ void Compiler::compShutdown()
 
         fprintf(fout, "\nLargest method:\n");
         s_maxCompMemStats.Print(jitstdout);
+
+        fprintf(fout, "\n");
+        fprintf(fout, "---------------------------------------------------\n");
+        fprintf(fout, "Distribution of total memory allocated per method (in KB):\n");
+        memAllocHist.dump(fout);
+
+        fprintf(fout, "\n");
+        fprintf(fout, "---------------------------------------------------\n");
+        fprintf(fout, "Distribution of total memory used      per method (in KB):\n");
+        memUsedHist.dump(fout);
     }
 
 #endif // MEASURE_MEM_ALLOC
@@ -4965,6 +4984,8 @@ void Compiler::compCompileFinish()
         // Make the updates.
         genMemStats.nraTotalSizeAlloc = compGetAllocator()->getTotalBytesAllocated();
         genMemStats.nraTotalSizeUsed  = compGetAllocator()->getTotalBytesUsed();
+        memAllocHist.record((unsigned)((genMemStats.nraTotalSizeAlloc + 1023) / 1024));
+        memUsedHist.record((unsigned)((genMemStats.nraTotalSizeUsed + 1023) / 1024));
         s_aggMemStats.Add(genMemStats);
         if (genMemStats.allocSz > s_maxCompMemStats.allocSz)
         {
