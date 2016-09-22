@@ -85,7 +85,7 @@ namespace System.Net
         Success = 0,
         Timeout = 14,
         TrustFailure = 9,
-        UnknownError = 16,
+        UnknownError = 16
     }
     public abstract partial class WebRequest
     {
@@ -122,5 +122,61 @@ namespace System.Net
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public abstract System.IO.Stream GetResponseStream();
+    }
+}
+namespace System.Net.Cache
+{
+    public enum HttpCacheAgeControl
+    {
+        None = 0x0,
+        MinFresh = 0x1,
+        MaxAge = 0x2,
+        MaxStale = 0x4,
+        MaxAgeAndMinFresh = 0x3,
+        MaxAgeAndMaxStale = 0x6
+    }
+    public enum HttpRequestCacheLevel
+    {
+        Default = 0,
+        BypassCache = 1,
+        CacheOnly = 2,
+        CacheIfAvailable = 3,
+        Revalidate = 4,
+        Reload = 5,
+        NoCacheNoStore = 6,
+        CacheOrNextCacheOnly = 7,
+        Refresh = 8
+    }
+    public class HttpRequestCachePolicy : RequestCachePolicy
+    {
+        public HttpRequestCachePolicy() { }
+        public HttpRequestCachePolicy(System.DateTime cacheSyncDate) { }
+        public HttpRequestCachePolicy(System.Net.Cache.HttpRequestCacheLevel level) { }
+        public HttpRequestCachePolicy(System.Net.Cache.HttpCacheAgeControl cacheAgeControl, System.TimeSpan ageOrFreshOrStale) { }
+        public HttpRequestCachePolicy(System.Net.Cache.HttpCacheAgeControl cacheAgeControl, System.TimeSpan maxAge, System.TimeSpan freshOrStale) { }
+        public HttpRequestCachePolicy(System.Net.Cache.HttpCacheAgeControl cacheAgeControl, System.TimeSpan maxAge, System.TimeSpan freshOrStale, System.DateTime cacheSyncDate) { }
+        public new System.Net.Cache.HttpRequestCacheLevel Level { get { throw null; } }
+        public System.DateTime CacheSyncDate { get { throw null; } }
+        public System.TimeSpan MaxAge { get { throw null; } }
+        public System.TimeSpan MinFresh { get { throw null; } }
+        public System.TimeSpan MaxStale { get { throw null; } }
+        public override string ToString() { throw null; }
+    }
+    public enum RequestCacheLevel
+    {
+        Default = 0,
+        BypassCache = 1,
+        CacheOnly = 2,
+        CacheIfAvailable = 3,
+        Revalidate = 4,
+        Reload = 5,
+        NoCacheNoStore = 6
+    }
+    public class RequestCachePolicy
+    {
+        public RequestCachePolicy() { }
+        public RequestCachePolicy(System.Net.Cache.RequestCacheLevel level) { }
+        public System.Net.Cache.RequestCacheLevel Level { get { throw null; } }
+        public override string ToString() { throw null; }
     }
 }
