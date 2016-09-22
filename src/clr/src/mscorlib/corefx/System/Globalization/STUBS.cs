@@ -19,14 +19,6 @@ namespace System.Globalization
                                 // so they align with the seasons as well as lunar events.
     }
 
-    public static partial class CharUnicodeInfo
-    {
-        public static int GetDecimalDigitValue(char ch) { throw new NotImplementedException(); }
-        public static int GetDecimalDigitValue(string s, int index) { throw new NotImplementedException(); }
-        public static int GetDigitValue(char ch) { throw new NotImplementedException(); }
-        public static int GetDigitValue(string s, int index) { throw new NotImplementedException(); }
-    }
-
     public partial class CompareInfo : System.Runtime.Serialization.IDeserializationCallback
     {
         public int LCID { get { throw new NotImplementedException(); } }
