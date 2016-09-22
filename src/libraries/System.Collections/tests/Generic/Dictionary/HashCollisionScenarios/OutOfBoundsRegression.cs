@@ -20,6 +20,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
+        [OuterLoop("Takes over 55% of System.Collections.Tests testing time")]
         public static void OutOfBoundsRegression()
         {
             var dictionary = new Dictionary<string, string>();
