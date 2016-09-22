@@ -78,7 +78,7 @@ namespace System.Text.RegularExpressions
         /// Returns a Group object equivalent to the one supplied that is safe to share between
         /// multiple threads.
         /// </summary>
-        static internal Group Synchronized(Group inner)
+        public static Group Synchronized(Group inner)
         {
             if (inner == null)
                 throw new ArgumentNullException(nameof(inner));

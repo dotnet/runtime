@@ -12,6 +12,7 @@
 // sequences of codes.
 //
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 
@@ -28,7 +29,7 @@ namespace System.Text.RegularExpressions
         private bool _counting;
         private int _count;
         private int _trackcount;
-        private Dictionary<Int32, Int32> _caps;
+        private Hashtable _caps;
 
         private const int BeforeChild = 64;
         private const int AfterChild = 128;
@@ -196,7 +197,7 @@ namespace System.Text.RegularExpressions
                 return -1;
 
             if (_caps != null)
-                return _caps[capnum];
+                return (int)_caps[capnum];
             else
                 return capnum;
         }

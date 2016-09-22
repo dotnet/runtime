@@ -143,7 +143,7 @@ namespace System.Text.RegularExpressions
 
             if (repl == null || !repl.Pattern.Equals(replacement))
             {
-                repl = RegexParser.ParseReplacement(replacement, _regex._caps, _regex.capsize, _regex._capnames, _regex.roptions);
+                repl = RegexParser.ParseReplacement(replacement, _regex.caps, _regex.capsize, _regex.capnames, _regex.roptions);
                 _regex._replref.Cache(repl);
             }
 
@@ -181,7 +181,7 @@ namespace System.Text.RegularExpressions
         /// between multiple threads.
         /// </summary>
 
-        static internal Match Synchronized(Match inner)
+        public static Match Synchronized(Match inner)
         {
             if (inner == null)
                 throw new ArgumentNullException(nameof(inner));
@@ -404,12 +404,12 @@ namespace System.Text.RegularExpressions
     internal class MatchSparse : Match
     {
         // the lookup hashtable
-        new internal Dictionary<Int32, Int32> _caps;
+        new internal Hashtable _caps;
 
         /*
          * Nonpublic constructor
          */
-        internal MatchSparse(Regex regex, Dictionary<Int32, Int32> caps, int capcount,
+        internal MatchSparse(Regex regex, Hashtable caps, int capcount,
                              String text, int begpos, int len, int startpos)
 
         : base(regex, capcount, text, begpos, len, startpos)
@@ -433,7 +433,7 @@ namespace System.Text.RegularExpressions
         {
             if (_caps != null)
             {
-                foreach (KeyValuePair<int, int> kvp in _caps)
+                foreach (DictionaryEntry kvp in _caps)
                 {
                     System.Diagnostics.Debug.WriteLine("Slot " + kvp.Key.ToString() + " -> " + kvp.Value.ToString());
                 }
