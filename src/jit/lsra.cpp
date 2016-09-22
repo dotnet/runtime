@@ -2931,6 +2931,11 @@ void LinearScan::buildInternalRegisterUsesForNode(GenTree*     tree,
             RefPosition* newest = newRefPosition(defs[i]->getInterval(), currentLoc, RefTypeUse, tree, mask,
                                                  0 DEBUG_ARG(minRegCandidateCount));
             newest->lastUse = true;
+
+            if (tree->gtLsraInfo.isInternalRegDelayFree)
+            {
+                newest->delayRegFree = true;
+            }
         }
     }
 }
@@ -3343,18 +3348,14 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
     assert(!isRegPairType(tree->TypeGet()));
 #endif // _TARGET_ARM_
 
-    // The LIR traversal doesn't visit GT_LIST or GT_ARGPLACE nodes
+    // The LIR traversal doesn't visit GT_LIST or GT_ARGPLACE nodes.
+    // GT_CLS_VAR nodes should have been eliminated by rationalizer.
     assert(tree->OperGet() != GT_ARGPLACE);
     assert(tree->OperGet() != GT_LIST);
+    assert(tree->OperGet() != GT_CLS_VAR);
+
     // The LIR traversal visits only the first node in a GT_FIELD_LIST.
     assert((tree->OperGet() != GT_FIELD_LIST) || tree->AsFieldList()->IsFieldListHead());
-
-    // These nodes are eliminated by the Rationalizer.
-    if (tree->OperGet() == GT_CLS_VAR)
-    {
-        JITDUMP("Unexpected node %s in LSRA.\n", GenTree::NodeName(tree->OperGet()));
-        assert(!"Unexpected node in LSRA.");
-    }
 
     // The set of internal temporary registers used by this node are stored in the
     // gtRsvdRegs register mask. Clear it out.

@@ -76,7 +76,7 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
             // InitBlk
             MakeSrcContained(storeLoc, op1);
         }
-        else if (storeLoc->TypeGet() == TYP_SIMD12)
+        else if ((storeLoc->TypeGet() == TYP_SIMD12) && (storeLoc->OperGet() == GT_STORE_LCL_FLD))
         {
             // Need an additional register to extract upper 4 bytes of Vector3.
             info->internalFloatCount = 1;
@@ -184,9 +184,9 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             if (tree->TypeGet() == TYP_SIMD12)
             {
                 // We need an internal register different from targetReg in which 'tree' produces its result
-                // because both targetReg and internal reg will be in use at the same time. This is achieved
-                // by asking for two internal registers.
-                info->internalFloatCount = 2;
+                // because both targetReg and internal reg will be in use at the same time.
+                info->internalFloatCount     = 1;
+                info->isInternalRegDelayFree = true;
                 info->setInternalCandidates(m_lsra, m_lsra->allSIMDRegs());
             }
 #endif
@@ -643,13 +643,19 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         case GT_ARR_OFFSET:
             // This consumes the offset, if any, the arrObj and the effective index,
             // and produces the flattened offset for this dimension.
-            info->srcCount         = 3;
-            info->dstCount         = 1;
-            info->internalIntCount = 1;
+            info->srcCount = 3;
+            info->dstCount = 1;
+
             // we don't want to generate code for this
             if (tree->gtArrOffs.gtOffset->IsIntegralConst(0))
             {
                 MakeSrcContained(tree, tree->gtArrOffs.gtOffset);
+            }
+            else
+            {
+                // Here we simply need an internal register, which must be different
+                // from any of the operand's registers, but may be the same as targetReg.
+                info->internalIntCount = 1;
             }
             break;
 
@@ -734,15 +740,9 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
 #endif
 
         case GT_CLS_VAR:
-            info->srcCount = 0;
-            // GT_CLS_VAR, by the time we reach the backend, must always
-            // be a pure use.
-            // It will produce a result of the type of the
-            // node, and use an internal register for the address.
-
-            info->dstCount = 1;
-            assert((tree->gtFlags & (GTF_VAR_DEF | GTF_VAR_USEASG | GTF_VAR_USEDEF)) == 0);
-            info->internalIntCount = 1;
+            // These nodes are eliminated by rationalizer.
+            JITDUMP("Unexpected node %s in Lower.\n", GenTree::NodeName(tree->OperGet()));
+            unreached();
             break;
     } // end switch (tree->OperGet())
 
@@ -2070,13 +2070,17 @@ void Lowering::TreeNodeInfoInitLclHeap(GenTree* tree)
     // Here '-' means don't care.
     //
     //     Size?                    Init Memory?         # temp regs
-    //      0                            -                  0
-    //      const and <=6 reg words      -                  0
-    //      const and >6 reg words       Yes                0
+    //      0                            -                  0 (returns 0)
+    //      const and <=6 reg words      -                  0 (pushes '0')
+    //      const and >6 reg words       Yes                0 (pushes '0')
     //      const and <PageSize          No                 0 (amd64) 1 (x86)
-    //      const and >=PageSize         No                 2
-    //      Non-const                    Yes                0
-    //      Non-const                    No                 2
+    //                                                        (x86:tmpReg for sutracting from esp)
+    //      const and >=PageSize         No                 2 (regCnt and tmpReg for subtracing from sp)
+    //      Non-const                    Yes                0 (regCnt=targetReg and pushes '0')
+    //      Non-const                    No                 2 (regCnt and tmpReg for subtracting from sp)
+    //
+    // Note: Here we don't need internal register to be different from targetReg.
+    // Rather, require it to be different from operand's reg.
 
     GenTreePtr size = tree->gtOp.gtOp1;
     if (size->IsCnsIntOrI())
@@ -2521,6 +2525,10 @@ void Lowering::TreeNodeInfoInitSIMD(GenTree* tree)
             // Need two SIMD registers as scratch.
             // See genSIMDIntrinsicRelOp() for details on code sequence generate and
             // the need for two scratch registers.
+            //
+            // Note these intrinsics produce a BOOL result, hence internal float
+            // registers reserved are guaranteed to be different from target
+            // integer register without explicitly specifying.
             info->srcCount           = 2;
             info->internalFloatCount = 2;
             info->setInternalCandidates(lsra, lsra->allSIMDRegs());
@@ -2532,13 +2540,12 @@ void Lowering::TreeNodeInfoInitSIMD(GenTree* tree)
             {
                 // For SSE, or AVX with 32-byte vectors, we also need an internal register as scratch.
                 // Further we need the targetReg and internal reg to be distinct registers.
-                // This is achieved by requesting two internal registers; thus one of them
-                // will be different from targetReg.
                 // Note that if this is a TYP_SIMD16 or smaller on AVX, then we don't need a tmpReg.
                 //
                 // See genSIMDIntrinsicDotProduct() for details on code sequence generated and
                 // the need for scratch registers.
-                info->internalFloatCount = 2;
+                info->internalFloatCount     = 1;
+                info->isInternalRegDelayFree = true;
                 info->setInternalCandidates(lsra, lsra->allSIMDRegs());
             }
             info->srcCount = 2;
@@ -2596,10 +2603,15 @@ void Lowering::TreeNodeInfoInitSIMD(GenTree* tree)
         case SIMDIntrinsicSetY:
         case SIMDIntrinsicSetZ:
         case SIMDIntrinsicSetW:
-            // We need an internal integer register
-            info->srcCount         = 2;
-            info->internalIntCount = 1;
-            info->setInternalCandidates(lsra, lsra->allRegs(TYP_INT));
+            info->srcCount = 2;
+
+            // We need an internal integer register for SSE2 codegen
+            if (comp->getSIMDInstructionSet() == InstructionSet_SSE2)
+            {
+                info->internalIntCount = 1;
+                info->setInternalCandidates(lsra, lsra->allRegs(TYP_INT));
+            }
+
             break;
 
         case SIMDIntrinsicCast:
@@ -2704,6 +2716,8 @@ void Lowering::TreeNodeInfoInitCast(GenTree* tree)
     {
         if (genTypeSize(castOpType) == 8)
         {
+            // Here we don't need internal register to be different from targetReg,
+            // rather require it to be different from operand's reg.
             info->internalIntCount = 1;
         }
     }
@@ -2822,11 +2836,10 @@ void Lowering::SetIndirAddrOpCounts(GenTreePtr indirTree)
         info->internalFloatCount = 1;
 
         // In case of GT_IND we need an internal register different from targetReg and
-        // both of the registers are used at the same time. This achieved by reserving
-        // two internal registers
+        // both of the registers are used at the same time.
         if (indirTree->OperGet() == GT_IND)
         {
-            (info->internalFloatCount)++;
+            info->isInternalRegDelayFree = true;
         }
 
         info->setInternalCandidates(m_lsra, m_lsra->allSIMDRegs());
