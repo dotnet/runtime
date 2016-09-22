@@ -4,7 +4,7 @@
     "System.Runtime.Handles": "4.3.0-beta-24521-07",
     "System.IO": "4.3.0-beta-24521-07",
     "System.Security.Cryptography.Algorithms": "4.3.0-beta-24521-07",
-    "System.Security.Cryptography.Primitives": "4.0.0"
+    "System.Security.Cryptography.Primitives": "4.3.0-beta-24521-07"
   },
   "frameworks": {
     "netstandard1.7": {
