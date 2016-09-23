@@ -23,7 +23,7 @@ extern "C" Error SystemNative_CreateNetworkChangeListenerSocket(int32_t* retSock
 {
     sockaddr_nl sa = {};
     sa.nl_family = AF_NETLINK;
-    sa.nl_groups = RTMGRP_LINK | RTMGRP_IPV4_IFADDR;
+    sa.nl_groups = RTMGRP_LINK | RTMGRP_IPV4_IFADDR | RTMGRP_IPV4_ROUTE | RTMGRP_IPV6_ROUTE;
     int32_t sock = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
     if (sock == -1)
     {
@@ -80,6 +80,17 @@ extern "C" void SystemNative_ReadEvents(int32_t sock, NetworkChangeEvent onNetwo
             case RTM_DELLINK:
                 onNetworkChange(sock, NetworkChangeKind::LinkRemoved);
                 break;
+            case RTM_NEWROUTE:
+            case RTM_DELROUTE:
+            {
+                rtmsg* dataAsRtMsg = reinterpret_cast<rtmsg*>(NLMSG_DATA(hdr));
+                if (dataAsRtMsg->rtm_table == RT_TABLE_MAIN)
+                {
+                    onNetworkChange(sock, NetworkChangeKind::AvailabilityChanged);
+                    return;
+                }
+                break;
+            }
             default:
                 break;
         }

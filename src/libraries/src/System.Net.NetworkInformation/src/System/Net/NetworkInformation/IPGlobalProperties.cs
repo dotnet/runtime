@@ -57,6 +57,16 @@ namespace System.Net.NetworkInformation
         /// </summary>
         public abstract NetBiosNodeType NodeType { get; }
 
+        public virtual IAsyncResult BeginGetUnicastAddresses(AsyncCallback callback, object state)
+        {
+            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
+        }
+
+        public virtual UnicastIPAddressInformationCollection EndGetUnicastAddresses(IAsyncResult asyncResult)
+        {
+            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
+        }
+
         public abstract TcpStatistics GetTcpIPv4Statistics();
 
         public abstract TcpStatistics GetTcpIPv6Statistics();
@@ -84,6 +94,11 @@ namespace System.Net.NetworkInformation
         public abstract IPGlobalStatistics GetIPv4GlobalStatistics();
 
         public abstract IPGlobalStatistics GetIPv6GlobalStatistics();
+
+        public virtual UnicastIPAddressInformationCollection GetUnicastAddresses()
+        {
+            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
+        }
 
         /// <summary>
         /// Returns a list of all unicast IP addresses after ensuring they are all stable.
