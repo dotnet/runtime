@@ -4094,6 +4094,8 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, CORJIT_F
         fgRemovePreds();
     }
 
+    EndPhase(PHASE_IMPORTATION);
+
     if (compIsForInlining())
     {
         /* Quit inlining if fgImport() failed for any reason. */
@@ -4111,8 +4113,6 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, CORJIT_F
     }
 
     assert(!compDonotInline());
-
-    EndPhase(PHASE_IMPORTATION);
 
     // Maybe the caller was not interested in generating code
     if (compIsForImportOnly())
@@ -4162,7 +4162,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, CORJIT_F
     /* Massage the trees so that we can generate code out of them */
 
     fgMorph();
-    EndPhase(PHASE_MORPH);
+    EndPhase(PHASE_MORPH_END);
 
     /* GS security checks for unsafe buffers */
     if (getNeedsGSSecurityCookie())
