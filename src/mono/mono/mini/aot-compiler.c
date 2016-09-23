@@ -219,6 +219,7 @@ typedef struct MonoAotCompile {
 	gboolean gas_line_numbers;
 	/* Whenever to emit an object file directly from llc */
 	gboolean llvm_owriter;
+	gboolean llvm_owriter_supported;
 	MonoImageWriter *w;
 	MonoDwarfWriter *dwarf;
 	FILE *fp;
@@ -879,6 +880,7 @@ arch_init (MonoAotCompile *acfg)
 {
 	acfg->llc_args = g_string_new ("");
 	acfg->as_args = g_string_new ("");
+	acfg->llvm_owriter_supported = TRUE;
 
 	/*
 	 * The prefix LLVM likes to put in front of symbol names on darwin.
@@ -940,6 +942,10 @@ arch_init (MonoAotCompile *acfg)
 
 #ifdef MONOTOUCH
 	acfg->global_symbols = TRUE;
+#endif
+
+#ifdef TARGET_ANDROID
+	acfg->llvm_owriter_supported = FALSE;
 #endif
 }
 
@@ -9963,16 +9969,23 @@ compile_asm (MonoAotCompile *acfg)
 		wrap_path (g_strdup_printf ("%s.o", acfg->tmpfname)), ld_flags);
 #else
 	// Default (linux)
-	char *args = g_strdup_printf ("%s -shared -o %s %s %s %s", LD_OPTIONS,
-		wrap_path (tmp_outfile_name), wrap_path (llvm_ofile),
-		wrap_path (g_strdup_printf ("%s.o", acfg->tmpfname)), ld_flags);
-
-	if (acfg->llvm) {
-		command = g_strdup_printf ("clang++ %s", args);
+	if (tool_prefix) {
+		/* Cross compiling */
+		command = g_strdup_printf ("\"%sld\" %s -shared -o %s %s %s %s", tool_prefix, LD_OPTIONS,
+								   wrap_path (tmp_outfile_name), wrap_path (llvm_ofile),
+								   wrap_path (g_strdup_printf ("%s.o", acfg->tmpfname)), ld_flags);
 	} else {
-		command = g_strdup_printf ("\"%sld\" %s", tool_prefix, args);
+		char *args = g_strdup_printf ("%s -shared -o %s %s %s %s", LD_OPTIONS,
+									  wrap_path (tmp_outfile_name), wrap_path (llvm_ofile),
+									  wrap_path (g_strdup_printf ("%s.o", acfg->tmpfname)), ld_flags);
+
+		if (acfg->llvm) {
+			command = g_strdup_printf ("clang++ %s", args);
+		} else {
+			command = g_strdup_printf ("\"%sld\" %s", tool_prefix, args);
+		}
+		g_free (args);
 	}
-	g_free (args);
 
 #endif
 	aot_printf (acfg, "Executing the native linker: %s\n", command);
@@ -10500,19 +10513,6 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 			aot_printerrf (acfg, "Compiling with LLVM and the asm-only option requires the llvm-outputfile= option.");
 			return 1;
 		}
-
-		/*
-		 * Emit all LLVM code into a separate assembly/object file and link with it
-		 * normally.
-		 */
-		if (!acfg->aot_opts.asm_only) {
-			acfg->llvm_owriter = TRUE;
-		} else if (acfg->aot_opts.llvm_outfile) {
-			int len = strlen (acfg->aot_opts.llvm_outfile);
-
-			if (len >= 2 && acfg->aot_opts.llvm_outfile [len - 2] == '.' && acfg->aot_opts.llvm_outfile [len - 1] == 'o')
-				acfg->llvm_owriter = TRUE;
-		}
 	}
 
 	if (mono_aot_mode_is_full (&acfg->aot_opts))
@@ -10544,6 +10544,22 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	acfg->temp_prefix = mono_img_writer_get_temp_label_prefix (NULL);
 
 	arch_init (acfg);
+
+	if (mono_use_llvm || acfg->aot_opts.llvm) {
+
+		/*
+		 * Emit all LLVM code into a separate assembly/object file and link with it
+		 * normally.
+		 */
+		if (!acfg->aot_opts.asm_only && acfg->llvm_owriter_supported) {
+			acfg->llvm_owriter = TRUE;
+		} else if (acfg->aot_opts.llvm_outfile) {
+			int len = strlen (acfg->aot_opts.llvm_outfile);
+
+			if (len >= 2 && acfg->aot_opts.llvm_outfile [len - 2] == '.' && acfg->aot_opts.llvm_outfile [len - 1] == 'o')
+				acfg->llvm_owriter = TRUE;
+		}
+	}
 
 	if (acfg->llvm && acfg->thumb_mixed)
 		acfg->flags = (MonoAotFileFlags)(acfg->flags | MONO_AOT_FILE_FLAG_LLVM_THUMB);
