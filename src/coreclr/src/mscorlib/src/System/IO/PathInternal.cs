@@ -19,7 +19,12 @@ namespace System.IO
         internal const string UncExtendedPrefixToInsert = @"?\UNC\";
         internal const string UncExtendedPathPrefix = @"\\?\UNC\";
         internal const string DevicePathPrefix = @"\\.\";
+        // \\?\, \\.\, \??\
         internal const int DevicePrefixLength = 4;
+        // \\
+        internal const int UncPrefixLength = 2;
+        // \\?\UNC\, \\.\UNC\
+        internal const int UncExtendedPrefixLength = 8;
 #if !PLATFORM_UNIX
         internal const int MaxShortPath = 260;
         internal const int MaxShortDirectoryPath = 248;
