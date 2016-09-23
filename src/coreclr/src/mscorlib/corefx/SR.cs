@@ -104,6 +104,11 @@ namespace System.Globalization
             get { return Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"); }
         }
 
+        public static string Arg_ArgumentOutOfRangeException
+        {
+            get { return Environment.GetResourceString("Arg_ArgumentOutOfRangeException"); }
+        }
+
         public static string ArgumentOutOfRange_OffsetLength
         {
             get { return Environment.GetResourceString("ArgumentOutOfRange_OffsetLength"); }
