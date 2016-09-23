@@ -19,6 +19,18 @@ namespace Internal.Runtime.Augments
 namespace Microsoft.Win32.SafeHandles
 {
     [System.Security.SecurityCriticalAttribute]
+    public abstract partial class CriticalHandleMinusOneIsInvalid : System.Runtime.InteropServices.CriticalHandle
+    {
+        protected CriticalHandleMinusOneIsInvalid() : base(default(System.IntPtr)) { }
+        public override bool IsInvalid { [System.Security.SecurityCriticalAttribute]get { throw null; } }
+    }
+    [System.Security.SecurityCriticalAttribute]
+    public abstract partial class CriticalHandleZeroOrMinusOneIsInvalid : System.Runtime.InteropServices.CriticalHandle
+    {
+        protected CriticalHandleZeroOrMinusOneIsInvalid() : base(default(System.IntPtr)) { }
+        public override bool IsInvalid { [System.Security.SecurityCriticalAttribute]get { throw null; } }
+    }
+    [System.Security.SecurityCriticalAttribute]
     public abstract partial class SafeHandleMinusOneIsInvalid : System.Runtime.InteropServices.SafeHandle
     {
         protected SafeHandleMinusOneIsInvalid(bool ownsHandle) { }
@@ -13011,7 +13023,9 @@ namespace System.Threading
         public static void TryEnter(object obj, System.TimeSpan timeout, ref bool lockTaken) { }
         public static bool Wait(object obj) { throw null; }
         public static bool Wait(object obj, int millisecondsTimeout) { throw null; }
+        public static bool Wait(object obj, int millisecondsTimeout, bool exitContext) { throw null; }
         public static bool Wait(object obj, System.TimeSpan timeout) { throw null; }
+        public static bool Wait(object obj, System.TimeSpan timeout, bool exitContext) { throw null; }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public sealed partial class Mutex : System.Threading.WaitHandle
@@ -13211,6 +13225,14 @@ namespace System.Threading
     public sealed partial class ThreadAbortException : System.SystemException
     {
         internal ThreadAbortException() { }
+    }
+    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
+    public partial class ThreadInterruptedException : System.SystemException
+    {
+        public ThreadInterruptedException() { }
+        public ThreadInterruptedException(string message) { }
+        public ThreadInterruptedException(string message, System.Exception innerException) { }
+        protected ThreadInterruptedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     [System.Diagnostics.DebuggerDisplayAttribute("IsValueCreated={IsValueCreated}, Value={ValueForDebugDisplay}, Count={ValuesCountForDebugDisplay}")]
     public partial class ThreadLocal<T> : System.IDisposable
