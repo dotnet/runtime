@@ -3227,7 +3227,7 @@ sgen_gc_init (void)
 			if (num_workers < 1)
 				num_workers = 1;
 		}
-		sgen_workers_init (num_workers);
+		sgen_workers_init (num_workers, (SgenWorkerCallback) major_collector.worker_init_cb);
 	}
 
 	sgen_memgov_init (max_heap, soft_limit, debug_print_allowance, allowance_ratio, save_target);

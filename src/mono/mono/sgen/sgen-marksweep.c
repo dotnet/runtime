@@ -244,6 +244,7 @@ static volatile size_t num_major_sections = 0;
  * thread only ever adds blocks to the free list, so the ABA problem can't occur.
  */
 static MSBlockInfo * volatile *free_block_lists [MS_BLOCK_TYPE_MAX];
+static MonoNativeTlsKey worker_block_free_list_key;
 
 static guint64 stat_major_blocks_alloced = 0;
 static guint64 stat_major_blocks_freed = 0;
@@ -1458,6 +1459,21 @@ static volatile size_t num_major_sections_before_sweep;
 static volatile size_t num_major_sections_freed_in_sweep;
 
 static void
+sgen_worker_clear_free_block_lists (WorkerData *worker)
+{
+	int i, j;
+
+	if (!worker->free_block_lists)
+		return;
+
+	for (i = 0; i < MS_BLOCK_TYPE_MAX; i++) {
+		for (j = 0; j < num_block_obj_sizes; j++) {
+			((MSBlockInfo***) worker->free_block_lists) [i][j] = NULL;
+		}
+	}
+}
+
+static void
 sweep_start (void)
 {
 	int i;
@@ -1472,6 +1488,8 @@ sweep_start (void)
 		for (j = 0; j < num_block_obj_sizes; ++j)
 			free_blocks [j] = NULL;
 	}
+
+	sgen_workers_foreach (sgen_worker_clear_free_block_lists);
 }
 
 static void sweep_finish (void);
@@ -2595,6 +2613,22 @@ post_param_init (SgenMajorCollector *collector)
 	collector->needs_thread_pool = concurrent_mark || concurrent_sweep;
 }
 
+/* We are guaranteed to be called by the worker in question */
+static void
+sgen_worker_init_callback (gpointer worker_untyped)
+{
+	int i;
+	WorkerData *worker = (WorkerData*) worker_untyped;
+	MSBlockInfo ***worker_free_blocks = (MSBlockInfo ***) sgen_alloc_internal_dynamic (sizeof (MSBlockInfo**) * MS_BLOCK_TYPE_MAX, INTERNAL_MEM_MS_TABLES, TRUE);
+
+	for (i = 0; i < MS_BLOCK_TYPE_MAX; i++)
+		worker_free_blocks [i] = (MSBlockInfo **) sgen_alloc_internal_dynamic (sizeof (MSBlockInfo*) * num_block_obj_sizes, INTERNAL_MEM_MS_TABLES, TRUE);
+
+	worker->free_block_lists = worker_free_blocks;
+
+	mono_native_tls_set_value (worker_block_free_list_key, worker_free_blocks);
+}
+
 static void
 sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurrent, gboolean is_parallel)
 {
@@ -2715,6 +2749,10 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 
 			/* FIXME use parallel obj ops */
 			collector->major_ops_conc_par_finish = collector->major_ops_concurrent_finish;
+
+			collector->worker_init_cb = sgen_worker_init_callback;
+
+			mono_native_tls_alloc (&worker_block_free_list_key, NULL);
 		}
 	}
 
