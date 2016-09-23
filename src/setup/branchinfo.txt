@@ -2,7 +2,7 @@
 # Any line that is not blank and does not start with '#' is interpreted as a variable to set.
 # Each line is expected to be in the format "[Name]=[Value]".
 MAJOR_VERSION=1
-MINOR_VERSION=1
+MINOR_VERSION=2
 PATCH_VERSION=0
 RELEASE_SUFFIX=beta
 CHANNEL=master
