@@ -153,12 +153,6 @@ namespace System.Globalization
         public static bool operator !=(System.Globalization.SortVersion left, System.Globalization.SortVersion right) { throw new NotImplementedException(); }
     }
 
-    public partial class StringInfo 
-    {
-        public string SubstringByTextElements(int startingTextElement) { throw new NotImplementedException(); }
-        public string SubstringByTextElements(int startingTextElement, int lengthInTextElements) { throw new NotImplementedException(); }
-    }
-
     public partial class TextInfo : System.ICloneable, System.Runtime.Serialization.IDeserializationCallback 
     {
         public virtual int ANSICodePage { get { throw new NotImplementedException(); } }
