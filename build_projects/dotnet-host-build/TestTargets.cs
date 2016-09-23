@@ -36,7 +36,8 @@ namespace Microsoft.DotNet.Host.Build
 
             dotnet.Restore(
                     "--fallbacksource", Dirs.CorehostLocalPackages,
-                    "--fallbacksource", Dirs.CorehostDummyPackages)
+                    "--fallbacksource", Dirs.CorehostDummyPackages,
+                    "--disable-parallel")
                 .WorkingDirectory(Path.Combine(Dirs.RepoRoot, "TestAssets"))
                 .Execute()
                 .EnsureSuccessful();
@@ -50,7 +51,7 @@ namespace Microsoft.DotNet.Host.Build
             var dotnet = DotNetCli.Stage0;
             CleanBinObj(c, Path.Combine(Dirs.RepoRoot, "test"));
 
-            dotnet.Restore()
+            dotnet.Restore("--disable-parallel")
                 .WorkingDirectory(Path.Combine(Dirs.RepoRoot, "test"))
                 .Execute()
                 .EnsureSuccessful();

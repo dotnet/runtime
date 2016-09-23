@@ -30,7 +30,7 @@ __distro_rid=
 
 # acquire dependencies
 pushd "$__project_dir/deps"
-"$__project_dir/Tools/dotnetcli/dotnet" restore --source "https://dotnet.myget.org/F/dotnet-core/api/v3/index.json" --packages "$__project_dir/packages"
+"$__project_dir/Tools/dotnetcli/dotnet" restore --source "https://dotnet.myget.org/F/dotnet-core/api/v3/index.json" --disable-parallel --packages "$__project_dir/packages"
 popd
 
 # cleanup existing packages
