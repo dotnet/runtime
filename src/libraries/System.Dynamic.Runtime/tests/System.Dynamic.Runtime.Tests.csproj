@@ -162,6 +162,7 @@
     <Compile Include="Dynamic.Variance\Conformance.dynamic.Variance.decl.cs" />
     <Compile Include="Dynamic.Variance\Conformance.dynamic.Variance.expr.cs" />
     <Compile Include="Dynamic.Variance\Conformance.dynamic.Variance.implem.cs" />
+    <Compile Include="Common.cs" />
     <Compile Include="ErrorVerifier.cs" />
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\System\PlatformDetection.cs</Link>
