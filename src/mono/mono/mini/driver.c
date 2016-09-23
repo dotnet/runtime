@@ -1500,6 +1500,7 @@ switch_gc (char* argv[], const char* target_gc)
 
 #ifdef HAVE_EXECVP
 	execvp (path->str, argv);
+	fprintf (stderr, "Error: Failed to switch to %s gc. mono-%s is not installed.\n", target_gc, target_gc);
 #else
 	fprintf (stderr, "Error: --gc=<NAME> option not supported on this platform.\n");
 #endif
