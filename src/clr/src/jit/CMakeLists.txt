@@ -63,6 +63,7 @@ set( JIT_SOURCES
   regset.cpp
   scopeinfo.cpp
   sharedfloat.cpp
+  sideeffects.cpp
   sm.cpp
   smdata.cpp
   smweights.cpp

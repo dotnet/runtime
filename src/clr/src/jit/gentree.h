@@ -1372,6 +1372,7 @@ public:
         {
             case GT_LOCKADD:
             case GT_XADD:
+            case GT_XCHG:
             case GT_CMPXCHG:
             case GT_BLK:
             case GT_OBJ:
@@ -1410,7 +1411,7 @@ public:
         return (gtOper == GT_XADD || gtOper == GT_XCHG || gtOper == GT_LOCKADD || gtOper == GT_CMPXCHG);
     }
 
-    bool OperIsAtomicOp()
+    bool OperIsAtomicOp() const
     {
         return OperIsAtomicOp(gtOper);
     }
@@ -3417,6 +3418,8 @@ struct GenTreeCall final : public GenTree
     {
         return (gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) != 0;
     }
+
+    bool IsPure(Compiler* compiler) const;
 
     unsigned short gtCallMoreFlags; // in addition to gtFlags
 

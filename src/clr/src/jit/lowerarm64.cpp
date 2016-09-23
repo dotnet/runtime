@@ -26,6 +26,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #ifdef _TARGET_ARM64_
 
 #include "jit.h"
+#include "sideeffects.h"
 #include "lower.h"
 
 // there is not much lowering to do with storing a local but
@@ -1735,7 +1736,7 @@ void Lowering::SetIndirAddrOpCounts(GenTreePtr indirTree)
     bool       rev;
     bool       modifiedSources = false;
 
-    if (addr->OperGet() == GT_LEA)
+    if ((addr->OperGet() == GT_LEA) && IsSafeToContainMem(indirTree, addr))
     {
         GenTreeAddrMode* lea = addr->AsAddrMode();
         base                 = lea->Base();
@@ -1748,7 +1749,7 @@ void Lowering::SetIndirAddrOpCounts(GenTreePtr indirTree)
         info->srcCount--;
     }
     else if (comp->codeGen->genCreateAddrMode(addr, -1, true, 0, &rev, &base, &index, &mul, &cns, true /*nogen*/) &&
-             !(modifiedSources = AreSourcesPossiblyModified(indirTree, base, index)))
+             !(modifiedSources = AreSourcesPossiblyModifiedLocals(indirTree, base, index)))
     {
         // An addressing mode will be constructed that may cause some
         // nodes to not need a register, and cause others' lifetimes to be extended
