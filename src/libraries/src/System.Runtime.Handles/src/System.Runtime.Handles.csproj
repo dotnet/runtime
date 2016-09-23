@@ -6,6 +6,7 @@
     <AssemblyName>System.Runtime.Handles</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
+    <PackageTargetFramework Condition="'$(TargetGroup)'==''">netstandard1.7;uap10.1</PackageTargetFramework>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -18,10 +19,8 @@
     <Compile Include="System\IO\HandleInheritability.cs" />
     <Compile Include="System\Threading\WaitHandleExtensions.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
-    <TargetingPackReference Include="System.Private.CoreLib" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot'">
     <TargetingPackReference Include="System.Private.Interop" />
-    <ProjectReference Include="../../System.Runtime/src/redist/System.Runtime.depproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="mscorlib" />
