@@ -218,5 +218,40 @@ namespace System.IO.IsolatedStorage
         {
             _fs.WriteByte(value);
         }
+
+        public override IAsyncResult BeginRead(byte[] array, int offset, int numBytes, AsyncCallback userCallback, object stateObject)
+        {
+            return _fs.BeginRead(array, offset, numBytes, userCallback, stateObject);
+        }
+
+        public override IAsyncResult BeginWrite(byte[] array, int offset, int numBytes, AsyncCallback userCallback, object stateObject)
+        {
+            return _fs.BeginWrite(array, offset, numBytes, userCallback, stateObject);
+        }
+
+        public override int EndRead(IAsyncResult asyncResult)
+        {
+            return _fs.EndRead(asyncResult);
+        }
+
+        public override void EndWrite(IAsyncResult asyncResult)
+        {
+            _fs.EndWrite(asyncResult);
+        }
+
+        public override IntPtr Handle
+        {
+            get { return _fs.Handle; }
+        }
+
+        public override void Unlock(long position, long length)
+        {
+            _fs.Unlock(position, length);
+        }
+
+        public override void Lock(long position, long length)
+        {
+            _fs.Lock(position, length);
+        }
     }
 }
