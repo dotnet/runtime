@@ -7,7 +7,6 @@
     <Project Include="System.Collections.Concurrent.csproj">
       <TargetGroup>net46</TargetGroup>
     </Project> -->
-    <!-- NETCore50 must redistribute binaries due to shared library -->
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>

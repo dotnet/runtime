@@ -256,25 +256,25 @@
       <Link>Common\Interop\Windows\Interop.SetErrorMode.cs</Link>
     </Compile>
   </ItemGroup>
-  <!-- Windows : Win32 + WinRT -->
+  <!-- Windows : UAP - Win32 + WinRT -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' == 'true'">
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\WinRT\Interop.UnsafeCreateFile.cs">
-      <Link>Common\Interop\Windows\WinRT\Interop.UnsafeCreateFile.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.UnsafeCreateFile.Uap.cs">
+      <Link>Common\Interop\Windows\Interop.UnsafeCreateFile.Uap.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\WinRT\Interop.CopyFile.cs">
-      <Link>Common\Interop\Windows\WinRT\Interop.CopyFile.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CopyFile.Uap.cs">
+      <Link>Common\Interop\Windows\Interop.CopyFile.Uap.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\WinRT\Interop.DeleteVolumeMountPoint.cs">
-      <Link>Common\Interop\Windows\WinRT\Interop.DeleteVolumeMountPoint.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.DeleteVolumeMountPoint.Uap.cs">
+      <Link>Common\Interop\Windows\Interop.DeleteVolumeMountPoint.Uap.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\WinRT\Interop.LockFile.cs">
-      <Link>Common\Interop\Windows\WinRT\Interop.LockFile.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.LockFile.Uap.cs">
+      <Link>Common\Interop\Windows\Interop.LockFile.Uap.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\WinRT\Interop.SetErrorMode.cs">
-      <Link>Common\Interop\Windows\WinRT\Interop.SetErrorMode.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetErrorMode.Uap.cs">
+      <Link>Common\Interop\Windows\Interop.SetErrorMode.Uap.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\IO\DriveInfoInternal.WinRT.cs">
-      <Link>Common\System\IO\DriveInfoInternal.WinRT.cs</Link>
+    <Compile Include="$(CommonPath)\System\IO\DriveInfoInternal.Uap.cs">
+      <Link>Common\System\IO\DriveInfoInternal.Uap.cs</Link>
     </Compile>
     <Compile Include="System\IO\FileSystem.Current.MuxWin32WinRT.cs" />
     <Compile Include="System\IO\FileSystemInfo.WinRT.cs" />
@@ -284,10 +284,10 @@
     <Compile Include="System\IO\WinRTFileSystem.cs" />
     <Compile Include="System\IO\WinRTFileSystemObject.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CopyFile2.cs">
-      <Link>Common\Interop\Windows\WinRT\Interop.CopyFile2.cs</Link>
+      <Link>Common\Interop\Windows\Interop.CopyFile2.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CreateFile2.cs">
-      <Link>Common\Interop\Windows\WinRT\Interop.CreateFile2.cs</Link>
+      <Link>Common\Interop\Windows\Interop.CreateFile2.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- Unix -->

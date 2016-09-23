@@ -11,7 +11,7 @@ internal partial class Interop
 {
     public static void CheckForAvailableVirtualMemory(ulong nativeSize)
     {
-        // this cannot be implemented on NETCore50 because we cannot get the total 
+        // this cannot be implemented on UAP because we cannot get the total 
         // available Virtual Memory.
     }
 

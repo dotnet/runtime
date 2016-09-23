@@ -12,7 +12,7 @@ namespace System.IO
     {
         internal static string[] GetLogicalDrives()
         {
-            // Getting volume information isn't supported on WinRT
+            // Getting volume information isn't supported on UAP
             throw new PlatformNotSupportedException();
         }
     }

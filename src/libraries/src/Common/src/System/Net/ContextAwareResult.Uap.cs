@@ -8,7 +8,7 @@ namespace System.Net
     {
         private void SafeCaptureIdentity()
         {
-            // WindowsIdentity is not supported on NETCore50
+            // WindowsIdentity is not supported on UAP
         }
 
         private void CleanupInternal()
