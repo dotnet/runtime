@@ -5434,13 +5434,13 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
 // Do liveness update for an address tree: one of GT_LEA, GT_LCL_VAR, or GT_CNS_INT (for call indirect).
 void CodeGen::genConsumeAddress(GenTree* addr)
 {
-    if (addr->OperGet() == GT_LEA)
-    {
-        genConsumeAddrMode(addr->AsAddrMode());
-    }
-    else if (!addr->isContained())
+    if (!addr->isContained())
     {
         genConsumeReg(addr);
+    }
+    else if (addr->OperGet() == GT_LEA)
+    {
+        genConsumeAddrMode(addr->AsAddrMode());
     }
 }
 
