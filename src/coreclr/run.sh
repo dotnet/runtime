@@ -8,8 +8,8 @@ $working_tree_root/init-tools.sh
 toolRuntime=$working_tree_root/Tools
 dotnet=$toolRuntime/dotnetcli/dotnet
 
-echo "Running: $dotnet $toolRuntime/run.exe $*"
-$dotnet $toolRuntime/run.exe $*
+echo "Running: $dotnet $toolRuntime/run.exe $working_tree_root/config.json $*"
+$dotnet $toolRuntime/run.exe $working_tree_root/config.json $*
 if [ $? -ne 0 ]
 then
     echo "ERROR: An error occured in $dotnet $toolRuntime/run $#. Check $# logs under $working_tree_root."
