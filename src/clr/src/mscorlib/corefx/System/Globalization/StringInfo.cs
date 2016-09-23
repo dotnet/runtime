@@ -23,7 +23,7 @@ namespace System.Globalization
     public partial class StringInfo
     {
         [OptionalField(VersionAdded = 2)] 
-        private String _str;
+        private string _str;
 
         [NonSerialized]
         private int[] _indexes;
@@ -32,7 +32,7 @@ namespace System.Globalization
         public StringInfo() : this("") { }
 
         // Primary, useful constructor
-        public StringInfo(String value)
+        public StringInfo(string value)
         {
             this.String = value;
         }
@@ -85,7 +85,7 @@ namespace System.Globalization
             }
         }
 
-        public String String
+        public string String
         {
             get
             {
@@ -119,7 +119,61 @@ namespace System.Globalization
             }
         }
 
-        public static String GetNextTextElement(String str)
+        public string SubstringByTextElements(int startingTextElement) 
+        {
+            // If the string is empty, no sense going further. 
+            if (null == this.Indexes) 
+            {
+                // Just decide which error to give depending on the param they gave us....
+                if (startingTextElement < 0) 
+                {
+                    throw new ArgumentOutOfRangeException("startingTextElement", SR.ArgumentOutOfRange_NeedPosNum);
+                }
+                else
+                {
+                    throw new ArgumentOutOfRangeException("startingTextElement", SR.Arg_ArgumentOutOfRangeException);
+                }
+            }
+            return (SubstringByTextElements(startingTextElement, Indexes.Length - startingTextElement));
+        }
+
+        public string SubstringByTextElements(int startingTextElement, int lengthInTextElements) 
+        {
+            if (startingTextElement < 0)
+            {
+                throw new ArgumentOutOfRangeException("startingTextElement", SR.ArgumentOutOfRange_NeedPosNum);
+            }
+
+            if (this.String.Length == 0 || startingTextElement >= Indexes.Length)
+            {
+                throw new ArgumentOutOfRangeException("startingTextElement", SR.Arg_ArgumentOutOfRangeException);
+            }
+
+            if (lengthInTextElements < 0)
+            {
+                throw new ArgumentOutOfRangeException("lengthInTextElements", SR.ArgumentOutOfRange_NeedPosNum);
+            }
+
+            if (startingTextElement > Indexes.Length - lengthInTextElements)
+            {
+                throw new ArgumentOutOfRangeException("lengthInTextElements", SR.Arg_ArgumentOutOfRangeException);
+            }
+
+            int start = Indexes[startingTextElement];
+
+            if (startingTextElement + lengthInTextElements == Indexes.Length)
+            {
+                // We are at the last text element in the string and because of that
+                // must handle the call differently.
+                return (this.String.Substring(start));
+            }
+            else
+            {
+                return (this.String.Substring(start, (Indexes[lengthInTextElements + startingTextElement] - start)));
+            }
+        }
+
+        public static string GetNextTextElement(string str)
         {
             return (GetNextTextElement(str, 0));
         }
@@ -157,7 +211,7 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////
 
-        internal static int GetCurrentTextElementLen(String str, int index, int len, ref UnicodeCategory ucCurrent, ref int currentCharCount)
+        internal static int GetCurrentTextElementLen(string str, int index, int len, ref UnicodeCategory ucCurrent, ref int currentCharCount)
         {
             Contract.Assert(index >= 0 && len >= 0, "StringInfo.GetCurrentTextElementLen() : index = " + index + ", len = " + len);
             Contract.Assert(index < len, "StringInfo.GetCurrentTextElementLen() : index = " + index + ", len = " + len);
@@ -220,7 +274,7 @@ namespace System.Globalization
         // of str.  It recognizes a base character plus one or more combining 
         // characters or a properly formed surrogate pair as a text element.  See also 
         // the ParseCombiningCharacters() and the ParseSurrogates() methods.
-        public static String GetNextTextElement(String str, int index)
+        public static string GetNextTextElement(string str, int index)
         {
             //
             // Validate parameters.
@@ -246,12 +300,12 @@ namespace System.Globalization
             return (str.Substring(index, GetCurrentTextElementLen(str, index, len, ref uc, ref charLen)));
         }
 
-        public static TextElementEnumerator GetTextElementEnumerator(String str)
+        public static TextElementEnumerator GetTextElementEnumerator(string str)
         {
             return (GetTextElementEnumerator(str, 0));
         }
 
-        public static TextElementEnumerator GetTextElementEnumerator(String str, int index)
+        public static TextElementEnumerator GetTextElementEnumerator(string str, int index)
         {
             //
             // Validate parameters.
@@ -283,7 +337,7 @@ namespace System.Globalization
          * return the indices: 0, 2, 4.
          */
 
-        public static int[] ParseCombiningCharacters(String str)
+        public static int[] ParseCombiningCharacters(string str)
         {
             if (str == null)
             {
