@@ -199,6 +199,8 @@ namespace System.IO
         public override bool CanRead { get { return default(bool); } }
         public override bool CanSeek { get { return default(bool); } }
         public override bool CanWrite { get { return default(bool); } }
+
+        [Obsolete("This property has been deprecated.  Please use FileStream's SafeFileHandle property instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
         public virtual System.IntPtr Handle { get { return default(System.IntPtr); } }
         public virtual bool IsAsync { get { return default(bool); } }
         public override long Length { get { return default(long); } }
