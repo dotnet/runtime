@@ -289,6 +289,19 @@ elemType hashBvNode::SubtractWithChange(hashBvNode* other)
     return result;
 }
 
+bool hashBvNode::Intersects(hashBvNode* other)
+{
+    for (int i = 0; i < this->numElements(); i++)
+    {
+        if ((this->elements[i] & other->elements[i]) != 0)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 void hashBvNode::AndWith(hashBvNode* other)
 {
     for (int i = 0; i < this->numElements(); i++)
@@ -1234,6 +1247,46 @@ public:
     }
 };
 
+class IntersectsAction
+{
+public:
+    static inline void PreAction(hashBv* lhs, hashBv* rhs)
+    {
+    }
+    static inline void PostAction(hashBv* lhs, hashBv* rhs)
+    {
+    }
+    static inline bool DefaultResult()
+    {
+        return false;
+    }
+
+    static inline void LeftGap(hashBv* lhs, hashBvNode**& l, hashBvNode*& r, bool& result, bool& terminate)
+    {
+        // in rhs, not lhs
+        // so skip rhs
+        r = r->next;
+    }
+    static inline void RightGap(hashBv* lhs, hashBvNode**& l, hashBvNode*& r, bool& result, bool& terminate)
+    {
+        // in lhs, not rhs
+        // so skip lhs
+        l = &((*l)->next);
+    }
+    static inline void BothPresent(hashBv* lhs, hashBvNode**& l, hashBvNode*& r, bool& result, bool& terminate)
+    {
+        if ((*l)->Intersects(r))
+        {
+            terminate = true;
+            result    = true;
+        }
+    }
+    static inline void LeftEmpty(hashBv* lhs, hashBvNode**& l, hashBvNode*& r, bool& result, bool& terminate)
+    {
+        r = r->next;
+    }
+};
+
 template <typename Action>
 bool hashBv::MultiTraverseLHSBigger(hashBv* other)
 {
@@ -1505,6 +1558,11 @@ bool hashBv::MultiTraverse(hashBv* other)
     {
         return MultiTraverseRHSBigger<Action>(other);
     }
+}
+
+bool hashBv::Intersects(hashBv* other)
+{
+    return MultiTraverse<IntersectsAction>(other);
 }
 
 bool hashBv::AndWithChange(hashBv* other)
