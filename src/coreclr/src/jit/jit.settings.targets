@@ -86,6 +86,7 @@
         <CppCompile Include="..\jitconfig.cpp" />
         <CppCompile Include="..\hostallocator.cpp" />
         <CppCompile Include="..\objectalloc.cpp" />
+        <CppCompile Inlcude="..\sideeffects.cpp" />
         <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='True'" Include="..\CodeGenLegacy.cpp" />
         <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\Lower.cpp" />
         <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\LSRA.cpp" />
