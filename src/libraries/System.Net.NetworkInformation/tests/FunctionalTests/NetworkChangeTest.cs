@@ -25,7 +25,25 @@ namespace System.Net.NetworkInformation.Tests
 
         private void NetworkChange_NetworkAddressChanged(object sender, EventArgs e)
         {
-            throw new NotImplementedException();
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/308
+        public void NetworkAvailabilityChanged_AddRemove_Success()
+        {
+            NetworkAvailabilityChangedEventHandler handler = NetworkChange_NetworkAvailabilityChanged;
+            NetworkChange.NetworkAvailabilityChanged += handler;
+            NetworkChange.NetworkAvailabilityChanged -= handler;
+        }
+
+        [Fact]
+        public void NetworkAvailabilityChanged_JustRemove_Success()
+        {
+            NetworkAvailabilityChangedEventHandler handler = NetworkChange_NetworkAvailabilityChanged;
+            NetworkChange.NetworkAvailabilityChanged -= handler;
+        }
+
+        private void NetworkChange_NetworkAvailabilityChanged(object sender, NetworkAvailabilityEventArgs e)
+        {
         }
     }
 }

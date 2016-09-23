@@ -88,6 +88,11 @@ namespace System.Net.NetworkInformation
             return new OsxIpInterfaceStatistics(Name);
         }
 
+        public override IPv4InterfaceStatistics GetIPv4Statistics()
+        {
+            return new OsxIPv4InterfaceStatistics(Name);
+        }
+
         public override OperationalStatus OperationalStatus
         {
             get
