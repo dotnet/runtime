@@ -10,6 +10,9 @@
     <Project Include="System.Runtime.Handles.csproj">
       <TargetGroup>net46</TargetGroup>
     </Project> -->
+    <Project Include="System.Runtime.Handles.csproj">
+      <TargetGroup>uap101aot</TargetGroup>
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
