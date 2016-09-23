@@ -21,12 +21,21 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
+    <Compile Include="System\Net\AuthenticationManager.cs" />
+    <Compile Include="System\Net\Authorization.cs" />
+    <Compile Include="System\Net\BindIPEndPoint.cs" />
     <Compile Include="System\Net\HttpRequestHeader.cs" />
     <Compile Include="System\Net\HttpWebRequest.cs" />
     <Compile Include="System\Net\HttpWebResponse.cs" />
+    <Compile Include="System\Net\IAuthenticationModule.cs" />
+    <Compile Include="System\Net\ICertificatePolicy.cs" />
+    <Compile Include="System\Net\ICredentialPolicy.cs" />
     <Compile Include="System\Net\IWebRequestCreate.cs" />
     <Compile Include="System\Net\ProtocolViolationException.cs" />
     <Compile Include="System\Net\RequestStream.cs" />
+    <Compile Include="System\Net\SecurityProtocolType.cs" />
+    <Compile Include="System\Net\ServicePoint.cs" />
+    <Compile Include="System\Net\ServicePointManager.cs" />
     <Compile Include="System\Net\SystemWebProxy.cs" />
     <Compile Include="System\Net\TaskExtensions.cs" />
     <Compile Include="System\Net\WebException.cs" />

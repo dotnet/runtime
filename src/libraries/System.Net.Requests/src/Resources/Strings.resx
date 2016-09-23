@@ -171,4 +171,7 @@
   <data name="net_invalid_enum" xml:space="preserve">
     <value>The specified value is not valid in the '{0}' enumeration.</value>
   </data>
+  <data name="net_securityprotocolnotsupported" xml:space="preserve">
+    <value>The requested security protocol is not supported.</value>
+  </data>
 </root>
