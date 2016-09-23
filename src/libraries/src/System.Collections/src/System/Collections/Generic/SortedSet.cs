@@ -1845,9 +1845,18 @@ namespace System.Collections.Generic
         {
             get
             {
-                T ret = default(T);
-                InOrderTreeWalk(delegate (SortedSet<T>.Node n) { ret = n.Item; return false; });
-                return ret;
+                if (_root == null)
+                {
+                    return default(T);
+                }
+
+                Node current = _root;
+                while (current.Left != null)
+                {
+                    current = current.Left;
+                }
+
+                return current.Item;
             }
         }
 
@@ -1855,9 +1864,18 @@ namespace System.Collections.Generic
         {
             get
             {
-                T ret = default(T);
-                InOrderTreeWalk(delegate (SortedSet<T>.Node n) { ret = n.Item; return false; }, true);
-                return ret;
+                if (_root == null)
+                {
+                    return default(T);
+                }
+
+                Node current = _root;
+                while (current.Right != null)
+                {
+                    current = current.Right;
+                }
+
+                return current.Item;
             }
         }
 
