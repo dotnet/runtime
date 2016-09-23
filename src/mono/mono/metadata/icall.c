@@ -7393,6 +7393,7 @@ ves_icall_MonoMethod_get_base_method (MonoReflectionMethod *m, gboolean definiti
 		klass = klass->generic_class->container_class;
 	}
 
+retry:
 	if (definition) {
 		/* At the end of the loop, klass points to the eldest class that has this virtual function slot. */
 		for (parent = klass->parent; parent != NULL; parent = parent->parent) {
@@ -7479,14 +7480,38 @@ ves_icall_MonoMethod_get_base_method (MonoReflectionMethod *m, gboolean definiti
 	result = klass->vtable [slot];
 	if (result == NULL) {
 		/* It is an abstract method */
+		gboolean found = FALSE;
 		gpointer iter = NULL;
-		while ((result = mono_class_get_methods (klass, &iter)))
-			if (result->slot == slot)
+		while ((result = mono_class_get_methods (klass, &iter))) {
+			if (result->slot == slot) {
+				found = TRUE;
 				break;
+			}
+		}
+		/* found might be FALSE if we looked in an abstract class
+		 * that doesn't override an abstract method of its
+		 * parent: 
+		 *   abstract class Base {
+		 *     public abstract void Foo ();
+		 *   }
+		 *   abstract class Derived : Base { }
+		 *   class Child : Derived {
+		 *     public override void Foo () { }
+		 *  }
+		 *
+		 *  if m was Child.Foo and we ask for the base method,
+		 *  then we get here with klass == Derived and found == FALSE
+		 */
+		/* but it shouldn't be the case that if we're looking
+		 * for the definition and didn't find a result; the
+		 * loop above should've taken us as far as we could
+		 * go! */
+		g_assert (!(definition && !found));
+		if (!found)
+			goto retry;
 	}
 
-	if (result == NULL)
-		return m;
+	g_assert (result != NULL);
 
 	ret = mono_method_get_object_checked (mono_domain_get (), result, NULL, &error);
 	mono_error_set_pending_exception (&error);
