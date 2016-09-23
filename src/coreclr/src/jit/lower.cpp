@@ -192,6 +192,27 @@ GenTree* Lowering::LowerNode(GenTree* node)
                 // produces a TYP_SIMD16 result
                 node->gtType = TYP_SIMD16;
             }
+
+#ifdef _TARGET_XARCH_
+            if ((node->AsSIMD()->gtSIMDIntrinsicID == SIMDIntrinsicGetItem) && (node->gtGetOp1()->OperGet() == GT_IND))
+            {
+                // If SIMD vector is already in memory, we force its
+                // addr to be evaluated into a reg.  This would allow
+                // us to generate [regBase] or [regBase+offset] or
+                // [regBase+sizeOf(SIMD vector baseType)*regIndex]
+                // to access the required SIMD vector element directly
+                // from memory.
+                //
+                // TODO-CQ-XARCH: If addr of GT_IND is GT_LEA, we
+                // might be able update GT_LEA to fold the regIndex
+                // or offset in some cases.  Instead with this
+                // approach we always evaluate GT_LEA into a reg.
+                // Ideally, we should be able to lower GetItem intrinsic
+                // into GT_IND(newAddr) where newAddr combines
+                // the addr of SIMD vector with the given index.
+                node->gtOp.gtOp1->gtFlags |= GTF_IND_REQ_ADDR_IN_REG;
+            }
+#endif
             break;
 
         case GT_LCL_VAR:
@@ -3154,7 +3175,7 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
         // All we have to do here is add an indirection to generate the actual call target.
 
         GenTree* ind = Ind(call->gtCallAddr);
-        ind->gtFlags |= GTF_IND_VSD_TGT;
+        ind->gtFlags |= GTF_IND_REQ_ADDR_IN_REG;
 
         BlockRange().InsertAfter(call->gtCallAddr, ind);
         call->gtCallAddr = ind;
@@ -3196,7 +3217,7 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
             addr->gtRegNum = REG_VIRTUAL_STUB_PARAM;
 
             indir->gtRegNum = REG_JUMP_THUNK_PARAM;
-            indir->gtFlags |= GTF_IND_VSD_TGT;
+            indir->gtFlags |= GTF_IND_REQ_ADDR_IN_REG;
 #endif
             result = indir;
         }
