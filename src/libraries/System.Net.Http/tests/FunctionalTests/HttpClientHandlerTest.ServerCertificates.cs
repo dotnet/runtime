@@ -37,6 +37,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(BackendSupportsCustomCertificateHandling))]
+        [ActiveIssue(12015, PlatformID.AnyUnix)]
         public void UseCallback_HaveNoCredsAndUseAuthenticatedCustomProxyAndPostToSecureServer_ProxyAuthenticationRequiredStatusCode()
         {
             int port;
