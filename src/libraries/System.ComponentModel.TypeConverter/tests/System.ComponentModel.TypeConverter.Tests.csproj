@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -8,16 +8,20 @@
     <ProjectGuid>{3F0326A1-9E19-4A6C-95CE-63E65C9D2030}</ProjectGuid>
     <RootNamespace>System.ComponentModel.TypeConverter.Tests</RootNamespace>
     <AssemblyName>System.ComponentModel.TypeConverter.Tests</AssemblyName>
-    <NugetTargetMoniker Condition="'$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.5</NugetTargetMoniker>
+    <NugetTargetMoniker Condition=" '$(TargetGroup)' == '' ">.NETStandard,Version=v1.5</NugetTargetMoniker>
     <DefineConstants>$(DefineConstants);FUNCTIONAL_TESTS</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
     <DebugEngines>{2E36F1D4-B23C-435D-AB41-18E608940038}</DebugEngines>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.7_Debug|AnyCPU' ">
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.7_Release|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.5_Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.5_Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ArrayConverterTests.cs" />
@@ -67,12 +71,24 @@
     <Compile Include="UInt64ConverterTests.cs" />
     <Compile Include="UriTypeConverterTests.cs" />
   </ItemGroup>
+  <ItemGroup Condition=" '$(TargetGroup)' == 'netstandard1.7'">
+    <Compile Include="Drawing\ColorConverterTests.cs" />
+    <Compile Include="Drawing\PointConverterTests.cs" />
+    <Compile Include="Drawing\RectangleConverterTests.cs" />
+    <Compile Include="Drawing\SizeConverterTests.cs" />
+    <Compile Include="Drawing\SizeFConverterTests.cs" />
+    <Compile Include="Drawing\StringTypeConverterTestBase.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
     <Compile Include="TimerTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.ComponentModel.TypeConverter.pkgproj">
     </ProjectReference>
+  </ItemGroup>
+  <!-- TODO: Replace this with a package reference. -->
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
+    <ProjectReference Include="..\..\System.Drawing.Primitives\pkg\System.Drawing.Primitives.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

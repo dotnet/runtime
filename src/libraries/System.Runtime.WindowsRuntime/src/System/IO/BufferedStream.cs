@@ -507,7 +507,7 @@ namespace System.IO
         }
 
 
-        public override int Read([In, Out] Byte[] array, Int32 offset, Int32 count)
+        public override int Read(Byte[] array, Int32 offset, Int32 count)
         {
             if (array == null)
                 throw new ArgumentNullException(nameof(array), SR.ArgumentNull_Buffer);

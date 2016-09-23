@@ -19,8 +19,15 @@ namespace System
         // used on all platforms.
         private static class SpecialFolderOptionValues
         {
-            internal const int CSIDL_FLAG_CREATE = 0x8000; // force folder creation in SHGetFolderPath
-            internal const int CSIDL_FLAG_DONT_VERIFY = 0x4000; // return an unverified folder path
+            /// <summary>
+            /// Force folder creation in SHGetFolderPath. Equivalent of KF_FLAG_CREATE (0x00008000).
+            /// </summary>
+            internal const int CSIDL_FLAG_CREATE = 0x8000;
+
+            /// <summary>
+            /// Return an unverified folder path. Equivalent of KF_FLAG_DONT_VERIFY (0x00004000).
+            /// </summary>
+            internal const int CSIDL_FLAG_DONT_VERIFY = 0x4000;
         }
     }
 }

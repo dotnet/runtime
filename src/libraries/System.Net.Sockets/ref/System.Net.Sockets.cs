@@ -88,6 +88,8 @@ namespace System.Net.Sockets
     {
         public NetworkStream(System.Net.Sockets.Socket socket) { }
         public NetworkStream(System.Net.Sockets.Socket socket, bool ownsSocket) { }
+        public NetworkStream(System.Net.Sockets.Socket socket, System.IO.FileAccess access) { }
+        public NetworkStream(System.Net.Sockets.Socket socket, System.IO.FileAccess access, bool ownsSocket) { }
         public override bool CanRead { get { return default(bool); } }
         public override bool CanSeek { get { return default(bool); } }
         public override bool CanTimeout { get { return default(bool); } }
@@ -95,10 +97,18 @@ namespace System.Net.Sockets
         public virtual bool DataAvailable { get { return default(bool); } }
         public override long Length { get { return default(long); } }
         public override long Position { get { return default(long); } set { } }
+        protected bool Readable { get { return default(bool); } set { } }
         public override int ReadTimeout { get { return default(int); } set { } }
+        protected Socket Socket { get { return default(Socket); } }
+        protected bool Writeable { get { return default(bool); } set { } }
         public override int WriteTimeout { get { return default(int); } set { } }
+        public IAsyncResult BeginRead(byte[] buffer, int offset, int size, AsyncCallback callback, Object state) { return default(IAsyncResult); }
+        public IAsyncResult BeginWrite(byte[] buffer, int offset, int size, AsyncCallback callback, Object state) { return default(IAsyncResult); }
+        public void Close(int timeout) { }
         protected override void Dispose(bool disposing) { }
         ~NetworkStream() { }
+        public int EndRead(IAsyncResult asyncResult) { return default(int); }
+        public void EndWrite(IAsyncResult asyncResult) { }
         public override void Flush() { }
         public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
         public override int Read(byte[] buffer, int offset, int size) { buffer = default(byte[]); return default(int); }
@@ -184,6 +194,10 @@ namespace System.Net.Sockets
         public int SendBufferSize { get { return default(int); } set { } }
         public int SendTimeout { get { return default(int); } set { } }
         public System.Net.Sockets.SocketType SocketType { get { return default(System.Net.Sockets.SocketType); } }
+        [Obsolete("SupportsIPv4 is obsoleted for this type, please use OSSupportsIPv4 instead. http://go.microsoft.com/fwlink/?linkid=14202")]
+        public static bool SupportsIPv4 { get { return default(bool); } }
+        [Obsolete("SupportsIPv6 is obsoleted for this type, please use OSSupportsIPv6 instead. http://go.microsoft.com/fwlink/?linkid=14202")]
+        public static bool SupportsIPv6 { get { return default(bool); } }
         public short Ttl { get { return default(short); } set { } }
         public bool UseOnlyOverlappedIO { get { return default(bool); } set { } }
         public System.Net.Sockets.Socket Accept() { return default(System.Net.Sockets.Socket); }

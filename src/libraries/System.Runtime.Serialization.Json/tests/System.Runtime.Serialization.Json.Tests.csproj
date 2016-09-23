@@ -2,37 +2,9 @@
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <MinimumVisualStudioVersion>11.0</MinimumVisualStudioVersion>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>System.Runtime.Serialization.Json.Tests</RootNamespace>
     <AssemblyName>System.Runtime.Serialization.Json.Tests</AssemblyName>
     <ProjectGuid>{701CB3BC-00DC-435D-BDE4-C5FC29A708A7}</ProjectGuid>
-    <NugetTargetMoniker>.NETStandard,Version=v1.5</NugetTargetMoniker>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(UseContractReferences)' == 'true'" >
-    <ProjectJson>Performance/project.json</ProjectJson>
-    <ProjectLockJson>Performance/project.lock.json</ProjectLockJson>
-  </PropertyGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\Microsoft.Win32.Registry\pkg\Microsoft.Win32.Registry.pkgproj" />
-    <Compile Include="..\..\System.Runtime.Serialization.Xml\tests\Utils.cs" />
-    <Compile Include="..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />
-    <Compile Include="..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.CoreCLR.cs" />
-    <Compile Include="DataContractJsonSerializer.cs" />
-    <Compile Include="DataContractJsonSerializer.CoreCLR.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj">
-      <Project>{6B4C1660-D158-4820-BE1C-D7A29CEBEC9B}</Project>
-      <Name>System.Private.DataContractSerialization</Name>
-      <KeepProjectReference>true</KeepProjectReference>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), System.Runtime.Serialization.Json.Tests.settings.targets))\System.Runtime.Serialization.Json.Tests.settings.targets" />
 </Project>

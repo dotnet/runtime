@@ -56,7 +56,7 @@ namespace System.IO
             }
         }
 
-        public override int Read([In, Out] char[] buffer, int index, int count)
+        public override int Read(char[] buffer, int index, int count)
         {
             lock (this)
             {
@@ -64,7 +64,7 @@ namespace System.IO
             }
         }
 
-        public override int ReadBlock([In, Out] char[] buffer, int index, int count)
+        public override int ReadBlock(char[] buffer, int index, int count)
         {
             lock (this)
             {

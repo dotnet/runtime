@@ -9,6 +9,11 @@
     <AssemblyName>System.IO.FileSystem</AssemblyName>
     <AssemblyVersion Condition="'$(TargetGroup)'=='netstandard1.3' Or '$(TargetGroup)'=='net46' Or '$(TargetGroup)'=='netcore50'">4.0.2.0</AssemblyVersion>
     <ContractProject Condition="'$(AssemblyVersion)'=='4.0.2.0'">../ref/4.0.1/System.IO.FileSystem.depproj</ContractProject>
+    <!--
+      Disabling APICompat for the older builds because we are hitting
+      bug https://github.com/dotnet/buildtools/issues/1056
+    -->
+    <RunApiCompat Condition="'$(AssemblyVersion)'=='4.0.2.0'">false</RunApiCompat>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableWinRT Condition="'$(PackageTargetFramework)' == 'netcore50'">true</EnableWinRT>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46' or '$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
@@ -215,6 +220,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SafeCreateFile.cs">
       <Link>Common\Interop\Windows\Interop.SafeCreateFile.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ReplaceFile.cs">
+      <Link>Common\Interop\Windows\Interop.ReplaceFile.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- Windows : Win32 only -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(EnableWinRT)' != 'true' and '$(TargetGroup)' != 'net46' and '$(TargetGroup)' != 'net463'">
@@ -241,26 +249,32 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.DeleteVolumeMountPoint.cs">
       <Link>Common\Interop\Windows\Interop.DeleteVolumeMountPoint.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.LockFile.cs">
+      <Link>Common\Interop\Windows\Interop.LockFile.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetErrorMode.cs">
       <Link>Common\Interop\Windows\Interop.SetErrorMode.cs</Link>
     </Compile>
   </ItemGroup>
-  <!-- Windows : Win32 + WinRT -->
+  <!-- Windows : UAP - Win32 + WinRT -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' == 'true'">
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\WinRT\Interop.UnsafeCreateFile.cs">
-      <Link>Common\Interop\Windows\WinRT\Interop.UnsafeCreateFile.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.UnsafeCreateFile.Uap.cs">
+      <Link>Common\Interop\Windows\Interop.UnsafeCreateFile.Uap.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\WinRT\Interop.CopyFile.cs">
-      <Link>Common\Interop\Windows\WinRT\Interop.CopyFile.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CopyFile.Uap.cs">
+      <Link>Common\Interop\Windows\Interop.CopyFile.Uap.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\WinRT\Interop.DeleteVolumeMountPoint.cs">
-      <Link>Common\Interop\Windows\WinRT\Interop.DeleteVolumeMountPoint.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.DeleteVolumeMountPoint.Uap.cs">
+      <Link>Common\Interop\Windows\Interop.DeleteVolumeMountPoint.Uap.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\WinRT\Interop.SetErrorMode.cs">
-      <Link>Common\Interop\Windows\WinRT\Interop.SetErrorMode.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.LockFile.Uap.cs">
+      <Link>Common\Interop\Windows\Interop.LockFile.Uap.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\IO\DriveInfoInternal.WinRT.cs">
-      <Link>Common\System\IO\DriveInfoInternal.WinRT.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetErrorMode.Uap.cs">
+      <Link>Common\Interop\Windows\Interop.SetErrorMode.Uap.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\DriveInfoInternal.Uap.cs">
+      <Link>Common\System\IO\DriveInfoInternal.Uap.cs</Link>
     </Compile>
     <Compile Include="System\IO\FileSystem.Current.MuxWin32WinRT.cs" />
     <Compile Include="System\IO\FileSystemInfo.WinRT.cs" />
@@ -270,10 +284,10 @@
     <Compile Include="System\IO\WinRTFileSystem.cs" />
     <Compile Include="System\IO\WinRTFileSystemObject.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CopyFile2.cs">
-      <Link>Common\Interop\Windows\WinRT\Interop.CopyFile2.cs</Link>
+      <Link>Common\Interop\Windows\Interop.CopyFile2.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CreateFile2.cs">
-      <Link>Common\Interop\Windows\WinRT\Interop.CreateFile2.cs</Link>
+      <Link>Common\Interop\Windows\Interop.CreateFile2.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- Unix -->

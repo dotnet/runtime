@@ -96,6 +96,27 @@ namespace System.IO
             await file.CopyAsync(destFolder, destFileName, overwrite ? NameCollisionOption.ReplaceExisting : NameCollisionOption.FailIfExists).TranslateWinRTTask(sourceFullPath);
         }
 
+        public override void ReplaceFile(string sourceFullPath, string destFullPath, string destBackupFullPath, bool ignoreMetadataErrors)
+        {
+            EnsureBackgroundThread();
+            SynchronousResultOf(ReplaceFileAsync(sourceFullPath, destFullPath, destBackupFullPath, ignoreMetadataErrors));
+        }
+
+        private async Task ReplaceFileAsync(string sourceFullPath, string destFullPath, string destBackupFullPath, bool ignoreMetadataErrors)
+        {
+            // Copy the destination file to a backup.
+            if (destBackupFullPath != null)
+            {
+                await CopyFileAsync(destFullPath, destBackupFullPath, overwrite: true).ConfigureAwait(false);
+            }
+
+            // Then copy the contents of the source file to the destination file.
+            await CopyFileAsync(sourceFullPath, destFullPath, overwrite: true).ConfigureAwait(false);
+
+            // Finally, delete the source file.
+            await DeleteFileAsync(sourceFullPath).ConfigureAwait(false);
+        }
+
         public override void CreateDirectory(string fullPath)
         {
             EnsureBackgroundThread();

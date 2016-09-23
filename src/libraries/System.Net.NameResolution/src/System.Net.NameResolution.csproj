@@ -149,8 +149,8 @@
   </ItemGroup>
   <!-- Windows : Win32 + WinRT -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' == 'true'">
-    <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.netcore50.cs">
-      <Link>Common\System\Net\ContextAwareResult.netcore50.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Uap.cs">
+      <Link>Common\System\Net\ContextAwareResult.Uap.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">

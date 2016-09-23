@@ -46,6 +46,8 @@ namespace System.Text.RegularExpressions
             _done = false;
         }
 
+        public bool IsReadOnly => true;
+
         /// <summary>
         /// Returns the number of captures.
         /// </summary>
@@ -124,17 +126,17 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        bool ICollection.IsSynchronized
+        public bool IsSynchronized
         {
             get { return false; }
         }
 
-        object ICollection.SyncRoot
+        public object SyncRoot
         {
             get { return this; }
         }
 
-        void ICollection.CopyTo(Array array, int arrayIndex)
+        public void CopyTo(Array array, int arrayIndex)
         {
             EnsureInitialized();
             ((ICollection)_matches).CopyTo(array, arrayIndex);

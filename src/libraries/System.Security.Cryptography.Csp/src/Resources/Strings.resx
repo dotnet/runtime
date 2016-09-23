@@ -183,8 +183,14 @@
   <data name="Cryptography_InvalidCipherMode" xml:space="preserve">
     <value>Specified cipher mode is not valid for this algorithm.</value>
   </data>
+  <data name="Cryptography_InvalidDSASignatureSize" xml:space="preserve">
+    <value>Length of the DSA signature was not 40 bytes.</value>
+  </data>
   <data name="Cryptography_InvalidFeedbackSize" xml:space="preserve">
     <value>Specified feedback size is invalid.</value>
+  </data>
+  <data name="Cryptography_InvalidHashSize" xml:space="preserve">
+    <value>{0} algorithm hash size is {1} bytes.</value>
   </data>
   <data name="Cryptography_InvalidIVSize" xml:space="preserve">
     <value>Specified initialization vector (IV) does not match the block size for this algorithm.</value>

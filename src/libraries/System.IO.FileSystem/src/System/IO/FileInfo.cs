@@ -296,5 +296,16 @@ namespace System.IO
         {
             return DisplayPath;
         }
+
+        public void Decrypt()
+        {
+            File.Decrypt(FullPath);
+        }
+
+        public void Encrypt()
+        {
+            File.Encrypt(FullPath);
+        }
+
     }
 }

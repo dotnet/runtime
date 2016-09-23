@@ -107,6 +107,8 @@ namespace System.IO
         public static System.IO.FileStream Create(string path, int bufferSize, System.IO.FileOptions options) { return default(System.IO.FileStream); }
         public static System.IO.StreamWriter CreateText(string path) { return default(System.IO.StreamWriter); }
         public static void Delete(string path) { }
+        public static void Decrypt(string path) { }
+        public static void Encrypt(string path) { }
         public static bool Exists(string path) { return default(bool); }
         public static System.IO.FileAttributes GetAttributes(string path) { return default(System.IO.FileAttributes); }
         public static System.DateTime GetCreationTime(string path) { return default(System.DateTime); }
@@ -129,6 +131,8 @@ namespace System.IO
         public static string ReadAllText(string path, System.Text.Encoding encoding) { return default(string); }
         public static System.Collections.Generic.IEnumerable<string> ReadLines(string path) { return default(System.Collections.Generic.IEnumerable<string>); }
         public static System.Collections.Generic.IEnumerable<string> ReadLines(string path, System.Text.Encoding encoding) { return default(System.Collections.Generic.IEnumerable<string>); }
+        public static void Replace(string sourceFileName, string destinationFileName, string destinationBackupFileName) { }
+        public static void Replace(string sourceFileName, string destinationFileName, string destinationBackupFileName, bool ignoreMetadataErrors) { }
         public static void SetAttributes(string path, System.IO.FileAttributes fileAttributes) { }
         public static void SetCreationTime(string path, System.DateTime creationTime) { }
         public static void SetCreationTimeUtc(string path, System.DateTime creationTimeUtc) { }
@@ -137,7 +141,9 @@ namespace System.IO
         public static void SetLastWriteTime(string path, System.DateTime lastWriteTime) { }
         public static void SetLastWriteTimeUtc(string path, System.DateTime lastWriteTimeUtc) { }
         public static void WriteAllBytes(string path, byte[] bytes) { }
+        public static void WriteAllLines(string path, string[] contents) { }
         public static void WriteAllLines(string path, System.Collections.Generic.IEnumerable<string> contents) { }
+        public static void WriteAllLines(string path, string[] contents, System.Text.Encoding encoding) { }
         public static void WriteAllLines(string path, System.Collections.Generic.IEnumerable<string> contents, System.Text.Encoding encoding) { }
         public static void WriteAllText(string path, string contents) { }
         public static void WriteAllText(string path, string contents, System.Text.Encoding encoding) { }
@@ -157,6 +163,8 @@ namespace System.IO
         public System.IO.FileStream Create() { return default(System.IO.FileStream); }
         public System.IO.StreamWriter CreateText() { return default(System.IO.StreamWriter); }
         public override void Delete() { }
+        public void Decrypt() { }
+        public void Encrypt() { }
         public void MoveTo(string destFileName) { }
         public System.IO.FileStream Open(System.IO.FileMode mode) { return default(System.IO.FileStream); }
         public System.IO.FileStream Open(System.IO.FileMode mode, System.IO.FileAccess access) { return default(System.IO.FileStream); }
@@ -191,6 +199,7 @@ namespace System.IO
         public override bool CanRead { get { return default(bool); } }
         public override bool CanSeek { get { return default(bool); } }
         public override bool CanWrite { get { return default(bool); } }
+        public virtual System.IntPtr Handle { get { return default(System.IntPtr); } }
         public virtual bool IsAsync { get { return default(bool); } }
         public override long Length { get { return default(long); } }
         public string Name { get { return default(string); } }
@@ -205,6 +214,7 @@ namespace System.IO
         public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task<int>); }
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state) { return default(IAsyncResult); }
         public override int EndRead(IAsyncResult asyncResult) { return default(int); }
+        public virtual void Lock(long position, long length) { }
         public override int ReadByte() { return default(int); }
         public override long Seek(long offset, System.IO.SeekOrigin origin) { return default(long); }
         public override void SetLength(long value) { }
@@ -213,6 +223,7 @@ namespace System.IO
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state) { return default(IAsyncResult); }
         public override void EndWrite(IAsyncResult asyncResult) { }
         public override void WriteByte(byte value) { }
+        public virtual void Unlock(long position, long length) { }
     }
     public abstract partial class FileSystemInfo
     {

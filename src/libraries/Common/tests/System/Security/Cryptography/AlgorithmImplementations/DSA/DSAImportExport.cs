@@ -65,6 +65,26 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void ImportRoundTrip(bool includePrivate)
+        {
+            DSAParameters imported = DSATestData.GetDSA1024Params();
+
+            using (DSA dsa = DSAFactory.Create())
+            {
+                dsa.ImportParameters(imported);
+                DSAParameters exported = dsa.ExportParameters(includePrivate);
+                using (DSA dsa2 = DSAFactory.Create())
+                {
+                    dsa2.ImportParameters(exported);
+                    DSAParameters exported2 = dsa2.ExportParameters(includePrivate);
+                    AssertKeyEquals(ref exported, ref exported2);
+                }
+            }
+        }
+
         internal static void AssertKeyEquals(ref DSAParameters expected, ref DSAParameters actual)
         {
             Assert.Equal(expected.G, actual.G);

@@ -61,6 +61,16 @@ namespace System.IO
                 _innerStream.Flush();
             }
         }
+
+        public override void Lock(long position, long length)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public override void Unlock(long position, long length)
+        {
+            throw new PlatformNotSupportedException();
+        }
         #endregion
 
         #region Stream members

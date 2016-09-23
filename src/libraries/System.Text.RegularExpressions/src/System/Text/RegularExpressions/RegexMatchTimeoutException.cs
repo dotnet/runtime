@@ -4,13 +4,15 @@
 
 using System;
 using System.Security;
+using System.Runtime.Serialization;
 
 namespace System.Text.RegularExpressions
 {
     /// <summary>
     /// This is the exception that is thrown when a RegEx matching timeout occurs.
     /// </summary>
-    public class RegexMatchTimeoutException : TimeoutException
+    [Serializable]
+    public class RegexMatchTimeoutException : TimeoutException, ISerializable
     {
         private string _regexInput = null;
 
@@ -102,6 +104,23 @@ namespace System.Text.RegularExpressions
             [SecurityCritical]
             get
             { return _matchTimeout; }
+        }
+
+        protected RegexMatchTimeoutException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
+            string input = info.GetString("regexInput");
+            string pattern = info.GetString("regexPattern");
+            TimeSpan timeout = new TimeSpan(info.GetInt64("timeoutTicks"));
+            Init(input, pattern, timeout);
+        }
+
+        void ISerializable.GetObjectData(SerializationInfo si, StreamingContext context)
+        {
+            base.GetObjectData(si, context);
+            si.AddValue("regexInput", _regexInput);
+            si.AddValue("regexPattern", _regexPattern);
+            si.AddValue("timeoutTicks", _matchTimeout.Ticks);
         }
     }
 }

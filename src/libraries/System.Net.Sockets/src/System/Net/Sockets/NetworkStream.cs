@@ -31,22 +31,21 @@ namespace System.Net.Sockets
 
         // Creates a new instance of the System.Net.Sockets.NetworkStream class for the specified System.Net.Sockets.Socket.
         public NetworkStream(Socket socket)
+            : this(socket, FileAccess.ReadWrite, ownsSocket: false)
         {
-#if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User))
-            {
-#endif
-                if (socket == null)
-                {
-                    throw new ArgumentNullException(nameof(socket));
-                }
-                InitNetworkStream(socket);
-#if DEBUG
-            }
-#endif
         }
 
         public NetworkStream(Socket socket, bool ownsSocket)
+            : this(socket, FileAccess.ReadWrite, ownsSocket)
+        {
+        }
+
+        public NetworkStream(Socket socket, FileAccess access)
+            : this(socket, access, ownsSocket: false)
+        {
+        }
+
+        public NetworkStream(Socket socket, FileAccess access, bool ownsSocket)
         {
 #if DEBUG
             using (GlobalLog.SetThreadKind(ThreadKinds.User))
@@ -56,22 +55,39 @@ namespace System.Net.Sockets
                 {
                     throw new ArgumentNullException(nameof(socket));
                 }
-                InitNetworkStream(socket);
+                if (!socket.Blocking)
+                {
+                    throw new IOException(SR.net_sockets_blocking);
+                }
+                if (!socket.Connected)
+                {
+                    throw new IOException(SR.net_notconnected);
+                }
+                if (socket.SocketType != SocketType.Stream)
+                {
+                    throw new IOException(SR.net_notstream);
+                }
+
+                _streamSocket = socket;
                 _ownsSocket = ownsSocket;
+
+                switch (access)
+                {
+                    case FileAccess.Read:
+                        _readable = true;
+                        break;
+                    case FileAccess.Write:
+                        _writeable = true;
+                        break;
+                    case FileAccess.ReadWrite:
+                    default: // assume FileAccess.ReadWrite
+                        _readable = true;
+                        _writeable = true;
+                        break;
+                }
 #if DEBUG
             }
 #endif
-        }
-
-        internal NetworkStream(NetworkStream networkStream, bool ownsSocket)
-        {
-            Socket socket = networkStream.Socket;
-            if (socket == null)
-            {
-                throw new ArgumentNullException(nameof(networkStream));
-            }
-            InitNetworkStream(socket);
-            _ownsSocket = ownsSocket;
         }
 
         // Socket - provides access to socket for stream closing
@@ -324,26 +340,6 @@ namespace System.Net.Sockets
             throw new NotSupportedException(SR.net_noseek);
         }
 
-        internal void InitNetworkStream(Socket socket)
-        {
-            if (!socket.Blocking)
-            {
-                throw new IOException(SR.net_sockets_blocking);
-            }
-            if (!socket.Connected)
-            {
-                throw new IOException(SR.net_notconnected);
-            }
-            if (socket.SocketType != SocketType.Stream)
-            {
-                throw new IOException(SR.net_notstream);
-            }
-
-            _streamSocket = socket;
-            _readable = true;
-            _writeable = true;
-        }
-
         internal bool PollRead()
         {
             if (_cleanedUp)
@@ -389,7 +385,7 @@ namespace System.Net.Sockets
         // Returns:
         // 
         //     Number of bytes we read, or 0 if the socket is closed.
-        public override int Read([In, Out] byte[] buffer, int offset, int size)
+        public override int Read(byte[] buffer, int offset, int size)
         {
 #if DEBUG
             using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Sync))
@@ -520,6 +516,24 @@ namespace System.Net.Sockets
 #endif
         }
 
+        private int _closeTimeout = Socket.DefaultCloseTimeout; // -1 = respect linger options
+
+        public void Close(int timeout)
+        {
+#if DEBUG
+            using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Sync))
+            {
+#endif
+                if (timeout < -1)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(timeout));
+                }
+                _closeTimeout = timeout;
+                Dispose();
+#if DEBUG
+            }
+#endif
+        }
         private volatile bool _cleanedUp = false;
         protected override void Dispose(bool disposing)
         {
@@ -550,7 +564,7 @@ namespace System.Net.Sockets
                             if (chkStreamSocket != null)
                             {
                                 chkStreamSocket.InternalShutdown(SocketShutdown.Both);
-                                chkStreamSocket.Dispose();
+                                chkStreamSocket.Close(_closeTimeout);
                             }
                         }
                     }

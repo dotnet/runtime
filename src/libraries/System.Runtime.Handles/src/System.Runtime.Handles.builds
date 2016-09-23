@@ -3,12 +3,15 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="System.Runtime.Handles.csproj" />
+    <Project Include="System.Runtime.Handles.csproj">
+      <TargetGroup>net463</TargetGroup>
+    </Project>
     <!-- Net46 facade is currently inbox for 4.0
     <Project Include="System.Runtime.Handles.csproj">
       <TargetGroup>net46</TargetGroup>
     </Project> -->
     <Project Include="System.Runtime.Handles.csproj">
-      <TargetGroup>netcore50aot</TargetGroup>
+      <TargetGroup>uap101aot</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

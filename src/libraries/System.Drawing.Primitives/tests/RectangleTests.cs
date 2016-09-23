@@ -132,7 +132,7 @@ namespace System.Drawing.PrimitivesTest
         public void EqualityTest(int x, int y, int width, int height)
         {
             Rectangle rect1 = new Rectangle(x, y, width, height);
-            Rectangle rect2 = new Rectangle(width/2, height/2, x, y);
+            Rectangle rect2 = new Rectangle(width / 2, height / 2, x, y);
 
             Assert.True(rect1 != rect2);
             Assert.False(rect1 == rect2);
@@ -183,7 +183,7 @@ namespace System.Drawing.PrimitivesTest
         [InlineData(0, int.MinValue, int.MaxValue, 0)]
         public void ContainsTest(int x, int y, int width, int height)
         {
-            Rectangle rect = new Rectangle(2*x-width, 2*y-height, width, height);
+            Rectangle rect = new Rectangle(2 * x - width, 2 * y - height, width, height);
             Point p = new Point(x, y);
             Rectangle r = new Rectangle(x, y, width / 2, height / 2);
 

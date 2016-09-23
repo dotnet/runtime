@@ -7,10 +7,13 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.ComponentModel.TypeConverter.cs" />
-    <Compile Include="System.ComponentModel.Manual.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
+  </ItemGroup>
+  <!-- TODO: Replace this with a package reference. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Drawing.Primitives\pkg\System.Drawing.Primitives.pkgproj"/>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

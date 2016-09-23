@@ -7,6 +7,10 @@
       <TestTFMs>netcore50;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
     </Project>
+    <Project Include="System.Text.Encoding.Tests.csproj">
+      <TargetGroup>netstandard1.7</TargetGroup>
+      <TestTFMs>netcoreapp1.1</TestTFMs>
+    </Project>
     <Project Include="Performance\System.Text.Encoding.Performance.Tests.csproj"/>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

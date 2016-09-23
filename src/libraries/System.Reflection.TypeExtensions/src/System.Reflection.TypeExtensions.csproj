@@ -32,7 +32,7 @@
     <Compile Include="System\Reflection\ModuleExtensions.cs" />
     <Compile Include="System\Reflection\MethodInfoExtensions.cs" />
     <Compile Include="System\Reflection\PropertyInfoExtensions.cs" />
-    <Compile Include="System\Reflection\TypeExtensions.netcore50aot.cs" />
+    <Compile Include="System\Reflection\TypeExtensions.CoreRT.cs" />
     <Compile Include="Internal\Reflection\Extensions\NonPortable\InheritedPropertyInfo.cs" />
     <Compile Include="Internal\Reflection\Extensions\NonPortable\MemberEnumerator.cs" />
     <Compile Include="Internal\Reflection\Extensions\NonPortable\MemberPolicies.cs" />

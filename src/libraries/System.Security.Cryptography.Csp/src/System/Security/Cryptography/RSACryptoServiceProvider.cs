@@ -112,10 +112,10 @@ namespace System.Security.Cryptography
                         SafeKeyHandle keyHandle = _safeKeyHandle;
                         _safeKeyHandle = null;
                         keyHandle?.Dispose();
+                        current.Dispose();
                     }
 
                     _safeProvHandle = value;
-                    current?.Dispose();
                 }
             }
         }

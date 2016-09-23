@@ -51,9 +51,9 @@
       <Link>Common\System\IO\EncodingHelper.cs</Link>
     </Compile>
   </ItemGroup>
-  <!-- Windows : WinRT -->
+  <!-- Windows : UAP -->
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'netcore50' ">
-    <Compile Include="System\ConsolePal.WinRT.cs" />
+    <Compile Include="System\ConsolePal.Uap.cs" />
   </ItemGroup>
   <!-- Windows : Win32 -->
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And ('$(TargetGroup)' == '' OR '$(TargetGroup)'=='netstandard1.3')">

@@ -136,6 +136,8 @@
     <EmbeddedResource Include="System\Reflection\EmbeddedTextFile.txt" >
       <LogicalName>System.Reflection.Tests.EmbeddedTextFile.txt</LogicalName>
     </EmbeddedResource>
+    <Compile Include="System\Threading\WaitHandleTests.netstandard1.7.cs" />
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.netstandard1.7.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

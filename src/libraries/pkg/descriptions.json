@@ -545,6 +545,7 @@
         "Name": "System.Drawing.Primitives",
         "Description": "Provides basic drawing primitive structures, that exposes the corresponding System.Drawing.dll types in .NET Core.",
         "CommonTypes": [
+            "System.Drawing.Color",
             "System.Drawing.Point",
             "System.Drawing.PointF",
             "System.Drawing.Size",
@@ -943,6 +944,13 @@
             "System.Net.Sockets.SocketType",
             "System.Net.Sockets.UdpClient",
             "System.Net.Sockets.SocketShutdown"
+        ]
+    },
+    {
+        "Name": "System.Net.WebClient",
+        "Description": "Provides the System.Net.WebClient class, which supports sending data to and receiving data from a resource identified by a URI.",
+        "CommonTypes": [
+            "System.Net.WebClient"
         ]
     },
     {
@@ -1770,6 +1778,13 @@
             "System.ValueTuple<T1, T2, T3, T4, T5, T6>",
             "System.ValueTuple<T1, T2, T3, T4, T5, T6, T7>",
             "System.ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>"
+        ]
+    },
+    {
+        "Name": "System.Web.HttpUtility",
+        "Description": "Provides the System.Web.HttpUtility class for encoding and decoding various web formats.",
+        "CommonTypes": [
+            "System.Web.HttpUtility"
         ]
     },
     {

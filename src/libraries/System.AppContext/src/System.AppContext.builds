@@ -1,21 +1,11 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="System.AppContext.csproj" />
-    <Project Include="redist\System.AppContext.depproj">
-      <TargetGroup>net46</TargetGroup>
-    </Project>
     <Project Include="System.AppContext.csproj">
       <TargetGroup>net463</TargetGroup>
-    </Project>
-    <Project Include="System.AppContext.csproj">
-      <TargetGroup>netcore50</TargetGroup>
-    </Project>
-    <Project Include="System.AppContext.csproj">
-      <TargetGroup>netcore50aot</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
-

@@ -6,6 +6,7 @@
 // use when using regexes to search/replace, etc. It's logically
 // a sequence intermixed (1) constant strings and (2) group numbers.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 
@@ -29,7 +30,7 @@ namespace System.Text.RegularExpressions
         /// the constructor takes a RegexNode which is a concatenation
         /// of constant strings and backreferences.
         /// </summary>
-        internal RegexReplacement(String rep, RegexNode concat, Dictionary<Int32, Int32> _caps)
+        internal RegexReplacement(String rep, RegexNode concat, Hashtable _caps)
         {
             if (concat.Type() != RegexNode.Concatenate)
                 throw new ArgumentException(SR.ReplacementError);

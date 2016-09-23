@@ -8,6 +8,11 @@
     <ProjectGuid>{404DB891-B5AF-41E6-B89D-29E3F4573C4F}</ProjectGuid>
     <!-- only supported by desktop CLR -->
     <GeneratePlatformNotSupportedAssembly>true</GeneratePlatformNotSupportedAssembly>
+    <!-- Xamarin frameworks claim to support PCL profiles which include this assembly, 
+         but do not include this assembly in their framework.
+         This causes NuGet to give them the placeholder from the portable-* folder.
+         Instead give them this assembly.  -->
+    <PackageTargetFramework>netstandard1.1;MonoAndroid10;MonoTouch10;xamarinios10;xamarintvos10;xamarinwatchos10</PackageTargetFramework>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />

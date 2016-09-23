@@ -26,6 +26,7 @@
     <Compile Include="SqlConnectionTest.RetrieveStatistics.cs" />
     <Compile Include="SqlErrorCollectionTest.cs" />
     <Compile Include="SqlStringTest.cs" />
+    <Compile Include="TcpDefaultForAzureTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Data.SqlClient.csproj"> 

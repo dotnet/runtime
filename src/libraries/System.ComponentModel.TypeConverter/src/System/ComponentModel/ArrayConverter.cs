@@ -30,7 +30,6 @@ namespace System.ComponentModel
             return base.ConvertTo(context, culture, value, destinationType);
         }
 
-#if !NETSTANDARD10
         /// <summary>
         ///    <para>Gets a collection of properties for the type of array specified by the value parameter.</para>
         /// </summary>
@@ -60,7 +59,6 @@ namespace System.ComponentModel
 
             return new PropertyDescriptorCollection(props);
         }
-#endif // !NETSTANDARD10
 
         /// <summary>
         ///    <para>Gets a value indicating whether this object supports properties.</para>
@@ -70,7 +68,6 @@ namespace System.ComponentModel
             return true;
         }
 
-#if !NETSTANDARD10
         private class ArrayPropertyDescriptor : SimplePropertyDescriptor
         {
             private readonly int _index;
@@ -106,6 +103,5 @@ namespace System.ComponentModel
                 }
             }
         }
-#endif // !NETSTANDARD10
     }
 }
