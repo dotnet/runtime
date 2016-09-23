@@ -1,9 +1,12 @@
 {
   "dependencies": {
+    "System.Collections.Specialized": "4.0.0",
     "System.IO": "4.0.0",
     "System.Net.Primitives": "4.0.10",
+    "System.Net.Security": "4.0.0",
     "System.Net.WebHeaderCollection": "4.0.0",
     "System.Runtime": "4.0.0",
+    "System.Security.Cryptography.X509Certificates": "4.1.0",
     "System.Threading.Tasks": "4.0.0"
   },
   "frameworks": {
