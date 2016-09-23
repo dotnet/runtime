@@ -30,8 +30,8 @@ if NOT [%ERRORLEVEL%]==[0] (
 set _toolRuntime=%~dp0Tools
 set _dotnet=%_toolRuntime%\dotnetcli\dotnet.exe
 
-echo Running: %_dotnet% %_toolRuntime%\run.exe %*
-call %_dotnet% %_toolRuntime%\run.exe %*
+echo Running: %_dotnet% %_toolRuntime%\run.exe %~dp0config.json %*
+call %_dotnet% %_toolRuntime%\run.exe %~dp0config.json %*
 if NOT [%ERRORLEVEL%]==[0] (
   exit /b 1
 )
