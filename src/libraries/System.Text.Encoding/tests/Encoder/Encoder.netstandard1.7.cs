@@ -11,7 +11,6 @@ namespace System.Text.Encodings.Tests
     public class EncoderMiscTests
     {
         [Fact]
-        [ActiveIssue(11858, Xunit.PlatformID.AnyUnix)]
         public static unsafe void ConvertTest()
         {
             string s1 = "This is simple ascii string";
@@ -76,7 +75,6 @@ namespace System.Text.Encodings.Tests
         }
 
         [Fact]
-        [ActiveIssue(11858, Xunit.PlatformID.AnyUnix)]
         public static unsafe void ConvertNegativeTest()
         {
             Encoder encoder = Encoding.UTF8.GetEncoder();
@@ -115,7 +113,6 @@ namespace System.Text.Encodings.Tests
         }
 
         [Fact]
-        [ActiveIssue(11858, Xunit.PlatformID.AnyUnix)]
         public static unsafe void GetBytesTest()
         {
             string s1 = "This is simple ascii string";
@@ -158,7 +155,6 @@ namespace System.Text.Encodings.Tests
         }
 
         [Fact]
-        [ActiveIssue(11858, Xunit.PlatformID.AnyUnix)]
         public static unsafe void GetBytesNegativeTest()
         {
             Encoder encoder = Encoding.UTF8.GetEncoder();
@@ -195,7 +191,6 @@ namespace System.Text.Encodings.Tests
         }
 
         [Fact]
-        [ActiveIssue(11858, Xunit.PlatformID.AnyUnix)]
         public static void EncoderExceptionFallbackBufferTest()
         {
             Encoder encoder = Encoding.GetEncoding("us-ascii", new EncoderExceptionFallback(), new DecoderExceptionFallback()).GetEncoder();
@@ -224,7 +219,6 @@ namespace System.Text.Encodings.Tests
         }
 
         [Fact]
-        [ActiveIssue(11858, Xunit.PlatformID.AnyUnix)]
         public static void EncoderReplacementFallbackBufferTest()
         {
             Encoder encoder = Encoding.GetEncoding("us-ascii", new EncoderReplacementFallback(), new DecoderReplacementFallback()).GetEncoder();
