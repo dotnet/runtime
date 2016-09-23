@@ -1478,7 +1478,11 @@ FCIMPL5(VOID, Buffer::BlockCopy, ArrayBase *src, int srcOffset, ArrayBase *dst, 
     PTR_BYTE dstPtr = dst->GetDataPtr() + dstOffset;
 
     if ((srcPtr != dstPtr) && (count > 0)) {
+#if defined(_AMD64_) && !defined(PLATFORM_UNIX)
+        JIT_MemCpy(dstPtr, srcPtr, count);
+#else
         memmove(dstPtr, srcPtr, count);
+#endif
     }
 
     FC_GC_POLL();
@@ -1524,7 +1528,11 @@ FCIMPL5(VOID, Buffer::InternalBlockCopy, ArrayBase *src, int srcOffset, ArrayBas
     _ASSERTE(count >= 0);
 
     // Copy the data.
+#if defined(_AMD64_) && !defined(PLATFORM_UNIX)
+    JIT_MemCpy(dst->GetDataPtr() + dstOffset, src->GetDataPtr() + srcOffset, count);
+#else
     memmove(dst->GetDataPtr() + dstOffset, src->GetDataPtr() + srcOffset, count);
+#endif
 
     FC_GC_POLL();
 }
