@@ -1333,6 +1333,11 @@
         "4.0.1.0": "4.0.1"
       }
     },
+    "System.Net.WebProxy": {
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.3.0"
+      }
+    },
     "System.Net.WebSockets": {
       "StableVersions": [
         "4.0.0"
