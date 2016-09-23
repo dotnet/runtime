@@ -284,7 +284,7 @@ ZLIB_INTERNAL void crc_fold_copy(deflate_state *z_const s,
         goto partial;
     }
 
-    algn_diff = 0 - (unsigned long)src & 0xF;
+    algn_diff = (unsigned char*)0 -src & 0xF;
     if (algn_diff) {
         xmm_crc_part = _mm_loadu_si128((__m128i *)src);
         _mm_storeu_si128((__m128i *)dst, xmm_crc_part);
@@ -417,7 +417,7 @@ unsigned ZLIB_INTERNAL crc_fold_512to32(deflate_state *z_const s)
     z_const __m128i xmm_mask2 = _mm_load_si128((__m128i *)crc_mask2);
 
     unsigned crc;
-    __m128i x_tmp0, x_tmp1, x_tmp2, x_tmp3, crc_fold;
+    __m128i x_tmp0, x_tmp1, x_tmp2, crc_fold;
 
     CRC_LOAD(s)
 

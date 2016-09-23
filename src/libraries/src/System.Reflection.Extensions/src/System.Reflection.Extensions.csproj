@@ -6,44 +6,16 @@
     <AssemblyVersion Condition="'$(TargetGroup)'=='netstandard1.3'">4.0.2.0</AssemblyVersion>
     <ContractProject Condition="'$(AssemblyVersion)'=='4.0.2.0'">..\ref\4.0.0\System.Reflection.Extensions.depproj</ContractProject>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <!-- all targets but netcore50aot are pure facades. Exclude resources for pure facades -->
+    <ExcludeResourcesImport Condition="'$(TargetGroup)'!='netcore50aot'">true</ExcludeResourcesImport>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
+    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.7;uap10.1</PackageTargetFramework>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
-  <ItemGroup>
-    <TargetingPackReference Include="mscorlib" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcore50aot'">
-    <ProjectReference Include="$(SourceDir)System.Reflection.TypeExtensions\src\System.Reflection.TypeExtensions.csproj" />
-    <TargetingPackReference Include="System.Private.Reflection.Execution" />
-    <TargetingPackReference Include="System.Private.Reflection.MissingMetadataException" />
-    <Compile Include="System\Reflection\CustomAttributeExtensions.cs" />
-    <Compile Include="System\Reflection\CustomAttributeInheritanceRules.cs" />
-    <Compile Include="System\Reflection\CustomAttributeSearcher.cs" />
-    <Compile Include="System\Reflection\InterfaceMapping.cs" />
-    <Compile Include="System\Reflection\RuntimeReflectionExtensions.cs" />
-    <Compile Include="$(CommonPath)\System\CommonRuntimeTypes.cs">
-      <Link>Common\System\CommonRuntimeTypes.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Collections\HashHelpers.cs">
-      <Link>Common\System\Collections\HashHelpers.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Collections\Generic\EnumerableExtensions.cs">
-      <Link>Common\System\Collections\Generic\EnumerableExtensions.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelList.cs">
-      <Link>Common\System\Collections\Generic\LowLevelList.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelDictionary.cs">
-      <Link>Common\System\Collections\Generic\LowLevelDictionary.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Linq\LowLevelEnumerable.cs">
-      <Link>Common\System\Linq\LowLevelEnumerable.cs</Link>
-    </Compile>
-  </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>

@@ -95,6 +95,7 @@
   <PropertyGroup Condition="'$(BuildTestsAgainstPackages)' == 'true'">
     <GeneratedProjectJsonDir>$(ObjDir)generated</GeneratedProjectJsonDir>
     <BuildTestsAgainstPackagesIdentityRegex>$(CoreFxVersionsIdentityRegex)</BuildTestsAgainstPackagesIdentityRegex>
+    <SkipVerifyPackageVersions>true</SkipVerifyPackageVersions>
   </PropertyGroup>
 
   <!-- list of directories to perform batch restore -->
@@ -127,6 +128,7 @@
   <ItemGroup>
     <ProjectJsonFiles Include="$(SourceDir)**/project.json" />
     <ProjectJsonFiles Include="$(MSBuildThisFileDirectory)pkg/**/project.json" />
+    <ProjectJsonFiles Condition="'$(BuildTestsAgainstPackages)' == 'true'" Include="$(GeneratedProjectJsonDir)/**/project.json" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(BuildAllProjects)'=='true'">
@@ -453,6 +455,28 @@
         <PackageTargetFramework>uap10.1</PackageTargetFramework>
         <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
       </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetGroup)'=='portable-net45+win8+sl5'">
+      <PropertyGroup>
+        <PackageTargetFramework>portable-net45+win8+sl5</PackageTargetFramework>
+        <NuGetTargetMoniker>.NETPortable,Version=v0.0,Profile=Profile47</NuGetTargetMoniker>
+      </PropertyGroup>
+      <ItemGroup>
+        <Compile Include="$(CommonPath)\System\Reflection\AssemblyMetadataAttribute.cs">
+          <Link>System\Reflection\AssemblyMetadataAttribute.cs</Link>
+        </Compile>
+      </ItemGroup>
+    </When>
+    <When Condition="'$(TargetGroup)'=='portable-net40+sl4+win8+wp8'">
+      <PropertyGroup>
+        <PackageTargetFramework>portable-net40+sl4+win8+wp8</PackageTargetFramework>
+        <NuGetTargetMoniker>.NETPortable,Version=v0.0,Profile=Profile36</NuGetTargetMoniker>
+      </PropertyGroup>
+      <ItemGroup>
+        <Compile Include="$(CommonPath)\System\Reflection\AssemblyMetadataAttribute.cs">
+          <Link>System\Reflection\AssemblyMetadataAttribute.cs</Link>
+        </Compile>
+      </ItemGroup>
     </When>
     <Otherwise>
       <PropertyGroup>

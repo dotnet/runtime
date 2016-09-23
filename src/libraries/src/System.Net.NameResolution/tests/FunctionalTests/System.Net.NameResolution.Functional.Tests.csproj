@@ -12,7 +12,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="DnsTest.cs" />
+    <Compile Include="GetHostByAddressTest.cs" />
+    <Compile Include="GetHostByNameTest.cs" />
+    <Compile Include="ResolveTest.cs" />
+    <Compile Include="GetHostNameTest.cs" />
+    <Compile Include="GetHostEntryTest.cs" />
+    <Compile Include="GetHostAddressesTest.cs" />
     <Compile Include="TestSettings.cs" />
   </ItemGroup>
   <ItemGroup>

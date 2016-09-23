@@ -6,26 +6,11 @@
 // ------------------------------------------------------------------------------
 
 
-namespace Microsoft.Win32.SafeHandles
-{
-    public partial class SafeWaitHandle
-    {
-        // Manually added because SafeHandleZeroOrMinusOneIsInvalid is removed.
-        public override bool IsInvalid {[System.Security.SecurityCriticalAttribute]get { return default(bool); } }
-    }
-}
-
 namespace System.Runtime.InteropServices
 {
     public partial class CriticalHandle
     {
         // Manually added because CriticalFinalizerObject.Finalize is removed.
         ~CriticalHandle() { }
-    }
-
-    public partial class SafeHandle
-    {
-        // Manually added because CriticalFinalizerObject.Finalize is removed.
-        ~SafeHandle() { }
     }
 }

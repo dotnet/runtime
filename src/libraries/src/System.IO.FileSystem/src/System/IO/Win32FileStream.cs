@@ -663,7 +663,7 @@ namespace System.IO
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
-        public override int Read([In, Out] byte[] array, int offset, int count)
+        public override int Read(byte[] array, int offset, int count)
         {
             if (array == null)
                 throw new ArgumentNullException(nameof(array), SR.ArgumentNull_Buffer);
@@ -2095,6 +2095,42 @@ namespace System.IO
             }
 
             return completedTask;
+        }
+
+        public override void Lock(long position, long length)
+        {
+            if (_handle.IsClosed)
+            {
+                throw Error.GetFileNotOpen();
+            }
+
+            int positionLow = unchecked((int)(position));
+            int positionHigh = unchecked((int)(position >> 32));
+            int lengthLow = unchecked((int)(length));
+            int lengthHigh = unchecked((int)(length >> 32));
+
+            if (!Interop.mincore.LockFile(_handle, positionLow, positionHigh, lengthLow, lengthHigh))
+            {
+                throw Win32Marshal.GetExceptionForLastWin32Error();
+            }
+        }
+
+        public override void Unlock(long position, long length)
+        {
+            if (_handle.IsClosed)
+            {
+                throw Error.GetFileNotOpen();
+            }
+
+            int positionLow = unchecked((int)(position));
+            int positionHigh = unchecked((int)(position >> 32));
+            int lengthLow = unchecked((int)(length));
+            int lengthHigh = unchecked((int)(length >> 32));
+
+            if (!Interop.mincore.UnlockFile(_handle, positionLow, positionHigh, lengthLow, lengthHigh))
+            {
+                throw Win32Marshal.GetExceptionForLastWin32Error();
+            }
         }
     }
 }

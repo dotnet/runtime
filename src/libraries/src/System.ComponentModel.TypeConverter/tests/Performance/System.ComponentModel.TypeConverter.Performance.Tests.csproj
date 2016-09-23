@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -7,6 +7,7 @@
     <IncludePerformanceTests>true</IncludePerformanceTests>
     <NugetTargetMoniker>.NETStandard,Version=v1.5</NugetTargetMoniker>
     <DefineConstants>$(DefineConstants);PERFORMANCE_TESTS</DefineConstants>
+    <ProjectGuid>{89C76728-ECAF-4905-A33F-BD6BFED5E91D}</ProjectGuid>
   </PropertyGroup>
   <PropertyGroup>
     <DebugEngines>{2E36F1D4-B23C-435D-AB41-18E608940038}</DebugEngines>
@@ -14,6 +15,9 @@
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.7_Debug|AnyCPU'">
+    <OutputPath>bin\netstandard1.7_Debug\</OutputPath>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\SampleClasses.cs" />
     <Compile Include="Perf.TypeDescriptorTests.cs" />

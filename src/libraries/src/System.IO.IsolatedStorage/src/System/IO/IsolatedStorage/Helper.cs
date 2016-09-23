@@ -139,10 +139,10 @@ namespace System.IO.IsolatedStorage
                     bw.Write(publicKey);
                     bw.Write(name.Version.Major);
                     bw.Write(name.Name);
-                }
 
-                ms.Position = 0;
-                return GetStrongHashSuitableForObjectName(ms);
+                    ms.Position = 0;
+                    return GetStrongHashSuitableForObjectName(ms);
+                }
             }
         }
 
@@ -153,10 +153,10 @@ namespace System.IO.IsolatedStorage
                 using (BinaryWriter b = new BinaryWriter(ms))
                 {
                     b.Write(name.ToUpperInvariant());
-                }
 
-                ms.Position = 0;
-                return GetStrongHashSuitableForObjectName(ms);
+                    ms.Position = 0;
+                    return GetStrongHashSuitableForObjectName(ms);
+                }
             }
         }
 

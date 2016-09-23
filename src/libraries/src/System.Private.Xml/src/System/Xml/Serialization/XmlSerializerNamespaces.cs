@@ -12,7 +12,6 @@ namespace System.Xml.Serialization
     using System.Collections.Generic;
     using System.Xml.Extensions;
 
-    /// <include file='doc\XmlSerializerNamespaces.uex' path='docs/doc[@for="XmlSerializerNamespaces"]/*' />
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
@@ -20,7 +19,6 @@ namespace System.Xml.Serialization
     {
         private Dictionary<string, string> _namespaces = null;
 
-        /// <include file='doc\XmlSerializerNamespaces.uex' path='docs/doc[@for="XmlSerializerNamespaces.XmlSerializerNamespaces"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -29,7 +27,6 @@ namespace System.Xml.Serialization
         }
 
 
-        /// <include file='doc\XmlSerializerNamespaces.uex' path='docs/doc[@for="XmlSerializerNamespaces.XmlSerializerNamespaces1"]/*' />
         /// <internalonly/>
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
@@ -39,7 +36,6 @@ namespace System.Xml.Serialization
             _namespaces = new Dictionary<string, string>(namespaces.Namespaces);
         }
 
-        /// <include file='doc\XmlSerializerNamespaces.uex' path='docs/doc[@for="XmlSerializerNamespaces.XmlSerializerNamespaces2"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -52,7 +48,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        /// <include file='doc\XmlSerializerNamespaces.uex' path='docs/doc[@for="XmlSerializerNamespaces.Add"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -72,7 +67,6 @@ namespace System.Xml.Serialization
             Namespaces[prefix] = ns;
         }
 
-        /// <include file='doc\XmlSerializerNamespaces.uex' path='docs/doc[@for="XmlSerializerNamespaces.ToArray"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -83,7 +77,6 @@ namespace System.Xml.Serialization
             return (XmlQualifiedName[])NamespaceList.ToArray();
         }
 
-        /// <include file='doc\XmlSerializerNamespaces.uex' path='docs/doc[@for="XmlSerializerNamespaces.Count"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>

@@ -68,7 +68,7 @@ namespace System.Drawing.PrimitivesTests
         [Theory]
         [InlineData(float.MaxValue, float.MinValue, int.MaxValue, int.MinValue)]
         [InlineData(float.MinValue, float.MaxValue, int.MinValue, int.MaxValue)]
-        [InlineData(0,0,0,0)]
+        [InlineData(0, 0, 0, 0)]
         public void ArithmeticTestWithSize(float x, float y, int x1, int y1)
         {
             PointF p = new PointF(x, y);
@@ -104,7 +104,7 @@ namespace System.Drawing.PrimitivesTests
         [InlineData(float.MinValue, float.MaxValue)]
         [InlineData(float.MinValue, float.MinValue)]
         [InlineData(float.MaxValue, float.MaxValue)]
-        [InlineData(0,0)]
+        [InlineData(0, 0)]
         public void EqualityTest(float x, float y)
         {
             PointF pLeft = new PointF(x, y);

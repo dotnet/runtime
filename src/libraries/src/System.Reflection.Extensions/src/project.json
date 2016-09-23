@@ -2,8 +2,8 @@
   "frameworks": {
     "netstandard1.7": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1",
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.1.0-beta-24519-02"
+        "System.Runtime": "4.3.0-beta-24522-03",
+        "System.Resources.ResourceManager": "4.0.0"
       },
       "imports": [
         "dotnet5.8"
@@ -12,6 +12,12 @@
     "net463": {
       "dependencies": {
         "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
+      }
+    },
+    "uap10.1": {
+      "dependencies": {
+        "System.Runtime": "4.3.0-beta-24522-03",
+        "System.Resources.ResourceManager": "4.0.0"
       }
     }
   }

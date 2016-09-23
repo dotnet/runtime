@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections;
 using System.Text.RegularExpressions;
 using RegexTestNamespace;
 using Xunit;
@@ -37,14 +38,8 @@ namespace RegexTestNamespace
             roptions = RegexOptions.IgnoreCase;
             internalMatchTimeout = TimeSpan.FromTicks(-10000L);
             factory = new RegexFactoryTestClass();
-            Caps = new Dictionary<int, int>();
-            Caps.Add(0, 0);
-            Caps.Add(1, 1);
-            Caps.Add(2, 2);
-            CapNames = new Dictionary<string, int>();
-            CapNames.Add("0", 0);
-            CapNames.Add("1", 1);
-            CapNames.Add("output", 2);
+            Caps = new Hashtable {{0, 0}, {1, 1}, {2, 2}};
+            CapNames = new Hashtable {{"0", 0}, {"1", 1}, {"output", 2}};
             capslist = new string[3];
             capslist[0] = "0";
             capslist[1] = "1";

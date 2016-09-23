@@ -671,7 +671,7 @@ namespace System.IO
         /// The total number of bytes read into the buffer. This might be less than the number of bytes requested 
         /// if that number of bytes are not currently available, or zero if the end of the stream is reached.
         /// </returns>
-        public override int Read([In, Out] byte[] array, int offset, int count)
+        public override int Read(byte[] array, int offset, int count)
         {
             ValidateReadWriteArgs(array, offset, count);
 
@@ -1194,6 +1194,24 @@ namespace System.IO
             {
                 throw Error.GetFileNotOpen();
             }
+        }
+
+        /// <summary>Prevents other processes from reading from or writing to the FileStream.</summary>
+        /// <param name="position">The beginning of the range to lock.</param>
+        /// <param name="length">The range to be locked.</param>
+        public override void Lock(long position, long length)
+        {
+            // TODO #5964: Implement this with fcntl and F_SETLK in System.Native
+            throw new PlatformNotSupportedException();
+        }
+
+        /// <summary>Allows access by other processes to all or part of a file that was previously locked.</summary>
+        /// <param name="position">The beginning of the range to unlock.</param>
+        /// <param name="length">The range to be unlocked.</param>
+        public override void Unlock(long position, long length)
+        {
+            // TODO #5964: Implement this with fcntl and F_SETLK in System.Native
+            throw new PlatformNotSupportedException();
         }
 
         /// <summary>

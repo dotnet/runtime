@@ -5,7 +5,6 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-
 namespace System.Security.Cryptography
 {
     public sealed partial class CspKeyContainerInfo
@@ -50,6 +49,34 @@ namespace System.Security.Cryptography
         UseNonExportableKey = 4,
         UseUserProtectedKey = 32,
     }
+    public sealed partial class DSACryptoServiceProvider : System.Security.Cryptography.DSA, System.Security.Cryptography.ICspAsymmetricAlgorithm
+    {
+        public DSACryptoServiceProvider() { }
+        public DSACryptoServiceProvider(int dwKeySize) { }
+        public DSACryptoServiceProvider(int dwKeySize, System.Security.Cryptography.CspParameters parameters) { }
+        public DSACryptoServiceProvider(System.Security.Cryptography.CspParameters parameters) { }
+        public System.Security.Cryptography.CspKeyContainerInfo CspKeyContainerInfo { get { return default(System.Security.Cryptography.CspKeyContainerInfo); } }
+        public override int KeySize { get { return default(int); } }
+        public override System.Security.Cryptography.KeySizes[] LegalKeySizes { get { return default(System.Security.Cryptography.KeySizes[]); } }
+        public bool PersistKeyInCsp { get { return default(bool); } set { } }
+        public bool PublicOnly { get { return default(bool); } }
+        public static bool UseMachineKeyStore { get { return default(bool); } set { } }
+        public override byte[] CreateSignature(byte[] rgbHash) { return default(byte[]); }
+        protected override void Dispose(bool disposing) { }
+        public byte[] ExportCspBlob(bool includePrivateParameters) { return default(byte[]); }
+        public override System.Security.Cryptography.DSAParameters ExportParameters(bool includePrivateParameters) { return default(System.Security.Cryptography.DSAParameters); }
+        protected override byte[] HashData(byte[] data, int offset, int count, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { return default(byte[]); }
+        protected override byte[] HashData(System.IO.Stream data, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { return default(byte[]); }
+        public void ImportCspBlob(byte[] keyBlob) { }
+        public override void ImportParameters(System.Security.Cryptography.DSAParameters parameters) { }
+        public byte[] SignData(byte[] buffer) { return default(byte[]); }
+        public byte[] SignData(byte[] buffer, int offset, int count) { return default(byte[]); }
+        public byte[] SignData(System.IO.Stream inputStream) { return default(byte[]); }
+        public byte[] SignHash(byte[] rgbHash, string str) { return default(byte[]); }
+        public bool VerifyData(byte[] rgbData, byte[] rgbSignature) { return default(bool); }
+        public bool VerifyHash(byte[] rgbHash, string str, byte[] rgbSignature) { return default(bool); }
+        public override bool VerifySignature(byte[] rgbHash, byte[] rgbSignature) { return default(bool); }
+    }
     public partial interface ICspAsymmetricAlgorithm
     {
         System.Security.Cryptography.CspKeyContainerInfo CspKeyContainerInfo { get; }
@@ -69,6 +96,7 @@ namespace System.Security.Cryptography
         public RSACryptoServiceProvider(System.Security.Cryptography.CspParameters parameters) { }
         public System.Security.Cryptography.CspKeyContainerInfo CspKeyContainerInfo { get { return default(System.Security.Cryptography.CspKeyContainerInfo); } }
         public override int KeySize { get { return default(int); } }
+        public override System.Security.Cryptography.KeySizes[] LegalKeySizes { get { return default(System.Security.Cryptography.KeySizes[]); } }
         public bool PersistKeyInCsp { get { return default(bool); } set { } }
         public bool PublicOnly { get { return default(bool); } }
         public static bool UseMachineKeyStore { get { return default(bool); } set { } }
@@ -83,7 +111,6 @@ namespace System.Security.Cryptography
         protected override byte[] HashData(System.IO.Stream data, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { return default(byte[]); }
         public void ImportCspBlob(byte[] keyBlob) { }
         public override void ImportParameters(System.Security.Cryptography.RSAParameters parameters) { }
-        public override System.Security.Cryptography.KeySizes[] LegalKeySizes { get { return default(System.Security.Cryptography.KeySizes[]); } }
         public byte[] SignData(byte[] buffer, int offset, int count, object halg) { return default(byte[]); }
         public byte[] SignData(byte[] buffer, object halg) { return default(byte[]); }
         public byte[] SignData(System.IO.Stream inputStream, object halg) { return default(byte[]); }

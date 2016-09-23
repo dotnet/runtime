@@ -43,8 +43,8 @@
     <Compile Include="..\..\src\System\Net\NetworkInformation\NetworkInterfaceComponent.cs">
       <Link>ProductionCode\System\Net\NetworkInformation\NetworkInterfaceComponent.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\System\Net\NetworkInformation\NetworkInterfacePal.NetNative.cs">
-      <Link>ProductionCode\System\Net\NetworkInformation\NetworkInterfacePal.NetNative.cs</Link>
+    <Compile Include="..\..\src\System\Net\NetworkInformation\NetworkInterfacePal.Uap.cs">
+      <Link>ProductionCode\System\Net\NetworkInformation\NetworkInterfacePal.Uap.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\NetworkInformation\NetNativeNetworkInterface.cs">
       <Link>ProductionCode\System\Net\NetworkInformation\NetNativeNetworkInterface.cs</Link>

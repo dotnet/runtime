@@ -255,13 +255,13 @@
   </ItemGroup>
   <!-- Windows : Win32 + WinRT -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' == 'true'">
-    <Compile Include="System\Net\NetworkInformation\IPGlobalPropertiesPal.NetNative.cs" />
+    <Compile Include="System\Net\NetworkInformation\IPGlobalPropertiesPal.Uap.cs" />
     <Compile Include="System\Net\NetworkInformation\NetNativeIPGlobalProperties.cs" />
-    <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.NetNative.cs" />
-    <Compile Include="System\Net\NetworkInformation\NetworkInterfacePal.NetNative.cs" />
+    <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.Uap.cs" />
+    <Compile Include="System\Net\NetworkInformation\NetworkInterfacePal.Uap.cs" />
     <Compile Include="System\Net\NetworkInformation\NetNativeNetworkInterface.cs" />
-    <Compile Include="$(CommonPath)\System\Net\NetworkInformation\HostInformationPal.NetNative.cs">
-      <Link>Common\System\Net\NetworkInformation\HostInformationPal.NetNative.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\NetworkInformation\HostInformationPal.Uap.cs">
+      <Link>Common\System\Net\NetworkInformation\HostInformationPal.Uap.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- Unix -->

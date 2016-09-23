@@ -9,7 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Text.Encoding.Extensions.csproj" />
     <ProjectReference Include="..\..\src\System.Text.Encoding.Extensions.csproj">
-      <TargetGroup>netcore50</TargetGroup>
+      <TargetGroup>net463</TargetGroup>
     </ProjectReference>
 
     <!-- AOT implementation comes from AOT package -->

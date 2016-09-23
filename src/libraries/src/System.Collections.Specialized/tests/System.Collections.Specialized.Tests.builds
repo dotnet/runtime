@@ -2,9 +2,7 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <!-- Disabling netcoreapp1.0 test run from CI since there are a lot of failures. Issue tracking is: https://github.com/dotnet/corefx/issues/11364
-    <Project Include="System.Collections.Specialized.Tests.csproj"/>
-    -->
+    <Project Include="System.Collections.Specialized.Tests.csproj" />
     <Project Include="System.Collections.Specialized.Tests.csproj">
       <TargetGroup>netstandard1.7</TargetGroup>
       <TestTFMs>netcoreapp1.1</TestTFMs>

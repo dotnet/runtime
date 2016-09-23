@@ -168,4 +168,7 @@
   <data name="net_repcall" xml:space="preserve">
     <value>Cannot re-call BeginGetRequestStream/BeginGetResponse while a previous call is still in progress.</value>
   </data>
+  <data name="net_invalid_enum" xml:space="preserve">
+    <value>The specified value is not valid in the '{0}' enumeration.</value>
+  </data>
 </root>

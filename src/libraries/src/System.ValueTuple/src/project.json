@@ -1,16 +1,17 @@
 {
-  "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.2-beta-24516-03",
-    "System.Collections": "4.0.0",
-    "System.Diagnostics.Debug": "4.0.0",
-    "System.Resources.ResourceManager": "4.0.0",
-    "System.Runtime": "4.0.0"
-  },
   "frameworks": {
     "netstandard1.0": {
-      "imports": [
-        "dotnet5.1"
-      ]
+      "dependencies": {
+        "System.Collections": "4.0.11",
+        "System.Diagnostics.Debug": "4.0.11",
+        "System.Resources.ResourceManager": "4.0.1",
+        "System.Runtime": "4.1.0"
+      }
+    },
+    "portable-net40+sl4+win8+wp8": {
+      "dependencies": {
+        "Microsoft.TargetingPack.Portable.v4.0.Profile36": "1.0.0" 
+      }
     }
   }
 }

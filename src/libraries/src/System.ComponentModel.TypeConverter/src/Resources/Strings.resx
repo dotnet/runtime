@@ -192,6 +192,18 @@
   <data name="TypeDescriptorSameAssociation" xml:space="preserve">
     <value>Cannot create an association when the primary and secondary objects are the same.</value>
   </data>
+  <data name="InvalidEx2BoundArgument" xml:space="preserve">
+    <value>Value of '{1}' is not valid for '{0}'. '{0}' should be greater than or equal to {2} and less than or equal to {3}.</value>
+  </data>
+  <data name="InvalidColor" xml:space="preserve">
+    <value>Color '{0}' is not valid.</value>
+  </data>
+  <data name="TextParseFailedFormat" xml:space="preserve">
+    <value>Text "{0}" cannot be parsed. The expected text format is "{1}".</value>
+  </data>
+  <data name="PropertyValueInvalidEntry" xml:space="preserve">
+    <value>IDictionary parameter contains at least one entry that is not valid. Ensure all values are consistent with the object's properties.</value>
+  </data>
   <data name="InvalidParameter" xml:space="preserve">
     <value>Invalid value '{1}' for parameter '{0}'.</value>
   </data>

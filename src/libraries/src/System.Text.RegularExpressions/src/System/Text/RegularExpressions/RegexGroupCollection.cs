@@ -18,16 +18,18 @@ namespace System.Text.RegularExpressions
     public class GroupCollection : ICollection
     {
         private readonly Match _match;
-        private readonly Dictionary<int, int> _captureMap;
+        private readonly Hashtable _captureMap;
 
         // cache of Group objects fed to the user
         private Group[] _groups;
 
-        internal GroupCollection(Match match, Dictionary<int, int> caps)
+        internal GroupCollection(Match match, Hashtable caps)
         {
             _match = match;
             _captureMap = caps;
         }
+
+        public bool IsReadOnly => true;
 
         /// <summary>
         /// Returns the number of groups.
@@ -102,17 +104,17 @@ namespace System.Text.RegularExpressions
             return _groups[groupnum - 1];
         }
 
-        bool ICollection.IsSynchronized
+        public bool IsSynchronized
         {
             get { return false; }
         }
 
-        object ICollection.SyncRoot
+        public object SyncRoot
         {
             get { return _match; }
         }
 
-        void ICollection.CopyTo(Array array, int arrayIndex)
+        public void CopyTo(Array array, int arrayIndex)
         {
             if (array == null)
                 throw new ArgumentNullException(nameof(array));

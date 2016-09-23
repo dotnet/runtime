@@ -21,7 +21,8 @@ namespace System.Runtime.Serialization.Formatters.Tests
             }
         }
 
-        internal static void AssertRoundtrips(Exception expected, params Func<Exception, object>[] additionalGetters)
+        internal static void AssertRoundtrips<T>(T expected, params Func<T, object>[] additionalGetters)
+            where T : Exception
         {
             for (int i = 0; i < 2; i++)
             {
@@ -32,7 +33,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 }
 
                 // Serialize/deserialize the exception
-                Exception actual = Clone(expected);
+                T actual = Clone(expected);
 
                 // Verify core state
                 Assert.Equal(expected.StackTrace, actual.StackTrace);
@@ -43,7 +44,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 Assert.Equal(expected.HResult, actual.HResult);
 
                 // Verify optional additional state
-                foreach (Func<Exception, object> getter in additionalGetters)
+                foreach (Func<T, object> getter in additionalGetters)
                 {
                     Assert.Equal(getter(expected), getter(actual));
                 }
