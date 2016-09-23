@@ -13,7 +13,9 @@ namespace System.IO.Tests
         {
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
             {
+#pragma warning disable CS0618
                 Assert.Equal(fs.SafeFileHandle.DangerousGetHandle(), fs.Handle);
+#pragma warning restore CS0618
             }
         }
     }
