@@ -11,9 +11,9 @@ namespace Microsoft.DotNet.Cli.Build
     {
         public const string SharedFrameworkName = "Microsoft.NETCore.App";
         public const string CLISdkBrandName = "Microsoft .NET Core 1.0.0 - SDK Preview 2";
-        public const string SharedFxBrandName = "Microsoft .NET Core 1.0.0 - Runtime";
-        public const string SharedHostBrandName = "Microsoft .NET Core 1.0.0 - Host";
-        public const string HostFxrBrandName = "Microsoft .NET Core 1.0.0 - Host FX Resolver";
+        public const string SharedFxBrandName = "Microsoft .NET Core 1.2.0 - Runtime";
+        public const string SharedHostBrandName = "Microsoft .NET Core 1.2.0 - Host";
+        public const string HostFxrBrandName = "Microsoft .NET Core 1.2.0 - Host FX Resolver";
 
         public static string GetProductMoniker(BuildTargetContext c, string artifactPrefix, string version)
         {
