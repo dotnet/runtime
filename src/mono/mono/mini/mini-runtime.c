@@ -3744,6 +3744,8 @@ register_icalls (void)
 				ves_icall_get_trace);
 	mono_add_internal_call ("Mono.Runtime::mono_runtime_install_handlers",
 				mono_runtime_install_handlers);
+	mono_add_internal_call ("Mono.Runtime::mono_runtime_cleanup_handlers",
+				mono_runtime_cleanup_handlers);
 
 #if defined(PLATFORM_ANDROID) || defined(TARGET_ANDROID)
 	mono_add_internal_call ("System.Diagnostics.Debugger::Mono_UnhandledException_internal",

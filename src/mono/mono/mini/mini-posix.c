@@ -140,11 +140,15 @@ mono_gdb_render_native_backtraces (pid_t crashed_pid)
 static GHashTable *mono_saved_signal_handlers = NULL;
 
 static struct sigaction *
-get_saved_signal_handler (int signo)
+get_saved_signal_handler (int signo, gboolean remove)
 {
-	if (mono_saved_signal_handlers)
+	if (mono_saved_signal_handlers) {
 		/* The hash is only modified during startup, so no need for locking */
-		return (struct sigaction *)g_hash_table_lookup (mono_saved_signal_handlers, GINT_TO_POINTER (signo));
+		struct sigaction *handler = g_hash_table_lookup (mono_saved_signal_handlers, GINT_TO_POINTER (signo));
+		if (remove && handler)
+			g_hash_table_remove (mono_saved_signal_handlers, GINT_TO_POINTER (signo));
+		return handler;
+	}
 	return NULL;
 }
 
@@ -191,7 +195,7 @@ gboolean
 MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
 {
 	int signal = MONO_SIG_HANDLER_GET_SIGNO ();
-	struct sigaction *saved_handler = (struct sigaction *)get_saved_signal_handler (signal);
+	struct sigaction *saved_handler = (struct sigaction *)get_saved_signal_handler (signal, FALSE);
 
 	if (saved_handler && saved_handler->sa_handler) {
 		if (!(saved_handler->sa_flags & SA_SIGINFO)) {
@@ -446,7 +450,7 @@ static void
 remove_signal_handler (int signo)
 {
 	struct sigaction sa;
-	struct sigaction *saved_action = get_saved_signal_handler (signo);
+	struct sigaction *saved_action = get_saved_signal_handler (signo, TRUE);
 
 	if (!saved_action) {
 		sa.sa_handler = SIG_DFL;
