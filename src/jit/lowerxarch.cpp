@@ -26,6 +26,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #ifdef _TARGET_XARCH_
 
 #include "jit.h"
+#include "sideeffects.h"
 #include "lower.h"
 
 // xarch supports both ROL and ROR instructions so no lowering is required.
@@ -2925,12 +2926,12 @@ void Lowering::SetIndirAddrOpCounts(GenTreePtr indirTree)
         // On x86, direct VSD is done via a relative branch, and in fact it MUST be contained.
         MakeSrcContained(indirTree, addr);
     }
-    else if (addr->OperGet() == GT_LEA)
+    else if ((addr->OperGet() == GT_LEA) && IsSafeToContainMem(indirTree, addr))
     {
         MakeSrcContained(indirTree, addr);
     }
     else if (comp->codeGen->genCreateAddrMode(addr, -1, true, 0, &rev, &base, &index, &mul, &cns, true /*nogen*/) &&
-             !AreSourcesPossiblyModified(indirTree, base, index))
+             !AreSourcesPossiblyModifiedLocals(indirTree, base, index))
     {
         // An addressing mode will be constructed that may cause some
         // nodes to not need a register, and cause others' lifetimes to be extended
@@ -3539,6 +3540,86 @@ void Lowering::LowerCast(GenTree* tree)
 }
 
 //----------------------------------------------------------------------------------------------
+// Lowering::IsRMWIndirCandidate:
+//    Returns true if the given operand is a candidate indirection for a read-modify-write
+//    operator.
+//
+//  Arguments:
+//     operand - The operand to consider.
+//     storeInd - The indirect store that roots the possible RMW operator.
+//
+bool Lowering::IsRMWIndirCandidate(GenTree* operand, GenTree* storeInd)
+{
+    // If the operand isn't an indirection, it's trivially not a candidate.
+    if (operand->OperGet() != GT_IND)
+    {
+        return false;
+    }
+
+    // If the indirection's source address isn't equivalent to the destination address of the storeIndir, then the
+    // indirection is not a candidate.
+    GenTree* srcAddr = operand->gtGetOp1();
+    GenTree* dstAddr = storeInd->gtGetOp1();
+    if ((srcAddr->OperGet() != dstAddr->OperGet()) || !IndirsAreEquivalent(operand, storeInd))
+    {
+        return false;
+    }
+
+    // If it is not safe to contain the entire tree rooted at the indirection, then the indirection is not a
+    // candidate. Crawl the IR from the node immediately preceding the storeIndir until the last node in the
+    // indirection's tree is visited and check the side effects at each point.
+
+    m_scratchSideEffects.Clear();
+
+    assert((operand->gtLIRFlags & LIR::Flags::Mark) == 0);
+    operand->gtLIRFlags |= LIR::Flags::Mark;
+
+    unsigned markCount = 1;
+    GenTree* node;
+    for (node = storeInd->gtPrev; markCount > 0; node = node->gtPrev)
+    {
+        assert(node != nullptr);
+
+        if ((node->gtLIRFlags & LIR::Flags::Mark) == 0)
+        {
+            m_scratchSideEffects.AddNode(comp, node);
+        }
+        else
+        {
+            node->gtLIRFlags &= ~LIR::Flags::Mark;
+            markCount--;
+
+            if (m_scratchSideEffects.InterferesWith(comp, node, false))
+            {
+                // The indirection's tree contains some node that can't be moved to the storeInder. The indirection is
+                // not a candidate. Clear any leftover mark bits and return.
+                for (; markCount > 0; node = node->gtPrev)
+                {
+                    if ((node->gtLIRFlags & LIR::Flags::Mark) != 0)
+                    {
+                        node->gtLIRFlags &= ~LIR::Flags::Mark;
+                        markCount--;
+                    }
+                }
+                return false;
+            }
+
+            for (GenTree* nodeOperand : node->Operands())
+            {
+                assert((nodeOperand->gtLIRFlags & LIR::Flags::Mark) == 0);
+                nodeOperand->gtLIRFlags |= LIR::Flags::Mark;
+                markCount++;
+            }
+        }
+    }
+
+    // At this point we've verified that the operand is an indirection, its address is equivalent to the storeIndir's
+    // destination address, and that it and the transitive closure of its operand can be safely contained by the
+    // storeIndir. This indirection is therefore a candidate for an RMW op.
+    return true;
+}
+
+//----------------------------------------------------------------------------------------------
 // Returns true if this tree is bin-op of a GT_STOREIND of the following form
 //      storeInd(subTreeA, binOp(gtInd(subTreeA), subtreeB)) or
 //      storeInd(subTreeA, binOp(subtreeB, gtInd(subTreeA)) in case of commutative bin-ops
@@ -3692,6 +3773,28 @@ bool Lowering::IsRMWMemOpRootedAtStoreInd(GenTreePtr tree, GenTreePtr* outIndirC
         return false;
     }
 
+    // At this point we can match one of two patterns:
+    //
+    //     t_ind = indir t_addr_0
+    //       ...
+    //     t_value = binop t_ind, t_other
+    //       ...
+    //     storeIndir t_addr_1, t_value
+    //
+    // or
+    //
+    //     t_ind = indir t_addr_0
+    //       ...
+    //     t_value = unop t_ind
+    //       ...
+    //     storeIndir t_addr_1, t_value
+    //
+    // In all cases, we will eventually make the binop that produces t_value and the entire dataflow tree rooted at
+    // t_ind contained by t_value.
+
+    GenTree*  indirCandidate = nullptr;
+    GenTree*  indirOpSource  = nullptr;
+    RMWStatus status         = STOREIND_RMW_STATUS_UNKNOWN;
     if (GenTree::OperIsBinary(oper))
     {
         // Return if binary op is not one of the supported operations for RMW of memory.
@@ -3711,29 +3814,25 @@ bool Lowering::IsRMWMemOpRootedAtStoreInd(GenTreePtr tree, GenTreePtr* outIndirC
             return false;
         }
 
-        GenTreePtr rhsLeft  = indirSrc->gtGetOp1();
-        GenTreePtr rhsRight = indirSrc->gtGetOp2();
-
-        // The most common case is rhsRight is GT_IND
-        if (GenTree::OperIsCommutative(oper) && rhsRight->OperGet() == GT_IND &&
-            rhsRight->gtGetOp1()->OperGet() == indirDst->OperGet() && IndirsAreEquivalent(rhsRight, storeInd))
+        // In the common case, the second operand to the binop will be the indir candidate.
+        GenTreeOp* binOp = indirSrc->AsOp();
+        if (GenTree::OperIsCommutative(oper) && IsRMWIndirCandidate(binOp->gtOp2, storeInd))
         {
-            *outIndirCandidate = rhsRight;
-            *outIndirOpSource  = rhsLeft;
-            storeInd->SetRMWStatus(STOREIND_RMW_DST_IS_OP2);
-            return true;
+            indirCandidate = binOp->gtOp2;
+            indirOpSource  = binOp->gtOp1;
+            status         = STOREIND_RMW_DST_IS_OP2;
         }
-        else if (rhsLeft->OperGet() == GT_IND && rhsLeft->gtGetOp1()->OperGet() == indirDst->OperGet() &&
-                 IsSafeToContainMem(indirSrc, rhsLeft) && IndirsAreEquivalent(rhsLeft, storeInd))
+        else if (IsRMWIndirCandidate(binOp->gtOp1, storeInd))
         {
-            *outIndirCandidate = rhsLeft;
-            *outIndirOpSource  = rhsRight;
-            storeInd->SetRMWStatus(STOREIND_RMW_DST_IS_OP1);
-            return true;
+            indirCandidate = binOp->gtOp1;
+            indirOpSource  = binOp->gtOp2;
+            status         = STOREIND_RMW_DST_IS_OP1;
         }
-
-        storeInd->SetRMWStatus(STOREIND_RMW_UNSUPPORTED_ADDR);
-        return false;
+        else
+        {
+            storeInd->SetRMWStatus(STOREIND_RMW_UNSUPPORTED_ADDR);
+            return false;
+        }
     }
     else if (GenTree::OperIsUnary(oper))
     {
@@ -3750,22 +3849,42 @@ bool Lowering::IsRMWMemOpRootedAtStoreInd(GenTreePtr tree, GenTreePtr* outIndirC
             return false;
         }
 
-        GenTreePtr indirCandidate = indirSrc->gtGetOp1();
-        if (indirCandidate->gtGetOp1()->OperGet() == indirDst->OperGet() &&
-            IndirsAreEquivalent(indirCandidate, storeInd))
+        GenTreeUnOp* unOp = indirSrc->AsUnOp();
+        if (IsRMWIndirCandidate(unOp->gtOp1, storeInd))
         {
             // src and dest are the same in case of unary ops
-            *outIndirCandidate = indirCandidate;
-            *outIndirOpSource  = indirCandidate;
-            storeInd->SetRMWStatus(STOREIND_RMW_DST_IS_OP1);
-            return true;
+            indirCandidate = unOp->gtOp1;
+            indirOpSource  = unOp->gtOp1;
+            status         = STOREIND_RMW_DST_IS_OP1;
+        }
+        else
+        {
+            storeInd->SetRMWStatus(STOREIND_RMW_UNSUPPORTED_ADDR);
+            return false;
         }
     }
+    else
+    {
+        storeInd->SetRMWStatus(STOREIND_RMW_UNSUPPORTED_OPER);
+        return false;
+    }
 
-    assert(*outIndirCandidate == nullptr);
-    assert(*outIndirOpSource == nullptr);
-    storeInd->SetRMWStatus(STOREIND_RMW_UNSUPPORTED_OPER);
-    return false;
+    // By this point we've verified that we have a supported operand with a supported address. Now we need to ensure
+    // that we're able to move the destination address for the source indirection forwards.
+    if (!IsSafeToContainMem(storeInd, indirDst))
+    {
+        storeInd->SetRMWStatus(STOREIND_RMW_UNSUPPORTED_ADDR);
+        return false;
+    }
+
+    assert(indirCandidate != nullptr);
+    assert(indirOpSource != nullptr);
+    assert(status != STOREIND_RMW_STATUS_UNKNOWN);
+
+    *outIndirCandidate = indirCandidate;
+    *outIndirOpSource  = indirOpSource;
+    storeInd->SetRMWStatus(status);
+    return true;
 }
 
 //--------------------------------------------------------------------------------------------

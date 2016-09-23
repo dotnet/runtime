@@ -78,34 +78,20 @@ bool Lowering::CheckImmedAndMakeContained(GenTree* parentNode, GenTree* childNod
 // and returns 'true' iff memory operand childNode can be contained in parentNode.
 //
 // Arguments:
-//    parentNode  - a non-leaf binary node
-//    childNode   - a memory op that is a child op of 'parentNode'
+//    parentNode - any non-leaf node
+//    childNode  - some node that is an input to `parentNode`
 //
 // Return value:
 //    true if it is safe to make childNode a contained memory operand.
 //
 bool Lowering::IsSafeToContainMem(GenTree* parentNode, GenTree* childNode)
 {
-    assert(parentNode->OperIsBinary());
-    assert(childNode->isMemoryOp());
+    m_scratchSideEffects.Clear();
+    m_scratchSideEffects.AddNode(comp, childNode);
 
-    unsigned int childFlags = (childNode->gtFlags & GTF_ALL_EFFECT);
-
-    GenTree* node;
-    for (node = childNode; node != parentNode; node = node->gtNext)
+    for (GenTree* node = childNode->gtNext; node != parentNode; node = node->gtNext)
     {
-        assert(node != nullptr);
-
-        if ((childFlags != 0) && node->IsCall())
-        {
-            bool isPureHelper = (node->gtCall.gtCallType == CT_HELPER) &&
-                                comp->s_helperCallProperties.IsPure(comp->eeGetHelperNum(node->gtCall.gtCallMethHnd));
-            if (!isPureHelper && ((node->gtFlags & childFlags & GTF_ALL_EFFECT) != 0))
-            {
-                return false;
-            }
-        }
-        else if (node->OperIsStore() && comp->fgNodesMayInterfere(node, childNode))
+        if (m_scratchSideEffects.InterferesWith(comp, node, false))
         {
             return false;
         }
@@ -3257,17 +3243,57 @@ void Lowering::AddrModeCleanupHelper(GenTreeAddrMode* addrMode, GenTree* node)
     BlockRange().Remove(node);
 }
 
-// given two nodes which will be used in an addressing mode (base, index)
-// walk backwards from the use to those nodes to determine if they are
-// potentially modified in that range
+//------------------------------------------------------------------------
+// Lowering::AreSourcesPossibleModifiedLocals:
+//    Given two nodes which will be used in an addressing mode (base,
+//    index), check to see if they are lclVar reads, and if so, walk
+//    backwards from the use until both reads have been visited to
+//    determine if they are potentially modified in that range.
 //
-// returns: true if the sources given may be modified before they are used
-bool Lowering::AreSourcesPossiblyModified(GenTree* addr, GenTree* base, GenTree* index)
+// Arguments:
+//    addr - the node that uses the base and index nodes
+//    base - the base node
+//    index - the index node
+//
+// Returns: true if either the base or index may be modified between the
+//          node and addr.
+//
+bool Lowering::AreSourcesPossiblyModifiedLocals(GenTree* addr, GenTree* base, GenTree* index)
 {
     assert(addr != nullptr);
 
-    for (GenTree* cursor = addr; cursor != nullptr; cursor = cursor->gtPrev)
+    unsigned markCount = 0;
+
+    SideEffectSet baseSideEffects;
+    if (base != nullptr)
     {
+        if (base->OperIsLocalRead())
+        {
+            baseSideEffects.AddNode(comp, base);
+        }
+        else
+        {
+            base = nullptr;
+        }
+    }
+
+    SideEffectSet indexSideEffects;
+    if (index != nullptr)
+    {
+        if (index->OperIsLocalRead())
+        {
+            indexSideEffects.AddNode(comp, index);
+        }
+        else
+        {
+            index = nullptr;
+        }
+    }
+
+    for (GenTree* cursor = addr;; cursor = cursor->gtPrev)
+    {
+        assert(cursor != nullptr);
+
         if (cursor == base)
         {
             base = nullptr;
@@ -3278,17 +3304,19 @@ bool Lowering::AreSourcesPossiblyModified(GenTree* addr, GenTree* base, GenTree*
             index = nullptr;
         }
 
-        if (base == nullptr && index == nullptr)
+        if ((base == nullptr) && (index == nullptr))
         {
             return false;
         }
 
-        if (base != nullptr && comp->fgNodesMayInterfere(base, cursor))
+        m_scratchSideEffects.Clear();
+        m_scratchSideEffects.AddNode(comp, cursor);
+        if ((base != nullptr) && m_scratchSideEffects.InterferesWith(baseSideEffects, false))
         {
             return true;
         }
 
-        if (index != nullptr && comp->fgNodesMayInterfere(index, cursor))
+        if ((index != nullptr) && m_scratchSideEffects.InterferesWith(indexSideEffects, false))
         {
             return true;
         }
@@ -3371,7 +3399,7 @@ GenTree* Lowering::TryCreateAddrMode(LIR::Use&& use, bool isIndir)
     }
 
     // make sure there are not any side effects between def of leaves and use
-    if (!doAddrMode || AreSourcesPossiblyModified(addr, base, index))
+    if (!doAddrMode || AreSourcesPossiblyModifiedLocals(addr, base, index))
     {
         JITDUMP("  No addressing mode\n");
         return addr;
@@ -3401,7 +3429,8 @@ GenTree* Lowering::TryCreateAddrMode(LIR::Use&& use, bool isIndir)
     GenTreeAddrMode* addrMode = new (comp, GT_LEA) GenTreeAddrMode(addrModeType, base, index, scale, offset);
 
     addrMode->gtRsvdRegs = addr->gtRsvdRegs;
-    addrMode->gtFlags |= (addr->gtFlags & (GTF_ALL_EFFECT | GTF_IND_FLAGS));
+    addrMode->gtFlags |= (addr->gtFlags & GTF_IND_FLAGS);
+    addrMode->gtFlags &= ~GTF_ALL_EFFECT; // LEAs are side-effect-free.
 
     JITDUMP("New addressing mode node:\n");
     DISPNODE(addrMode);
