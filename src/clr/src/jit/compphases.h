@@ -22,7 +22,12 @@
 CompPhaseNameMacro(PHASE_PRE_IMPORT,             "Pre-import",                     "PRE-IMP",  false, -1)
 CompPhaseNameMacro(PHASE_IMPORTATION,            "Importation",                    "IMPORT",   false, -1)
 CompPhaseNameMacro(PHASE_POST_IMPORT,            "Post-import",                    "POST-IMP", false, -1)
-CompPhaseNameMacro(PHASE_MORPH,                  "Morph",                          "MORPH",    false, -1)
+CompPhaseNameMacro(PHASE_MORPH_INIT,             "Morph - Init",                   "MOR-INIT" ,false, -1)
+CompPhaseNameMacro(PHASE_MORPH_INLINE,           "Morph - Inlining",               "MOR-INL",  false, -1)
+CompPhaseNameMacro(PHASE_MORPH_IMPBYREF,         "Morph - ByRefs",                 "MOR-BYREF",false, -1)
+CompPhaseNameMacro(PHASE_STR_ADRLCL,             "Morph - Structs/AddrExp",        "MOR-STRAL",false, -1)
+CompPhaseNameMacro(PHASE_MORPH_GLOBAL,           "Morph - Global",                 "MOR-GLOB", false, -1)
+CompPhaseNameMacro(PHASE_MORPH_END,              "Morph - Finish",                 "MOR-END",  false, -1)
 CompPhaseNameMacro(PHASE_GS_COOKIE,              "GS Cookie",                      "GS-COOK",  false, -1)
 CompPhaseNameMacro(PHASE_COMPUTE_PREDS,          "Compute preds",                  "PREDS",    false, -1)
 CompPhaseNameMacro(PHASE_MARK_GC_POLL_BLOCKS,    "Mark GC poll blocks",            "GC-POLL",  false, -1)
@@ -55,7 +60,7 @@ CompPhaseNameMacro(PHASE_OPTIMIZE_INDEX_CHECKS,  "Optimize index checks",       
 
 #if FEATURE_VALNUM_CSE
 CompPhaseNameMacro(PHASE_OPTIMIZE_VALNUM_CSES,   "Optimize Valnum CSEs",           "OPT-CSE",  false, -1)
-#endif  
+#endif
 
 CompPhaseNameMacro(PHASE_VN_COPY_PROP,           "VN based copy prop",             "CP-PROP",  false, -1)
 #if ASSERTION_PROP
