@@ -66,7 +66,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.VirtualAllocFromApp.cs">
       <Link>Common\Interop\Windows\Interop.VirtualAllocFromApp.cs</Link>
     </Compile>
-    <Compile Include="System\IO\MemoryMappedFiles\Interop.Windows.NETCore50.cs" />
+    <Compile Include="System\IO\MemoryMappedFiles\Interop.Windows.Uap.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'net46' ">
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">

@@ -15,7 +15,7 @@
     <!-- System.IO.Path conflicts between type in partial facade and in mscorlib -->
     <NoWarn>0436</NoWarn>
     <NuGetTargetMoniker Condition="'$(NuGetTargetMoniker)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
-    <CoreClrOrCorRt Condition="'$(TargetGroup)' == '' Or '$(TargetGroup)' == 'netstandard1.5' Or '$(TargetGroup)' == 'netstandard15aot'">true</CoreClrOrCorRt>
+    <TargetsWindowsUap Condition="'$(TargetGroup)'=='netcore50' or '$(TargetGroup)'=='netcore50aot'">true</TargetsWindowsUap>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
@@ -154,8 +154,8 @@
       <Link>Common\System\IO\PathInternal.Windows.StringBuffer.cs</Link>
     </Compile>
   </ItemGroup>
-  <!-- WINDOWS: CoreCLR -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(CoreClrOrCorRt)' == 'true'">
+  <!-- WINDOWS: Win32 -->
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetsWindowsUap)' != 'true'">
     <Compile Include="System\Environment.Win32.cs" />
     <Compile Include="System\IO\Path.Win32.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs">
@@ -274,7 +274,7 @@
       <Link>Common\Interop\Windows\mincore\Interop.SECURITY_ATTRIBUTES.cs</Link>
     </Compile>
   </ItemGroup>
-  <!-- UNIX: CoreCLR -->
+  <!-- UNIX -->
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="System\Environment.Unix.cs" />
     <Compile Include="System\Diagnostics\Stopwatch.Unix.cs" />
@@ -355,16 +355,18 @@
       <Link>Common\System\IO\PersistedFiles.Unix.cs</Link>
     </Compile>
   </ItemGroup>
-  <!-- WINDOWS: .NET Native -->
+  <!-- WINDOWS: UAP -->
+  <ItemGroup Condition="'$(TargetsWindowsUap)' == 'true'">
+    <Compile Include="System\Environment.Uap.cs" />
+    <Compile Include="System\IO\Path.Uap.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot' Or '$(TargetGroup)' == 'netstandard15aot'">
-    <Compile Include="System\Environment.WinRT.cs" Condition="'$(TargetGroup)' == 'netcore50aot' And '$(TargetsWindows)'=='true'" />
     <Compile Include="System\Random.cs" />
     <Compile Include="System\Net\Configuration\UnicodeDecodingConformance.cs" />
     <Compile Include="System\Net\Configuration\UnicodeEncodingConformance.cs" />
-    <Compile Include="System\IO\Path.WinRT.cs" Condition="'$(TargetGroup)' == 'netcore50aot' And '$(TargetsWindows)'=='true'" />
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLastError.cs" Condition="'$(TargetsWindows)'=='true'" />
-    <Compile Include="$(CommonPath)\System\SR.Core.cs" Condition="'$(TargetGroup)' == 'netcore50aot' And '$(TargetsWindows)'=='true'" />
-    <Compile Include="$(CommonPath)\System\SR.CoreRT.cs" Condition="'$(TargetGroup)' == 'netstandard15aot' Or '$(TargetsUnix)'=='true'" />
+    <Compile Include="$(CommonPath)\System\SR.Core.cs" Condition="'$(TargetsWindowsUap)' == 'true'" />
+    <Compile Include="$(CommonPath)\System\SR.CoreRT.cs" Condition="'$(TargetsWindowsUap)' != 'true'" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == '' Or '$(TargetGroup)' == 'netstandard1.5'">
     <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj">

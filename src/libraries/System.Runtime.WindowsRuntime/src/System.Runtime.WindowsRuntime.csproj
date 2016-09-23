@@ -45,22 +45,22 @@
     <ProjectReference Include="..\..\System.Runtime\src\redist\System.Runtime.depproj">
       <TargetGroup>netcore50</TargetGroup>
     </ProjectReference>
-    <Compile Include="System\IO\StreamOperationAsyncResult.netstandard.cs" />
+    <Compile Include="System\IO\StreamOperationAsyncResult.CoreCLR.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\MarshalingHelpers.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\RestrictedErrorInfoHelper.cs" />
-    <Compile Include="System\Threading\Tasks\AsyncInfoToTaskBridge.netstandard.cs" />
+    <Compile Include="System\Threading\Tasks\AsyncInfoToTaskBridge.CoreCLR.cs" />
     <Compile Include="System\Threading\WindowsRuntimeSynchronizationContext.cs" />
-    <Compile Include="System\WindowsRuntimeSystemExtensions.netstandard.cs" />
+    <Compile Include="System\WindowsRuntimeSystemExtensions.CoreCLR.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetRestrictedErrorInfo.cs">
       <Link>Common\Interop\Windows\mincore\Interop.GetRestrictedErrorInfo.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcore50aot'">
     <Compile Include="System\IO\BufferedStream.cs" />
-    <Compile Include="System\IO\StreamOperationAsyncResult.netcore50aot.cs" />
+    <Compile Include="System\IO\StreamOperationAsyncResult.CoreRT.cs" />
     <Compile Include="System\IO\UnmanagedMemoryStreamInternal.cs" />
-    <Compile Include="System\Threading\Tasks\AsyncInfoToTaskBridge.cs" />
-    <Compile Include="System\WindowsRuntimeSystemExtensions.cs" />
+    <Compile Include="System\Threading\Tasks\AsyncInfoToTaskBridge.CoreRT.cs" />
+    <Compile Include="System\WindowsRuntimeSystemExtensions.CoreRT.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ResolveLocaleName.cs">

@@ -24,7 +24,7 @@
     <TargetingPackReference Include="System.Core" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
-    <Compile Include="System\Threading\Tasks\TaskExtensions.netcore50.cs" />
+    <Compile Include="System\Threading\Tasks\TaskExtensions.CoreRT.cs" />
     <ProjectReference Include="..\..\System.Runtime\src\redist\System.Runtime.depproj" />
     <TargetingPackReference Include="System.Private.CoreLib" />
     <TargetingPackReference Include="System.Private.CoreLib.Threading" />
