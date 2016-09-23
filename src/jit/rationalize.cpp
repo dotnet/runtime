@@ -662,7 +662,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, ArrayStack<G
             break;
 
         case GT_IND:
-            // Clear the `GTF_IND_ASG_LHS` flag, which overlaps with `GTF_IND_VSD_TGT`.
+            // Clear the `GTF_IND_ASG_LHS` flag, which overlaps with `GTF_IND_REQ_ADDR_IN_REG`.
             node->gtFlags &= ~GTF_IND_ASG_LHS;
             break;
 
