@@ -20,11 +20,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />  
   
   <ItemGroup>
+    <Compile Include="AuthorizationTest.cs" />
+    <Compile Include="AuthenticationManagerTest.cs" />
     <Compile Include="HttpRequestCachePolicyTest.cs" />
     <Compile Include="HttpWebRequestTest.cs" />
     <Compile Include="HttpWebResponseTest.cs" />
     <Compile Include="RequestCachePolicyTest.cs" />
     <Compile Include="RequestStreamTest.cs" />
+    <Compile Include="ServicePointManagerTest.cs" />
     <Compile Include="WebRequestTest.cs" />
 
     <Compile Include="$(CommonTestPath)\System\Net\Configuration.cs">
