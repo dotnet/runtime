@@ -66,6 +66,7 @@ namespace System.Net.Tests
         [Theory]
         [InlineData("http")]
         [InlineData("https")]
+        [InlineData("ftp")]
         public void Create_ValidWebRequestUriScheme_Success(string scheme)
         {
             var uri = new Uri($"{scheme}://example.com/folder/resource.txt");
@@ -75,7 +76,6 @@ namespace System.Net.Tests
         [Theory]
         [InlineData("ws")]
         [InlineData("wss")]
-        [InlineData("ftp")]
         [InlineData("custom")]
         public void Create_InvalidWebRequestUriScheme_Throws(string scheme)
         {

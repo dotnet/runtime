@@ -74,6 +74,49 @@ namespace System.Net
         protected override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public override System.IO.Stream GetResponseStream() { throw null; }
     }
+    public sealed class FtpWebRequest : WebRequest
+    {
+        internal FtpWebRequest() { }
+        public System.Security.Cryptography.X509Certificates.X509CertificateCollection ClientCertificates { get { throw null; } set { } }
+        public override string ConnectionGroupName { get { throw null; } set { } }
+        public override long ContentLength { get { throw null; } set { } }
+        public long ContentOffset { get { throw null; } set { } }
+        public override string ContentType { get { throw null; } set { } }
+        public override System.Net.ICredentials Credentials { get { throw null; } set { } }
+        public override System.Net.WebHeaderCollection Headers { get { throw null; } }
+        public override string Method { get { throw null; } set { } }
+        public override bool PreAuthenticate { get { throw null; } set { } }
+        public override System.Net.IWebProxy Proxy { get { throw null; } set { } }
+        public string RenameTo { get { throw null; } set { } }
+        public override int Timeout { get { throw null; } set { } }
+        public bool EnableSsl { get { throw null; } set { } }
+        public bool UsePassive { get { throw null; } set { } }
+        public bool UseBinary { get { throw null; } set { } }
+        public bool KeepAlive { get { throw null; } set { } }
+        public int ReadWriteTimeout { get { throw null; } set { } }
+        public System.Net.ServicePoint ServicePoint { get { throw null; } }
+        public static new System.Net.Cache.RequestCachePolicy DefaultCachePolicy { get { throw null; } set { } }
+        public override System.Uri RequestUri { get { throw null; } }
+        public override bool UseDefaultCredentials { get { throw null; } set { } }
+        public override void Abort() { throw null; }
+        public override System.IAsyncResult BeginGetRequestStream(System.AsyncCallback callback, object state) { throw null; }
+        public override System.IAsyncResult BeginGetResponse(System.AsyncCallback callback, object state) { throw null; }
+        public override System.IO.Stream EndGetRequestStream(System.IAsyncResult asyncResult) { throw null; }
+        public override System.Net.WebResponse EndGetResponse(System.IAsyncResult asyncResult) { throw null; }
+        public override System.IO.Stream GetRequestStream() { throw null; }
+        public override System.Net.WebResponse GetResponse() { throw null; }
+    }
+    public class FtpWebResponse : WebResponse
+    {
+        internal FtpWebResponse() { }
+        public override long ContentLength { get { throw null; } }
+        public override string ContentType { get { throw null; } }
+        public override WebHeaderCollection Headers { get { throw null; } }
+        public override bool SupportsHeaders { get { throw null; } }
+        public override Uri ResponseUri { get { throw null; } }
+        public override void Close() { throw null; }
+        public override System.IO.Stream GetResponseStream() { throw null; }
+    }
     public partial class HttpWebRequest : System.Net.WebRequest
     {
         internal HttpWebRequest() { }
