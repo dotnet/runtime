@@ -1064,6 +1064,11 @@
       <Member MemberType="Event" Name="Resolving" />
       <Member MemberType="Event" Name="Unloading" />
     </Type>
+    <Type Name="System.Runtime.MemoryFailPoint">
+      <Member Name="#ctor(System.Int32)" />
+      <Member Name="Dispose" />
+      <Member Status="ImplRoot" Name="Finalize" />
+    </Type>
     <Type Name="System.Reflection.Metadata.AssemblyExtensions">
       <Member Name="TryGetRawMetadata(System.Reflection.Assembly,System.Byte*@,System.Int32@)"/>
     </Type>
@@ -6198,10 +6203,6 @@
       <Member Name="#ctor(System.Runtime.CompilerServices.CompilationRelaxations)" />
       <Member MemberType="Property" Name="CompilationRelaxations" />
     </Type>
-    <Type Name="System.Runtime.CompilerServices.CallConvCdecl" /> <!-- for MC++ -->
-    <Type Name="System.Runtime.CompilerServices.CallConvStdcall" /> <!-- for MC++ -->
-    <Type Name="System.Runtime.CompilerServices.CallConvThiscall" /> <!-- for MC++ -->
-    <Type Name="System.Runtime.CompilerServices.CallConvFastcall" /> <!-- for MC++ -->
     <Type Name="System.Runtime.CompilerServices.CompilerMarshalOverride" />
     <Type Name="System.Runtime.CompilerServices.CustomConstantAttribute">
       <Member Name="#ctor" />
@@ -6280,18 +6281,6 @@
     </Type>
     <Type Name="System.Runtime.CompilerServices.SuppressMergeCheckAttribute"> <!-- for MC++ -->
     </Type>
-    <Type Name="System.Runtime.CompilerServices.RequiredAttributeAttribute"> <!-- for MC++ -->
-      <Member Name="#ctor(System.Type)" />
-      <Member Name="get_RequiredContract" />
-    </Type>
-    <Type Name="System.Runtime.CompilerServices.IsBoxed"> <!-- for MC++ -->
-    </Type>
-    <Type Name="System.Runtime.CompilerServices.IsByValue"> <!-- for MC++ -->
-    </Type>
-    <Type Name="System.Runtime.CompilerServices.IsConst"> <!-- for MC++ -->
-    </Type>
-    <Type Name="System.Runtime.CompilerServices.IsCopyConstructed"> <!-- for MC++ -->
-    </Type>
     <Type Name="System.Runtime.CompilerServices.ICastable">
       <Member Name="IsInstanceOfInterface(System.RuntimeTypeHandle,System.Exception@)" /> <!-- EE -->
       <Member Name="GetImplType(System.RuntimeTypeHandle)" /> <!-- EE -->
@@ -6299,27 +6288,6 @@
     <Type Name="System.Runtime.CompilerServices.ICastableHelpers">
       <Member Name="IsInstanceOfInterface(System.Runtime.CompilerServices.ICastable,System.RuntimeType,System.Exception@)" /> <!-- EE -->
       <Member Name="GetImplType(System.Runtime.CompilerServices.ICastable,System.RuntimeType)" /> <!-- EE -->
-    </Type>
-    <Type Name="System.Runtime.CompilerServices.IsExplicitlyDereferenced"> <!-- for MC++ -->
-    </Type>
-    <Type Name="System.Runtime.CompilerServices.IsImplicitlyDereferenced">  <!-- for MC++ -->
-    </Type>
-    <Type Name="System.Runtime.CompilerServices.IsLong">  <!-- for MC++ -->
-    </Type>
-    <Type Name="System.Runtime.CompilerServices.IsJitIntrinsic">  <!-- for MC++ -->
-    </Type>
-    <Type Name="System.Runtime.CompilerServices.IsSignUnspecifiedByte">  <!-- for MC++ -->
-    </Type>
-    <Type Name="System.Runtime.CompilerServices.IsUdtReturn">  <!-- for MC++ -->
-    </Type>
-    <Type Name="System.Runtime.CompilerServices.NativeCppClassAttribute">  <!-- for MC++ -->
-      <Member Name="#ctor" />
-    </Type>
-    <Type Name="System.Runtime.CompilerServices.IsVolatile" />  <!-- for MC++ -->
-    <Type Name="System.Runtime.CompilerServices.IUnknownConstantAttribute">
-      <Member Name="#ctor" />
-      <Member Name="get_Value" />
-      <Member MemberType="Property" Name="Value" />
     </Type>
     <Type Name="System.Runtime.CompilerServices.MethodCodeType">
       <Member MemberType="Field" Name="IL" />
