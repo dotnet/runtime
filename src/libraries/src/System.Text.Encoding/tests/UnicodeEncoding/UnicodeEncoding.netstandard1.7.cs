@@ -11,14 +11,12 @@ namespace System.Text.Encodings.Tests
     public class UnicodeEncodingMiscTests
     {
         [Fact]
-        [ActiveIssue(11858, Xunit.PlatformID.AnyUnix)]
         public static void CharSizeTest()
         {
             Assert.Equal(2, UnicodeEncoding.CharSize);
         }
 
         [Fact]
-        [ActiveIssue(11858, Xunit.PlatformID.AnyUnix)]
         public static unsafe void GetCharAndBytesTest()
         {
             Encoding encoding = Encoding.Unicode;
@@ -46,7 +44,6 @@ namespace System.Text.Encodings.Tests
         }
 
         [Fact]
-        [ActiveIssue(11858, Xunit.PlatformID.AnyUnix)]
         public static unsafe void GetBytesNegativeTest()
         {
             Encoding enc = Encoding.GetEncoding("utf-16", new EncoderExceptionFallback(), new DecoderExceptionFallback());
@@ -75,7 +72,6 @@ namespace System.Text.Encodings.Tests
         }
 
         [Fact]
-        [ActiveIssue(11858, Xunit.PlatformID.AnyUnix)]
         public static unsafe void GetCharsNegativeTest()
         {
             Encoding enc = Encoding.GetEncoding("utf-16", new EncoderExceptionFallback(), new DecoderExceptionFallback());
