@@ -93,7 +93,21 @@ class PersistentInlineTrackingMap;
 #define PARAMMETHODS_HASH_BUCKETS 11
 #define METHOD_STUBS_HASH_BUCKETS 11
 #define GUID_TO_TYPE_HASH_BUCKETS 16
-
+            
+// The native symbol reader dll name
+#ifdef FEATURE_CORECLR
+#if defined(_TARGET_AMD64_)
+#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.amd64.dll")
+#elif defined(_TARGET_X86_)
+#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.x86.dll")
+#elif defined(_TARGET_ARM_)
+#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm.dll")
+#elif defined(_TARGET_ARM64_)
+#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm64.dll")
+#endif
+#else
+#define NATIVE_SYMBOL_READER_DLL W("diasymreader.dll")
+#endif
 
 typedef DPTR(PersistentInlineTrackingMap) PTR_PersistentInlineTrackingMap;
 
