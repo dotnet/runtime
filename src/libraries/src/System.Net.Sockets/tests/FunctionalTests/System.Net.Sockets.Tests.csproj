@@ -86,6 +86,9 @@
     <Compile Include="$(CommonTestPath)\System\Net\Capability.Sockets.cs">
       <Link>Common\System\Net\Capability.Sockets.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\ShouldNotBeInvokedException.cs">
+      <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\Sockets\SocketAPMExtensions.cs">
       <Link>Common\System\Net\Sockets\SocketAPMExtensions.cs</Link>
     </Compile>

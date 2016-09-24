@@ -361,7 +361,7 @@ namespace System.Net.Sockets.Tests
 
         public void CallbackThatShouldNotBeCalled(object sender, SocketAsyncEventArgs args)
         {
-            Assert.True(false, "This Callback should not be called");
+            throw new ShouldNotBeInvokedException();
         }
 
         [OuterLoop] // TODO: Issue #11345
