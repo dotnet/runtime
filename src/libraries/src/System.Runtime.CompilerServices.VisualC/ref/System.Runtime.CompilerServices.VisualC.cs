@@ -32,6 +32,9 @@ namespace System.Runtime.CompilerServices
     public static partial class IsBoxed
     {
     }
+    public static partial class IsConst
+    {
+    }
     public static partial class IsByValue
     {
     }
@@ -70,4 +73,19 @@ namespace System.Runtime.CompilerServices
         public RequiredAttributeAttribute(System.Type requiredContract) { }
         public System.Type RequiredContract { get { return default(System.Type); } }
     }
+    public static partial class IsPinned
+    {
+    }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(8))]
+    public sealed partial class HasCopySemanticsAttribute : System.Attribute
+    {
+        public HasCopySemanticsAttribute() { }
+    }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(16))]
+    public sealed partial class ScopelessEnumAttribute : System.Attribute
+    {
+        public ScopelessEnumAttribute() { }
+    }
+    
+    
 }
