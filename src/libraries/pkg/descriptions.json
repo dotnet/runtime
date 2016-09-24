@@ -963,6 +963,13 @@
         ]
     },
     {
+        "Name": "System.Net.WebProxy",
+        "Description": "Provides the System.Net.WebProxy class, which supports sending data to and receiving data from a resource identified by a URI.",
+        "CommonTypes": [
+            "System.Net.WebProxy"
+        ]
+    },
+    {
         "Name": "System.Net.WebSockets",
         "Description": "Provides the System.Net.WebSockets.WebSocket abstract class and related types to allow developers to implement the WebSocket protocol (RFC 6455). WebSockets provide full-duplex communication over a single TCP connection.",
         "CommonTypes": [
