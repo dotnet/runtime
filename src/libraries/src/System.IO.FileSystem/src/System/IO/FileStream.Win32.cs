@@ -11,19 +11,12 @@ namespace System.IO
     {
         public FileStream(Microsoft.Win32.SafeHandles.SafeFileHandle handle, FileAccess access, int bufferSize)
         {
-            this._innerStream = new Win32FileStream(handle, access, bufferSize, this);
+            _innerStream = new Win32FileStream(handle, access, bufferSize, this);
         }
 
         public FileStream(Microsoft.Win32.SafeHandles.SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
         {
-            this._innerStream = new Win32FileStream(handle, access, bufferSize, isAsync, this);
-        }
-
-        static partial void ValidatePath(string fullPath, string paramName)
-        {
-            // Prevent access to your disk drives as raw block devices.
-            if (fullPath.StartsWith("\\\\.\\", StringComparison.Ordinal))
-                throw new ArgumentException(SR.Arg_DevicesNotSupported, paramName);
+            _innerStream = new Win32FileStream(handle, access, bufferSize, isAsync, this);
         }
     }
 }

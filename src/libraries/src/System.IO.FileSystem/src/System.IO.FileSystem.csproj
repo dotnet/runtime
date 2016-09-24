@@ -87,7 +87,7 @@
     </Compile>
   </ItemGroup>
   <!-- .NET Standard 1.7 -->
-  <ItemGroup Condition="'$(PackageTargetFramework)' == 'netstandard1.7' and '$(TargetGroup)' != 'net46' and '$(TargetGroup)' != 'net463'" >
+  <ItemGroup Condition="'$(TargetGroup)' == ''" >
     <Compile Include="System\IO\FileStreamBase.NetStandard17.cs" />
     <Compile Include="System\IO\FileStream.NetStandard17.cs" />
   </ItemGroup>
