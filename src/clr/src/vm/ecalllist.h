@@ -1567,11 +1567,9 @@ FCFuncStart(gGCInterfaceFuncs)
     FCFuncElement("_GetAllocatedBytesForCurrentThread", GCInterface::GetAllocatedBytesForCurrentThread)
 FCFuncEnd()
 
-#ifndef FEATURE_CORECLR
 FCFuncStart(gMemoryFailPointFuncs)
     FCFuncElement("GetMemorySettings", COMMemoryFailPoint::GetMemorySettings)
 FCFuncEnd()
-#endif // FEATURE_CORECLR
 
 FCFuncStart(gInteropMarshalFuncs)
     FCFuncElement("GetLastWin32Error", MarshalNative::GetLastWin32Error)
@@ -2256,9 +2254,7 @@ FCClassElement("Math", "System", gMathFuncs)
 #ifdef MDA_SUPPORTED 
 FCClassElement("Mda", "System", gMda)
 #endif
-#ifndef FEATURE_CORECLR
 FCClassElement("MemoryFailPoint", "System.Runtime", gMemoryFailPointFuncs)
-#endif // FEATURE_CORECLR
 #ifdef FEATURE_REMOTING    
 FCClassElement("Message", "System.Runtime.Remoting.Messaging", gMessageFuncs)
 #endif    
