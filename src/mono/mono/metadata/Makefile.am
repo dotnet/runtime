@@ -225,7 +225,6 @@ common_sources = \
 	handle.c	\
 	handle.h	\
 	w32mutex.h	\
-	w32mutex-utils.h	\
 	w32semaphore.h	\
 	w32event.h	\
 	w32handle-namespace.h	\
