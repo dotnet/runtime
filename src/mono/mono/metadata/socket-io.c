@@ -1787,7 +1787,7 @@ Socket_to_SOCKET (MonoObject *sockobj)
 	MonoSafeHandle *safe_handle;
 	MonoClassField *field;
 	
-	field = mono_class_get_field_from_name (sockobj->vtable->klass, "safe_handle");
+	field = mono_class_get_field_from_name (sockobj->vtable->klass, "m_Handle");
 	safe_handle = ((MonoSafeHandle *)(*(gpointer *)(((char *)sockobj) + field->offset)));
 
 	if (safe_handle == NULL)
