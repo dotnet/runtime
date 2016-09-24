@@ -8,14 +8,93 @@
 
 namespace System
 {
-   public partial class AppDomain
-   {
-       private AppDomain() {}
-       public static AppDomain CurrentDomain { get { return default(AppDomain); } }
-       public string BaseDirectory { get { return default(string); } }
-       public string RelativeSearchPath { get { return default(string); } }
-       public event System.UnhandledExceptionEventHandler UnhandledException { add { } remove { } } 
-   }
+    public partial class AppDomain : System.MarshalByRefObject
+    {
+        private AppDomain() { }
+        public static AppDomain CurrentDomain { get { return default(AppDomain); } }
+        public string BaseDirectory { get { return default(string); } }
+        public string RelativeSearchPath { get { return default(string); } }
+        public event System.UnhandledExceptionEventHandler UnhandledException { add { } remove { } }
+        public string DynamicDirectory { get { throw null; } }
+        public string FriendlyName { get { throw null; } }
+        public int Id { get { throw null; } }
+        public bool IsFullyTrusted { get { throw null; } }
+        public bool IsHomogenous { get { throw null; } }
+        public static bool MonitoringIsEnabled { get { throw null; } set { } }
+        public long MonitoringSurvivedMemorySize { get { throw null; } }
+        public static long MonitoringSurvivedProcessMemorySize { get { throw null; } }
+        public long MonitoringTotalAllocatedMemorySize { get { throw null; } }
+        public System.TimeSpan MonitoringTotalProcessorTime { get { throw null; } }
+        public event System.AssemblyLoadEventHandler AssemblyLoad { add { } remove { } }
+        public event System.ResolveEventHandler AssemblyResolve { add { } remove { } }
+        public event System.EventHandler DomainUnload { add { } remove { } }
+        public event System.EventHandler<System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs> FirstChanceException { add { } remove { } }
+        public event System.EventHandler ProcessExit { add { } remove { } }
+        public event System.ResolveEventHandler ResourceResolve { add { } remove { } }
+        public event System.ResolveEventHandler TypeResolve { add { } remove { } }
+        public string ApplyPolicy(string assemblyName) { throw null; }
+        public static System.AppDomain CreateDomain(string friendlyName) { throw null; }
+        public int ExecuteAssembly(string assemblyFile) { throw null; }
+        public int ExecuteAssembly(string assemblyFile, string[] args) { throw null; }
+        public int ExecuteAssembly(string assemblyFile, string[] args, byte[] hashValue, System.Configuration.Assemblies.AssemblyHashAlgorithm hashAlgorithm) { throw null; }
+        public int ExecuteAssemblyByName(System.Reflection.AssemblyName assemblyName, params string[] args) { throw null; }
+        public int ExecuteAssemblyByName(string assemblyName) { throw null; }
+        public int ExecuteAssemblyByName(string assemblyName, params string[] args) { throw null; }
+        public System.Reflection.Assembly[] GetAssemblies() { throw null; }
+        [Obsolete("AppDomain.GetCurrentThreadId has been deprecated because it does not provide a stable Id when managed threads are running on fibers (aka lightweight threads). To get a stable identifier for a managed thread, use the ManagedThreadId property on Thread.  http://go.microsoft.com/fwlink/?linkid=14202", false)]
+        public static int GetCurrentThreadId() { throw null; }
+        public object GetData(string name) { throw null; }
+        public System.Nullable<bool> IsCompatibilitySwitchSet(string value) { throw null; }
+        public bool IsDefaultAppDomain() { throw null; }
+        public bool IsFinalizingForUnload() { throw null; }
+        public System.Reflection.Assembly Load(byte[] rawAssembly) { throw null; }
+        public System.Reflection.Assembly Load(byte[] rawAssembly, byte[] rawSymbolStore) { throw null; }
+        public System.Reflection.Assembly Load(System.Reflection.AssemblyName assemblyRef) { throw null; }
+        public System.Reflection.Assembly Load(string assemblyString) { throw null; }
+        public System.Reflection.Assembly[] ReflectionOnlyGetAssemblies() { throw null; }
+        public void SetData(string name, object data) { }
+        //public void SetPrincipalPolicy(System.Security.Principal.PrincipalPolicy policy) { }
+        //public void SetThreadPrincipal(System.Security.Principal.IPrincipal principal) { }
+        public override string ToString() { throw null; }
+        public static void Unload(System.AppDomain domain) { }
+        public bool ShadowCopyFiles { get { throw null; } }
+        [Obsolete("AppDomain.AppendPrivatePath has been deprecated.")]
+        public void AppendPrivatePath(string path) { }
+        [Obsolete("AppDomain.ClearPrivatePath has been deprecated.")]
+        public void ClearPrivatePath() { }
+        [Obsolete("AppDomain.ClearShadowCopyPath has been deprecated.")]
+        public void ClearShadowCopyPath() { }
+        [Obsolete("AppDomain.SetCachePath has been deprecated.")]
+        public void SetCachePath(string path) { }
+        [Obsolete("AppDomain.SetShadowCopyFiles has been deprecated.")]
+        public void SetShadowCopyFiles() { }
+        [Obsolete("AppDomain.SetShadowCopyPath has been deprecated.")]
+        public void SetShadowCopyPath(string path) { }
+    }
+
+    public delegate System.Reflection.Assembly ResolveEventHandler(Object sender, ResolveEventArgs args);
+    public delegate void AssemblyLoadEventHandler(Object sender, AssemblyLoadEventArgs args);
+
+    public class AssemblyLoadEventArgs : EventArgs
+    {
+        public System.Reflection.Assembly LoadedAssembly { get { throw null; } }
+        public AssemblyLoadEventArgs(System.Reflection.Assembly loadedAssembly) { }
+    }
+
+    public partial class AppDomainUnloadedException : System.SystemException
+    {
+        public AppDomainUnloadedException() { }
+        protected AppDomainUnloadedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public AppDomainUnloadedException(string message) { }
+        public AppDomainUnloadedException(string message, System.Exception innerException) { }
+    }
+    public partial class CannotUnloadAppDomainException : System.SystemException
+    {
+        public CannotUnloadAppDomainException() { }
+        protected CannotUnloadAppDomainException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public CannotUnloadAppDomainException(string message) { }
+        public CannotUnloadAppDomainException(string message, System.Exception innerException) { }
+    }
 
     [Flags]
     public enum Base64FormattingOptions
@@ -519,7 +598,7 @@ namespace System
         public static System.Version Version { get { return default(System.Version); } }
         public static long WorkingSet { get { return default(long); } }
         public static string ExpandEnvironmentVariables(string name) { return default(string); }
-        public static void Exit(int exitCode) {}
+        public static void Exit(int exitCode) { }
         [System.Security.SecurityCriticalAttribute]
         public static void FailFast(string message) { }
         [System.Security.SecurityCriticalAttribute]
@@ -860,7 +939,7 @@ namespace System.Runtime.Versioning
         public static bool operator !=(System.Runtime.Versioning.FrameworkName left, System.Runtime.Versioning.FrameworkName right) { return default(bool); }
         public override string ToString() { return default(string); }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(5887), AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(5887), AllowMultiple = false, Inherited = false)]
     public sealed partial class ComponentGuaranteesAttribute : System.Attribute
     {
         public ComponentGuaranteesAttribute(System.Runtime.Versioning.ComponentGuaranteesOptions guarantees) { }
@@ -874,7 +953,7 @@ namespace System.Runtime.Versioning
         SideBySide = 4,
         Stable = 2,
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(224), Inherited=false)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(224), Inherited = false)]
     [System.Diagnostics.ConditionalAttribute("RESOURCE_ANNOTATION_WORK")]
     public sealed partial class ResourceConsumptionAttribute : System.Attribute
     {
@@ -883,7 +962,7 @@ namespace System.Runtime.Versioning
         public System.Runtime.Versioning.ResourceScope ConsumptionScope { get { throw null; } }
         public System.Runtime.Versioning.ResourceScope ResourceScope { get { throw null; } }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(480), Inherited=false)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(480), Inherited = false)]
     [System.Diagnostics.ConditionalAttribute("RESOURCE_ANNOTATION_WORK")]
     public sealed partial class ResourceExposureAttribute : System.Attribute
     {

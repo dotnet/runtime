@@ -34,6 +34,8 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net462' And '$(TargetGroup)' != 'net463'">
     <Compile Include="System\AppDomain.cs" />
+    <Compile Include="System\AppDomainUnloadedException.cs" />
+    <Compile Include="System\CannotUnloadAppDomainException.cs" />
     <Compile Include="System\BitConverter.cs" />
     <Compile Include="System\Diagnostics\Stopwatch.cs" />
     <Compile Include="System\Environment.cs" />

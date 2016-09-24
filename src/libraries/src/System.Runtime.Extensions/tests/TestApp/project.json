@@ -1,0 +1,13 @@
+{
+  "dependencies": {
+    "Microsoft.NETCore.Platforms": "1.0.2-beta-24604-02",
+    "System.Runtime": "4.3.0-beta-24604-02",
+    "System.Runtime.Extensions": "4.3.0-beta-24604-02",
+    "System.Reflection": "4.3.0-beta-24604-02",
+    "System.Threading.Thread": "4.3.0-beta-24604-02"
+  },
+  "frameworks": {
+    ".NETCoreApp,Version=v1.0": {},
+    "netstandard1.3": {}
+  }
+}

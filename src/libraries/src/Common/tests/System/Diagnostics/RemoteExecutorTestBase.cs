@@ -144,18 +144,20 @@ namespace System.Diagnostics
             // Return the handle to the process, which may or not be started
             return new RemoteInvokeHandle(options.Start ?
                 Process.Start(psi) :
-                new Process() { StartInfo = psi });
+                new Process() { StartInfo = psi }, options);
         }
 
         /// <summary>A cleanup handle to the Process created for the remote invocation.</summary>
         internal sealed class RemoteInvokeHandle : IDisposable
         {
-            public RemoteInvokeHandle(Process process)
+            public RemoteInvokeHandle(Process process, RemoteInvokeOptions options)
             {
                 Process = process;
+                Options = options;
             }
 
             public Process Process { get; private set; }
+            public RemoteInvokeOptions Options { get; private set; }
 
             public void Dispose()
             {
@@ -166,7 +168,8 @@ namespace System.Diagnostics
                     try
                     {
                         Assert.True(Process.WaitForExit(FailWaitTimeoutMilliseconds));
-                        Assert.Equal(SuccessExitCode, Process.ExitCode);
+                        if (Options.CheckExitCode)
+                            Assert.Equal(SuccessExitCode, Process.ExitCode);
                     }
                     finally
                     {
@@ -188,5 +191,6 @@ namespace System.Diagnostics
         public bool Start { get; set; } = true;
         public ProcessStartInfo StartInfo { get; set; } = new ProcessStartInfo();
         public bool EnableProfiling { get; set; } = true;
+        public bool CheckExitCode {get; set; } = true;
     }
 }
