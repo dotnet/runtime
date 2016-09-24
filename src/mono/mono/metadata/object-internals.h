@@ -1801,9 +1801,6 @@ void
 ves_icall_EnumBuilder_setup_enum_type (MonoReflectionType *enumtype,
 									   MonoReflectionType *t);
 
-MonoReflectionType*
-ves_icall_ModuleBuilder_create_modified_type (MonoReflectionTypeBuilder *tb, MonoString *smodifiers);
-
 void
 ves_icall_ModuleBuilder_basic_init (MonoReflectionModuleBuilder *moduleb);
 
