@@ -37,7 +37,6 @@ namespace System.Text.Encodings.Tests
         }
 
         [Fact]
-        [ActiveIssue(11858, Xunit.PlatformID.AnyUnix)]
         public static void DefaultEncodingTest()
         {
             Encoding enc = (Encoding) Encoding.Default.Clone();
@@ -46,7 +45,6 @@ namespace System.Text.Encodings.Tests
         }
 
         [Fact]
-        [ActiveIssue(11858, Xunit.PlatformID.AnyUnix)]
         public static void GetEncodingsTest()
         {
             EncodingInfo [] encodingList = Encoding.GetEncodings();
@@ -60,7 +58,6 @@ namespace System.Text.Encodings.Tests
         }
 
         [Theory]
-        [ActiveIssue(11858, Xunit.PlatformID.AnyUnix)]
         [MemberData(nameof(Encoding_TestData))]
         public static void NormalizationTest(int codepage, string name, string bodyName, string headerName, bool isBrowserDisplay, 
                                             bool isBrowserSave, bool isMailNewsDisplay, bool isMailNewsSave, int windowsCodePage)
@@ -77,7 +74,6 @@ namespace System.Text.Encodings.Tests
         }
 
         [Theory]
-        [ActiveIssue(11858, Xunit.PlatformID.AnyUnix)]
         [MemberData(nameof(Normalization_TestData))]
         public static void NormalizationTest(int codepage, bool normalized, bool normalizedC, bool normalizedD, bool normalizedKC, bool normalizedKD)
         {
