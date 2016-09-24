@@ -2847,12 +2847,32 @@ namespace System
 
 namespace System.Runtime.ConstrainedExecution
 {
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public abstract partial class CriticalFinalizerObject
     {
         [System.Security.SecuritySafeCriticalAttribute]
         protected CriticalFinalizerObject() { }
         ~CriticalFinalizerObject() { }
+    }
+    
+    public enum Cer
+    {
+        MayFail = 1,
+        None = 0,
+        Success = 2,
+    }
+    public enum Consistency
+    {
+        MayCorruptAppDomain = 1,
+        MayCorruptInstance = 2,
+        MayCorruptProcess = 0,
+        WillNotCorruptState = 3,
+    }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(1133), Inherited=false)]
+    internal sealed partial class ReliabilityContractAttribute : System.Attribute
+    {
+        public ReliabilityContractAttribute(System.Runtime.ConstrainedExecution.Consistency consistencyGuarantee, System.Runtime.ConstrainedExecution.Cer cer) { }
+        public System.Runtime.ConstrainedExecution.Cer Cer { get { return default(System.Runtime.ConstrainedExecution.Cer); } }
+        public System.Runtime.ConstrainedExecution.Consistency ConsistencyGuarantee { get { return default(System.Runtime.ConstrainedExecution.Consistency); } }
     }
 }
 
@@ -5449,9 +5469,13 @@ namespace System.Runtime.CompilerServices
     public enum MethodImplOptions
     {
         AggressiveInlining = 256,
+        ForwardRef = 16,
+        InternalCall = 4096,
         NoInlining = 8,
         NoOptimization = 64,
         PreserveSig = 128,
+        Synchronized = 32,
+        Unmanaged = 4,
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(1), AllowMultiple = false)]
     public sealed partial class ReferenceAssemblyAttribute : System.Attribute
@@ -5474,8 +5498,28 @@ namespace System.Runtime.CompilerServices
         public static object GetObjectValue(object obj) { return default(object); }
         public static void InitializeArray(System.Array array, System.RuntimeFieldHandle fldHandle) { }
         public static void RunClassConstructor(System.RuntimeTypeHandle type) { }
-    }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(64), Inherited = false, AllowMultiple = false)]
+        public static void RunModuleConstructor(System.ModuleHandle module) { }
+        public static void ExecuteCodeWithGuaranteedCleanup(System.Runtime.CompilerServices.RuntimeHelpers.TryCode code, System.Runtime.CompilerServices.RuntimeHelpers.CleanupCode backoutCode, object userData) { }
+        [System.Security.SecurityCriticalAttribute]
+        public delegate void CleanupCode(object userData, bool exceptionThrown);
+        [System.Security.SecurityCriticalAttribute]
+        public delegate void TryCode(object userData);
+        [System.Runtime.ConstrainedExecution.ReliabilityContractAttribute((System.Runtime.ConstrainedExecution.Consistency)(3), (System.Runtime.ConstrainedExecution.Cer)(1))]
+        [System.Security.SecurityCriticalAttribute]
+        public static void PrepareConstrainedRegions() { }
+        [System.Runtime.ConstrainedExecution.ReliabilityContractAttribute((System.Runtime.ConstrainedExecution.Consistency)(3), (System.Runtime.ConstrainedExecution.Cer)(1))]
+        [System.Security.SecurityCriticalAttribute]
+        public static void PrepareConstrainedRegionsNoOP() { }
+        public static void PrepareContractedDelegate(System.Delegate d) { }
+        public static void PrepareDelegate(System.Delegate d) { }
+        [System.Security.SecurityCriticalAttribute]
+        public static void PrepareMethod(System.RuntimeMethodHandle method) { }
+        [System.Security.SecurityCriticalAttribute]
+        public static void PrepareMethod(System.RuntimeMethodHandle method, System.RuntimeTypeHandle[] instantiation) { }
+        [System.Security.SecurityCriticalAttribute]
+        public static void ProbeForSufficientStack() { }
+   }
+   [System.AttributeUsageAttribute((System.AttributeTargets)(64), Inherited = false, AllowMultiple = false)]
     public partial class StateMachineAttribute : System.Attribute
     {
         public StateMachineAttribute(System.Type stateMachineType) { }
@@ -5510,6 +5554,47 @@ namespace System.Runtime.CompilerServices
     {
         public UnsafeValueTypeAttribute() { }
     }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(4))]
+    public partial class CompilerGlobalScopeAttribute : System.Attribute
+    {
+        public CompilerGlobalScopeAttribute() { }
+    }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(1))]
+    public sealed partial class DefaultDependencyAttribute : System.Attribute
+    {
+        public DefaultDependencyAttribute(System.Runtime.CompilerServices.LoadHint loadHintArgument) { }
+        public System.Runtime.CompilerServices.LoadHint LoadHint { get { return default(System.Runtime.CompilerServices.LoadHint); } }
+    }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(1), AllowMultiple=true)]
+    public sealed partial class DependencyAttribute : System.Attribute
+    {
+        public DependencyAttribute(string dependentAssemblyArgument, System.Runtime.CompilerServices.LoadHint loadHintArgument) { }
+        public string DependentAssembly { get { return default(string); } }
+        public System.Runtime.CompilerServices.LoadHint LoadHint { get { return default(System.Runtime.CompilerServices.LoadHint); } }
+    }
+    public partial class DiscardableAttribute : System.Attribute
+    {
+        public DiscardableAttribute() { }
+    }
+    public enum LoadHint 
+    {
+        Always = 1,
+        Default = 0,
+        Sometimes = 2,
+    }
+    
+    public sealed partial class RuntimeWrappedException : System.Exception
+    {
+        internal RuntimeWrappedException() { }
+        public object WrappedException { get { return default(object); } }
+        [System.Security.SecurityCriticalAttribute]
+        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+    }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(1), Inherited=false)]
+    public sealed partial class StringFreezingAttribute : System.Attribute
+    {
+        public StringFreezingAttribute() { }
+    }
 }
 namespace System.Runtime.ExceptionServices
 {
@@ -5519,6 +5604,11 @@ namespace System.Runtime.ExceptionServices
         public System.Exception SourceException { get { return default(System.Exception); } }
         public static System.Runtime.ExceptionServices.ExceptionDispatchInfo Capture(System.Exception source) { return default(System.Runtime.ExceptionServices.ExceptionDispatchInfo); }
         public void Throw() { }
+    }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(64), AllowMultiple=false, Inherited=false)]
+    public sealed partial class HandleProcessCorruptedStateExceptionsAttribute : System.Attribute
+    {
+        public HandleProcessCorruptedStateExceptionsAttribute() { }
     }
 }
 namespace System.Runtime.InteropServices
@@ -6043,7 +6133,6 @@ namespace System.Text
         public virtual bool IsBrowserSave { get { return default(bool); } }
         public virtual bool IsMailNewsDisplay { get { return default(bool); } }
         public virtual bool IsMailNewsSave { get { return default(bool); } }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public bool IsReadOnly { get { return default(bool); } }
         public virtual bool IsSingleByte { get { return default(bool); } }
         public static System.Text.Encoding Unicode { get { return default(System.Text.Encoding); } }
@@ -6097,9 +6186,7 @@ namespace System.Text
         public unsafe string GetString(byte* bytes, int byteCount) { return default(string); }
         public virtual string GetString(byte[] bytes) { return default(string); }
         public virtual string GetString(byte[] bytes, int index, int count) { return default(string); }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public bool IsAlwaysNormalized() { return default(bool); }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public virtual bool IsAlwaysNormalized(System.Text.NormalizationForm form) { return default(bool); }
         [System.Security.SecurityCriticalAttribute]
         public static void RegisterProvider(System.Text.EncodingProvider provider) { }
@@ -6122,7 +6209,6 @@ namespace System.Text
         public abstract System.Text.Encoding GetEncoding(string name);
         public virtual System.Text.Encoding GetEncoding(string name, System.Text.EncoderFallback encoderFallback, System.Text.DecoderFallback decoderFallback) { return default(System.Text.Encoding); }
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public enum NormalizationForm
     {
         FormC = 1,
