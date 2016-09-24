@@ -4280,7 +4280,11 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
             // On desktop, the framework installer is supposed to install diasymreader.dll as well
             // and so this shouldn't happen.
             hr = FakeCoCreateInstanceEx(CLSID_CorSymBinder_SxS,
+#ifdef FEATURE_CORECLR
+                                        NATIVE_SYMBOL_READER_DLL,
+#else
                                         GetInternalSystemDirectory(),
+#endif
                                         IID_ISymUnmanagedBinder,
                                         (void**)&pBinder,
                                         NULL);
