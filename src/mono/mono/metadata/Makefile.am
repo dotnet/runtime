@@ -101,6 +101,7 @@ null_gc_sources = \
 common_sources = \
 	$(platform_sources)	\
 	assembly.c		\
+	assembly-internals.h	\
 	attach.h		\
 	attach.c		\
 	cil-coff.h		\
