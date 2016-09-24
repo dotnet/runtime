@@ -39,6 +39,7 @@
     "System.Threading.Tasks.Parallel": "4.0.1",
     "System.Threading.Thread": "4.0.0",
     "System.Threading.ThreadPool": "4.0.10",
+    "Microsoft.DiaSymReader.Native": "1.4.0",
     "Libuv": "1.9.0"
   },
   "frameworks": {
