@@ -2799,7 +2799,7 @@ namespace System {
             //! Warning: "this" is an array, not an SZArrayHelper. See comments above
             //! or you may introduce a security hole!
             T[] _this = JitHelpers.UnsafeCast<T[]>(this);
-            return Array.IndexOf(_this, value) != -1;
+            return Array.IndexOf(_this, value, 0, _this.Length) >= 0;
         }
         
         bool get_IsReadOnly<T>() {
@@ -2818,7 +2818,7 @@ namespace System {
             //! Warning: "this" is an array, not an SZArrayHelper. See comments above
             //! or you may introduce a security hole!
             T[] _this = JitHelpers.UnsafeCast<T[]>(this);
-            return Array.IndexOf(_this, value);
+            return Array.IndexOf(_this, value, 0, _this.Length);
         }
         
         void Insert<T>(int index, T value) {
