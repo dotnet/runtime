@@ -27,7 +27,7 @@ namespace System.Net.Tests
         private int _responseCallbackCallCount = 0;
         private readonly ITestOutputHelper _output;
 
-        public readonly static object[][] EchoServers = Configuration.Http.EchoServers;
+        public readonly static object[][] EchoServers = System.Net.Test.Common.Configuration.Http.EchoServers;
 
         public HttpWebRequestTest(ITestOutputHelper output)
         {
@@ -333,7 +333,7 @@ namespace System.Net.Tests
             {
                 strContent = sr.ReadToEnd();
             }
-            Assert.True(strContent.Contains("\"Host\": \"" + Configuration.Http.Host + "\""));
+            Assert.True(strContent.Contains("\"Host\": \"" + System.Net.Test.Common.Configuration.Http.Host + "\""));
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -375,8 +375,8 @@ namespace System.Net.Tests
         }
 
         public static object[][] StatusCodeServers = {
-            new object[] { Configuration.Http.StatusCodeUri(false, 404) },
-            new object[] { Configuration.Http.StatusCodeUri(true, 404) },
+            new object[] { System.Net.Test.Common.Configuration.Http.StatusCodeUri(false, 404) },
+            new object[] { System.Net.Test.Common.Configuration.Http.StatusCodeUri(true, 404) },
         };
 
         [Theory, MemberData(nameof(StatusCodeServers))]
