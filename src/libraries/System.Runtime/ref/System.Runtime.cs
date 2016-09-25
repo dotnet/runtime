@@ -5079,6 +5079,7 @@ namespace System.Reflection
     [System.CLSCompliantAttribute(false)]
     public sealed class Pointer : System.Runtime.Serialization.ISerializable
     {
+        private Pointer() { }    
         [System.Security.SecurityCriticalAttribute]
         public static unsafe object Box(void* ptr, System.Type type) { return default(object); }
         [System.Security.SecurityCriticalAttribute]
