@@ -476,7 +476,151 @@ namespace System {
       public static Decimal Min(Decimal val1, Decimal val2) {
         return Decimal.Min(val1,val2);
       }
-    
+
+        /*=====================================Clamp====================================
+        **
+        ==============================================================================*/
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Byte Clamp(Byte value, Byte min, Byte max)
+        {
+            if (min > max)
+                ThrowMinMaxException(min, max);
+            if (value < min)
+                return min;
+            else if (value > max)
+                return max;
+            return value;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Decimal Clamp(Decimal value, Decimal min, Decimal max)
+        {
+            if (min > max)
+                ThrowMinMaxException(min, max);
+            if (value < min)
+                return min;
+            else if (value > max)
+                return max;
+            return value;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Double Clamp(Double value, Double min, Double max)
+        {
+            if (min > max)
+                ThrowMinMaxException(min, max);
+            if (value < min)
+                return min;
+            else if (value > max)
+                return max;
+            return value;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Int16 Clamp(Int16 value, Int16 min, Int16 max)
+        {
+            if (min > max)
+                ThrowMinMaxException(min, max);
+            if (value < min)
+                return min;
+            else if (value > max)
+                return max;
+            return value;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Int32 Clamp(Int32 value, Int32 min, Int32 max)
+        {
+            if (min > max)
+                ThrowMinMaxException(min, max);
+            if (value < min)
+                return min;
+            else if (value > max)
+                return max;
+            return value;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Int64 Clamp(Int64 value, Int64 min, Int64 max)
+        {
+            if (min > max)
+                ThrowMinMaxException(min, max);
+            if (value < min)
+                return min;
+            else if (value > max)
+                return max;
+            return value;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static SByte Clamp(SByte value, SByte min, SByte max)
+        {
+            if (min > max)
+                ThrowMinMaxException(min, max);
+            if (value < min)
+                return min;
+            else if (value > max)
+                return max;
+            return value;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Single Clamp(Single value, Single min, Single max)
+        {
+            if (min > max)
+                ThrowMinMaxException(min, max);
+            if (value < min)
+                return min;
+            else if (value > max)
+                return max;
+            return value;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static UInt16 Clamp(UInt16 value, UInt16 min, UInt16 max)
+        {
+            if (min > max)
+                ThrowMinMaxException(min, max);
+            if (value < min)
+                return min;
+            else if (value > max)
+                return max;
+            return value;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static UInt32 Clamp(UInt32 value, UInt32 min, UInt32 max)
+        {
+            if (min > max)
+                ThrowMinMaxException(min, max);
+            if (value < min)
+                return min;
+            else if (value > max)
+                return max;
+            return value;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static UInt64 Clamp(UInt64 value, UInt64 min, UInt64 max)
+        {
+            if (min > max)
+                ThrowMinMaxException(min, max);
+            if (value < min)
+                return min;
+            else if (value > max)
+                return max;
+            return value;
+        }
+
+        private static void ThrowMinMaxException<T>(T min, T max)
+        {
+            throw new ArgumentException(Environment.GetResourceString("Argument_MinMaxValue", min, max));
+        }
+
       /*=====================================Log======================================
       **
       ==============================================================================*/

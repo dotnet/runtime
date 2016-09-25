@@ -3585,6 +3585,17 @@
       <Member Name="BigMul(System.Int32,System.Int32)" />
       <Member Name="Ceiling(System.Decimal)"  />
       <Member Name="Ceiling(System.Double)"/>
+      <Member Name="Clamp(System.Byte,System.Byte,System.Byte)" />
+      <Member Name="Clamp(System.Decimal,System.Decimal,System.Decimal)" />
+      <Member Name="Clamp(System.Double,System.Double,System.Double)" />
+      <Member Name="Clamp(System.Int16,System.Int16,System.Int16)" />
+      <Member Name="Clamp(System.Int32,System.Int32,System.Int32)" />
+      <Member Name="Clamp(System.Int64,System.Int64,System.Int64)" />
+      <Member Name="Clamp(System.SByte,System.SByte,System.SByte)" />
+      <Member Name="Clamp(System.Single,System.Single,System.Single)" />
+      <Member Name="Clamp(System.UInt16,System.UInt16,System.UInt16)" />
+      <Member Name="Clamp(System.UInt32,System.UInt32,System.UInt32)" />
+      <Member Name="Clamp(System.UInt64,System.UInt64,System.UInt64)" />
       <Member Name="Cos(System.Double)" />
       <Member Name="Cosh(System.Double)" />
       <Member Name="DivRem(System.Int32,System.Int32,System.Int32@)" />
