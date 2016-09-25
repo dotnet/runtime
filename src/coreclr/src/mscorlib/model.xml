@@ -8467,6 +8467,9 @@
       <Member Name="get_IsPrimitive" />
       <Member Name="get_IsPublic" />
       <Member Name="get_IsSealed" />
+      <Member Name="get_IsSecurityCritical" />
+      <Member Name="get_IsSecuritySafeCritical" />
+      <Member Name="get_IsSecurityTransparent" />      
       <Member Name="get_IsSerializable" />
       <Member Name="get_IsSpecialName" />
       <Member Name="get_IsUnicodeClass" />
