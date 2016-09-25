@@ -15,7 +15,9 @@ namespace System.Net.Tests
         [Theory]
         [InlineData("text/html")]
         [InlineData("text/html; charset=utf-8")]
+#if netstandard17 // Depends on a bug fix made for 1.1 release.  Can be un-ifdef'd once an updated package is available on NuGet
         [InlineData("TypeAndNoSubType")]
+#endif
         public async Task ContentType_ServerResponseHasContentTypeHeader_ContentTypeReceivedCorrectly(string expectedContentType)
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
