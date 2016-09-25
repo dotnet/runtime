@@ -114,7 +114,7 @@ export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
 echo "Restoring Build Script projects..."
 (
     cd "$DIR/.."
-    dotnet restore --infer-runtimes
+    dotnet restore --infer-runtimes --disable-parallel
 )
 
 # Build the builder
