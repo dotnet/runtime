@@ -6,7 +6,7 @@
       <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="System.Net.WebSockets.Client.Tests.csproj">
-      <TestTFMs>netcoreapp1.0;net46</TestTFMs>
+      <TestTFMs>netcore50;netcoreapp1.0;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
     </Project>
   </ItemGroup>
