@@ -73,9 +73,8 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        private static string Serialize(ReadOnlyCollection<string> payloadName, ReadOnlyCollection<object> payload, string sep = ", ")
+        private static string Serialize(ReadOnlyCollection<string> payloadName, ReadOnlyCollection<object> payload, string eventMessage)
         {
-
             if (payloadName == null || payload == null )
                 return String.Empty;
 
@@ -92,6 +91,16 @@ namespace System.Diagnostics.Tracing
             var sb = StringBuilderCache.Acquire();
 
             sb.Append('{');
+
+            // If the event has a message, send that as well as a pseudo-field
+            if (!string.IsNullOrEmpty(eventMessage)) 
+            {
+                sb.Append("\\\"EventSource_Message\\\":\\\"");
+                minimalJsonserializer(eventMessage,sb);
+                sb.Append("\\\"");
+                sb.Append(", ");
+            }
+
             for (int i = 0; i < eventDataCount; i++)
             {
                 var fieldstr = payloadName[i].ToString();
@@ -114,8 +123,7 @@ namespace System.Diagnostics.Tracing
                     sb.Append(payload[i].ToString());
                 }
 
-                sb.Append(sep);
-
+                sb.Append(", ");
             }
 
              sb.Length -= sep.Length;
@@ -149,7 +157,7 @@ namespace System.Diagnostics.Tracing
             if (eventData.Payload != null)
             {
                 try{
-                    payload = Serialize(eventData.PayloadNames, eventData.Payload);
+                    payload = Serialize(eventData.PayloadNames, eventData.Payload, eventData.Message);
                 }
                 catch (Exception ex)
                 {
