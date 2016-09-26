@@ -103,7 +103,9 @@ class PersistentInlineTrackingMap;
 #elif defined(_TARGET_ARM_)
 #define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm.dll")
 #elif defined(_TARGET_ARM64_)
-#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm64.dll")
+// Use diasymreader until the package has an arm64 version - issue #7360
+//#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm64.dll")
+#define NATIVE_SYMBOL_READER_DLL W("diasymreader.dll")
 #endif
 #else
 #define NATIVE_SYMBOL_READER_DLL W("diasymreader.dll")
