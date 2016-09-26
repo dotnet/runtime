@@ -88,7 +88,7 @@ namespace System.Net.Sockets.Tests
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
-        public void ExclusiveAddressUse_NullClient()
+        public void ExclusiveAddressUse_NullClient_Windows()
         {
             using (TcpClient client = new TcpClient())
             {
@@ -100,13 +100,33 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
-        public void Roundtrip_ExclusiveAddressUse_GetEqualsSet()
+        [PlatformSpecific(~PlatformID.Windows)]
+        public void ExclusiveAddressUse_NullClient_NonWindows()
+        {
+            using (TcpClient client = new TcpClient())
+            {
+                client.Client = null;
+
+                Assert.True(client.ExclusiveAddressUse);
+            }
+        }
+
+        [Fact]
+        public void Roundtrip_ExclusiveAddressUse_GetEqualsSet_True()
         {
             using (TcpClient client = new TcpClient())
             {
                 client.ExclusiveAddressUse = true;
                 Assert.True(client.ExclusiveAddressUse);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void Roundtrip_ExclusiveAddressUse_GetEqualsSet_False()
+        {
+            using (TcpClient client = new TcpClient())
+            {
                 client.ExclusiveAddressUse = false;
                 Assert.False(client.ExclusiveAddressUse);
             }
@@ -115,14 +135,13 @@ namespace System.Net.Sockets.Tests
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         [PlatformSpecific(PlatformID.AnyUnix)]
-        public void ExclusiveAddressUse_NotSupported()
+        public void ExclusiveAddressUse_Set_False_NotSupported()
         {
             using (TcpClient client = new TcpClient())
             {
-                Assert.Throws<SocketException>(() => client.ExclusiveAddressUse);
                 Assert.Throws<SocketException>(() =>
                 {
-                    client.ExclusiveAddressUse = true;
+                    client.ExclusiveAddressUse = false;
                 });
             }
         }
