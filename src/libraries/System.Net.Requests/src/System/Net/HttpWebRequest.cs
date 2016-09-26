@@ -310,7 +310,7 @@ namespace System.Net
             return Task.FromResult((Stream)_requestStream);
         }
 
-        public override IAsyncResult BeginGetRequestStream(AsyncCallback callback, Object state)
+        public override IAsyncResult BeginGetRequestStream(AsyncCallback callback, object state)
         {
             CheckAbort();
 
