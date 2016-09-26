@@ -9,5 +9,12 @@
     <ProjectJson>../project.json</ProjectJson>
     <ProjectLockJson>../project.lock.json</ProjectLockJson>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(TestSourceFolder)..\..\System.Runtime.Serialization.Xml\tests\Utils.cs" />
+    <Compile Include="$(TestSourceFolder)..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />
+    <Compile Include="$(TestSourceFolder)..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.CoreCLR.cs" />
+    <Compile Include="$(TestSourceFolder)DataContractJsonSerializer.cs" />
+    <Compile Include="$(TestSourceFolder)DataContractJsonSerializer.CoreCLR.cs" />
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), System.Runtime.Serialization.Json.Tests.settings.targets))\System.Runtime.Serialization.Json.Tests.settings.targets" />
 </Project>
