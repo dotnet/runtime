@@ -40,6 +40,7 @@
   <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
     <Compile Include="AuthorizationTest.cs" />
     <Compile Include="AuthenticationManagerTest.cs" />
+    <Compile Include="FileWebRequestTest.cs" />
     <Compile Include="HttpRequestCachePolicyTest.cs" />
     <Compile Include="RequestCachePolicyTest.cs" />
     <Compile Include="ServicePointManagerTest.cs" />
