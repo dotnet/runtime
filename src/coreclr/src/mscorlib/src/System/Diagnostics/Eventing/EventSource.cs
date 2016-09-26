@@ -4927,7 +4927,7 @@ namespace System.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// Gets the message for the event.
+        /// Gets the message for the event.  If the message has {N} parameters they are NOT substituted.  
         /// </summary>
         public string Message
         {
