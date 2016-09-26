@@ -6994,6 +6994,25 @@
     </Type>
     <Type Name="System.Security.AllowPartiallyTrustedCallersAttribute">
       <Member Name="#ctor" />
+      <Member Name="get_PartialTrustVisibilityLevel" />
+      <Member Name="set_PartialTrustVisibilityLevel(System.Security.PartialTrustVisibilityLevel)" />
+      <Member MemberType="Property" Name="PartialTrustVisibilityLevel" />
+    </Type>
+    <Type Name="System.Security.PartialTrustVisibilityLevel">
+      <Member MemberType="Field" Name="NotVisibleByDefault" />
+      <Member MemberType="Field" Name="value__" />
+      <Member MemberType="Field" Name="VisibleToAllHosts" />
+    </Type>
+    <Type Name="System.Security.SecurityCriticalAttribute">
+      <Member Name="#ctor" />
+      <Member Name="#ctor(System.Security.SecurityCriticalScope)" />
+      <Member Name="get_Scope" />
+      <Member MemberType="Property" Name="Scope" />
+    </Type>
+    <Type Name="System.Security.SecurityCriticalScope">
+      <Member MemberType="Field" Name="Everything" />
+      <Member MemberType="Field" Name="Explicit" />
+      <Member MemberType="Field" Name="value__" />
     </Type>
     <Type Name="System.Security.SecurityException">
       <Member Name="#ctor" />
@@ -10601,17 +10620,34 @@
       <Member MemberType="Field" Name="None" />
       <Member MemberType="Field" Name="value__" />
     </Type>
-    <Type Name="System.Security.SecurityCriticalAttribute">
-      <Member Name="#ctor" />
-    </Type>
     <Type Status="ImplRoot" Name="System.Security.SecurityRuntime">
       <Member Name="FrameDescHelper(System.Security.FrameSecurityDescriptor,System.Security.IPermission,System.Security.PermissionToken,System.RuntimeMethodHandleInternal)" /> <!-- EE -->
       <Member Name="FrameDescSetHelper(System.Security.FrameSecurityDescriptor,System.Security.PermissionSet,System.Security.PermissionSet@,System.RuntimeMethodHandleInternal)" /> <!-- EE -->
     </Type>
+    <Type Name="System.Security.SecurityRulesAttribute">
+      <Member Name="#ctor(System.Security.SecurityRuleSet)" />
+      <Member Name="get_RuleSet" />
+      <Member Name="get_SkipVerificationInFullTrust" />
+      <Member Name="set_SkipVerificationInFullTrust(System.Boolean)" />
+      <Member MemberType="Property" Name="RuleSet" />
+      <Member MemberType="Property" Name="SkipVerificationInFullTrust" />
+    </Type>
+    <Type Name="System.Security.SecurityRuleSet">
+      <Member MemberType="Field" Name="Level1" />
+      <Member MemberType="Field" Name="Level2" />
+      <Member MemberType="Field" Name="None" />
+      <Member MemberType="Field" Name="value__" />
+    </Type>
+    <Type Name="System.Security.SecuritySafeCriticalAttribute">
+      <Member Name="#ctor" />
+    </Type>
     <Type Name="System.Security.SecurityTransparentAttribute">
       <Member Name="#ctor" />
     </Type>
-    <Type Name="System.Security.SecuritySafeCriticalAttribute" >
+    <Type Name="System.Security.SecurityTreatAsSafeAttribute">
+      <Member Name="#ctor" />
+    </Type>
+    <Type Name="System.Security.SuppressUnmanagedCodeSecurityAttribute">
       <Member Name="#ctor" />
     </Type>
     <Type Name="System.Security.UnverifiableCodeAttribute">
