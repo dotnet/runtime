@@ -51,7 +51,25 @@ The CoreFX cryptography libraries are built on OpenSSL. The version of OpenSSL i
 
 ```sh
 brew install openssl
-brew link --force openssl
+
+# We need to make the runtime libraries discoverable, as well as make
+# pkg-config be able to find the headers and current ABI version.
+#
+# Ensure the paths we will need exist
+mkdir -p /usr/local/lib/pkgconfig
+
+# The rest of these instructions assume a default Homebrew path of
+# /usr/local/opt/<module>, with /usr/local being the answer to
+# `brew --prefix`.
+#
+# Runtime dependencies
+ln -s /usr/local/opt/openssl/lib/libcrypto.1.0.0.dylib /usr/local/lib/
+ln -s /usr/local/opt/openssl/lib/libssl.1.0.0.dylib /usr/local/lib/
+
+# Compile-time dependences (for pkg-config)
+ln -s /usr/local/opt/openssl/lib/pkgconfig/libcrypto.pc /usr/local/lib/pkgconfig/
+ln -s /usr/local/opt/openssl/lib/pkgconfig/libssl.pc /usr/local/lib/pkgconfig/
+ln -s /usr/local/opt/openssl/lib/pkgconfig/openssl.pc /usr/local/lib/pkgconfig/
 ```
 
 Build the Runtime and Microsoft Core Library
