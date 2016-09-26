@@ -7,6 +7,7 @@
     "System.Net.WebHeaderCollection": "4.3.0-beta-24522-03",
     "System.Runtime": "4.3.0-beta-24522-03",
     "System.Security.Cryptography.X509Certificates": "4.3.0-beta-24522-03",
+    "System.Security.Principal": "4.3.0-beta-24522-03",
     "System.Threading.Tasks": "4.3.0-beta-24522-03"
   },
   "frameworks": {
