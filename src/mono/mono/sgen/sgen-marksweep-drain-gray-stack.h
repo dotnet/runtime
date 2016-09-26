@@ -142,7 +142,8 @@ COPY_OR_MARK_FUNCTION_NAME (GCObject **ptr, GCObject *obj, SgenGrayQueue *queue)
 
 		SGEN_ASSERT (9, !SGEN_VTABLE_IS_PINNED (vtable_word), "Pinned object in non-pinned block?");
 
-		desc = sgen_vtable_get_descriptor ((GCVTable)vtable_word);
+		/* We untag the vtable for concurrent M&S, in case bridge is running and it tagged it */
+		desc = sgen_vtable_get_descriptor ((GCVTable)SGEN_POINTER_UNTAG_VTABLE (vtable_word));
 		type = desc & DESC_TYPE_MASK;
 
 		if (sgen_safe_object_is_small (obj, type)) {
@@ -183,7 +184,7 @@ COPY_OR_MARK_FUNCTION_NAME (GCObject **ptr, GCObject *obj, SgenGrayQueue *queue)
 
 			sgen_los_pin_object (obj);
 			if (SGEN_OBJECT_HAS_REFERENCES (obj))
-				GRAY_OBJECT_ENQUEUE (queue, obj, sgen_obj_get_descriptor (obj));
+				GRAY_OBJECT_ENQUEUE (queue, obj, desc);
 		}
 		return FALSE;
 	}
