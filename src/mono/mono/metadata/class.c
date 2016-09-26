@@ -1132,6 +1132,15 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 	result->sre_method = FALSE;
 	result->signature = NULL;
 
+	if (method->wrapper_type) {
+		MonoMethodWrapper *mw = (MonoMethodWrapper*)method;
+		MonoMethodWrapper *resw = (MonoMethodWrapper*)result;
+		int len = GPOINTER_TO_INT (((void**)mw->method_data) [0]);
+
+		resw->method_data = (void **)g_malloc (sizeof (gpointer) * (len + 1));
+		memcpy (resw->method_data, mw->method_data, sizeof (gpointer) * (len + 1));
+	}
+
 	if (iresult->context.method_inst) {
 		/* Set the generic_container of the result to the generic_container of method */
 		MonoGenericContainer *generic_container = mono_method_get_generic_container (method);
@@ -1424,7 +1433,7 @@ mono_error_set_for_class_failure (MonoError *oerror, MonoClass *klass)
  *   Allocate memory for some data belonging to CLASS, either from its image's mempool,
  * or from the heap.
  */
-static gpointer
+gpointer
 mono_class_alloc (MonoClass *klass, int size)
 {
 	if (klass->generic_class)
@@ -1433,7 +1442,7 @@ mono_class_alloc (MonoClass *klass, int size)
 		return mono_image_alloc (klass->image, size);
 }
 
-static gpointer
+gpointer
 mono_class_alloc0 (MonoClass *klass, int size)
 {
 	gpointer res;

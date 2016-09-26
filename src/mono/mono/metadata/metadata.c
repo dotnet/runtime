@@ -2789,6 +2789,9 @@ free_inflated_method (MonoMethodInflated *imethod)
 	if (method->signature)
 		mono_metadata_free_inflated_signature (method->signature);
 
+	if (method->wrapper_type)
+		g_free (((MonoMethodWrapper*)method)->method_data);
+
 	g_free (method);
 }
 

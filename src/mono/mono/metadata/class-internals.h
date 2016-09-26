@@ -1350,6 +1350,12 @@ mono_class_get_generic_container (MonoClass *klass);
 MonoGenericClass*
 mono_class_get_generic_class (MonoClass *klass);
 
+gpointer
+mono_class_alloc (MonoClass *klass, int size);
+
+gpointer
+mono_class_alloc0 (MonoClass *klass, int size);
+
 void
 mono_class_alloc_ext (MonoClass *klass);
 
