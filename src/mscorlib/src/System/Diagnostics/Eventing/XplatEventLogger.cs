@@ -98,11 +98,15 @@ namespace System.Diagnostics.Tracing
                 sb.Append("\\\"EventSource_Message\\\":\\\"");
                 minimalJsonserializer(eventMessage,sb);
                 sb.Append("\\\"");
-                sb.Append(", ");
+                if (eventDataCount != 0)
+                    sb.Append(", ");
             }
 
             for (int i = 0; i < eventDataCount; i++)
             {
+                if (i != 0)
+                    sb.Append(", ");
+
                 var fieldstr = payloadName[i].ToString();
 
                 sb.Append("\\\"");
@@ -123,13 +127,9 @@ namespace System.Diagnostics.Tracing
                     sb.Append(payload[i].ToString());
                 }
 
-                sb.Append(", ");
             }
-
-             sb.Length -= sep.Length;
-             sb.Append('}');
-
-             return StringBuilderCache.GetStringAndRelease(sb);
+            sb.Append('}');
+            return StringBuilderCache.GetStringAndRelease(sb);
         }
 
         internal protected  override void OnEventSourceCreated(EventSource eventSource)
