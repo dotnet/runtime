@@ -15,6 +15,12 @@
 
 #include "gcenv.h"
 
+#ifdef FEATURE_STANDALONE_GC
+#include "gcenv.ee.h"
+#else
+#include "../gc/env/gcenv.ee.h"
+#endif // FEATURE_STANDALONE_GC
+
 #include "threadsuspend.h"
 
 #ifdef FEATURE_COMINTEROP
