@@ -11,6 +11,8 @@ INSTALL_DESTINATION=$2
 chmod 755 $INSTALL_DESTINATION/dotnet
 
 # Add the installation directory to the system-wide paths
+# But first create the directory if it doesn't exist
+mkdir -p /etc/paths.d
 echo $INSTALL_DESTINATION | tee /etc/paths.d/dotnet
 
 exit 0
