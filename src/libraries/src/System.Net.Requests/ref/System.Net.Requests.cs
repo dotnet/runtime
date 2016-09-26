@@ -127,41 +127,62 @@ namespace System.Net
         TrustFailure = 9,
         UnknownError = 16
     }
-    public abstract partial class WebRequest
+    public abstract partial class WebRequest : System.Runtime.Serialization.ISerializable
     {
         protected WebRequest() { }
-        public abstract string ContentType { get; set; }
+        protected WebRequest(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
+        public System.Net.Security.AuthenticationLevel AuthenticationLevel { get { throw null; } set { } }
+        public virtual long ContentLength { get { throw null; } set { } }
+        public virtual string ContentType { get { throw null; } set { } }
+        public virtual System.Net.Cache.RequestCachePolicy CachePolicy { get { throw null; } set { } }
+        public virtual string ConnectionGroupName { get { throw null; } set { } }
         public virtual System.Net.ICredentials Credentials { get { return default(System.Net.ICredentials); } set { } }
+        public static System.Net.Cache.RequestCachePolicy DefaultCachePolicy { get { throw null; } set { } }
         public static System.Net.IWebProxy DefaultWebProxy { get { return default(System.Net.IWebProxy); } set { } }
-        public abstract System.Net.WebHeaderCollection Headers { get; set; }
-        public abstract string Method { get; set; }
+        public virtual System.Net.WebHeaderCollection Headers { get { throw null; } set { } }
+        public System.Security.Principal.TokenImpersonationLevel ImpersonationLevel { get { throw null; } set { } }
+        public virtual string Method { get { throw null; } set { } }
+        public virtual bool PreAuthenticate { get { throw null; } set { } }
         public virtual System.Net.IWebProxy Proxy { get { return default(System.Net.IWebProxy); } set { } }
-        public abstract System.Uri RequestUri { get; }
+        public virtual System.Uri RequestUri { get { throw null; } }
+        public virtual int Timeout { get { throw null; } set { } }
         public virtual bool UseDefaultCredentials { get { return default(bool); } set { } }
-        public abstract void Abort();
-        public abstract System.IAsyncResult BeginGetRequestStream(System.AsyncCallback callback, object state);
-        public abstract System.IAsyncResult BeginGetResponse(System.AsyncCallback callback, object state);
+        public virtual void Abort() { throw null; }
+        public virtual System.IAsyncResult BeginGetRequestStream(System.AsyncCallback callback, object state) { throw null; }
+        public virtual System.IAsyncResult BeginGetResponse(System.AsyncCallback callback, object state) { throw null; }
         public static System.Net.WebRequest Create(string requestUriString) { return default(System.Net.WebRequest); }
         public static System.Net.WebRequest Create(System.Uri requestUri) { return default(System.Net.WebRequest); }
+        public static System.Net.WebRequest CreateDefault(Uri requestUri) { throw null; }
         public static System.Net.HttpWebRequest CreateHttp(string requestUriString) { return default(System.Net.HttpWebRequest); }
         public static System.Net.HttpWebRequest CreateHttp(System.Uri requestUri) { return default(System.Net.HttpWebRequest); }
-        public abstract System.IO.Stream EndGetRequestStream(System.IAsyncResult asyncResult);
-        public abstract System.Net.WebResponse EndGetResponse(System.IAsyncResult asyncResult);
+        public virtual System.IO.Stream EndGetRequestStream(System.IAsyncResult asyncResult) { throw null; }
+        public virtual System.Net.WebResponse EndGetResponse(System.IAsyncResult asyncResult) { throw null; }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { throw null; }
+        protected virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { throw null; }
+        public virtual System.IO.Stream GetRequestStream() { throw null; }
         public virtual System.Threading.Tasks.Task<System.IO.Stream> GetRequestStreamAsync() { return default(System.Threading.Tasks.Task<System.IO.Stream>); }
+        public virtual System.Net.WebResponse GetResponse() { throw null; }
         public virtual System.Threading.Tasks.Task<System.Net.WebResponse> GetResponseAsync() { return default(System.Threading.Tasks.Task<System.Net.WebResponse>); }
+        public static System.Net.IWebProxy GetSystemWebProxy() { throw null; }
         public static bool RegisterPrefix(string prefix, System.Net.IWebRequestCreate creator) { return default(bool); }
     }
-    public abstract partial class WebResponse : System.IDisposable
+    public abstract partial class WebResponse : System.Runtime.Serialization.ISerializable, System.IDisposable
     {
         protected WebResponse() { }
-        public abstract long ContentLength { get; }
-        public abstract string ContentType { get; }
+        protected WebResponse(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
+        public virtual long ContentLength { get { throw null; } }
+        public virtual string ContentType { get { throw null; } }
         public virtual System.Net.WebHeaderCollection Headers { get { return default(System.Net.WebHeaderCollection); } }
-        public abstract System.Uri ResponseUri { get; }
+        public virtual bool IsFromCache { get { throw null; } }
+        public virtual bool IsMutuallyAuthenticated { get { throw null; } }
+        public virtual System.Uri ResponseUri { get { throw null; } }
         public virtual bool SupportsHeaders { get { return default(bool); } }
+        public virtual void Close() { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
-        public abstract System.IO.Stream GetResponseStream();
+        public virtual System.IO.Stream GetResponseStream() { throw null; }
+        protected virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
 
     [Flags]

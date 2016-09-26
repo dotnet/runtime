@@ -5,11 +5,16 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Cache;
+using System.Net.Security;
+using System.Runtime.Serialization;
+using System.Security.Principal;
 using System.Threading.Tasks;
 
 namespace System.Net
 {
-    public abstract class WebRequest
+    [Serializable]
+    public abstract class WebRequest : ISerializable
     {
         internal class WebRequestPrefixElement
         {
@@ -25,6 +30,17 @@ namespace System.Net
 
         private static volatile List<WebRequestPrefixElement> s_prefixList;
         private static readonly object s_internalSyncObject = new object();
+
+        protected WebRequest() { }
+
+        protected WebRequest(SerializationInfo serializationInfo, StreamingContext streamingContext) { }
+
+        void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
+        {
+            GetObjectData(serializationInfo, streamingContext);
+        }
+
+        protected virtual void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext) { }
 
         // Create a WebRequest.
         //
@@ -173,7 +189,7 @@ namespace System.Net
         //
         // Returns:
         //     Newly created WebRequest.
-        internal static WebRequest CreateDefault(Uri requestUri)
+        public static WebRequest CreateDefault(Uri requestUri)
         {
             if (requestUri == null)
             {
@@ -375,34 +391,94 @@ namespace System.Net
             }
         }
 
-        protected WebRequest()
+        public static RequestCachePolicy DefaultCachePolicy { get; set; } = new RequestCachePolicy(RequestCacheLevel.BypassCache);
+
+        public virtual RequestCachePolicy CachePolicy { get; set; }
+
+        public AuthenticationLevel AuthenticationLevel { get; set; } = AuthenticationLevel.MutualAuthRequested;
+
+        public TokenImpersonationLevel ImpersonationLevel { get; set; } = TokenImpersonationLevel.Delegation;
+
+        public virtual string ConnectionGroupName
         {
+            get
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
+            set
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
         }
 
-        public abstract string Method
+        public virtual string Method
         {
-            get;
-            set;
+            get
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
+            set
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
         }
 
-        public abstract Uri RequestUri
+        public virtual Uri RequestUri
         {
-            get;
+            get
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
         }
 
-        public abstract WebHeaderCollection Headers
+        public virtual WebHeaderCollection Headers
         {
-            get;
-            set;
+            get
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
+            set
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
+        }
+        public virtual long ContentLength
+        {
+            get
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
+            set
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
         }
 
-        public abstract string ContentType
+        public virtual string ContentType
         {
-            get;
-            set;
+            get
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
+            set
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
         }
 
         public virtual ICredentials Credentials
+        {
+            get
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
+            set
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
+        }
+
+        public virtual int Timeout
         {
             get
             {
@@ -426,13 +502,35 @@ namespace System.Net
             }
         }
 
-        public abstract IAsyncResult BeginGetResponse(AsyncCallback callback, object state);
+        public virtual Stream GetRequestStream()
+        {
+            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
+        }
 
-        public abstract WebResponse EndGetResponse(IAsyncResult asyncResult);
+        public virtual WebResponse GetResponse()
+        {
+            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
+        }
 
-        public abstract IAsyncResult BeginGetRequestStream(AsyncCallback callback, Object state);
+        public virtual IAsyncResult BeginGetResponse(AsyncCallback callback, object state)
+        {
+            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
+        }
 
-        public abstract Stream EndGetRequestStream(IAsyncResult asyncResult);
+        public virtual WebResponse EndGetResponse(IAsyncResult asyncResult)
+        {
+            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
+        }
+
+        public virtual IAsyncResult BeginGetRequestStream(AsyncCallback callback, Object state)
+        {
+            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
+        }
+
+        public virtual Stream EndGetRequestStream(IAsyncResult asyncResult)
+        {
+            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
+        }
 
         public virtual Task<Stream> GetRequestStreamAsync()
         {
@@ -459,11 +557,16 @@ namespace System.Net
                     this));
         }
 
-        public abstract void Abort();
+        public virtual void Abort()
+        {
+            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
+        }
 
         // Default Web Proxy implementation.
         private static IWebProxy s_DefaultWebProxy;
         private static bool s_DefaultWebProxyInitialized;
+
+        public static IWebProxy GetSystemWebProxy() => SystemWebProxy.Get();
 
         public static IWebProxy DefaultWebProxy
         {
@@ -488,6 +591,18 @@ namespace System.Net
                     s_DefaultWebProxy = value;
                     s_DefaultWebProxyInitialized = true;
                 }
+            }
+        }
+
+        public virtual bool PreAuthenticate
+        {
+            get
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
+            set
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
             }
         }
 
