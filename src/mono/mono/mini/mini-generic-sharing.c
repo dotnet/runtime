@@ -3436,6 +3436,24 @@ mini_get_shared_method_full (MonoMethod *method, gboolean all_vt, gboolean is_gs
 	MonoGenericContext *context = mono_method_get_context (method);
 	MonoGenericInst *inst;
 
+	/*
+	 * Instead of creating a shared version of the wrapper, create a shared version of the original
+	 * method and construct a wrapper for it. Otherwise, we could end up with two copies of the
+	 * same wrapper, breaking AOT which assumes wrappers are unique.
+	 * FIXME: Add other cases.
+	 */
+	if (method->wrapper_type == MONO_WRAPPER_SYNCHRONIZED) {
+		MonoMethod *wrapper = mono_marshal_method_from_wrapper (method);
+
+		return mono_marshal_get_synchronized_wrapper (mini_get_shared_method_full (wrapper, all_vt, is_gsharedvt));
+	}
+	if (method->wrapper_type == MONO_WRAPPER_DELEGATE_INVOKE) {
+		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
+
+		if (info->subtype == WRAPPER_SUBTYPE_NONE)
+			return mono_marshal_get_delegate_invoke (mini_get_shared_method_full (info->d.delegate_invoke.method, all_vt, is_gsharedvt), NULL);
+	}
+
 	if (method->is_generic || (method->klass->generic_container && !method->is_inflated)) {
 		declaring_method = method;
 	} else {

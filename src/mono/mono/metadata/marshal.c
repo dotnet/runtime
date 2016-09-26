@@ -2691,6 +2691,11 @@ mono_marshal_method_from_wrapper (MonoMethod *wrapper)
 			return info->d.runtime_invoke.method;
 		else
 			return NULL;
+	case MONO_WRAPPER_DELEGATE_INVOKE:
+		if (info)
+			return info->d.delegate_invoke.method;
+		else
+			return NULL;
 	default:
 		return NULL;
 	}
