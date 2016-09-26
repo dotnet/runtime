@@ -456,7 +456,7 @@ namespace System.ServiceProcess
                 Interop.mincore.EnumServicesStatusEx(
                     databaseHandle,
                     Interop.mincore.ServiceControllerOptions.SC_ENUM_PROCESS_INFO,
-                    Interop.mincore.ServiceTypeOptions.SERVICE_TYPE_WIN32,
+                    Interop.mincore.ServiceTypeOptions.SERVICE_TYPE_WIN32 | Interop.mincore.ServiceTypeOptions.SERVICE_TYPE_DRIVER,
                     Interop.mincore.StatusOptions.STATUS_ALL,
                     IntPtr.Zero,
                     0,
@@ -470,7 +470,7 @@ namespace System.ServiceProcess
                 Interop.mincore.EnumServicesStatusEx(
                     databaseHandle,
                     Interop.mincore.ServiceControllerOptions.SC_ENUM_PROCESS_INFO,
-                    Interop.mincore.ServiceTypeOptions.SERVICE_TYPE_WIN32,
+                    Interop.mincore.ServiceTypeOptions.SERVICE_TYPE_WIN32 | Interop.mincore.ServiceTypeOptions.SERVICE_TYPE_DRIVER,
                     Interop.mincore.StatusOptions.STATUS_ALL,
                     memory,
                     bytesNeeded,
