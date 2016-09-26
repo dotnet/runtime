@@ -618,7 +618,7 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 			}
 
 			exception = mono_exception_from_name_two_strings_checked (mono_get_corlib (), "System", "TypeLoadException", type_name, assembly_name, error_out);
-			if (exception)
+			if (exception && error->full_message != NULL && strcmp (error->full_message, ""))
 				set_message_on_exception (exception, error, error_out);
 		} else {
 			exception = mono_exception_from_name_msg (mono_defaults.corlib, "System", "TypeLoadException", error->full_message);

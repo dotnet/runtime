@@ -1420,7 +1420,7 @@ ves_icall_System_Type_internal_from_name (MonoString *name,
 
 	if (type == NULL){
 		if (throwOnError) {
-			mono_error_set_type_load_name (&error, g_strdup (str), NULL, "");
+			mono_error_set_type_load_name (&error, g_strdup (str), g_strdup (""), "");
 			goto leave;
 		}
 	}
