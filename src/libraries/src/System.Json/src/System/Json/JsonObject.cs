@@ -60,7 +60,7 @@ namespace System.Json
         {
             if (key == null)
             {
-                throw new ArgumentNullException(nameof(value));
+                throw new ArgumentNullException(nameof(key));
             }
 
             _map.Add(key, value);

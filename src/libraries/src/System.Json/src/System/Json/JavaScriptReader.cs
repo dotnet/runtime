@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -18,12 +19,9 @@ namespace System.Runtime.Serialization.Json
         private bool _has_peek;
         private bool _prev_lf;
 
-        public JavaScriptReader(TextReader reader, bool raiseOnNumberError)
+        public JavaScriptReader(TextReader reader)
         {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
+            Debug.Assert(reader != null);
 
             _r = reader;
         }
