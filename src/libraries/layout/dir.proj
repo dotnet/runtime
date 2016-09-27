@@ -17,7 +17,7 @@
     <TargetFrameworkMonikers Include="netcoreapp1.1">
       <RID>win7-x64</RID>
       <AdditionalBinaryPath>
-        $(PackagesDir)/runtime.win7-x64.Microsoft.NETCore.Runtime.CoreCLR/1.1.0-$(CoreClrExpectedPrerelease)/runtimes/win7-x64/lib/netstandard1.0;
+        $(PackagesDir)/runtime.win7-x64.Microsoft.NETCore.Runtime.CoreCLR/1.2.0-$(CoreClrExpectedPrerelease)/runtimes/win7-x64/lib/netstandard1.0;
         $(PackagesDir)/runtime.win7.System.Private.Uri\4.3.0-$(CoreFxExpectedPrerelease)\runtimes\win\lib\netstandard1.0;
         $(PackagesDir)/System.Private.DataContractSerialization\4.3.0-$(CoreFxExpectedPrerelease)\lib\netstandard1.3;
         $(PackagesDir)/System.Private.Xml\4.3.0-$(CoreFxExpectedPrerelease)\lib\netstandard1.3;
