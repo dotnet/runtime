@@ -148,19 +148,25 @@ mono_trace_set_logdest_string (const char *dest)
 	if(level_stack == NULL)
 		mono_trace_init();
 
+#if PLATFORM_ANDROID
+	logger.opener = mono_log_open_logcat;
+	logger.writer = mono_log_write_logcat;
+	logger.closer = mono_log_close_logcat;
+	logger.dest   = (char*) dest;
+#else
 	if ((dest == NULL) || (strcmp("syslog", dest) != 0)) {
 		logger.opener = mono_log_open_logfile;
 		logger.writer = mono_log_write_logfile;
 		logger.closer = mono_log_close_logfile;
 		logger.dest   = (char *) dest;
-		mono_trace_set_log_handler_internal(&logger, NULL);
 	} else {
 		logger.opener = mono_log_open_syslog;
 		logger.writer = mono_log_write_syslog;
 		logger.closer = mono_log_close_syslog;
 		logger.dest   = (char *) dest;
-		mono_trace_set_log_handler_internal(&logger, NULL);
 	}
+#endif
+	mono_trace_set_log_handler_internal(&logger, NULL);
 }
 
 /**

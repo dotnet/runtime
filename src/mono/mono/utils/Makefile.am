@@ -30,6 +30,7 @@ monoutils_sources = \
 	mono-log-windows.c	\
 	mono-log-common.c	\
 	mono-log-posix.c	\
+	mono-log-android.c \
 	mono-internal-hash.c	\
 	mono-internal-hash.h	\
 	mono-io-portability.c 	\
