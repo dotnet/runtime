@@ -458,6 +458,8 @@
   </ItemGroup>
   <ItemGroup>
     <InternalSources Condition="'$(FeatureCoreclr)' == 'true'" Include="$(BclSourcesRoot)\Internal\Runtime\Augments\EnvironmentAugments.cs" />
+    <InternalSources Condition="'$(FeatureCoreclr)' == 'true'" Include="$(BclSourcesRoot)\Internal\Runtime\Augments\IRuntimeThread.cs" />
+    <InternalSources Condition="'$(FeatureCoreclr)' == 'true'" Include="$(BclSourcesRoot)\Internal\Runtime\Augments\RuntimeThreadAugments.cs" />
   </ItemGroup>
   <ItemGroup>
     <ReflectionSources Include="$(BclSourcesRoot)\System\Reflection\__Filters.cs" />

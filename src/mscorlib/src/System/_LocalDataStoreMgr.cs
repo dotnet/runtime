@@ -26,12 +26,12 @@ namespace System {
 [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class LocalDataStoreSlot
     {
-        private LocalDataStoreMgr m_mgr;
+        private object m_mgr;
         private int m_slot;
         private long m_cookie;
 
         // Construct the object to encapsulate the slot.
-        internal LocalDataStoreSlot(LocalDataStoreMgr mgr, int slot, long cookie)
+        internal LocalDataStoreSlot(object mgr, int slot, long cookie)
         {
             m_mgr = mgr;
             m_slot = slot;
@@ -39,7 +39,7 @@ namespace System {
         }
 
         // Accessors for the two fields of this class.
-        internal LocalDataStoreMgr Manager
+        internal object Manager
         {
             get
             {
@@ -58,22 +58,28 @@ namespace System {
             get
             {
                 return m_cookie;
-        }
+            }
         }
 
         // Release the slot reserved by this object when this object goes away.
         ~LocalDataStoreSlot()
         {
-            LocalDataStoreMgr mgr = m_mgr;
+            object mgr = m_mgr;
             if (mgr == null)
                 return;
 
+            LocalDataStoreMgr localDataStoreMgr = mgr as LocalDataStoreMgr;
+            if (localDataStoreMgr == null)
+            {
+                return;
+            }
+
             int slot = m_slot;
 
-                // Mark the slot as free.
-                m_slot = -1;
+            // Mark the slot as free.
+            m_slot = -1;
 
-            mgr.FreeDataSlot(slot, m_cookie);
+            localDataStoreMgr.FreeDataSlot(slot, m_cookie);
         }
     }
 

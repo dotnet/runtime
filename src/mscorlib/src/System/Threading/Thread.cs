@@ -12,6 +12,8 @@
 **
 =============================================================================*/
 
+using Internal.Runtime.Augments;
+
 namespace System.Threading {
     using System.Threading;
     using System.Runtime;
@@ -122,7 +124,7 @@ namespace System.Threading {
     [ClassInterface(ClassInterfaceType.None)]
     [ComDefaultInterface(typeof(_Thread))]
 [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class Thread : CriticalFinalizerObject, _Thread
+    public sealed class Thread : CriticalFinalizerObject, _Thread, IRuntimeThread
     {
         /*=========================================================================
         ** Data accessed from managed code that needs to be defined in
@@ -356,10 +358,21 @@ namespace System.Threading {
 
 
 #if FEATURE_CORECLR
-        internal ExecutionContext ExecutionContext
+        public ExecutionContext ExecutionContext
         {
-            get { return m_ExecutionContext; } 
-            set { m_ExecutionContext = value; }
+            get
+            {
+                if (this == CurrentThread && m_ExecutionContext == null)
+                {
+                    m_ExecutionContext = ExecutionContext.Default;
+                }
+                return m_ExecutionContext;
+            }
+            internal set
+            {
+                Contract.Assert(this == CurrentThread);
+                m_ExecutionContext = value;
+            }
         }
 
         internal SynchronizationContext SynchronizationContext
@@ -539,7 +552,22 @@ namespace System.Threading {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern void AbortInternal();
 
-#if !FEATURE_CORECLR
+#if FEATURE_CORECLR
+        /*=========================================================================
+        ** Interrupts a thread that is inside a Wait(), Sleep() or Join().  If that
+        ** thread is not currently blocked in that manner, it will be interrupted
+        ** when it next begins to block.
+        =========================================================================*/
+        [System.Security.SecuritySafeCritical]  // auto-generated
+#pragma warning disable 618 // obsolete types: SecurityPermissionAttribute, SecurityAction
+        [SecurityPermission(SecurityAction.Demand, ControlThread = true)]
+#pragma warning restore 618 // obsolete types: SecurityPermissionAttribute, SecurityAction
+        public void Interrupt()
+        {
+            // TODO: implement
+            throw new NotImplementedException();
+        }
+#else // !FEATURE_CORECLR
         /*=========================================================================
         ** Resets a thread abort.
         ** Should be called by trusted code only
@@ -608,7 +636,7 @@ namespace System.Threading {
         [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern void InterruptInternal();
-#endif
+#endif // FEATURE_CORECLR
 
         /*=========================================================================
         ** Returns the priority of the thread.
@@ -888,20 +916,32 @@ namespace System.Threading {
                 SetApartmentStateNative((int)value, true);
             }
         }
+#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
         [System.Security.SecuritySafeCritical]  // auto-generated
         public ApartmentState GetApartmentState()
         {
+#if FEATURE_COMINTEROP_APARTMENT_SUPPORT
             return (ApartmentState)GetApartmentStateNative();
+#else // !FEATURE_COMINTEROP_APARTMENT_SUPPORT
+            Contract.Assert(false); // the Thread class in CoreFX should have handled this case
+            return ApartmentState.MTA;
+#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
         [HostProtection(Synchronization=true, SelfAffectingThreading=true)]
         public bool TrySetApartmentState(ApartmentState state)
         {
+#if FEATURE_COMINTEROP_APARTMENT_SUPPORT
             return SetApartmentStateHelper(state, false);
+#else // !FEATURE_COMINTEROP_APARTMENT_SUPPORT
+            Contract.Assert(false); // the Thread class in CoreFX should have handled this case
+            return false;
+#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
         }
 
+#if FEATURE_COMINTEROP_APARTMENT_SUPPORT
         [System.Security.SecuritySafeCritical]  // auto-generated
         [HostProtection(Synchronization=true, SelfAffectingThreading=true)]
         public void SetApartmentState(ApartmentState state)
