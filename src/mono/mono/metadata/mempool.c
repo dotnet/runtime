@@ -210,8 +210,10 @@ mono_backtrace (int size)
 
         mono_os_mutex_lock (&mempool_tracing_lock);
         g_print ("Allocating %d bytes\n", size);
+	MONO_ENTER_GC_SAFE;
         symbols = backtrace (array, BACKTRACE_DEPTH);
         names = backtrace_symbols (array, symbols);
+	MONO_EXIT_GC_SAFE;
         for (i = 1; i < symbols; ++i) {
                 g_print ("\t%s\n", names [i]);
         }
