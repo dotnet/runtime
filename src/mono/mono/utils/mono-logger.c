@@ -153,6 +153,11 @@ mono_trace_set_logdest_string (const char *dest)
 	logger.writer = mono_log_write_logcat;
 	logger.closer = mono_log_close_logcat;
 	logger.dest   = (char*) dest;
+#elif defined (HOST_IOS)
+	logger.opener = mono_log_open_asl;
+	logger.writer = mono_log_write_asl;
+	logger.closer = mono_log_close_asl;
+	logger.dest   = (char*) dest;
 #else
 	if ((dest == NULL) || (strcmp("syslog", dest) != 0)) {
 		logger.opener = mono_log_open_logfile;
