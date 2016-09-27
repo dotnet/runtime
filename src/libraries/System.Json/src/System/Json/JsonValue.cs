@@ -32,7 +32,7 @@ namespace System.Json
                 throw new ArgumentNullException(nameof(textReader));
             }
 
-            return ToJsonValue(new JavaScriptReader(textReader, true).Read());
+            return ToJsonValue(new JavaScriptReader(textReader).Read());
         }
 
         private static IEnumerable<KeyValuePair<string, JsonValue>> ToJsonPairEnumerable(IEnumerable<KeyValuePair<string, object>> kvpc)

@@ -17,6 +17,9 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <ItemGroup>
+    <Compile Include="JsonArrayTests.cs" />
+    <Compile Include="JsonObjectTests.cs" />
+    <Compile Include="JsonPrimitiveTests.cs" />
     <Compile Include="JsonValueTests.cs" />
   </ItemGroup>
   <ItemGroup>
