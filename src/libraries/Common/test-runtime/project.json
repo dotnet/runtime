@@ -61,7 +61,7 @@
         "System.Xml.XmlSerializer": "4.0.11",
         "Microsoft.NETCore.UniversalWindowsPlatform": "5.2.1-beta-000547-00",
         "System.Console": "4.3.0-beta-24522-03",
-        "microsoft.xunit.runner.uwp": "1.0.3-prerelease-00808-02",
+        "microsoft.xunit.runner.uwp": "1.0.3-prerelease-00826-05",
         "Microsoft.DotNet.TestILC": {
           "version": "1.4.24208-prerelease",
           "include": "contentFiles"
