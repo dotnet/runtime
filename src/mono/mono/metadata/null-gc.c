@@ -26,6 +26,10 @@ mono_gc_base_init (void)
 
 	mono_counters_init ();
 
+#ifndef HOST_WIN32
+	mono_w32handle_init ();
+#endif
+
 	memset (&cb, 0, sizeof (cb));
 	/* TODO: This casts away an incompatible pointer type warning in the same
 	         manner that boehm-gc does it. This is probably worth investigating

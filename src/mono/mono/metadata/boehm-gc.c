@@ -111,6 +111,10 @@ mono_gc_base_init (void)
 
 	mono_counters_init ();
 
+#ifndef HOST_WIN32
+	mono_w32handle_init ();
+#endif
+
 	/*
 	 * Handle the case when we are called from a thread different from the main thread,
 	 * confusing libgc.
