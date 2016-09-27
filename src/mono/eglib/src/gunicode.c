@@ -205,24 +205,22 @@ g_filename_from_utf8 (const gchar *utf8string, gssize len, gsize *bytes_read, gs
 	return res;
 }
 
+#ifdef G_OS_WIN32
+extern WINBASEAPI UINT WINAPI GetACP(void);
 gboolean
 g_get_charset (G_CONST_RETURN char **charset)
 {
 	if (my_charset == NULL) {
-#ifdef G_OS_WIN32
 		static char buf [14];
+#if G_HAVE_API_SUPPORT(HAVE_UWP_WINAPI_SUPPORT)
+		CPINFOEXA cp_info;
+		GetCPInfoExA (CP_ACP, 0, &cp_info);
+		sprintf (buf, "CP%u", cp_info.CodePage);
+#else
 		sprintf (buf, "CP%u", GetACP ());
+#endif
 		my_charset = buf;
 		is_utf8 = FALSE;
-#else
-		/* These shouldn't be heap allocated */
-#if defined(HAVE_LOCALCHARSET_H)
-		my_charset = locale_charset ();
-#else
-		my_charset = "UTF-8";
-#endif
-		is_utf8 = strcmp (my_charset, "UTF-8") == 0;
-#endif
 	}
 	
 	if (charset != NULL)
@@ -230,6 +228,28 @@ g_get_charset (G_CONST_RETURN char **charset)
 
 	return is_utf8;
 }
+
+#else /* G_OS_WIN32 */
+
+gboolean
+g_get_charset (G_CONST_RETURN char **charset)
+{
+	if (my_charset == NULL) {
+		/* These shouldn't be heap allocated */
+#if defined(HAVE_LOCALCHARSET_H)
+		my_charset = locale_charset ();
+#else
+		my_charset = "UTF-8";
+#endif
+		is_utf8 = strcmp (my_charset, "UTF-8") == 0;
+	}
+	
+	if (charset != NULL)
+		*charset = my_charset;
+
+	return is_utf8;
+}
+#endif /* G_OS_WIN32 */
 
 gchar *
 g_locale_to_utf8 (const gchar *opsysstring, gssize len, gsize *bytes_read, gsize *bytes_written, GError **error)

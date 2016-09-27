@@ -1068,6 +1068,10 @@ glong     g_utf8_pointer_to_offset (const gchar *str, const gchar *pos);
 #define _EGLIB_MINOR  0
  
 #define GLIB_CHECK_VERSION(a,b,c) ((a < _EGLIB_MAJOR) || (a == _EGLIB_MAJOR && (b < _EGLIB_MIDDLE || (b == _EGLIB_MIDDLE && c <= _EGLIB_MINOR))))
+
+#define G_HAVE_API_SUPPORT(x) (x)
+#define G_UNSUPPORTED_API "%s:%d: '%s' not supported.", __FILE__, __LINE__
+#define g_unsupported_api(name) G_STMT_START { g_warning (G_UNSUPPORTED_API, name); } G_STMT_END
  
 G_END_DECLS
 
