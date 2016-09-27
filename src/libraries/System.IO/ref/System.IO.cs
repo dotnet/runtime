@@ -5,7 +5,53 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-
+namespace System.CodeDom.Compiler
+{
+    public class IndentedTextWriter : System.IO.TextWriter
+    {
+        public const string DefaultTabString = "    ";
+        public IndentedTextWriter(System.IO.TextWriter writer) { }
+        public IndentedTextWriter(System.IO.TextWriter writer, string tabString) { }
+        public override System.Text.Encoding Encoding { get { throw null; } }
+        public override string NewLine { get { throw null; } set { } }
+        public int Indent { get { throw null; } set { } }
+        public System.IO.TextWriter InnerWriter { get { throw null; } }
+        internal string TabString { get { throw null; } }
+        public override void Close() { }
+        public override void Flush() { }
+        protected virtual void OutputTabs() { }
+        public override void Write(string s) { }
+        public override void Write(bool value) { }
+        public override void Write(char value) { }
+        public override void Write(char[] buffer) { }
+        public override void Write(char[] buffer, int index, int count) { }
+        public override void Write(double value) { }
+        public override void Write(float value) { }
+        public override void Write(int value) { }
+        public override void Write(long value) { }
+        public override void Write(object value) { }
+        public override void Write(string format, object arg0) { }
+        public override void Write(string format, object arg0, object arg1) { }
+        public override void Write(string format, params object[] arg) { }
+        public void WriteLineNoTabs(string s) { }
+        public override void WriteLine(string s) { }
+        public override void WriteLine() { }
+        public override void WriteLine(bool value) { }
+        public override void WriteLine(char value) { }
+        public override void WriteLine(char[] buffer) { }
+        public override void WriteLine(char[] buffer, int index, int count) { }
+        public override void WriteLine(double value) { }
+        public override void WriteLine(float value) { }
+        public override void WriteLine(int value) { }
+        public override void WriteLine(long value) { }
+        public override void WriteLine(object value) { }
+        public override void WriteLine(string format, object arg0) { }
+        public override void WriteLine(string format, object arg0, object arg1) { }
+        public override void WriteLine(string format, params object[] arg) { }
+        [CLSCompliant(false)]
+        public override void WriteLine(uint value) { }
+    }
+}
 namespace System.IO
 {
     public partial class BinaryReader : System.IDisposable

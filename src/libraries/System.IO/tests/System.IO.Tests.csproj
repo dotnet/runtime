@@ -14,6 +14,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="IndentedTextWriter.cs" Condition="'$(TargetGroup)'=='netstandard1.7'" />
     <Compile Include="BinaryReader\BinaryReaderTests.cs" Condition="'$(TargetGroup)'=='netstandard1.7'" />
     <Compile Include="BinaryWriter\BinaryWriter.WriteByteCharTests.cs" />
     <Compile Include="BinaryWriter\BinaryWriter.WriteTests.cs" />
