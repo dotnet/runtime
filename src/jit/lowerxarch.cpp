@@ -2529,16 +2529,34 @@ void Lowering::TreeNodeInfoInitSIMD(GenTree* tree)
 
         case SIMDIntrinsicOpEquality:
         case SIMDIntrinsicOpInEquality:
-            // Need two SIMD registers as scratch.
-            // See genSIMDIntrinsicRelOp() for details on code sequence generate and
-            // the need for two scratch registers.
-            //
-            // Note these intrinsics produce a BOOL result, hence internal float
-            // registers reserved are guaranteed to be different from target
-            // integer register without explicitly specifying.
-            info->srcCount           = 2;
-            info->internalFloatCount = 2;
-            info->setInternalCandidates(lsra, lsra->allSIMDRegs());
+            info->srcCount = 2;
+
+            // On AVX, we can generate optimal code for (in)equality
+            // against zero.
+            op2 = tree->gtGetOp2();
+            if (comp->canUseAVX() && op2->IsIntegralConstVector(0))
+            {
+                // On AVX we can use ptest instruction for (in)equality
+                // against zero to generate optimal code.
+                //
+                // We can safely do the below optimization for integral
+                // vectors but not for floating-point for the reason
+                // that we have +0.0 and -0.0 and +0.0 == -0.0
+                MakeSrcContained(tree, op2);
+            }
+            else
+            {
+
+                // Need two SIMD registers as scratch.
+                // See genSIMDIntrinsicRelOp() for details on code sequence generate and
+                // the need for two scratch registers.
+                //
+                // Note these intrinsics produce a BOOL result, hence internal float
+                // registers reserved are guaranteed to be different from target
+                // integer register without explicitly specifying.
+                info->internalFloatCount = 2;
+                info->setInternalCandidates(lsra, lsra->allSIMDRegs());
+            }
             break;
 
         case SIMDIntrinsicDotProduct:
