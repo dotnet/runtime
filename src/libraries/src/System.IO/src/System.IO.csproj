@@ -37,6 +37,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net462' and '$(TargetGroup)' != 'net463'">
+    <Compile Include="System\CodeDom\Compiler\IndentedTextWriter.cs" />
     <Compile Include="System\IO\BufferedStream.cs" />
     <Compile Include="System\IO\InvalidDataException.cs" />
     <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
