@@ -254,7 +254,7 @@ sgen_get_nursery_end (void)
 #define SGEN_POINTER_UNTAG_VTABLE(p)		SGEN_POINTER_UNTAG_ALL((p))
 
 /* returns NULL if not forwarded, or the forwarded address */
-#define SGEN_VTABLE_IS_FORWARDED(vtable) ((GCVTable *)(SGEN_POINTER_IS_TAGGED_FORWARDED ((vtable)) ? SGEN_POINTER_UNTAG_VTABLE ((vtable)) : NULL))
+#define SGEN_VTABLE_IS_FORWARDED(vtable) ((GCObject *)(SGEN_POINTER_IS_TAGGED_FORWARDED ((vtable)) ? SGEN_POINTER_UNTAG_VTABLE ((vtable)) : NULL))
 #define SGEN_OBJECT_IS_FORWARDED(obj) ((GCObject *)SGEN_VTABLE_IS_FORWARDED (((mword*)(obj))[0]))
 
 #define SGEN_VTABLE_IS_PINNED(vtable) SGEN_POINTER_IS_TAGGED_PINNED ((vtable))
@@ -265,6 +265,18 @@ sgen_get_nursery_end (void)
 /* set the forwarded address fw_addr for object obj */
 #define SGEN_FORWARD_OBJECT(obj,fw_addr) do {				\
 		*(void**)(obj) = SGEN_POINTER_TAG_FORWARDED ((fw_addr));	\
+	} while (0)
+#define SGEN_FORWARD_OBJECT_PAR(obj,fw_addr,final_fw_addr) do {			\
+		gpointer old_vtable_word = *(gpointer*)obj;			\
+		gpointer new_vtable_word;					\
+		final_fw_addr = SGEN_VTABLE_IS_FORWARDED (old_vtable_word);	\
+		if (final_fw_addr)						\
+			break;							\
+		new_vtable_word = SGEN_POINTER_TAG_FORWARDED ((fw_addr));	\
+		old_vtable_word = InterlockedCompareExchangePointer ((gpointer*)obj, new_vtable_word, old_vtable_word); \
+		final_fw_addr = SGEN_VTABLE_IS_FORWARDED (old_vtable_word);	\
+		if (!final_fw_addr)						\
+			final_fw_addr = (fw_addr);				\
 	} while (0)
 #define SGEN_PIN_OBJECT(obj) do {	\
 		*(void**)(obj) = SGEN_POINTER_TAG_PINNED (*(void**)(obj)); \
@@ -637,6 +649,7 @@ struct _SgenMajorCollector {
 	SgenObjectOperations major_ops_conc_par_finish;
 
 	GCObject* (*alloc_object) (GCVTable vtable, size_t size, gboolean has_references);
+	GCObject* (*alloc_object_par) (GCVTable vtable, size_t size, gboolean has_references);
 	void (*free_pinned_object) (GCObject *obj, size_t size);
 
 	/*

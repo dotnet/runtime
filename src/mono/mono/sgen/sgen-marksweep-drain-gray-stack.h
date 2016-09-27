@@ -48,6 +48,7 @@ COPY_OR_MARK_FUNCTION_NAME (GCObject **ptr, GCObject *obj, SgenGrayQueue *queue)
 	if (sgen_ptr_in_nursery (obj)) {
 #if !defined(COPY_OR_MARK_CONCURRENT) && !defined(COPY_OR_MARK_CONCURRENT_WITH_EVACUATION)
 		int word, bit;
+		gboolean first = TRUE;
 		GCObject *forwarded, *old_obj;
 		mword vtable_word = *(mword*)obj;
 
@@ -77,7 +78,11 @@ COPY_OR_MARK_FUNCTION_NAME (GCObject **ptr, GCObject *obj, SgenGrayQueue *queue)
 	do_copy_object:
 #endif
 		old_obj = obj;
+#ifdef COPY_OR_MARK_PARALLEL
+		obj = copy_object_no_checks_par (obj, queue);
+#else
 		obj = copy_object_no_checks (obj, queue);
+#endif
 		if (G_UNLIKELY (old_obj == obj)) {
 			/*
 			 * If we fail to evacuate an object we just stop doing it for a
@@ -116,8 +121,13 @@ COPY_OR_MARK_FUNCTION_NAME (GCObject **ptr, GCObject *obj, SgenGrayQueue *queue)
 		block = MS_BLOCK_FOR_OBJ (obj);
 		MS_CALC_MARK_BIT (word, bit, obj);
 		SGEN_ASSERT (9, !MS_MARK_BIT (block, word, bit), "object %p already marked", obj);
+#ifdef COPY_OR_MARK_PARALLEL
+		MS_SET_MARK_BIT_PAR (block, word, bit, first);
+#else
 		MS_SET_MARK_BIT (block, word, bit);
-		binary_protocol_mark (obj, (gpointer)SGEN_LOAD_VTABLE (obj), sgen_safe_object_get_size (obj));
+#endif
+		if (first)
+			binary_protocol_mark (obj, (gpointer)SGEN_LOAD_VTABLE (obj), sgen_safe_object_get_size (obj));
 
 		return FALSE;
 #endif

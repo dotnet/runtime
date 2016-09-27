@@ -294,6 +294,7 @@ ms_find_block_obj_size_index (size_t size)
 
 #define FREE_BLOCKS_FROM(lists,p,r)	(lists [((p) ? MS_BLOCK_FLAG_PINNED : 0) | ((r) ? MS_BLOCK_FLAG_REFS : 0)])
 #define FREE_BLOCKS(p,r)		(FREE_BLOCKS_FROM (free_block_lists, (p), (r)))
+#define FREE_BLOCKS_LOCAL(p,r)		(FREE_BLOCKS_FROM (((MSBlockInfo***)mono_native_tls_get_value (worker_block_free_list_key)), (p), (r)))
 
 #define MS_BLOCK_OBJ_SIZE_INDEX(s)				\
 	(((s)+7)>>3 < MS_NUM_FAST_BLOCK_OBJ_SIZE_INDEXES ?	\
@@ -690,6 +691,56 @@ static GCObject*
 major_alloc_object (GCVTable vtable, size_t size, gboolean has_references)
 {
 	return alloc_obj (vtable, size, FALSE, has_references);
+}
+
+/*
+ * This can only be called by sgen workers. While this is called we assume
+ * that no other thread is accessing the block free lists. The world should
+ * be stopped and the gc thread should be waiting for workers to finish.
+ */
+static GCObject*
+major_alloc_object_par (GCVTable vtable, size_t size, gboolean has_references)
+{
+	int size_index = MS_BLOCK_OBJ_SIZE_INDEX (size);
+	MSBlockInfo * volatile * free_blocks = FREE_BLOCKS (FALSE, has_references);
+	MSBlockInfo **free_blocks_local = FREE_BLOCKS_LOCAL (FALSE, has_references);
+	void *obj;
+
+	if (free_blocks_local [size_index]) {
+get_slot:
+		obj = unlink_slot_from_free_list_uncontested (free_blocks_local, size_index);
+	} else {
+		MSBlockInfo *block;
+get_block:
+		block = free_blocks [size_index];
+		if (!block) {
+			if (G_UNLIKELY (!ms_alloc_block (size_index, FALSE, has_references)))
+				return NULL;
+			goto get_block;
+		} else {
+			MSBlockInfo *next_free = block->next_free;
+			/*
+			 * Once a block is removed from the main list, it cannot return on the list until
+			 * all the workers are finished and sweep is starting. This means we don't need
+			 * to account for ABA problems.
+			 */
+			if (SGEN_CAS_PTR ((volatile gpointer *)&free_blocks [size_index], next_free, block) != block)
+				goto get_block;
+			g_assert (block->free_list);
+			block->next_free = free_blocks_local [size_index];
+			free_blocks_local [size_index] = block;
+
+			goto get_slot;
+		}
+	}
+
+	/* FIXME: assumes object layout */
+	*(GCVTable*)obj = vtable;
+
+	/* FIXME is it worth CAS-ing here */
+	total_allocated_major += block_obj_sizes [size_index]; 
+
+	return (GCObject *)obj;
 }
 
 /*
@@ -1128,6 +1179,7 @@ pin_major_object (GCObject *obj, SgenGrayQueue *queue)
 	MS_MARK_OBJECT_AND_ENQUEUE (obj, sgen_obj_get_descriptor (obj), block, queue);
 }
 
+#define COPY_OR_MARK_PARALLEL
 #include "sgen-major-copy-object.h"
 
 static long long
@@ -2688,6 +2740,7 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	collector->alloc_degraded = major_alloc_degraded;
 
 	collector->alloc_object = major_alloc_object;
+	collector->alloc_object_par = major_alloc_object_par;
 	collector->free_pinned_object = free_pinned_object;
 	collector->iterate_objects = major_iterate_objects;
 	collector->free_non_pinned_object = major_free_non_pinned_object;
