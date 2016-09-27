@@ -87,7 +87,7 @@
     </ProjectReference>
   </ItemGroup>
   <!-- TODO: Replace this with a package reference. -->
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
+  <ItemGroup>
     <ProjectReference Include="..\..\System.Drawing.Primitives\pkg\System.Drawing.Primitives.pkgproj" />
   </ItemGroup>
   <ItemGroup>
