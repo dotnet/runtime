@@ -1942,10 +1942,30 @@ public static partial class DataContractSerializerTests
     public static void DCS_DeserializeEmptyString()
     {
         var serializer = new DataContractSerializer(typeof(object));
-        Assert.Throws<XmlException>(() =>
+        bool exceptionThrown = false;
+        try
         {
             serializer.ReadObject(new MemoryStream());
-        });
+        }
+        catch (Exception e)
+        {
+            Type expectedExceptionType = typeof(XmlException);
+            Type actualExceptionType = e.GetType();
+            if (!actualExceptionType.Equals(expectedExceptionType))
+            {
+                var messageBuilder = new StringBuilder();
+                messageBuilder.AppendLine("The actual exception was not of the expected type.");
+                messageBuilder.AppendLine($"Expected exception type: {expectedExceptionType.FullName}, {expectedExceptionType.GetTypeInfo().Assembly.FullName}");
+                messageBuilder.AppendLine($"Actual exception type: {actualExceptionType.FullName}, {actualExceptionType.GetTypeInfo().Assembly.FullName}");
+                messageBuilder.AppendLine($"The type of {nameof(expectedExceptionType)} was: {expectedExceptionType.GetType()}");
+                messageBuilder.AppendLine($"The type of {nameof(actualExceptionType)} was: {actualExceptionType.GetType()}");
+                Assert.True(false, messageBuilder.ToString());
+            }
+
+            exceptionThrown = true;
+        }
+
+        Assert.True(exceptionThrown, "An expected exception was not thrown.");
     }
 
     [Fact]
