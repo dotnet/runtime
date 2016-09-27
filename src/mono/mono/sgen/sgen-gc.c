@@ -1737,7 +1737,7 @@ typedef enum {
 } CopyOrMarkFromRootsMode;
 
 static void
-major_copy_or_mark_from_roots (SgenGrayQueue *gc_thread_gray_queue, size_t *old_next_pin_slot, CopyOrMarkFromRootsMode mode, SgenObjectOperations *object_ops)
+major_copy_or_mark_from_roots (SgenGrayQueue *gc_thread_gray_queue, size_t *old_next_pin_slot, CopyOrMarkFromRootsMode mode, SgenObjectOperations *object_ops, SgenObjectOperations *worker_object_ops)
 {
 	LOSObject *bigobj;
 	TV_DECLARE (atv);
@@ -1872,11 +1872,7 @@ major_copy_or_mark_from_roots (SgenGrayQueue *gc_thread_gray_queue, size_t *old_
 			 * We force the finish of the worker with the new object ops context
 			 * which can also do copying. We need to have finished pinning.
 			 */
-			/* FIXME Implement parallel copying and get rid of this ineffective hack */
-			if (major_collector.is_parallel)
-				sgen_workers_start_all_workers (&major_collector.major_ops_conc_par_start, NULL);
-			else
-				sgen_workers_start_all_workers (object_ops, NULL);
+			sgen_workers_start_all_workers (worker_object_ops, NULL);
 
 			sgen_workers_join ();
 		}
@@ -1906,28 +1902,38 @@ major_copy_or_mark_from_roots (SgenGrayQueue *gc_thread_gray_queue, size_t *old_
 	if (mode == COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT) {
 		gray_queue_redirect (gc_thread_gray_queue);
 		if (precleaning_enabled) {
-			sgen_workers_start_all_workers (object_ops, workers_finish_callback);
+			sgen_workers_start_all_workers (worker_object_ops, workers_finish_callback);
 		} else {
-			sgen_workers_start_all_workers (object_ops, NULL);
+			sgen_workers_start_all_workers (worker_object_ops, NULL);
 		}
 	}
 
 	if (mode == COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT) {
 		ScanJob *sj;
 
+		gray_queue_redirect (gc_thread_gray_queue);
+
 		/* Mod union card table */
 		sj = (ScanJob*)sgen_thread_pool_job_alloc ("scan mod union cardtable", job_scan_major_mod_union_card_table, sizeof (ScanJob));
-		sj->ops = object_ops;
-		sj->gc_thread_gray_queue = gc_thread_gray_queue;
-		sgen_workers_enqueue_job (&sj->job, FALSE);
+		sj->ops = worker_object_ops;
+		sj->gc_thread_gray_queue = NULL;
+		sgen_workers_enqueue_job (&sj->job, TRUE);
 
 		sj = (ScanJob*)sgen_thread_pool_job_alloc ("scan LOS mod union cardtable", job_scan_los_mod_union_card_table, sizeof (ScanJob));
-		sj->ops = object_ops;
-		sj->gc_thread_gray_queue = gc_thread_gray_queue;
-		sgen_workers_enqueue_job (&sj->job, FALSE);
+		sj->ops = worker_object_ops;
+		sj->gc_thread_gray_queue = NULL;
+		sgen_workers_enqueue_job (&sj->job, TRUE);
 
-		TV_GETTIME (atv);
-		time_major_scan_mod_union += TV_ELAPSED (btv, atv);
+		/*
+		 * If we enqueue a job while workers are running we need to sgen_workers_ensure_awake
+		 * in order to make sure that we are running the idle func and draining all worker
+		 * gray queues. The operation of starting workers implies this, so we start them after
+		 * in order to avoid doing this operation twice. The workers will drain the main gray
+		 * stack that contained roots and pinned objects and also scan the mod union card
+		 * table.
+		 */
+		sgen_workers_start_all_workers (worker_object_ops, NULL);
+		sgen_workers_join ();
 	}
 
 	sgen_pin_stats_report ();
@@ -1985,7 +1991,7 @@ major_start_collection (SgenGrayQueue *gc_thread_gray_queue, const char *reason,
 	if (major_collector.start_major_collection)
 		major_collector.start_major_collection ();
 
-	major_copy_or_mark_from_roots (gc_thread_gray_queue, old_next_pin_slot, concurrent ? COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT : COPY_OR_MARK_FROM_ROOTS_SERIAL, object_ops);
+	major_copy_or_mark_from_roots (gc_thread_gray_queue, old_next_pin_slot, concurrent ? COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT : COPY_OR_MARK_FROM_ROOTS_SERIAL, object_ops, object_ops);
 }
 
 static void
@@ -2000,12 +2006,14 @@ major_finish_collection (SgenGrayQueue *gc_thread_gray_queue, const char *reason
 	TV_GETTIME (btv);
 
 	if (concurrent_collection_in_progress) {
+		SgenObjectOperations *worker_object_ops;
+		object_ops = &major_collector.major_ops_concurrent_finish;
 		if (major_collector.is_parallel)
-			object_ops = &major_collector.major_ops_conc_par_finish;
+			worker_object_ops = &major_collector.major_ops_conc_par_finish;
 		else
-			object_ops = &major_collector.major_ops_concurrent_finish;
+			worker_object_ops = object_ops;
 
-		major_copy_or_mark_from_roots (gc_thread_gray_queue, NULL, COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT, object_ops);
+		major_copy_or_mark_from_roots (gc_thread_gray_queue, NULL, COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT, object_ops, worker_object_ops);
 
 #ifdef SGEN_DEBUG_INTERNAL_ALLOC
 		main_gc_thread = NULL;
