@@ -21,7 +21,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(UpperLowerCasing_TestData))]
-        [ActiveIssue(11815, Xunit.PlatformID.AnyUnix)]
         public static void CreateWithCulturesTest(string lowerForm, string upperForm, string cultureName)
         {
             CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);
@@ -39,7 +38,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue(11815, Xunit.PlatformID.AnyUnix)]
         public static void InvariantTest()
         {
             Assert.True(StringComparer.InvariantCulture.Equals("test", "test"), "Same casing strings with StringComparer.InvariantCulture should be equal");
@@ -54,7 +52,6 @@ namespace System.Tests
 
             Assert.True(StringComparer.InvariantCultureIgnoreCase.Equals("test", "test"), "Same casing strings with StringComparer.InvariantCultureIgnoreCase should be equal");
             Assert.True(StringComparer.InvariantCultureIgnoreCase.Equals((object) "test", (object) "test"), "Same casing objects with StringComparer.InvariantCultureIgnoreCase should be equal");
-            Assert.Equal(StringComparer.InvariantCultureIgnoreCase.GetHashCode("test"), StringComparer.InvariantCulture.GetHashCode("test"));
             Assert.Equal(0, StringComparer.InvariantCultureIgnoreCase.Compare("test", "test"));
             
             Assert.True(StringComparer.InvariantCultureIgnoreCase.Equals("test", "TEST"), "same strings with different casing with StringComparer.InvariantCultureIgnoreCase should be equal");
