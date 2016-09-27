@@ -3560,6 +3560,8 @@
       <Member MemberType="Property" Name="Value" />
     </Type>
     <Type Name="System.LocalDataStoreSlot">
+      <Member Status="ImplRoot" Name="#ctor(System.Object,System.Int32,System.Int64)" />
+      <Member Status="ImplRoot" Name="get_Manager" />
       <Member Status="ImplRoot" Name="Finalize" />
     </Type>
     <Type Name="System.MarshalByRefObject">
@@ -7828,6 +7830,12 @@
       <Member MemberType="Property" Name="Mutex" />
       <Member MemberType="Property" Name="MutexIndex" />
     </Type>
+    <Type Name="System.Threading.ApartmentState">
+      <Member MemberType="Field" Name="MTA" />
+      <Member MemberType="Field" Name="STA" />
+      <Member MemberType="Field" Name="Unknown" />
+      <Member MemberType="Field" Name="value__" />
+    </Type>
     <Type Name="System.Threading.AutoResetEvent">
       <Member Name="#ctor(System.Boolean)" />
     </Type>
@@ -7993,6 +8001,27 @@
       <Member Status="ImplRoot" MemberType="Field" Name="m_Priority" />
       <Member Status="ImplRoot" MemberType="Field" Name="m_ThreadStartArg" />
     </Type>
+    <Type Name="Internal.Runtime.Augments.IRuntimeThread">
+      <Member Name="GetApartmentState" />
+      <Member MemberType="Property" Name="ExecutionContext" />
+      <Member Name="Interrupt" />
+      <Member MemberType="Property" Name="IsAlive" />
+      <Member MemberType="Property" Name="IsBackground" />
+      <Member MemberType="Property" Name="IsThreadPoolThread" />
+      <Member MemberType="Property" Name="ManagedThreadId" />
+      <Member MemberType="Property" Name="Name" />
+      <Member MemberType="Property" Name="Priority" />
+      <Member MemberType="Property" Name="ThreadState" />
+      <Member Name="TrySetApartmentState(System.Threading.ApartmentState)" />
+    </Type>
+    <Type Name="Internal.Runtime.Augments.RuntimeThreadAugments">
+      <Member Name="Create(System.Threading.ThreadStart)" />
+      <Member Name="Create(System.Threading.ThreadStart,System.Int32)" />
+      <Member Name="Create(System.Threading.ParameterizedThreadStart)" />
+      <Member Name="Create(System.Threading.ParameterizedThreadStart,System.Int32)" />
+      <Member MemberType="Property" Name="CurrentThread" />
+      <Member Name="SpinWait(System.Int32)" />
+    </Type>
     <Type Name="System.Threading.ThreadAbortException">
       <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
@@ -8016,6 +8045,14 @@
       <Member Status="ImplRoot" Name="GetGloballyQueuedWorkItemsForDebugger"/>
       <Member Status="ImplRoot" Name="GetLocallyQueuedWorkItemsForDebugger"/>
       <Member Status="ImplRoot" Name="NotifyWorkItemProgress"/>
+    </Type>
+    <Type Name="System.Threading.ThreadPriority">
+      <Member MemberType="Field" Name="AboveNormal" />
+      <Member MemberType="Field" Name="BelowNormal" />
+      <Member MemberType="Field" Name="Highest" />
+      <Member MemberType="Field" Name="Lowest" />
+      <Member MemberType="Field" Name="Normal" />
+      <Member MemberType="Field" Name="value__" />
     </Type>
     <Type Status="ImplRoot"  Name="System.Threading.StackCrawlMark">
       <Member MemberType="Field" Name="LookForMe" />

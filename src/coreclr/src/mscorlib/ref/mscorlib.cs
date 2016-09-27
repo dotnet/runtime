@@ -15,6 +15,29 @@ namespace Internal.Runtime.Augments
         public static void FailFast(string message, System.Exception error) { }
         public static string[] GetCommandLineArgs() { throw null; }
     }
+    public partial interface IRuntimeThread
+    {
+        System.Threading.ExecutionContext ExecutionContext { get; }
+        System.Threading.ApartmentState GetApartmentState();
+        void Interrupt();
+        bool IsAlive { get; }
+        bool IsBackground { get; set; }
+        bool IsThreadPoolThread { get; }
+        int ManagedThreadId { get; }
+        string Name { get; set; }
+        System.Threading.ThreadPriority Priority { get; set; }
+        System.Threading.ThreadState ThreadState { get; }
+        bool TrySetApartmentState(System.Threading.ApartmentState state);
+    }
+    public static partial class RuntimeThreadAugments
+    {
+        public static Internal.Runtime.Augments.IRuntimeThread Create(System.Threading.ThreadStart start) { throw null; }
+        public static Internal.Runtime.Augments.IRuntimeThread Create(System.Threading.ThreadStart start, int maxStackSize) { throw null; }
+        public static Internal.Runtime.Augments.IRuntimeThread Create(System.Threading.ParameterizedThreadStart start) { throw null; }
+        public static Internal.Runtime.Augments.IRuntimeThread Create(System.Threading.ParameterizedThreadStart start, int maxStackSize) { throw null; }
+        public static Internal.Runtime.Augments.IRuntimeThread CurrentThread { get { throw null; } }
+        public static void SpinWait(int iterations) { throw null; }
+    }
 }
 namespace Microsoft.Win32.SafeHandles
 {
@@ -2483,7 +2506,8 @@ namespace System
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public sealed partial class LocalDataStoreSlot
     {
-        internal LocalDataStoreSlot() { }
+        internal LocalDataStoreSlot(object mgr, int slot, long cookie) { }
+        internal object Manager { get { throw null; } }
         ~LocalDataStoreSlot() { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
@@ -12836,6 +12860,12 @@ namespace System.Threading
         public System.Threading.Mutex Mutex { get { throw null; } }
         public int MutexIndex { get { throw null; } }
     }
+    public enum ApartmentState
+    {
+        MTA = 1,
+        STA = 0,
+        Unknown = 2,
+    }
     public sealed partial class AsyncLocal<T>
     {
         public AsyncLocal() { }
@@ -13335,6 +13365,14 @@ namespace System.Threading
         [System.Security.SecurityCriticalAttribute]
         [System.Security.Permissions.SecurityPermissionAttribute(System.Security.Permissions.SecurityAction.Demand, ControlThread=true)]
         public static bool SetMinThreads(int workerThreads, int completionPortThreads) { throw null; }
+    }
+    public enum ThreadPriority
+    {
+        AboveNormal = 3,
+        BelowNormal = 1,
+        Highest = 4,
+        Lowest = 0,
+        Normal = 2,
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public delegate void ThreadStart();
