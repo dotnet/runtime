@@ -170,6 +170,7 @@ typedef struct {
 	GPtrArray *bblock_list;
 	char *method_name;
 	GHashTable *jit_callees;
+	LLVMValueRef long_bb_break_var;
 } EmitContext;
 
 typedef struct {
@@ -4150,14 +4151,36 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		if (nins > 1000) {
 			/*
 			 * Some steps in llc are non-linear in the size of basic blocks, see #5714.
-			 * Start a new bblock. If the llvm optimization passes merge these, we
-			 * can work around that by doing a volatile load + cond branch from
-			 * localloc-ed memory.
+			 * Start a new bblock.
+			 * Prevent the bblocks to be merged by doing a volatile load + cond branch
+			 * from localloc-ed memory.
 			 */
 			if (!cfg->llvm_only)
-				set_failure (ctx, "basic block too long");
+				;//set_failure (ctx, "basic block too long");
+
+			if (!ctx->long_bb_break_var) {
+				ctx->long_bb_break_var = build_alloca_llvm_type_name (ctx, LLVMInt32Type (), 0, "long_bb_break");
+				mono_llvm_build_store (ctx->alloca_builder, LLVMConstInt (LLVMInt32Type (), 0, FALSE), ctx->long_bb_break_var, TRUE, LLVM_BARRIER_NONE);
+			}
+
 			cbb = gen_bb (ctx, "CONT_LONG_BB");
-			LLVMBuildBr (ctx->builder, cbb);
+			LLVMBasicBlockRef dummy_bb = gen_bb (ctx, "CONT_LONG_BB_DUMMY");
+
+			LLVMValueRef load = mono_llvm_build_load (builder, ctx->long_bb_break_var, "", TRUE);
+			/*
+			 * The long_bb_break_var is initialized to 0 in the prolog, so this branch will always go to 'cbb'
+			 * but llvm doesn't know that, so the branch is not going to be eliminated.
+			 */
+			LLVMValueRef cmp = LLVMBuildICmp (builder, LLVMIntEQ, load, LLVMConstInt (LLVMInt32Type (), 0, FALSE), "");
+
+			LLVMBuildCondBr (builder, cmp, cbb, dummy_bb);
+
+			/* Emit a dummy false bblock which does nothing but contains a volatile store so it cannot be eliminated */
+			ctx->builder = builder = create_builder (ctx);
+			LLVMPositionBuilderAtEnd (builder, dummy_bb);
+			mono_llvm_build_store (builder, LLVMConstInt (LLVMInt32Type (), 1, FALSE), ctx->long_bb_break_var, TRUE, LLVM_BARRIER_NONE);
+			LLVMBuildBr (builder, cbb);
+
 			ctx->builder = builder = create_builder (ctx);
 			LLVMPositionBuilderAtEnd (builder, cbb);
 			ctx->bblocks [bb->block_num].end_bblock = cbb;
