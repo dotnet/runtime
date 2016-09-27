@@ -40,6 +40,9 @@
         <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\muldimjagary\muldimjagary\*">
             <Issue>3392</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\DoublinkList\dlstack\*">
+            <Issue>6574</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\importer\Desktop\bleref_il_d\bleref_il_d.cmd">
             <Issue>2414</Issue>
         </ExcludeList>
@@ -242,9 +245,6 @@
     <!-- The following x86 failures only occur with RyuJIT/x86 -->
 
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(BuildArch)' == 'x86'">
-        <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\DoublinkList\dlstack\*">
-            <Issue>6553</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1.2-Beta1\b103058\b103058\b103058.cmd">
             <Issue>7008</Issue>
         </ExcludeList>
