@@ -1490,6 +1490,7 @@ public:
 
     inline bool IsFPZero();
     inline bool IsIntegralConst(ssize_t constVal);
+    inline bool IsIntegralConstVector(ssize_t constVal);
 
     inline bool IsBoxedValue();
 
@@ -4876,6 +4877,32 @@ inline bool GenTree::IsIntegralConst(ssize_t constVal)
     {
         return true;
     }
+
+    return false;
+}
+
+//-------------------------------------------------------------------
+// IsIntegralConstVector: returns true if this this is a SIMD vector
+// with all its elements equal to an integral constant.
+//
+// Arguments:
+//     constVal  -  const value of vector element
+//
+// Returns:
+//     True if this represents an integral const SIMD vector.
+//
+inline bool GenTree::IsIntegralConstVector(ssize_t constVal)
+{
+#ifdef FEATURE_SIMD
+    // SIMDIntrinsicInit intrinsic with a const value as initializer
+    // represents a const vector.
+    if ((gtOper == GT_SIMD) && (gtSIMD.gtSIMDIntrinsicID == SIMDIntrinsicInit) && gtGetOp1()->IsIntegralConst(constVal))
+    {
+        assert(varTypeIsIntegral(gtSIMD.gtSIMDBaseType));
+        assert(gtGetOp2() == nullptr);
+        return true;
+    }
+#endif
 
     return false;
 }
