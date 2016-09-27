@@ -1197,6 +1197,10 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             genUpdateLife(tree);
         }
 #endif // _TARGET_XARCH_
+        else if (tree->OperIsInitVal())
+        {
+            genConsumeReg(tree->gtGetOp1());
+        }
         else
         {
 #ifdef FEATURE_SIMD
@@ -1405,6 +1409,13 @@ void CodeGen::genConsumeBlockSrc(GenTreeBlk* blkNode)
             return;
         }
     }
+    else
+    {
+        if (src->OperIsInitVal())
+        {
+            src = src->gtGetOp1();
+        }
+    }
     genConsumeReg(src);
 }
 
@@ -1431,6 +1442,13 @@ void CodeGen::genSetBlockSrc(GenTreeBlk* blkNode, regNumber srcReg)
             // Load its address into srcReg.
             inst_RV_TT(INS_lea, srcReg, src, 0, EA_BYREF);
             return;
+        }
+    }
+    else
+    {
+        if (src->OperIsInitVal())
+        {
+            src = src->gtGetOp1();
         }
     }
     genCopyRegIfNeeded(src, srcReg);
