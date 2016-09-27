@@ -91,8 +91,9 @@ static inline void
 mono_stack_mark_pop (MonoThreadInfo *info, HandleStackMark *stackmark)
 {
 	HandleStack *handles = (HandleStack *)info->handle_stack;
-	handles->top = stackmark->chunk;
 	handles->top->size = stackmark->size;
+	mono_memory_write_barrier ();
+	handles->top = stackmark->chunk;
 }
 
 /*
