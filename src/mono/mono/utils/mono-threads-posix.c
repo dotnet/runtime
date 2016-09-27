@@ -157,7 +157,11 @@ mono_threads_platform_exit (int exit_code)
 void
 mono_threads_platform_unregister (MonoThreadInfo *info)
 {
-	mono_threads_platform_set_exited (info);
+	g_assert (info->handle);
+
+	/* The thread is no longer active, so unref it */
+	mono_w32handle_unref (info->handle);
+	info->handle = NULL;
 }
 
 int
@@ -285,28 +289,23 @@ mono_native_thread_set_name (MonoNativeThreadId tid, const char *name)
 }
 
 void
-mono_threads_platform_set_exited (MonoThreadInfo *info)
+mono_threads_platform_set_exited (gpointer handle)
 {
 	int thr_ret;
 
-	g_assert (info->handle);
-	if (mono_w32handle_issignalled (info->handle))
-		g_error ("%s: handle %p thread %p has already exited, it's handle is signalled", __func__, info->handle, mono_thread_info_get_tid (info));
-	if (mono_w32handle_get_type (info->handle) == MONO_W32HANDLE_UNUSED)
-		g_error ("%s: handle %p thread %p has already exited, it's handle type is 'unused'", __func__, info->handle, mono_thread_info_get_tid (info));
+	g_assert (handle);
+	if (mono_w32handle_issignalled (handle))
+		g_error ("%s: handle %p thread %p has already exited, it's handle is signalled", __func__, handle, mono_native_thread_id_get ());
+	if (mono_w32handle_get_type (handle) == MONO_W32HANDLE_UNUSED)
+		g_error ("%s: handle %p thread %p has already exited, it's handle type is 'unused'", __func__, handle, mono_native_thread_id_get ());
 
-	thr_ret = mono_w32handle_lock_handle (info->handle);
+	thr_ret = mono_w32handle_lock_handle (handle);
 	g_assert (thr_ret == 0);
 
-	mono_w32handle_set_signal_state (info->handle, TRUE, TRUE);
+	mono_w32handle_set_signal_state (handle, TRUE, TRUE);
 
-	thr_ret = mono_w32handle_unlock_handle (info->handle);
+	thr_ret = mono_w32handle_unlock_handle (handle);
 	g_assert (thr_ret == 0);
-
-	/* The thread is no longer active, so unref it */
-	mono_w32handle_unref (info->handle);
-
-	info->handle = NULL;
 }
 
 static const gchar* thread_typename (void)

@@ -522,7 +522,7 @@ gboolean mono_threads_platform_yield (void);
 void mono_threads_platform_exit (int exit_code);
 HANDLE mono_threads_platform_open_thread_handle (HANDLE handle, MonoNativeThreadId tid);
 void mono_threads_platform_close_thread_handle (HANDLE handle);
-void mono_threads_platform_set_exited (THREAD_INFO_TYPE *info);
+void mono_threads_platform_set_exited (gpointer handle);
 gpointer mono_threads_platform_duplicate_handle (THREAD_INFO_TYPE *info);
 
 void mono_threads_coop_begin_global_suspend (void);

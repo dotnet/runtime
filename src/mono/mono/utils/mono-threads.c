@@ -399,6 +399,7 @@ unregister_thread (void *arg)
 	MonoThreadInfo *info;
 	int small_id;
 	gboolean result;
+	gpointer handle;
 
 	info = (MonoThreadInfo *) arg;
 	g_assert (info);
@@ -422,6 +423,10 @@ unregister_thread (void *arg)
 #ifndef HAVE_KW_THREAD
 	mono_native_tls_set_value (small_id_key, GUINT_TO_POINTER (info->small_id + 1));
 #endif
+
+	/* we need to duplicate it, as the info->handle is going
+	 * to be closed when unregistering from the platform */
+	handle = mono_threads_platform_duplicate_handle (info);
 
 	/*
 	First perform the callback that requires no locks.
@@ -457,6 +462,13 @@ unregister_thread (void *arg)
 	mono_thread_hazardous_try_free_some ();
 
 	mono_thread_small_id_free (small_id);
+
+	/* Signal the w32handle. It can be done as late as here
+	 * because w32handle does not access the current MonoThreadInfo,
+	 * neither does it switch state to BLOCKING. */
+	mono_threads_platform_set_exited (handle);
+
+	mono_threads_platform_close_thread_handle (handle);
 }
 
 static void
@@ -1638,7 +1650,9 @@ void
 mono_thread_info_set_exited (THREAD_INFO_TYPE *info)
 {
 	g_assert (mono_thread_info_is_current (info));
-	mono_threads_platform_set_exited (info);
+
+	g_assert (info->handle);
+	mono_threads_platform_set_exited (info->handle);
 }
 
 gpointer
