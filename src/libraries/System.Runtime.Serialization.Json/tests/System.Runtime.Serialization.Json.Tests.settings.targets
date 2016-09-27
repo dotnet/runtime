@@ -10,13 +10,6 @@
     <TestSourceFolder>$(MSBuildThisFileDirectory)\</TestSourceFolder>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(TestSourceFolder)..\..\System.Runtime.Serialization.Xml\tests\Utils.cs" />
-    <Compile Include="$(TestSourceFolder)..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />
-    <Compile Include="$(TestSourceFolder)..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.CoreCLR.cs" />
-    <Compile Include="$(TestSourceFolder)DataContractJsonSerializer.cs" />
-    <Compile Include="$(TestSourceFolder)DataContractJsonSerializer.CoreCLR.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="$(TestSourceFolder)..\..\System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj">
       <Project>{6B4C1660-D158-4820-BE1C-D7A29CEBEC9B}</Project>
       <Name>System.Private.DataContractSerialization</Name>

@@ -42,26 +42,54 @@ public static class XmlDictionaryWriterTest
     [Fact]
     public static void XmlBaseWriter_FlushAsync()
     {
-        string actual;
+        string actual = null;
         int byteSize = 1024;
         byte[] bytes = GetByteArray(byteSize);
         string expect = GetExpectString(bytes, byteSize);
-        using (var ms = new AsyncMemoryStream())
+        string lastCompletedOperation = null;
+        try
+        {            
+            using (var ms = new AsyncMemoryStream())
+            {
+                var writer = XmlDictionaryWriter.CreateTextWriter(ms);
+                lastCompletedOperation = "XmlDictionaryWriter.CreateTextWriter()";
+
+                writer.WriteStartDocument();
+                lastCompletedOperation = "writer.WriteStartDocument()";
+
+                writer.WriteStartElement("data");
+                lastCompletedOperation = "writer.WriteStartElement()";
+
+                writer.WriteBase64(bytes, 0, byteSize);
+                lastCompletedOperation = "writer.WriteBase64()";
+
+                writer.WriteEndElement();
+                lastCompletedOperation = "writer.WriteEndElement()";
+
+                writer.WriteEndDocument();
+                lastCompletedOperation = "writer.WriteEndDocument()";
+
+                var task = writer.FlushAsync();
+                lastCompletedOperation = "writer.FlushAsync()";
+
+                task.Wait();
+                ms.Position = 0;
+                var sr = new StreamReader(ms);
+                actual = sr.ReadToEnd();
+            }
+        }
+        catch(Exception e)
         {
-            var writer = XmlDictionaryWriter.CreateTextWriter(ms);
-            writer.WriteStartDocument();
-            writer.WriteStartElement("data");
-            writer.WriteBase64(bytes, 0, byteSize);
-            writer.WriteEndElement();
-            writer.WriteEndDocument();
-            var task = writer.FlushAsync();
-            task.Wait();
-            ms.Position = 0;
-            var sr = new StreamReader(ms);
-            actual = sr.ReadToEnd();
+            var sb = new StringBuilder();
+            sb.AppendLine($"An error occured: {e.Message}");
+            sb.AppendLine(e.StackTrace);
+            sb.AppendLine();
+            sb.AppendLine($"The last completed operation before the exception was: {lastCompletedOperation}");
+            Assert.True(false, sb.ToString());
         }
 
         Assert.StrictEqual(expect, actual);
+
     }
 
     [Fact]
