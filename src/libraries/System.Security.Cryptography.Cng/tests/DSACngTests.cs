@@ -19,7 +19,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(SupportsFips186_3))]
         public static void TestImportV2Key()
         {
             using (CngKey key = CngKey.Import(TestData.Key_DSA2048Key, CngKeyBlobFormat.GenericPrivateBlob))
@@ -57,6 +57,24 @@ namespace System.Security.Cryptography.Dsa.Tests
             {
                 byte[] reExported = key.Export(CngKeyBlobFormat.GenericPublicBlob);
                 Assert.Equal<byte>(TestData.Key_DSA1024PublicKey, reExported);
+            }
+        }
+
+        [Fact]
+        public static void VerifyDefaultKeySize_Cng()
+        {
+            using (DSA dsa = new DSACng())
+            {
+                // DSACng detects OS version and selects appropriate default key size
+                Assert.Equal(DSAFactory.SupportsFips186_3 ? 2048 : 1024, dsa.KeySize);
+            }
+        }
+
+        static internal bool SupportsFips186_3
+        {
+            get
+            {
+                return DSAFactory.SupportsFips186_3;
             }
         }
     }

@@ -6,8 +6,20 @@ using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    public class DSAKeyGeneration
+    public partial class DSAKeyGeneration
     {
+        [Fact]
+        public static void VerifyDefaultKeySize_Fips186_2()
+        {
+            if (!DSAFactory.SupportsFips186_3)
+            {
+                using (DSA dsa = DSAFactory.Create())
+                {
+                    Assert.True(dsa.KeySize <= 1024); // KeySize must be <= 1024 for FIPS 186-2
+                }
+            }
+        }
+
         [Fact]
         public static void GenerateMinKey()
         {
