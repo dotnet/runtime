@@ -230,6 +230,16 @@
     </Otherwise>
   </Choose>
 
+  <!-- initialize all the targets variables to false as they should only be set below -->
+  <PropertyGroup>
+    <TargetsWindows>false</TargetsWindows>
+    <TargetsUnix>false</TargetsUnix>
+    <TargetsLinux>false</TargetsLinux>
+    <TargetsOSX>false</TargetsOSX>
+    <TargetsFreeBSD>false</TargetsFreeBSD>
+    <TargetsNetBSD>false</TargetsNetBSD>
+  </PropertyGroup>
+
   <!-- Setup properties per OSGroup -->
   <Choose>
     <When Condition="'$(OSGroup)'=='AnyOS'">
