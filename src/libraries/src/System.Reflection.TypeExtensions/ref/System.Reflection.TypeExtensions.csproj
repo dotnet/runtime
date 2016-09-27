@@ -4,6 +4,7 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <NuGetTargetMoniker>.NETStandard,Version=v1.5</NuGetTargetMoniker>
+    <PackageTargetFramework>netstandard1.5;uap10.1</PackageTargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Reflection.TypeExtensions.cs" />

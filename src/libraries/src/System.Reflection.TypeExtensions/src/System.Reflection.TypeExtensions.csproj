@@ -6,6 +6,7 @@
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' != 'netcore50aot'">true</IsPartialFacadeAssembly>
     <ProjectGuid>{1E689C1B-690C-4799-BDE9-6E7990585894}</ProjectGuid>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.5</NuGetTargetMoniker>
+    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.5;uap10.1</PackageTargetFramework>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -21,7 +22,7 @@
     <Compile Include="System\Reflection\Requires.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netcore50aot'">
-    <Compile Include="System\Reflection\TypeExtensions.CoreCLR.cs" />
+    <Compile Include="System\Reflection\TypeExtensions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
     <Compile Include="System\Reflection\AssemblyExtensions.cs" />
@@ -32,7 +33,7 @@
     <Compile Include="System\Reflection\ModuleExtensions.cs" />
     <Compile Include="System\Reflection\MethodInfoExtensions.cs" />
     <Compile Include="System\Reflection\PropertyInfoExtensions.cs" />
-    <Compile Include="System\Reflection\TypeExtensions.CoreRT.cs" />
+    <Compile Include="System\Reflection\TypeExtensions.netcore50aot.cs" />
     <Compile Include="Internal\Reflection\Extensions\NonPortable\InheritedPropertyInfo.cs" />
     <Compile Include="Internal\Reflection\Extensions\NonPortable\MemberEnumerator.cs" />
     <Compile Include="Internal\Reflection\Extensions\NonPortable\MemberPolicies.cs" />
