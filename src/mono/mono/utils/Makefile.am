@@ -11,7 +11,20 @@ mono-dtrace.h: $(top_srcdir)/data/mono.d
 
 endif
 
+if HOST_WIN32
+win32_sources = \
+	os-event-win32.c
+
+platform_sources = $(win32_sources)
+else
+unix_sources = \
+	os-event-unix.c
+
+platform_sources = $(unix_sources)
+endif
+
 monoutils_sources = \
+	$(platform_sources)	\
 	mono-md5.c		\
 	mono-sha1.c		\
 	mono-logger.c		\
@@ -164,7 +177,8 @@ monoutils_sources = \
 	checked-build.c \
 	checked-build.h \
 	w32handle.c \
-	w32handle.h
+	w32handle.h \
+	os-event.h
 
 arch_sources = 
 
