@@ -21,6 +21,7 @@
     <FeatureDbiOopDebugging_HostOneCoreamd64 Condition="'$(TargetArch)' == 'amd64'">true</FeatureDbiOopDebugging_HostOneCoreamd64>
     <FeatureEventTrace>true</FeatureEventTrace>
     <FeatureExceptionDispatchInfo>true</FeatureExceptionDispatchInfo>
+    <FeatureExceptionNotifications>true</FeatureExceptionNotifications>
     <FeatureFrameworkInternal>true</FeatureFrameworkInternal>
     <FeatureHijack>true</FeatureHijack>
     <FeatureInteropDebugging Condition="('$(TargetArch)' == 'i386') or ('$(TargetArch)' == 'amd64')">true</FeatureInteropDebugging>
