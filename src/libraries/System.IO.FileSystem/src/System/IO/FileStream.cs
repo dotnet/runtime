@@ -97,15 +97,11 @@ namespace System.IO
 
             string fullPath = Path.GetFullPath(path);
 
-            ValidatePath(fullPath, "path");
-
             if ((access & FileAccess.Read) != 0 && mode == FileMode.Append)
                 throw new ArgumentException(SR.Argument_InvalidAppendMode, nameof(access));
 
             this._innerStream = FileSystem.Current.Open(fullPath, mode, access, share, bufferSize, options, this);
         }
-
-        static partial void ValidatePath(string fullPath, string paramName);
 
         // InternalOpen, InternalCreate, and InternalAppend:
         // Factory methods for FileStream used by File, FileInfo, and ReadLinesIterator
