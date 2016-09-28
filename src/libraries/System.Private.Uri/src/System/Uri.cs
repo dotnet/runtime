@@ -4189,7 +4189,7 @@ namespace System
                             && StaticNotAny(flags, Flags.HostUnicodeNormalized))
                         {
                             // Normalize any other host
-                            string user = new string(pString, startOtherHost, startOtherHost - end);
+                            string user = new string(pString, startOtherHost, end - startOtherHost);
                             try
                             {
                                 newHost += user.Normalize(NormalizationForm.FormC);
