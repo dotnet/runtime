@@ -187,6 +187,16 @@
         ]
     },
     {
+        "Name": "System.CodeDom",
+        "Description": "Provides types that can be used to model the structure of a source code document and to output source code for that model in a supported language.",
+        "CommonTypes": [
+            "System.CodeDom.CodeObject",
+            "System.CodeDom.Compiler.CodeDomProvider",
+            "Microsoft.CSharp.CSharpCodeProvider",
+            "Microsoft.VisualBasic.VBCodeProvider"
+        ]
+    },
+    {
         "Name": "System.Collections",
         "Description": "Provides classes that define generic collections, which allow developers to create strongly typed collections that provide better type safety and performance than non-generic strongly typed collections.",
         "CommonTypes": [

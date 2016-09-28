@@ -2,24 +2,24 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System;
-using System.IO;
-using System.Collections;
-using System.Reflection;
 using System.CodeDom;
 using System.CodeDom.Compiler;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Globalization;
-using System.Security.Permissions;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Reflection;
+using System.Text;
 
 namespace Microsoft.CSharp
 {
-    internal class CSharpCodeGenerator : ICodeCompiler, ICodeGenerator
+    internal sealed class CSharpCodeGenerator : ICodeCompiler, ICodeGenerator
     {
+        private static readonly char[] s_periodArray = new char[] { '.' };
+
         private ExposedTabStringIndentedTextWriter _output;
         private CodeGeneratorOptions _options;
         private CodeTypeDeclaration _currentClass;
@@ -322,13 +322,13 @@ namespace Microsoft.CSharp
                 Indent++;
                 OutputExpressionList(init, newlineBetweenItems: true);
                 Indent--;
-                Output.Write("}");
+                Output.Write('}');
             }
             else
             {
                 Output.Write(GetBaseTypeOutput(e.CreateType));
 
-                Output.Write("[");
+                Output.Write('[');
                 if (e.SizeExpression != null)
                 {
                     GenerateExpression(e.SizeExpression);
@@ -337,7 +337,7 @@ namespace Microsoft.CSharp
                 {
                     Output.Write(e.Size);
                 }
-                Output.Write("]");
+                Output.Write(']');
 
                 int nestedArrayDepth = e.CreateType.NestedArrayDepth;
                 for (int i = 0; i < nestedArrayDepth - 1; i++)
@@ -352,10 +352,10 @@ namespace Microsoft.CSharp
         private void GenerateBinaryOperatorExpression(CodeBinaryOperatorExpression e)
         {
             bool indentedExpression = false;
-            Output.Write("(");
+            Output.Write('(');
 
             GenerateExpression(e.Left);
-            Output.Write(" ");
+            Output.Write(' ');
 
             if (e.Left is CodeBinaryOperatorExpression || e.Right is CodeBinaryOperatorExpression)
             {
@@ -373,10 +373,10 @@ namespace Microsoft.CSharp
 
             OutputOperator(e.Operator);
 
-            Output.Write(" ");
+            Output.Write(' ');
             GenerateExpression(e.Right);
 
-            Output.Write(")");
+            Output.Write(')');
             if (indentedExpression)
             {
                 Indent -= 3;
@@ -420,18 +420,18 @@ namespace Microsoft.CSharp
         {
             Output.Write("default(");
             OutputType(e.Type);
-            Output.Write(")");
+            Output.Write(')');
         }
 
         private void GenerateDelegateCreateExpression(CodeDelegateCreateExpression e)
         {
             Output.Write("new ");
             OutputType(e.DelegateType);
-            Output.Write("(");
+            Output.Write('(');
             GenerateExpression(e.TargetObject);
-            Output.Write(".");
+            Output.Write('.');
             OutputIdentifier(e.MethodName);
-            Output.Write(")");
+            Output.Write(')');
         }
 
         private void GenerateEvents(CodeTypeDeclaration e)
@@ -497,7 +497,7 @@ namespace Microsoft.CSharp
             if (e.TargetObject != null)
             {
                 GenerateExpression(e.TargetObject);
-                Output.Write(".");
+                Output.Write('.');
             }
             OutputIdentifier(e.FieldName);
         }
@@ -511,7 +511,7 @@ namespace Microsoft.CSharp
         private void GenerateIndexerExpression(CodeIndexerExpression e)
         {
             GenerateExpression(e.TargetObject);
-            Output.Write("[");
+            Output.Write('[');
             bool first = true;
             foreach (CodeExpression exp in e.Indices)
             {
@@ -525,13 +525,13 @@ namespace Microsoft.CSharp
                 }
                 GenerateExpression(exp);
             }
-            Output.Write("]");
+            Output.Write(']');
         }
 
         private void GenerateArrayIndexerExpression(CodeArrayIndexerExpression e)
         {
             GenerateExpression(e.TargetObject);
-            Output.Write("[");
+            Output.Write('[');
             bool first = true;
             foreach (CodeExpression exp in e.Indices)
             {
@@ -545,7 +545,7 @@ namespace Microsoft.CSharp
                 }
                 GenerateExpression(exp);
             }
-            Output.Write("]");
+            Output.Write(']');
         }
 
         private void GenerateSnippetCompileUnit(CodeSnippetCompileUnit e)
@@ -570,9 +570,9 @@ namespace Microsoft.CSharp
         private void GenerateMethodInvokeExpression(CodeMethodInvokeExpression e)
         {
             GenerateMethodReferenceExpression(e.Method);
-            Output.Write("(");
+            Output.Write('(');
             OutputExpressionList(e.Parameters);
-            Output.Write(")");
+            Output.Write(')');
         }
 
         private void GenerateMethodReferenceExpression(CodeMethodReferenceExpression e)
@@ -581,15 +581,15 @@ namespace Microsoft.CSharp
             {
                 if (e.TargetObject is CodeBinaryOperatorExpression)
                 {
-                    Output.Write("(");
+                    Output.Write('(');
                     GenerateExpression(e.TargetObject);
-                    Output.Write(")");
+                    Output.Write(')');
                 }
                 else
                 {
                     GenerateExpression(e.TargetObject);
                 }
-                Output.Write(".");
+                Output.Write('.');
             }
             OutputIdentifier(e.MethodName);
 
@@ -619,7 +619,7 @@ namespace Microsoft.CSharp
                 GenerateNamespaceImports(e);
             }
 
-            Output.WriteLine("");
+            Output.WriteLine();
 
             GenerateTypes(e);
             GenerateNamespaceEnd(e);
@@ -740,7 +740,7 @@ namespace Microsoft.CSharp
             if (e.TargetObject != null)
             {
                 GenerateExpression(e.TargetObject);
-                Output.Write(".");
+                Output.Write('.');
             }
             OutputIdentifier(e.EventName);
         }
@@ -751,18 +751,18 @@ namespace Microsoft.CSharp
             {
                 GenerateExpression(e.TargetObject);
             }
-            Output.Write("(");
+            Output.Write('(');
             OutputExpressionList(e.Parameters);
-            Output.Write(")");
+            Output.Write(')');
         }
 
         private void GenerateObjectCreateExpression(CodeObjectCreateExpression e)
         {
             Output.Write("new ");
             OutputType(e.CreateType);
-            Output.Write("(");
+            Output.Write('(');
             OutputExpressionList(e.Parameters);
-            Output.Write(")");
+            Output.Write(')');
         }
 
         private void GeneratePrimitiveExpression(CodePrimitiveExpression e)
@@ -785,7 +785,7 @@ namespace Microsoft.CSharp
             else if (e.Value is uint)
             {
                 Output.Write(((uint)e.Value).ToString(CultureInfo.InvariantCulture));
-                Output.Write("u");
+                Output.Write('u');
             }
             else if (e.Value is ulong)
             {
@@ -929,7 +929,7 @@ namespace Microsoft.CSharp
             GenerateExpression(e.Expression);
             if (!_generatingForLoop)
             {
-                Output.WriteLine(";");
+                Output.WriteLine(';');
             }
         }
 
@@ -942,13 +942,13 @@ namespace Microsoft.CSharp
             GenerateExpression(e.TestExpression);
             Output.Write("; ");
             GenerateStatement(e.IncrementStatement);
-            Output.Write(")");
+            Output.Write(')');
             OutputStartingBrace();
             _generatingForLoop = false;
             Indent++;
             GenerateStatements(e.Statements);
             Indent--;
-            Output.WriteLine("}");
+            Output.WriteLine('}');
         }
 
         private void GenerateThrowExceptionStatement(CodeThrowExceptionStatement e)
@@ -956,17 +956,17 @@ namespace Microsoft.CSharp
             Output.Write("throw");
             if (e.ToThrow != null)
             {
-                Output.Write(" ");
+                Output.Write(' ');
                 GenerateExpression(e.ToThrow);
             }
-            Output.WriteLine(";");
+            Output.WriteLine(';');
         }
 
         private void GenerateComment(CodeComment e)
         {
             string commentLineStart = e.DocComment ? "///" : "//";
             Output.Write(commentLineStart);
-            Output.Write(" ");
+            Output.Write(' ');
 
             string value = e.Text;
             for (int i = 0; i < value.Length; i++)
@@ -1022,17 +1022,17 @@ namespace Microsoft.CSharp
             Output.Write("return");
             if (e.Expression != null)
             {
-                Output.Write(" ");
+                Output.Write(' ');
                 GenerateExpression(e.Expression);
             }
-            Output.WriteLine(";");
+            Output.WriteLine(';');
         }
 
         private void GenerateConditionStatement(CodeConditionStatement e)
         {
             Output.Write("if (");
             GenerateExpression(e.Condition);
-            Output.Write(")");
+            Output.Write(')');
             OutputStartingBrace();
             Indent++;
             GenerateStatements(e.TrueStatements);
@@ -1041,14 +1041,14 @@ namespace Microsoft.CSharp
             CodeStatementCollection falseStatemetns = e.FalseStatements;
             if (falseStatemetns.Count > 0)
             {
-                Output.Write("}");
+                Output.Write('}');
                 if (Options.ElseOnClosing)
                 {
-                    Output.Write(" ");
+                    Output.Write(' ');
                 }
                 else
                 {
-                    Output.WriteLine("");
+                    Output.WriteLine();
                 }
                 Output.Write("else");
                 OutputStartingBrace();
@@ -1056,7 +1056,7 @@ namespace Microsoft.CSharp
                 GenerateStatements(e.FalseStatements);
                 Indent--;
             }
-            Output.WriteLine("}");
+            Output.WriteLine('}');
         }
 
         private void GenerateTryCatchFinallyStatement(CodeTryCatchFinallyStatement e)
@@ -1071,20 +1071,20 @@ namespace Microsoft.CSharp
             {
                 foreach (CodeCatchClause current in catches)
                 {
-                    Output.Write("}");
+                    Output.Write('}');
                     if (Options.ElseOnClosing)
                     {
-                        Output.Write(" ");
+                        Output.Write(' ');
                     }
                     else
                     {
-                        Output.WriteLine("");
+                        Output.WriteLine();
                     }
                     Output.Write("catch (");
                     OutputType(current.CatchExceptionType);
-                    Output.Write(" ");
+                    Output.Write(' ');
                     OutputIdentifier(current.LocalName);
-                    Output.Write(")");
+                    Output.Write(')');
                     OutputStartingBrace();
                     Indent++;
                     GenerateStatements(current.Statements);
@@ -1095,14 +1095,14 @@ namespace Microsoft.CSharp
             CodeStatementCollection finallyStatements = e.FinallyStatements;
             if (finallyStatements.Count > 0)
             {
-                Output.Write("}");
+                Output.Write('}');
                 if (Options.ElseOnClosing)
                 {
-                    Output.Write(" ");
+                    Output.Write(' ');
                 }
                 else
                 {
-                    Output.WriteLine("");
+                    Output.WriteLine();
                 }
                 Output.Write("finally");
                 OutputStartingBrace();
@@ -1110,7 +1110,7 @@ namespace Microsoft.CSharp
                 GenerateStatements(finallyStatements);
                 Indent--;
             }
-            Output.WriteLine("}");
+            Output.WriteLine('}');
         }
 
         private void GenerateAssignStatement(CodeAssignStatement e)
@@ -1120,7 +1120,7 @@ namespace Microsoft.CSharp
             GenerateExpression(e.Right);
             if (!_generatingForLoop)
             {
-                Output.WriteLine(";");
+                Output.WriteLine(';');
             }
         }
 
@@ -1129,7 +1129,7 @@ namespace Microsoft.CSharp
             GenerateEventReferenceExpression(e.Event);
             Output.Write(" += ");
             GenerateExpression(e.Listener);
-            Output.WriteLine(";");
+            Output.WriteLine(';');
         }
 
         private void GenerateRemoveEventStatement(CodeRemoveEventStatement e)
@@ -1137,7 +1137,7 @@ namespace Microsoft.CSharp
             GenerateEventReferenceExpression(e.Event);
             Output.Write(" -= ");
             GenerateExpression(e.Listener);
-            Output.WriteLine(";");
+            Output.WriteLine(';');
         }
 
         private void GenerateSnippetStatement(CodeSnippetStatement e)
@@ -1149,14 +1149,14 @@ namespace Microsoft.CSharp
         {
             Output.Write("goto ");
             Output.Write(e.Label);
-            Output.WriteLine(";");
+            Output.WriteLine(';');
         }
 
         private void GenerateLabeledStatement(CodeLabeledStatement e)
         {
             Indent--;
             Output.Write(e.Label);
-            Output.WriteLine(":");
+            Output.WriteLine(':');
             Indent++;
             if (e.Statement != null)
             {
@@ -1174,19 +1174,19 @@ namespace Microsoft.CSharp
             }
             if (!_generatingForLoop)
             {
-                Output.WriteLine(";");
+                Output.WriteLine(';');
             }
         }
 
         private void GenerateLinePragmaStart(CodeLinePragma e)
         {
-            Output.WriteLine("");
+            Output.WriteLine();
             Output.Write("#line ");
             Output.Write(e.LineNumber);
             Output.Write(" \"");
             Output.Write(e.FileName);
-            Output.Write("\"");
-            Output.WriteLine("");
+            Output.Write('\"');
+            Output.WriteLine();
         }
 
         private void GenerateLinePragmaEnd(CodeLinePragma e)
@@ -1216,7 +1216,7 @@ namespace Microsoft.CSharp
                 name = GetBaseTypeOutput(e.PrivateImplementationType) + "." + name;
             }
             OutputTypeNamePair(e.Type, name);
-            Output.WriteLine(";");
+            Output.WriteLine(';');
         }
 
         private void GenerateExpression(CodeExpression e)
@@ -1350,7 +1350,7 @@ namespace Microsoft.CSharp
                     Output.Write(" = ");
                     GenerateExpression(e.InitExpression);
                 }
-                Output.WriteLine(",");
+                Output.WriteLine(',');
             }
             else
             {
@@ -1368,7 +1368,7 @@ namespace Microsoft.CSharp
                     Output.Write(" = ");
                     GenerateExpression(e.InitExpression);
                 }
-                Output.WriteLine(";");
+                Output.WriteLine(';');
             }
         }
 
@@ -1402,7 +1402,7 @@ namespace Microsoft.CSharp
             GenerateStatements(e.Statements);
 
             Indent--;
-            Output.WriteLine("}");
+            Output.WriteLine('}');
         }
 
         private void GenerateMethods(CodeTypeDeclaration e)
@@ -1469,19 +1469,19 @@ namespace Microsoft.CSharp
                 OutputVTableModifier(e.Attributes);
             }
             OutputType(e.ReturnType);
-            Output.Write(" ");
+            Output.Write(' ');
             if (e.PrivateImplementationType != null)
             {
                 Output.Write(GetBaseTypeOutput(e.PrivateImplementationType));
-                Output.Write(".");
+                Output.Write('.');
             }
             OutputIdentifier(e.Name);
 
             OutputTypeParameters(e.TypeParameters);
 
-            Output.Write("(");
+            Output.Write('(');
             OutputParameters(e.Parameters);
-            Output.Write(")");
+            Output.Write(')');
 
             OutputTypeParameterConstraints(e.TypeParameters);
 
@@ -1494,11 +1494,11 @@ namespace Microsoft.CSharp
                 GenerateStatements(e.Statements);
 
                 Indent--;
-                Output.WriteLine("}");
+                Output.WriteLine('}');
             }
             else
             {
-                Output.WriteLine(";");
+                Output.WriteLine(';');
             }
         }
 
@@ -1554,19 +1554,19 @@ namespace Microsoft.CSharp
                 OutputVTableModifier(e.Attributes);
             }
             OutputType(e.Type);
-            Output.Write(" ");
+            Output.Write(' ');
 
             if (e.PrivateImplementationType != null && !IsCurrentInterface)
             {
                 Output.Write(GetBaseTypeOutput(e.PrivateImplementationType));
-                Output.Write(".");
+                Output.Write('.');
             }
 
-            if (e.Parameters.Count > 0 && string.Compare(e.Name, "Item", StringComparison.OrdinalIgnoreCase) == 0)
+            if (e.Parameters.Count > 0 && string.Equals(e.Name, "Item", StringComparison.OrdinalIgnoreCase))
             {
                 Output.Write("this[");
                 OutputParameters(e.Parameters);
-                Output.Write("]");
+                Output.Write(']');
             }
             else
             {
@@ -1589,7 +1589,7 @@ namespace Microsoft.CSharp
                     Indent++;
                     GenerateStatements(e.GetStatements);
                     Indent--;
-                    Output.WriteLine("}");
+                    Output.WriteLine('}');
                 }
             }
             if (e.HasSet)
@@ -1605,12 +1605,12 @@ namespace Microsoft.CSharp
                     Indent++;
                     GenerateStatements(e.SetStatements);
                     Indent--;
-                    Output.WriteLine("}");
+                    Output.WriteLine('}');
                 }
             }
 
             Indent--;
-            Output.WriteLine("}");
+            Output.WriteLine('}');
         }
 
         private void GenerateSingleFloatValue(float s)
@@ -1652,7 +1652,7 @@ namespace Microsoft.CSharp
             {
                 Output.Write(d.ToString("R", CultureInfo.InvariantCulture));
                 // always mark a double as being a double in case we have no decimal portion (e.g write 1D instead of 1 which is an int)
-                Output.Write("D");
+                Output.Write('D');
             }
         }
 
@@ -1734,22 +1734,22 @@ namespace Microsoft.CSharp
             switch (op)
             {
                 case CodeBinaryOperatorType.Add:
-                    Output.Write("+");
+                    Output.Write('+');
                     break;
                 case CodeBinaryOperatorType.Subtract:
-                    Output.Write("-");
+                    Output.Write('-');
                     break;
                 case CodeBinaryOperatorType.Multiply:
-                    Output.Write("*");
+                    Output.Write('*');
                     break;
                 case CodeBinaryOperatorType.Divide:
-                    Output.Write("/");
+                    Output.Write('/');
                     break;
                 case CodeBinaryOperatorType.Modulus:
-                    Output.Write("%");
+                    Output.Write('%');
                     break;
                 case CodeBinaryOperatorType.Assign:
-                    Output.Write("=");
+                    Output.Write('=');
                     break;
                 case CodeBinaryOperatorType.IdentityInequality:
                     Output.Write("!=");
@@ -1761,10 +1761,10 @@ namespace Microsoft.CSharp
                     Output.Write("==");
                     break;
                 case CodeBinaryOperatorType.BitwiseOr:
-                    Output.Write("|");
+                    Output.Write('|');
                     break;
                 case CodeBinaryOperatorType.BitwiseAnd:
-                    Output.Write("&");
+                    Output.Write('&');
                     break;
                 case CodeBinaryOperatorType.BooleanOr:
                     Output.Write("||");
@@ -1773,7 +1773,7 @@ namespace Microsoft.CSharp
                     Output.Write("&&");
                     break;
                 case CodeBinaryOperatorType.LessThan:
-                    Output.Write("<");
+                    Output.Write('<');
                     break;
                 case CodeBinaryOperatorType.LessThanOrEqual:
                     Output.Write("<=");
@@ -1809,7 +1809,7 @@ namespace Microsoft.CSharp
             if (e.TargetObject != null)
             {
                 GenerateExpression(e.TargetObject);
-                Output.Write(".");
+                Output.Write('.');
             }
             OutputIdentifier(e.PropertyName);
         }
@@ -1854,9 +1854,9 @@ namespace Microsoft.CSharp
 
             OutputMemberAccessModifier(e.Attributes);
             OutputIdentifier(CurrentTypeName);
-            Output.Write("(");
+            Output.Write('(');
             OutputParameters(e.Parameters);
-            Output.Write(")");
+            Output.Write(')');
 
             CodeExpressionCollection baseArgs = e.BaseConstructorArgs;
             CodeExpressionCollection thisArgs = e.ChainedConstructorArgs;
@@ -1868,7 +1868,7 @@ namespace Microsoft.CSharp
                 Indent++;
                 Output.Write("base(");
                 OutputExpressionList(baseArgs);
-                Output.Write(")");
+                Output.Write(')');
                 Indent--;
                 Indent--;
             }
@@ -1880,7 +1880,7 @@ namespace Microsoft.CSharp
                 Indent++;
                 Output.Write("this(");
                 OutputExpressionList(thisArgs);
-                Output.Write(")");
+                Output.Write(')');
                 Indent--;
                 Indent--;
             }
@@ -1889,7 +1889,7 @@ namespace Microsoft.CSharp
             Indent++;
             GenerateStatements(e.Statements);
             Indent--;
-            Output.WriteLine("}");
+            Output.WriteLine('}');
         }
 
         private void GenerateTypeConstructor(CodeTypeConstructor e)
@@ -1907,7 +1907,7 @@ namespace Microsoft.CSharp
             Indent++;
             GenerateStatements(e.Statements);
             Indent--;
-            Output.WriteLine("}");
+            Output.WriteLine('}');
         }
 
         private void GenerateTypeReferenceExpression(CodeTypeReferenceExpression e) =>
@@ -1917,7 +1917,7 @@ namespace Microsoft.CSharp
         {
             Output.Write("typeof(");
             OutputType(e.Type);
-            Output.Write(")");
+            Output.Write(')');
         }
 
         private void GenerateType(CodeTypeDeclaration e)
@@ -2006,9 +2006,9 @@ namespace Microsoft.CSharp
                 CodeTypeDelegate del = (CodeTypeDelegate)e;
                 Output.Write("delegate ");
                 OutputType(del.ReturnType);
-                Output.Write(" ");
+                Output.Write(' ');
                 OutputIdentifier(e.Name);
-                Output.Write("(");
+                Output.Write('(');
                 OutputParameters(del.Parameters);
                 Output.WriteLine(");");
             }
@@ -2236,10 +2236,10 @@ namespace Microsoft.CSharp
 
         private void OutputAttributeArgument(CodeAttributeArgument arg)
         {
-            if (arg.Name != null && arg.Name.Length > 0)
+            if (!string.IsNullOrEmpty(arg.Name))
             {
                 OutputIdentifier(arg.Name);
-                Output.Write("=");
+                Output.Write('=');
             }
             ((ICodeGenerator)this).GenerateCodeFromExpression(arg.Value, _output.InnerWriter, _options);
         }
@@ -2319,7 +2319,7 @@ namespace Microsoft.CSharp
         private void OutputTypeNamePair(CodeTypeReference typeRef, string name)
         {
             OutputType(typeRef);
-            Output.Write(" ");
+            Output.Write(' ');
             OutputIdentifier(name);
         }
 
@@ -2486,21 +2486,21 @@ namespace Microsoft.CSharp
             if (!IsCurrentDelegate)
             {
                 Indent--;
-                Output.WriteLine("}");
+                Output.WriteLine('}');
             }
         }
 
         private void GenerateNamespaceStart(CodeNamespace e)
         {
-            if (e.Name != null && e.Name.Length > 0)
+            if (!string.IsNullOrEmpty(e.Name))
             {
                 Output.Write("namespace ");
-                string[] names = e.Name.Split('.');
+                string[] names = e.Name.Split(s_periodArray);
                 Debug.Assert(names.Length > 0);
                 OutputIdentifier(names[0]);
                 for (int i = 1; i < names.Length; i++)
                 {
-                    Output.Write(".");
+                    Output.Write('.');
                     OutputIdentifier(names[i]);
                 }
                 OutputStartingBrace();
@@ -2538,12 +2538,12 @@ namespace Microsoft.CSharp
             Output.Write("// </");
             Output.WriteLine(SR.AutoGen_Comment_Line1);
             Output.WriteLine("//------------------------------------------------------------------------------");
-            Output.WriteLine("");
+            Output.WriteLine();
 
             // CSharp needs to put assembly attributes after using statements.
             // Since we need to create a empty namespace even if we don't need it,
             // using will generated after assembly attributes.
-            SortedList importList = new SortedList(StringComparer.Ordinal);
+            var importList = new SortedSet<string>(StringComparer.Ordinal);
             foreach (CodeNamespace nspace in e.Namespaces)
             {
                 if (string.IsNullOrEmpty(nspace.Name))
@@ -2554,31 +2554,28 @@ namespace Microsoft.CSharp
                     // Collect the unique list of imports
                     foreach (CodeNamespaceImport import in nspace.Imports)
                     {
-                        if (!importList.Contains(import.Namespace))
-                        {
-                            importList.Add(import.Namespace, import.Namespace);
-                        }
+                        importList.Add(import.Namespace);
                     }
                 }
             }
 
             // now output the imports
-            foreach (string import in importList.Keys)
+            foreach (string import in importList)
             {
                 Output.Write("using ");
                 OutputIdentifier(import);
-                Output.WriteLine(";");
+                Output.WriteLine(';');
             }
-            if (importList.Keys.Count > 0)
+            if (importList.Count > 0)
             {
-                Output.WriteLine("");
+                Output.WriteLine();
             }
 
             // in C# the best place to put these is at the top level.
             if (e.AssemblyCustomAttributes.Count > 0)
             {
                 GenerateAttributes(e.AssemblyCustomAttributes, "assembly: ");
-                Output.WriteLine("");
+                Output.WriteLine();
             }
         }
 
@@ -2647,7 +2644,7 @@ namespace Microsoft.CSharp
             if (!string.IsNullOrEmpty(e.Name))
             {
                 Indent--;
-                Output.WriteLine("}");
+                Output.WriteLine('}');
             }
         }
 
@@ -2655,14 +2652,14 @@ namespace Microsoft.CSharp
         {
             Output.Write("using ");
             OutputIdentifier(e.Namespace);
-            Output.WriteLine(";");
+            Output.WriteLine(';');
         }
 
         private void GenerateAttributeDeclarationsStart(CodeAttributeDeclarationCollection attributes) =>
-            Output.Write("[");
+            Output.Write('[');
 
         private void GenerateAttributeDeclarationsEnd(CodeAttributeDeclarationCollection attributes) =>
-            Output.Write("]");
+            Output.Write(']');
 
         private void GenerateAttributes(CodeAttributeDeclarationCollection attributes) =>
             GenerateAttributes(attributes, null, inLine: false);
@@ -2696,7 +2693,7 @@ namespace Microsoft.CSharp
                 {
                     Output.Write(GetTypeOutput(current.AttributeType));
                 }
-                Output.Write("(");
+                Output.Write('(');
 
                 bool firstArg = true;
                 foreach (CodeAttributeArgument arg in current.Arguments)
@@ -2713,11 +2710,11 @@ namespace Microsoft.CSharp
                     OutputAttributeArgument(arg);
                 }
 
-                Output.Write(")");
+                Output.Write(')');
                 GenerateAttributeDeclarationsEnd(attributes);
                 if (inLine)
                 {
-                    Output.Write(" ");
+                    Output.Write(' ');
                 }
                 else
                 {
@@ -2735,7 +2732,7 @@ namespace Microsoft.CSharp
 
                 if (inLine)
                 {
-                    Output.Write(" ");
+                    Output.Write(' ');
                 }
                 else
                 {
@@ -2756,7 +2753,7 @@ namespace Microsoft.CSharp
         {
             // identifiers must be 1 char or longer
             //
-            if (value == null || value.Length == 0)
+            if (string.IsNullOrEmpty(value))
             {
                 return false;
             }
@@ -2999,8 +2996,8 @@ namespace Microsoft.CSharp
         {
             if (Options.BracingStyle == "C")
             {
-                Output.WriteLine("");
-                Output.WriteLine("{");
+                Output.WriteLine();
+                Output.WriteLine('{');
             }
             else
             {

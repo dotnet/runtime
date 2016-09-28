@@ -6,7 +6,7 @@ using System.Reflection;
 
 namespace Microsoft.VisualBasic
 {
-    internal class VBTypeAttributeConverter : VBModifierAttributeConverter
+    internal sealed class VBTypeAttributeConverter : VBModifierAttributeConverter
     {
         private VBTypeAttributeConverter() { } // no  need to create an instance; use Default
 

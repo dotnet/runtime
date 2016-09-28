@@ -6,7 +6,7 @@ using System.Reflection;
 
 namespace Microsoft.CSharp
 {
-    internal class CSharpTypeAttributeConverter : CSharpModifierAttributeConverter
+    internal sealed class CSharpTypeAttributeConverter : CSharpModifierAttributeConverter
     {
         private CSharpTypeAttributeConverter() { } // no  need to create an instance; use Default
 

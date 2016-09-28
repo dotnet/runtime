@@ -6,7 +6,7 @@ using System.CodeDom;
 
 namespace Microsoft.VisualBasic
 {
-    internal class VBMemberAttributeConverter : VBModifierAttributeConverter
+    internal sealed class VBMemberAttributeConverter : VBModifierAttributeConverter
     {
         private VBMemberAttributeConverter() { } // no  need to create an instance; use Default
 

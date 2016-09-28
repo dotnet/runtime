@@ -2,25 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System;
-using System.IO;
-using System.Collections;
-using System.Collections.Specialized;
-using System.ComponentModel;
-using System.Reflection;
 using System.CodeDom;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Globalization;
 using System.CodeDom.Compiler;
-using System.Security.Permissions;
+using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Diagnostics;
+using System.Globalization;
+using System.Reflection;
+using System.Text;
 
 namespace Microsoft.VisualBasic
 {
-    internal class VBCodeGenerator : CodeCompiler
+    internal sealed class VBCodeGenerator : CodeCompiler
     {
+        private static readonly char[] s_periodArray = new char[] { '.' };
         private const int MaxLineLength = 80;
 
         private const GeneratorSupport LanguageSupport = GeneratorSupport.EntryPointMethod |
@@ -249,54 +246,21 @@ namespace Microsoft.VisualBasic
             }
         };
 
-        internal VBCodeGenerator()
-        {
-        }
+        internal VBCodeGenerator() { }
 
         internal VBCodeGenerator(IDictionary<string, string> providerOptions)
         {
             _provOptions = providerOptions;
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Gets or the file extension to use for source files.
-        ///    </para>
-        /// </devdoc>
-        protected override string FileExtension { get { return ".vb"; } }
+        protected override string FileExtension => ".vb";
 
-        /// <devdoc>
-        ///    <para>
-        ///       Gets the name of the compiler exe
-        ///    </para>
-        /// </devdoc>
-        protected override string CompilerName { get { return "vbc.exe"; } }
+        protected override string CompilerName => "vbc.exe";
 
-        /// <devdoc>
-        ///    <para>
-        ///       Tells whether or not the current class should be generated as a module
-        ///    </para>
-        /// </devdoc>
-        private bool IsCurrentModule
-        {
-            get
-            {
-                return (IsCurrentClass && GetUserData(CurrentClass, "Module", false));
-            }
-        }
+        /// <summary>Tells whether or not the current class should be generated as a module</summary>
+        private bool IsCurrentModule => IsCurrentClass && GetUserData(CurrentClass, "Module", false);
 
-        /// <devdoc>
-        ///    <para>
-        ///       Gets the token that is used to represent <see langword='null'/>.
-        ///    </para>
-        /// </devdoc>
-        protected override string NullToken
-        {
-            get
-            {
-                return "Nothing";
-            }
-        }
+        protected override string NullToken => "Nothing";
 
         private void EnsureInDoubleQuotes(ref bool fInDoubleQuotes, StringBuilder b)
         {
@@ -308,15 +272,10 @@ namespace Microsoft.VisualBasic
         private void EnsureNotInDoubleQuotes(ref bool fInDoubleQuotes, StringBuilder b)
         {
             if (!fInDoubleQuotes) return;
-            b.Append("\"");
+            b.Append('\"');
             fInDoubleQuotes = false;
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Provides conversion to formatting with escape codes.
-        ///    </para>
-        /// </devdoc>
         protected override string QuoteSnippetString(string value)
         {
             StringBuilder b = new StringBuilder(value.Length + 5);
@@ -324,7 +283,7 @@ namespace Microsoft.VisualBasic
             bool fInDoubleQuotes = true;
             Indentation indentObj = new Indentation((ExposedTabStringIndentedTextWriter)Output, Indent + 1);
 
-            b.Append("\"");
+            b.Append('\"');
 
             int i = 0;
             while (i < value.Length)
@@ -394,7 +353,7 @@ namespace Microsoft.VisualBasic
                     }
 
                     if (fInDoubleQuotes)
-                        b.Append("\"");
+                        b.Append('\"');
                     fInDoubleQuotes = true;
 
                     b.Append("& _ ");
@@ -406,7 +365,7 @@ namespace Microsoft.VisualBasic
             }
 
             if (fInDoubleQuotes)
-                b.Append("\"");
+                b.Append('\"');
 
             return b.ToString();
         }
@@ -430,7 +389,7 @@ namespace Microsoft.VisualBasic
 
         protected override void OutputAttributeArgument(CodeAttributeArgument arg)
         {
-            if (arg.Name != null && arg.Name.Length > 0)
+            if (!string.IsNullOrEmpty(arg.Name))
             {
                 OutputIdentifier(arg.Name);
                 Output.Write(":=");
@@ -460,11 +419,11 @@ namespace Microsoft.VisualBasic
                     if (!inLine)
                     {
                         ContinueOnNewLine("");
-                        Output.Write(" ");
+                        Output.Write(' ');
                     }
                 }
 
-                if (prefix != null && prefix.Length > 0)
+                if (!string.IsNullOrEmpty(prefix))
                 {
                     Output.Write(prefix);
                 }
@@ -473,7 +432,7 @@ namespace Microsoft.VisualBasic
                 {
                     Output.Write(GetTypeOutput(current.AttributeType));
                 }
-                Output.Write("(");
+                Output.Write('(');
 
                 bool firstArg = true;
                 foreach (CodeAttributeArgument arg in current.Arguments)
@@ -490,10 +449,10 @@ namespace Microsoft.VisualBasic
                     OutputAttributeArgument(arg);
                 }
 
-                Output.Write(")");
+                Output.Write(')');
             }
             GenerateAttributeDeclarationsEnd(attributes);
-            Output.Write(" ");
+            Output.Write(' ');
             if (!inLine)
             {
                 if (closingLine)
@@ -558,12 +517,6 @@ namespace Microsoft.VisualBasic
             }
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based member
-        ///       access modifier representation.
-        ///    </para>
-        /// </devdoc>
         protected override void OutputMemberAccessModifier(MemberAttributes attributes)
         {
             switch (attributes & MemberAttributes.AccessMask)
@@ -599,12 +552,6 @@ namespace Microsoft.VisualBasic
             }
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based member scope modifier
-        ///       representation.
-        ///    </para>
-        /// </devdoc>
         protected override void OutputMemberScopeModifier(MemberAttributes attributes)
         {
             switch (attributes & MemberAttributes.ScopeMask)
@@ -646,12 +593,6 @@ namespace Microsoft.VisualBasic
             }
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based operator
-        ///       representation.
-        ///    </para>
-        /// </devdoc>
         protected override void OutputOperator(CodeBinaryOperatorType op)
         {
             switch (op)
@@ -669,7 +610,7 @@ namespace Microsoft.VisualBasic
                     Output.Write("AndAlso");
                     break;
                 case CodeBinaryOperatorType.ValueEquality:
-                    Output.Write("=");
+                    Output.Write('=');
                     break;
                 case CodeBinaryOperatorType.Modulus:
                     Output.Write("Mod");
@@ -692,7 +633,7 @@ namespace Microsoft.VisualBasic
             GenerateExpression(e);
             Output.Write(") Is ");
             Output.Write(NullToken);
-            Output.Write(")");
+            Output.Write(')');
         }
 
         protected override void GenerateBinaryOperatorExpression(CodeBinaryOperatorExpression e)
@@ -718,9 +659,6 @@ namespace Microsoft.VisualBasic
             base.GenerateBinaryOperatorExpression(e);
         }
 
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         protected override string GetResponseFileCmdArgs(CompilerParameters options, string cmdArgs)
         {
             // Always specify the /noconfig flag (outside of the response file) 
@@ -732,12 +670,6 @@ namespace Microsoft.VisualBasic
             Output.Write(CreateEscapedIdentifier(ident));
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based return type
-        ///       representation.
-        ///    </para>
-        /// </devdoc>
         protected override void OutputType(CodeTypeReference typeRef)
         {
             Output.Write(GetTypeOutputWithoutArrayPostFix(typeRef));
@@ -819,12 +751,6 @@ namespace Microsoft.VisualBasic
             }
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based type name pair
-        ///       representation.
-        ///    </para>
-        /// </devdoc>
         protected override void OutputTypeNamePair(CodeTypeReference typeRef, string name)
         {
             if (string.IsNullOrEmpty(name))
@@ -868,18 +794,12 @@ namespace Microsoft.VisualBasic
             }
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based for loop statement
-        ///       representation.
-        ///    </para>
-        /// </devdoc>
         protected override void GenerateIterationStatement(CodeIterationStatement e)
         {
             GenerateStatement(e.InitStatement);
             Output.Write("Do While ");
             GenerateExpression(e.TestExpression);
-            Output.WriteLine("");
+            Output.WriteLine();
             Indent++;
             GenerateVBStatements(e.Statements);
             GenerateStatement(e.IncrementStatement);
@@ -887,12 +807,6 @@ namespace Microsoft.VisualBasic
             Output.WriteLine("Loop");
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based primitive expression
-        ///       representation.
-        ///    </para>
-        /// </devdoc>
         protected override void GeneratePrimitiveExpression(CodePrimitiveExpression e)
         {
             if (e.Value is char)
@@ -903,7 +817,7 @@ namespace Microsoft.VisualBasic
             {
                 Output.Write("CSByte(");
                 Output.Write(((sbyte)e.Value).ToString(CultureInfo.InvariantCulture));
-                Output.Write(")");
+                Output.Write(')');
             }
             else if (e.Value is ushort)
             {
@@ -926,30 +840,18 @@ namespace Microsoft.VisualBasic
             }
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based throw exception statement
-        ///       representation.
-        ///    </para>
-        /// </devdoc>
         protected override void GenerateThrowExceptionStatement(CodeThrowExceptionStatement e)
         {
             Output.Write("Throw");
             if (e.ToThrow != null)
             {
-                Output.Write(" ");
+                Output.Write(' ');
                 GenerateExpression(e.ToThrow);
             }
-            Output.WriteLine("");
+            Output.WriteLine();
         }
 
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based array creation expression
-        ///       representation.
-        ///    </para>
-        /// </devdoc>
         protected override void GenerateArrayCreateExpression(CodeArrayCreateExpression e)
         {
             Output.Write("New ");
@@ -969,7 +871,7 @@ namespace Microsoft.VisualBasic
                 Indent++;
                 OutputExpressionList(init);
                 Indent--;
-                Output.Write("}");
+                Output.Write('}');
             }
             else
             {
@@ -989,7 +891,7 @@ namespace Microsoft.VisualBasic
                 // The tricky thing is we need to declare the size - 1
                 if (e.SizeExpression != null)
                 {
-                    Output.Write("(");
+                    Output.Write('(');
                     GenerateExpression(e.SizeExpression);
                     Output.Write(") - 1");
                 }
@@ -1011,58 +913,35 @@ namespace Microsoft.VisualBasic
             }
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based base reference expression
-        ///       representation.
-        ///    </para>
-        /// </devdoc>
         protected override void GenerateBaseReferenceExpression(CodeBaseReferenceExpression e)
         {
             Output.Write("MyBase");
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based cast expression representation.
-        ///    </para>
-        /// </devdoc>
         protected override void GenerateCastExpression(CodeCastExpression e)
         {
             Output.Write("CType(");
             GenerateExpression(e.Expression);
-            Output.Write(",");
+            Output.Write(',');
             OutputType(e.TargetType);
             OutputArrayPostfix(e.TargetType);
-            Output.Write(")");
+            Output.Write(')');
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based delegate creation expression
-        ///       representation.
-        ///    </para>
-        /// </devdoc>
         protected override void GenerateDelegateCreateExpression(CodeDelegateCreateExpression e)
         {
             Output.Write("AddressOf ");
             GenerateExpression(e.TargetObject);
-            Output.Write(".");
+            Output.Write('.');
             OutputIdentifier(e.MethodName);
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based field reference expression
-        ///       representation.
-        ///    </para>
-        /// </devdoc>
         protected override void GenerateFieldReferenceExpression(CodeFieldReferenceExpression e)
         {
             if (e.TargetObject != null)
             {
                 GenerateExpression(e.TargetObject);
-                Output.Write(".");
+                Output.Write('.');
             }
 
             OutputIdentifier(e.FieldName);
@@ -1107,7 +986,7 @@ namespace Microsoft.VisualBasic
             {
                 Output.Write(d.ToString("R", CultureInfo.InvariantCulture));
                 // always mark a double as being a double in case we have no decimal portion (e.g write 1D instead of 1 which is an int)
-                Output.Write("R");
+                Output.Write('R');
             }
         }
 
@@ -1127,12 +1006,6 @@ namespace Microsoft.VisualBasic
             OutputIdentifier(e.VariableName);
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based indexer expression
-        ///       representation.
-        ///    </para>
-        /// </devdoc>
         protected override void GenerateIndexerExpression(CodeIndexerExpression e)
         {
             GenerateExpression(e.TargetObject);
@@ -1143,7 +1016,7 @@ namespace Microsoft.VisualBasic
                 Output.Write(".Item");
             }
 
-            Output.Write("(");
+            Output.Write('(');
             bool first = true;
             foreach (CodeExpression exp in e.Indices)
             {
@@ -1157,13 +1030,13 @@ namespace Microsoft.VisualBasic
                 }
                 GenerateExpression(exp);
             }
-            Output.Write(")");
+            Output.Write(')');
         }
 
         protected override void GenerateArrayIndexerExpression(CodeArrayIndexerExpression e)
         {
             GenerateExpression(e.TargetObject);
-            Output.Write("(");
+            Output.Write('(');
             bool first = true;
             foreach (CodeExpression exp in e.Indices)
             {
@@ -1177,34 +1050,23 @@ namespace Microsoft.VisualBasic
                 }
                 GenerateExpression(exp);
             }
-            Output.Write(")");
+            Output.Write(')');
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based code snippet expression
-        ///       representation.
-        ///    </para>
-        /// </devdoc>
         protected override void GenerateSnippetExpression(CodeSnippetExpression e)
         {
             Output.Write(e.Value);
         }
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based method invoke
-        ///       expression.
-        ///    </para>
-        /// </devdoc>
+
         protected override void GenerateMethodInvokeExpression(CodeMethodInvokeExpression e)
         {
             GenerateMethodReferenceExpression(e.Method);
             CodeExpressionCollection parameters = e.Parameters;
             if (parameters.Count > 0)
             {
-                Output.Write("(");
+                Output.Write('(');
                 OutputExpressionList(e.Parameters);
-                Output.Write(")");
+                Output.Write(')');
             }
         }
 
@@ -1213,7 +1075,7 @@ namespace Microsoft.VisualBasic
             if (e.TargetObject != null)
             {
                 GenerateExpression(e.TargetObject);
-                Output.Write(".");
+                Output.Write('.');
                 Output.Write(e.MethodName);
             }
             else
@@ -1233,7 +1095,7 @@ namespace Microsoft.VisualBasic
             {
                 bool localReference = (e.TargetObject is CodeThisReferenceExpression);
                 GenerateExpression(e.TargetObject);
-                Output.Write(".");
+                Output.Write('.');
                 if (localReference)
                 {
                     Output.Write(e.EventName + "Event");
@@ -1257,19 +1119,12 @@ namespace Microsoft.VisualBasic
                 if (!(e.TargetObject is CodeThisReferenceExpression))
                 {
                     GenerateExpression(e.TargetObject);
-                    Output.Write(".");
+                    Output.Write('.');
                 }
             }
             OutputIdentifier(e.EventName);
         }
 
-
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based delegate invoke
-        ///       expression.
-        ///    </para>
-        /// </devdoc>
         protected override void GenerateDelegateInvokeExpression(CodeDelegateInvokeExpression e)
         {
             if (e.TargetObject != null)
@@ -1288,34 +1143,22 @@ namespace Microsoft.VisualBasic
             CodeExpressionCollection parameters = e.Parameters;
             if (parameters.Count > 0)
             {
-                Output.Write("(");
+                Output.Write('(');
                 OutputExpressionList(e.Parameters);
-                Output.Write(")");
+                Output.Write(')');
             }
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based object creation
-        ///       expression.
-        ///    </para>
-        /// </devdoc>
         protected override void GenerateObjectCreateExpression(CodeObjectCreateExpression e)
         {
             Output.Write("New ");
             OutputType(e.CreateType);
             // always write out the () to disambiguate cases like "New System.Random().Next(x,y)"
-            Output.Write("(");
+            Output.Write('(');
             OutputExpressionList(e.Parameters);
-            Output.Write(")");
+            Output.Write(')');
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom
-        ///       based parameter declaration expression representation.
-        ///    </para>
-        /// </devdoc>
         protected override void GenerateParameterDeclarationExpression(CodeParameterDeclarationExpression e)
         {
             if (e.CustomAttributes.Count > 0)
@@ -1331,43 +1174,22 @@ namespace Microsoft.VisualBasic
             Output.Write("value");
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based this reference expression
-        ///       representation.
-        ///    </para>
-        /// </devdoc>
         protected override void GenerateThisReferenceExpression(CodeThisReferenceExpression e)
         {
             Output.Write("Me");
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based method invoke statement
-        ///       representation.
-        ///    </para>
-        /// </devdoc>
         protected override void GenerateExpressionStatement(CodeExpressionStatement e)
         {
             GenerateExpression(e.Expression);
-            Output.WriteLine("");
+            Output.WriteLine();
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Tells whether or not the given comment is a DocComment
-        ///    </para>
-        /// </devdoc>
         private bool IsDocComment(CodeCommentStatement comment)
         {
             return ((comment != null) && (comment.Comment != null) && comment.Comment.DocComment);
         }
 
-        /// <include file='doc\VBCodeProvider.uex' path='docs/doc[@for="VBCodeGenerator.GenerateCommentStatements"]/*' />
-        /// <devdoc>
-        ///    <para>Overridden in order to output XML DocComments in the correct order for VB</para>
-        /// </devdoc>
         protected override void GenerateCommentStatements(CodeCommentStatementCollection e)
         {
             // since the compiler emits a warning if XML DocComment blocks appear before
@@ -1423,19 +1245,13 @@ namespace Microsoft.VisualBasic
             Output.WriteLine();
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based method return statement
-        ///       representation.
-        ///    </para>
-        /// </devdoc>
         protected override void GenerateMethodReturnStatement(CodeMethodReturnStatement e)
         {
             if (e.Expression != null)
             {
                 Output.Write("Return ");
                 GenerateExpression(e.Expression);
-                Output.WriteLine("");
+                Output.WriteLine();
             }
             else
             {
@@ -1443,11 +1259,6 @@ namespace Microsoft.VisualBasic
             }
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based if statement representation.
-        ///    </para>
-        /// </devdoc>
         protected override void GenerateConditionStatement(CodeConditionStatement e)
         {
             Output.Write("If ");
@@ -1461,7 +1272,7 @@ namespace Microsoft.VisualBasic
             if (falseStatemetns.Count > 0)
             {
                 Output.Write("Else");
-                Output.WriteLine("");
+                Output.WriteLine();
                 Indent++;
                 GenerateVBStatements(e.FalseStatements);
                 Indent--;
@@ -1469,12 +1280,6 @@ namespace Microsoft.VisualBasic
             Output.WriteLine("End If");
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based try catch finally statement
-        ///       representation.
-        ///    </para>
-        /// </devdoc>
         protected override void GenerateTryCatchFinallyStatement(CodeTryCatchFinallyStatement e)
         {
             Output.WriteLine("Try ");
@@ -1486,7 +1291,7 @@ namespace Microsoft.VisualBasic
             {
                 Output.Write("Catch ");
                 OutputTypeNamePair(current.CatchExceptionType, current.LocalName);
-                Output.WriteLine("");
+                Output.WriteLine();
                 Indent++;
                 GenerateVBStatements(current.Statements);
                 Indent--;
@@ -1503,18 +1308,12 @@ namespace Microsoft.VisualBasic
             Output.WriteLine("End Try");
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based assignment statement
-        ///       representation.
-        ///    </para>
-        /// </devdoc>
         protected override void GenerateAssignStatement(CodeAssignStatement e)
         {
             GenerateExpression(e.Left);
             Output.Write(" = ");
             GenerateExpression(e.Right);
-            Output.WriteLine("");
+            Output.WriteLine();
         }
 
         protected override void GenerateAttachEventStatement(CodeAttachEventStatement e)
@@ -1523,7 +1322,7 @@ namespace Microsoft.VisualBasic
             GenerateFormalEventReferenceExpression(e.Event);
             Output.Write(", ");
             GenerateExpression(e.Listener);
-            Output.WriteLine("");
+            Output.WriteLine();
         }
 
         protected override void GenerateRemoveEventStatement(CodeRemoveEventStatement e)
@@ -1532,7 +1331,7 @@ namespace Microsoft.VisualBasic
             GenerateFormalEventReferenceExpression(e.Event);
             Output.Write(", ");
             GenerateExpression(e.Listener);
-            Output.WriteLine("");
+            Output.WriteLine();
         }
 
         protected override void GenerateSnippetStatement(CodeSnippetStatement e)
@@ -1550,7 +1349,7 @@ namespace Microsoft.VisualBasic
         {
             Indent--;
             Output.Write(e.Label);
-            Output.WriteLine(":");
+            Output.WriteLine(':');
             Indent++;
             if (e.Statement != null)
             {
@@ -1558,12 +1357,6 @@ namespace Microsoft.VisualBasic
             }
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom variable declaration statement
-        ///       representation.
-        ///    </para>
-        /// </devdoc>
         protected override void GenerateVariableDeclarationStatement(CodeVariableDeclarationStatement e)
         {
             bool doInit = true;
@@ -1578,11 +1371,11 @@ namespace Microsoft.VisualBasic
                 {
                     doInit = false;
                     OutputIdentifier(e.Name);
-                    Output.Write("(");
+                    Output.Write('(');
 
                     if (eAsArrayCreate.SizeExpression != null)
                     {
-                        Output.Write("(");
+                        Output.Write('(');
                         GenerateExpression(eAsArrayCreate.SizeExpression);
                         Output.Write(") - 1");
                     }
@@ -1591,7 +1384,7 @@ namespace Microsoft.VisualBasic
                         Output.Write(eAsArrayCreate.Size - 1);
                     }
 
-                    Output.Write(")");
+                    Output.Write(')');
 
                     if (typeRef.ArrayElementType != null)
                         OutputArrayPostfix(typeRef.ArrayElementType);
@@ -1611,35 +1404,23 @@ namespace Microsoft.VisualBasic
                 GenerateExpression(e.InitExpression);
             }
 
-            Output.WriteLine("");
+            Output.WriteLine();
         }
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based line pragma start
-        ///       representation.
-        ///    </para>
-        /// </devdoc>
         protected override void GenerateLinePragmaStart(CodeLinePragma e)
         {
-            Output.WriteLine("");
+            Output.WriteLine();
             Output.Write("#ExternalSource(\"");
             Output.Write(e.FileName);
             Output.Write("\",");
             Output.Write(e.LineNumber);
-            Output.WriteLine(")");
-        }
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based line pragma end
-        ///       representation.
-        ///    </para>
-        /// </devdoc>
-        protected override void GenerateLinePragmaEnd(CodeLinePragma e)
-        {
-            Output.WriteLine("");
-            Output.WriteLine("#End ExternalSource");
+            Output.WriteLine(')');
         }
 
+        protected override void GenerateLinePragmaEnd(CodeLinePragma e)
+        {
+            Output.WriteLine();
+            Output.WriteLine("#End ExternalSource");
+        }
 
         protected override void GenerateEvent(CodeMemberEvent e, CodeTypeDeclaration c)
         {
@@ -1677,7 +1458,7 @@ namespace Microsoft.VisualBasic
                         Output.Write(" , ");
                     }
                     OutputType(type);
-                    Output.Write(".");
+                    Output.Write('.');
                     OutputIdentifier(eventName);
                 }
             }
@@ -1685,19 +1466,13 @@ namespace Microsoft.VisualBasic
             {
                 Output.Write(" Implements ");
                 OutputType(e.PrivateImplementationType);
-                Output.Write(".");
+                Output.Write('.');
                 OutputIdentifier(eventName);
             }
 
-            Output.WriteLine("");
+            Output.WriteLine();
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based member
-        ///       field representation.
-        ///    </para>
-        /// </devdoc>
         protected override void GenerateField(CodeMemberField e)
         {
             if (IsCurrentDelegate || IsCurrentInterface) return;
@@ -1715,7 +1490,7 @@ namespace Microsoft.VisualBasic
                     Output.Write(" = ");
                     GenerateExpression(e.InitExpression);
                 }
-                Output.WriteLine("");
+                Output.WriteLine();
             }
             else
             {
@@ -1739,7 +1514,7 @@ namespace Microsoft.VisualBasic
                     Output.Write(" = ");
                     GenerateExpression(e.InitExpression);
                 }
-                Output.WriteLine("");
+                Output.WriteLine();
             }
         }
 
@@ -1767,12 +1542,6 @@ namespace Microsoft.VisualBasic
             return false;
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for
-        ///       the specified CodeDom based snippet member representation.
-        ///    </para>
-        /// </devdoc>
         protected override void GenerateSnippetMember(CodeSnippetTypeMember e)
         {
             Output.Write(e.Text);
@@ -1814,7 +1583,7 @@ namespace Microsoft.VisualBasic
                 OutputVTableModifier(e.Attributes);
             }
             bool sub = false;
-            if (e.ReturnType.BaseType.Length == 0 || string.Compare(e.ReturnType.BaseType, typeof(void).FullName, StringComparison.OrdinalIgnoreCase) == 0)
+            if (e.ReturnType.BaseType.Length == 0 || string.Equals(e.ReturnType.BaseType, typeof(void).FullName, StringComparison.OrdinalIgnoreCase))
             {
                 sub = true;
             }
@@ -1832,9 +1601,9 @@ namespace Microsoft.VisualBasic
             OutputIdentifier(e.Name);
             OutputTypeParameters(e.TypeParameters);
 
-            Output.Write("(");
+            Output.Write('(');
             OutputParameters(e.Parameters);
-            Output.Write(")");
+            Output.Write(')');
 
             if (!sub)
             {
@@ -1862,7 +1631,7 @@ namespace Microsoft.VisualBasic
                         Output.Write(" , ");
                     }
                     OutputType(type);
-                    Output.Write(".");
+                    Output.Write('.');
                     OutputIdentifier(methodName);
                 }
             }
@@ -1870,10 +1639,10 @@ namespace Microsoft.VisualBasic
             {
                 Output.Write(" Implements ");
                 OutputType(e.PrivateImplementationType);
-                Output.Write(".");
+                Output.Write('.');
                 OutputIdentifier(methodName);
             }
-            Output.WriteLine("");
+            Output.WriteLine();
             if (!IsCurrentInterface
                 && (e.Attributes & MemberAttributes.ScopeMask) != MemberAttributes.Abstract)
             {
@@ -1933,12 +1702,6 @@ namespace Microsoft.VisualBasic
             return false;
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based member property
-        ///       representation.
-        ///    </para>
-        /// </devdoc>
         protected override void GenerateProperty(CodeMemberProperty e, CodeTypeDeclaration c)
         {
             if (!(IsCurrentClass || IsCurrentStruct || IsCurrentInterface)) return;
@@ -1973,7 +1736,7 @@ namespace Microsoft.VisualBasic
                 // interface may still need "Shadows"
                 OutputVTableModifier(e.Attributes);
             }
-            if (e.Parameters.Count > 0 && string.Compare(e.Name, "Item", StringComparison.OrdinalIgnoreCase) == 0)
+            if (e.Parameters.Count > 0 && string.Equals(e.Name, "Item", StringComparison.OrdinalIgnoreCase))
             {
                 Output.Write("Default ");
             }
@@ -1990,12 +1753,12 @@ namespace Microsoft.VisualBasic
             }
             Output.Write("Property ");
             OutputIdentifier(e.Name);
-            Output.Write("(");
+            Output.Write('(');
             if (e.Parameters.Count > 0)
             {
                 OutputParameters(e.Parameters);
             }
-            Output.Write(")");
+            Output.Write(')');
             Output.Write(" As ");
             OutputType(e.Type);
             OutputArrayPostfix(e.Type);
@@ -2015,7 +1778,7 @@ namespace Microsoft.VisualBasic
                         Output.Write(" , ");
                     }
                     OutputType(type);
-                    Output.Write(".");
+                    Output.Write('.');
                     OutputIdentifier(propName);
                 }
             }
@@ -2023,11 +1786,11 @@ namespace Microsoft.VisualBasic
             {
                 Output.Write(" Implements ");
                 OutputType(e.PrivateImplementationType);
-                Output.Write(".");
+                Output.Write('.');
                 OutputIdentifier(propName);
             }
 
-            Output.WriteLine("");
+            Output.WriteLine();
 
             if (!c.IsInterface && (e.Attributes & MemberAttributes.ScopeMask) != MemberAttributes.Abstract)
             {
@@ -2065,18 +1828,12 @@ namespace Microsoft.VisualBasic
             e.Name = propName;
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based property reference
-        ///       expression representation.
-        ///    </para>
-        /// </devdoc>
         protected override void GeneratePropertyReferenceExpression(CodePropertyReferenceExpression e)
         {
             if (e.TargetObject != null)
             {
                 GenerateExpression(e.TargetObject);
-                Output.Write(".");
+                Output.Write('.');
                 Output.Write(e.PropertyName);
             }
             else
@@ -2085,12 +1842,6 @@ namespace Microsoft.VisualBasic
             }
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based constructor
-        ///       representation.
-        ///    </para>
-        /// </devdoc>
         protected override void GenerateConstructor(CodeConstructor e, CodeTypeDeclaration c)
         {
             if (!(IsCurrentClass || IsCurrentStruct)) return;
@@ -2103,7 +1854,7 @@ namespace Microsoft.VisualBasic
             OutputMemberAccessModifier(e.Attributes);
             Output.Write("Sub New(");
             OutputParameters(e.Parameters);
-            Output.WriteLine(")");
+            Output.WriteLine(')');
             Indent++;
 
             CodeExpressionCollection baseArgs = e.BaseConstructorArgs;
@@ -2113,15 +1864,15 @@ namespace Microsoft.VisualBasic
             {
                 Output.Write("Me.New(");
                 OutputExpressionList(thisArgs);
-                Output.Write(")");
-                Output.WriteLine("");
+                Output.Write(')');
+                Output.WriteLine();
             }
             else if (baseArgs.Count > 0)
             {
                 Output.Write("MyBase.New(");
                 OutputExpressionList(baseArgs);
-                Output.Write(")");
-                Output.WriteLine("");
+                Output.Write(')');
+                Output.WriteLine();
             }
             else if (IsCurrentClass)
             {
@@ -2133,12 +1884,7 @@ namespace Microsoft.VisualBasic
             Indent--;
             Output.WriteLine("End Sub");
         }
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based class constructor
-        ///       representation.
-        ///    </para>
-        /// </devdoc>
+
         protected override void GenerateTypeConstructor(CodeTypeConstructor e)
         {
             if (!(IsCurrentClass || IsCurrentStruct)) return;
@@ -2159,14 +1905,9 @@ namespace Microsoft.VisualBasic
         {
             Output.Write("GetType(");
             Output.Write(GetTypeOutput(e.Type));
-            Output.Write(")");
+            Output.Write(')');
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the CodeDom based class start representation.
-        ///    </para>
-        /// </devdoc>
         protected override void GenerateTypeStart(CodeTypeDeclaration e)
         {
             if (IsCurrentDelegate)
@@ -2187,21 +1928,21 @@ namespace Microsoft.VisualBasic
                 }
 
                 CodeTypeDelegate del = (CodeTypeDelegate)e;
-                if (del.ReturnType.BaseType.Length > 0 && string.Compare(del.ReturnType.BaseType, "System.Void", StringComparison.OrdinalIgnoreCase) != 0)
+                if (del.ReturnType.BaseType.Length > 0 && !string.Equals(del.ReturnType.BaseType, "System.Void", StringComparison.OrdinalIgnoreCase))
                     Output.Write("Delegate Function ");
                 else
                     Output.Write("Delegate Sub ");
                 OutputIdentifier(e.Name);
-                Output.Write("(");
+                Output.Write('(');
                 OutputParameters(del.Parameters);
-                Output.Write(")");
-                if (del.ReturnType.BaseType.Length > 0 && string.Compare(del.ReturnType.BaseType, "System.Void", StringComparison.OrdinalIgnoreCase) != 0)
+                Output.Write(')');
+                if (del.ReturnType.BaseType.Length > 0 && !string.Equals(del.ReturnType.BaseType, "System.Void", StringComparison.OrdinalIgnoreCase))
                 {
                     Output.Write(" As ");
                     OutputType(del.ReturnType);
                     OutputArrayPostfix(del.ReturnType);
                 }
-                Output.WriteLine("");
+                Output.WriteLine();
             }
             else if (e.IsEnum)
             {
@@ -2219,7 +1960,7 @@ namespace Microsoft.VisualBasic
                     OutputType(e.BaseTypes[0]);
                 }
 
-                Output.WriteLine("");
+                Output.WriteLine();
                 Indent++;
             }
             else
@@ -2251,13 +1992,13 @@ namespace Microsoft.VisualBasic
                     // if we're generating an interface, we always want to use Inherits because interfaces can't Implement anything. 
                     if (!writtenInherits && (e.IsInterface || !typeRef.IsInterface))
                     {
-                        Output.WriteLine("");
+                        Output.WriteLine();
                         Output.Write("Inherits ");
                         writtenInherits = true;
                     }
                     else if (!writtenImplements)
                     {
-                        Output.WriteLine("");
+                        Output.WriteLine();
                         Output.Write("Implements ");
                         writtenImplements = true;
                     }
@@ -2268,7 +2009,7 @@ namespace Microsoft.VisualBasic
                     OutputType(typeRef);
                 }
 
-                Output.WriteLine("");
+                Output.WriteLine();
             }
         }
 
@@ -2351,12 +2092,6 @@ namespace Microsoft.VisualBasic
             }
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based class end
-        ///       representation.
-        ///    </para>
-        /// </devdoc>
         protected override void GenerateTypeEnd(CodeTypeDeclaration e)
         {
             if (!IsCurrentDelegate)
@@ -2390,11 +2125,6 @@ namespace Microsoft.VisualBasic
             }
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the CodeDom based namespace representation.
-        ///    </para>
-        /// </devdoc>
         protected override void GenerateNamespace(CodeNamespace e)
         {
             if (GetUserData(e, "GenerateImports", true))
@@ -2408,7 +2138,7 @@ namespace Microsoft.VisualBasic
             GenerateNamespaceEnd(e);
         }
 
-        protected bool AllowLateBound(CodeCompileUnit e)
+        private bool AllowLateBound(CodeCompileUnit e)
         {
             object o = e.UserData["AllowLateBound"];
             if (o != null && o is bool)
@@ -2420,7 +2150,7 @@ namespace Microsoft.VisualBasic
             return true;
         }
 
-        protected bool RequireVariableDeclaration(CodeCompileUnit e)
+        private bool RequireVariableDeclaration(CodeCompileUnit e)
         {
             object o = e.UserData["RequireVariableDeclaration"];
             if (o != null && o is bool)
@@ -2460,7 +2190,7 @@ namespace Microsoft.VisualBasic
             Output.Write("' </");
             Output.WriteLine(SR.AutoGen_Comment_Line1);
             Output.WriteLine("'------------------------------------------------------------------------------");
-            Output.WriteLine("");
+            Output.WriteLine();
 
             if (AllowLateBound(e))
                 Output.WriteLine("Option Strict Off");
@@ -2479,10 +2209,9 @@ namespace Microsoft.VisualBasic
         {
             GenerateCompileUnitStart(e);
 
-            SortedList importList;
             // Visual Basic needs all the imports together at the top of the compile unit.
             // If generating multiple namespaces, gather all the imports together
-            importList = new SortedList(StringComparer.OrdinalIgnoreCase);
+            var importList = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (CodeNamespace nspace in e.Namespaces)
             {
                 // mark the namespace to stop it generating its own import list
@@ -2491,18 +2220,16 @@ namespace Microsoft.VisualBasic
                 // Collect the unique list of imports
                 foreach (CodeNamespaceImport import in nspace.Imports)
                 {
-                    if (!importList.Contains(import.Namespace))
-                    {
-                        importList.Add(import.Namespace, import.Namespace);
-                    }
+                    importList.Add(import.Namespace);
                 }
             }
+
             // now output the imports
-            foreach (string import in importList.Keys)
+            foreach (string import in importList)
             {
                 Output.Write("Imports ");
                 OutputIdentifier(import);
-                Output.WriteLine("");
+                Output.WriteLine();
             }
 
             if (e.AssemblyCustomAttributes.Count > 0)
@@ -2567,22 +2294,17 @@ namespace Microsoft.VisualBasic
             }
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based namespace representation.
-        ///    </para>
-        /// </devdoc>
         protected override void GenerateNamespaceStart(CodeNamespace e)
         {
-            if (e.Name != null && e.Name.Length > 0)
+            if (!string.IsNullOrEmpty(e.Name))
             {
                 Output.Write("Namespace ");
-                string[] names = e.Name.Split('.');
+                string[] names = e.Name.Split(s_periodArray);
                 Debug.Assert(names.Length > 0);
                 OutputIdentifier(names[0]);
                 for (int i = 1; i < names.Length; i++)
                 {
-                    Output.Write(".");
+                    Output.Write('.');
                     OutputIdentifier(names[i]);
                 }
                 Output.WriteLine();
@@ -2590,49 +2312,27 @@ namespace Microsoft.VisualBasic
             }
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based namespace representation.
-        ///    </para>
-        /// </devdoc>
         protected override void GenerateNamespaceEnd(CodeNamespace e)
         {
-            if (e.Name != null && e.Name.Length > 0)
+            if (!string.IsNullOrEmpty(e.Name))
             {
                 Indent--;
                 Output.WriteLine("End Namespace");
             }
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based namespace import
-        ///       representation.
-        ///    </para>
-        /// </devdoc>
         protected override void GenerateNamespaceImport(CodeNamespaceImport e)
         {
             Output.Write("Imports ");
             OutputIdentifier(e.Namespace);
-            Output.WriteLine("");
+            Output.WriteLine();
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based attribute block start
-        ///       representation.
-        ///    </para>
-        /// </devdoc>
         protected override void GenerateAttributeDeclarationsStart(CodeAttributeDeclarationCollection attributes)
         {
             Output.Write("<");
         }
-        /// <devdoc>
-        ///    <para>
-        ///       Generates code for the specified CodeDom based attribute block end
-        ///       representation.
-        ///    </para>
-        /// </devdoc>
+
         protected override void GenerateAttributeDeclarationsEnd(CodeAttributeDeclarationCollection attributes)
         {
             Output.Write(">");
@@ -2648,16 +2348,11 @@ namespace Microsoft.VisualBasic
             return ((support & LanguageSupport) == support);
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Gets whether the specified identifier is valid.
-        ///    </para>
-        /// </devdoc>
         protected override bool IsValidIdentifier(string value)
         {
             // identifiers must be 1 char or longer
             //
-            if (value == null || value.Length == 0)
+            if (string.IsNullOrEmpty(value))
             {
                 return false;
             }
@@ -2712,73 +2407,73 @@ namespace Microsoft.VisualBasic
             {
                 return "Void";
             }
-            else if (string.Compare(baseType, "System.Byte", StringComparison.OrdinalIgnoreCase) == 0)
+            else if (string.Equals(baseType, "System.Byte", StringComparison.OrdinalIgnoreCase))
             {
                 return "Byte";
             }
-            else if (string.Compare(baseType, "System.SByte", StringComparison.OrdinalIgnoreCase) == 0)
+            else if (string.Equals(baseType, "System.SByte", StringComparison.OrdinalIgnoreCase))
             {
                 return "SByte";
             }
-            else if (string.Compare(baseType, "System.Int16", StringComparison.OrdinalIgnoreCase) == 0)
+            else if (string.Equals(baseType, "System.Int16", StringComparison.OrdinalIgnoreCase))
             {
                 return "Short";
             }
-            else if (string.Compare(baseType, "System.Int32", StringComparison.OrdinalIgnoreCase) == 0)
+            else if (string.Equals(baseType, "System.Int32", StringComparison.OrdinalIgnoreCase))
             {
                 return "Integer";
             }
-            else if (string.Compare(baseType, "System.Int64", StringComparison.OrdinalIgnoreCase) == 0)
+            else if (string.Equals(baseType, "System.Int64", StringComparison.OrdinalIgnoreCase))
             {
                 return "Long";
             }
-            else if (string.Compare(baseType, "System.UInt16", StringComparison.OrdinalIgnoreCase) == 0)
+            else if (string.Equals(baseType, "System.UInt16", StringComparison.OrdinalIgnoreCase))
             {
                 return "UShort";
             }
-            else if (string.Compare(baseType, "System.UInt32", StringComparison.OrdinalIgnoreCase) == 0)
+            else if (string.Equals(baseType, "System.UInt32", StringComparison.OrdinalIgnoreCase))
             {
                 return "UInteger";
             }
-            else if (string.Compare(baseType, "System.UInt64", StringComparison.OrdinalIgnoreCase) == 0)
+            else if (string.Equals(baseType, "System.UInt64", StringComparison.OrdinalIgnoreCase))
             {
                 return "ULong";
             }
-            else if (string.Compare(baseType, "System.String", StringComparison.OrdinalIgnoreCase) == 0)
+            else if (string.Equals(baseType, "System.String", StringComparison.OrdinalIgnoreCase))
             {
                 return "String";
             }
-            else if (string.Compare(baseType, "System.DateTime", StringComparison.OrdinalIgnoreCase) == 0)
+            else if (string.Equals(baseType, "System.DateTime", StringComparison.OrdinalIgnoreCase))
             {
                 return "Date";
             }
-            else if (string.Compare(baseType, "System.Decimal", StringComparison.OrdinalIgnoreCase) == 0)
+            else if (string.Equals(baseType, "System.Decimal", StringComparison.OrdinalIgnoreCase))
             {
                 return "Decimal";
             }
-            else if (string.Compare(baseType, "System.Single", StringComparison.OrdinalIgnoreCase) == 0)
+            else if (string.Equals(baseType, "System.Single", StringComparison.OrdinalIgnoreCase))
             {
                 return "Single";
             }
-            else if (string.Compare(baseType, "System.Double", StringComparison.OrdinalIgnoreCase) == 0)
+            else if (string.Equals(baseType, "System.Double", StringComparison.OrdinalIgnoreCase))
             {
                 return "Double";
             }
-            else if (string.Compare(baseType, "System.Boolean", StringComparison.OrdinalIgnoreCase) == 0)
+            else if (string.Equals(baseType, "System.Boolean", StringComparison.OrdinalIgnoreCase))
             {
                 return "Boolean";
             }
-            else if (string.Compare(baseType, "System.Char", StringComparison.OrdinalIgnoreCase) == 0)
+            else if (string.Equals(baseType, "System.Char", StringComparison.OrdinalIgnoreCase))
             {
                 return "Char";
             }
-            else if (string.Compare(baseType, "System.Object", StringComparison.OrdinalIgnoreCase) == 0)
+            else if (string.Equals(baseType, "System.Object", StringComparison.OrdinalIgnoreCase))
             {
                 return "Object";
             }
             else
             {
-                StringBuilder sb = new StringBuilder(baseType.Length + 10);
+                var sb = new StringBuilder(baseType.Length + 10);
                 if ((typeRef.Options & CodeTypeReferenceOptions.GlobalReference) != 0)
                 {
                     sb.Append("Global.");
@@ -2825,7 +2520,9 @@ namespace Microsoft.VisualBasic
                 }
 
                 if (lastIndex < baseType.Length)
+                {
                     sb.Append(CreateEscapedIdentifier(baseType.Substring(lastIndex)));
+                }
 
                 return sb.ToString();
             }

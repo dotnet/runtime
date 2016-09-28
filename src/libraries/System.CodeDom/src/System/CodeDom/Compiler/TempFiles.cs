@@ -4,7 +4,6 @@
 
 using System.Collections;
 using System.IO;
-using System.Security.Permissions;
 
 namespace System.CodeDom.Compiler
 {

@@ -3,18 +3,19 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Collections.Generic;
 
 namespace System.CodeDom
 {
     [Serializable]
     public class CodeNamespaceImportCollection : IList
     {
-        private readonly ArrayList _data = new ArrayList();
-        private Hashtable _keys = new Hashtable(StringComparer.OrdinalIgnoreCase);
+        private readonly List<CodeNamespaceImport> _data = new List<CodeNamespaceImport>();
+        private readonly Dictionary<string, CodeNamespaceImport> _keys = new Dictionary<string, CodeNamespaceImport>(StringComparer.OrdinalIgnoreCase);
 
         public CodeNamespaceImport this[int index]
         {
-            get { return (CodeNamespaceImport)_data[index]; }
+            get { return _data[index]; }
             set
             {
                 _data[index] = value;
@@ -23,7 +24,6 @@ namespace System.CodeDom
         }
 
         public int Count => _data.Count;
-
 
         bool IList.IsReadOnly => false;
 
@@ -59,15 +59,14 @@ namespace System.CodeDom
 
         private void SyncKeys()
         {
-            _keys = new Hashtable(StringComparer.OrdinalIgnoreCase);
-            foreach (CodeNamespaceImport c in this)
+            _keys.Clear();
+            foreach (CodeNamespaceImport c in _data)
             {
                 _keys[c.Namespace] = c;
             }
         }
 
         public IEnumerator GetEnumerator() => _data.GetEnumerator();
-
 
         object IList.this[int index]
         {
@@ -85,15 +84,15 @@ namespace System.CodeDom
 
         object ICollection.SyncRoot => null;
 
-        void ICollection.CopyTo(Array array, int index) => _data.CopyTo(array, index);
+        void ICollection.CopyTo(Array array, int index) => ((IList)_data).CopyTo(array, index);
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        int IList.Add(object value) => _data.Add((CodeNamespaceImport)value);
+        int IList.Add(object value) => ((IList)_data).Add((CodeNamespaceImport)value);
 
         void IList.Clear() => Clear();
 
-        bool IList.Contains(object value) => _data.Contains(value);
+        bool IList.Contains(object value) => ((IList)_data).Contains(value);
 
         int IList.IndexOf(object value) => _data.IndexOf((CodeNamespaceImport)value);
 

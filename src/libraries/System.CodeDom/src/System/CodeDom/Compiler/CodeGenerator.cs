@@ -2,10 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.IO;
-using System.Collections;
-using System.Reflection;
 using System.Globalization;
+using System.IO;
+using System.Reflection;
 
 namespace System.CodeDom.Compiler
 {
@@ -794,7 +793,7 @@ namespace System.CodeDom.Compiler
             GenerateNamespaceStart(e);
 
             GenerateNamespaceImports(e);
-            Output.WriteLine("");
+            Output.WriteLine();
 
             GenerateTypes(e);
             GenerateNamespaceEnd(e);
@@ -962,7 +961,7 @@ namespace System.CodeDom.Compiler
                 }
 
                 Output.Write(current.Name);
-                Output.Write("(");
+                Output.Write('(');
 
                 bool firstArg = true;
                 foreach (CodeAttributeArgument arg in current.Arguments)
@@ -979,17 +978,17 @@ namespace System.CodeDom.Compiler
                     OutputAttributeArgument(arg);
                 }
 
-                Output.Write(")");
+                Output.Write(')');
             }
             GenerateAttributeDeclarationsEnd(attributes);
         }
 
         protected virtual void OutputAttributeArgument(CodeAttributeArgument arg)
         {
-            if (arg.Name != null && arg.Name.Length > 0)
+            if (!string.IsNullOrEmpty(arg.Name))
             {
                 OutputIdentifier(arg.Name);
-                Output.Write("=");
+                Output.Write('=');
             }
             ((ICodeGenerator)this).GenerateCodeFromExpression(arg.Value, _output.InnerWriter, _options);
         }
@@ -1144,7 +1143,7 @@ namespace System.CodeDom.Compiler
         protected virtual void OutputTypeNamePair(CodeTypeReference typeRef, string name)
         {
             OutputType(typeRef);
-            Output.Write(" ");
+            Output.Write(' ');
             OutputIdentifier(name);
         }
 
@@ -1185,22 +1184,22 @@ namespace System.CodeDom.Compiler
             switch (op)
             {
                 case CodeBinaryOperatorType.Add:
-                    Output.Write("+");
+                    Output.Write('+');
                     break;
                 case CodeBinaryOperatorType.Subtract:
-                    Output.Write("-");
+                    Output.Write('-');
                     break;
                 case CodeBinaryOperatorType.Multiply:
-                    Output.Write("*");
+                    Output.Write('*');
                     break;
                 case CodeBinaryOperatorType.Divide:
-                    Output.Write("/");
+                    Output.Write('/');
                     break;
                 case CodeBinaryOperatorType.Modulus:
-                    Output.Write("%");
+                    Output.Write('%');
                     break;
                 case CodeBinaryOperatorType.Assign:
-                    Output.Write("=");
+                    Output.Write('=');
                     break;
                 case CodeBinaryOperatorType.IdentityInequality:
                     Output.Write("!=");
@@ -1212,10 +1211,10 @@ namespace System.CodeDom.Compiler
                     Output.Write("==");
                     break;
                 case CodeBinaryOperatorType.BitwiseOr:
-                    Output.Write("|");
+                    Output.Write('|');
                     break;
                 case CodeBinaryOperatorType.BitwiseAnd:
-                    Output.Write("&");
+                    Output.Write('&');
                     break;
                 case CodeBinaryOperatorType.BooleanOr:
                     Output.Write("||");
@@ -1224,7 +1223,7 @@ namespace System.CodeDom.Compiler
                     Output.Write("&&");
                     break;
                 case CodeBinaryOperatorType.LessThan:
-                    Output.Write("<");
+                    Output.Write('<');
                     break;
                 case CodeBinaryOperatorType.LessThanOrEqual:
                     Output.Write("<=");
@@ -1274,10 +1273,10 @@ namespace System.CodeDom.Compiler
         protected virtual void GenerateBinaryOperatorExpression(CodeBinaryOperatorExpression e)
         {
             bool indentedExpression = false;
-            Output.Write("(");
+            Output.Write('(');
 
             GenerateExpression(e.Left);
-            Output.Write(" ");
+            Output.Write(' ');
 
             if (e.Left is CodeBinaryOperatorExpression || e.Right is CodeBinaryOperatorExpression)
             {
@@ -1295,10 +1294,10 @@ namespace System.CodeDom.Compiler
 
             OutputOperator(e.Operator);
 
-            Output.Write(" ");
+            Output.Write(' ');
             GenerateExpression(e.Right);
 
-            Output.Write(")");
+            Output.Write(')');
             if (indentedExpression)
             {
                 Indent -= 3;
@@ -1327,7 +1326,7 @@ namespace System.CodeDom.Compiler
             if (e.CustomAttributes.Count > 0)
             {
                 OutputAttributeDeclarations(e.CustomAttributes);
-                Output.Write(" ");
+                Output.Write(' ');
             }
 
             OutputDirection(e.Direction);
@@ -1424,7 +1423,7 @@ namespace System.CodeDom.Compiler
         {
             Output.Write("typeof(");
             OutputType(e.Type);
-            Output.Write(")");
+            Output.Write(')');
         }
 
         protected abstract void GenerateExpressionStatement(CodeExpressionStatement e);
@@ -1517,7 +1516,9 @@ namespace System.CodeDom.Compiler
             bool nextMustBeStartChar = true;
 
             if (value.Length == 0)
+            {
                 return false;
+            }
 
             // each char must be Lu, Ll, Lt, Lm, Lo, Nd, Mn, Mc, Pc
             // 
