@@ -28,6 +28,7 @@
 #include "marshal.h"
 #include "coree.h"
 #include <mono/io-layer/io-layer.h>
+#include <mono/utils/checked-build.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-path.h>
 #include <mono/utils/mono-mmap.h>
@@ -2623,6 +2624,7 @@ mono_image_property_lookup (MonoImage *image, gpointer subject, guint32 property
 void
 mono_image_property_insert (MonoImage *image, gpointer subject, guint32 property, gpointer value)
 {
+	CHECKED_METADATA_STORE_LOCAL (image->mempool, value);
 	mono_image_lock (image);
 	mono_property_hash_insert (image->property_hash, subject, property, value);
  	mono_image_unlock (image);
