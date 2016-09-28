@@ -18,7 +18,7 @@ if exist "%__ProjectDir%\bin" (rmdir /s /q "%__ProjectDir%\bin")
 
 :: Package the assets using Tools
 
-"%__DotNet%" "%__MSBuild%" "%__ProjectDir%\projects\packages.builds" /p:TargetsWindows=true /verbosity:minimal
+"%__DotNet%" "%__MSBuild%" "%__ProjectDir%\projects\packages.builds" /p:TargetsWindows=true /verbosity:minimal /p:NetCoreAppVersion=%1
 
 if not ERRORLEVEL 0 goto :Error
 exit /b 0
