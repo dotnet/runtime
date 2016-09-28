@@ -176,20 +176,6 @@ sgen_workers_enqueue_job (SgenThreadPoolJob *job, gboolean enqueue)
 	sgen_thread_pool_job_enqueue (job);
 }
 
-void
-sgen_workers_wait_for_jobs_finished (void)
-{
-	sgen_thread_pool_wait_for_all_jobs ();
-	/*
-	 * If the idle task was never triggered or it finished before the last job did and
-	 * then didn't get triggered again, we might end up in the situation of having
-	 * something in the gray queue yet the idle task not working.  The easiest way to
-	 * make sure this doesn't stay that way is to just trigger it again after all jobs
-	 * have finished.
-	 */
-	sgen_workers_ensure_awake ();
-}
-
 static gboolean
 workers_get_work (WorkerData *data)
 {

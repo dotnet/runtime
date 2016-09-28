@@ -33,7 +33,6 @@ void sgen_workers_stop_all_workers (void);
 void sgen_workers_start_all_workers (SgenObjectOperations *object_ops, SgenWorkersFinishCallback finish_job);
 void sgen_workers_init_distribute_gray_queue (void);
 void sgen_workers_enqueue_job (SgenThreadPoolJob *job, gboolean enqueue);
-void sgen_workers_wait_for_jobs_finished (void);
 void sgen_workers_distribute_gray_queue_sections (void);
 void sgen_workers_reset_data (void);
 void sgen_workers_join (void);
