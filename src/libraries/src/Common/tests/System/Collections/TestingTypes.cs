@@ -246,15 +246,6 @@ namespace System.Collections.Tests
             return StructuralComparisons.StructuralEqualityComparer.GetHashCode(obj);
         }
     }
-    
-    public enum SByteEnum : sbyte { }
-    public enum ByteEnum : byte { }
-    public enum ShortEnum : short { }
-    public enum UShortEnum : ushort { }
-    public enum IntEnum : int { }
-    public enum UIntEnum : uint { }
-    public enum LongEnum : long { }
-    public enum ULongEnum : ulong { }
 
     public class GenericComparable : IComparable<GenericComparable>
     {
@@ -324,6 +315,55 @@ namespace System.Collections.Tests
 
         public int CompareTo(ValueComparable<T> other) =>
             Value.CompareTo(other.Value);
+    }
+
+    public class Equatable : IEquatable<Equatable>
+    {
+        public Equatable(int value)
+        {
+            Value = value;
+        }
+
+        public int Value { get; }
+        
+        // Equals(object) is not implemented on purpose.
+        // EqualityComparer is only supposed to call through to the strongly-typed Equals since we implement IEquatable.
+
+        public bool Equals(Equatable other)
+        {
+            return other != null && Value == other.Value;
+        }
+
+        public override int GetHashCode() => Value;
+    }
+
+    public struct NonEquatableValueType
+    {
+        public NonEquatableValueType(int value)
+        {
+            Value = value;
+        }
+
+        public int Value { get; set; }
+    }
+
+    public class DelegateEquatable : IEquatable<DelegateEquatable>
+    {
+        public DelegateEquatable()
+        {
+            EqualsWorker = _ => false;
+        }
+
+        public Func<DelegateEquatable, bool> EqualsWorker { get; set; }
+
+        public bool Equals(DelegateEquatable other) => EqualsWorker(other);
+    }
+
+    public struct ValueDelegateEquatable : IEquatable<ValueDelegateEquatable>
+    {
+        public Func<ValueDelegateEquatable, bool> EqualsWorker { get; set; }
+
+        public bool Equals(ValueDelegateEquatable other) => EqualsWorker(other);
     }
 
     #endregion
