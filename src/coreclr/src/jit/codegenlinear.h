@@ -107,6 +107,7 @@ void genUnspillRegIfNeeded(GenTree* tree);
 
 regNumber genConsumeReg(GenTree* tree);
 
+void genCopyRegIfNeeded(GenTree* tree, regNumber needReg);
 void genConsumeRegAndCopy(GenTree* tree, regNumber needReg);
 
 void genConsumeIfReg(GenTreePtr tree)
@@ -125,9 +126,9 @@ void genConsumeAddress(GenTree* addr);
 
 void genConsumeAddrMode(GenTreeAddrMode* mode);
 
-void genConsumeBlockSize(GenTreeBlk* blkNode, regNumber sizeReg);
-void genConsumeBlockDst(GenTreeBlk* blkNode);
-GenTree* genConsumeBlockSrc(GenTreeBlk* blkNode);
+void genSetBlockSize(GenTreeBlk* blkNode, regNumber sizeReg);
+void genConsumeBlockSrc(GenTreeBlk* blkNode);
+void genSetBlockSrc(GenTreeBlk* blkNode, regNumber srcReg);
 void genConsumeBlockOp(GenTreeBlk* blkNode, regNumber dstReg, regNumber srcReg, regNumber sizeReg);
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
@@ -201,6 +202,14 @@ bool genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarrierForm, G
 void genCallInstruction(GenTreePtr call);
 
 void genJmpMethod(GenTreePtr jmp);
+
+BasicBlock* genCallFinally(BasicBlock* block, BasicBlock* lblk);
+
+#if FEATURE_EH_FUNCLETS
+void genEHCatchRet(BasicBlock* block);
+#else  // !FEATURE_EH_FUNCLETS
+void genEHFinallyOrFilterRet(BasicBlock* block);
+#endif // !FEATURE_EH_FUNCLETS
 
 void genMultiRegCallStoreToLocal(GenTreePtr treeNode);
 
