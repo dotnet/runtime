@@ -353,6 +353,10 @@ struct BasicBlock : private LIR::Range
                                        // BBJ_CALLFINALLY block, as well as, on x86, the final step block out of a
                                        // finally.
 
+// Flags that relate blocks to loop structure.
+
+#define BBF_LOOP_FLAGS (BBF_LOOP_PREHEADER | BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1)
+
     bool isRunRarely()
     {
         return ((bbFlags & BBF_RUN_RARELY) != 0);
