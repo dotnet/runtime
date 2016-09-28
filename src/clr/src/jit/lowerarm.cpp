@@ -28,6 +28,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #ifdef _TARGET_ARM_
 
 #include "jit.h"
+#include "sideeffects.h"
 #include "lower.h"
 #include "lsra.h"
 
