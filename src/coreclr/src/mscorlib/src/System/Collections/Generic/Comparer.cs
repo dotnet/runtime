@@ -139,7 +139,7 @@ namespace System.Collections.Generic
     [Serializable]
     internal sealed class NullableComparer<T> : Comparer<T?> where T : struct, IComparable<T>
     {
-        public override int Compare(Nullable<T> x, Nullable<T> y) {
+        public override int Compare(T? x, T? y) {
             if (x.HasValue) {
                 if (y.HasValue) return x.value.CompareTo(y.value);
                 return 1;
