@@ -47,14 +47,14 @@ echo "configuration = $perfConfig"
 # Install nuget to download benchview package, which includes the script machinedata.py for machine data collection
 wget https://dist.nuget.org/win-x86-commandline/latest/nuget.exe
 chmod u+x ./nuget.exe
-./nuget.exe install Microsoft.BenchView.JSONFormat -Source http://benchviewtestfeed.azurewebsites.net/nuget -OutputDirectory ./tests/scripts -Prerelease
+./nuget.exe install Microsoft.BenchView.JSONFormat -Source http://benchviewtestfeed.azurewebsites.net/nuget -OutputDirectory ./tests/scripts -Prerelease -ExcludeVersion
 
 # Install python 3.5.2 to run machinedata.py for machine data collection
 sudo add-apt-repository ppa:fkrull/deadsnakes
 sudo apt-get update
 sudo apt-get --assume-yes install python3.5
 python3.5 --version
-python3.5 ./tests/scripts/Microsoft.BenchView.JSONFormat.0.1.0-pre010/tools/machinedata.py
+python3.5 ./tests/scripts/Microsoft.BenchView.JSONFormat/tools/machinedata.py
 
 # Set up the copies
 # Coreclr build containing the tests and mscorlib
