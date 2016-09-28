@@ -3,7 +3,8 @@ win32_sources = \
 	console-win32.c \
 	w32mutex-win32.c \
 	w32semaphore-win32.c \
-	w32event-win32.c
+	w32event-win32.c \
+	socket-io-windows.c
 
 platform_sources = $(win32_sources)
 

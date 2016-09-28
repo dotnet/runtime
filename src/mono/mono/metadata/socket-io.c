@@ -94,6 +94,9 @@
 #endif
 
 #include "mono/io-layer/socket-wrappers.h"
+#ifdef HOST_WIN32
+#include "mono/metadata/socket-io-windows-internals.h"
+#endif
 
 #define LOGDEBUG(...)  
 /* define LOGDEBUG(...) g_message(__VA_ARGS__)  */
@@ -765,7 +768,7 @@ ves_icall_System_Net_Sockets_Socket_Accept_internal (SOCKET sock, gint32 *werror
 	{
 		MonoInternalThread *curthread = mono_thread_internal_current ();
 		curthread->interrupt_on_stop = (gpointer)TRUE;
-		newsock = _wapi_accept (sock, NULL, 0);
+		newsock = alertable_accept (sock, NULL, 0, blocking);
 		curthread->interrupt_on_stop = (gpointer)FALSE;
 	}
 #else
@@ -1331,7 +1334,11 @@ ves_icall_System_Net_Sockets_Socket_Connect_internal (SOCKET sock, MonoObject *s
 
 	MONO_ENTER_GC_SAFE;
 
+#ifdef HOST_WIN32
+	ret = alertable_connect (sock, sa, sa_size, blocking);
+#else
 	ret = _wapi_connect (sock, sa, sa_size);
+#endif
 
 	MONO_EXIT_GC_SAFE;
 
@@ -1469,7 +1476,7 @@ ves_icall_System_Net_Sockets_Socket_Receive_internal (SOCKET sock, MonoArray *bu
 #ifdef HOST_WIN32
 	{
 		curthread->interrupt_on_stop = (gpointer)TRUE;
-		ret = _wapi_recv (sock, buf, count, recvflags);
+		ret = alertable_recv (sock, buf, count, recvflags, blocking);
 		curthread->interrupt_on_stop = (gpointer)FALSE;
 	}
 #else
@@ -1519,7 +1526,11 @@ ves_icall_System_Net_Sockets_Socket_Receive_array_internal (SOCKET sock, MonoArr
 
 	MONO_ENTER_GC_SAFE;
 
+#ifdef HOST_WIN32
+	ret = alertable_WSARecv (sock, wsabufs, count, &recv, &recvflags, NULL, NULL, blocking);
+#else
 	ret = WSARecv (sock, wsabufs, count, &recv, &recvflags, NULL, NULL);
+#endif
 
 	MONO_EXIT_GC_SAFE;
 
@@ -1579,7 +1590,11 @@ ves_icall_System_Net_Sockets_Socket_ReceiveFrom_internal (SOCKET sock, MonoArray
 
 	MONO_ENTER_GC_SAFE;
 
+#ifdef HOST_WIN32
+	ret = alertable_recvfrom (sock, buf, count, recvflags, sa, &sa_size, blocking);
+#else
 	ret = _wapi_recvfrom (sock, buf, count, recvflags, sa, &sa_size);
+#endif
 
 	MONO_EXIT_GC_SAFE;
 
@@ -1651,7 +1666,11 @@ ves_icall_System_Net_Sockets_Socket_Send_internal (SOCKET sock, MonoArray *buffe
 
 	MONO_ENTER_GC_SAFE;
 
+#ifdef HOST_WIN32
+	ret = alertable_send (sock, buf, count, sendflags, blocking);
+#else
 	ret = _wapi_send (sock, buf, count, sendflags);
+#endif
 
 	MONO_EXIT_GC_SAFE;
 
@@ -1696,7 +1715,11 @@ ves_icall_System_Net_Sockets_Socket_Send_array_internal (SOCKET sock, MonoArray 
 
 	MONO_ENTER_GC_SAFE;
 
+#ifdef HOST_WIN32
+	ret = alertable_WSASend (sock, wsabufs, count, &sent, sendflags, NULL, NULL, blocking);
+#else
 	ret = WSASend (sock, wsabufs, count, &sent, sendflags, NULL, NULL);
+#endif
 
 	MONO_EXIT_GC_SAFE;
 
@@ -1762,7 +1785,11 @@ ves_icall_System_Net_Sockets_Socket_SendTo_internal (SOCKET sock, MonoArray *buf
 
 	MONO_ENTER_GC_SAFE;
 
+#ifdef HOST_WIN32
+	ret = alertable_sendto (sock, buf, count, sendflags, sa, sa_size, blocking);
+#else
 	ret = _wapi_sendto (sock, buf, count, sendflags, sa, sa_size);
+#endif
 
 	MONO_EXIT_GC_SAFE;
 
@@ -2812,7 +2839,11 @@ ves_icall_System_Net_Sockets_Socket_SendFile_internal (SOCKET sock, MonoString *
 
 	MONO_ENTER_GC_SAFE;
 
+#ifdef HOST_WIN32
+	ret = alertable_TransmitFile (sock, file, 0, 0, NULL, &buffers, flags, blocking);
+#else
 	ret = TransmitFile (sock, file, 0, 0, NULL, &buffers, flags);
+#endif
 
 	MONO_EXIT_GC_SAFE;
 

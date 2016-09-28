@@ -24,6 +24,7 @@ mono_threads_abort_syscall_init (void)
 static void CALLBACK
 abort_apc (ULONG_PTR param)
 {
+	THREADS_INTERRUPT_DEBUG ("%06d - abort_apc () called", GetCurrentThreadId ());
 }
 
 void
@@ -35,6 +36,7 @@ mono_threads_suspend_abort_syscall (MonoThreadInfo *info)
 	handle = OpenThread (THREAD_ALL_ACCESS, FALSE, id);
 	g_assert (handle);
 
+	THREADS_INTERRUPT_DEBUG ("%06d - Aborting syscall in thread %06d", GetCurrentThreadId (), id);
 	QueueUserAPC ((PAPCFUNC)abort_apc, handle, (ULONG_PTR)NULL);
 
 	CloseHandle (handle);
