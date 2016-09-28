@@ -174,4 +174,13 @@
   <data name="net_securityprotocolnotsupported" xml:space="preserve">
     <value>The requested security protocol is not supported.</value>
   </data>
+  <data name="net_requestaborted" xml:space="preserve">
+    <value>The request was aborted: {0}.</value>
+  </data>
+  <data name="net_clsmall" xml:space="preserve">
+    <value>The Content-Length value must be greater than or equal to zero.</value>
+  </data>
+  <data name="net_webstatus_Timeout" xml:space="preserve">
+    <value>The operation has timed out.</value>
+  </data>
 </root>

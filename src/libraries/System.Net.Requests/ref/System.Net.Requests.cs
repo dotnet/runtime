@@ -33,6 +33,47 @@ namespace System.Net
         public bool MutuallyAuthenticated { get { throw null; } set { } }
     }
     public delegate System.Net.IPEndPoint BindIPEndPoint(System.Net.ServicePoint servicePoint, System.Net.IPEndPoint remoteEndPoint, int retryCount);
+    public class FileWebRequest : WebRequest, System.Runtime.Serialization.ISerializable
+    {
+        internal FileWebRequest() { }
+        [Obsolete("Serialization is obsoleted for this type. http://go.microsoft.com/fwlink/?linkid=14202")]
+        protected FileWebRequest(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) : base(serializationInfo, streamingContext) { }
+        public override string ConnectionGroupName { get { throw null; } set { } }
+        public override long ContentLength { get { throw null; } set { } }
+        public override string ContentType { get { throw null; } set { } }
+        public override System.Net.ICredentials Credentials { get { throw null; } set { } }
+        public override System.Net.WebHeaderCollection Headers { get { throw null; } }
+        public override string Method { get { throw null; } set { } }
+        public override bool PreAuthenticate { get { throw null; } set { } }
+        public override System.Net.IWebProxy Proxy { get { throw null; } set { } }
+        public override int Timeout { get { throw null; } set { } }
+        public override System.Uri RequestUri { get { throw null; } }
+        public override bool UseDefaultCredentials { get { throw null; } set { } }
+        public override void Abort() { throw null; }
+        public override System.IAsyncResult BeginGetRequestStream(System.AsyncCallback callback, object state) { throw null; }
+        public override System.IAsyncResult BeginGetResponse(System.AsyncCallback callback, object state) { throw null; }
+        public override System.IO.Stream EndGetRequestStream(System.IAsyncResult asyncResult) { throw null; }
+        public override System.Net.WebResponse EndGetResponse(System.IAsyncResult asyncResult) { throw null; }
+        public override System.IO.Stream GetRequestStream() { throw null; }
+        public override System.Net.WebResponse GetResponse() { throw null; }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
+        protected override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
+    }
+    public class FileWebResponse : WebResponse, System.Runtime.Serialization.ISerializable
+    {
+        internal FileWebResponse() { }
+        [Obsolete("Serialization is obsoleted for this type. http://go.microsoft.com/fwlink/?linkid=14202")]
+        protected FileWebResponse(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) : base(serializationInfo, streamingContext) { }
+        public override long ContentLength { get { throw null; } }
+        public override string ContentType { get { throw null; } }
+        public override WebHeaderCollection Headers { get { throw null; } }
+        public override bool SupportsHeaders { get { throw null; } }
+        public override Uri ResponseUri { get { throw null; } }
+        public override void Close() { throw null; }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
+        protected override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
+        public override System.IO.Stream GetResponseStream() { throw null; }
+    }
     public partial class HttpWebRequest : System.Net.WebRequest
     {
         internal HttpWebRequest() { }
@@ -165,6 +206,39 @@ namespace System.Net
         public virtual System.Threading.Tasks.Task<System.Net.WebResponse> GetResponseAsync() { return default(System.Threading.Tasks.Task<System.Net.WebResponse>); }
         public static System.Net.IWebProxy GetSystemWebProxy() { throw null; }
         public static bool RegisterPrefix(string prefix, System.Net.IWebRequestCreate creator) { return default(bool); }
+    }
+    public static class WebRequestMethods
+    {
+        public static class Ftp
+        {
+            public const string DownloadFile = "RETR";
+            public const string ListDirectory = "NLST";
+            public const string UploadFile = "STOR";
+            public const string DeleteFile = "DELE";
+            public const string AppendFile = "APPE";
+            public const string GetFileSize = "SIZE";
+            public const string UploadFileWithUniqueName = "STOU";
+            public const string MakeDirectory = "MKD";
+            public const string RemoveDirectory = "RMD";
+            public const string ListDirectoryDetails = "LIST";
+            public const string GetDateTimestamp = "MDTM";
+            public const string PrintWorkingDirectory = "PWD";
+            public const string Rename = "RENAME";
+        }
+        public static class Http
+        {
+            public const string Get = "GET";
+            public const string Connect = "CONNECT";
+            public const string Head = "HEAD";
+            public const string Put = "PUT";
+            public const string Post = "POST";
+            public const string MkCol = "MKCOL";
+        }
+        public static class File
+        {
+            public const string DownloadFile = "GET";
+            public const string UploadFile = "PUT";
+        }
     }
     public abstract partial class WebResponse : System.Runtime.Serialization.ISerializable, System.IDisposable
     {

@@ -75,7 +75,6 @@ namespace System.Net.Tests
         [Theory]
         [InlineData("ws")]
         [InlineData("wss")]
-        [InlineData("file")]
         [InlineData("ftp")]
         [InlineData("custom")]
         public void Create_InvalidWebRequestUriScheme_Throws(string scheme)
