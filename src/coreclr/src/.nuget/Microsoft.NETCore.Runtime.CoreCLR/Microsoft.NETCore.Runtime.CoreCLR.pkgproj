@@ -2,7 +2,6 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Version>1.2.0</Version>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <SkipValidatePackage>true</SkipValidatePackage>
     <PackagePlatforms>x64;x86;arm64;arm;</PackagePlatforms>
@@ -15,12 +14,12 @@
     -->
     <RuntimeDependency Include="runtime.win8-arm.Microsoft.NETCore.Runtime.CoreCLR">
       <TargetRuntime>win8-arm</TargetRuntime>
-      <Version>1.2.0-$(ExternalExpectedPrerelease)</Version>
+      <Version>$(Win8ArmPackageVersion)-$(ExternalExpectedPrerelease)</Version>
     </RuntimeDependency>
     <!-- ApiSets are only applicable for Windows. 
          Despite the unconditioned package dependency it is constrained by runtime IDs within it's own package -->
     <Dependency Include="Microsoft.NETCore.Windows.ApiSets">
-      <Version>1.0.2-$(ExternalExpectedPrerelease)</Version>
+      <Version>$(WindowsAPISetPackageVersion)</Version>
     </Dependency>
     <ProjectReference Include="..\Microsoft.NETCore.Jit\Microsoft.NETCore.Jit.pkgproj" />
     <ProjectReference Include="win\Microsoft.NETCore.Runtime.CoreCLR.pkgproj">
