@@ -8,7 +8,6 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Runtime.Serialization.Formatters.Tests</AssemblyName>
     <RootNamespace>System.Runtime.Serialization.Formatters.Tests</RootNamespace>
-    <IncludePerformanceTests>true</IncludePerformanceTests>
     <!--
       Until we get first class support for NS1.7 and Netcoreapp1.1
       we need to hard code $(TestTFM) and $(TestNugetTargetMoniker)
