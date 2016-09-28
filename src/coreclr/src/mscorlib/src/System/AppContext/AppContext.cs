@@ -49,6 +49,12 @@ namespace System
             return AppDomain.CurrentDomain.GetData(name);
         }
 
+        [System.Security.SecuritySafeCritical]
+        public static void SetData(string name, object data)
+        {
+            AppDomain.CurrentDomain.SetData(name, data);
+        }
+
         public static event UnhandledExceptionEventHandler UnhandledException
         {
             [System.Security.SecurityCritical]
@@ -62,6 +68,34 @@ namespace System
             {
                 AppDomain.CurrentDomain.UnhandledException -= value;
             }
+        }
+
+        public static event System.EventHandler<System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs> FirstChanceException
+        {  
+            [System.Security.SecurityCritical]
+            add  
+            {  
+                AppDomain.CurrentDomain.FirstChanceException += value;  
+            }  
+            [System.Security.SecurityCritical]
+            remove  
+            {  
+                AppDomain.CurrentDomain.FirstChanceException -= value;  
+            }  
+        }  
+
+        public static event System.EventHandler ProcessExit
+        {  
+            [System.Security.SecurityCritical]
+            add  
+            {  
+                AppDomain.CurrentDomain.ProcessExit += value;  
+            }  
+            [System.Security.SecurityCritical]  
+            remove  
+            {  
+                AppDomain.CurrentDomain.ProcessExit -= value;  
+            }  
         }
 
         #region Switch APIs

@@ -143,15 +143,23 @@
       <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Name="System.AppContext">
+      <Member MemberType="Event" Name="FirstChanceException" />
+      <Member MemberType="Event" Name="ProcessExit" />
+      <Member MemberType="Event" Name="UnhandledException" />
+      <Member Name="add_FirstChanceException(System.EventHandler&lt;System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs&gt;)" />
+      <Member Name="add_ProcessExit(System.EventHandler)" />
+      <Member Name="add_UnhandledException(System.UnhandledExceptionEventHandler)" />
       <Member Name="get_BaseDirectory" />
-      <Member MemberType="Property" Name="BaseDirectory" />
       <Member Name="get_TargetFrameworkName" />
-      <Member MemberType="Property" Name="TargetFrameworkName" />
-      <Member Name="DefineSwitchDefault(System.String,System.Boolean)" />
+      <Member Name="GetData(System.String)" />
+      <Member Name="remove_FirstChanceException(System.EventHandler&lt;System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs&gt;)" />
+      <Member Name="remove_ProcessExit(System.EventHandler)" />
+      <Member Name="remove_UnhandledException(System.UnhandledExceptionEventHandler)" />
+      <Member Name="SetData(System.String,System.Object)" />
       <Member Name="SetSwitch(System.String,System.Boolean)" />
       <Member Name="TryGetSwitch(System.String,System.Boolean@)" />
-      <Member Name="GetData(System.String)" />
-      <Member MemberType="Event" Name="UnhandledException" />
+      <Member MemberType="Property" Name="BaseDirectory" />
+      <Member MemberType="Property" Name="TargetFrameworkName" />
     </Type>
     <Type Name="System.ApplicationException">
       <Member Name="#ctor" />
@@ -6429,6 +6437,11 @@
       <Member MemberType="Property" Name="SourceException" />
     </Type>
     <!-- #endif FEATURE_EXCEPTIONDISPATCHINFO -->
+    <Type Name="System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs">
+      <Member Name="#ctor(System.Exception)" />
+      <Member Name="get_Exception" />
+      <Member MemberType="Property" Name="Exception" />
+    </Type>
     <Type Name="System.Runtime.GCLatencyMode">
       <Member MemberType="Field" Name="Batch" />
       <Member MemberType="Field" Name="Interactive" />
