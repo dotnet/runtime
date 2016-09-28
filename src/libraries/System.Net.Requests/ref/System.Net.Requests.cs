@@ -244,8 +244,8 @@ namespace System.Net
     {
         protected WebResponse() { }
         protected WebResponse(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
-        public virtual long ContentLength { get { throw null; } }
-        public virtual string ContentType { get { throw null; } }
+        public virtual long ContentLength { get { throw null; } set { } }
+        public virtual string ContentType { get { throw null; } set { } }
         public virtual System.Net.WebHeaderCollection Headers { get { return default(System.Net.WebHeaderCollection); } }
         public virtual bool IsFromCache { get { throw null; } }
         public virtual bool IsMutuallyAuthenticated { get { throw null; } }
