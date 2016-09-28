@@ -1827,6 +1827,21 @@ namespace System.Tests
             yield return new object[] { stringArray, "Goodbye", 2, 3, 4 };
             yield return new object[] { stringArray, "Goodbye", 2, 2, -1 };
 
+            // SByteEnum
+            yield return new object[] { new SByteEnum[] { SByteEnum.MinusTwo, SByteEnum.Zero }, SByteEnum.Zero, 0, 2, 1 };
+            yield return new object[] { new SByteEnum[] { SByteEnum.MinusTwo, SByteEnum.Zero }, SByteEnum.Zero, 1, 1, 1 };
+            yield return new object[] { new SByteEnum[] { SByteEnum.MinusTwo, SByteEnum.Zero }, SByteEnum.Zero, 2, 0, -1 };
+            yield return new object[] { new SByteEnum[] { SByteEnum.Five, SByteEnum.Five }, SByteEnum.Five, 0, 2, 0 };
+            yield return new object[] { new SByteEnum[] { SByteEnum.Five, SByteEnum.Five }, SByteEnum.Five, 1, 1, 1 };
+            yield return new object[] { new SByteEnum[] { SByteEnum.Five, SByteEnum.Five }, SByteEnum.Five, 2, 0, -1 };
+
+            // Int16Enum
+            yield return new object[] { new Int16Enum[] { Int16Enum.Min }, Int16Enum.Min, 0, 1, 0 };
+            yield return new object[] { new Int16Enum[] { Int16Enum.Min + 1 }, Int16Enum.One, 0, 1, -1 };
+            yield return new object[] { new Int16Enum[] { Int16Enum.Max, Int16Enum.Max }, Int16Enum.Max, 0, 2, 0 };
+            yield return new object[] { new Int16Enum[] { Int16Enum.Max, Int16Enum.Max }, Int16Enum.Max, 1, 1, 1 };
+            yield return new object[] { new Int16Enum[] { Int16Enum.Max, Int16Enum.Max }, Int16Enum.Max, 2, 0, -1 };
+
             // Int32Enum
             yield return new object[] { new Int32Enum[] { Int32Enum.Case1, Int32Enum.Case2, Int32Enum.Case1 }, Int32Enum.Case1, 0, 3, 0 };
             yield return new object[] { new Int32Enum[] { Int32Enum.Case1, Int32Enum.Case2, Int32Enum.Case1 }, Int32Enum.Case3, 0, 3, -1 };
@@ -3274,11 +3289,6 @@ namespace System.Tests
             public int Compare(object x, object y) => Compare((ComparableRefType)x, (ComparableRefType)y);
         }
 
-        private enum SByteEnum : sbyte
-        {
-            MinusTwo = -2
-        }
-
         private class NotInt32 : IEquatable<int>
         {
             public bool Equals(int other)
@@ -3318,6 +3328,21 @@ namespace System.Tests
 
         public abstract class AbstractClass { }
         public static class StaticClass { }
+
+        public enum SByteEnum : sbyte
+        {
+            MinusTwo = -2,
+            Zero = 0,
+            Five = 5
+        }
+
+        public enum Int16Enum : short
+        {
+            Min = short.MinValue,
+            One = 1,
+            Two = 2,
+            Max = short.MaxValue
+        }
             
         public enum Int32Enum
         {
@@ -3325,6 +3350,7 @@ namespace System.Tests
             Case2,
             Case3
         }
+
         public enum Int64Enum : long { }
     }
 }
