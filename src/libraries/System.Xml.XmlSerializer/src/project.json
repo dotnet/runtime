@@ -1,6 +1,6 @@
 {
   "frameworks": {
-    "netstandard1.3": {
+    "netstandard1.7": {
       "dependencies": {
         "System.Collections": "4.3.0-beta-24522-03",
         "System.Collections.NonGeneric": "4.3.0-beta-24522-03",
@@ -30,12 +30,9 @@
         "System.Text.RegularExpressions": "4.3.0-beta-24522-03",
         "System.Threading": "4.3.0-beta-24522-03",
         "System.Threading.Tasks": "4.3.0-beta-24522-03"
-      },
-      "imports": [
-        "dotnet5.4"
-      ]
+      }
     },
-    "net46": {
+    "net463": {
       "dependencies": {
         "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1",
         "System.Collections.NonGeneric": "4.3.0-beta-24522-03"

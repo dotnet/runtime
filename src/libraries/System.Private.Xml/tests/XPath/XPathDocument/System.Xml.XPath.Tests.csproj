@@ -206,9 +206,8 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\System.Xml.XPath\src\System.Xml.XPath.csproj" />
-    <ProjectReference Include="..\..\..\src\System.Private.Xml.csproj" />
-    <ProjectReference Include="..\..\..\..\System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj" />
+    <ProjectReference Include="..\..\..\..\System.Xml.XPath\pkg\System.Xml.XPath.pkgproj" />
+    <ProjectReference Include="..\..\..\..\System.Xml.ReaderWriter\pkg\System.Xml.ReaderWriter.pkgproj" />
     <ProjectReference Include="..\..\..\..\Microsoft.Win32.Registry\pkg\Microsoft.Win32.Registry.pkgproj" />
   </ItemGroup>
   <ItemGroup>

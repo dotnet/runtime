@@ -2,13 +2,13 @@
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <AssemblyVersion>4.0.10.0</AssemblyVersion>
     <OutputType>Library</OutputType>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Xml.XmlSerializer.cs" />
-    <Compile Include="System.Xml.XmlSerializer.Manual.cs" />
+    <ProjectReference Include="..\..\System.Xml.ReaderWriter\ref\System.Xml.ReaderWriter.csproj" />
+    <ProjectReference Include="..\..\System.Xml.XmlDocument\ref\System.Xml.XmlDocument.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

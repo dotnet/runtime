@@ -3,6 +3,7 @@
     "Microsoft.NETCore.Platforms": "1.0.2-beta-24522-03",
     "System.Collections.NonGeneric": "4.3.0-beta-24522-03",
     "System.Collections.Specialized": "4.3.0-beta-24522-03",
+    "System.Globalization": "4.3.0-beta-24522-03",
     "System.IO": "4.3.0-beta-24522-03",
     "System.IO.FileSystem": "4.3.0-beta-24522-03",
     "System.IO.FileSystem.Primitives": "4.3.0-beta-24522-03",
@@ -14,6 +15,7 @@
     "System.Reflection.TypeExtensions": "4.3.0-beta-24522-03",
     "System.Runtime": "4.3.0-beta-24522-03",
     "System.Runtime.Extensions": "4.3.0-beta-24522-03",
+    "System.Text.Encoding": "4.3.0-beta-24522-03",
     "System.Threading": "4.3.0-beta-24522-03",
     "System.Threading.Thread": "4.3.0-beta-24522-03",
     "System.Threading.Tasks": "4.3.0-beta-24522-03",
@@ -25,13 +27,10 @@
     "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00807-03"
   },
   "frameworks": {
-    "netstandard1.3": {}
+    "netstandard1.7": {}
   },
   "supports": {
-    "coreFx.Test.netcoreapp1.0": {},
-    "coreFx.Test.net46": {},
-    "coreFx.Test.net461": {},
-    "coreFx.Test.net462": {},
+    "coreFx.Test.netcoreapp1.1": {},
     "coreFx.Test.net463": {}
   }
 }

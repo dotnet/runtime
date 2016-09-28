@@ -9,16 +9,20 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn),649</NoWarn>
     <DefineConstants>ASYNC;ASTORIA_LIGHT</DefineConstants><!-- TODO: this should be prepended with $(DefineConstants); - otherwise DEBUG and TRACE are not being passed -->
-    <DefineConstants Condition="'$(TargetGroup)' == 'netcore50aot'">$(DefineConstants);NET_NATIVE</DefineConstants>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <!--<DefineConstants Condition="'$(TargetGroup)' == 'uap101aot'">$(DefineConstants);NET_NATIVE</DefineConstants> TODO: Bring this back when uap101aot support is added -->
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
+    <ProjectReference Include="..\..\System.Net.Requests\ref\System.Net.Requests.csproj">
+    </ProjectReference>
+  </ItemGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
     <Compile Include="$(CommonPath)\System\ValueTuple.cs">
       <Link>Common\System\ValueTuple.cs</Link>
     </Compile>
@@ -72,7 +76,6 @@
     <Compile Include="System\Xml\XmlSecureResolverAsync.cs" />
     <Compile Include="System\Xml\XmlUrlResolver.cs" />
     <Compile Include="System\Xml\XmlUrlResolverAsync.cs" />
-    <Compile Include="System\Xml\XmlXapResolver.cs" />
     <Compile Include="System\Xml\Core\CharEntityEncoderFallback.cs" />
     <Compile Include="System\Xml\Core\ConformanceLevel.cs" />
     <Compile Include="System\Xml\Core\DtdProcessing.cs" />
@@ -518,7 +521,7 @@
       <LogicalName>rss-0.91.dtd</LogicalName>
     </EmbeddedResource>-->
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
   <ItemGroup>
@@ -815,15 +818,9 @@
     <Compile Include="Workarounds\DummyTypes\ConnectionStringSettingsCollection.cs" />
     <Compile Include="Workarounds\DummyTypes\Evidence.cs" />
     <Compile Include="Workarounds\DummyTypes\PermissionSet.cs" />
-    <Compile Include="Workarounds\DummyTypes\RequestCachePolicy.cs" />
     <Compile Include="Workarounds\DummyTypes\SecurityManger.cs" />
-    <Compile Include="Workarounds\SerializationEntry.cs" />
-    <Compile Include="Workarounds\ICloneable.cs" />
     <Compile Include="Workarounds\LocalAppContextSwitches.cs" />
     <Compile Include="Workarounds\SecurityElement.cs" />
-    <Compile Include="Workarounds\SerializationInfo.cs" />
-    <Compile Include="Workarounds\StreamingContext.cs" />
-    <Compile Include="Workarounds\DummyTypes\SystemException.cs" />
     <Compile Include="Workarounds\ThisAssembly.cs" />
     <Compile Include="Workarounds\VBCodeProvider.cs" />
     <Compile Include="Workarounds\__HResults.cs" />
