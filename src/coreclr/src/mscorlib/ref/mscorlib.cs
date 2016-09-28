@@ -9992,6 +9992,10 @@ namespace System.Runtime.CompilerServices
         public bool AllInternalsVisible { get { throw null; } set { } }
         public string AssemblyName { get { throw null; } }
     }
+    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
+    public static partial class IsVolatile 
+    {
+    }
     [System.AttributeUsageAttribute((System.AttributeTargets)(64), Inherited=false, AllowMultiple=false)]
     public sealed partial class IteratorStateMachineAttribute : System.Runtime.CompilerServices.StateMachineAttribute
     {
