@@ -28,6 +28,7 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include <config.h>
 #include <glib.h>
 #include <gmodule.h>
 #include <windows.h>
@@ -68,6 +69,7 @@ g_module_open (const gchar *file, GModuleFlags flags)
 	return module;
 }
 
+#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 static gpointer
 w32_find_symbol (const gchar *symbol_name)
 {
@@ -115,6 +117,17 @@ w32_find_symbol (const gchar *symbol_name)
 	return NULL;
 }
 
+#else /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
+
+static gpointer
+w32_find_symbol (const gchar *symbol_name)
+{
+	g_unsupported_api ("EnumProcessModules");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return NULL;
+}
+#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
+
 gboolean
 g_module_symbol (GModule *module, const gchar *symbol_name, gpointer *symbol)
 {
@@ -134,6 +147,7 @@ g_module_symbol (GModule *module, const gchar *symbol_name, gpointer *symbol)
 	}
 }
 
+#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 const gchar *
 g_module_error (void)
 {
@@ -150,6 +164,35 @@ g_module_error (void)
 
 	return ret;
 }
+
+#elif G_HAVE_API_SUPPORT(HAVE_UWP_WINAPI_SUPPORT)   /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
+
+const gchar *
+g_module_error (void)
+{
+	gchar* ret = NULL;
+	TCHAR buf[1024];
+	DWORD code = GetLastError ();
+
+	if (!FormatMessage (FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
+		code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), buf, G_N_ELEMENTS(buf) - 1, NULL) )
+		buf[0] = TEXT('\0');
+
+	ret = u16to8 (buf);
+	return ret;
+}
+
+#else
+
+const gchar *
+g_module_error (void)
+{
+	g_unsupported_api ("FormatMessage");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return NULL;
+}
+
+#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
 
 gboolean
 g_module_close (GModule *module)
