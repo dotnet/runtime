@@ -639,6 +639,12 @@ mono_image_alloc0 (MonoImage *image, guint size);
 char*
 mono_image_strdup (MonoImage *image, const char *s);
 
+char*
+mono_image_strdup_vprintf (MonoImage *image, const char *format, va_list args);
+
+char*
+mono_image_strdup_printf (MonoImage *image, const char *format, ...);
+
 GList*
 g_list_prepend_image (MonoImage *image, GList *list, gpointer data);
 
