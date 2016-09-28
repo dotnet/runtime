@@ -6300,6 +6300,7 @@
       <Member Name="IsInstanceOfInterface(System.Runtime.CompilerServices.ICastable,System.RuntimeType,System.Exception@)" /> <!-- EE -->
       <Member Name="GetImplType(System.Runtime.CompilerServices.ICastable,System.RuntimeType)" /> <!-- EE -->
     </Type>
+    <Type Name="System.Runtime.CompilerServices.IsVolatile" />  <!-- for All Compilers, [ C# and MC++ uses it] -->
     <Type Name="System.Runtime.CompilerServices.MethodCodeType">
       <Member MemberType="Field" Name="IL" />
       <Member MemberType="Field" Name="Native" />
