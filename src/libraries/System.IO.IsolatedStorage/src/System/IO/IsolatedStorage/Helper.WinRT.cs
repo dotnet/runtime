@@ -34,7 +34,7 @@ namespace System.IO.IsolatedStorage
             }
 
             dataDirectory = Path.Combine(dataDirectory, IsolatedStorageDirectoryName);
-            CreateDirectory(dataDirectory, scope);
+
             return dataDirectory;
         }
 
