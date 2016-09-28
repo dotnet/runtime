@@ -424,12 +424,11 @@ sgen_workers_get_job_gray_queue (WorkerData *worker_data, SgenGrayQueue *default
 }
 
 static void
-gray_queue_enable_redirect (SgenGrayQueue *queue)
+gray_queue_redirect (SgenGrayQueue *queue)
 {
 	SGEN_ASSERT (0, concurrent_collection_in_progress, "Where are we redirecting the gray queue to, without a concurrent collection?");
 
-	sgen_gray_queue_set_alloc_prepare (queue, sgen_workers_take_from_queue_and_awake);
-	sgen_workers_take_from_queue_and_awake (queue);
+	sgen_workers_take_from_queue (queue);
 }
 
 void
@@ -1905,12 +1904,12 @@ major_copy_or_mark_from_roots (SgenGrayQueue *gc_thread_gray_queue, size_t *old_
 	 * the roots.
 	 */
 	if (mode == COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT) {
+		gray_queue_redirect (gc_thread_gray_queue);
 		if (precleaning_enabled) {
 			sgen_workers_start_all_workers (object_ops, workers_finish_callback);
 		} else {
 			sgen_workers_start_all_workers (object_ops, NULL);
 		}
-		gray_queue_enable_redirect (gc_thread_gray_queue);
 	}
 
 	if (mode == COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT) {

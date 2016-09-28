@@ -49,9 +49,6 @@ sgen_gray_object_alloc_queue_section (SgenGrayQueue *queue)
 {
 	GrayQueueSection *section;
 
-	if (queue->alloc_prepare_func)
-		queue->alloc_prepare_func (queue);
-
 	if (queue->free_list) {
 		/* Use the previously allocated queue sections if possible */
 		section = queue->free_list;
@@ -245,13 +242,6 @@ sgen_gray_object_queue_dispose (SgenGrayQueue *queue)
 
 	/* just to make sure */
 	memset (queue, 0, sizeof (SgenGrayQueue));
-}
-
-void
-sgen_gray_queue_set_alloc_prepare (SgenGrayQueue *queue, GrayQueueAllocPrepareFunc alloc_prepare_func)
-{
-	SGEN_ASSERT (0, !queue->alloc_prepare_func, "Can't set gray queue alloc-prepare twice");
-	queue->alloc_prepare_func = alloc_prepare_func;
 }
 
 void

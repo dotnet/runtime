@@ -421,22 +421,16 @@ sgen_workers_assert_gray_queue_is_empty (void)
 }
 
 void
-sgen_workers_take_from_queue_and_awake (SgenGrayQueue *queue)
+sgen_workers_take_from_queue (SgenGrayQueue *queue)
 {
-	gboolean wake = FALSE;
-
 	for (;;) {
 		GrayQueueSection *section = sgen_gray_object_dequeue_section (queue);
 		if (!section)
 			break;
 		sgen_section_gray_queue_enqueue (&workers_distribute_gray_queue, section);
-		wake = TRUE;
 	}
 
-	if (wake) {
-		SGEN_ASSERT (0, sgen_concurrent_collection_in_progress (), "Why is there work to take when there's no concurrent collection in progress?");
-		sgen_workers_ensure_awake ();
-	}
+	SGEN_ASSERT (0, !sgen_workers_are_working (), "We should fully populate the distribute gray queue before we start the workers");
 }
 
 SgenObjectOperations*

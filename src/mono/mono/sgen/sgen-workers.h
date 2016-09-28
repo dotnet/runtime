@@ -41,7 +41,7 @@ gboolean sgen_workers_have_idle_work (void);
 gboolean sgen_workers_all_done (void);
 gboolean sgen_workers_are_working (void);
 void sgen_workers_assert_gray_queue_is_empty (void);
-void sgen_workers_take_from_queue_and_awake (SgenGrayQueue *queue);
+void sgen_workers_take_from_queue (SgenGrayQueue *queue);
 SgenObjectOperations* sgen_workers_get_idle_func_object_ops (void);
 int sgen_workers_get_job_split_count (void);
 void sgen_workers_foreach (SgenWorkerCallback callback);
