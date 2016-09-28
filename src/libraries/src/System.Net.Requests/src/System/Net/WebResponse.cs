@@ -70,6 +70,10 @@ namespace System.Net
             {
                 throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
             }
+            set
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
         }
 
 
@@ -81,6 +85,10 @@ namespace System.Net
         public virtual string ContentType
         {
             get
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
+            set
             {
                 throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
             }
