@@ -57,6 +57,12 @@ g_slist_append_mempool (MonoMemPool *mp, GSList *list, gpointer data)
 		return new_list;
 }
 
+char*
+mono_mempool_strdup_vprintf (MonoMemPool *pool, const char *format, va_list args);
+
+char*
+mono_mempool_strdup_printf (MonoMemPool *pool, const char *format, ...);
+
 long
 mono_mempool_get_bytes_allocated (void);
 

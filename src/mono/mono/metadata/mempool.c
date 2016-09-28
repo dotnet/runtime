@@ -381,6 +381,35 @@ mono_mempool_strdup (MonoMemPool *pool,
 	return res;
 }
 
+char*
+mono_mempool_strdup_vprintf (MonoMemPool *pool, const char *format, va_list args)
+{
+	size_t buflen;
+	char *buf;
+	va_list args2;
+	va_copy (args2, args);
+	int len = vsnprintf (NULL, 0, format, args2);
+	va_end (args2);
+
+	if (len >= 0 && (buf = (char*)mono_mempool_alloc (pool, (buflen = (size_t) (len + 1)))) != NULL) {
+		vsnprintf (buf, buflen, format, args);
+	} else {
+		buf = NULL;
+	}
+	return buf;
+}
+
+char*
+mono_mempool_strdup_printf (MonoMemPool *pool, const char *format, ...)
+{
+	char *buf;
+	va_list args;
+	va_start (args, format);
+	buf = mono_mempool_strdup_vprintf (pool, format, args);
+	va_end (args);
+	return buf;
+}
+
 /**
  * mono_mempool_get_allocated:
  *
