@@ -1714,15 +1714,15 @@ mono_class_setup_fields (MonoClass *klass)
 				field->offset = offset;
 
 				if (field->offset == (guint32)-1 && !(field->type->attrs & FIELD_ATTRIBUTE_STATIC)) {
-					mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Missing field layout info for %s", field->name));
+					mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup_printf (klass->image, "Missing field layout info for %s", field->name));
 					break;
 				}
 				if (field->offset < -1) { /*-1 is used to encode special static fields */
-					mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Invalid negative field offset %d for %s", field->offset, field->name));
+					mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup_printf (klass->image, "Invalid negative field offset %d for %s", field->offset, field->name));
 					break;
 				}
 				if (klass->generic_container) {
-					mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Generic class cannot have explicit layout."));
+					mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup_printf (klass->image, "Generic class cannot have explicit layout."));
 					break;
 				}
 			}
@@ -2110,7 +2110,7 @@ mono_class_layout_fields (MonoClass *klass, int instance_size)
 				// FIXME: Too much code does this
 #if 0
 				if (!MONO_TYPE_IS_REFERENCE (field->type) && ref_bitmap [field->offset / sizeof (gpointer)]) {
-					char *err_msg = g_strdup_printf ("Could not load type '%s' because it contains an object field at offset %d that is incorrectly aligned or overlapped by a non-object field.", klass->name, field->offset);
+					char *err_msg = mono_image_strdup_printf (klass->image, "Could not load type '%s' because it contains an object field at offset %d that is incorrectly aligned or overlapped by a non-object field.", klass->name, field->offset);
 					mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, err_msg);
 				}
 #endif
@@ -2236,7 +2236,7 @@ mono_class_setup_methods (MonoClass *klass)
 			mono_class_setup_methods (gklass);
 		if (mono_class_has_failure (gklass)) {
 			/* FIXME make exception_data less opaque so it's possible to dup it here */
-			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Generic type definition failed to load"));
+			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup (klass->image, "Generic type definition failed to load"));
 			return;
 		}
 
@@ -2249,7 +2249,7 @@ mono_class_setup_methods (MonoClass *klass)
 				gklass->methods [i], klass, mono_class_get_context (klass), &error);
 			if (!mono_error_ok (&error)) {
 				char *method = mono_method_full_name (gklass->methods [i], TRUE);
-				mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Could not inflate method %s due to %s", method, mono_error_get_message (&error)));
+				mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup_printf (klass->image, "Could not inflate method %s due to %s", method, mono_error_get_message (&error)));
 
 				g_free (method);
 				mono_error_cleanup (&error);
@@ -2355,7 +2355,7 @@ mono_class_setup_methods (MonoClass *klass)
 			int idx = mono_metadata_translate_token_index (klass->image, MONO_TABLE_METHOD, klass->method.first + i + 1);
 			methods [i] = mono_get_method_checked (klass->image, MONO_TOKEN_METHOD_DEF | idx, klass, NULL, &error);
 			if (!methods [i]) {
-				mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Could not load method %d due to %s", i, mono_error_get_message (&error)));
+				mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup_printf (klass->image, "Could not load method %d due to %s", i, mono_error_get_message (&error)));
 				mono_error_cleanup (&error);
 			}
 		}
@@ -2533,7 +2533,7 @@ mono_class_setup_properties (MonoClass *klass)
 		mono_class_init (gklass);
 		mono_class_setup_properties (gklass);
 		if (mono_class_has_failure (gklass)) {
-			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Generic type definition failed to load"));
+			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup (klass->image, "Generic type definition failed to load"));
 			return;
 		}
 
@@ -2666,7 +2666,7 @@ mono_class_setup_events (MonoClass *klass)
 
 		mono_class_setup_events (gklass);
 		if (mono_class_has_failure (gklass)) {
-			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Generic type definition failed to load"));
+			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup (klass->image, "Generic type definition failed to load"));
 			return;
 		}
 
@@ -2706,7 +2706,7 @@ mono_class_setup_events (MonoClass *klass)
 		if (count) {
 			mono_class_setup_methods (klass);
 			if (mono_class_has_failure (klass)) {
-				mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Generic type definition failed to load"));
+				mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup (klass->image, "Generic type definition failed to load"));
 				return;
 			}
 		}
@@ -3568,7 +3568,7 @@ setup_interface_offsets (MonoClass *klass, int cur_slot, gboolean overwrite)
 		ifaces = mono_class_get_implemented_interfaces (k, &error);
 		if (!mono_error_ok (&error)) {
 			char *name = mono_type_get_full_name (k);
-			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Error getting the interfaces of %s due to %s", name, mono_error_get_message (&error)));
+			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup_printf (klass->image, "Error getting the interfaces of %s due to %s", name, mono_error_get_message (&error)));
 			g_free (name);
 			mono_error_cleanup (&error);
 			cur_slot = -1;
@@ -3635,7 +3635,7 @@ setup_interface_offsets (MonoClass *klass, int cur_slot, gboolean overwrite)
 			count = count_virtual_methods (ic);
 			if (count == -1) {
 				char *name = mono_type_get_full_name (ic);
-				mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Error calculating interface offset of %s", name));
+				mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup_printf (klass->image, "Error calculating interface offset of %s", name));
 				g_free (name);
 				cur_slot = -1;
 				goto end;
@@ -3812,7 +3812,7 @@ mono_class_check_vtable_constraints (MonoClass *klass, GList *in_setup)
 
 	mono_class_setup_vtable_full (mono_class_get_generic_type_definition (klass), in_setup);
 	if (mono_class_has_failure (klass->generic_class->container_class)) {
-		mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Failed to load generic definition vtable"));
+		mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup (klass->image, "Failed to load generic definition vtable"));
 		return FALSE;
 	}
 
@@ -3826,7 +3826,7 @@ mono_class_check_vtable_constraints (MonoClass *klass, GList *in_setup)
 		if (mono_class_has_gtd_parent (klass, arg) || mono_class_has_gtd_parent (arg, klass))
 			continue;
 		if (!mono_class_check_vtable_constraints (arg, in_setup)) {
-			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Failed to load generic parameter %d", i));
+			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup_printf (klass->image, "Failed to load generic parameter %d", i));
 			return FALSE;
 		}
 	}
@@ -3909,7 +3909,7 @@ mono_class_setup_vtable_full (MonoClass *klass, GList *in_setup)
 		if (!is_ok (&error)) {
 			mono_loader_unlock ();
 			g_list_remove (in_setup, klass);
-			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf("Could not load list of method overrides due to %s", mono_error_get_message (&error)));
+			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup_printf(klass->image, "Could not load list of method overrides due to %s", mono_error_get_message (&error)));
 			mono_error_cleanup (&error);
 			return;
 		}
@@ -3922,7 +3922,7 @@ mono_class_setup_vtable_full (MonoClass *klass, GList *in_setup)
 	if (ok)
 		mono_class_setup_vtable_general (klass, overrides, onum, in_setup);
 	else
-		mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Could not load list of method overrides"));
+		mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup (klass->image, "Could not load list of method overrides"));
 		
 	g_free (overrides);
 
@@ -4038,7 +4038,7 @@ check_interface_method_override (MonoClass *klass, MonoMethod *im, MonoMethod *c
 		cmsig = mono_method_signature (cm);
 		imsig = mono_method_signature (im);
 		if (!cmsig || !imsig) {
-			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Could not resolve the signature of a virtual method"));
+			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup (klass->image, "Could not resolve the signature of a virtual method"));
 			return FALSE;
 		}
 
@@ -4056,7 +4056,7 @@ check_interface_method_override (MonoClass *klass, MonoMethod *im, MonoMethod *c
 		if (is_wcf_hack_disabled () && !mono_method_can_access_method_full (cm, im, NULL)) {
 			char *body_name = mono_method_full_name (cm, TRUE);
 			char *decl_name = mono_method_full_name (im, TRUE);
-			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Method %s overrides method '%s' which is not accessible", body_name, decl_name));
+			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup_printf (klass->image, "Method %s overrides method '%s' which is not accessible", body_name, decl_name));
 			g_free (body_name);
 			g_free (decl_name);
 			return FALSE;
@@ -4080,7 +4080,7 @@ check_interface_method_override (MonoClass *klass, MonoMethod *im, MonoMethod *c
 		cmsig = mono_method_signature (cm);
 		imsig = mono_method_signature (im);
 		if (!cmsig || !imsig) {
-			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Could not resolve the signature of a virtual method"));
+			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup (klass->image, "Could not resolve the signature of a virtual method"));
 			return FALSE;
 		}
 
@@ -4137,7 +4137,7 @@ check_interface_method_override (MonoClass *klass, MonoMethod *im, MonoMethod *c
 		if (is_wcf_hack_disabled () && !mono_method_can_access_method_full (cm, im, NULL)) {
 			char *body_name = mono_method_full_name (cm, TRUE);
 			char *decl_name = mono_method_full_name (im, TRUE);
-			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Method %s overrides method '%s' which is not accessible", body_name, decl_name));
+			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup_printf (klass->image, "Method %s overrides method '%s' which is not accessible", body_name, decl_name));
 			g_free (body_name);
 			g_free (decl_name);
 			return FALSE;
@@ -4304,28 +4304,28 @@ verify_class_overrides (MonoClass *klass, MonoMethod **overrides, int onum)
 		MonoMethod *body = overrides [i * 2 + 1];
 
 		if (mono_class_get_generic_type_definition (body->klass) != mono_class_get_generic_type_definition (klass)) {
-			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Method belongs to a different class than the declared one"));
+			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup (klass->image, "Method belongs to a different class than the declared one"));
 			return FALSE;
 		}
 
 		if (!(body->flags & METHOD_ATTRIBUTE_VIRTUAL) || (body->flags & METHOD_ATTRIBUTE_STATIC)) {
 			if (body->flags & METHOD_ATTRIBUTE_STATIC)
-				mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Method must not be static to override a base type"));
+				mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup (klass->image, "Method must not be static to override a base type"));
 			else
-				mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Method must be virtual to override a base type"));
+				mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup (klass->image, "Method must be virtual to override a base type"));
 			return FALSE;
 		}
 
 		if (!(decl->flags & METHOD_ATTRIBUTE_VIRTUAL) || (decl->flags & METHOD_ATTRIBUTE_STATIC)) {
 			if (body->flags & METHOD_ATTRIBUTE_STATIC)
-				mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Cannot override a static method in a base type"));
+				mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup (klass->image, "Cannot override a static method in a base type"));
 			else
-				mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Cannot override a non virtual method in a base type"));
+				mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup (klass->image, "Cannot override a non virtual method in a base type"));
 			return FALSE;
 		}
 
 		if (!mono_class_is_assignable_from_slow (decl->klass, klass)) {
-			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Method overrides a class or interface that is not extended or implemented by this type"));
+			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup (klass->image, "Method overrides a class or interface that is not extended or implemented by this type"));
 			return FALSE;
 		}
 
@@ -4335,7 +4335,7 @@ verify_class_overrides (MonoClass *klass, MonoMethod **overrides, int onum)
 		if (is_wcf_hack_disabled () && !mono_method_can_access_method_full (body, decl, NULL)) {
 			char *body_name = mono_method_full_name (body, TRUE);
 			char *decl_name = mono_method_full_name (decl, TRUE);
-			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Method %s overrides method '%s' which is not accessible", body_name, decl_name));
+			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup_printf (klass->image, "Method %s overrides method '%s' which is not accessible", body_name, decl_name));
 			g_free (body_name);
 			g_free (decl_name);
 			return FALSE;
@@ -4378,7 +4378,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	ifaces = mono_class_get_implemented_interfaces (klass, &error);
 	if (!mono_error_ok (&error)) {
 		char *name = mono_type_get_full_name (klass);
-		mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Could not resolve %s interfaces due to %s", name, mono_error_get_message (&error)));
+		mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup_printf (klass->image, "Could not resolve %s interfaces due to %s", name, mono_error_get_message (&error)));
 		g_free (name);
 		mono_error_cleanup (&error);
 		return;
@@ -4397,7 +4397,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 
 		if (mono_class_has_failure (klass->parent)) {
 			char *name = mono_type_get_full_name (klass->parent);
-			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Parent %s failed to load", name));
+			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup_printf (klass->image, "Parent %s failed to load", name));
 			g_free (name);
 			return;
 		}
@@ -4445,9 +4445,8 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 			if (gklass->vtable [i]) {
 				MonoMethod *inflated = mono_class_inflate_generic_method_full_checked (gklass->vtable [i], klass, mono_class_get_context (klass), &error);
 				if (!mono_error_ok (&error)) {
-					char *err_msg = g_strdup_printf ("Could not inflate method due to %s", mono_error_get_message (&error));
+					char *err_msg = mono_image_strdup_printf (klass->image, "Could not inflate method due to %s", mono_error_get_message (&error));
 					mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, err_msg);
-					g_free (err_msg);
 					mono_error_cleanup (&error);
 					return;
 				}
@@ -4714,7 +4713,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 						if (is_wcf_hack_disabled () && !mono_method_can_access_method_full (cm, m1, NULL)) {
 							char *body_name = mono_method_full_name (cm, TRUE);
 							char *decl_name = mono_method_full_name (m1, TRUE);
-							mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Method %s overrides method '%s' which is not accessible", body_name, decl_name));
+							mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup_printf (klass->image, "Method %s overrides method '%s' which is not accessible", body_name, decl_name));
 							g_free (body_name);
 							g_free (decl_name);
 							goto fail;
@@ -4799,7 +4798,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 			if (vtable [i] == NULL || (vtable [i]->flags & (METHOD_ATTRIBUTE_ABSTRACT | METHOD_ATTRIBUTE_STATIC))) {
 				char *type_name = mono_type_get_full_name (klass);
 				char *method_name = vtable [i] ? mono_method_full_name (vtable [i], TRUE) : g_strdup ("none");
-				mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Type %s has invalid vtable method slot %d with method %s", type_name, i, method_name));
+				mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup_printf (klass->image, "Type %s has invalid vtable method slot %d with method %s", type_name, i, method_name));
 				g_free (type_name);
 				g_free (method_name);
 				return;
@@ -4883,7 +4882,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 fail:
 	{
 	char *name = mono_type_get_full_name (klass);
-	mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("VTable setup of type %s failed", name));
+	mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup_printf (klass->image, "VTable setup of type %s failed", name));
 	g_free (name);
 	if (override_map)
 		g_hash_table_destroy (override_map);
@@ -5123,7 +5122,7 @@ mono_class_init (MonoClass *klass)
 	}
 
 	if (klass->init_pending) {
-		mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Recursive type definition detected"));
+		mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup (klass->image, "Recursive type definition detected"));
 		goto leave;
 	}
 
@@ -5160,7 +5159,7 @@ mono_class_init (MonoClass *klass)
 		if (!mono_class_has_failure (gklass))
 			mono_class_setup_methods (gklass);
 		if (mono_class_has_failure (gklass)) {
-			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Generic Type Defintion failed to init"));
+			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup_printf (klass->image, "Generic Type Defintion failed to init"));
 			goto leave;
 		}
 
@@ -5321,7 +5320,7 @@ mono_class_init (MonoClass *klass)
 		mono_security_core_clr_check_inheritance (klass);
 
 	if (klass->generic_class && !mono_verifier_class_is_valid_generic_instantiation (klass))
-		mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Invalid generic instantiation"));
+		mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup (klass->image, "Invalid generic instantiation"));
 
 	goto leave;
 
@@ -5719,7 +5718,7 @@ fix_gclass_incomplete_instantiation (MonoClass *gclass, void *user_data)
 static void
 mono_class_set_failure_and_error (MonoClass *klass, MonoError *error, const char *msg)
 {
-	mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup (msg));
+	mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup (klass->image, msg));
 	mono_error_set_type_load_class (error, klass, msg);
 }
 
@@ -5814,7 +5813,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 			parent = mono_class_inflate_generic_class_checked (parent, context, error);
 
 		if (parent == NULL) {
-			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup (mono_error_get_message (error)));
+			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup (klass->image, mono_error_get_message (error)));
 			goto parent_failure;
 		}
 
@@ -5846,7 +5845,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 		klass->nested_in = mono_class_create_from_typedef (image, nesting_tokeen, error);
 		if (!mono_error_ok (error)) {
 			/*FIXME implement a mono_class_set_failure_from_mono_error */
-			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup (mono_error_get_message (error)));
+			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup (klass->image, mono_error_get_message (error)));
 			mono_loader_unlock ();
 			mono_profiler_class_loaded (klass, MONO_PROFILE_FAILED);
 			return NULL;
@@ -5867,7 +5866,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 		if (!mono_metadata_interfaces_from_typedef_full (
 			    image, type_token, &interfaces, &icount, FALSE, context, error)){
 
-			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup (mono_error_get_message (error)));
+			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup (klass->image, mono_error_get_message (error)));
 			mono_loader_unlock ();
 			mono_profiler_class_loaded (klass, MONO_PROFILE_FAILED);
 			return NULL;
@@ -5917,7 +5916,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 		if (!enum_basetype) {
 			/*set it to a default value as the whole runtime can't handle this to be null*/
 			klass->cast_class = klass->element_class = mono_defaults.int32_class;
-			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup (mono_error_get_message (error)));
+			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup (klass->image, mono_error_get_message (error)));
 			mono_loader_unlock ();
 			mono_profiler_class_loaded (klass, MONO_PROFILE_FAILED);
 			return NULL;
@@ -5931,7 +5930,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	 * work.
 	 */
 	if (klass->generic_container && !mono_metadata_load_generic_param_constraints_checked (image, type_token, klass->generic_container, error)) {
-		mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Could not load generic parameter constrains due to %s", mono_error_get_message (error)));
+		mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup_printf (klass->image, "Could not load generic parameter constrains due to %s", mono_error_get_message (error)));
 		mono_loader_unlock ();
 		mono_profiler_class_loaded (klass, MONO_PROFILE_FAILED);
 		return NULL;
@@ -6228,7 +6227,7 @@ make_generic_param_class (MonoGenericParam *param, MonoGenericParamInfo *pinfo)
 	if (count - pos > 0) {
 		mono_class_setup_vtable (klass->parent);
 		if (mono_class_has_failure (klass->parent))
-			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Failed to setup parent interfaces"));
+			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup (klass->image, "Failed to setup parent interfaces"));
 		else
 			setup_interface_offsets (klass, klass->parent->vtable_size, TRUE);
 	}
@@ -10645,7 +10644,7 @@ mono_class_setup_interfaces (MonoClass *klass, MonoError *error)
 
 		mono_class_setup_interfaces (gklass, error);
 		if (!mono_error_ok (error)) {
-			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Could not setup the interfaces"));
+			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup (klass->image, "Could not setup the interfaces"));
 			return;
 		}
 
@@ -10654,7 +10653,7 @@ mono_class_setup_interfaces (MonoClass *klass, MonoError *error)
 		for (i = 0; i < interface_count; i++) {
 			interfaces [i] = mono_class_inflate_generic_class_checked (gklass->interfaces [i], mono_generic_class_get_context (klass->generic_class), error);
 			if (!mono_error_ok (error)) {
-				mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Could not setup the interfaces"));
+				mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup (klass->image, "Could not setup the interfaces"));
 				return;
 			}
 		}
@@ -10691,13 +10690,13 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 		MonoClassField *gfield = &gtd->fields [field_idx];
 		MonoType *gtype = mono_field_get_type_checked (gfield, error);
 		if (!mono_error_ok (error)) {
-			char *err_msg = g_strdup_printf ("Could not load field %d type due to: %s", field_idx, mono_error_get_message (error));
+			char *err_msg = mono_image_strdup_printf (klass->image, "Could not load field %d type due to: %s", field_idx, mono_error_get_message (error));
 			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, err_msg);
 		}
 
 		field->type = mono_class_inflate_generic_type_no_copy (image, gtype, mono_class_get_context (klass), error);
 		if (!mono_error_ok (error)) {
-			char *err_msg = g_strdup_printf ("Could not load field %d type due to: %s", field_idx, mono_error_get_message (error));
+			char *err_msg = mono_image_strdup_printf (klass->image, "Could not load field %d type due to: %s", field_idx, mono_error_get_message (error));
 			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, err_msg);
 		}
 	} else {
@@ -10721,7 +10720,7 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 
 		if (!mono_verifier_verify_field_signature (image, cols [MONO_FIELD_SIGNATURE], NULL)) {
 			mono_error_set_type_load_class (error, klass, "Could not verify field %s signature", field->name);;
-			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup (mono_error_get_message (error)));
+			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup (klass->image, mono_error_get_message (error)));
 			return;
 		}
 
@@ -10733,7 +10732,7 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 
 		field->type = mono_metadata_parse_type_checked (image, container, cols [MONO_FIELD_FLAGS], FALSE, sig + 1, &sig, error);
 		if (!field->type) {
-			char *err_msg = g_strdup_printf ("Could not load field %d type due to: %s", field_idx, mono_error_get_message (error));
+			char *err_msg = mono_image_strdup_printf (klass->image, "Could not load field %d type due to: %s", field_idx, mono_error_get_message (error));
 			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, err_msg);
 		}
 	}
