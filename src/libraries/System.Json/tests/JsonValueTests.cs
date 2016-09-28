@@ -152,6 +152,7 @@ namespace System.Json.Tests
         [InlineData("[")]
         [InlineData("[1")]
         [InlineData("{")]
+        [InlineData("{ ")]
         [InlineData("{1")]
         [InlineData("{\"")]
         [InlineData("{\"u")]
@@ -169,6 +170,11 @@ namespace System.Json.Tests
         [InlineData("{\"name\":1")]
         [InlineData("1e")]
         [InlineData("1e-")]
+        [InlineData("\0")]
+        [InlineData("\u000B1")]
+        [InlineData("\u000C1")]
+        [InlineData("{\"\\a\"}")]
+        [InlineData("{\"\\z\"}")]
         public void Parse_InvalidInput_ThrowsArgumentException(string value)
         {
             Assert.Throws<ArgumentException>(null, () => JsonValue.Parse(value));
@@ -703,6 +709,13 @@ namespace System.Json.Tests
             Assert.Equal(primitive, toPrimitive);
         }
 
+        [Fact]
+        public void ToString_InvalidJsonType_ThrowsInvalidCastException()
+        {
+            InvalidJsonValue value = new InvalidJsonValue();
+            Assert.Throws<InvalidCastException>(() => value.ToString());
+        }
+
         private static void Parse(string jsonString, Action<JsonValue> action)
         {
             action(JsonValue.Parse(jsonString));
@@ -723,6 +736,11 @@ namespace System.Json.Tests
             public override JsonType JsonType => JsonType.String;
 
             public override void Save(TextWriter textWriter) => textWriter.Write("Hello");
+        }
+
+        public class InvalidJsonValue : JsonValue
+        {
+            public override JsonType JsonType => (JsonType)(-1);
         }
     }
 }
