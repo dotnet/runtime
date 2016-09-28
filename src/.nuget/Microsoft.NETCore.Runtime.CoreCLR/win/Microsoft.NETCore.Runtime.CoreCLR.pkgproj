@@ -3,7 +3,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
-    <Version>1.2.0</Version>
     <PackageTargetRuntime>$(MinOSForArch)-$(PackagePlatform)</PackageTargetRuntime>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <LongNamePlatform>$(PackagePlatform)</LongNamePlatform>
