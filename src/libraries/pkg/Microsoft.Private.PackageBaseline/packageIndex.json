@@ -8,7 +8,8 @@
       "BaselineVersion": "4.0.1",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
-        "4.0.1.0": "4.0.1"
+        "4.0.1.0": "4.0.1",
+        "4.0.2.0": "4.3.0"
       }
     },
     "Microsoft.NETCore.Platforms": {
@@ -32,7 +33,8 @@
       "BaselineVersion": "10.0.1",
       "AssemblyVersionInPackageVersion": {
         "10.0.0.0": "10.0.0",
-        "10.0.1.0": "10.0.1"
+        "10.0.1.0": "10.0.1",
+        "10.0.2.0": "10.1.0"
       }
     },
     "Microsoft.Win32.Primitives": {
@@ -87,7 +89,8 @@
         "4.0.1"
       ],
       "AssemblyVersionInPackageVersion": {
-        "4.0.2.0": "4.3.0"
+        "4.0.2.0": "4.3.0",
+        "4.0.1.0": "4.3.0"
       }
     },
     "runtime.any.System.Diagnostics.Tracing": {
@@ -209,7 +212,8 @@
         "4.0.11"
       ],
       "AssemblyVersionInPackageVersion": {
-        "4.0.12.0": "4.3.0"
+        "4.0.11.0": "4.3.0",
+        "4.1.0.0": "4.3.0"
       }
     },
     "runtime.any.System.Threading.Tasks": {
@@ -232,37 +236,61 @@
     "runtime.aot.System.Collections": {
       "StableVersions": [
         "4.0.10"
-      ]
+      ],
+      "AssemblyVersionInPackageVersion": {
+        "4.0.10.0": "4.3.0"
+      }
     },
     "runtime.aot.System.Diagnostics.Tools": {
       "StableVersions": [
         "4.0.1"
-      ]
+      ],
+      "AssemblyVersionInPackageVersion": {
+        "4.0.2.0": "4.3.0"
+      }
     },
     "runtime.aot.System.Diagnostics.Tracing": {
       "StableVersions": [
         "4.0.20"
-      ]
+      ],
+      "AssemblyVersionInPackageVersion": {
+        "4.0.20.0": "4.3.0"
+      }
     },
     "runtime.aot.System.Globalization": {
       "StableVersions": [
         "4.0.11"
-      ]
+      ],
+      "AssemblyVersionInPackageVersion": {
+        "4.0.12.0": "4.3.0"
+      }
     },
     "runtime.aot.System.Globalization.Calendars": {
       "StableVersions": [
         "4.0.1"
-      ]
+      ],
+      "AssemblyVersionInPackageVersion": {
+        "4.0.1.0": "4.3.0"
+      }
     },
     "runtime.aot.System.IO": {
       "StableVersions": [
         "4.1.0"
-      ]
+      ],
+      "AssemblyVersionInPackageVersion": {
+        "4.0.10.0": "4.3.0",
+        "4.1.0.0": "4.3.0",
+        "4.2.0.0": "4.3.0"
+      }
     },
     "runtime.aot.System.Reflection": {
       "StableVersions": [
         "4.0.10"
-      ]
+      ],
+      "AssemblyVersionInPackageVersion": {
+        "4.0.10.0": "4.3.0",
+        "4.2.0.0": "4.3.0"
+      }
     },
     "runtime.aot.System.Reflection.Extensions": {
       "StableVersions": [
@@ -272,47 +300,77 @@
     "runtime.aot.System.Reflection.Primitives": {
       "StableVersions": [
         "4.0.0"
-      ]
+      ],
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.3.0",
+        "4.1.0.0": "4.3.0"
+      }
     },
     "runtime.aot.System.Resources.ResourceManager": {
       "StableVersions": [
         "4.0.0"
-      ]
+      ],
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.3.0"
+      }
     },
     "runtime.aot.System.Runtime": {
       "StableVersions": [
         "4.0.20"
-      ]
+      ],
+      "AssemblyVersionInPackageVersion": {
+        "4.0.20.0": "4.3.0",
+        "4.2.0.0": "4.3.0"
+      }
     },
     "runtime.aot.System.Runtime.Handles": {
       "StableVersions": [
         "4.0.1"
-      ]
+      ],
+      "AssemblyVersionInPackageVersion": {
+        "4.0.1.0": "4.3.0",
+        "4.1.0.0": "4.3.0"
+      }
     },
     "runtime.aot.System.Runtime.InteropServices": {
       "StableVersions": [
         "4.0.20"
-      ]
+      ],
+      "AssemblyVersionInPackageVersion": {
+        "4.0.20.0": "4.3.0"
+      }
     },
     "runtime.aot.System.Text.Encoding": {
       "StableVersions": [
         "4.0.11"
-      ]
+      ],
+      "AssemblyVersionInPackageVersion": {
+        "4.0.11.0": "4.3.0"
+      }
     },
     "runtime.aot.System.Text.Encoding.Extensions": {
       "StableVersions": [
         "4.0.11"
-      ]
+      ],
+      "AssemblyVersionInPackageVersion": {
+        "4.0.11.0": "4.3.0"
+      }
     },
     "runtime.aot.System.Threading.Tasks": {
       "StableVersions": [
         "4.0.11"
-      ]
+      ],
+      "AssemblyVersionInPackageVersion": {
+        "4.0.11.0": "4.3.0"
+      }
     },
     "runtime.aot.System.Threading.Timer": {
       "StableVersions": [
         "4.0.1"
-      ]
+      ],
+      "AssemblyVersionInPackageVersion": {
+        "4.0.2.0": "4.3.0"
+      }
     },
     "runtime.debian.8-x64.runtime.native.System": {
       "StableVersions": [
@@ -528,77 +586,129 @@
     "runtime.unix.Microsoft.Win32.Primitives": {
       "StableVersions": [
         "4.0.1"
-      ]
+      ],
+      "AssemblyVersionInPackageVersion": {
+        "4.0.2.0": "4.3.0"
+      }
     },
     "runtime.unix.System.Console": {
       "StableVersions": [
         "4.0.0"
-      ]
+      ],
+      "AssemblyVersionInPackageVersion": {
+        "4.0.1.0": "4.3.0",
+        "4.1.0.0": "4.3.0"
+      }
     },
     "runtime.unix.System.Diagnostics.Debug": {
       "StableVersions": [
         "4.0.11"
-      ]
+      ],
+      "AssemblyVersionInPackageVersion": {
+        "4.0.12.0": "4.3.0"
+      }
     },
     "runtime.unix.System.IO.FileSystem": {
       "StableVersions": [
         "4.0.1"
-      ]
+      ],
+      "AssemblyVersionInPackageVersion": {
+        "4.0.2.0": "4.3.0",
+        "4.1.0.0": "4.3.0"
+      }
     },
     "runtime.unix.System.Net.Primitives": {
       "StableVersions": [
         "4.0.11"
-      ]
+      ],
+      "AssemblyVersionInPackageVersion": {
+        "4.0.12.0": "4.3.0"
+      }
     },
     "runtime.unix.System.Net.Sockets": {
       "StableVersions": [
         "4.1.0"
-      ]
+      ],
+      "AssemblyVersionInPackageVersion": {
+        "4.2.0.0": "4.3.0"
+      }
     },
     "runtime.unix.System.Private.Uri": {
       "StableVersions": [
         "4.0.1"
-      ]
+      ],
+      "AssemblyVersionInPackageVersion": {
+        "4.0.3.0": "4.3.0"
+      }
     },
     "runtime.unix.System.Runtime.Extensions": {
       "StableVersions": [
         "4.1.0"
-      ]
+      ],
+      "AssemblyVersionInPackageVersion": {
+        "4.1.1.0": "4.3.0",
+        "4.2.0.0": "4.3.0"
+      }
     },
     "runtime.win.Microsoft.Win32.Primitives": {
       "StableVersions": [
         "4.0.1"
-      ]
+      ],
+      "AssemblyVersionInPackageVersion": {
+        "4.0.2.0": "4.3.0"
+      }
     },
     "runtime.win.System.Console": {
       "StableVersions": [
         "4.0.0"
-      ]
+      ],
+      "AssemblyVersionInPackageVersion": {
+        "4.0.1.0": "4.3.0",
+        "4.1.0.0": "4.3.0"
+      }
     },
     "runtime.win.System.Diagnostics.Debug": {
       "StableVersions": [
         "4.0.11"
-      ]
+      ],
+      "AssemblyVersionInPackageVersion": {
+        "4.0.12.0": "4.3.0"
+      }
     },
     "runtime.win.System.IO.FileSystem": {
       "StableVersions": [
         "4.0.1"
-      ]
+      ],
+      "AssemblyVersionInPackageVersion": {
+        "4.0.2.0": "4.3.0",
+        "4.1.0.0": "4.3.0"
+      }
     },
     "runtime.win.System.Net.Primitives": {
       "StableVersions": [
         "4.0.11"
-      ]
+      ],
+      "AssemblyVersionInPackageVersion": {
+        "4.0.12.0": "4.3.0"
+      }
     },
     "runtime.win.System.Net.Sockets": {
       "StableVersions": [
         "4.1.0"
-      ]
+      ],
+      "AssemblyVersionInPackageVersion": {
+        "4.2.0.0": "4.3.0"
+      }
     },
     "runtime.win.System.Runtime.Extensions": {
       "StableVersions": [
         "4.1.0"
-      ]
+      ],
+      "AssemblyVersionInPackageVersion": {
+        "4.0.10.0": "4.3.0",
+        "4.1.1.0": "4.3.0",
+        "4.2.0.0": "4.3.0"
+      }
     },
     "runtime.win10-x86-aot.runtime.native.System.IO.Compression": {
       "StableVersions": [
@@ -629,7 +739,11 @@
       "StableVersions": [
         "4.0.1",
         "4.0.2"
-      ]
+      ],
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.3.0",
+        "4.0.3.0": "4.3.0"
+      }
     },
     "runtime.win8-arm.runtime.native.System.IO.Compression": {
       "StableVersions": [
@@ -682,7 +796,8 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
-        "4.0.12.0": "4.0.12"
+        "4.0.12.0": "4.0.12",
+        "4.0.13.0": "4.3.0"
       }
     },
     "System.Collections.Immutable": {
@@ -731,7 +846,8 @@
       "BaselineVersion": "4.0.1",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
-        "4.0.1.0": "4.0.1"
+        "4.0.1.0": "4.0.1",
+        "4.0.2.0": "4.3.0"
       }
     },
     "System.ComponentModel.Annotations": {
@@ -758,7 +874,8 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
-        "4.0.11.0": "4.0.11"
+        "4.0.11.0": "4.0.11",
+        "4.0.12.0": "4.3.0"
       }
     },
     "System.ComponentModel.Primitives": {
@@ -827,7 +944,8 @@
       "BaselineVersion": "4.0.1",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
-        "4.0.1.0": "4.0.1"
+        "4.0.1.0": "4.0.1",
+        "4.0.2.0": "4.3.0"
       }
     },
     "System.Diagnostics.Debug": {
@@ -840,7 +958,8 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
-        "4.0.11.0": "4.0.11"
+        "4.0.11.0": "4.0.11",
+        "4.0.12.0": "4.3.0"
       }
     },
     "System.Diagnostics.DiagnosticSource": {
@@ -906,7 +1025,8 @@
       "BaselineVersion": "4.0.1",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
-        "4.0.1.0": "4.0.1"
+        "4.0.1.0": "4.0.1",
+        "4.0.2.0": "4.3.0"
       }
     },
     "System.Diagnostics.TraceSource": {
@@ -955,7 +1075,8 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
-        "4.0.11.0": "4.0.11"
+        "4.0.11.0": "4.0.11",
+        "4.0.12.0": "4.3.0"
       }
     },
     "System.Globalization": {
@@ -969,7 +1090,8 @@
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
         "4.0.11.0": "4.0.11",
-        "4.1.0.0": "4.3.0"
+        "4.1.0.0": "4.3.0",
+        "4.0.12.0": "4.3.0"
       }
     },
     "System.Globalization.Calendars": {
@@ -1168,7 +1290,8 @@
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
         "4.1.0.0": "4.1.0",
-        "4.2.0.0": "4.3.0"
+        "4.2.0.0": "4.3.0",
+        "4.1.1.0": "4.3.0"
       }
     },
     "System.Linq.Parallel": {
@@ -1179,7 +1302,8 @@
       "BaselineVersion": "4.0.1",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
-        "4.0.1.0": "4.0.1"
+        "4.0.1.0": "4.0.1",
+        "4.0.2.0": "4.3.0"
       }
     },
     "System.Linq.Queryable": {
@@ -1190,7 +1314,8 @@
       "BaselineVersion": "4.0.1",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
-        "4.0.1.0": "4.0.1"
+        "4.0.1.0": "4.0.1",
+        "4.0.2.0": "4.3.0"
       }
     },
     "System.Net.Http": {
@@ -1213,7 +1338,8 @@
       "BaselineVersion": "4.0.1",
       "AssemblyVersionInPackageVersion": {
         "4.0.1.0": "4.0.1",
-        "4.0.0.0": "4.0.0"
+        "4.0.0.0": "4.0.0",
+        "4.0.2.0": "4.3.0"
       }
     },
     "System.Net.Http.WinHttpHandler": {
@@ -1275,7 +1401,8 @@
         "3.9.0.0": "3.9.0",
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
-        "4.0.11.0": "4.0.11"
+        "4.0.11.0": "4.0.11",
+        "4.0.12.0": "4.3.0"
       }
     },
     "System.Net.Requests": {
@@ -1330,7 +1457,8 @@
       "BaselineVersion": "4.0.1",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
-        "4.0.1.0": "4.0.1"
+        "4.0.1.0": "4.0.1",
+        "4.0.2.0": "4.3.0"
       }
     },
     "System.Net.WebProxy": {
@@ -1394,7 +1522,8 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
-        "4.0.12.0": "4.0.12"
+        "4.0.12.0": "4.0.12",
+        "4.0.13.0": "4.3.0"
       }
     },
     "System.Private.DataContractSerialization": {
@@ -1413,7 +1542,11 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.3.0"
+      "BaselineVersion": "4.3.0",
+      "AssemblyVersionInPackageVersion": {
+        "4.0.3.0": "4.3.0",
+        "4.0.0.0": "4.3.0"
+      }
     },
     "System.Reflection": {
       "StableVersions": [
@@ -1436,7 +1569,9 @@
       ],
       "BaselineVersion": "4.0.1",
       "AssemblyVersionInPackageVersion": {
-        "4.0.0.0": "4.0.0"
+        "4.0.0.0": "4.0.0",
+        "4.0.2.0": "4.3.0",
+        "4.0.1.0": "4.3.0"
       }
     },
     "System.Reflection.DispatchProxy": {
@@ -1459,7 +1594,8 @@
       "BaselineVersion": "4.0.1",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
-        "4.0.1.0": "4.0.1"
+        "4.0.1.0": "4.0.1",
+        "4.0.2.0": "4.3.0"
       }
     },
     "System.Reflection.Emit.ILGeneration": {
@@ -1470,7 +1606,8 @@
       "BaselineVersion": "4.0.1",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
-        "4.0.1.0": "4.0.1"
+        "4.0.1.0": "4.0.1",
+        "4.0.2.0": "4.3.0"
       }
     },
     "System.Reflection.Emit.Lightweight": {
@@ -1481,7 +1618,8 @@
       "BaselineVersion": "4.0.1",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
-        "4.0.1.0": "4.0.1"
+        "4.0.1.0": "4.0.1",
+        "4.0.2.0": "4.3.0"
       }
     },
     "System.Reflection.Extensions": {
@@ -1554,7 +1692,8 @@
       "BaselineVersion": "4.0.1",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
-        "4.0.1.0": "4.0.1"
+        "4.0.1.0": "4.0.1",
+        "4.0.2.0": "4.3.0"
       }
     },
     "System.Resources.Writer": {
@@ -1663,7 +1802,9 @@
       ],
       "BaselineVersion": "4.0.1",
       "AssemblyVersionInPackageVersion": {
-        "4.0.0.0": "4.0.0"
+        "4.0.0.0": "4.0.0",
+        "4.0.1.0": "4.3.0",
+        "4.0.2.0": "4.3.0"
       }
     },
     "System.Runtime.Loader": {
@@ -1672,7 +1813,8 @@
       ],
       "BaselineVersion": "4.0.0",
       "AssemblyVersionInPackageVersion": {
-        "4.0.0.0": "4.0.0"
+        "4.0.0.0": "4.0.0",
+        "4.0.1.0": "4.3.0"
       }
     },
     "System.Runtime.Numerics": {
@@ -1683,7 +1825,8 @@
       "BaselineVersion": "4.0.1",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
-        "4.0.1.0": "4.0.1"
+        "4.0.1.0": "4.0.1",
+        "4.0.2.0": "4.3.0"
       }
     },
     "System.Runtime.Serialization.Json": {
@@ -1696,7 +1839,8 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
-        "4.0.2.0": "4.0.2"
+        "4.0.2.0": "4.0.2",
+        "4.0.3.0": "4.3.0"
       }
     },
     "System.Runtime.Serialization.Primitives": {
@@ -1741,7 +1885,8 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
-        "4.0.11.0": "4.0.11"
+        "4.0.11.0": "4.0.11",
+        "4.0.12.0": "4.3.0"
       }
     },
     "System.Runtime.WindowsRuntime.UI.Xaml": {
@@ -1752,7 +1897,8 @@
       "BaselineVersion": "4.0.1",
       "AssemblyVersionInPackageVersion": {
         "4.0.1.0": "4.0.1",
-        "4.0.0.0": "4.0.0"
+        "4.0.0.0": "4.0.0",
+        "4.0.2.0": "4.3.0"
       }
     },
     "System.Security.AccessControl": {
@@ -1879,7 +2025,8 @@
       "BaselineVersion": "4.0.1",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
-        "4.0.1.0": "4.0.1"
+        "4.0.1.0": "4.0.1",
+        "4.0.2.0": "4.3.0"
       }
     },
     "System.Security.Principal.Windows": {
@@ -1985,7 +2132,8 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
-        "4.0.11.0": "4.0.11"
+        "4.0.11.0": "4.0.11",
+        "4.0.12.0": "4.3.0"
       }
     },
     "System.Threading.AccessControl": {
@@ -2054,7 +2202,8 @@
       "BaselineVersion": "4.0.1",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
-        "4.0.1.0": "4.0.1"
+        "4.0.1.0": "4.0.1",
+        "4.0.2.0": "4.3.0"
       }
     },
     "System.Threading.Thread": {
@@ -2085,7 +2234,8 @@
       "BaselineVersion": "4.0.1",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
-        "4.0.1.0": "4.0.1"
+        "4.0.1.0": "4.0.1",
+        "4.0.2.0": "4.3.0"
       }
     },
     "System.Xml.ReaderWriter": {
@@ -2230,8 +2380,12 @@
         "4.0.1.0": "4.3.0"
       }
     },
-    "runtime.native.System.Security.Cryptography.Apple": {},
-    "runtime.native.System.Security.Cryptography.OpenSsl": {},
+    "runtime.native.System.Security.Cryptography.Apple": {
+      "BaselineVersion": "4.3.0"
+    },
+    "runtime.native.System.Security.Cryptography.OpenSsl": {
+      "BaselineVersion": "4.3.0"
+    },
     "System.Json": {
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.3.0"
