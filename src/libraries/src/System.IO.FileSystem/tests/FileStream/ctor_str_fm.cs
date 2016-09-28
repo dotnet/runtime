@@ -197,12 +197,5 @@ namespace System.IO.Tests
                 Assert.Throws<NotSupportedException>(() => fs.ReadByte());
             }
         }
-
-        [Fact]
-        [PlatformSpecific(Xunit.PlatformID.Windows)]
-        public void RawLongPathAccess_ThrowsArgumentException()
-        {
-            Assert.Throws<ArgumentException>(() => CreateFileStream("\\\\.\\disk\\access\\", FileMode.Open));
-        }
     }
 }
