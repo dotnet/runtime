@@ -66,13 +66,12 @@ namespace System.PrivateUri.Tests
             string root = "viewcode://./codeschema_class?";
             string uriDataFra = root + Uri.EscapeDataString("Type=\u00E9");
 
-            // TODO #8330 : Uri should not throw ArgumentOutOfRangeException. 
-            // This test is documenting current behavior.
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-           {
-               Uri u1 = new Uri(uriDataFra);
-               Assert.Equal(root + "Type=%C3%A9", u1.AbsoluteUri);
-           });
+            Uri u1 = new Uri(uriDataFra);
+
+            // TODO #8330 : Normalization should produce the same result for escaped/unescaped URIs.
+            // Assert.Equal(root + "Type=%C3%A9", u1.AbsoluteUri);
+
+            Assert.NotEqual(root + "Type=%C3%A9", u1.AbsoluteUri);
         }
 
         [Fact]
