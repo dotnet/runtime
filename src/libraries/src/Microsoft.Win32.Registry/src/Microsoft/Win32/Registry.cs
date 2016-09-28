@@ -75,40 +75,62 @@ namespace Microsoft.Win32
             }
 
             int i = keyName.IndexOf('\\');
-            string basekeyName = i != -1 ?
-                keyName.Substring(0, i).ToUpperInvariant() :
-                keyName.ToUpperInvariant();
+            int length = i != -1 ? i : keyName.Length;
 
-            RegistryKey basekey = null;
-            switch (basekeyName)
+            // Determine the potential base key from the length. Note that
+            // HKEY_CLASSES_ROOT and HKEY_CURRENT_USER are the same length,
+            // so for that case, switch on a char at a position with a
+            // unique char to determine the potential base key.
+            RegistryKey baseKey = null;
+            switch (length)
             {
-                case "HKEY_CURRENT_USER":
-                    basekey = CurrentUser;
+                case 10:
+                    baseKey = Users; // HKEY_USERS
                     break;
-                case "HKEY_LOCAL_MACHINE":
-                    basekey = LocalMachine;
+
+                case 17:
+                    const int UniqueCharIndex = 6;
+                    switch (keyName[UniqueCharIndex])
+                    {
+                        case 'l':
+                        case 'L':
+                            Debug.Assert(ClassesRoot.Name[UniqueCharIndex] == 'L');
+                            baseKey = ClassesRoot; // HKEY_C[L]ASSES_ROOT
+                            break;
+
+                        case 'u':
+                        case 'U':
+                            Debug.Assert(CurrentUser.Name[UniqueCharIndex] == 'U');
+                            baseKey = CurrentUser; // HKEY_C[U]RRENT_USER
+                            break;
+                    }
                     break;
-                case "HKEY_CLASSES_ROOT":
-                    basekey = ClassesRoot;
+
+                case 18:
+                    baseKey = LocalMachine; // HKEY_LOCAL_MACHINE
                     break;
-                case "HKEY_USERS":
-                    basekey = Users;
+
+                case 19:
+                    baseKey = CurrentConfig; // HKEY_CURRENT_CONFIG
                     break;
-                case "HKEY_PERFORMANCE_DATA":
-                    basekey = PerformanceData;
+
+                case 21:
+                    baseKey = PerformanceData; // HKEY_PERFORMANCE_DATA
                     break;
-                case "HKEY_CURRENT_CONFIG":
-                    basekey = CurrentConfig;
-                    break;
-                default:
-                    throw new ArgumentException(SR.Format(SR.Arg_RegInvalidKeyName, nameof(keyName)), nameof(keyName));
             }
 
-            subKeyName = (i == -1 || i == keyName.Length) ?
-                string.Empty :
-                keyName.Substring(i + 1, keyName.Length - i - 1);
+            Debug.Assert(baseKey == null || baseKey.Name.Length == length);
 
-            return basekey;
+            if (baseKey != null && keyName.StartsWith(baseKey.Name, StringComparison.OrdinalIgnoreCase))
+            {
+                subKeyName = (i == -1 || i == keyName.Length) ?
+                    string.Empty :
+                    keyName.Substring(i + 1, keyName.Length - i - 1);
+
+                return baseKey;
+            }
+
+            throw new ArgumentException(SR.Format(SR.Arg_RegInvalidKeyName, nameof(keyName)), nameof(keyName));
         }
     }
 }
