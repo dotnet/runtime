@@ -380,7 +380,7 @@ namespace System.Data.SqlClient
                     ref sendLength,
                     out local_fDone,
                     pin_serverUserName,
-                    (uint)(serverUserName == null ? 0 : serverUserName.Length),
+                    (uint)serverUserName.Length,
                     null,
                     null);
             }
