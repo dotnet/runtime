@@ -211,7 +211,7 @@ namespace System.Data.SqlTypes
             {
                 Debug.Assert(lHigh1 == 0);
                 lPartialResult = lLow1 * lHigh2;
-                if (lPartialResult < 0 || lPartialResult > Int64.MaxValue)
+                if (lPartialResult < 0)
                     throw new OverflowException(SQLResource.ArithOverflowMessage);
             }
 
