@@ -52,6 +52,8 @@ CPPFLAGS_FOR_LIBGC=$CPPFLAGS
 CFLAGS_FOR_LIBGC=$CFLAGS
 CPPFLAGS_FOR_EGLIB=$CPPFLAGS
 CFLAGS_FOR_EGLIB=$CFLAGS
+CPPFLAGS_FOR_BTLS=$CPPFLAGS
+CFLAGS_FOR_BTLS=$CFLAGS
 
 # libgc uses some deprecated APIs
 CFLAGS_FOR_LIBGC="$CFLAGS -Wno-deprecated-declarations"
@@ -2951,6 +2953,8 @@ sizeof_register="SIZEOF_VOID_P"
 
 jit_wanted=true
 boehm_supported=true
+BTLS_SUPPORTED=no
+BTLS_PLATFORM=
 case "$host" in
 	mips*)
 		TARGET=MIPS;
@@ -3003,9 +3007,13 @@ case "$host" in
 			;;
 		  linux*)
 			AOT_SUPPORTED="yes"
+			BTLS_SUPPORTED=yes
+			BTLS_PLATFORM=i386
 			;;
 		  darwin*)
 			AOT_SUPPORTED="yes"
+			BTLS_SUPPORTED=yes
+			BTLS_PLATFORM=i386
 			;;
 		  openbsd*|freebsd*|kfreebsd-gnu*)
 		        ;;
@@ -3021,9 +3029,13 @@ case "$host" in
 		case $host_os in
 		  linux*)
 			AOT_SUPPORTED="yes"
+			BTLS_SUPPORTED=yes
+			BTLS_PLATFORM=x86_64
 			;;
 		  darwin*)
 			AOT_SUPPORTED="yes"
+			BTLS_SUPPORTED=yes
+			BTLS_PLATFORM=x86_64
 			;;
 		  openbsd*|freebsd*|kfreebsd-gnu*)
 			;;
@@ -3144,6 +3156,7 @@ HOST=$TARGET
 if test "x$host" != "x$target"; then
    AC_DEFINE(MONO_CROSS_COMPILE,1,[The runtime is compiled for cross-compiling mode])
    enable_mcs_build=no
+   BTLS_SUPPORTED=no
    case "$target" in
    arm*-darwin*)
 		TARGET=ARM;
@@ -3429,10 +3442,12 @@ if test "x$target_mach" = "xyes"; then
 	  AC_DEFINE(TARGET_WATCHOS,1,[The JIT/AOT targets WatchOS])
 	  CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DTARGET_WATCHOS"
 	  CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC -DTARGET_WATCHOS"
+	  BTLS_SUPPORTED=no
    elif test "x$TARGET" = "xARM" -o "x$TARGET" = "xARM64"; then
    	  AC_DEFINE(TARGET_IOS,1,[The JIT/AOT targets iOS])
 	  CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DTARGET_IOS"
 	  CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC -DTARGET_IOS"
+	  BTLS_SUPPORTED=no
    else
        AC_TRY_COMPILE([#include "TargetConditionals.h"],[
        #if TARGET_IPHONE_SIMULATOR == 1 || TARGET_OS_IPHONE == 1
@@ -3447,6 +3462,7 @@ if test "x$target_mach" = "xyes"; then
           AC_DEFINE(TARGET_IOS,1,[The JIT/AOT targets iOS])
           CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DTARGET_IOS"
           CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC -DTARGET_IOS"
+          BTLS_SUPPORTED=no
        ])
 	fi
    AC_DEFINE(TARGET_MACH,1,[The JIT/AOT targets Apple platforms])
@@ -3754,6 +3770,45 @@ if test ${TARGET} = unknown; then
 	AC_MSG_WARN("mono has not been ported to $host: some things may not work.")
 fi
 
+if test "x$platform_android" = "xyes"; then
+	case "x${TARGET}" in
+	xARM)
+		case "x$arm_ver" in
+		xARMv5)
+			BTLS_SUPPORTED=yes
+			BTLS_PLATFORM=android-armv5
+			;;
+		xARMv6)
+			BTLS_SUPPORTED=yes
+			BTLS_PLATFORM=android-armv6
+			;;
+		xARMv7)
+			BTLS_SUPPORTED=yes
+			BTLS_PLATFORM=android-armv7
+			;;
+		*)
+			BTLS_SUPPORTED=no
+			;;
+		esac
+		;;
+	xARM64)
+		BTLS_SUPPORTED=yes
+		BTLS_PLATFORM=android-v8a
+		;;
+	xX86)
+		BTLS_SUPPORTED=yes
+		BTLS_PLATFORM=android-x86
+		;;
+	xAMD64)
+		BTLS_SUPPORTED=yes
+		BTLS_PLATFORM=android-x64
+		;;
+	*)
+		BTLS_SUPPORTED=no
+		;;
+	esac
+fi
+
 if test ${ACCESS_UNALIGNED} = no; then
 	CPPFLAGS="$CPPFLAGS -DNO_UNALIGNED_ACCESS"
 fi
@@ -3875,6 +3930,84 @@ else
    fi
 fi
 AC_SUBST(LIBMONO_LA)
+
+dnl **************
+dnl ***  Btls  ***
+dnl **************
+
+AC_ARG_ENABLE(btls, [  --disable-blts             Disable the BoringTls provider], enable_btls=$enableval, enable_btls=$BTLS_SUPPORTED)
+AC_ARG_WITH(btls_android_ndk, [  --with-btls-android-ndk        Android NDK for BoringTls])
+
+AM_CONDITIONAL(BTLS, test x$enable_btls = xyes)
+
+btls_android=no
+if test "x$enable_btls" = "xyes"; then
+	AC_PATH_PROG(CMAKE, [cmake], [no], [$PATH:/Applications/CMake.app/Contents/bin:/usr/local/bin])
+	if test "x$CMAKE" = "xno"; then
+		AC_MSG_ERROR("cmake not found")
+	fi
+
+	BTLS_ROOT=`cd $srcdir && pwd`/external/boringssl
+	AC_SUBST(BTLS_ROOT)
+
+	btls_arch=
+	btls_cflags=
+	BTLS_CMAKE_ARGS=
+
+	case "$BTLS_PLATFORM" in
+	i386)
+		btls_arch=i386
+		btls_cflags="-m32 -arch i386"
+		;;
+	x86_64)
+		btls_arch=x86_64
+		;;
+	android-armv5)
+		BTLS_CMAKE_ARGS="-DANDROID_ABI=\"armeabi\" -DANDROID_NATIVE_API_LEVEL=12"
+		;;
+	android-armv6)
+		BTLS_CMAKE_ARGS="-DANDROID_ABI=\"armeabi\" -DANDROID_NATIVE_API_LEVEL=12"
+		;;
+	android-armv7)
+		BTLS_CMAKE_ARGS="-DANDROID_ABI=\"armeabi-v7a\" -DANDROID_NATIVE_API_LEVEL=12"
+		;;
+	android-v8a)
+		BTLS_CMAKE_ARGS="-DANDROID_ABI=\"arm64-v8a\" -DANDROID_NATIVE_API_LEVEL=12"
+		;;
+	android-x86)
+		BTLS_CMAKE_ARGS="-DANDROID_ABI=\"x86\" -DANDROID_NATIVE_API_LEVEL=12"
+		;;
+	android-x64)
+		BTLS_CMAKE_ARGS="-DANDROID_ABI=\"x86_64\" -DANDROID_NATIVE_API_LEVEL=12"
+		;;
+	*)
+		AC_MSG_ERROR(Invalid BTLS platform)
+	esac
+
+	if test "x$platform_android" = "xyes"; then
+		btls_android=yes
+		BTLS_CMAKE_ARGS="$BTLS_CMAKE_ARGS -DCMAKE_TOOLCHAIN_FILE=$BTLS_ROOT/util/android-cmake/android.toolchain.cmake"
+		if test "x$with_btls_android_ndk" != "x"; then
+			BTLS_CMAKE_ARGS="$BTLS_CMAKE_ARGS -DANDROID_NDK=\"$with_btls_android_ndk\""
+		fi
+	fi
+
+	if test "x$btls_arch" != "x"; then
+		BTLS_CMAKE_ARGS="$BTLS_CMAKE_ARGS -DBTLS_ARCH=\"$btls_arch\""
+	fi
+
+	BTLS_CFLAGS="$CPPFLAGS_FOR_BTLS $btls_cflags"
+	AC_SUBST(BTLS_ARCH)
+	AC_SUBST(BTLS_CFLAGS)
+	AC_SUBST(BTLS_PLATFORM)
+	AC_SUBST(BTLS_CMAKE_ARGS)
+
+	AC_DEFINE(HAVE_BTLS, 1, [BoringTls is supported])
+else
+	enable_btls=no
+fi
+
+AM_CONDITIONAL(BTLS_ANDROID, test x$btls_android = xyes)
 
 if test x$DISABLE_MCS_DOCS = xyes; then
    docs_dir=""
@@ -4283,6 +4416,15 @@ fi
 
 libgdiplus_msg=${libgdiplus_loc:-assumed to be installed}
 
+btls_platform_string=
+if test x$enable_btls = xyes; then
+	if test x$btls_android = xyes; then
+		btls_platform_string=" (android:$BTLS_PLATFORM)"
+	else
+		btls_platform_string=" ($BTLS_PLATFORM)"
+	fi
+fi
+
 echo "
         mcs source:    $mcsdir
 
@@ -4308,6 +4450,7 @@ echo "
 	JNI support:     $jdk_headers_found
 	libgdiplus:      $libgdiplus_msg
 	zlib:            $zlib_msg
+	BTLS:            $enable_btls$btls_platform_string
 	$disabled
 "
 if test x$with_static_mono = xno -a "x$host_win32" != "xyes"; then
