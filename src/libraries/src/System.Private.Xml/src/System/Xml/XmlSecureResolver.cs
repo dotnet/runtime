@@ -42,9 +42,7 @@ namespace System.Xml
             return new Evidence();
         }
 
-#if SERIALIZABLE_DEFINED
         [Serializable]
-#endif
         private class UncDirectory
         {
             private string _uncDir;

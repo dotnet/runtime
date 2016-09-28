@@ -11,7 +11,8 @@
   <ItemGroup>
     <Compile Include="System.Xml.Serialization.cs" />
     <ProjectReference Include="..\..\..\mscorlib\ref\Compat\mscorlib.csproj" />
-    <ProjectReference Include="..\..\..\System.Xml\ref\Compat\System.Xml.csproj" />
+    <ProjectReference Include="..\..\..\System.Xml.ReaderWriter\ref\System.Xml.ReaderWriter.csproj" />
+    <ProjectReference Include="..\..\..\System.Xml.XmlSerializer\ref\System.Xml.XmlSerializer.csproj" />
     <ProjectReference Include="..\..\..\System.ServiceModel\ref\Compat\System.ServiceModel.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

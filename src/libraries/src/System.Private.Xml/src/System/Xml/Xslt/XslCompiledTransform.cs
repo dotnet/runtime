@@ -265,8 +265,8 @@ namespace System.Xml.Xsl
             if (compiledStylesheet == null)
                 throw new ArgumentNullException(nameof(compiledStylesheet));
 
-            IEnumerable<Attribute> customAttrs = compiledStylesheet.GetTypeInfo().GetCustomAttributes(typeof(GeneratedCodeAttribute), /*inherit:*/false);
-            GeneratedCodeAttribute generatedCodeAttr = customAttrs.Count() > 0 ? (GeneratedCodeAttribute)customAttrs.First() : null;
+            object[] customAttrs = compiledStylesheet.GetCustomAttributes(typeof(GeneratedCodeAttribute), /*inherit:*/false);
+            GeneratedCodeAttribute generatedCodeAttr = customAttrs.Length > 0 ? (GeneratedCodeAttribute)customAttrs[0] : null;
 
             // If GeneratedCodeAttribute is not there, it is not a compiled stylesheet class
             if (generatedCodeAttr != null && generatedCodeAttr.Tool == typeof(XslCompiledTransform).FullName)
@@ -566,4 +566,4 @@ namespace System.Xml.Xsl
         }
     }
 #endif // ! HIDE_XSL
-}
+        }

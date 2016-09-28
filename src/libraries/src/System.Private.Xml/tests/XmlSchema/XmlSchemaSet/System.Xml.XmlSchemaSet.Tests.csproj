@@ -7,7 +7,7 @@
     <ProjectGuid>{9EDAADA8-B658-430F-97EE-CCA494883D86}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Xml.XmlSchema.XmlSchemaSet.Tests</AssemblyName>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
     <RootNamespace>System.Xml.Tests</RootNamespace>
     <KeepAllProjectReferences>true</KeepAllProjectReferences>
   </PropertyGroup>
@@ -58,8 +58,8 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\System.Private.Xml.csproj" />
-    <ProjectReference Include="..\..\..\..\System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj" />
+    <ProjectReference Include="..\..\..\..\System.Xml.ReaderWriter\pkg\System.Xml.ReaderWriter.pkgproj" />
+    <ProjectReference Include="..\..\..\..\System.Xml.XPath\pkg\System.Xml.XPath.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

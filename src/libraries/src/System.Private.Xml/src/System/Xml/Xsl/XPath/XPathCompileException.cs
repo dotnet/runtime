@@ -7,9 +7,7 @@ using System.Text;
 
 namespace System.Xml.Xsl.XPath
 {
-#if SERIALIZABLE_DEFINED
     [Serializable]
-#endif
     internal class XPathCompileException : XslLoadException
     {
         public string queryString;

@@ -1255,10 +1255,10 @@ namespace System.Xml.Serialization
                     flags |= TypeFlags.CtorInaccessible;
                 else
                 {
-                    IEnumerable<Attribute> attrs = ctor.GetCustomAttributes(typeof(ObsoleteAttribute), false);
-                    if (attrs != null && attrs.Count() > 0)
+                    object[] attrs = ctor.GetCustomAttributes(typeof(ObsoleteAttribute), false);
+                    if (attrs != null && attrs.Length > 0)
                     {
-                        ObsoleteAttribute obsolete = (ObsoleteAttribute)attrs.First();
+                        ObsoleteAttribute obsolete = (ObsoleteAttribute)attrs[0];
                         if (obsolete.IsError)
                         {
                             flags |= TypeFlags.CtorInaccessible;

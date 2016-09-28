@@ -87,16 +87,16 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public void IncludeTypes(MemberInfo memberInfo)
+        public void IncludeTypes(ICustomAttributeProvider provider)
         {
-            IncludeTypes(memberInfo, new RecursionLimiter());
+            IncludeTypes(provider, new RecursionLimiter());
         }
 
-        private void IncludeTypes(MemberInfo memberInfo, RecursionLimiter limiter)
+        private void IncludeTypes(ICustomAttributeProvider provider, RecursionLimiter limiter)
         {
-            foreach (Attribute attr in memberInfo.GetCustomAttributes(typeof(XmlIncludeAttribute), false))
-            {
-                Type type = ((XmlIncludeAttribute)attr).Type;
+            object[] attrs = provider.GetCustomAttributes(typeof(XmlIncludeAttribute), false);
+            for (int i = 0; i < attrs.Length; i++) {
+                Type type = ((XmlIncludeAttribute)attrs[i]).Type;
                 IncludeType(type, limiter);
             }
         }
@@ -499,12 +499,12 @@ namespace System.Xml.Serialization
                 SerializableMapping serializableMapping = null;
 
                 // get the schema method info
-                IEnumerable<Attribute> attrs = type.GetTypeInfo().GetCustomAttributes(typeof(XmlSchemaProviderAttribute), false);
+                object[] attrs = type.GetCustomAttributes(typeof(XmlSchemaProviderAttribute), false);
 
-                if (attrs.Count() > 0)
+                if (attrs.Length > 0)
                 {
                     // new IXmlSerializable
-                    XmlSchemaProviderAttribute provider = (XmlSchemaProviderAttribute)attrs.First();
+                    XmlSchemaProviderAttribute provider = (XmlSchemaProviderAttribute)attrs[0];
                     MethodInfo method = GetMethodFromSchemaProvider(provider, type);
                     serializableMapping = new SerializableMapping(method, provider.IsAny, ns);
                     XmlQualifiedName qname = serializableMapping.XsiType;

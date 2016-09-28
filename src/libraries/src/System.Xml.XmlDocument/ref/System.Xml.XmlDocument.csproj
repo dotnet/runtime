@@ -6,7 +6,8 @@
     <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System.Xml.XmlDocument.cs" />
+    <Compile Include="System.Xml.XmlDocument.Forwards.cs" />
+    <ProjectReference Include="..\..\System.Xml.ReaderWriter\ref\System.Xml.ReaderWriter.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

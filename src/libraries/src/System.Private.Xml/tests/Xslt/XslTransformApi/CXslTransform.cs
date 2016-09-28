@@ -8,7 +8,6 @@ using System;
 using System.Collections;
 using System.IO;
 using System.Security;
-using System.Security.Policy;
 using System.Xml;
 using System.Xml.XPath;
 using System.Xml.Xsl;
