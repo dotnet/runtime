@@ -31,9 +31,6 @@ namespace System.Runtime.CompilerServices
     public static partial class IsByValue
     {
     }
-    public static partial class IsConst
-    {
-    }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public static partial class IsCopyConstructed
     {
@@ -54,10 +51,6 @@ namespace System.Runtime.CompilerServices
     {
     }
     public static partial class IsUdtReturn
-    {
-    }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public static partial class IsVolatile
     {
     }
     [Serializable]
