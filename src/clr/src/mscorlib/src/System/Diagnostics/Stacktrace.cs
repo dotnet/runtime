@@ -125,7 +125,7 @@ namespace System.Diagnostics {
                 if (s_symbolsMethodInfo == null)
                 {
                     s_symbolsType = Type.GetType(
-                        "System.Diagnostics.StackTraceSymbols, System.Diagnostics.StackTrace, Version=4.0.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                        "System.Diagnostics.StackTraceSymbols, System.Diagnostics.StackTrace, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
                         throwOnError: false);
 
                     if (s_symbolsType == null)
