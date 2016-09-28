@@ -3024,6 +3024,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.disAsm2         = false;
     opts.dspUnwind       = false;
     opts.compLongAddress = false;
+    opts.optRepeat       = false;
 
 #ifdef LATE_DISASM
     opts.doLateDisasm = false;
@@ -3116,6 +3117,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         if (JitConfig.JitLongAddress() != 0)
         {
             opts.compLongAddress = true;
+        }
+
+        if (JitConfig.JitOptRepeat().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+        {
+            opts.optRepeat = true;
         }
     }
 
@@ -4359,6 +4365,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         bool doCopyProp      = true;
         bool doAssertionProp = true;
         bool doRangeAnalysis = true;
+        int  iterations      = 1;
 
 #ifdef DEBUG
         doSsa           = (JitConfig.JitDoSsa() != 0);
@@ -4368,72 +4375,88 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         doCopyProp      = doValueNum && (JitConfig.JitDoCopyProp() != 0);
         doAssertionProp = doValueNum && (JitConfig.JitDoAssertionProp() != 0);
         doRangeAnalysis = doAssertionProp && (JitConfig.JitDoRangeAnalysis() != 0);
+
+        if (opts.optRepeat)
+        {
+            iterations = JitConfig.JitOptRepeatCount();
+        }
 #endif
 
-        if (doSsa)
+        while (iterations > 0)
         {
-            fgSsaBuild();
-            EndPhase(PHASE_BUILD_SSA);
-        }
+            if (doSsa)
+            {
+                fgSsaBuild();
+                EndPhase(PHASE_BUILD_SSA);
+            }
 
-        if (doEarlyProp)
-        {
-            /* Propagate array length and rewrite getType() method call */
-            optEarlyProp();
-            EndPhase(PHASE_EARLY_PROP);
-        }
+            if (doEarlyProp)
+            {
+                /* Propagate array length and rewrite getType() method call */
+                optEarlyProp();
+                EndPhase(PHASE_EARLY_PROP);
+            }
 
-        if (doValueNum)
-        {
-            fgValueNumber();
-            EndPhase(PHASE_VALUE_NUMBER);
-        }
+            if (doValueNum)
+            {
+                fgValueNumber();
+                EndPhase(PHASE_VALUE_NUMBER);
+            }
 
-        if (doLoopHoisting)
-        {
-            /* Hoist invariant code out of loops */
-            optHoistLoopCode();
-            EndPhase(PHASE_HOIST_LOOP_CODE);
-        }
+            if (doLoopHoisting)
+            {
+                /* Hoist invariant code out of loops */
+                optHoistLoopCode();
+                EndPhase(PHASE_HOIST_LOOP_CODE);
+            }
 
-        if (doCopyProp)
-        {
-            /* Perform VN based copy propagation */
-            optVnCopyProp();
-            EndPhase(PHASE_VN_COPY_PROP);
-        }
+            if (doCopyProp)
+            {
+                /* Perform VN based copy propagation */
+                optVnCopyProp();
+                EndPhase(PHASE_VN_COPY_PROP);
+            }
 
 #if FEATURE_ANYCSE
-        /* Remove common sub-expressions */
-        optOptimizeCSEs();
+            /* Remove common sub-expressions */
+            optOptimizeCSEs();
 #endif // FEATURE_ANYCSE
 
 #if ASSERTION_PROP
-        if (doAssertionProp)
-        {
-            /* Assertion propagation */
-            optAssertionPropMain();
-            EndPhase(PHASE_ASSERTION_PROP_MAIN);
-        }
+            if (doAssertionProp)
+            {
+                /* Assertion propagation */
+                optAssertionPropMain();
+                EndPhase(PHASE_ASSERTION_PROP_MAIN);
+            }
 
-        if (doRangeAnalysis)
-        {
-            /* Optimize array index range checks */
-            RangeCheck rc(this);
-            rc.OptimizeRangeChecks();
-            EndPhase(PHASE_OPTIMIZE_INDEX_CHECKS);
-        }
+            if (doRangeAnalysis)
+            {
+                /* Optimize array index range checks */
+                RangeCheck rc(this);
+                rc.OptimizeRangeChecks();
+                EndPhase(PHASE_OPTIMIZE_INDEX_CHECKS);
+            }
 #endif // ASSERTION_PROP
 
-        /* update the flowgraph if we modified it during the optimization phase*/
-        if (fgModified)
-        {
-            fgUpdateFlowGraph();
-            EndPhase(PHASE_UPDATE_FLOW_GRAPH);
+            /* update the flowgraph if we modified it during the optimization phase*/
+            if (fgModified)
+            {
+                fgUpdateFlowGraph();
+                EndPhase(PHASE_UPDATE_FLOW_GRAPH);
 
-            // Recompute the edge weight if we have modified the flow graph
-            fgComputeEdgeWeights();
-            EndPhase(PHASE_COMPUTE_EDGE_WEIGHTS2);
+                // Recompute the edge weight if we have modified the flow graph
+                fgComputeEdgeWeights();
+                EndPhase(PHASE_COMPUTE_EDGE_WEIGHTS2);
+            }
+
+            // Iterate if requested, resetting annotations first.
+            if (--iterations == 0)
+            {
+                break;
+            }
+            ResetOptAnnotations();
+            RecomputeLoopInfo();
         }
     }
 
@@ -4595,6 +4618,66 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         fprintf(compJitFuncInfoFile, ""); // in our logic this causes a flush
     }
 #endif // FUNC_INFO_LOGGING
+}
+
+//------------------------------------------------------------------------
+// ResetOptAnnotations: Clear annotations produced during global optimizations.
+//
+// Notes:
+//    The intent of this method is to clear any information typically assumed
+//    to be set only once; it is used between iterations when JitOptRepeat is
+//    in effect.
+
+void Compiler::ResetOptAnnotations()
+{
+    assert(opts.optRepeat);
+    assert(JitConfig.JitOptRepeatCount() > 0);
+    fgResetForSsa();
+    vnStore               = nullptr;
+    m_opAsgnVarDefSsaNums = nullptr;
+    fgSsaPassesCompleted  = 0;
+    fgVNPassesCompleted   = 0;
+
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    {
+        for (GenTreeStmt* stmt = block->firstStmt(); stmt != nullptr; stmt = stmt->getNextStmt())
+        {
+            stmt->gtFlags &= ~GTF_STMT_HAS_CSE;
+
+            for (GenTreePtr tree = stmt->gtStmt.gtStmtList; tree != nullptr; tree = tree->gtNext)
+            {
+                tree->ClearVN();
+                tree->ClearAssertion();
+                tree->gtCSEnum = NO_CSE;
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// RecomputeLoopInfo: Recompute loop annotations between opt-repeat iterations.
+//
+// Notes:
+//    The intent of this method is to update loop structure annotations, and those
+//    they depend on; these annotations may have become stale during optimization,
+//    and need to be up-to-date before running another iteration of optimizations.
+
+void Compiler::RecomputeLoopInfo()
+{
+    assert(opts.optRepeat);
+    assert(JitConfig.JitOptRepeatCount() > 0);
+    // Recompute reachability sets, dominators, and loops.
+    optLoopCount   = 0;
+    fgDomsComputed = false;
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    {
+        block->bbFlags &= ~BBF_LOOP_FLAGS;
+    }
+    fgComputeReachability();
+    // Rebuild the loop tree annotations themselves.  Since this is performed as
+    // part of 'optOptimizeLoops', this will also re-perform loop rotation, but
+    // not other optimizations, as the others are not part of 'optOptimizeLoops'.
+    optOptimizeLoops();
 }
 
 /*****************************************************************************/
@@ -5066,6 +5149,7 @@ void Compiler::compCompileFinish()
                                            // the prolog which requires memory
         (info.compLocalsCount <= 32) && (!opts.MinOpts()) && // We may have too many local variables, etc
         (getJitStressLevel() == 0) &&                        // We need extra memory for stress
+        !opts.optRepeat &&                                   // We need extra memory to repeat opts
         !compAllocator->bypassHostAllocator() && // ArenaAllocator::getDefaultPageSize() is artificially low for
                                                  // DirectAlloc
         (compAllocator->getTotalBytesAllocated() > (2 * ArenaAllocator::getDefaultPageSize())) &&
