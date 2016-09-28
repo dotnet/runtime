@@ -20,6 +20,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #ifdef _TARGET_AMD64_
 #include "emit.h"
 #include "codegen.h"
+#include "sideeffects.h"
 #include "lower.h"
 #include "gcinfo.h"
 #include "gcinfoencoder.h"

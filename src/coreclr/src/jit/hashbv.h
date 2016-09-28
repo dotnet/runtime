@@ -157,6 +157,8 @@ public:
     elemType XorWithChange(hashBvNode* other);
     elemType SubtractWithChange(hashBvNode* other);
 
+    bool Intersects(hashBvNode* other);
+
 #ifdef DEBUG
     void dump();
 #endif // DEBUG
@@ -252,6 +254,8 @@ public:
     bool OrWithChangeLeft(hashBv* other);
     bool XorWithChange(hashBv* other);
     bool SubtractWithChange(hashBv* other);
+
+    bool Intersects(hashBv* other);
 
     template <class Action>
     bool MultiTraverseLHSBigger(hashBv* other);
