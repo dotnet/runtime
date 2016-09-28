@@ -388,12 +388,15 @@ DO_SETUP=TRUE
 
 if [ ${DO_SETUP} == "TRUE" ]; then
 cp  $testNativeBinDir/../../../../../packages/Microsoft.DotNet.xunit.performance.runner.cli/1.0.0-alpha-build0040/lib/netstandard1.3/Microsoft.DotNet.xunit.performance.runner.cli.dll .
+cp  $testNativeBinDir/../../../../../packages/Microsoft.DotNet.xunit.performance.analysis.cli/1.0.0-alpha-build0040/lib/netstandard1.3/Microsoft.DotNet.xunit.performance.analysis.cli.dll .
 cp  $testNativeBinDir/../../../../../packages/Microsoft.DotNet.xunit.performance.run.core/1.0.0-alpha-build0040/lib/dotnet/*.dll .
 fi
 
 # Run coreclr performance tests
 echo "Test root dir is: $testRootDir"
 tests=($(find $testRootDir/JIT/Performance/CodeQuality -name '*.exe'))
+
+echo "current dir is $PWD"
 
 for testcase in ${tests[@]}; do
 
@@ -404,7 +407,10 @@ echo "....Running $testname"
 cp $testcase .
 
 chmod u+x ./corerun
+echo "./corerun Microsoft.DotNet.xunit.performance.runner.cli.dll $test -runner xunit.console.netcore.exe -runnerhost ./corerun -verbose -runid perf-$testname"
 ./corerun Microsoft.DotNet.xunit.performance.runner.cli.dll $test -runner xunit.console.netcore.exe -runnerhost ./corerun -verbose -runid perf-$testname
+echo "./corerun Microsoft.DotNet.xunit.performance.analysis.cli.dll perf-$testname.xml -xml perf-$testname-summary.xml"
+./corerun Microsoft.DotNet.xunit.performance.analysis.cli.dll perf-$testname.xml -xml perf-$testname-summary.xml
 done
 
 mkdir ../../../../../sandbox
