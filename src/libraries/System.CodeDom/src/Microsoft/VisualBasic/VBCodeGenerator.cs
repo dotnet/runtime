@@ -2267,7 +2267,7 @@ namespace Microsoft.VisualBasic
             Output.Write("\",\"");
             if (checksumPragma.ChecksumData != null)
             {
-                foreach (Byte b in checksumPragma.ChecksumData)
+                foreach (byte b in checksumPragma.ChecksumData)
                 {
                     Output.Write(b.ToString("X2", CultureInfo.InvariantCulture));
                 }
@@ -2330,12 +2330,12 @@ namespace Microsoft.VisualBasic
 
         protected override void GenerateAttributeDeclarationsStart(CodeAttributeDeclarationCollection attributes)
         {
-            Output.Write("<");
+            Output.Write('<');
         }
 
         protected override void GenerateAttributeDeclarationsEnd(CodeAttributeDeclarationCollection attributes)
         {
-            Output.Write(">");
+            Output.Write('>');
         }
 
         public static bool IsKeyword(string value)

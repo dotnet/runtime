@@ -1779,7 +1779,7 @@ namespace Microsoft.CSharp
                     Output.Write("<=");
                     break;
                 case CodeBinaryOperatorType.GreaterThan:
-                    Output.Write(">");
+                    Output.Write('>');
                     break;
                 case CodeBinaryOperatorType.GreaterThanOrEqual:
                     Output.Write(">=");
@@ -2618,7 +2618,7 @@ namespace Microsoft.CSharp
             Output.Write("\" \"");
             if (checksumPragma.ChecksumData != null)
             {
-                foreach (Byte b in checksumPragma.ChecksumData)
+                foreach (byte b in checksumPragma.ChecksumData)
                 {
                     Output.Write(b.ToString("X2", CultureInfo.InvariantCulture));
                 }

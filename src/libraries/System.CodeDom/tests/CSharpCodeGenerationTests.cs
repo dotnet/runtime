@@ -153,7 +153,7 @@ namespace System.CodeDom.Tests
             var ns = new CodeNamespace("MyNamespace");
             var cd = new CodeTypeDeclaration("TEST") { IsClass = true };
 
-            CodeMemberMethod cmm = new CodeMemberMethod();
+            var cmm = new CodeMemberMethod();
             cmm.Name = "CallingOverrideScenario";
             cmm.Parameters.Add(new CodeParameterDeclarationExpression(typeof(int), "i"));
             cmm.ReturnType = new CodeTypeReference(typeof(int));
@@ -330,10 +330,10 @@ namespace System.CodeDom.Tests
         [Fact]
         public void MethodWithRefParameter()
         {
-            CodeTypeDeclaration cd = new CodeTypeDeclaration("TEST");
+            var cd = new CodeTypeDeclaration("TEST");
             cd.IsClass = true;
 
-            CodeMemberMethod cmm = new CodeMemberMethod();
+            var cmm = new CodeMemberMethod();
             cmm.Name = "Work";
             cmm.ReturnType = new CodeTypeReference("System.void");
             cmm.Attributes = MemberAttributes.Static;
@@ -663,7 +663,7 @@ namespace System.CodeDom.Tests
             evt.CustomAttributes.Add(new CodeAttributeDeclaration("System.CLSCompliantAttribute", new CodeAttributeArgument(new CodePrimitiveExpression(false))));
             class1.Members.Add(evt);
 
-            CodeMemberMethod cmm = new CodeMemberMethod();
+            var cmm = new CodeMemberMethod();
             cmm.Name = "b_Click";
             cmm.Parameters.Add(new CodeParameterDeclarationExpression(typeof(object), "sender"));
             cmm.Parameters.Add(new CodeParameterDeclarationExpression(typeof(EventArgs), "e"));
@@ -989,32 +989,17 @@ namespace System.CodeDom.Tests
         [Fact]
         public void CharEncoding()
         {
+            string chars = "\u1234 \u4567 \uABCD \r \n \t \\ \" \' \0 \u2028 \u2029 \u0084 \u0085 \U00010F00";
+
             var main = new CodeEntryPointMethod();
-            foreach (int i in new int[] { 0x1234, 0x4567, 0xABCD, '\r', '\n', '\t', '\\', '"', '\'', '\0', 0x2028, 0x2029, 0x0084, 0x0085, 0xD83C })
-            {
-                main.Statements.Add(
-                    new CodeMethodInvokeExpression(
-                        new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(typeof(Console)), "WriteLine"),
-                        new CodeExpression[] { new CodePrimitiveExpression((char)i) }));
-            }
+            main.Statements.Add(
+                new CodeMethodInvokeExpression(
+                    new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(typeof(Console)), "WriteLine"),
+                    new CodeExpression[] { new CodePrimitiveExpression(chars) }));
 
             AssertEqual(main,
                  "public static void Main() { " +
-                 "     System.Console.WriteLine('\x1234'); " +
-                 "     System.Console.WriteLine('\x4567'); " +
-                 "     System.Console.WriteLine('\xABCD'); " +
-                 "     System.Console.WriteLine('\\r'); " +
-                 "     System.Console.WriteLine('\\n'); " +
-                 "     System.Console.WriteLine('\\t'); " +
-                 "     System.Console.WriteLine('\\\\'); " +
-                 "     System.Console.WriteLine('\\\"'); " +
-                 "     System.Console.WriteLine('\\''); " +
-                 "     System.Console.WriteLine('\\0'); " +
-                 "     System.Console.WriteLine('\\u2028'); " +
-                 "     System.Console.WriteLine('\\u2029'); " +
-                 "     System.Console.WriteLine('\\u0084'); " +
-                 "     System.Console.WriteLine('\\u0085'); " +
-                 "     System.Console.WriteLine('\\uD83C'); " +
+                 "     System.Console.WriteLine(\"\u1234 \u4567 \uABCD \\r \\n \\t \\\\ \\\" \\' \\0 \\u2028 \\u2029 \u0084 \u0085 \U00010F00\"); " +
                  "}");
         }
 
@@ -1053,7 +1038,7 @@ namespace System.CodeDom.Tests
             var class1 = new CodeTypeDeclaration("ClassToTest") { IsClass = true };
             nspace.Types.Add(class1);
 
-            CodeMemberMethod cmm = new CodeMemberMethod();
+            var cmm = new CodeMemberMethod();
             cmm.Name = "Primitives";
             cmm.ReturnType = new CodeTypeReference(typeof(string));
             cmm.Attributes = MemberAttributes.Public | MemberAttributes.Static;
@@ -1136,7 +1121,7 @@ namespace System.CodeDom.Tests
             cd.IsClass = true;
 
             // try catch statement with just finally
-            CodeMemberMethod cmm = new CodeMemberMethod();
+            var cmm = new CodeMemberMethod();
             cmm.Name = "FirstScenario";
             cmm.ReturnType = new CodeTypeReference(typeof(int));
             cmm.Attributes = MemberAttributes.Public | MemberAttributes.Static;
@@ -1399,7 +1384,7 @@ namespace System.CodeDom.Tests
         [Fact]
         public void RegionsSnippetsAndLinePragmas()
         {
-            CodeCompileUnit cu = new CodeCompileUnit();
+            var cu = new CodeCompileUnit();
             CodeNamespace ns = new CodeNamespace("Namespace1");
 
             cu.StartDirectives.Add(new CodeRegionDirective(CodeRegionMode.Start, "Compile Unit Region"));
@@ -1407,7 +1392,7 @@ namespace System.CodeDom.Tests
 
             cu.Namespaces.Add(ns);
 
-            CodeTypeDeclaration cd = new CodeTypeDeclaration("Class1");
+            var cd = new CodeTypeDeclaration("Class1");
             ns.Types.Add(cd);
 
             cd.StartDirectives.Add(new CodeRegionDirective(CodeRegionMode.Start, "Outer Type Region"));
@@ -1957,11 +1942,11 @@ namespace System.CodeDom.Tests
             CodeNamespace ns = new CodeNamespace("System");
             ns.Comments.Add(new CodeCommentStatement("Some comment on a namespace"));
 
-            CodeTypeDeclaration cd = new CodeTypeDeclaration("MyType");
+            var cd = new CodeTypeDeclaration("MyType");
             cd.Comments.Add(new CodeCommentStatement("<summary>Insightful comment</summary>", docComment: true));
             ns.Types.Add(cd);
 
-            CodeMemberMethod cmm = new CodeMemberMethod() { Name = "SomeMethod" };
+            var cmm = new CodeMemberMethod() { Name = "SomeMethod" };
             cmm.Comments.Add(new CodeCommentStatement("<summary>Another insightful comment</summary>", docComment: true));
             cd.Members.Add(cmm);
 
@@ -1984,7 +1969,7 @@ namespace System.CodeDom.Tests
             class1.Name = "Class1";
             ns.Types.Add(class1);
 
-            CodeMemberMethod cmm = new CodeMemberMethod();
+            var cmm = new CodeMemberMethod();
             cmm.Name = "for";
             class1.Members.Add(cmm);
 
@@ -2031,13 +2016,13 @@ namespace System.CodeDom.Tests
         [Fact]
         public void ForLoops()
         {
-            CodeNamespace nspace = new CodeNamespace("NSPC");
+            var nspace = new CodeNamespace("NSPC");
 
             CodeTypeDeclaration class1 = new CodeTypeDeclaration("ClassWithMethod");
             class1.IsClass = true;
             nspace.Types.Add(class1);
 
-            CodeMemberMethod cmm = new CodeMemberMethod();
+            var cmm = new CodeMemberMethod();
             cmm.Name = "TestBasicIterationStatement";
             cmm.Attributes = MemberAttributes.Public | MemberAttributes.Static;
             cmm.Statements.Add(new CodeVariableDeclarationStatement(new CodeTypeReference(typeof(int)), "i"));
@@ -2131,9 +2116,9 @@ namespace System.CodeDom.Tests
         [Fact]
         public void Indexers()
         {
-            CodeNamespace nspace = new CodeNamespace("NSPC");
+            var nspace = new CodeNamespace("NSPC");
 
-            CodeTypeDeclaration cd = new CodeTypeDeclaration("TEST");
+            var cd = new CodeTypeDeclaration("TEST");
             cd.IsClass = true;
             nspace.Types.Add(cd);
 
@@ -2185,7 +2170,7 @@ namespace System.CodeDom.Tests
             cd.IsClass = true;
             nspace.Types.Add(cd);
 
-            CodeMemberMethod cmm = new CodeMemberMethod();
+            var cmm = new CodeMemberMethod();
             cmm.Name = "TestMethod";
             cmm.ReturnType = new CodeTypeReference(typeof(int));
             cmm.Parameters.Add(new CodeParameterDeclarationExpression(new CodeTypeReference(typeof(int)), "i"));
@@ -2253,7 +2238,7 @@ namespace System.CodeDom.Tests
             ns.Types.Add(class1);
 
             // create first method to test gotos that jump ahead to a defined label with statement
-            CodeMemberMethod cmm = new CodeMemberMethod();
+            var cmm = new CodeMemberMethod();
             cmm.Name = "FirstMethod";
             cmm.ReturnType = new CodeTypeReference(typeof(int));
             cmm.Attributes = MemberAttributes.Public | MemberAttributes.Static;
@@ -2396,7 +2381,7 @@ namespace System.CodeDom.Tests
             CodeNamespace ns = new CodeNamespace("Foo");
             ns.Comments.Add(new CodeCommentStatement("Foo namespace"));
 
-            CodeTypeDeclaration cd = new CodeTypeDeclaration("Foo");
+            var cd = new CodeTypeDeclaration("Foo");
             ns.Types.Add(cd);
 
             string fieldName1 = "_verifyGlobalGeneration1";
@@ -2518,20 +2503,20 @@ namespace System.CodeDom.Tests
         {
             CodeDomProvider provider = GetProvider();
 
-            CodeCompileUnit cu = new CodeCompileUnit();
-            CodeNamespace nspace = new CodeNamespace("NSPC");
+            var cu = new CodeCompileUnit();
+            var nspace = new CodeNamespace("NSPC");
             nspace.Imports.Add(new CodeNamespaceImport("System"));
             nspace.Imports.Add(new CodeNamespaceImport("System.Drawing"));
             nspace.Imports.Add(new CodeNamespaceImport("System.Windows.Forms"));
             nspace.Imports.Add(new CodeNamespaceImport("System.ComponentModel"));
             cu.Namespaces.Add(nspace);
 
-            CodeTypeDeclaration cd = new CodeTypeDeclaration("TEST");
+            var cd = new CodeTypeDeclaration("TEST");
             cd.IsClass = true;
             nspace.Types.Add(cd);
 
             // Arrays of Arrays
-            CodeMemberMethod cmm = new CodeMemberMethod();
+            var cmm = new CodeMemberMethod();
             cmm.Name = "ArraysOfArrays";
             cmm.ReturnType = new CodeTypeReference(typeof(int));
             cmm.Attributes = MemberAttributes.Final | MemberAttributes.Public;
@@ -3301,6 +3286,92 @@ namespace System.CodeDom.Tests
                           public event System.EventHandler MyEvent;
 
                           private void b_Click(object sender, System.EventArgs e) {
+                          }
+                      }
+                  }");
+        }
+
+        [Fact]
+        public void GenericTypesAndConstraints()
+        {
+            CodeNamespace ns = new CodeNamespace("NS");
+            ns.Imports.Add(new CodeNamespaceImport("System"));
+            ns.Imports.Add(new CodeNamespaceImport("System.Collections.Generic"));
+
+            CodeTypeDeclaration class1 = new CodeTypeDeclaration();
+            class1.Name = "MyDictionary";
+            class1.BaseTypes.Add(new CodeTypeReference("Dictionary", new CodeTypeReference[] { new CodeTypeReference("TKey"), new CodeTypeReference("TValue"), }));
+            CodeTypeParameter kType = new CodeTypeParameter("TKey");
+            kType.HasConstructorConstraint = true;
+            kType.Constraints.Add(new CodeTypeReference(typeof(IComparable)));
+            kType.CustomAttributes.Add(new CodeAttributeDeclaration(
+                "System.ComponentModel.DescriptionAttribute", new CodeAttributeArgument(new CodePrimitiveExpression("KeyType"))));
+
+            CodeTypeReference iComparableT = new CodeTypeReference("IComparable");
+            iComparableT.TypeArguments.Add(new CodeTypeReference(kType));
+            kType.Constraints.Add(iComparableT);
+
+            CodeTypeParameter vType = new CodeTypeParameter("TValue");
+            vType.Constraints.Add(new CodeTypeReference(typeof(IList<System.String>)));
+            vType.CustomAttributes.Add(new CodeAttributeDeclaration(
+                "System.ComponentModel.DescriptionAttribute", new CodeAttributeArgument(new CodePrimitiveExpression("ValueType"))));
+
+            class1.TypeParameters.Add(kType);
+            class1.TypeParameters.Add(vType);
+            ns.Types.Add(class1);
+
+            // Declare a generic method.
+            CodeMemberMethod printMethod = new CodeMemberMethod();
+            CodeTypeParameter sType = new CodeTypeParameter("S");
+            sType.HasConstructorConstraint = true;
+            CodeTypeParameter tType = new CodeTypeParameter("T");
+            sType.HasConstructorConstraint = true;
+
+            printMethod.Name = "Nop";
+            printMethod.TypeParameters.Add(sType);
+            printMethod.TypeParameters.Add(tType);
+            printMethod.Attributes = MemberAttributes.Public;
+            class1.Members.Add(printMethod);
+
+            var class2 = new CodeTypeDeclaration();
+            class2.Name = "Demo";
+
+            var methodMain = new CodeEntryPointMethod();
+            var myClass = new CodeTypeReference(
+                "MyDictionary",
+                new CodeTypeReference[] {
+                    new CodeTypeReference(typeof(int)),
+                    new CodeTypeReference("List",
+                       new CodeTypeReference[]
+                            {new CodeTypeReference("System.String") })});
+            methodMain.Statements.Add(new CodeVariableDeclarationStatement(myClass, "dict", new CodeObjectCreateExpression(myClass)));
+            string dictionaryTypeName = typeof(System.Collections.Generic.Dictionary<int, System.Collections.Generic.List<string>>[]).FullName;
+
+            var dictionaryType = new CodeTypeReference(dictionaryTypeName);
+            methodMain.Statements.Add(
+                  new CodeVariableDeclarationStatement(dictionaryType, "dict2",
+                     new CodeArrayCreateExpression(dictionaryType, new CodeExpression[1] { new CodePrimitiveExpression(null) })));
+
+            class2.Members.Add(methodMain);
+            ns.Types.Add(class2);
+
+            AssertEqual(ns,
+                @"namespace NS {
+                      using System;
+                      using System.Collections.Generic;
+                      public class MyDictionary<[System.ComponentModel.DescriptionAttribute(""KeyType"")] TKey, [System.ComponentModel.DescriptionAttribute(""ValueType"")]  TValue> : Dictionary<TKey, TValue>
+                          where TKey : System.IComparable, IComparable<TKey>, new ()
+                          where TValue : System.Collections.Generic.IList<string>
+                      {
+                          public virtual void Nop<S, T>() where S : new() { }
+                      }
+
+                      public class Demo
+                      {
+                          public static void Main()
+                          {
+                              MyDictionary<int, List<string>> dict = new MyDictionary<int, List<string>>();
+                              System.Collections.Generic.Dictionary<int, System.Collections.Generic.List<string>>[] dict2 = new System.Collections.Generic.Dictionary<int, System.Collections.Generic.List<string>>[] { null};
                           }
                       }
                   }");

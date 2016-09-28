@@ -991,33 +991,18 @@ namespace System.CodeDom.Tests
         [Fact]
         public void CharEncoding()
         {
+            string chars = "\u1234 \u4567 \uABCD \r \n \t \\ \" \' \0 \u2028 \u2029 \u0084 \u0085 \U00010F00";
+
             var main = new CodeEntryPointMethod();
-            foreach (int i in new int[] { 0x1234, 0x4567, 0xABCD, '\r', '\n', '\t', '\\', '"', '\'', '\0', 0x2028, 0x2029, 0x0084, 0x0085, 0xD83C })
-            {
-                main.Statements.Add(
-                    new CodeMethodInvokeExpression(
-                        new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(typeof(Console)), "WriteLine"),
-                        new CodeExpression[] { new CodePrimitiveExpression((char)i) }));
-            }
+            main.Statements.Add(
+                new CodeMethodInvokeExpression(
+                    new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(typeof(Console)), "WriteLine"),
+                    new CodeExpression[] { new CodePrimitiveExpression(chars) }));
 
             AssertEqual(main,
-                 @"Public Shared Sub Main()
-                      System.Console.WriteLine(Global.Microsoft.VisualBasic.ChrW(4660))
-                      System.Console.WriteLine(Global.Microsoft.VisualBasic.ChrW(17767))
-                      System.Console.WriteLine(Global.Microsoft.VisualBasic.ChrW(43981))
-                      System.Console.WriteLine(Global.Microsoft.VisualBasic.ChrW(13))
-                      System.Console.WriteLine(Global.Microsoft.VisualBasic.ChrW(10))
-                      System.Console.WriteLine(Global.Microsoft.VisualBasic.ChrW(9))
-                      System.Console.WriteLine(Global.Microsoft.VisualBasic.ChrW(92))
-                      System.Console.WriteLine(Global.Microsoft.VisualBasic.ChrW(34))
-                      System.Console.WriteLine(Global.Microsoft.VisualBasic.ChrW(39))
-                      System.Console.WriteLine(Global.Microsoft.VisualBasic.ChrW(0))
-                      System.Console.WriteLine(Global.Microsoft.VisualBasic.ChrW(8232))
-                      System.Console.WriteLine(Global.Microsoft.VisualBasic.ChrW(8233))
-                      System.Console.WriteLine(Global.Microsoft.VisualBasic.ChrW(132))
-                      System.Console.WriteLine(Global.Microsoft.VisualBasic.ChrW(133))
-                      System.Console.WriteLine(Global.Microsoft.VisualBasic.ChrW(55356))
-                  End Sub");
+                 "Public Shared Sub Main() " +
+                 "    System.Console.WriteLine(\"\u1234 \u4567 \uABCD \"&Global.Microsoft.VisualBasic.ChrW(13)&\" \"&Global.Microsoft.VisualBasic.ChrW(10)&\" \"&Global.Microsoft.VisualBasic.ChrW(9)&\" \\ \"\" ' \"&Global.Microsoft.VisualBasic.ChrW(0)&\" \"&Global.Microsoft.VisualBasic.ChrW(8232)&\" \"&Global.Microsoft.VisualBasic.ChrW(8233)&\" \u0084 \u0085 \U00010F00\") " +
+                 "End Sub");
         }
 
         [Fact]
@@ -3157,6 +3142,88 @@ namespace System.CodeDom.Tests
                           Public Event MyEvent As System.EventHandler
 
                           Private Sub b_Click(ByVal sender As Object, ByVal e As System.EventArgs)
+                          End Sub
+                      End Class
+                  End Namespace");
+        }
+
+        [Fact]
+        public void GenericTypesAndConstraints()
+        {
+            CodeNamespace ns = new CodeNamespace("NS");
+            ns.Imports.Add(new CodeNamespaceImport("System"));
+            ns.Imports.Add(new CodeNamespaceImport("System.Collections.Generic"));
+
+            CodeTypeDeclaration class1 = new CodeTypeDeclaration();
+            class1.Name = "MyDictionary";
+            class1.BaseTypes.Add(new CodeTypeReference("Dictionary", new CodeTypeReference[] { new CodeTypeReference("TKey"), new CodeTypeReference("TValue"), }));
+            CodeTypeParameter kType = new CodeTypeParameter("TKey");
+            kType.HasConstructorConstraint = true;
+            kType.Constraints.Add(new CodeTypeReference(typeof(IComparable)));
+            kType.CustomAttributes.Add(new CodeAttributeDeclaration(
+                "System.ComponentModel.DescriptionAttribute", new CodeAttributeArgument(new CodePrimitiveExpression("KeyType"))));
+
+            CodeTypeReference iComparableT = new CodeTypeReference("IComparable");
+            iComparableT.TypeArguments.Add(new CodeTypeReference(kType));
+            kType.Constraints.Add(iComparableT);
+
+            CodeTypeParameter vType = new CodeTypeParameter("TValue");
+            vType.Constraints.Add(new CodeTypeReference(typeof(IList<System.String>)));
+            vType.CustomAttributes.Add(new CodeAttributeDeclaration(
+                "System.ComponentModel.DescriptionAttribute", new CodeAttributeArgument(new CodePrimitiveExpression("ValueType"))));
+
+            class1.TypeParameters.Add(kType);
+            class1.TypeParameters.Add(vType);
+            ns.Types.Add(class1);
+
+            // Declare a generic method.
+            CodeMemberMethod printMethod = new CodeMemberMethod();
+            CodeTypeParameter sType = new CodeTypeParameter("S");
+            sType.HasConstructorConstraint = true;
+            CodeTypeParameter tType = new CodeTypeParameter("T");
+            sType.HasConstructorConstraint = true;
+
+            printMethod.Name = "Nop";
+            printMethod.TypeParameters.Add(sType);
+            printMethod.TypeParameters.Add(tType);
+            printMethod.Attributes = MemberAttributes.Public;
+            class1.Members.Add(printMethod);
+
+            var class2 = new CodeTypeDeclaration();
+            class2.Name = "Demo";
+
+            var methodMain = new CodeEntryPointMethod();
+            var myClass = new CodeTypeReference(
+                "MyDictionary",
+                new CodeTypeReference[] {
+                    new CodeTypeReference(typeof(int)),
+                    new CodeTypeReference("List",
+                       new CodeTypeReference[]
+                            {new CodeTypeReference("System.String") })});
+            methodMain.Statements.Add(new CodeVariableDeclarationStatement(myClass, "dict", new CodeObjectCreateExpression(myClass)));
+            string dictionaryTypeName = typeof(System.Collections.Generic.Dictionary<int, System.Collections.Generic.List<string>>[]).FullName;
+
+            var dictionaryType = new CodeTypeReference(dictionaryTypeName);
+            methodMain.Statements.Add(
+                  new CodeVariableDeclarationStatement(dictionaryType, "dict2",
+                     new CodeArrayCreateExpression(dictionaryType, new CodeExpression[1] { new CodePrimitiveExpression(null) })));
+
+            class2.Members.Add(methodMain);
+            ns.Types.Add(class2);
+
+            AssertEqual(ns,
+                @"Imports System
+                  Imports System.Collections.Generic
+                  Namespace NS
+                      Public Class MyDictionary(Of TKey As  {System.IComparable, IComparable(Of TKey), New}, TValue As System.Collections.Generic.IList(Of String))
+                          Inherits Dictionary(Of TKey, TValue)
+                          Public Overridable Sub Nop(Of S As New, T)()
+                          End Sub
+                      End Class
+                      Public Class Demo
+                          Public Shared Sub Main()
+                              Dim dict As MyDictionary(Of Integer, List(Of String)) = New MyDictionary(Of Integer, List(Of String))()
+                              Dim dict2() As System.Collections.Generic.Dictionary(Of Integer, System.Collections.Generic.List(Of String)) = New System.Collections.Generic.Dictionary(Of Integer, System.Collections.Generic.List(Of String))() {Nothing}
                           End Sub
                       End Class
                   End Namespace");

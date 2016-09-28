@@ -17,6 +17,9 @@
     <Compile Include="CodeGenerationTests.cs" />
     <Compile Include="VBCodeGenerationTests.cs" />
     <Compile Include="CSharpCodeGenerationTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
+      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.CodeDom.pkgproj">
