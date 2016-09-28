@@ -1494,6 +1494,8 @@ public:
 
     inline bool IsBoxedValue();
 
+    inline bool IsSIMDEqualityOrInequality() const;
+
     static bool OperIsList(genTreeOps gtOper)
     {
         return gtOper == GT_LIST;
@@ -4911,6 +4913,21 @@ inline bool GenTree::IsBoxedValue()
 {
     assert(gtOper != GT_BOX || gtBox.BoxOp() != nullptr);
     return (gtOper == GT_BOX) && (gtFlags & GTF_BOX_VALUE);
+}
+
+inline bool GenTree::IsSIMDEqualityOrInequality() const
+{
+#ifdef FEATURE_SIMD
+    if (gtOper == GT_SIMD)
+    {
+        // Has to cast away const-ness since AsSIMD() method is non-const.
+        GenTreeSIMD* simdNode = const_cast<GenTree*>(this)->AsSIMD();
+        return (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicOpEquality ||
+                simdNode->gtSIMDIntrinsicID == SIMDIntrinsicOpInEquality);
+    }
+#endif
+
+    return false;
 }
 
 inline GenTreePtr GenTree::MoveNext()
