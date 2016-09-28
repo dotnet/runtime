@@ -140,6 +140,7 @@ namespace System.IO.IsolatedStorage
 
         protected void InitStore(IsolatedStorageScope scope, Type domainEvidenceType, Type assemblyEvidenceType)
         {
+            VerifyScope(scope);
             Scope = scope;
 
             object identity = null;
@@ -162,6 +163,27 @@ namespace System.IO.IsolatedStorage
             }
 
             IdentityHash = hash;
+        }
+
+        private static void VerifyScope(IsolatedStorageScope scope)
+        {
+            // The only valid ones are the ones that have a helper constant defined above (c_*)
+
+            switch (scope)
+            {
+                case IsolatedStorageScope.User | IsolatedStorageScope.Assembly:
+                case IsolatedStorageScope.User | IsolatedStorageScope.Assembly | IsolatedStorageScope.Domain:
+                case IsolatedStorageScope.Roaming | IsolatedStorageScope.User | IsolatedStorageScope.Assembly:
+                case IsolatedStorageScope.Roaming | IsolatedStorageScope.User | IsolatedStorageScope.Assembly | IsolatedStorageScope.Domain:
+                case IsolatedStorageScope.Machine | IsolatedStorageScope.Assembly:
+                case IsolatedStorageScope.Machine | IsolatedStorageScope.Assembly | IsolatedStorageScope.Domain:
+                case IsolatedStorageScope.Application | IsolatedStorageScope.User:
+                case IsolatedStorageScope.Application | IsolatedStorageScope.User | IsolatedStorageScope.Roaming:
+                case IsolatedStorageScope.Application | IsolatedStorageScope.Machine:
+                    break;
+                default:
+                    throw new ArgumentException(SR.IsolatedStorage_Scope_Invalid);
+            }
         }
     }
 }
