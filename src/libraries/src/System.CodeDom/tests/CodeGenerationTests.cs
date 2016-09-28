@@ -6,6 +6,7 @@ using System.CodeDom.Compiler;
 using System.ComponentModel;
 using System.IO;
 using System.Reflection;
+using System.Runtime.Serialization.Formatters.Tests;
 using System.Text;
 using Xunit;
 
@@ -77,6 +78,20 @@ namespace System.CodeDom.Tests
             Assert.True(tc.CanConvertTo(typeof(string)));
         }
 
+        [Fact]
+        public void CodeSnippets()
+        {
+            var snippetStmt = new CodeSnippetStatement("blah");
+            AssertEqual(snippetStmt, "blah");
+
+            var snippetExpr = new CodeSnippetExpression("    blah   ");
+            AssertEqual(snippetExpr, "    blah   ");
+
+            var snippetCu = new CodeSnippetCompileUnit();
+            snippetCu.Value = GetEmptyProgramSource();
+            AssertEqual(snippetCu, GetEmptyProgramSource());
+        }
+
         protected abstract CodeDomProvider GetProvider();
         protected abstract string GetEmptyProgramSource();
 
@@ -87,9 +102,33 @@ namespace System.CodeDom.Tests
 
         protected void AssertEqual(CodeObject c, string expected)
         {
+            // Validate all identifiers are valid
             CodeGenerator.ValidateIdentifiers(c);
 
+            // Generate code 
             CodeDomProvider provider = GetProvider();
+            string code = GenerateCode(c, provider);
+
+            // Make sure the code matches what we expected
+            try
+            {
+                Assert.Equal(CoalesceWhitespace(expected), CoalesceWhitespace(code));
+            }
+            catch
+            {
+                Console.WriteLine(code);
+                throw;
+            }
+
+            // Serialize and deserialize the CodeObject, and make sure code generated for it
+            // is the same as the original.
+            CodeObject clone = BinaryFormatterHelpers.Clone(c);
+            string cloneCode = GenerateCode(clone, provider);
+            Assert.Equal(code, cloneCode);
+        }
+
+        private static string GenerateCode(CodeObject c, CodeDomProvider provider)
+        {
             var sb = new StringBuilder();
             var writer = new StringWriter(sb);
             var options = new CodeGeneratorOptions();
@@ -123,15 +162,7 @@ namespace System.CodeDom.Tests
                 Assert.False(true, $"Unknown type: {c.GetType()}");
             }
 
-            try
-            {
-                Assert.Equal(CoalesceWhitespace(expected), CoalesceWhitespace(sb.ToString()));
-            }
-            catch
-            {
-                Console.WriteLine(sb.ToString());
-                throw;
-            }
+            return sb.ToString();
         }
 
         private static string CoalesceWhitespace(string str)

@@ -1229,7 +1229,7 @@ namespace System.CodeDom.Compiler
                     Output.Write("<=");
                     break;
                 case CodeBinaryOperatorType.GreaterThan:
-                    Output.Write(">");
+                    Output.Write('>');
                     break;
                 case CodeBinaryOperatorType.GreaterThanOrEqual:
                     Output.Write(">=");
