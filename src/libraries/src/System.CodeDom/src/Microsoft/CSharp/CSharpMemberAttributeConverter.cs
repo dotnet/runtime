@@ -6,7 +6,7 @@ using System.CodeDom;
 
 namespace Microsoft.CSharp
 {
-    internal class CSharpMemberAttributeConverter : CSharpModifierAttributeConverter
+    internal sealed class CSharpMemberAttributeConverter : CSharpModifierAttributeConverter
     {
         private CSharpMemberAttributeConverter() { } // no  need to create an instance; use Default
 

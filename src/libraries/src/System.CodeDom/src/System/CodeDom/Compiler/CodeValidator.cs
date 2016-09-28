@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
 using System.IO;
 
 namespace System.CodeDom.Compiler
@@ -12,7 +11,7 @@ namespace System.CodeDom.Compiler
     // independent manner. By default, this will not be turned on. This gives clients of codedom a mechanism to 
     // protect themselves against certain types of code injection attacks (using identifier and type names). 
     // You can pass in any node in the tree that is a subclass of CodeObject.
-    internal class CodeValidator
+    internal sealed class CodeValidator
     {
         private static readonly char[] s_newLineChars = new char[] { '\r', '\n', '\u2028', '\u2029', '\u0085' };
         private CodeTypeDeclaration _currentClass;
@@ -150,9 +149,9 @@ namespace System.CodeDom.Compiler
 
         private static void ValidateNamespaceStart(CodeNamespace e)
         {
-            if (e.Name != null && e.Name.Length > 0)
+            if (!string.IsNullOrEmpty(e.Name))
             {
-                ValidateTypeName(e, "Name", e.Name);
+                ValidateTypeName(e, nameof(e.Name), e.Name);
             }
         }
 
@@ -167,7 +166,7 @@ namespace System.CodeDom.Compiler
 
         private static void ValidateNamespaceImport(CodeNamespaceImport e)
         {
-            ValidateTypeName(e, "Namespace", e.Namespace);
+            ValidateTypeName(e, nameof(e.Namespace), e.Namespace);
         }
 
         private void ValidateAttributes(CodeAttributeDeclarationCollection attributes)
@@ -175,7 +174,7 @@ namespace System.CodeDom.Compiler
             if (attributes.Count == 0) return;
             foreach (CodeAttributeDeclaration current in attributes)
             {
-                ValidateTypeName(current, "Name", current.Name);
+                ValidateTypeName(current, nameof(current.Name), current.Name);
                 ValidateTypeReference(current.AttributeType);
 
                 foreach (CodeAttributeArgument arg in current.Arguments)
@@ -187,9 +186,9 @@ namespace System.CodeDom.Compiler
 
         private void ValidateAttributeArgument(CodeAttributeArgument arg)
         {
-            if (arg.Name != null && arg.Name.Length > 0)
+            if (!string.IsNullOrEmpty(arg.Name))
             {
-                ValidateIdentifier(arg, "Name", arg.Name);
+                ValidateIdentifier(arg, nameof(arg.Name), arg.Name);
             }
             ValidateExpression(arg.Value);
         }
@@ -235,7 +234,7 @@ namespace System.CodeDom.Compiler
 
         private void ValidateTypeParameter(CodeTypeParameter e)
         {
-            ValidateIdentifier(e, "Name", e.Name);
+            ValidateIdentifier(e, nameof(e.Name), e.Name);
             ValidateTypeReferences(e.Constraints);
             ValidateAttributes(e.CustomAttributes);
         }
@@ -247,7 +246,7 @@ namespace System.CodeDom.Compiler
                 ValidateAttributes(e.CustomAttributes);
             }
 
-            ValidateIdentifier(e, "Name", e.Name);
+            ValidateIdentifier(e, nameof(e.Name), e.Name);
             if (!IsCurrentEnum)
             {
                 ValidateTypeReference(e.Type);
@@ -299,13 +298,13 @@ namespace System.CodeDom.Compiler
                 ValidateTypeReference(e.PrivateImplementationType);
             }
 
-            if (e.Parameters.Count > 0 && string.Compare(e.Name, "Item", StringComparison.OrdinalIgnoreCase) == 0)
+            if (e.Parameters.Count > 0 && string.Equals(e.Name, "Item", StringComparison.OrdinalIgnoreCase))
             {
                 ValidateParameters(e.Parameters);
             }
             else
             {
-                ValidateIdentifier(e, "Name", e.Name);
+                ValidateIdentifier(e, nameof(e.Name), e.Name);
             }
 
             if (e.HasGet)
@@ -373,7 +372,7 @@ namespace System.CodeDom.Compiler
                 ValidateTypeReference(e.PrivateImplementationType);
             }
 
-            ValidateIdentifier(e, "Name", e.Name);
+            ValidateIdentifier(e, nameof(e.Name), e.Name);
             ValidateParameters(e.Parameters);
 
             if (!IsCurrentInterface
@@ -395,7 +394,7 @@ namespace System.CodeDom.Compiler
                 ValidateAttributes(e.CustomAttributes);
             }
 
-            ValidateIdentifier(e, "Name", e.Name);
+            ValidateIdentifier(e, nameof(e.Name), e.Name);
             if (IsCurrentDelegate)
             {
                 CodeTypeDelegate del = (CodeTypeDelegate)e;
@@ -553,7 +552,7 @@ namespace System.CodeDom.Compiler
                 foreach (CodeCatchClause current in catches)
                 {
                     ValidateTypeReference(current.CatchExceptionType);
-                    ValidateIdentifier(current, "LocalName", current.LocalName);
+                    ValidateIdentifier(current, nameof(current.LocalName), current.LocalName);
                     ValidateStatements(current.Statements);
                 }
             }
@@ -585,12 +584,12 @@ namespace System.CodeDom.Compiler
 
         private static void ValidateGotoStatement(CodeGotoStatement e)
         {
-            ValidateIdentifier(e, "Label", e.Label);
+            ValidateIdentifier(e, nameof(e.Label), e.Label);
         }
 
         private void ValidateLabeledStatement(CodeLabeledStatement e)
         {
-            ValidateIdentifier(e, "Label", e.Label);
+            ValidateIdentifier(e, nameof(e.Label), e.Label);
             if (e.Statement != null)
             {
                 ValidateStatement(e.Statement);
@@ -600,7 +599,7 @@ namespace System.CodeDom.Compiler
         private void ValidateVariableDeclarationStatement(CodeVariableDeclarationStatement e)
         {
             ValidateTypeReference(e.Type);
-            ValidateIdentifier(e, "Name", e.Name);
+            ValidateIdentifier(e, nameof(e.Name), e.Name);
             if (e.InitExpression != null)
             {
                 ValidateExpression(e.InitExpression);
@@ -620,7 +619,7 @@ namespace System.CodeDom.Compiler
             if (e.PrivateImplementationType != null)
             {
                 ValidateTypeReference(e.Type);
-                ValidateIdentifier(e, "Name", e.Name);
+                ValidateIdentifier(e, nameof(e.Name), e.Name);
             }
 
             ValidateTypeReferences(e.ImplementationTypes);
@@ -648,8 +647,7 @@ namespace System.CodeDom.Compiler
 
         private static void ValidateTypeReference(CodeTypeReference e)
         {
-            string baseType = e.BaseType;
-            ValidateTypeName(e, "BaseType", baseType);
+            ValidateTypeName(e, nameof(e.BaseType), e.BaseType);
             ValidateArity(e);
             ValidateTypeReferences(e.TypeArguments);
         }
@@ -865,7 +863,7 @@ namespace System.CodeDom.Compiler
         {
             ValidateTypeReference(e.DelegateType);
             ValidateExpression(e.TargetObject);
-            ValidateIdentifier(e, "MethodName", e.MethodName);
+            ValidateIdentifier(e, nameof(e.MethodName), e.MethodName);
         }
 
         private void ValidateFieldReferenceExpression(CodeFieldReferenceExpression e)
@@ -874,17 +872,17 @@ namespace System.CodeDom.Compiler
             {
                 ValidateExpression(e.TargetObject);
             }
-            ValidateIdentifier(e, "FieldName", e.FieldName);
+            ValidateIdentifier(e, nameof(e.FieldName), e.FieldName);
         }
 
         private static void ValidateArgumentReferenceExpression(CodeArgumentReferenceExpression e)
         {
-            ValidateIdentifier(e, "ParameterName", e.ParameterName);
+            ValidateIdentifier(e, nameof(e.ParameterName), e.ParameterName);
         }
 
         private static void ValidateVariableReferenceExpression(CodeVariableReferenceExpression e)
         {
-            ValidateIdentifier(e, "VariableName", e.VariableName);
+            ValidateIdentifier(e, nameof(e.VariableName), e.VariableName);
         }
 
         private void ValidateIndexerExpression(CodeIndexerExpression e)
@@ -921,7 +919,7 @@ namespace System.CodeDom.Compiler
             {
                 ValidateExpression(e.TargetObject);
             }
-            ValidateIdentifier(e, "MethodName", e.MethodName);
+            ValidateIdentifier(e, nameof(e.MethodName), e.MethodName);
             ValidateTypeReferences(e.TypeArguments);
         }
 
@@ -931,7 +929,7 @@ namespace System.CodeDom.Compiler
             {
                 ValidateExpression(e.TargetObject);
             }
-            ValidateIdentifier(e, "EventName", e.EventName);
+            ValidateIdentifier(e, nameof(e.EventName), e.EventName);
         }
 
         private void ValidateDelegateInvokeExpression(CodeDelegateInvokeExpression e)
@@ -957,7 +955,7 @@ namespace System.CodeDom.Compiler
             }
 
             ValidateTypeReference(e.Type);
-            ValidateIdentifier(e, "Name", e.Name);
+            ValidateIdentifier(e, nameof(e.Name), e.Name);
         }
 
         private void ValidateDirectionExpression(CodeDirectionExpression e)
@@ -975,7 +973,7 @@ namespace System.CodeDom.Compiler
             {
                 ValidateExpression(e.TargetObject);
             }
-            ValidateIdentifier(e, "PropertyName", e.PropertyName);
+            ValidateIdentifier(e, nameof(e.PropertyName), e.PropertyName);
         }
 
         private void ValidatePropertySetValueReferenceExpression(CodePropertySetValueReferenceExpression e)

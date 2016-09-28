@@ -4,7 +4,6 @@
 
 using System.Collections.Specialized;
 using System.Security.Policy;
-using System.Runtime.Serialization;
 
 namespace System.CodeDom.Compiler
 {

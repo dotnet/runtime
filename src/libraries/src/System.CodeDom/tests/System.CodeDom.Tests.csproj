@@ -3,12 +3,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <!--
-      Until we get first class support for NS1.7 and Netcoreapp1.1
-      we need to hard code $(TestTFM) and $(TestNugetTargetMoniker)
-      in the project file.
-    -->
-    <TestTFM>netcoreapp1.1</TestTFM>
     <NugetTargetMoniker>.NETStandard,Version=v1.7</NugetTargetMoniker>
     <ProjectGuid>{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}</ProjectGuid>
   </PropertyGroup>

@@ -30,7 +30,7 @@
     "netstandard1.7": {}
   },
   "supports": {
-    "coreFx.Test.netcoreapp1.1-ns17": {
+    "coreFx.Test.netcoreapp1.1": {
       "netstandard1.7": [
         "win7-x86",
         "win7-x64",
