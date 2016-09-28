@@ -7065,11 +7065,11 @@ VNFunc Compiler::fgValueNumberHelperMethVNFunc(CorInfoHelpFunc helpFunc)
             vnf = VNFunc(GT_MOD);
             break;
         case CORINFO_HELP_ULDIV:
-            vnf = VNFunc(GT_DIV);
-            break; // Is this the right thing?
+            vnf = VNFunc(GT_UDIV);
+            break;
         case CORINFO_HELP_ULMOD:
-            vnf = VNFunc(GT_MOD);
-            break; // Is this the right thing?
+            vnf = VNFunc(GT_UMOD);
+            break;
 
         case CORINFO_HELP_LNG2DBL:
             vnf = VNF_Lng2Dbl;
