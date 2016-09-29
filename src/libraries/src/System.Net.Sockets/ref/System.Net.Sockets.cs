@@ -118,6 +118,40 @@ namespace System.Net.Sockets
         public override void Write(byte[] buffer, int offset, int size) { }
         public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int size, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
     }
+    public enum ProtocolFamily
+    {
+        AppleTalk = 16,
+        Atm = 22,
+        Banyan = 21,
+        Ccitt = 10,
+        Chaos = 5,
+        Cluster = 24,
+        DataKit = 9,
+        DataLink = 13,
+        DecNet = 12,
+        Ecma = 8,
+        FireFox = 19,
+        HyperChannel = 15,
+        Ieee12844 = 25,
+        ImpLink = 3,
+        InterNetwork = 2,
+        InterNetworkV6 = 23,
+        Ipx = 6,
+        Irda = 26,
+        Iso = 7,
+        Lat = 14,
+        Max = 29,
+        NetBios = 17,
+        NetworkDesigners = 28,
+        NS = 6,
+        Osi = 7,
+        Pup = 4,
+        Sna = 11,
+        Unix = 1,
+        Unknown = -1,
+        Unspecified = 0,
+        VoiceView = 18,
+    }
     public enum ProtocolType
     {
         Ggp = 3,

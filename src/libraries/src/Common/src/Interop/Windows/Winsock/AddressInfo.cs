@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System.Runtime.InteropServices;
 #if !SYSTEM_NET_SOCKETS_DLL
 using SocketType = System.Net.Internals.SocketType;
+using ProtocolFamily = System.Net.Internals.ProtocolFamily;
 #endif
 
 namespace System.Net.Sockets
