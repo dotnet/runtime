@@ -270,6 +270,14 @@ namespace System.Globalization
             }
         }
 
+        public override CalendarAlgorithmType AlgorithmType
+        {
+            get
+            {
+                return CalendarAlgorithmType.LunarCalendar;
+            }
+        }
+
         public UmAlQuraCalendar()
         {
         }

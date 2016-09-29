@@ -635,6 +635,7 @@
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\SR.cs" />
     <GlobalizationSources Condition="'$(FeatureCoreClr)'=='true'" Include="$(CoreFxSourcesRoot)\System\Globalization\STUBS.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\Calendar.cs" />
+    <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\CalendarAlgorithmType.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\CalendarData.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\CalendarWeekRule.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\CalendricalCalculationsHelper.cs" />
