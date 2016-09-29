@@ -28,7 +28,10 @@
 
 #include <config.h>
 #include "test.h"
+
+#ifndef DRIVER_EXTERNAL_TESTS
 #include "tests.h"
+#endif
 
 #include <stdio.h>
 #ifdef HAVE_GETOPT_H
@@ -102,7 +105,11 @@ static void print_help(char *s)
 	printf("\n");
 }
 
+#ifdef DRIVER_EXTERNAL_MAIN
+gint run_tests_main(gint argc, gchar **argv)
+#else
 gint main(gint argc, gchar **argv)
+#endif
 {
 	gint i, j, c, iterations = 1;
 	StringArray *tests_to_run = NULL;
