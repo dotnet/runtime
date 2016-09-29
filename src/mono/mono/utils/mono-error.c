@@ -38,6 +38,12 @@ is_managed_exception (MonoErrorInternal *error)
 	return (error->error_code == MONO_ERROR_EXCEPTION_INSTANCE);
 }
 
+static gboolean
+is_boxed (MonoErrorInternal *error)
+{
+	return ((error->flags & MONO_ERROR_MEMPOOL_BOXED) != 0);
+}
+
 static void
 mono_error_prepare (MonoErrorInternal *error)
 {
@@ -116,6 +122,8 @@ mono_error_cleanup (MonoError *oerror)
 
 	/* Two cleanups in a row without an intervening init. */
 	g_assert (orig_error_code != MONO_ERROR_CLEANUP_CALLED_SENTINEL);
+	/* Mempool stored error shouldn't be cleaned up */
+	g_assert (!is_boxed (error));
 
 	/* Mark it as cleaned up. */
 	error->error_code = MONO_ERROR_CLEANUP_CALLED_SENTINEL;
@@ -730,6 +738,9 @@ mono_error_convert_to_exception (MonoError *target_error)
 	MonoError error;
 	MonoException *ex;
 
+	/* Mempool stored error shouldn't be cleaned up */
+	g_assert (!is_boxed ((MonoErrorInternal*)target_error));
+
 	if (mono_error_ok (target_error))
 		return NULL;
 
@@ -751,4 +762,98 @@ mono_error_move (MonoError *dest, MonoError *src)
 {
 	memcpy (dest, src, sizeof (MonoErrorInternal));
 	mono_error_init (src);
+}
+
+/**
+ * mono_error_box:
+ * @ierror: The input error that will be boxed.
+ * @image: The mempool of this image will hold the boxed error.
+ *
+ * Creates a new boxed error in the given mempool from MonoError.
+ * It does not alter ierror, so you still have to clean it up with
+ * mono_error_cleanup or mono_error_convert_to_exception or another such function.
+ *
+ * Returns the boxed error, or NULL if the mempool could not allocate.
+ */
+MonoErrorBoxed*
+mono_error_box (const MonoError *ierror, MonoImage *image)
+{
+	MonoErrorInternal *from = (MonoErrorInternal*)ierror;
+	/* Don't know how to box a gchandle */
+	g_assert (!is_managed_exception (from));
+	MonoErrorBoxed* box = mono_image_alloc (image, sizeof (MonoErrorBoxed));
+	box->image = image;
+	mono_error_init_flags (&box->error, MONO_ERROR_MEMPOOL_BOXED);
+	MonoErrorInternal *to = (MonoErrorInternal*)&box->error;
+
+#define DUP_STR(field) do {						\
+		if (from->field) {					\
+			if (!(to->field = mono_image_strdup (image, from->field))) \
+				to->flags |= MONO_ERROR_INCOMPLETE;	\
+		} else {						\
+			to->field = NULL;				\
+		}							\
+	} while (0)
+
+	to->error_code = from->error_code;
+	DUP_STR (type_name);
+	DUP_STR (assembly_name);
+	DUP_STR (member_name);
+	DUP_STR (exception_name_space);
+	DUP_STR (exception_name);
+	DUP_STR (full_message);
+	DUP_STR (full_message_with_fields);
+	DUP_STR (first_argument);
+	to->exn.klass = from->exn.klass;
+
+#undef DUP_STR
+	
+	return box;
+}
+
+
+/**
+ * mono_error_set_from_boxed:
+ * @oerror: The error that will be set to the contents of the box.
+ * @box: A mempool-allocated error.
+ *
+ * Sets the error condition in the oerror from the contents of the
+ * given boxed error.  Does not alter the boxed error, so it can be
+ * used in a future call to mono_error_set_from_boxed as needed.  The
+ * oerror should've been previously initialized with mono_error_init,
+ * as usual.
+ *
+ * Returns TRUE on success or FALSE on failure.
+ */
+gboolean
+mono_error_set_from_boxed (MonoError *oerror, const MonoErrorBoxed *box)
+{
+	MonoErrorInternal* to = (MonoErrorInternal*)oerror;
+	MonoErrorInternal* from = (MonoErrorInternal*)&box->error;
+	g_assert (!is_managed_exception (from));
+
+	mono_error_prepare (to);
+	to->flags |= MONO_ERROR_FREE_STRINGS;
+#define DUP_STR(field)	do {						\
+		if (from->field) {					\
+			if (!(to->field = g_strdup (from->field)))	\
+				to->flags |= MONO_ERROR_INCOMPLETE;	\
+		} else {						\
+			to->field = NULL;				\
+		}							\
+	} while (0)
+
+	to->error_code = from->error_code;
+	DUP_STR (type_name);
+	DUP_STR (assembly_name);
+	DUP_STR (member_name);
+	DUP_STR (exception_name_space);
+	DUP_STR (exception_name);
+	DUP_STR (full_message);
+	DUP_STR (full_message_with_fields);
+	DUP_STR (first_argument);
+	to->exn.klass = from->exn.klass;
+		  
+#undef DUP_STR
+	return (to->flags & MONO_ERROR_INCOMPLETE) == 0 ;
 }
