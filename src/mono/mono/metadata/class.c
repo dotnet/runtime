@@ -838,7 +838,7 @@ mono_class_get_context (MonoClass *klass)
 MonoGenericContainer*
 mono_class_get_generic_container (MonoClass *klass)
 {
-	g_assert (klass->class_kind == MONO_CLASS_GTD);
+	g_assert (mono_class_is_gtd (klass));
 
 	return klass->generic_container;
 }
@@ -851,7 +851,7 @@ mono_class_get_generic_container (MonoClass *klass)
 MonoGenericClass*
 mono_class_get_generic_class (MonoClass *klass)
 {
-	g_assert (klass->class_kind == MONO_CLASS_GINST);
+	g_assert (mono_class_is_ginst (klass));
 
 	return klass->generic_class;
 }

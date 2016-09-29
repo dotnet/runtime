@@ -1439,4 +1439,7 @@ mono_error_set_for_class_failure (MonoError *orerror, const MonoClass *klass);
 gboolean
 mono_class_has_failure (const MonoClass *klass);
 
+/*Now that everything has been defined, let's include the inline functions */
+#include <mono/metadata/class-inlines.h>
+
 #endif /* __MONO_METADATA_CLASS_INTERNALS_H__ */

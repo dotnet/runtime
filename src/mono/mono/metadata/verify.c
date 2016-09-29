@@ -4848,7 +4848,7 @@ mono_method_verify (MonoMethod *method, int level)
 		finish_collect_stats ();
 		return ctx.list;
 	}
-	if (!method->is_generic && method->klass->class_kind != MONO_CLASS_GTD && ctx.signature->has_type_parameters) {
+	if (!method->is_generic && !mono_class_is_gtd (method->klass) && ctx.signature->has_type_parameters) {
 		ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Method and signature don't match in terms of genericity"));
 		finish_collect_stats ();
 		return ctx.list;
