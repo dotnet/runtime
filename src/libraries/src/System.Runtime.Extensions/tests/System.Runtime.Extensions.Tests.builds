@@ -38,7 +38,10 @@
       <TestTFMs>netcoreapp1.1</TestTFMs>
       <OSGroup>Unix</OSGroup>
     </Project>
-    <Project Include="Performance\System.Runtime.Extensions.Performance.Tests.csproj"/>
+    <Project Include="Performance\System.Runtime.Extensions.Performance.Tests.csproj">
+      <TargetGroup>netstandard1.7</TargetGroup>
+      <TestTFMs>netcoreapp1.1</TestTFMs>
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
