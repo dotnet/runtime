@@ -551,6 +551,16 @@ namespace System.Net.Sockets
         public void Start(int backlog) { }
         public void Stop() { }
     }
+    [System.FlagsAttribute]
+    public enum TransmitFileOptions
+    {
+        Disconnect = 1,
+        ReuseSocket = 2,
+        UseDefaultWorkerThread = 0,
+        UseKernelApc = 32,
+        UseSystemThread = 16,
+        WriteBehind = 4,
+    }
     public partial class UdpClient : System.IDisposable
     {
         public UdpClient() { }
