@@ -1763,6 +1763,9 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 		posix_fadvise (fd, 0, 0, POSIX_FADV_SEQUENTIAL);
 	if (attrs & FILE_FLAG_RANDOM_ACCESS)
 		posix_fadvise (fd, 0, 0, POSIX_FADV_RANDOM);
+#elif defined(PLATFORM_MACOSX) || defined(PLATFORM_BSD)
+	if (attrs & FILE_FLAG_SEQUENTIAL_SCAN)
+		fcntl(fd, F_RDAHEAD, 1);
 #endif
 	
 #ifndef S_ISFIFO
