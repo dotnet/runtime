@@ -26,6 +26,15 @@
     <UpdatePackageIndex PackageIndexFile="$(IntermediateOutputPath)$(PackageIndexFileName)"
                         PreRelease="$(VersionSuffix)" />
   </Target>
+  
+  <Target Name="UpdateFromLocalBuild">
+    <ItemGroup>
+      <AllPackages Include="$(PackageOutputPath)\*.nupkg" />
+    </ItemGroup>
+  
+    <UpdatePackageIndex PackageIndexFile="$(PackageIndexFile)"
+                        Packages="@(AllPackages)" />
+  </Target>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
