@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public static class BitConverterTests
+    public static partial class BitConverterTests
     {
         [Fact]
         public static unsafe void IsLittleEndian()

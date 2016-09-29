@@ -47,6 +47,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp1.1'">
+    <Compile Include="System\BitConverter.netcoreapp1.1.cs" />
     <Compile Include="System\IO\Path.GetRelativePath.cs" />
     <Compile Include="System\MathTests.netcoreapp1.1.cs" />
   </ItemGroup>
