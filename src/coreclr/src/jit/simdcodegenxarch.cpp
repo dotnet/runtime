@@ -17,7 +17,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #ifndef LEGACY_BACKEND // This file is ONLY used for the RyuJIT backend that uses the linear scan register allocator.
 
-#ifdef _TARGET_AMD64_
+#ifdef _TARGET_XARCH_
 #include "emit.h"
 #include "codegen.h"
 #include "sideeffects.h"
@@ -2240,5 +2240,5 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
 }
 
 #endif // FEATURE_SIMD
-#endif //_TARGET_AMD64_
+#endif //_TARGET_XARCH_
 #endif // !LEGACY_BACKEND

@@ -29,14 +29,14 @@ struct SIMDIntrinsicInfo
     var_types       supportedBaseTypes[SIMD_INTRINSIC_MAX_BASETYPE_COUNT];
 };
 
-#ifdef _TARGET_AMD64_
+#ifdef _TARGET_XARCH_
 // SSE2 Shuffle control byte to shuffle vector <W, Z, Y, X>
 // These correspond to shuffle immediate byte in shufps SSE2 instruction.
 #define SHUFFLE_XXXX 0x00
 #define SHUFFLE_ZWYX 0xB1
 #define SHUFFLE_WWYY 0xF5
 #define SHUFFLE_ZZXX 0xA0
-#endif
+#endif // _TARGET_XARCH_
 
 #endif // FEATURE_SIMD
 

@@ -6,6 +6,12 @@ add_definitions(-DSELF_NO_HOST)
 add_definitions(-DFEATURE_READYTORUN_COMPILER)
 remove_definitions(-DFEATURE_MERGE_JIT_AND_ENGINE)
 
+# Enable SIMD support for RyuJIT/x86.
+if (CLR_CMAKE_PLATFORM_ARCH_I386)
+  add_definitions(-DFEATURE_SIMD)
+  add_definitions(-DFEATURE_AVX_SUPPORT)
+endif (CLR_CMAKE_PLATFORM_ARCH_I386)
+
 add_library_clr(protojit
    SHARED
    ${SHARED_LIB_SOURCES}
