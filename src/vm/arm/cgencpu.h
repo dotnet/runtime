@@ -36,10 +36,12 @@ Stub * GenerateInitPInvokeFrameHelper();
 
 EXTERN_C void checkStack(void);
 
+#define THUMB_CODE      1
+
 #ifdef CROSSGEN_COMPILE
 #define GetEEFuncEntryPoint(pfn) 0x1001
 #else
-#define GetEEFuncEntryPoint(pfn) GFN_TADDR(pfn)
+#define GetEEFuncEntryPoint(pfn) (GFN_TADDR(pfn) | THUMB_CODE)
 #endif
 
 //**********************************************************************
@@ -305,8 +307,6 @@ inline PCODE decodeBackToBackJump(PCODE pBuffer)
 //----------------------------------------------------------------------
 #include "stublink.h"
 struct ArrayOpScript;
-
-#define THUMB_CODE      1
 
 inline BOOL IsThumbCode(PCODE pCode)
 {
