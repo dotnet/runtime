@@ -20,6 +20,49 @@ namespace System.Security.Cryptography
         public virtual void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
         public virtual string Format(bool multiLine) { return default(string); }
     }
+    public sealed partial class AsnEncodedDataCollection : System.Collections.ICollection, System.Collections.IEnumerable
+    {
+        public AsnEncodedDataCollection() { }
+        public AsnEncodedDataCollection(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
+        public int Count { get { return default(int); } }
+        public System.Security.Cryptography.AsnEncodedData this[int index] { get { return default(System.Security.Cryptography.AsnEncodedData); } }
+        bool System.Collections.ICollection.IsSynchronized { get { return default(bool); } }
+        object System.Collections.ICollection.SyncRoot { get { return default(object); } }
+        public int Add(System.Security.Cryptography.AsnEncodedData asnEncodedData) { return default(int); }
+        public void CopyTo(System.Security.Cryptography.AsnEncodedData[] array, int index) { }
+        public System.Security.Cryptography.AsnEncodedDataEnumerator GetEnumerator() { return default(System.Security.Cryptography.AsnEncodedDataEnumerator); }
+        public void Remove(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
+        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { return default(System.Collections.IEnumerator); }
+    }
+    public sealed partial class AsnEncodedDataEnumerator : System.Collections.IEnumerator
+    {
+        internal AsnEncodedDataEnumerator() { }
+        public System.Security.Cryptography.AsnEncodedData Current { get { return default(System.Security.Cryptography.AsnEncodedData); } }
+        object System.Collections.IEnumerator.Current { get { return default(object); } }
+        public bool MoveNext() { return default(bool); }
+        public void Reset() { }
+    }
+    public partial class FromBase64Transform : System.IDisposable, System.Security.Cryptography.ICryptoTransform
+    {
+        public FromBase64Transform() { }
+        public FromBase64Transform(System.Security.Cryptography.FromBase64TransformMode whitespaces) { }
+        public virtual bool CanReuseTransform { get { return default(bool); } }
+        public bool CanTransformMultipleBlocks { get { return default(bool); } }
+        public int InputBlockSize { get { return default(int); } }
+        public int OutputBlockSize { get { return default(int); } }
+        public void Clear() { }
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
+        ~FromBase64Transform() { }
+        public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset) { return default(int); }
+        public byte[] TransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount) { return default(byte[]); }
+    }
+    public enum FromBase64TransformMode
+    {
+        DoNotIgnoreWhiteSpaces = 1,
+        IgnoreWhiteSpaces = 0,
+    }
     public sealed partial class Oid
     {
         public Oid(System.Security.Cryptography.Oid oid) { }
@@ -66,29 +109,18 @@ namespace System.Security.Cryptography
         SignatureAlgorithm = 4,
         Template = 9,
     }
-
-    public sealed class AsnEncodedDataCollection : System.Collections.ICollection, System.Collections.IEnumerable
+    public partial class ToBase64Transform : System.IDisposable, System.Security.Cryptography.ICryptoTransform
     {
-        public AsnEncodedDataCollection() { }
-        public AsnEncodedDataCollection(AsnEncodedData asnEncodedData) { }
-        public int Count { get { return default(int); } }
-        bool System.Collections.ICollection.IsSynchronized { get { return default(bool); } }
-        object System.Collections.ICollection.SyncRoot { get { return default(object); } }
-        public AsnEncodedData this[int index] { get { return default(AsnEncodedData); } }
-        public int Add(AsnEncodedData asnEncodedData) { return default(int); }
-        public void CopyTo(AsnEncodedData[] array, int index) { }
-        public AsnEncodedDataEnumerator GetEnumerator() { return default(AsnEncodedDataEnumerator); }
-        public void Remove(AsnEncodedData asnEncodedData) { }
-        void System.Collections.ICollection.CopyTo(Array array, int index) { }
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { return default(System.Collections.IEnumerator); }
-    }
-
-    public sealed class AsnEncodedDataEnumerator : System.Collections.IEnumerator
-    {
-        private AsnEncodedDataEnumerator() { }
-        public AsnEncodedData Current { get { return default(AsnEncodedData); } }
-        object System.Collections.IEnumerator.Current { get { return default(object); } }
-        public bool MoveNext() { return default(bool); }
-        public void Reset() { }
+        public ToBase64Transform() { }
+        public virtual bool CanReuseTransform { get { return default(bool); } }
+        public bool CanTransformMultipleBlocks { get { return default(bool); } }
+        public int InputBlockSize { get { return default(int); } }
+        public int OutputBlockSize { get { return default(int); } }
+        public void Clear() { }
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
+        ~ToBase64Transform() { }
+        public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset) { return default(int); }
+        public byte[] TransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount) { return default(byte[]); }
     }
 }
