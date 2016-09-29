@@ -149,7 +149,7 @@ static void
 bundle_save_library_initialize ()
 {
 	bundle_save_library_initialized = 1;
-	char *path = g_build_filename (g_get_tmp_dir (), "mono-bundle-XXXXXX");
+	char *path = g_build_filename (g_get_tmp_dir (), "mono-bundle-XXXXXX", NULL);
 	bundled_dylibrary_directory = g_mkdtemp (path);
 	g_free (path);
 	if (bundled_dylibrary_directory == NULL)
@@ -161,19 +161,23 @@ static void
 save_library (int fd, uint64_t offset, uint64_t size, const char *destfname)
 {
 	MonoDl *lib;
-	char *file, *buffer, *err;
+	char *file, *buffer, *err, *internal_path;
 	if (!bundle_save_library_initialized)
 		bundle_save_library_initialize ();
 	
-	file = g_build_filename (bundled_dylibrary_directory, destfname);
+	file = g_build_filename (bundled_dylibrary_directory, destfname, NULL);
 	buffer = load_from_region (fd, offset, size);
 	g_file_set_contents (file, buffer, size, NULL);
+
 	lib = mono_dl_open (file, MONO_DL_LAZY, &err);
-	if (err != NULL){
-		fprintf (stderr, "Error loading shared library: %s\n", file);
+	if (lib == NULL){
+		fprintf (stderr, "Error loading shared library: %s %s\n", file, err);
 		exit (1);
 	}
-	mono_loader_register_module (destfname, lib);
+	// Register the name with "." as this is how it will be found when embedded
+	internal_path = g_build_filename (".", destfname, NULL);
+ 	mono_loader_register_module (internal_path, lib);
+	g_free (internal_path);
 	bundle_library_paths = g_slist_append (bundle_library_paths, file);
 	
 	g_free (buffer);
