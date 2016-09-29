@@ -149,6 +149,9 @@
     <Compile Include="$(CommonPath)\System\Net\Internals\SocketExceptionFactory.cs">
       <Link>Common\System\Net\Internals\SocketExceptionFactory.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Sockets\ProtocolFamily.cs">
+      <Link>Common\System\Net\Sockets\ProtocolFamily.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\Sockets\ProtocolType.cs">
       <Link>Common\System\Net\Sockets\ProtocolType.cs</Link>
     </Compile>
@@ -275,9 +278,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSASocketW.SafeCloseSocket.cs">
       <Link>Interop\Windows\Winsock\Interop.WSASocketW.SafeCloseSocket.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\ProtocolFamily.cs">
-      <Link>Interop\Windows\Winsock\ProtocolFamily.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Winsock\SafeNativeOverlapped.cs">
       <Link>Interop\Windows\Winsock\SafeNativeOverlapped.cs</Link>
