@@ -256,6 +256,15 @@ typedef struct {
 	GList      *nested_classes;
 } MonoClassExt;
 
+typedef enum {
+	MONO_CLASS_DEF = 1, /* non-generic type */
+	MONO_CLASS_GTD, /* generic type definition */
+	MONO_CLASS_GINST, /* generic instantiation */
+	MONO_CLASS_GPARAM, /* generic parameter */
+	MONO_CLASS_ARRAY, /* vector or array, bounded or not */
+	MONO_CLASS_POINTER, /* pointer of function pointer*/
+} MonoTypeKind;
+
 struct _MonoClass {
 	/* element class for arrays and enum basetype for enums */
 	MonoClass *element_class; 
@@ -315,10 +324,9 @@ struct _MonoClass {
 	guint nested_classes_inited : 1; /* Whenever nested_class is initialized */
 
 	/* next byte*/
+	guint class_kind : 3; /* One of the values from MonoTypeKind */
 	guint interfaces_inited : 1; /* interfaces is initialized */
 	guint simd_type : 1; /* class is a simd intrinsic type */
-	guint is_generic : 1; /* class is a generic type definition */
-	guint is_inflated : 1; /* class is a generic instance */
 	guint has_finalize_inited    : 1; /* has_finalize is initialized */
 	guint fields_inited : 1; /* setup_fields () has finished */
 	guint has_failure : 1; /* See MONO_CLASS_PROP_EXCEPTION_DATA for a MonoErrorBoxed with the details */

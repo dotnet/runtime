@@ -1406,7 +1406,7 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer*
 		for (method_slot_in_interface = 0; method_slot_in_interface < iface->method.count; method_slot_in_interface++) {
 			MonoMethod *method;
 
-			if (slot_num >= 0 && iface->is_inflated) {
+			if (slot_num >= 0 && iface->class_kind == MONO_CLASS_GINST) {
 				/*
 				 * The imt slot of the method is the same as for its declaring method,
 				 * see the comment in mono_method_get_imt_slot (), so we can

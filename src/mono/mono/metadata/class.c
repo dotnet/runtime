@@ -838,7 +838,7 @@ mono_class_get_context (MonoClass *klass)
 MonoGenericContainer*
 mono_class_get_generic_container (MonoClass *klass)
 {
-	g_assert (klass->is_generic);
+	g_assert (klass->class_kind == MONO_CLASS_GTD);
 
 	return klass->generic_container;
 }
@@ -851,7 +851,7 @@ mono_class_get_generic_container (MonoClass *klass)
 MonoGenericClass*
 mono_class_get_generic_class (MonoClass *klass)
 {
-	g_assert (klass->is_inflated);
+	g_assert (klass->class_kind == MONO_CLASS_GINST);
 
 	return klass->generic_class;
 }
@@ -5781,8 +5781,9 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	 * Check whether we're a generic type definition.
 	 */
 	klass->generic_container = mono_metadata_load_generic_params (image, klass->type_token, NULL);
+	klass->class_kind = MONO_CLASS_DEF;
 	if (klass->generic_container) {
-		klass->is_generic = 1;
+		klass->class_kind = MONO_CLASS_GTD;
 		klass->generic_container->owner.klass = klass;
 		klass->generic_container->is_anonymous = FALSE; // Owner class is now known, container is no longer anonymous
 		context = &klass->generic_container->context;
@@ -6031,7 +6032,7 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 	klass->type_token = gklass->type_token;
 	klass->field.count = gklass->field.count;
 
-	klass->is_inflated = 1;
+	klass->class_kind = MONO_CLASS_GINST;
 	klass->generic_class = gclass;
 
 	klass->byval_arg.type = MONO_TYPE_GENERICINST;
@@ -6145,6 +6146,7 @@ make_generic_param_class (MonoGenericParam *param, MonoGenericParamInfo *pinfo)
 	gboolean is_anonymous = container->is_anonymous;
 
 	klass = (MonoClass *)mono_image_alloc0 (image, sizeof (MonoClass));
+	klass->class_kind = MONO_CLASS_GPARAM;
 	classes_size += sizeof (MonoClass);
 
 	if (pinfo) {
@@ -6429,6 +6431,7 @@ mono_ptr_class_get (MonoType *type)
 	result->name_space = el_class->name_space;
 	name = g_strdup_printf ("%s*", el_class->name);
 	result->name = mono_image_strdup (image, name);
+	result->class_kind = MONO_CLASS_POINTER;
 	g_free (name);
 
 	mono_profiler_class_event (result, MONO_PROFILE_START_LOAD);
@@ -6488,6 +6491,7 @@ mono_fnptr_class_get (MonoMethodSignature *sig)
 	result->parent = NULL; /* no parent for PTR types */
 	result->name_space = "System";
 	result->name = "MonoFNPtrFakeClass";
+	result->class_kind = MONO_CLASS_POINTER;
 
 	mono_profiler_class_event (result, MONO_PROFILE_START_LOAD);
 
@@ -6704,6 +6708,8 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 
 	klass->image = image;
 	klass->name_space = eclass->name_space;
+	klass->class_kind = MONO_CLASS_ARRAY;
+
 	nsize = strlen (eclass->name);
 	name = (char *)g_malloc (nsize + 2 + rank + 1);
 	memcpy (name, eclass->name, nsize);

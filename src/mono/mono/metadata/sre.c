@@ -2299,6 +2299,7 @@ reflection_setup_internal_class (MonoReflectionTypeBuilder *tb, MonoError *error
 	}
 
 	klass = (MonoClass *)mono_image_alloc0 (&tb->module->dynamic_image->image, sizeof (MonoClass));
+	klass->class_kind = MONO_CLASS_DEF;
 
 	klass->image = &tb->module->dynamic_image->image;
 
@@ -2416,7 +2417,7 @@ reflection_create_generic_class (MonoReflectionTypeBuilder *tb, MonoError *error
 	klass->generic_container->type_argc = count;
 	klass->generic_container->type_params = (MonoGenericParamFull *)mono_image_alloc0 (klass->image, sizeof (MonoGenericParamFull) * count);
 
-	klass->is_generic = 1;
+	klass->class_kind = MONO_CLASS_GTD;
 
 	for (i = 0; i < count; i++) {
 		MonoReflectionGenericParam *gparam = (MonoReflectionGenericParam *)mono_array_get (tb->generic_params, gpointer, i);
