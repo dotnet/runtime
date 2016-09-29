@@ -182,15 +182,17 @@ namespace System.Resources {
             return typeof(ResourceReader);
         }
     
-#if !FEATURE_CORECLR
         // Returns the preferred IResourceWriter class for this kind of ResourceSet.
         // Subclasses of ResourceSet using their own Readers &; should override
         // GetDefaultReader and GetDefaultWriter.
         public virtual Type GetDefaultWriter()
         {
+#if FEATURE_CORECLR
+            return Type.GetType("System.Resources.ResourceWriter, System.Resources.Writer, Version=4.0.1.0, Culture=neutral, PublicKeyToken=" + AssemblyRef.MicrosoftPublicKeyToken, throwOnError: true);
+#else
             return typeof(ResourceWriter);
+#endif
         }
-#endif // !FEATURE_CORECLR
 
         [ComVisible(false)]
         public virtual IDictionaryEnumerator GetEnumerator()
