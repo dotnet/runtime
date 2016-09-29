@@ -676,12 +676,14 @@
   <ItemGroup Condition="'$(FeatureCoreFxGlobalization)' == 'true' and '$(TargetsUnix)' == 'true'">
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\EncodingTable.Unix.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\EncodingDataItem.Unix.cs" />
+    <GlobalizationSources Include="$(BclSourcesRoot)\System\Text\Normalization.Unix.cs" />
 
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\Interop\Unix\Interop.Libraries.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Calendar.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Casing.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Collation.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Locale.cs" />
+    <GlobalizationSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Normalization.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.ResultCode.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.TimeZoneInfo.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Utils.cs" />
@@ -999,6 +1001,7 @@
     <TextSources Include="$(BclSourcesRoot)\System\Text\Latin1Encoding.cs" />
     <TextSources Include="$(BclSourcesRoot)\System\Text\MLangCodePageEncoding.cs" />
     <TextSources Include="$(BclSourcesRoot)\System\Text\Normalization.cs" />
+    <TextSources Include="$(BclSourcesRoot)\System\Text\Normalization.Windows.cs" Condition="'$(TargetsUnix)' != 'true'"/>
     <TextSources Include="$(BclSourcesRoot)\System\Text\DBCSCodePageEncoding.cs" />
     <TextSources Include="$(BclSourcesRoot)\System\Text\SBCSCodePageEncoding.cs" />
     <TextSources Include="$(BclSourcesRoot)\System\Text\SurrogateEncoder.cs" />
