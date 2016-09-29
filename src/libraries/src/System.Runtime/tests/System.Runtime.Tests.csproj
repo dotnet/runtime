@@ -13,9 +13,13 @@
     <NugetTargetMoniker Condition="'$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.5</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.7_Debug|AnyCPU' ">
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.7_Release|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.5_Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.5_Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\EnumTypes.cs" >
@@ -144,16 +148,28 @@
     </EmbeddedResource>
     <Compile Include="System\Threading\WaitHandleTests.netstandard1.7.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.netstandard1.7.cs" />
+    <Compile Include="System\Reflection\ModuleTests.cs" />
+    <Compile Include="System\Reflection\PointerTests.cs" />
+    <Compile Include="System\Reflection\RuntimeReflectionExtensionsTests.cs" />
+    <Compile Include="System\Reflection\TypeDelegatorTests.cs" />
+    <Compile Include="System\Reflection\TypeInfoTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
+      <Link>System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="TestModule\System.Reflection.TestModule.dll">
+    </Reference>
     <ProjectReference Include="..\pkg\System.Runtime.pkgproj">
-      <Project>{1e689c1b-690c-4799-bde9-6e7990585894}</Project>
+      <Project>{ADBCF120-3454-4A3C-9D1D-AC4293E795D6}</Project>
       <Name>System.Runtime</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\System.Private.Uri\pkg\System.Private.Uri.pkgproj">
+      <Project>{4AC5343E-6E31-4BA5-A795-0493AE7E9008}</Project>
+      <Name>System.Private.Uri</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
