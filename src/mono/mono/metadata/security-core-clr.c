@@ -160,7 +160,7 @@ set_type_load_exception_type (const char *format, MonoClass *klass)
 {
 	char *type_name = mono_type_get_full_name (klass);
 	char *parent_name = mono_type_get_full_name (klass->parent);
-	char *message = g_strdup_printf (format, type_name, parent_name);
+	char *message = mono_image_strdup_printf (klass->image, format, type_name, parent_name);
 
 	g_free (parent_name);
 	g_free (type_name);
@@ -183,7 +183,7 @@ set_type_load_exception_methods (const char *format, MonoMethod *override, MonoM
 {
 	char *method_name = get_method_full_name (override);
 	char *base_name = get_method_full_name (base);
-	char *message = g_strdup_printf (format, method_name, base_name);
+	char *message = mono_image_strdup_printf (override->klass->image, format, method_name, base_name);
 
 	g_free (base_name);
 	g_free (method_name);

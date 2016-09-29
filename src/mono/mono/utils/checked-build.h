@@ -185,11 +185,17 @@ void assert_in_gc_critical_region (void);
 void check_metadata_store(void *from, void *to);
 void check_metadata_store_local(void *from, void *to);
 
+#define CHECKED_METADATA_STORE(ptr, val) check_metadata_store ((ptr), (val))
+#define CHECKED_METADATA_STORE_LOCAL(ptr, val) check_metadata_store_local ((ptr), (val))
+
 #else
 
 #define CHECKED_METADATA_WRITE_PTR(ptr, val) do { (ptr) = (val); } while (0)
 #define CHECKED_METADATA_WRITE_PTR_LOCAL(ptr, val) do { (ptr) = (val); } while (0)
 #define CHECKED_METADATA_WRITE_PTR_ATOMIC(ptr, val) do { mono_atomic_store_release (&(ptr), (val)); } while (0)
+
+#define CHECKED_METADATA_STORE(ptr, val) do { (ptr); (val); } while (0)
+#define CHECKED_METADATA_STORE_LOCAL(ptr, val) do { (ptr); (val); } while (0)
 
 #endif /* defined(ENABLE_CHECKED_BUILD_METADATA) */
 

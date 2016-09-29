@@ -4397,9 +4397,8 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 
 	vtable = mono_class_vtable (target_domain, method->klass);
 	if (!vtable) {
-		ex = mono_class_get_exception_for_failure (method->klass);
-		g_assert (ex);
-		mono_error_set_exception_instance (error, ex);
+		g_assert (mono_class_has_failure (method->klass));
+		mono_error_set_for_class_failure (error, method->klass);
 		return NULL;
 	}
 

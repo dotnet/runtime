@@ -2405,10 +2405,9 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 			 */
 			mono_class_setup_vtable (method->klass);
 			if (mono_class_has_failure (method->klass)) {
-				MonoException *fail_exc = mono_class_get_exception_for_failure (method->klass);
+				mono_error_set_for_class_failure (error, method->klass);
 				if (exc)
-					*exc = (MonoObject*)fail_exc;
-				mono_error_set_exception_instance (error, fail_exc);
+					*exc = (MonoObject*)mono_class_get_exception_for_failure (method->klass);
 				return NULL;
 			}
 		}

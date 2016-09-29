@@ -3935,7 +3935,7 @@ typebuilder_setup_fields (MonoClass *klass, MonoError *error)
 
 	if (tb->class_size) {
 		if ((tb->packing_size & 0xffffff00) != 0) {
-			char *err_msg = g_strdup_printf ("Could not load struct '%s' with packing size %d >= 256", klass->name, tb->packing_size);
+			char *err_msg = mono_image_strdup_printf (klass->image, "Could not load struct '%s' with packing size %d >= 256", klass->name, tb->packing_size);
 			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, err_msg);
 			return;
 		}

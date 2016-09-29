@@ -28,6 +28,7 @@
 #include "marshal.h"
 #include "coree.h"
 #include <mono/io-layer/io-layer.h>
+#include <mono/utils/checked-build.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-path.h>
 #include <mono/utils/mono-mmap.h>
@@ -2526,6 +2527,31 @@ mono_image_strdup (MonoImage *image, const char *s)
 	return res;
 }
 
+char*
+mono_image_strdup_vprintf (MonoImage *image, const char *format, va_list args)
+{
+	char *buf;
+	mono_image_lock (image);
+	buf = mono_mempool_strdup_vprintf (image->mempool, format, args);
+	mono_image_unlock (image);
+#ifndef DISABLE_PERFCOUNTERS
+	mono_perfcounters->loader_bytes += strlen (buf);
+#endif
+	return buf;
+}
+
+char*
+mono_image_strdup_printf (MonoImage *image, const char *format, ...)
+{
+	char *buf;
+	va_list args;
+
+	va_start (args, format);
+	buf = mono_image_strdup_vprintf (image, format, args);
+	va_end (args);
+	return buf;
+}
+
 GList*
 g_list_prepend_image (MonoImage *image, GList *list, gpointer data)
 {
@@ -2598,6 +2624,7 @@ mono_image_property_lookup (MonoImage *image, gpointer subject, guint32 property
 void
 mono_image_property_insert (MonoImage *image, gpointer subject, guint32 property, gpointer value)
 {
+	CHECKED_METADATA_STORE_LOCAL (image->mempool, value);
 	mono_image_lock (image);
 	mono_property_hash_insert (image->property_hash, subject, property, value);
  	mono_image_unlock (image);
