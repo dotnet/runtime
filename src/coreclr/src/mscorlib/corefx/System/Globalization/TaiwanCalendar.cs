@@ -83,6 +83,15 @@ namespace System.Globalization
             }
         }
 
+        [System.Runtime.InteropServices.ComVisible(false)]
+        public override CalendarAlgorithmType AlgorithmType
+        {
+            get
+            {
+                return CalendarAlgorithmType.SolarCalendar;
+            }
+        }
+
         // Return the type of the Taiwan calendar.
         //
 
