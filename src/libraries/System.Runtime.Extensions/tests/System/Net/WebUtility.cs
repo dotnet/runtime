@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Text;
 using Xunit;
 
@@ -81,6 +80,7 @@ namespace System.Net.Tests
             yield return new object[] { "\u00A0", "&#160;" };
             yield return new object[] { "\u00FF", "&#255;" };
             yield return new object[] { "\u0100", "\u0100" };
+            yield return new object[] { "\u0021\u0023\u003D\u003F", "!#=?" };
 
             // Surrogate pairs - default strict settings
             yield return new object[] { char.ConvertFromUtf32(144308), "&#144308;" };
@@ -147,7 +147,7 @@ namespace System.Net.Tests
             yield return Tuple.Create("++++", "    ");
             yield return Tuple.Create("    ", "    ");
 
-            // No escaping needed
+            // No decoding needed
             yield return Tuple.Create("abc", "abc");
             yield return Tuple.Create("", "");
             yield return Tuple.Create("Hello, world", "Hello, world");
@@ -157,18 +157,22 @@ namespace System.Net.Tests
             // Invalid percent encoding
             yield return Tuple.Create("%", "%");
             yield return Tuple.Create("%A", "%A");
+            yield return Tuple.Create("%\01", "%\01");
+            yield return Tuple.Create("%1\0", "%1\0");
+            yield return Tuple.Create("%g1", "%g1");
+            yield return Tuple.Create("%1g", "%1g");
             yield return Tuple.Create("%G1", "%G1");
             yield return Tuple.Create("%1G", "%1G");
         }
 
         public static IEnumerable<Tuple<string, string>> UrlEncode_SharedTestData()
         {
-            // Recent change brings function inline with RFC 3986 to return hex-encoded chars in uppercase
+            // RFC 3986 requires returned hex-encoded chars to be uppercase
             yield return Tuple.Create("/\\\"\tHello! \u2665?/\\\"\tWorld! \u2665?\u2665", "%2F%5C%22%09Hello!+%E2%99%A5%3F%2F%5C%22%09World!+%E2%99%A5%3F%E2%99%A5");
             yield return Tuple.Create("'", "%27");
             yield return Tuple.Create("\uD800\uDFFF", "%F0%90%8F%BF"); // Surrogate pairs should be encoded as 4 bytes together
 
-            // No escaping needed
+            // No encoding needed
             yield return Tuple.Create("abc", "abc");
             yield return Tuple.Create("", "");
 
@@ -284,7 +288,21 @@ namespace System.Net.Tests
                 byte[] output = Encoding.UTF8.GetBytes(tuple.Item2);
                 yield return new object[] { input, 0, input.Length, output };
             }
+
+            // Ranges
+            byte[] bytes = new byte[] { 97, 37, 67, 50, 37, 56, 48, 98 };
+            yield return new object[] { bytes, 1, 6, new byte[] { 194, 128 } };
+            yield return new object[] { bytes, 7, 1, new byte[] { 98 } };
+            yield return new object[] { bytes, 0, 0, new byte[0] };
+            yield return new object[] { bytes, 8, 0, new byte[0] };
+
+            // Empty
+            yield return new object[] { new byte[0], 0, 0, new byte[0] };
+
+            // Null
             yield return new object[] { null, 0, 0, null };
+            yield return new object[] { null, int.MinValue, 0, null };
+            yield return new object[] { null, int.MaxValue, 0, null };
         }
 
         [Theory]
@@ -296,37 +314,27 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        public static void UrlDecodeToBytes_Invalid()
+        public static void UrlDecodeToBytes_NullBytes_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("bytes", () => WebUtility.UrlDecodeToBytes(null, 0, 1)); // Bytes is null
-
-            Assert.Throws<ArgumentOutOfRangeException>("offset", () => WebUtility.UrlDecodeToBytes(new byte[1], -1, 1)); // Offset < 0
-            Assert.Throws<ArgumentOutOfRangeException>("offset", () => WebUtility.UrlDecodeToBytes(new byte[1], 2, 1)); // Offset > bytes.Length
-
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => WebUtility.UrlDecodeToBytes(new byte[1], 0, -1)); // Count < 0
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => WebUtility.UrlDecodeToBytes(new byte[1], 0, 3)); // Count > bytes.Length
+            Assert.Throws<ArgumentNullException>("bytes", () => WebUtility.UrlDecodeToBytes(null, 0, 1));
         }
 
         [Theory]
-        [InlineData("a", 0, 1)]
-        [InlineData("a", 1, 0)]
-        [InlineData("abc", 0, 3)]
-        [InlineData("abc", 1, 2)]
-        [InlineData("abc", 1, 1)]
-        [InlineData("abcd", 1, 2)]
-        [InlineData("abcd", 2, 2)]
-        public static void UrlEncodeToBytes_NothingToExpand_OutputMatchesSubInput(string inputString, int offset, int count)
+        [InlineData(-1)]
+        [InlineData(2)]
+        public static void UrlDecodeToBytes_InvalidOffset_ThrowsArgumentOutOfRangeException(int offset)
         {
-            byte[] inputBytes = Encoding.UTF8.GetBytes(inputString);
-            byte[] subInputBytes = new byte[count];
-            Buffer.BlockCopy(inputBytes, offset, subInputBytes, 0, count);
-            Assert.Equal(inputString.Length, inputBytes.Length);
+            Assert.Throws<ArgumentOutOfRangeException>("offset", () => WebUtility.UrlDecodeToBytes(new byte[1], offset, 1));
+        }
 
-            byte[] outputBytes = WebUtility.UrlEncodeToBytes(inputBytes, offset, count);
-
-            Assert.NotSame(inputBytes, outputBytes);
-            Assert.Equal(count, outputBytes.Length);
-            Assert.Equal(subInputBytes, outputBytes);
+        [Theory]
+        [InlineData(1, 0, -1)]
+        [InlineData(1, 0, 2)]
+        [InlineData(1, 1, 1)]
+        [InlineData(3, 2, 2)]
+        public static void UrlDecodeToBytes_InvalidCount_ThrowsArgumentOutOfRangeException(int byteCount, int offset, int count)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => WebUtility.UrlDecodeToBytes(new byte[byteCount], offset, count));
         }
         
         public static IEnumerable<object[]> UrlEncodeToBytes_TestData()
@@ -337,11 +345,27 @@ namespace System.Net.Tests
                 byte[] output = Encoding.UTF8.GetBytes(tuple.Item2);
                 yield return new object[] { input, 0, input.Length, output };
             }
+
+            // Nothing to encode
+            yield return new object[] { new byte[] { 97 }, 0, 1, new byte[] { 97 } };
+            yield return new object[] { new byte[] { 97 }, 1, 0, new byte[0] };
+            yield return new object[] { new byte[] { 97, 98, 99 }, 0, 3, new byte[] { 97, 98, 99 } };
+            yield return new object[] { new byte[] { 97, 98, 99 }, 1, 2, new byte[] { 98, 99 } };
+            yield return new object[] { new byte[] { 97, 98, 99 }, 1, 1, new byte[] { 98 } };
+            yield return new object[] { new byte[] { 97, 98, 99, 100 }, 1, 2, new byte[] { 98, 99 } };
+            yield return new object[] { new byte[] { 97, 98, 99, 100 }, 2, 2, new byte[] { 99, 100 } };
+
             // Mixture of ASCII and non-URL safe chars (full and in a range)
             yield return new object[] { new byte[] { 97, 225, 136, 180, 98 }, 0, 5, new byte[] { 97, 37, 69, 49, 37, 56, 56, 37, 66, 52, 98 } };
             yield return new object[] { new byte[] { 97, 225, 136, 180, 98 }, 1, 3, new byte[] { 37, 69, 49, 37, 56, 56, 37, 66, 52 } };
 
+            // Empty
+            yield return new object[] { new byte[0], 0, 0, new byte[0] };
+
+            // Null
             yield return new object[] { null, 0, 0, null };
+            yield return new object[] { null, int.MinValue, 0, null };
+            yield return new object[] { null, int.MaxValue, 0, null };
         }
 
         [Theory]
@@ -353,15 +377,27 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        public static void UrlEncodeToBytes_Invalid()
+        public static void UrlEncodeToBytes_NullBytes_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("bytes", () => WebUtility.UrlEncodeToBytes(null, 0, 1)); // Bytes is null
+            Assert.Throws<ArgumentNullException>("bytes", () => WebUtility.UrlEncodeToBytes(null, 0, 1));
+        }
 
-            Assert.Throws<ArgumentOutOfRangeException>("offset", () => WebUtility.UrlEncodeToBytes(new byte[1], -1, 1)); // Offset < 0
-            Assert.Throws<ArgumentOutOfRangeException>("offset", () => WebUtility.UrlEncodeToBytes(new byte[1], 2, 1)); // Offset > bytes.Length
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(2)]
+        public static void UrlEncodeToBytes_InvalidOffset_ThrowsArgumentOutOfRangeException(int offset)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("offset", () => WebUtility.UrlEncodeToBytes(new byte[1], offset, 0));
+        }
 
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => WebUtility.UrlEncodeToBytes(new byte[1], 0, -1)); // Count < 0
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => WebUtility.UrlEncodeToBytes(new byte[1], 0, 3)); // Count > bytes.Length
+        [Theory]
+        [InlineData(1, 0, -1)]
+        [InlineData(1, 0, 2)]
+        [InlineData(1, 1, 1)]
+        [InlineData(3, 2, 2)]
+        public static void UrlEncodeToBytes_InvalidCount_ThrowsArgumentOutOfRangeExceptioh(int byteCount, int offset, int count)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => WebUtility.UrlEncodeToBytes(new byte[byteCount], offset, count));
         }
 
         [Theory]
@@ -377,8 +413,8 @@ namespace System.Net.Tests
         public static void UrlEncodeDecodeToBytes_Roundtrip_AstralPlanes()
         {
             // These were separated out of the UrlEncodeDecode_Roundtrip_SharedTestData member data
-            // due to the CharRange calls resulting in giant (several megabyte) strings.  Since these
-            // values become part of the test names, they're resulting in gigantic logs.  To avoid that,
+            // due to the CharRange calls resulting in giant (several megabyte) strings. Since these
+            // values become part of the test names, they're resulting in gigantic logs. To avoid that,
             // they've been separated out of the theory.
 
             // Astral plane private use chars
@@ -400,23 +436,10 @@ namespace System.Net.Tests
             string actual = Encoding.UTF8.GetString(encoded);
             Assert.Equal(expected, actual);
         }
-
-        [Theory]
-        [InlineData("FooBarQuux", 3, 7, "BarQuux")]
-        public static void UrlDecodeToBytes_ExcludeIrrelevantData(string value, int offset, int count, string expected)
-        {
-            byte[] input = Encoding.UTF8.GetBytes(value);
-            byte[] decoded = WebUtility.UrlDecodeToBytes(input, offset, count);
-            string actual = Encoding.UTF8.GetString(decoded);
-            Assert.Equal(expected, actual);
-        }
-
+        
         [Fact]
-        public static void UrlEncodeToBytes_NewArray()
+        public static void UrlEncodeToBytes_NoEncodingNeeded_ReturnsNewClonedArray()
         {
-            // If no encoding is needed, the current implementation simply
-            // returns the input array to a method which then clones it.
-
             // We have to make sure it always returns a new array, to
             // prevent problems where the input array is changed if
             // the output one is modified.
@@ -427,7 +450,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        public static void UrlDecodeToBytes_NewArray()
+        public static void UrlDecodeToBytes_NoDecodingNeeded_ReturnsNewClonedArray()
         {
             byte[] input = Encoding.UTF8.GetBytes("Dont.Need.Decoding");
             byte[] output = WebUtility.UrlDecodeToBytes(input, 0, input.Length);
