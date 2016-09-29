@@ -26,10 +26,11 @@ namespace System.Net.Mime
 
         private static readonly TrackingValidationObjectDictionary.ValidateAndParseValue s_dateParser =
                 new TrackingValidationObjectDictionary.ValidateAndParseValue(v => new SmtpDateTime(v.ToString()));
-                // this will throw a FormatException if the value supplied is not a valid SmtpDateTime
+        // this will throw a FormatException if the value supplied is not a valid SmtpDateTime
 
         private static readonly TrackingValidationObjectDictionary.ValidateAndParseValue s_longParser =
-                new TrackingValidationObjectDictionary.ValidateAndParseValue((object value) => {
+                new TrackingValidationObjectDictionary.ValidateAndParseValue((object value) =>
+                {
                     long longValue;
                     if (!long.TryParse(value.ToString(), NumberStyles.None, CultureInfo.InvariantCulture, out longValue))
                     {

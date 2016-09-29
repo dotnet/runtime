@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Text;
 
 namespace System.Net.Mail
@@ -12,6 +13,7 @@ namespace System.Net.Mail
         private int _offset;
 
         internal BufferBuilder() : this(256) { }
+
         internal BufferBuilder(int initialSize)
         {
             _buffer = new byte[initialSize];
@@ -79,10 +81,8 @@ namespace System.Net.Mail
             for (int i = 0; i < count; i++)
             {
                 char c = value[offset + i];
-                if (c > 0xFF)
-                {
+                if ((ushort)c > 0xFF)
                     throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, c));
-                }
                 _buffer[_offset + i] = (byte)c;
             }
             _offset += count;

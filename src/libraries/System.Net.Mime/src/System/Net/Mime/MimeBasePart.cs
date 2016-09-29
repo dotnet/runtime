@@ -23,7 +23,7 @@ namespace System.Net.Mime
             encoding == Encoding.Unicode || encoding == Encoding.UTF8 || encoding == Encoding.UTF32 || encoding == Encoding.BigEndianUnicode;
 
         //use when the length of the header is not known or if there is no header
-        internal static string EncodeHeaderValue(string value, Encoding encoding, bool base64Encoding) => 
+        internal static string EncodeHeaderValue(string value, Encoding encoding, bool base64Encoding) =>
             EncodeHeaderValue(value, encoding, base64Encoding, 0);
 
         //used when the length of the header name itself is known (i.e. Subject : )

@@ -5,7 +5,6 @@
 using System;
 using System.IO;
 using System.Text;
-using System.Net.Http;
 using System.Diagnostics;
 
 namespace System.Net.Mime
@@ -19,7 +18,7 @@ namespace System.Net.Mime
     /// This stream should only be used for the e-mail content.  
     /// Use QEncodedStream for encoding headers.
     /// </summary>
-    internal class QuotedPrintableStream : DelegatingStream, IEncodableStream
+    internal class QuotedPrintableStream : DelegatedStream, IEncodableStream
     {
         //should we encode CRLF or not?
         private bool _encodeCRLF;
@@ -36,7 +35,7 @@ namespace System.Net.Mime
         //if we aren't encoding CRLF then it occupies two chars
         private const int SizeOfNonEncodedCRLF = 2;
 
-        private static readonly byte[] s_hexDecodeMap = new byte[] 
+        private static readonly byte[] s_hexDecodeMap = new byte[]
         {
             // 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
              255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255, // 0
@@ -218,7 +217,7 @@ namespace System.Net.Mime
                         }
                     }
                 }
-                EndWhile:
+            EndWhile:
                 return (int)(dest - start);
             }
         }

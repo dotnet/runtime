@@ -6,11 +6,10 @@ using System.IO;
 using System.Net.Mime;
 using System.Text;
 using System.Diagnostics;
-using System.Net.Http;
 
 namespace System.Net
 {
-    internal sealed class Base64Stream : DelegatingStream, IEncodableStream
+    internal sealed class Base64Stream : DelegatedStream, IEncodableStream
     {
         private static readonly byte[] s_base64DecodeMap = new byte[] {
             //0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F

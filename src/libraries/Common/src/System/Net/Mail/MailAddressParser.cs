@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Net.Mime;
+using System.Collections.Generic;
 
 namespace System.Net.Mail
 {
@@ -28,6 +29,24 @@ namespace System.Net.Mail
             MailAddress parsedAddress = MailAddressParser.ParseAddress(data, false, ref index);
             Debug.Assert(index == -1, "The index indicates that part of the address was not parsed: " + index);
             return parsedAddress;
+        }
+
+        // Parse a comma separated list of MailAddress's
+        //
+        // Throws a FormatException if any MailAddress is invalid.
+        internal static IList<MailAddress> ParseMultipleAddresses(string data)
+        {
+            IList<MailAddress> results = new List<MailAddress>();
+            int index = data.Length - 1;
+            while (index >= 0)
+            {
+                // Because we're parsing in reverse, we must make an effort to preserve the order of the addresses.
+                results.Insert(0, MailAddressParser.ParseAddress(data, true, ref index));
+                Debug.Assert(index == -1 || data[index] == MailBnfHelper.Comma,
+                    "separator not found while parsing multiple addresses");
+                index--;
+            }
+            return results;
         }
 
         //
@@ -283,7 +302,7 @@ namespace System.Net.Mail
 
                 // Do not include the Comma (if any), and because there were no bounding quotes, 
                 // trim extra whitespace.
-                displayName = data.SubstringTrim(index + 1, startingIndex - index);
+                displayName = data.Substring(index + 1, startingIndex - index).Trim();
             }
             return NormalizeOrThrow(displayName);
         }
