@@ -6138,6 +6138,15 @@
       <Member Name="#ctor(System.String,System.Exception)" />
       <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
+    <Type Name="System.Resources.MissingSatelliteAssemblyException">
+      <Member Name="#ctor" />
+      <Member Name="#ctor(System.String)" />
+      <Member Name="#ctor(System.String,System.String)" />
+      <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
+      <Member Name="get_CultureName" />
+      <Member MemberType="Property" Name="CultureName"/>
+    </Type>
     <Type Name="System.Resources.NeutralResourcesLanguageAttribute">
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Resources.UltimateResourceFallbackLocation)" />
@@ -6145,6 +6154,19 @@
       <Member MemberType="Property" Name="CultureName" />
       <Member Name="get_Location" />
       <Member MemberType="Property" Name="Location" />
+    </Type>
+    <Type Name="System.Resources.IResourceReader">
+      <Member Name="Close"/>
+      <Member Name="GetEnumerator"/>
+    </Type>
+    <Type Name="System.Resources.ResourceReader">
+      <Member Name="#ctor(System.IO.Stream)"/>
+      <Member Name="#ctor(System.String)"/>
+      <Member Name="Close"/>
+      <Member Name="Dispose"/>
+      <Member Name="GetResourceData(System.String,System.String@,System.Byte[]@)"/>
+      <Member Name="GetEnumerator"/>
+      <Member Name="System.Collections.IEnumerable.GetEnumerator"/>
     </Type>
     <Type Name="System.Resources.ResourceManager">
       <Member MemberType="Field" Name="BaseNameField" />
@@ -6158,6 +6180,7 @@
       <Member Name="get_BaseName" />
       <Member Name="get_IgnoreCase" />
       <Member Name="get_ResourceSetType" />
+      <Member Name="get_FallbackLocation" />
       <Member Name="GetNeutralResourcesLanguage(System.Reflection.Assembly)" />
       <Member Name="GetObject(System.String)" />
       <Member Name="GetObject(System.String,System.Globalization.CultureInfo)" />
@@ -6174,9 +6197,12 @@
       <Member Status="ImplRoot" Name="OnSerializing(System.Runtime.Serialization.StreamingContext)" />
       <Member Name="ReleaseAllResources" />
       <Member Name="set_IgnoreCase(System.Boolean)" />
+      <Member Name="set_FallbackLocation(System.Resources.UltimateResourceFallbackLocation)" />
       <Member MemberType="Property" Name="BaseName" />
       <Member MemberType="Property" Name="IgnoreCase" />
       <Member MemberType="Property" Name="ResourceSetType" />
+      <Member MemberType="Property" Name="FallbackLocation" />
+      <Member Name="CreateFileBasedResourceManager(System.String,System.String,System.Type)" />
     </Type>
     <Type Name="System.Resources.ResourceSet">
       <Member MemberType="Field" Name="Reader" />
@@ -6184,10 +6210,12 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.IO.Stream)" />
       <Member Name="#ctor(System.String)" />
+      <Member Name="#ctor(System.Resources.IResourceReader)" />
       <Member Name="Close" />
       <Member Name="Dispose" />
       <Member Name="Dispose(System.Boolean)" />
       <Member Name="GetDefaultReader" />
+      <Member Name="GetDefaultWriter" />
       <Member Name="GetEnumerator" />
       <Member Name="GetObject(System.String)" />
       <Member Name="GetObject(System.String,System.Boolean)" />
