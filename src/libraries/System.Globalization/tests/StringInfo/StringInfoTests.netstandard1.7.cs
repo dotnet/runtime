@@ -20,7 +20,6 @@ namespace System.Globalization.Tests
         }
 
         [Theory]
-        [ActiveIssue(11615, Xunit.PlatformID.AnyUnix)]
         [MemberData(nameof(StringInfo_TestData))]
         public void SubstringTest(string source, int index, string expected, int length, string expectedWithLength)
         {
@@ -30,7 +29,6 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(11615, Xunit.PlatformID.AnyUnix)]
         public void NegativeTest()
         {
             string s = "Some String";
