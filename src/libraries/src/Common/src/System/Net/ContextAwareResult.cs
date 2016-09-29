@@ -173,7 +173,7 @@ namespace System.Net
                             GlobalLog.AssertFormat("ContextAwareResult#{0}::ContextCopy|Must lock (StartPostingAsyncOp()) { ... FinishPostingAsyncOp(); } when calling ContextCopy (unless it's only called after FinishPostingAsyncOp).", LoggingHash.HashString(this));
                         }
 
-                        Debug.Fail("ContextAwareResult#" + LoggingHash.HashString(this) +"::ContextCopy |Must lock (StartPostingAsyncOp()) { ... FinishPostingAsyncOp(); } when calling ContextCopy (unless it's only called after FinishPostingAsyncOp).");
+                        Debug.Fail("ContextAwareResult#" + LoggingHash.HashString(this) + "::ContextCopy |Must lock (StartPostingAsyncOp()) { ... FinishPostingAsyncOp(); } when calling ContextCopy (unless it's only called after FinishPostingAsyncOp).");
                     }
                     lock (_lock) { }
                 }

@@ -4,7 +4,6 @@
 
 using System.IO;
 using System.Text;
-using System.Net.Http;
 using System.Diagnostics;
 
 namespace System.Net.Mime
@@ -15,7 +14,7 @@ namespace System.Net.Mime
     /// buffer as the data being encoded will most likely grow.
     /// Encoding and decoding is done transparently to the caller.
     /// </summary>
-    internal class QEncodedStream : DelegatingStream, IEncodableStream
+    internal class QEncodedStream : DelegatedStream, IEncodableStream
     {
         //folding takes up 3 characters "\r\n "
         private const int SizeOfFoldingCRLF = 3;
@@ -76,10 +75,10 @@ namespace System.Net.Mime
             return result;
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Close()
         {
             FlushInternal();
-            base.Dispose(disposing);
+            base.Close();
         }
 
         public unsafe int DecodeBytes(byte[] buffer, int offset, int count)
@@ -195,7 +194,7 @@ namespace System.Net.Mime
                         }
                     }
                 }
-                EndWhile:
+            EndWhile:
                 return (int)(dest - start);
             }
         }
@@ -258,7 +257,7 @@ namespace System.Net.Mime
             return cur - offset;
         }
 
-        private static bool IsAsciiLetterOrDigit(char character) => 
+        private static bool IsAsciiLetterOrDigit(char character) =>
             IsAsciiLetter(character) || (character >= '0' && character <= '9');
 
         private static bool IsAsciiLetter(char character) =>

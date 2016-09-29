@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
-using System.Net.Http;
 
 namespace System.Net.Mime
 {
@@ -22,7 +21,7 @@ namespace System.Net.Mime
     /// For legacy (app-compat) reasons we have chosen to remove the enforcement 
     /// and rename the class from SevenBitStream to EightBitStream.
     /// </summary>
-    internal class EightBitStream : DelegatingStream, IEncodableStream
+    internal class EightBitStream : DelegatedStream, IEncodableStream
     {
         private WriteStateInfoBase _writeState;
 

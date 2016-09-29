@@ -20,8 +20,11 @@
     <Compile Include="WriteStateInfoTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\src\System\Net\Mime\Base64Stream.cs">
+    <Compile Include="..\..\src\System\Net\Base64Stream.cs">
       <Link>ProductionCode\Base64Stream.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\DelegatedStream.cs">
+      <Link>ProductionCode\DelegatedStream.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\Mime\MimePart.cs">
       <Link>ProductionCode\MimePart.cs</Link>
@@ -32,7 +35,7 @@
     <Compile Include="..\..\src\System\Net\Mime\QuotedPrintableStream.cs">
       <Link>ProductionCode\QuotedPrintableStream.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\System\Net\Mime\CloseableStream.cs">
+    <Compile Include="..\..\src\System\Net\CloseableStream.cs">
       <Link>ProductionCode\CloseableStream.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\Mime\EightBitStream.cs">
@@ -80,10 +83,10 @@
     <Compile Include="..\..\src\System\Net\Mime\MultiAsyncResult.cs">
       <Link>ProductionCode\MultiAsyncResult.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\System\Net\Mime\TrackingStringDictionary.cs">
+    <Compile Include="..\..\src\System\Net\TrackingStringDictionary.cs">
       <Link>ProductionCode\TrackingStringDictionary.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\System\Net\Mime\TrackingValidationObjectDictionary.cs">
+    <Compile Include="..\..\src\System\Net\TrackingValidationObjectDictionary.cs">
       <Link>ProductionCode\TrackingValidationObjectDictionary.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\Mail\MailHeaderID.cs">
@@ -92,11 +95,8 @@
     <Compile Include="..\..\src\System\Net\Mail\MailHeaderInfo.cs">
       <Link>ProductionCode\MailHeaderInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\System\Net\Mail\BufferBuilder.cs">
+    <Compile Include="..\..\src\System\Net\BufferBuilder.cs">
       <Link>ProductionCode\BufferBuilder.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\IO\DelegatingStream.cs">
-      <Link>ProductionCode\Common\System\IO\DelegatingStream.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
       <Link>ProductionCode\Common\System\Net\InternalException.cs</Link>

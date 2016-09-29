@@ -4,12 +4,11 @@
 
 using System.IO;
 using System.Threading;
-using System.Net.Http;
 
 namespace System.Net
 {
     /// <summary>Provides a stream that notifies an event when the Close method is called.</summary>
-    internal class ClosableStream : DelegatingStream
+    internal class ClosableStream : DelegatedStream
     {
         private readonly EventHandler _onClose;
         private int _closed;
@@ -19,14 +18,12 @@ namespace System.Net
             _onClose = onClose;
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Close()
         {
             if (Interlocked.Increment(ref _closed) == 1)
             {
                 _onClose?.Invoke(this, new EventArgs());
             }
-
-            base.Dispose(disposing);
         }
     }
 }
