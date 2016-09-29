@@ -7,7 +7,7 @@
 
 namespace System.Net
 {
-    public class WebProxy : System.Runtime.Serialization.ISerializable
+    public class WebProxy : System.Net.IWebProxy, System.Runtime.Serialization.ISerializable
     {
         public WebProxy() { }
         public WebProxy(System.Uri Address) { }
