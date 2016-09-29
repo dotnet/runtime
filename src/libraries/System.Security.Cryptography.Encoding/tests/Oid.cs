@@ -175,7 +175,7 @@ namespace System.Security.Cryptography.Encoding.Tests
 
         [Theory]
         [MemberData(nameof(ValidOidFriendlyNameHashAlgorithmPairs))]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(Xunit.PlatformID.Windows)]
         public static void LookupOidByValue_Method_WrongGroup(string oidValue, string friendlyName)
         {
             // Oid group is implemented strictly - no fallback to OidGroup.All as with many other parts of Crypto.
@@ -231,7 +231,7 @@ namespace System.Security.Cryptography.Encoding.Tests
 
         [Theory]
         [MemberData(nameof(ValidOidFriendlyNameHashAlgorithmPairs))]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(Xunit.PlatformID.Windows)]
         public static void LookupOidByFriendlyName_Method_WrongGroup(string oidValue, string friendlyName)
         {
             // Oid group is implemented strictly - no fallback to OidGroup.All as with many other parts of Crypto.
@@ -253,7 +253,7 @@ namespace System.Security.Cryptography.Encoding.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
         public static void LookupOidByValue_Method_UnixOnly()
         {
             // This needs to be an OID not in the static lookup table.  The purpose is to verify the
@@ -267,7 +267,7 @@ namespace System.Security.Cryptography.Encoding.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
         public static void LookupOidByFriendlyName_Method_UnixOnly()
         {
             // This needs to be a name not in the static lookup table.  The purpose is to verify the

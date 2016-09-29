@@ -6,7 +6,16 @@
       <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="System.Security.Cryptography.Encoding.Tests.csproj">
-      <TestTFMs>netcore50;netcoreapp1.0;net46</TestTFMs>
+      <TargetGroup>netstandard1.7</TargetGroup>
+      <TestTFMs>netcoreapp1.1</TestTFMs>
+      <OSGroup>Unix</OSGroup>
+    </Project>
+    <Project Include="System.Security.Cryptography.Encoding.Tests.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+    </Project>
+    <Project Include="System.Security.Cryptography.Encoding.Tests.csproj">
+      <TargetGroup>netstandard1.7</TargetGroup>
+      <TestTFMs>netcoreapp1.1;net463</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
     </Project>
   </ItemGroup>
