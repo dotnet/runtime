@@ -41,6 +41,6 @@ void sgen_thread_pool_idle_wait (void);
 
 void sgen_thread_pool_wait_for_all_jobs (void);
 
-gboolean sgen_thread_pool_is_thread_pool_thread (MonoNativeThreadId thread);
+int sgen_thread_pool_is_thread_pool_thread (MonoNativeThreadId thread);
 
 #endif

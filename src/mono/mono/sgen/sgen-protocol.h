@@ -21,7 +21,7 @@
  * should be able to handle all the previous versions, while an old grepper will
  * be able to tell if it cannot handle the format.
  */
-#define PROTOCOL_HEADER_VERSION 1
+#define PROTOCOL_HEADER_VERSION 2
 
 /* Special indices returned by MATCH_INDEX. */
 #define BINARY_PROTOCOL_NO_MATCH (-1)

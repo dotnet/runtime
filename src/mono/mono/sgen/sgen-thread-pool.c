@@ -268,17 +268,18 @@ sgen_thread_pool_wait_for_all_jobs (void)
 	mono_os_mutex_unlock (&lock);
 }
 
-gboolean
+/* Return 0 if is not a thread pool thread or the thread number otherwise */
+int
 sgen_thread_pool_is_thread_pool_thread (MonoNativeThreadId some_thread)
 {
 	int i;
 
 	for (i = 0; i < threads_num; i++) {
 		if (some_thread == threads [i])
-			return TRUE;
+			return i + 1;
 	}
 
-	return FALSE;
+	return 0;
 }
 
 #endif
