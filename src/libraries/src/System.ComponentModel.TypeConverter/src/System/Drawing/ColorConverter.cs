@@ -92,7 +92,7 @@ namespace System.Drawing
                              (text.Length == 8 && (text.StartsWith("&h") || text.StartsWith("&H"))))
                     {
                         // Note: ConvertFromString will raise exception if value cannot be converted.
-                        return  PossibleKnownColor(Color.FromArgb(unchecked((int)(0xFF000000 | (uint)(int)intConverter.ConvertFromString(context, culture, text)))));
+                        return PossibleKnownColor(Color.FromArgb(unchecked((int)(0xFF000000 | (uint)(int)intConverter.ConvertFromString(context, culture, text)))));
                     }
                 }
 
