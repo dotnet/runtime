@@ -5762,7 +5762,15 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	name = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAME]);
 	nspace = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE]);
 
-	klass = (MonoClass *)mono_image_alloc0 (image, sizeof (MonoClass));
+	if (mono_metadata_has_generic_params (image, type_token)) {
+		klass = mono_image_alloc0 (image, sizeof (MonoClassGtd));
+		klass->class_kind = MONO_CLASS_GTD;
+		classes_size += sizeof (MonoClassGtd);
+	} else {
+		klass = mono_image_alloc0 (image, sizeof (MonoClassDef));
+		klass->class_kind = MONO_CLASS_DEF;
+		classes_size += sizeof (MonoClassDef);
+	}
 
 	klass->name = name;
 	klass->name_space = nspace;
@@ -5775,15 +5783,11 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 
 	mono_internal_hash_table_insert (&image->class_cache, GUINT_TO_POINTER (type_token), klass);
 
-	classes_size += sizeof (MonoClass);
-
 	/*
 	 * Check whether we're a generic type definition.
 	 */
 	klass->generic_container = mono_metadata_load_generic_params (image, klass->type_token, NULL);
-	klass->class_kind = MONO_CLASS_DEF;
 	if (klass->generic_container) {
-		klass->class_kind = MONO_CLASS_GTD;
 		klass->generic_container->owner.klass = klass;
 		klass->generic_container->is_anonymous = FALSE; // Owner class is now known, container is no longer anonymous
 		context = &klass->generic_container->context;
@@ -6010,7 +6014,7 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 		return gclass->cached_class;
 	}
 
-	klass = (MonoClass *)mono_image_set_alloc0 (gclass->owner, sizeof (MonoClass));
+	klass = (MonoClass *)mono_image_set_alloc0 (gclass->owner, sizeof (MonoClassGenericInst));
 
 	gklass = gclass->container_class;
 
@@ -6084,7 +6088,7 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 	mono_profiler_class_loaded (klass, MONO_PROFILE_OK);
 
 	inflated_classes ++;
-	inflated_classes_size += sizeof (MonoClass);
+	inflated_classes_size += sizeof (MonoClassGenericInst);
 	
 	mono_loader_unlock ();
 
@@ -6145,9 +6149,9 @@ make_generic_param_class (MonoGenericParam *param, MonoGenericParamInfo *pinfo)
 	gboolean is_mvar = container->is_method;
 	gboolean is_anonymous = container->is_anonymous;
 
-	klass = (MonoClass *)mono_image_alloc0 (image, sizeof (MonoClass));
+	klass = (MonoClass *)mono_image_alloc0 (image, sizeof (MonoClassGenericParam));
 	klass->class_kind = MONO_CLASS_GPARAM;
-	classes_size += sizeof (MonoClass);
+	classes_size += sizeof (MonoClassGenericParam);
 
 	if (pinfo) {
 		CHECKED_METADATA_WRITE_PTR_EXEMPT ( klass->name , pinfo->name );
@@ -6423,9 +6427,9 @@ mono_ptr_class_get (MonoType *type)
 	}
 	mono_image_unlock (image);
 	
-	result = (MonoClass *)mono_image_alloc0 (image, sizeof (MonoClass));
+	result = (MonoClass *)mono_image_alloc0 (image, sizeof (MonoClassPointer));
 
-	classes_size += sizeof (MonoClass);
+	classes_size += sizeof (MonoClassPointer);
 
 	result->parent = NULL; /* no parent for PTR types */
 	result->name_space = el_class->name_space;
@@ -6704,7 +6708,7 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	if (!parent->inited)
 		mono_class_init (parent);
 
-	klass = (MonoClass *)mono_image_alloc0 (image, sizeof (MonoClass));
+	klass = (MonoClass *)mono_image_alloc0 (image, sizeof (MonoClassArray));
 
 	klass->image = image;
 	klass->name_space = eclass->name_space;
@@ -6725,7 +6729,7 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 
 	mono_profiler_class_event (klass, MONO_PROFILE_START_LOAD);
 
-	classes_size += sizeof (MonoClass);
+	classes_size += sizeof (MonoClassArray);
 
 	klass->type_token = 0;
 	/* all arrays are marked serializable and sealed, bug #42779 */

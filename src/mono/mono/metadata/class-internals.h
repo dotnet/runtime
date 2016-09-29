@@ -408,6 +408,30 @@ struct _MonoClass {
 	MonoClassExt *ext;
 };
 
+typedef struct {
+	MonoClass class;
+} MonoClassDef;
+
+typedef struct {
+	MonoClass class;
+} MonoClassGtd;
+
+typedef struct {
+	MonoClass class;
+} MonoClassGenericInst;
+
+typedef struct {
+	MonoClass class;
+} MonoClassGenericParam;
+
+typedef struct {
+	MonoClass class;
+} MonoClassArray;
+
+typedef struct {
+	MonoClass class;
+} MonoClassPointer;
+
 #ifdef COMPRESSED_INTERFACE_BITMAP
 int mono_compress_bitmap (uint8_t *dest, const uint8_t *bitmap, int size);
 int mono_class_interface_match (const uint8_t *bitmap, int id);

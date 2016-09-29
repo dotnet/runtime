@@ -2298,7 +2298,7 @@ reflection_setup_internal_class (MonoReflectionTypeBuilder *tb, MonoError *error
 		return TRUE;
 	}
 
-	klass = (MonoClass *)mono_image_alloc0 (&tb->module->dynamic_image->image, sizeof (MonoClass));
+	klass = (MonoClass *)mono_image_alloc0 (&tb->module->dynamic_image->image, MAX (sizeof (MonoClassDef), sizeof (MonoClassGtd)));
 	klass->class_kind = MONO_CLASS_DEF;
 
 	klass->image = &tb->module->dynamic_image->image;
