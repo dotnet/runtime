@@ -1107,7 +1107,7 @@ BOOL VirtualCallStubManager::TraceManager(Thread *thread,
 
 #ifdef FEATURE_PREJIT
     // This is the case for the lazy slot fixup
-    if (GetIP(pContext) == GFN_TADDR(StubDispatchFixupPatchLabel)) {
+    if (GetIP(pContext) == GetEEFuncEntryPoint(StubDispatchFixupPatchLabel)) {
 
         *pRetAddr = (BYTE *)StubManagerHelpers::GetReturnAddress(pContext);
 
