@@ -29,6 +29,7 @@
     <Compile Include="System\Runtime\InteropServices\ComTypes\statdata.cs" />
     <Compile Include="System\Runtime\InteropServices\ComTypes\stgmedium.cs" />
     <Compile Include="System\Runtime\InteropServices\ComTypes\tymed.cs" />
+    <Compile Include="System\Runtime\CompilerServices\Attributes.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netcore50aot'">
     <TargetingPackReference Include="mscorlib" />
