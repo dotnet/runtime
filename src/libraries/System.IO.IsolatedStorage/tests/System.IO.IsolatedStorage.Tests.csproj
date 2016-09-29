@@ -50,6 +50,9 @@
       <Link>Internals\Helper.Win32.Unix.cs</Link>
     </Compile>
     <Compile Include="System\IO\IsolatedStorage\HelperTests.cs" />
+    <Compile Include="System\IO\IsolatedStorage\GetStoreTests.cs" />
+    <Compile Include="System\IO\IsolatedStorage\IsoStorageTest.cs" />
+    <Compile Include="System\IO\IsolatedStorage\IsoStorageTestHelper.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

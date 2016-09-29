@@ -239,10 +239,11 @@ namespace System.IO.IsolatedStorage
             _fs.EndWrite(asyncResult);
         }
 
-        public override IntPtr Handle
-        {
-            get { return _fs.Handle; }
-        }
+        // https://github.com/dotnet/corefx/issues/11127
+        //public override IntPtr Handle
+        //{
+        //    get { return _fs.Handle; }
+        //}
 
         public override void Unlock(long position, long length)
         {
