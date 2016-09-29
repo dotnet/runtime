@@ -5,6 +5,9 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Net.Sockets;
+#if !SYSTEM_NET_SOCKETS_DLL
+using ProtocolFamily = System.Net.Internals.ProtocolFamily;
+#endif
 
 internal static partial class Interop
 {
