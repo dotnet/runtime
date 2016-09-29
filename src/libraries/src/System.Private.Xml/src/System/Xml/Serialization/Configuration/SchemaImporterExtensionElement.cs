@@ -10,7 +10,7 @@ namespace System.Xml.Serialization.Configuration
     using System.Globalization;
     using System.Reflection;
 
-    internal sealed class SchemaImporterExtensionElement : ConfigurationElement
+    internal sealed class SchemaImporterExtensionElement
     {
         public SchemaImporterExtensionElement()
         {
@@ -28,14 +28,6 @@ namespace System.Xml.Serialization.Configuration
         {
             get { return null; }
             set { }
-        }
-
-        protected override ConfigurationPropertyCollection Properties
-        {
-            get
-            {
-                return null;
-            }
         }
 
         [TypeConverter(typeof(TypeTypeConverter))]

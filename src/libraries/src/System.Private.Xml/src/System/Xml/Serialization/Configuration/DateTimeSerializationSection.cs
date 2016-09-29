@@ -10,7 +10,7 @@ namespace System.Xml.Serialization.Configuration
     using System.Globalization;
     using System.Reflection;
 
-    internal sealed class DateTimeSerializationSection : ConfigurationSection
+    internal sealed class DateTimeSerializationSection
     {
         public enum DateTimeSerializationMode
         {
@@ -23,21 +23,11 @@ namespace System.Xml.Serialization.Configuration
         {
         }
 
-        protected override ConfigurationPropertyCollection Properties
-        {
-            get
-            {
-                return _properties;
-            }
-        }
-
         public DateTimeSerializationMode Mode
         {
             get { return default(DateTimeSerializationMode); }
             set { }
         }
-
-        private ConfigurationPropertyCollection _properties = new ConfigurationPropertyCollection();
     }
 }
 
