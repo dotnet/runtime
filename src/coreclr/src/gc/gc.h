@@ -15,11 +15,7 @@ Module Name:
 #define __GC_H
 
 #include "gcinterface.h"
-#include "env/gcenv.ee.h"
 
-#ifdef FEATURE_STANDALONE_GC
-#include "gcenv.ee.standalone.inl"
-#endif // FEATURE_STANDALONE_GC
 
 /*
  * Promotion Function Prototypes
