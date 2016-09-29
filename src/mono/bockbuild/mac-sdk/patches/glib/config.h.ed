@@ -1,0 +1,32 @@
+/ AC_APPLE_UNIVERSAL_BUILD /c
+/* #undef AC_APPLE_UNIVERSAL_BUILD */
+.
+/ G_VA_COPY_AS_ARRAY /c
+#ifdef __LP64__
+#define G_VA_COPY_AS_ARRAY 1
+#else
+/* #undef G_VA_COPY_AS_ARRAY */
+#endif
+.
+/ SIZEOF_LONG /c
+#ifdef __LP64__
+#define SIZEOF_LONG 8
+#else
+#define SIZEOF_LONG 4
+#endif
+.
+/ SIZEOF_SIZE_T /c
+#ifdef __LP64__
+#define SIZEOF_SIZE_T 8
+#else
+#define SIZEOF_SIZE_T 4
+#endif
+.
+/ SIZEOF_VOID_P /c
+#ifdef __LP64__
+#define SIZEOF_VOID_P 8
+#else
+#define SIZEOF_VOID_P 4
+#endif
+.
+w

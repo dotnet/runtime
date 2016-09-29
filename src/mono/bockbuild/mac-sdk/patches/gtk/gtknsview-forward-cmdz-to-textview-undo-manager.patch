@@ -1,0 +1,22 @@
+commit ea748772ee7fd99d70a1ce119bc377c3e2083954
+Author: Cody Russell <cody@jhu.edu>
+Date:   Tue Jan 13 16:46:03 2015 -0600
+
+    [GtkNSView] Add support for forwarding Cmd-Z to an NSTextView's undo manager
+
+diff --git a/gtk/gtknsview.c b/gtk/gtknsview.c
+index d5f8c76..9ba080d 100644
+--- a/gtk/gtknsview.c
++++ b/gtk/gtknsview.c
+@@ -712,6 +712,11 @@ gtk_ns_view_key_press (GtkWidget   *widget,
+
+           switch (event->keyval)
+             {
++            case GDK_KEY_z: /* undo */
++              if ([[text_view undoManager] canUndo])
++                [[text_view undoManager] undo];
++              return TRUE;
++
+             case GDK_KEY_c: /* copy */
+               if (has_selection)
+                 [text_view copy: text_view];

@@ -1,0 +1,133 @@
+From 4c79075b4d396ba009b0f0e70d05c1c253cc3da6 Mon Sep 17 00:00:00 2001
+From: Kristian Rietveld <kris@lanedo.com>
+Date: Fri, 24 Aug 2012 12:12:04 +0200
+Subject: [PATCH 07/68] Implement gtk-enable-overlay-scrollbars GtkSetting
+
+And set this up such that on OS X
+NSPreferredScrollerDidChangeNotification is followed.
+---
+ gdk/quartz/gdkevents-quartz.c |   56 ++++++++++++++++++++++++++++++++++++++++-
+ gtk/gtksettings.c             |   20 ++++++++++++++-
+ 2 files changed, 74 insertions(+), 2 deletions(-)
+
+diff --git a/gdk/quartz/gdkevents-quartz.c b/gdk/quartz/gdkevents-quartz.c
+index 53f1962..c99a2c9 100644
+--- a/gdk/quartz/gdkevents-quartz.c
++++ b/gdk/quartz/gdkevents-quartz.c
+@@ -85,6 +85,10 @@ gdk_quartz_ns_notification_callback (CFNotificationCenterRef  center,
+                        CFSTR("AppleNoRedisplayAppearancePreferenceChanged"),
+                        0) == kCFCompareEqualTo)
+     new_event.setting.name = "gtk-primary-button-warps-slider";
++  else if (CFStringCompare (name,
++                            CFSTR("NSPreferredScrollerStyleDidChangeNotification"),
++                            0) == kCFCompareEqualTo)
++    new_event.setting.name = "gtk-enable-overlay-scrollbars";
+
+   if (!new_event.setting.name)
+     return;
+@@ -114,6 +118,20 @@ gdk_quartz_events_init_notifications (void)
+                                    CFSTR ("AppleNoRedisplayAppearancePreferenceChanged"),
+                                    NULL,
+                                    CFNotificationSuspensionBehaviorDeliverImmediately);
++
++  /* The preferred scroller notification and property are only available on Lion
++   * and higher. Also, beware that the notification will only start working after the
++   * property has been queried for the first time!.
++   */
++  if (gdk_quartz_osx_version () >= GDK_OSX_LION)
++    {
++      CFNotificationCenterAddObserver (CFNotificationCenterGetLocalCenter (),
++                                       NULL,
++                                       &gdk_quartz_ns_notification_callback,
++                                       CFSTR ("NSPreferredScrollerStyleDidChangeNotification"),
++                                       NULL,
++                                       CFNotificationSuspensionBehaviorDeliverImmediately);
++    }
+ }
+
+ void
+@@ -1686,7 +1704,43 @@ gdk_screen_get_setting (GdkScreen   *screen,
+
+       return TRUE;
+     }
+-
++  else if (strcmp (name, "gtk-enable-overlay-scrollbars") == 0)
++    {
++      gboolean enabled = FALSE;
++
++      GDK_QUARTZ_ALLOC_POOL;
++
++      if (gdk_quartz_osx_version () >= GDK_OSX_LION)
++        {
++          /* Use an integer instead of NSScrollerStyle to allow things to be compiled
++           * on < 10.7 systems.
++           */
++          int setting = (int)[NSScroller preferredScrollerStyle];
++
++          if (setting == 1)
++            /* 1 == NSScrollerStyleOverlay */
++            enabled = TRUE;
++          else
++            enabled = FALSE;
++        }
++      else
++        {
++          /* On systems prior to Lion, default to legacy scrolling. */
++          enabled = FALSE;
++        }
++
++      g_value_set_boolean (value, enabled);
++
++      /* Initialize after quering the property for the first theme,
++       * notifications are otherwise not received!
++       */
++      gdk_quartz_events_init_notifications ();
++
++      GDK_QUARTZ_RELEASE_POOL;
++
++      return TRUE;
++    }
++
+   /* FIXME: Add more settings */
+
+   return FALSE;
+diff --git a/gtk/gtksettings.c b/gtk/gtksettings.c
+index 3fbbf00..1455db1 100644
+--- a/gtk/gtksettings.c
++++ b/gtk/gtksettings.c
+@@ -139,7 +139,8 @@ enum {
+   PROP_LABEL_SELECT_ON_FOCUS,
+   PROP_COLOR_PALETTE,
+   PROP_IM_PREEDIT_STYLE,
+-  PROP_IM_STATUS_STYLE
++  PROP_IM_STATUS_STYLE,
++  PROP_ENABLE_OVERLAY_SCROLLBARS
+ };
+
+ /* --- prototypes --- */
+@@ -1205,6 +1206,23 @@ gtk_settings_class_init (GtkSettingsClass *class)
+                                                                 GTK_PARAM_READWRITE),
+                                              gtk_rc_property_parse_enum);
+   g_assert (result == PROP_IM_STATUS_STYLE);
++
++  /**
++   * GtkSettings:gtk-enable-overlay-scrollbars:
++   *
++   * Whether overlay scrollbars should be enabled.
++   *
++   * Since: Xamarin specific API.
++   */
++  result = settings_install_property_parser (class,
++                                             g_param_spec_boolean ("gtk-enable-overlay-scrollbars",
++                                                                   P_("Enable Overlay Scrollbars"),
++                                                                   P_("Whether to enable overlay scrollbars."),
++                                                                   FALSE,
++                                                                   GTK_PARAM_READWRITE),
++                                             NULL);
++
++  g_assert (result == PROP_ENABLE_OVERLAY_SCROLLBARS);
+ }
+
+ static void
+--
+1.7.10.2 (Apple Git-33)

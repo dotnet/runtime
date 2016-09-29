@@ -1,0 +1,189 @@
+diff --git a/src/cairo-quartz-font.c b/src/cairo-quartz-font.c
+index a9bbbdc..48eb071 100644
+--- a/src/cairo-quartz-font.c
++++ b/src/cairo-quartz-font.c
+@@ -95,6 +95,10 @@ static int (*CGFontGetAscentPtr) (CGFontRef fontRef) = NULL;
+ static int (*CGFontGetDescentPtr) (CGFontRef fontRef) = NULL;
+ static int (*CGFontGetLeadingPtr) (CGFontRef fontRef) = NULL;
+
++/* CTFontCreateWithGraphicsFont is not public until 10.5. */
++typedef const struct __CTFontDescriptor *CTFontDescriptorRef;
++static CTFontRef (*CTFontCreateWithGraphicsFontPtr) (CGFontRef, CGFloat, const CGAffineTransform *, CTFontDescriptorRef) = NULL;
++
+ /* Not public anymore in 64-bits nor in 10.7 */
+ static ATSFontRef (*FMGetATSFontRefFromFontPtr) (FMFont iFont) = NULL;
+
+@@ -137,6 +141,8 @@ quartz_font_ensure_symbols(void)
+     CGContextGetAllowsFontSmoothingPtr = dlsym(RTLD_DEFAULT, "CGContextGetAllowsFontSmoothing");
+     CGContextSetAllowsFontSmoothingPtr = dlsym(RTLD_DEFAULT, "CGContextSetAllowsFontSmoothing");
+
++    CTFontCreateWithGraphicsFontPtr = dlsym(RTLD_DEFAULT, "CTFontCreateWithGraphicsFont");
++
+     FMGetATSFontRefFromFontPtr = dlsym(RTLD_DEFAULT, "FMGetATSFontRefFromFont");
+
+     if ((CGFontCreateWithFontNamePtr || CGFontCreateWithNamePtr) &&
+@@ -162,6 +168,7 @@ struct _cairo_quartz_font_face {
+     cairo_font_face_t base;
+
+     CGFontRef cgFont;
++    CTFontRef ctFont;
+ };
+
+ /*
+@@ -246,6 +253,10 @@ _cairo_quartz_font_face_destroy (void *abstract_face)
+ {
+     cairo_quartz_font_face_t *font_face = (cairo_quartz_font_face_t*) abstract_face;
+
++    if (font_face->ctFont) {
++        CFRelease (font_face->ctFont);
++    }
++
+     CGFontRelease (font_face->cgFont);
+ }
+
+@@ -370,6 +381,12 @@ cairo_quartz_font_face_create_for_cgfont (CGFontRef font)
+
+     font_face->cgFont = CGFontRetain (font);
+
++    if (CTFontCreateWithGraphicsFontPtr) {
++        font_face->ctFont = CTFontCreateWithGraphicsFontPtr (font, 1.0, NULL, NULL);
++    } else {
++        font_face->ctFont = NULL;
++    }
++
+     _cairo_font_face_init (&font_face->base, &_cairo_quartz_font_face_backend);
+
+     return &font_face->base;
+@@ -812,6 +829,14 @@ _cairo_quartz_scaled_font_get_cg_font_ref (cairo_scaled_font_t *abstract_font)
+     return ffont->cgFont;
+ }
+
++CTFontRef
++_cairo_quartz_scaled_font_get_ct_font_ref (cairo_scaled_font_t *abstract_font)
++{
++    cairo_quartz_font_face_t *ffont = _cairo_quartz_scaled_to_face(abstract_font);
++
++    return ffont->ctFont;
++}
++
+ /*
+  * compat with old ATSUI backend
+  */
+diff --git a/src/cairo-quartz-private.h b/src/cairo-quartz-private.h
+index f841a49..3c1e5aa 100644
+--- a/src/cairo-quartz-private.h
++++ b/src/cairo-quartz-private.h
+@@ -57,6 +57,9 @@ typedef enum {
+     DO_TILED_IMAGE
+ } cairo_quartz_action_t;
+
++/* define CTFontRef for pre-10.5 SDKs */
++typedef const struct __CTFont *CTFontRef;
++
+ typedef struct cairo_quartz_surface {
+     cairo_surface_t base;
+
+@@ -97,6 +100,9 @@ CairoQuartzCreateCGImage (cairo_format_t format,
+ cairo_private CGFontRef
+ _cairo_quartz_scaled_font_get_cg_font_ref (cairo_scaled_font_t *sfont);
+
++CTFontRef
++_cairo_quartz_scaled_font_get_ct_font_ref (cairo_scaled_font_t *sfont);
++
+ #else
+
+ # error Cairo was not compiled with support for the quartz backend
+diff --git a/src/cairo-quartz-surface.c b/src/cairo-quartz-surface.c
+index 1e2bbec..417255c 100644
+--- a/src/cairo-quartz-surface.c
++++ b/src/cairo-quartz-surface.c
+@@ -123,6 +123,9 @@ static void (*CGContextSetAllowsFontSmoothingPtr) (CGContextRef, bool) = NULL;
+ static unsigned int (*CGContextGetTypePtr) (CGContextRef) = NULL;
+ static bool (*CGContextGetAllowsFontSmoothingPtr) (CGContextRef) = NULL;
+
++/* CTFontDrawGlyphs is not available until 10.7 */
++static void (*CTFontDrawGlyphsPtr) (CTFontRef, const CGGlyph[], const CGPoint[], size_t, CGContextRef) = NULL;
++
+ static cairo_bool_t _cairo_quartz_symbol_lookup_done = FALSE;
+
+ /*
+@@ -155,6 +158,8 @@ static void quartz_ensure_symbols (void)
+     CGContextGetAllowsFontSmoothingPtr = dlsym (RTLD_DEFAULT, "CGContextGetAllowsFontSmoothing");
+     CGContextSetAllowsFontSmoothingPtr = dlsym (RTLD_DEFAULT, "CGContextSetAllowsFontSmoothing");
+
++    CTFontDrawGlyphsPtr = dlsym(RTLD_DEFAULT, "CTFontDrawGlyphs");
++
+     _cairo_quartz_symbol_lookup_done = TRUE;
+ }
+
+@@ -2026,30 +2031,50 @@ _cairo_quartz_cg_glyphs (const cairo_compositor_t *compositor,
+     CGContextSetTextPosition (state.cgMaskContext, 0.0, 0.0);
+     CGContextSetTextMatrix (state.cgMaskContext, CGAffineTransformIdentity);
+
+-    /* Convert our glyph positions to glyph advances.  We need n-1 advances,
+-     * since the advance at index 0 is applied after glyph 0. */
+-    xprev = glyphs[0].x;
+-    yprev = glyphs[0].y;
+-
+-    cg_glyphs[0] = glyphs[0].index;
+-
+-    for (i = 1; i < num_glyphs; i++) {
+-	cairo_quartz_float_t xf = glyphs[i].x;
+-	cairo_quartz_float_t yf = glyphs[i].y;
+-	cg_glyphs[i] = glyphs[i].index;
+-	cg_advances[i - 1] = CGSizeApplyAffineTransform (CGSizeMake (xf - xprev, yf - yprev), invTextTransform);
+-	xprev = xf;
+-	yprev = yf;
+-    }
+-
+     /* Translate to the first glyph's position before drawing */
+     CGContextTranslateCTM (state.cgMaskContext, glyphs[0].x, glyphs[0].y);
+     CGContextConcatCTM (state.cgMaskContext, textTransform);
+
+-    CGContextShowGlyphsWithAdvances (state.cgMaskContext,
+-				     cg_glyphs,
+-				     cg_advances,
+-				     num_glyphs);
++    if (CTFontDrawGlyphsPtr) {
++        /* If CTFontDrawGlyphs is available (i.e. OS X 10.7 or later), we want to use
++         * that in preference to CGContextShowGlyphsWithAdvances so that colored-bitmap
++         * fonts like Apple Color Emoji will render properly.
++         * For this, we need to convert our glyph positions to Core Graphics's CGPoint.
++         * We borrow the cg_advances array, as CGPoint and CGSize are the same size. */
++
++        CGPoint *cg_positions = (CGPoint*) cg_advances;
++        cairo_quartz_float_t origin_x = glyphs[0].x;
++        cairo_quartz_float_t origin_y = glyphs[0].y;
++
++        for (i = 0; i < num_glyphs; i++) {
++            CGPoint pt = CGPointMake (glyphs[i].x - origin_x, glyphs[i].y - origin_y);
++            cg_positions[i] = CGPointApplyAffineTransform (pt, invTextTransform);
++            cg_glyphs[i] = glyphs[i].index;
++        }
++
++        CTFontDrawGlyphsPtr (_cairo_quartz_scaled_font_get_ct_font_ref (scaled_font),
++                             cg_glyphs, cg_positions, num_glyphs, state.cgMaskContext);
++    } else {
++        /* Convert our glyph positions to glyph advances.  We need n-1 advances,
++         * since the advance at index 0 is applied after glyph 0. */
++        xprev = glyphs[0].x;
++        yprev = glyphs[0].y;
++
++        cg_glyphs[0] = glyphs[0].index;
++
++        for (i = 1; i < num_glyphs; i++) {
++            cairo_quartz_float_t xf = glyphs[i].x;
++            cairo_quartz_float_t yf = glyphs[i].y;
++            cg_glyphs[i] = glyphs[i].index;
++            cg_advances[i - 1] = CGSizeApplyAffineTransform (CGSizeMake (xf - xprev, yf - yprev), invTextTransform);
++            xprev = xf;
++            yprev = yf;
++        }
++        CGContextShowGlyphsWithAdvances (state.cgMaskContext,
++                                         cg_glyphs,
++                                         cg_advances,
++                                         num_glyphs);
++    }
+
+     CGContextConcatCTM (state.cgMaskContext, invTextTransform);
+     CGContextTranslateCTM (state.cgMaskContext, -glyphs[0].x, -glyphs[0].y);

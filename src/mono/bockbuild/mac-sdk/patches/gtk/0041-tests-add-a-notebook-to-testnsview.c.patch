@@ -1,0 +1,59 @@
+From 9e267bd60da4235a0facb6bab98fef5884bc0ff0 Mon Sep 17 00:00:00 2001
+From: Michael Natterer <mitch@gimp.org>
+Date: Tue, 12 Feb 2013 13:22:39 +0100
+Subject: [PATCH 41/68] tests: add a notebook to testnsview.c
+
+---
+ tests/testnsview.c |   17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/tests/testnsview.c b/tests/testnsview.c
+index 7c9ccb7..45b1d60 100644
+--- a/tests/testnsview.c
++++ b/tests/testnsview.c
+@@ -45,6 +45,7 @@ main (gint   argc,
+   GtkWidget *vbox;
+   GtkWidget *toolbar;
+   GtkToolItem *item;
++  GtkWidget *notebook;
+   WebView *webview;
+   NSRect web_rect = { { 0.0, 0.0 }, { 100.0, 100.0 } };
+   NSURL *url;
+@@ -86,6 +87,10 @@ main (gint   argc,
+                     G_CALLBACK (forward_clicked),
+                     webview);
+
++  notebook = gtk_notebook_new ();
++  gtk_box_pack_end (GTK_BOX (vbox), notebook, TRUE, TRUE, 0);
++  gtk_widget_show (notebook);
++
+   [webview initWithFrame:web_rect
+                frameName:@"foo"
+                groupName:@"bar"];
+@@ -97,12 +102,24 @@ main (gint   argc,
+
+   ns_view = gtk_ns_view_new ((NSView *) webview);
+   gtk_widget_set_size_request (ns_view, 300, 200);
++#if 0
+   gtk_box_pack_end (GTK_BOX (vbox), ns_view, TRUE, TRUE, 0);
++#else
++  gtk_notebook_append_page (GTK_NOTEBOOK (notebook), ns_view,
++                            gtk_label_new ("WebView"));
++#endif
+   gtk_widget_show (ns_view);
+
+   [webview release];
+
+   {
++    GtkWidget *useless = gtk_label_new ("Useless Label");
++    gtk_notebook_append_page (GTK_NOTEBOOK (notebook), useless,
++                              gtk_label_new ("Useless"));
++    gtk_widget_show (useless);
++  }
++
++  {
+     GtkWidget *button;
+
+     button = gtk_button_new_with_label ("hide webview");
+--
+1.7.10.2 (Apple Git-33)

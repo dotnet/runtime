@@ -1,0 +1,55 @@
+From 82dbf415e822d1bb687db09b9dfa0d1e43528e99 Mon Sep 17 00:00:00 2001
+From: Michael Natterer <mitch@gimp.org>
+Date: Fri, 15 Feb 2013 15:35:13 +0100
+Subject: [PATCH 55/68] gtk: add gtk_widget_get_scale_factor()
+
+---
+ gtk/gtkwidget.c |   20 ++++++++++++++++++++
+ gtk/gtkwidget.h |    1 +
+ 2 files changed, 21 insertions(+)
+
+diff --git a/gtk/gtkwidget.c b/gtk/gtkwidget.c
+index 8e38ee1..c812bb9 100644
+--- a/gtk/gtkwidget.c
++++ b/gtk/gtkwidget.c
+@@ -7713,6 +7713,26 @@ gtk_widget_has_screen (GtkWidget *widget)
+   return (gtk_widget_get_screen_unchecked (widget) != NULL);
+ }
+
++gdouble
++gtk_widget_get_scale_factor (GtkWidget *widget)
++{
++  GtkWidget *toplevel;
++
++  g_return_val_if_fail (GTK_IS_WIDGET (widget), 1.0);
++
++  toplevel = gtk_widget_get_toplevel (widget);
++  if (toplevel && toplevel != widget)
++    return gtk_widget_get_scale_factor (toplevel);
++
++  if (widget->window)
++    return gdk_window_get_scale_factor (widget->window);
++
++  /* else fall back to something that is more likely to be right than
++   * just returning 1.0:
++   */
++  return gdk_screen_get_monitor_scale_factor (gtk_widget_get_screen (widget), 0);
++}
++
+ /**
+  * gtk_widget_get_display:
+  * @widget: a #GtkWidget
+diff --git a/gtk/gtkwidget.h b/gtk/gtkwidget.h
+index 1fcf21a..cee16cd 100644
+--- a/gtk/gtkwidget.h
++++ b/gtk/gtkwidget.h
+@@ -1055,6 +1055,7 @@ GdkVisual*   gtk_widget_get_visual	(GtkWidget	*widget);
+
+ GdkScreen *   gtk_widget_get_screen      (GtkWidget *widget);
+ gboolean      gtk_widget_has_screen      (GtkWidget *widget);
++gdouble       gtk_widget_get_scale_factor (GtkWidget *widget);
+ GdkDisplay *  gtk_widget_get_display     (GtkWidget *widget);
+ GdkWindow *   gtk_widget_get_root_window (GtkWidget *widget);
+ GtkSettings*  gtk_widget_get_settings    (GtkWidget *widget);
+--
+1.7.10.2 (Apple Git-33)

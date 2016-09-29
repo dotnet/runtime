@@ -1,0 +1,65 @@
+diff --git a/modules/input/imquartz.c b/modules/input/imquartz.c
+index 67c7d6c..a8ebd02 100644
+--- a/modules/input/imquartz.c
++++ b/modules/input/imquartz.c
+@@ -132,6 +132,8 @@ output_result (GtkIMContext *context,
+   GtkIMContextQuartz *qc = GTK_IM_CONTEXT_QUARTZ (context);
+   gboolean retval = FALSE;
+   gchar *fixed_str, *marked_str;
++  gboolean needs_commit = FALSE;
++  gboolean needs_preedit_change = FALSE;
+
+   fixed_str = g_object_get_data (G_OBJECT (win), TIC_INSERT_TEXT);
+   marked_str = g_object_get_data (G_OBJECT (win), TIC_MARKED_TEXT);
+@@ -141,8 +143,8 @@ output_result (GtkIMContext *context,
+       g_free (qc->preedit_str);
+       qc->preedit_str = NULL;
+       g_object_set_data (G_OBJECT (win), TIC_INSERT_TEXT, NULL);
+-      g_signal_emit_by_name (context, "commit", fixed_str);
+-      g_signal_emit_by_name (context, "preedit_changed");
++      needs_commit = TRUE;
++      needs_preedit_change = TRUE;
+
+       unsigned int filtered =
+	   GPOINTER_TO_UINT (g_object_get_data (G_OBJECT (win),
+@@ -162,10 +164,11 @@ output_result (GtkIMContext *context,
+       qc->selected_len =
+	   GPOINTER_TO_UINT (g_object_get_data (G_OBJECT (win),
+						TIC_SELECTED_LEN));
+-      g_free (qc->preedit_str);
++      if (qc->preedit_str)
++        g_free (qc->preedit_str);
+       qc->preedit_str = g_strdup (marked_str);
+       g_object_set_data (G_OBJECT (win), TIC_MARKED_TEXT, NULL);
+-      g_signal_emit_by_name (context, "preedit_changed");
++      needs_preedit_change = TRUE;
+       retval = TRUE;
+     }
+   if (!fixed_str && !marked_str)
+@@ -174,8 +177,15 @@ output_result (GtkIMContext *context,
+         retval = TRUE;
+     }
+
+-  g_free (fixed_str);
+-  g_free (marked_str);
++  if (needs_commit)
++    g_signal_emit_by_name (context, "commit", fixed_str);
++  if (needs_preedit_change)
++    g_signal_emit_by_name (context, "preedit-changed");
++
++  if (fixed_str)
++    g_free (fixed_str);
++  if (marked_str)
++    g_free (marked_str);
+
+   return retval;
+ }
+@@ -261,8 +271,6 @@ discard_preedit (GtkIMContext *context)
+
+   if (qc->preedit_str && strlen (qc->preedit_str) > 0)
+     {
+-      g_signal_emit_by_name (context, "commit", qc->preedit_str);
+-
+       g_free (qc->preedit_str);
+       qc->preedit_str = NULL;
+       g_signal_emit_by_name (context, "preedit_changed");

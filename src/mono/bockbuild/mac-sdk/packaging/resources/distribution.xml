@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<installer-gui-script minSpecVersion="1">
+    <title>Mono Framework</title>
+    <license file="License.rtf" mime-type="application/rtf" />
+    <readme file="ReadMe.rtf" mime-type="application/rtf" />
+    <pkg-ref id="mono">
+        <bundle-version/>
+    </pkg-ref>
+    <choices-outline>
+        <line choice="default">
+            <line choice="mono"/>
+        </line>
+    </choices-outline>
+    <choice id="default"/>
+    <choice id="mono" visible="false">
+        <pkg-ref id="mono"/>
+    </choice>
+    <pkg-ref id="mono">#mono.pkg</pkg-ref>
+</installer-gui-script>

@@ -1,0 +1,119 @@
+From ef95f0fc2917e98ea48ea5a07031b6e4b4152634 Mon Sep 17 00:00:00 2001
+From: Michael Natterer <mitch@gimp.org>
+Date: Thu, 25 Apr 2013 12:22:28 +0200
+Subject: [PATCH 49/68] nsview: also swizzle DidAddSubview and clip all
+ subviews that are added
+
+Finally makes textviews being clipped correctly. Original patch
+from Kris, I fixed a minor clipping off-by-something.
+---
+ gtk/gtknsview.c |   63 ++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 62 insertions(+), 1 deletion(-)
+
+diff --git a/gtk/gtknsview.c b/gtk/gtknsview.c
+index e2d8f96..bc3cbfb 100644
+--- a/gtk/gtknsview.c
++++ b/gtk/gtknsview.c
+@@ -139,6 +139,25 @@ gtk_ns_view_init (GtkNSView *ns_view)
+   gtk_widget_set_has_window (GTK_WIDGET (ns_view), FALSE);
+ }
+
++
++static void   gtk_ns_view_swizzle_draw_rect_recursive (NSView      *view,
++                                                       const gchar *associated_key,
++                                                       gpointer     associated_object);
++
++@implementation NSView (myDidAddSubview)
++- (void) myDidAddSubview:(NSView *)aView
++{
++  void *associated_object;
++
++  associated_object = objc_getAssociatedObject (self, "gtknsview");
++
++  if (associated_object)
++    gtk_ns_view_swizzle_draw_rect_recursive (aView, "gtknsview", associated_object);
++
++  [self myDidAddSubview:aView];
++}
++@end
++
+ @implementation NSView (myDrawRect)
+ - (void) myDrawRect: (NSRect) dirtyRect
+ {
+@@ -164,7 +183,8 @@ gtk_ns_view_init (GtkNSView *ns_view)
+         }
+     }
+
+-  if (! ns_view)
++  if (! ns_view ||
++      ns_view->priv->view != [ns_view->priv->view ancestorSharedWithView: self])
+     {
+       [self myDrawRect: dirtyRect];
+       return;
+@@ -215,6 +235,18 @@ gtk_ns_view_init (GtkNSView *ns_view)
+       rect.size.width = viewport_allocation.width;
+       rect.size.height = viewport_allocation.height;
+
++      /*  need to translate rect if this is not the view itself but a subview  */
++      if (ns_view->priv->view != self)
++        {
++          NSRect offset = NSMakeRect (0, 0, 0, 0);
++
++          offset = [ns_view->priv->view convertRect: offset
++                                           fromView: self];
++
++          rect.origin.x -= offset.origin.x;
++          rect.origin.y -= offset.origin.y;
++        }
++
+       CGContextClipToRect (cg_context, rect);
+     }
+
+@@ -231,9 +263,20 @@ gtk_ns_view_swizzle_draw_rect_recursive (NSView      *view,
+ {
+   Method original_drawRect;
+   Method my_drawRect;
++  Method original_didAddSubview;
++  Method my_didAddSubview;
+   NSArray *subviews;
+   gint i;
+
++  /* This is a private method that disable automatic focus ring handling.
++   * It looks like automatic focus ring drawing is handled by a toplevel
++   * NSView, so it cannot be caught by our clipping. If we disable this
++   * automatic handling, the focus ring appears to be drawn locally and
++   * is affected by our clipping.
++   */
++  [view _setAutomaticFocusRingDisabled:YES];
++
++  /* Swizzle drawRect */
+   original_drawRect = class_getInstanceMethod ([view class],
+                                                @selector (drawRect:));
+   my_drawRect = class_getInstanceMethod ([view class],
+@@ -250,6 +293,24 @@ gtk_ns_view_swizzle_draw_rect_recursive (NSView      *view,
+                            method_getTypeEncoding (my_drawRect));
+     }
+
++  /* Swizzle didAddSubView */
++  original_didAddSubview = class_getInstanceMethod ([view class],
++                                                    @selector (didAddSubview:));
++  my_didAddSubview = class_getInstanceMethod ([view class],
++                                              @selector (myDidAddSubview:));
++
++  if (class_addMethod ([view class],
++                       @selector (myDidAddSubview:),
++                       method_getImplementation (original_didAddSubview),
++                       method_getTypeEncoding (original_didAddSubview)))
++    {
++      class_replaceMethod ([view class],
++                           @selector (didAddSubview:),
++                           method_getImplementation (my_didAddSubview),
++                           method_getTypeEncoding (my_didAddSubview));
++    }
++
++
+   objc_setAssociatedObject (view, associated_key, (id) associated_object,
+                             OBJC_ASSOCIATION_ASSIGN);
+
+--
+1.7.10.2 (Apple Git-33)

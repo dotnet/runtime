@@ -1,0 +1,23 @@
+diff --git a/scripts/Makefile.am b/scripts/Makefile.am
+index 73b9cea..98b8cfb 100644
+--- a/scripts/Makefile.am
++++ b/scripts/Makefile.am
+@@ -179,7 +179,8 @@ REWRITE_COMMON = sed \
+	-e 's,@''bindir@,$(bindir),g'				\
+	-e 's,@''plat_bindir@,$(plat_bindir),g'			\
+	-e 's,@''mono_instdir@,$(mono_instdir),g'		\
+-	-e 's,@''gtkdir@,$(gtkdir),g'
++	-e 's,@''gtkdir@,$(gtkdir),g'                           \
++	-e 's,@''mono_version@,$(VERSION),g'
+
+ REWRITE = $(REWRITE_COMMON) -e 's,@''mono_interp@,$(mono_interp),g'
+ REWRITE_DEBUG = $(REWRITE_COMMON) -e 's,@''mono_interp@,$(mono_interp) --debug,g'
+diff --git a/scripts/mcs.in b/scripts/mcs.in
+index 32498fa..c15087e 100644
+--- a/scripts/mcs.in
++++ b/scripts/mcs.in
+@@ -1,2 +1,4 @@
+ #!/bin/sh
++export PATH=$PATH:/Library/Frameworks/Mono.framework/Versions/@mono_version@/bin
++export PKG_CONFIG_PATH=/Library/Frameworks/Mono.framework/External/pkgconfig:/Library/Frameworks/Mono.framework/Versions/@mono_version@/lib/pkgconfig:/Library/Frameworks/Mono.framework/Versions/@mono_version@/share/pkgconfig:$PKG_CONFIG_PATH
+ exec @bindir@/mono $MONO_OPTIONS @mono_instdir@/2.0/mcs.exe -lib:@mono_instdir@/2.0 -lib:@mono_instdir@/3.5 "$@"

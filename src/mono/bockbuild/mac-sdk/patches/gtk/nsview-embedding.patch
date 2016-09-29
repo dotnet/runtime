@@ -1,0 +1,229 @@
+diff --git a/gdk/gdkwindow.c b/gdk/gdkwindow.c
+index 6d4abc0..cf8b626 100644
+--- a/gdk/gdkwindow.c
++++ b/gdk/gdkwindow.c
+@@ -1468,6 +1468,8 @@ gdk_window_new (GdkWindow     *parent,
+     private->parent->children = g_list_prepend (private->parent->children, window);
+
+   native = _gdk_native_windows; /* Default */
++  if (attributes->type_hint == 100)
++      native = TRUE;
+   if (private->parent->window_type == GDK_WINDOW_ROOT)
+     native = TRUE; /* Always use native windows for toplevels */
+   else if (!private->input_only &&
+diff --git a/gdk/gdkwindow.h b/gdk/gdkwindow.h
+index 95a3665..e9428d0 100644
+--- a/gdk/gdkwindow.h
++++ b/gdk/gdkwindow.h
+@@ -722,6 +722,9 @@ void       gdk_window_redirect_to_drawable   (GdkWindow     *window,
+                                               gint           height);
+ void       gdk_window_remove_redirection     (GdkWindow     *window);
+
++/* NSView embedding */
++gboolean   gdk_window_supports_nsview_embedding ();
++
+ #ifndef GDK_DISABLE_DEPRECATED
+ #ifndef GDK_MULTIHEAD_SAFE
+ GdkPointerHooks *gdk_set_pointer_hooks (const GdkPointerHooks *new_hooks);
+diff --git a/gdk/quartz/GdkQuartzView.c b/gdk/quartz/GdkQuartzView.c
+index 1c92714..3c7ba37 100644
+--- a/gdk/quartz/GdkQuartzView.c
++++ b/gdk/quartz/GdkQuartzView.c
+@@ -122,6 +122,11 @@
+   return selectedRange;
+ }
+
++-(BOOL)isGtkView
++{
++  return YES;
++}
++
+ -(void)unmarkText
+ {
+   GDK_NOTE (EVENTS, g_print ("unmarkText\n"));
+diff --git a/gdk/quartz/GdkQuartzView.h b/gdk/quartz/GdkQuartzView.h
+index 2f86de7..04acb62 100644
+--- a/gdk/quartz/GdkQuartzView.h
++++ b/gdk/quartz/GdkQuartzView.h
+@@ -47,5 +47,6 @@
+ - (GdkWindow *)gdkWindow;
+ - (NSTrackingRectTag)trackingRect;
+ - (void)setNeedsInvalidateShadow: (BOOL)invalidate;
++- (void)mouseDown:(NSEvent *)theEvent;
+
+ @end
+diff --git a/gdk/quartz/GdkQuartzWindow.c b/gdk/quartz/GdkQuartzWindow.c
+index 8face0c..b6b794e 100644
+--- a/gdk/quartz/GdkQuartzWindow.c
++++ b/gdk/quartz/GdkQuartzWindow.c
+@@ -228,6 +228,28 @@
+   [self checkSendEnterNotify];
+ }
+
++-(BOOL)makeFirstResponder:(NSResponder *)responder
++{
++  GdkWindow *window = [[self contentView] gdkWindow];
++  GdkWindowObject *private = (GdkWindowObject *)window;
++  GdkWindowImplQuartz *impl = GDK_WINDOW_IMPL_QUARTZ (private->impl);
++
++  if (impl->type_hint == GDK_WINDOW_TYPE_HINT_TOOLBAR)
++    {
++      if ([responder respondsToSelector:@selector(isGtkView)] ||
++          [responder isKindOfClass:[GdkQuartzView class]])
++        {
++          _gdk_quartz_events_update_focus_window (window, TRUE);
++        }
++      else
++        {
++          _gdk_quartz_events_update_focus_window (window, FALSE);
++        }
++    }
++
++  return [super makeFirstResponder:responder];
++}
++
+ -(id)initWithContentRect:(NSRect)contentRect styleMask:(NSUInteger)styleMask backing:(NSBackingStoreType)backingType defer:(BOOL)flag screen:(NSScreen *)screen
+ {
+   self = [super initWithContentRect:contentRect
+diff --git a/gdk/quartz/GdkQuartzWindow.h b/gdk/quartz/GdkQuartzWindow.h
+index 9cdee6b..928f961 100644
+--- a/gdk/quartz/GdkQuartzWindow.h
++++ b/gdk/quartz/GdkQuartzWindow.h
+@@ -44,6 +44,7 @@
+ -(BOOL)trackManualResize;
+ -(void)showAndMakeKey:(BOOL)makeKey;
+ -(void)hide;
++-(BOOL)makeFirstResponder:(NSResponder *)responder;
+
+ @end
+
+diff --git a/gdk/quartz/gdkevents-quartz.c b/gdk/quartz/gdkevents-quartz.c
+index b7b2665..f5bf65a 100644
+--- a/gdk/quartz/gdkevents-quartz.c
++++ b/gdk/quartz/gdkevents-quartz.c
+@@ -703,6 +703,37 @@ _gdk_quartz_events_send_map_event (GdkWindow *window)
+     }
+ }
+
++static NSView *
++find_nsview_at_pos (GdkWindowImplQuartz *impl, gint x, gint y)
++{
++  NSView *view = impl->view;
++  guint n_subviews;
++  guint i;
++
++  n_subviews = [[view subviews] count];
++
++  for (i = 0; i < n_subviews; ++i)
++    {
++      NSView* sv = [[view subviews] objectAtIndex:i];
++      NSRect r = [sv frame];
++
++      if (sv == impl->layer_view)
++        continue;
++
++      if (r.origin.x <= x && r.origin.x + r.size.width >= x &&
++          r.origin.y <= y && r.origin.y + r.size.height >= y)
++        {
++          NSView* child = find_nsview_at_pos (impl, x - r.origin.x, y - r.origin.y);
++          if (child != NULL)
++            return child;
++          else
++            return sv;
++        }
++    }
++
++  return NULL;
++}
++
+ static GdkWindow *
+ find_toplevel_under_pointer (GdkDisplay *display,
+                              NSPoint     screen_point,
+@@ -869,34 +900,21 @@ find_window_for_ns_event (NSEvent *nsevent,
+               {
+                 GdkWindowObject *toplevel_private;
+                 GdkWindowImplQuartz *toplevel_impl;
+-                guint n_subviews;
+-                guint i;
++                NSView *subview;
+
+                 toplevel = toplevel_under_pointer;
+
+                 toplevel_private = (GdkWindowObject *)toplevel;
+                 toplevel_impl = (GdkWindowImplQuartz *)toplevel_private->impl;
+
+-                n_subviews = [[toplevel_impl->view subviews] count];
+-
+-                for (i = 0; i < n_subviews; ++i)
+-                  {
+-                    NSView* sv = [[toplevel_impl->view subviews] objectAtIndex:i];
+-                    NSRect r = [sv frame];
+-
+-                    if (sv == toplevel_impl->layer_view)
+-                      continue;
+-
+-                    if (r.origin.x <= *x && r.origin.x + r.size.width >= *x &&
+-                        r.origin.y <= *y && r.origin.y + r.size.height >= *y)
+-                      {
+-                        g_signal_emit_by_name (toplevel, "native-child-event",
+-                                               sv, nsevent);
++                subview = find_nsview_at_pos (toplevel_impl, *x, *y);
++                if (subview != NULL && ![subview isKindOfClass:[GdkQuartzView class]]) {
++                  g_signal_emit_by_name (toplevel, "native-child-event",
++                                         subview, nsevent);
+
+-                        /* event is within subview, forward back to Cocoa */
+-                        return NULL;
+-                      }
+-                  }
++                  /* event is within subview, forward back to Cocoa */
++                  return NULL;
++                }
+
+                 *x = x_tmp;
+                 *y = y_tmp;
+@@ -1665,6 +1683,11 @@ gdk_event_translate (GdkEvent *event,
+       GdkWindowObject *private = (GdkWindowObject *)window;
+       GdkWindowImplQuartz *impl = GDK_WINDOW_IMPL_QUARTZ (private->impl);
+
++      GdkQuartzWindow *nswindow = ((GdkWindowImplQuartz *)private->impl)->toplevel;
++      GdkQuartzView *nsview = ((GdkWindowImplQuartz *)private->impl)->view;
++
++      [nswindow makeFirstResponder:nsview];
++
+       if (![NSApp isActive])
+         {
+           [NSApp activateIgnoringOtherApps:YES];
+@@ -1796,6 +1819,15 @@ gdk_event_translate (GdkEvent *event,
+     case NSFlagsChanged:
+       {
+         GdkEventType type;
++        GdkWindowObject *private = (GdkWindowObject *)window;
++        GdkQuartzWindow *nswindow = ((GdkWindowImplQuartz *)private->impl)->toplevel;
++        GdkQuartzView *nsview = ((GdkWindowImplQuartz *)private->impl)->view;
++
++        if (![[nswindow firstResponder] respondsToSelector:@selector(isGtkView)])
++          {
++            return_val = FALSE;
++            break;
++          }
+
+         type = _gdk_quartz_keys_event_type (nsevent);
+         if (type == GDK_NOTHING)
+diff --git a/gdk/quartz/gdkwindow-quartz.c b/gdk/quartz/gdkwindow-quartz.c
+index 5b9ceef..050139a 100644
+--- a/gdk/quartz/gdkwindow-quartz.c
++++ b/gdk/quartz/gdkwindow-quartz.c
+@@ -889,6 +889,12 @@ get_nsscreen_for_point (gint x, gint y)
+   return screen;
+ }
+
++gboolean
++gdk_window_supports_nsview_embedding ()
++{
++  return TRUE;
++}
++
+ void
+ _gdk_window_impl_new (GdkWindow     *window,
+		      GdkWindow     *real_parent,

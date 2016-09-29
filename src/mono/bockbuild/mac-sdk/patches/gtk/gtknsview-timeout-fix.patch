@@ -1,0 +1,57 @@
+diff --git a/gtk/gtknsview.c b/gtk/gtknsview.c
+index 31c4970..ad003d9 100644
+--- a/gtk/gtknsview.c
++++ b/gtk/gtknsview.c
+@@ -48,6 +48,7 @@ enum
+ struct _GtkNSViewPrivate
+ {
+   NSView *view;
++  guint   map_timeout;
+ };
+
+ #define GTK_NS_VIEW_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), \
+@@ -563,6 +564,15 @@ gtk_ns_view_position_view (GtkNSView     *ns_view,
+ static void
+ gtk_ns_view_unrealize (GtkWidget *widget)
+ {
++  GtkNSView *ns_view = GTK_NS_VIEW (widget);
++
++  if (ns_view->priv->map_timeout != 0)
++    {
++      g_source_remove (ns_view->priv->map_timeout);
++      ns_view->priv->map_timeout = 0;
++      g_object_unref (widget);
++    }
++
+   if (gtk_widget_get_mapped (widget))
+     gtk_widget_unmap (widget);
+
+@@ -577,6 +587,8 @@ really_map (GtkWidget *widget) {
+   NSView *parent_view;
+   NSWindow *window;
+
++  g_object_unref (widget);
++
+   if (gtk_widget_get_mapped (widget))
+     return FALSE;
+
+@@ -611,13 +623,18 @@ really_map (GtkWidget *widget) {
+         }
+     }
+
++  ns_view->priv->map_timeout = 0;
++
+   return FALSE;
+ }
+
+ static void
+ gtk_ns_view_map (GtkWidget *widget)
+ {
+-   g_timeout_add (50, (GSourceFunc)really_map, widget);
++  GtkNSView *ns_view = GTK_NS_VIEW (widget);
++
++  g_object_ref (widget);
++  ns_view->priv->map_timeout = g_timeout_add (50, (GSourceFunc)really_map, widget);
+ }
+
+ static void

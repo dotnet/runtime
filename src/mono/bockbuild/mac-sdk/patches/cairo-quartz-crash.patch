@@ -1,0 +1,9 @@
+--- a/src/cairo-quartz-surface.c	2013-03-28 19:19:15.000000000 -0400
++++ b/src/cairo-quartz-surface.c	2013-03-28 19:19:28.000000000 -0400
+@@ -1379,7 +1379,6 @@
+	CGContextDrawLayerInRect (surface->cgContext,
+				  state->clipRect,
+				  state->layer);
+-	CGContextRelease (state->cgDrawContext);
+	CGLayerRelease (state->layer);
+     }

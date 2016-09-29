@@ -1,0 +1,20 @@
+diff --git a/gtk/gtkcolorsel.c b/gtk/gtkcolorsel.c
+index 78a483d..06b9d0e 100644
+--- a/gtk/gtkcolorsel.c
++++ b/gtk/gtkcolorsel.c
+@@ -367,6 +367,7 @@ gtk_color_selection_init (GtkColorSelection *colorsel)
+   gtk_container_add (GTK_CONTAINER (frame), priv->sample_area);
+   gtk_box_pack_start (GTK_BOX (hbox), frame, TRUE, TRUE, 0);
+
++  /*
+   button = gtk_button_new ();
+
+   gtk_widget_set_events (button, GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK);
+@@ -380,6 +381,7 @@ gtk_color_selection_init (GtkColorSelection *colorsel)
+
+   gtk_widget_set_tooltip_text (button,
+                         _("Click the eyedropper, then click a color anywhere on your screen to select that color."));
++                        */
+
+   top_right_vbox = gtk_vbox_new (FALSE, 6);
+   gtk_box_pack_start (GTK_BOX (top_hbox), top_right_vbox, FALSE, FALSE, 0);

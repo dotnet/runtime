@@ -1,0 +1,53 @@
+diff --git a/gtk/gtkcombobox.c b/gtk/gtkcombobox.c
+index 39514fd..bd83a1e 100644
+--- a/gtk/gtkcombobox.c
++++ b/gtk/gtkcombobox.c
+@@ -330,8 +330,6 @@ static void     gtk_combo_box_forall               (GtkContainer     *container,
+                                                     gpointer          callback_data);
+ static gboolean gtk_combo_box_expose_event         (GtkWidget        *widget,
+                                                     GdkEventExpose   *event);
+-static gboolean gtk_combo_box_scroll_event         (GtkWidget        *widget,
+-                                                    GdkEventScroll   *event);
+ static void     gtk_combo_box_set_active_internal  (GtkComboBox      *combo_box,
+						    GtkTreePath      *path);
+
+@@ -551,7 +549,6 @@ gtk_combo_box_class_init (GtkComboBoxClass *klass)
+   widget_class->size_allocate = gtk_combo_box_size_allocate;
+   widget_class->size_request = gtk_combo_box_size_request;
+   widget_class->expose_event = gtk_combo_box_expose_event;
+-  widget_class->scroll_event = gtk_combo_box_scroll_event;
+   widget_class->mnemonic_activate = gtk_combo_box_mnemonic_activate;
+   widget_class->grab_focus = gtk_combo_box_grab_focus;
+   widget_class->style_set = gtk_combo_box_style_set;
+@@ -2963,31 +2960,6 @@ tree_first (GtkComboBox  *combo,
+   return search_data.set;
+ }
+
+-static gboolean
+-gtk_combo_box_scroll_event (GtkWidget          *widget,
+-                            GdkEventScroll     *event)
+-{
+-  GtkComboBox *combo_box = GTK_COMBO_BOX (widget);
+-  gboolean found;
+-  GtkTreeIter iter;
+-  GtkTreeIter new_iter;
+-
+-  if (!gtk_combo_box_get_active_iter (combo_box, &iter))
+-    return TRUE;
+-
+-  if (event->direction == GDK_SCROLL_UP)
+-    found = tree_prev (combo_box, combo_box->priv->model,
+-		       &iter, &new_iter, FALSE);
+-  else
+-    found = tree_next (combo_box, combo_box->priv->model,
+-		       &iter, &new_iter, FALSE);
+-
+-  if (found)
+-    gtk_combo_box_set_active_iter (combo_box, &new_iter);
+-
+-  return TRUE;
+-}
+-
+ /*
+  * menu style
+  */

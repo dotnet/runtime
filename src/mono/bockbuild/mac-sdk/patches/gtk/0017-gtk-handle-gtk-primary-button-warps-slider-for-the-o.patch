@@ -1,0 +1,69 @@
+From f2c762968b02b73323a75a723ad664ff1645abde Mon Sep 17 00:00:00 2001
+From: Michael Natterer <mitch@gimp.org>
+Date: Fri, 31 Aug 2012 16:24:07 +0200
+Subject: [PATCH 17/68] gtk: handle gtk-primary-button-warps-slider for the
+ overlay scrollbars
+
+---
+ gtk/gtkscrolledwindow.c |   38 +++++++++++++++++++++++++++++++++-----
+ 1 file changed, 33 insertions(+), 5 deletions(-)
+
+diff --git a/gtk/gtkscrolledwindow.c b/gtk/gtkscrolledwindow.c
+index 7680f5d..02745b1 100644
+--- a/gtk/gtkscrolledwindow.c
++++ b/gtk/gtkscrolledwindow.c
+@@ -2725,6 +2725,10 @@ gtk_scrolled_window_scroll_step_timeout (gpointer data)
+ }
+
+ static gboolean
++gtk_scrolled_window_captured_motion_notify_scrollbar (GtkWidget *widget,
++                                                      GdkEvent  *event);
++
++static gboolean
+ gtk_scrolled_window_captured_button_press_scrollbar (GtkWidget *widget,
+                                                      GdkEvent  *event)
+ {
+@@ -2808,12 +2812,36 @@ gtk_scrolled_window_captured_button_press_scrollbar (GtkWidget *widget,
+       if ((priv->sb_grab_vscroll || priv->sb_grab_hscroll) &&
+           !priv->sb_drag_slider)
+         {
+-          gtk_scrolled_window_scroll_step (scrolled_window);
++          gboolean primary_warps;
++
++          g_object_get (gtk_widget_get_settings (widget),
++                        "gtk-primary-button-warps-slider", &primary_warps,
++                        NULL);
++
++          if (primary_warps)
++            {
++              GdkEventMotion mevent = { 0, };
++
++              priv->sb_drag_slider = TRUE;
++              priv->sb_grab_offset_x = hslider_rect.width / 2;
++              priv->sb_grab_offset_y = vslider_rect.height / 2;
++
++              mevent.window = bevent->window;
++              mevent.x = bevent->x;
++              mevent.y = bevent->y;
+
+-          priv->sb_scroll_timeout_id =
+-            gdk_threads_add_timeout (SCROLL_INTERVAL_INITIAL,
+-                                     gtk_scrolled_window_scroll_step_timeout,
+-                                     scrolled_window);
++              gtk_scrolled_window_captured_motion_notify_scrollbar (widget,
++                                                                    (GdkEvent *) &mevent);
++            }
++          else
++            {
++              gtk_scrolled_window_scroll_step (scrolled_window);
++
++              priv->sb_scroll_timeout_id =
++                gdk_threads_add_timeout (SCROLL_INTERVAL_INITIAL,
++                                         gtk_scrolled_window_scroll_step_timeout,
++                                         scrolled_window);
++            }
+         }
+
+       return TRUE;
+--
+1.7.10.2 (Apple Git-33)

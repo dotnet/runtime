@@ -1,0 +1,8 @@
+--- glib-2.0.pc.in.orig	2012-01-15 21:12:06.000000000 -0600
++++ glib-2.0.pc.in	2012-01-19 22:29:43.000000000 -0600
+@@ -13,4 +13,4 @@
+ Requires.private: @PCRE_REQUIRES@
+ Libs: -L${libdir} -lglib-2.0 @INTLLIBS@
+ Libs.private: @G_THREAD_LIBS@ @G_LIBS_EXTRA@ @PCRE_LIBS@ @INTLLIBS@ @ICONV_LIBS@
+-Cflags: -I${includedir}/glib-2.0 -I${libdir}/glib-2.0/include @GLIB_EXTRA_CFLAGS@
++Cflags: -I${includedir}/glib-2.0 -I${libdir}/glib-2.0/include -I${includedir} @GLIB_EXTRA_CFLAGS@

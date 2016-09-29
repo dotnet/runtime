@@ -1,0 +1,73 @@
+From 5dfd206b09f91cba45fa8e2b66e1b57aafe30868 Mon Sep 17 00:00:00 2001
+From: Kristian Rietveld <kris@lanedo.com>
+Date: Mon, 8 Jul 2013 12:02:00 +0200
+Subject: [PATCH] Make g_main_context_iterate resilient to recursion in poll
+
+On OS X, main loop recursion may happen during the call the poll.
+As a result, the allocated poll array may be re-allocated (note that
+it is always enlarged, never shrunk). By always using cached_poll_array
+after the poll function, reads from bad memory are avoided.
+---
+ glib/gmain.c |   28 +++++++++++++++-------------
+ 1 file changed, 15 insertions(+), 13 deletions(-)
+
+diff --git a/glib/gmain.c b/glib/gmain.c
+index 077a935..529f2b6 100644
+--- a/glib/gmain.c
++++ b/glib/gmain.c
+@@ -3065,8 +3065,7 @@ g_main_context_iterate (GMainContext *context,
+   gint max_priority;
+   gint timeout;
+   gboolean some_ready;
+-  gint nfds, allocated_nfds;
+-  GPollFD *fds = NULL;
++  gint nfds;
+
+   UNLOCK_CONTEXT (context);
+
+@@ -3095,29 +3094,32 @@ g_main_context_iterate (GMainContext *context,
+       context->cached_poll_array = g_new (GPollFD, context->n_poll_records);
+     }
+
+-  allocated_nfds = context->cached_poll_array_size;
+-  fds = context->cached_poll_array;
+-
+   UNLOCK_CONTEXT (context);
+
+   g_main_context_prepare (context, &max_priority);
+
+-  while ((nfds = g_main_context_query (context, max_priority, &timeout, fds,
+-				       allocated_nfds)) > allocated_nfds)
++  while ((nfds = g_main_context_query (context, max_priority, &timeout,
++                                       context->cached_poll_array,
++                                       context->cached_poll_array_size))
++         > context->cached_poll_array_size)
+     {
+       LOCK_CONTEXT (context);
+-      g_free (fds);
+-      context->cached_poll_array_size = allocated_nfds = nfds;
+-      context->cached_poll_array = fds = g_new (GPollFD, nfds);
++      g_free (context->cached_poll_array);
++      context->cached_poll_array_size = nfds;
++      context->cached_poll_array = g_new (GPollFD, nfds);
+       UNLOCK_CONTEXT (context);
+     }
+
+   if (!block)
+     timeout = 0;
+
+-  g_main_context_poll (context, timeout, max_priority, fds, nfds);
+-
+-  some_ready = g_main_context_check (context, max_priority, fds, nfds);
++  g_main_context_poll (context, timeout, max_priority,
++                       context->cached_poll_array,
++                       nfds);
++
++  some_ready = g_main_context_check (context, max_priority,
++                                     context->cached_poll_array,
++                                     nfds);
+
+   if (dispatch)
+     g_main_context_dispatch (context);
+--
+1.7.10

@@ -1,0 +1,30 @@
+From 649890483c012837251571c0042b9149743be9e7 Mon Sep 17 00:00:00 2001
+From: Kristian Rietveld <kris@lanedo.com>
+Date: Wed, 19 Sep 2012 07:28:20 +0200
+Subject: [PATCH 24/68] Cancel out smaller delta component.
+
+---
+ gtk/gtkscrolledwindow.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/gtk/gtkscrolledwindow.c b/gtk/gtkscrolledwindow.c
+index f3be303..ab3df16 100644
+--- a/gtk/gtkscrolledwindow.c
++++ b/gtk/gtkscrolledwindow.c
+@@ -2027,6 +2027,14 @@ gtk_scrolled_window_scroll_event (GtkWidget      *widget,
+       if (is_momentum_event && !is_overshot)
+         gtk_scrolled_window_calculate_velocity (scrolled_window, (GdkEvent *)event);
+
++      /* Cancel out smaller component, makes it easier to scroll when the
++       * gestures are not fully straight.
++       */
++      if (fabs (delta_y) >= fabs (delta_x))
++        delta_x = 0.0;
++      else
++        delta_y = 0.0;
++
+       /* Scroll events are handled in two cases:
+        *  1) We are not overshot and not snapping back, so scroll as
+        *  usual and also handle momentum events.
+--
+1.7.10.2 (Apple Git-33)

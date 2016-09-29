@@ -1,0 +1,180 @@
+From 08f7cca62c0a810d1bd5eaf52813b9ecb776478e Mon Sep 17 00:00:00 2001
+From: Michael Natterer <mitch@gimp.org>
+Date: Fri, 1 Mar 2013 12:39:41 +0100
+Subject: [PATCH 44/68] gtknsview: clip drawRect to a parent GtkViewport's
+ window
+
+not quite perfect yet, but getting there...
+---
+ gtk/gtknsview.c |  121 +++++++++++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 109 insertions(+), 12 deletions(-)
+
+diff --git a/gtk/gtknsview.c b/gtk/gtknsview.c
+index a19a94e..84d758f 100644
+--- a/gtk/gtknsview.c
++++ b/gtk/gtknsview.c
+@@ -28,6 +28,7 @@
+ #include <objc/runtime.h>
+
+ #include "gtknsview.h"
++#include "gtkviewport.h"
+ #include "gtkprivate.h"
+ #include "gtkintl.h"
+ #include "gtkalias.h"
+@@ -52,6 +53,7 @@ struct _GtkNSViewPrivate
+                                       GTK_TYPE_NS_VIEW, GtkNSViewPrivate))
+
+
++static void       gtk_ns_view_constructed   (GObject        *object);
+ static void       gtk_ns_view_finalize      (GObject        *object);
+ static void       gtk_ns_view_set_property  (GObject        *object,
+                                              guint           prop_id,
+@@ -89,7 +91,6 @@ static gboolean   gtk_ns_view_forward_event        (GtkWidget     *widget,
+
+ G_DEFINE_TYPE (GtkNSView, gtk_ns_view, GTK_TYPE_WIDGET)
+
+-
+ static void
+ gtk_ns_view_class_init (GtkNSViewClass *klass)
+ {
+@@ -98,6 +99,7 @@ gtk_ns_view_class_init (GtkNSViewClass *klass)
+
+   g_type_class_add_private (klass, sizeof (GtkNSViewPrivate));
+
++  object_class->constructed = gtk_ns_view_constructed;
+   object_class->finalize = gtk_ns_view_finalize;
+   object_class->set_property = gtk_ns_view_set_property;
+   object_class->get_property = gtk_ns_view_get_property;
+@@ -136,6 +138,111 @@ gtk_ns_view_init (GtkNSView *ns_view)
+   gtk_widget_set_has_window (GTK_WIDGET (ns_view), FALSE);
+ }
+
++@implementation NSView (myDrawRect)
++- (void) myDrawRect: (NSRect) dirtyRect
++{
++  GtkNSView *ns_view;
++  GtkWidget *viewport;
++
++#if 0
++  g_printerr ("drawRect called\n");
++#endif
++
++  ns_view = (GtkNSView *) objc_getAssociatedObject (self, "gtknsview");
++
++  if (! ns_view)
++    {
++      [self myDrawRect: dirtyRect];
++      return;
++    }
++
++  viewport = gtk_widget_get_ancestor (GTK_WIDGET (ns_view), GTK_TYPE_VIEWPORT);
++
++  if (viewport)
++    {
++      CGContextRef cg_context = [[NSGraphicsContext currentContext] graphicsPort];
++      GtkAllocation viewport_allocation;
++      CGRect rect;
++
++#if 0
++      g_printerr ("drawRect called on gtknsview in gtkviewport\n");
++#endif
++
++      gtk_widget_get_allocation (viewport, &viewport_allocation);
++
++      if (gtk_viewport_get_shadow_type (GTK_VIEWPORT (viewport)) != GTK_SHADOW_NONE)
++        {
++          GtkStyle *style = gtk_widget_get_style (viewport);
++
++          viewport_allocation.x += style->xthickness;
++          viewport_allocation.y += style->ythickness;
++          viewport_allocation.width -= 2 * style->xthickness;
++          viewport_allocation.height -= 2 * style->ythickness;
++        }
++
++      gtk_widget_translate_coordinates (viewport, GTK_WIDGET (ns_view),
++                                        viewport_allocation.x,
++                                        viewport_allocation.y,
++                                        &viewport_allocation.x,
++                                        &viewport_allocation.y);
++
++      rect.origin.x = viewport_allocation.x;
++      rect.origin.y = viewport_allocation.y;
++      rect.size.width = viewport_allocation.width;
++      rect.size.height = viewport_allocation.height;
++
++      CGContextSaveGState (cg_context);
++      CGContextClipToRect (cg_context, rect);
++
++      [self myDrawRect: dirtyRect];
++
++      CGContextRestoreGState (cg_context);
++    }
++  else
++    {
++      [self myDrawRect: dirtyRect];
++    }
++}
++@end
++
++static void
++gtk_ns_view_constructed (GObject *object)
++{
++  GtkNSView *ns_view = GTK_NS_VIEW (object);
++  Method original_drawRect;
++  Method my_drawRect;
++
++  G_OBJECT_CLASS (gtk_ns_view_parent_class)->constructed (object);
++
++  gtk_widget_set_can_focus (GTK_WIDGET (ns_view),
++                            [ns_view->priv->view acceptsFirstResponder]);
++
++#if DEBUG_FOCUS
++  g_printerr ("%s can focus: %d\n",
++              class_getName ([ns_view->priv->view class]),
++              gtk_widget_get_can_focus (GTK_WIDGET (ns_view)));
++#endif
++
++  original_drawRect = class_getInstanceMethod ([ns_view->priv->view class],
++                                               @selector (drawRect:));
++  my_drawRect = class_getInstanceMethod ([ns_view->priv->view class],
++                                         @selector (myDrawRect:));
++
++  if (class_addMethod ([ns_view->priv->view class],
++                       @selector (myDrawRect:),
++                       method_getImplementation (original_drawRect),
++                       method_getTypeEncoding (original_drawRect)))
++    {
++      class_replaceMethod ([ns_view->priv->view class],
++                           @selector (drawRect:),
++                           method_getImplementation (my_drawRect),
++                           method_getTypeEncoding (my_drawRect));
++    }
++
++  objc_setAssociatedObject (ns_view->priv->view, "gtknsview", (id) ns_view,
++                            OBJC_ASSOCIATION_ASSIGN);
++}
++
+ static void
+ gtk_ns_view_finalize (GObject *object)
+ {
+@@ -163,17 +270,7 @@ gtk_ns_view_set_property (GObject      *object,
+     case PROP_VIEW:
+       ns_view->priv->view = g_value_get_pointer (value);
+       if (ns_view->priv->view)
+-        {
+-          [ns_view->priv->view retain];
+-          gtk_widget_set_can_focus (GTK_WIDGET (ns_view),
+-                                    [ns_view->priv->view acceptsFirstResponder]);
+-
+-#if DEBUG_FOCUS
+-          g_printerr ("%s can focus: %d\n",
+-                      class_getName ([ns_view->priv->view class]),
+-                      gtk_widget_get_can_focus (GTK_WIDGET (ns_view)));
+-#endif
+-        }
++        [ns_view->priv->view retain];
+       break;
+
+     default:
+--
+1.7.10.2 (Apple Git-33)

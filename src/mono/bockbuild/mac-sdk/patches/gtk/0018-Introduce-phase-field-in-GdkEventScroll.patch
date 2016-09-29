@@ -1,0 +1,166 @@
+From 4ef417938760f98e530c152ee50071da2af31b06 Mon Sep 17 00:00:00 2001
+From: Kristian Rietveld <kris@lanedo.com>
+Date: Sun, 2 Sep 2012 14:16:45 +0200
+Subject: [PATCH 18/68] Introduce phase field in GdkEventScroll
+
+Using the phase field it is possible to distinguish between
+events generated while the user is performing a gesture and
+momentum events that are generated after the gesture has been
+finished.
+---
+ gdk/gdkevents.c               |    1 +
+ gdk/gdkevents.h               |    9 +++++++++
+ gdk/gdkwindow.c               |    1 +
+ gdk/quartz/gdkevents-quartz.c |   36 +++++++++++++++++++++++++++++++++---
+ 4 files changed, 44 insertions(+), 3 deletions(-)
+
+diff --git a/gdk/gdkevents.c b/gdk/gdkevents.c
+index 0f8bba2..d3d67db 100644
+--- a/gdk/gdkevents.c
++++ b/gdk/gdkevents.c
+@@ -394,6 +394,7 @@ gdk_event_new (GdkEventType type)
+       new_event->scroll.y_root = 0.;
+       new_event->scroll.delta_x = 0.;
+       new_event->scroll.delta_y = 0.;
++      new_event->scroll.phase = GDK_EVENT_SCROLL_PHASE_NONE;
+       break;
+     case GDK_ENTER_NOTIFY:
+     case GDK_LEAVE_NOTIFY:
+diff --git a/gdk/gdkevents.h b/gdk/gdkevents.h
+index f6b4e04..765b520 100644
+--- a/gdk/gdkevents.h
++++ b/gdk/gdkevents.h
+@@ -263,6 +263,14 @@ typedef enum
+   GDK_OWNER_CHANGE_CLOSE
+ } GdkOwnerChange;
+
++typedef enum
++{
++  GDK_EVENT_SCROLL_PHASE_NONE,
++  GDK_EVENT_SCROLL_PHASE_START,
++  GDK_EVENT_SCROLL_PHASE_ACTIVE,
++  GDK_EVENT_SCROLL_PHASE_END
++} GdkEventScrollPhase;
++
+ struct _GdkEventAny
+ {
+   GdkEventType type;
+@@ -340,6 +348,7 @@ struct _GdkEventScroll
+   gboolean has_deltas;
+   gdouble delta_x;
+   gdouble delta_y;
++  GdkEventScrollPhase phase;
+ };
+
+ struct _GdkEventKey
+diff --git a/gdk/gdkwindow.c b/gdk/gdkwindow.c
+index d48751e..1843873 100644
+--- a/gdk/gdkwindow.c
++++ b/gdk/gdkwindow.c
+@@ -10803,6 +10803,7 @@ proxy_button_event (GdkEvent *source_event,
+       event->scroll.has_deltas = source_event->scroll.has_deltas;
+       event->scroll.delta_x = source_event->scroll.delta_x;
+       event->scroll.delta_y = source_event->scroll.delta_y;
++      event->scroll.phase = source_event->scroll.phase;
+       return TRUE;
+
+     default:
+diff --git a/gdk/quartz/gdkevents-quartz.c b/gdk/quartz/gdkevents-quartz.c
+index e7d97dc..bb4da70 100644
+--- a/gdk/quartz/gdkevents-quartz.c
++++ b/gdk/quartz/gdkevents-quartz.c
+@@ -62,6 +62,7 @@ static GdkWindow *find_toplevel_under_pointer   (GdkDisplay *display,
+ - (BOOL) hasPreciseScrollingDeltas;
+ - (CGFloat) scrollingDeltaX;
+ - (CGFloat) scrollingDeltaY;
++- (int) phase;
+ @end
+
+
+@@ -990,6 +991,7 @@ fill_scroll_event (GdkWindow          *window,
+                    gboolean            has_deltas,
+                    gdouble             delta_x,
+                    gdouble             delta_y,
++                   GdkEventScrollPhase phase,
+                    GdkScrollDirection  direction)
+ {
+   GdkWindowObject *private;
+@@ -1012,6 +1014,7 @@ fill_scroll_event (GdkWindow          *window,
+   event->scroll.has_deltas = has_deltas;
+   event->scroll.delta_x = delta_x;
+   event->scroll.delta_y = delta_y;
++  event->scroll.phase = phase;
+ }
+
+ static void
+@@ -1300,6 +1303,28 @@ test_resize (NSEvent *event, GdkWindow *toplevel, gint x, gint y)
+   return FALSE;
+ }
+
++static GdkEventScrollPhase
++gdk_event_scroll_phase_from_ns_event_phase (NSUInteger phase)
++{
++  switch (phase)
++    {
++      case 0:
++        return GDK_EVENT_SCROLL_PHASE_NONE;
++
++      case 1 << 0:
++        return GDK_EVENT_SCROLL_PHASE_START;
++
++      case 1 << 1:
++      case 1 << 2:
++        return GDK_EVENT_SCROLL_PHASE_ACTIVE;
++
++      case 1 << 3:
++        return GDK_EVENT_SCROLL_PHASE_END;
++    }
++
++  return GDK_EVENT_SCROLL_PHASE_NONE;
++}
++
+ static gboolean
+ gdk_event_translate (GdkEvent *event,
+                      NSEvent  *nsevent)
+@@ -1491,6 +1516,7 @@ gdk_event_translate (GdkEvent *event,
+	if (gdk_quartz_osx_version() >= GDK_OSX_LION &&
+	    [(id <PreciseDeltas>) nsevent hasPreciseScrollingDeltas])
+	  {
++            GdkEventScrollPhase phase;
+	    dx = [(id <PreciseDeltas>) nsevent scrollingDeltaX];
+	    dy = [(id <PreciseDeltas>) nsevent scrollingDeltaY];
+
+@@ -1509,8 +1535,10 @@ gdk_event_translate (GdkEvent *event,
+                   direction = GDK_SCROLL_LEFT;
+               }
+
++            phase = gdk_event_scroll_phase_from_ns_event_phase ([(id <PreciseDeltas>) nsevent phase]);
++
+             fill_scroll_event (window, event, nsevent, x, y, x_root, y_root,
+-                               TRUE, -dx, -dy, direction);
++                               TRUE, -dx, -dy, phase, direction);
+	  }
+	else
+	  {
+@@ -1525,7 +1553,8 @@ gdk_event_translate (GdkEvent *event,
+                   direction = GDK_SCROLL_UP;
+
+                 fill_scroll_event (window, event, nsevent, x, y, x_root, y_root,
+-                                   FALSE, 0.0, fabs (dy), direction);
++                                   FALSE, 0.0, fabs (dy), GDK_EVENT_SCROLL_PHASE_NONE,
++                                   direction);
+               }
+             else if (dx != 0.0)
+               {
+@@ -1535,7 +1564,8 @@ gdk_event_translate (GdkEvent *event,
+                   direction = GDK_SCROLL_LEFT;
+
+                 fill_scroll_event (window, event, nsevent, x, y, x_root, y_root,
+-                                   FALSE, fabs (dx), 0.0, direction);
++                                   FALSE, fabs (dx), 0.0, GDK_EVENT_SCROLL_PHASE_NONE,
++                                   direction);
+               }
+           }
+       }
+--
+1.7.10.2 (Apple Git-33)

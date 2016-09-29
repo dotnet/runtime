@@ -1,0 +1,57 @@
+From 41c694a884284280c8ac766e636dd344493509e4 Mon Sep 17 00:00:00 2001
+From: Matthias Clasen <mclasen@redhat.com>
+Date: Fri, 2 Sep 2011 21:40:42 -0400
+Subject: [PATCH 03/68] GtkPlug: preserve map/unmap invariants (cherry picked
+ from commit be152f9b6196849c99c54afe5a0f651d08bf4626)
+
+---
+ gtk/gtkplug.c |   19 +++++++++++++------
+ 1 file changed, 13 insertions(+), 6 deletions(-)
+
+diff --git a/gtk/gtkplug.c b/gtk/gtkplug.c
+index 99af62a..86dd85e 100644
+--- a/gtk/gtkplug.c
++++ b/gtk/gtkplug.c
+@@ -708,13 +708,15 @@ gtk_plug_map (GtkWidget *widget)
+     {
+       GtkBin *bin = GTK_BIN (widget);
+       GtkPlug *plug = GTK_PLUG (widget);
+-
++      GtkWidget *child;
++
+       gtk_widget_set_mapped (widget, TRUE);
+
+-      if (bin->child &&
+-	  gtk_widget_get_visible (bin->child) &&
+-	  !gtk_widget_get_mapped (bin->child))
+-	gtk_widget_map (bin->child);
++      child = gtk_bin_get_child (bin);
++      if (child != NULL &&
++          gtk_widget_get_visible (child) &&
++          !gtk_widget_get_mapped (child))
++        gtk_widget_map (child);
+
+       _gtk_plug_windowing_map_toplevel (plug);
+
+@@ -732,13 +734,18 @@ gtk_plug_unmap (GtkWidget *widget)
+   if (gtk_widget_is_toplevel (widget))
+     {
+       GtkPlug *plug = GTK_PLUG (widget);
++      GtkWidget *child;
+
+       gtk_widget_set_mapped (widget, FALSE);
+
+       gdk_window_hide (widget->window);
+
++      child = gtk_bin_get_child (GTK_BIN (widget));
++      if (child != NULL)
++        gtk_widget_unmap (child);
++
+       _gtk_plug_windowing_unmap_toplevel (plug);
+-
++
+       gdk_synthesize_window_state (widget->window,
+				   0,
+				   GDK_WINDOW_STATE_WITHDRAWN);
+--
+1.7.10.2 (Apple Git-33)

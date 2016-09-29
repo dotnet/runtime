@@ -1,0 +1,227 @@
+From 478d022cd553d33de59ec8ce22605b14a3837264 Mon Sep 17 00:00:00 2001
+From: Michael Natterer <mitch@gimp.org>
+Date: Fri, 26 Apr 2013 15:50:14 +0200
+Subject: [PATCH 51/68] nsview: factor out almost all code from the overridden
+ draw functions
+
+---
+ gtk/gtknsview.c |  151 +++++++++++++++++--------------------------------------
+ 1 file changed, 47 insertions(+), 104 deletions(-)
+
+diff --git a/gtk/gtknsview.c b/gtk/gtknsview.c
+index 5e3aa59..b37b2fa 100644
+--- a/gtk/gtknsview.c
++++ b/gtk/gtknsview.c
+@@ -167,21 +167,19 @@ static void   gtk_ns_view_swizzle_draw_rect_recursive (NSView      *view,
+ }
+ @end
+
+-@implementation NSView (myDrawRect)
+-- (void) myDrawRect: (NSRect) dirtyRect
++static GtkNSView *
++get_associated_gtknsview (NSView *view)
+ {
+   GtkNSView *ns_view;
+-  GtkWidget *viewport;
+-  CGContextRef cg_context;
+
+-  ns_view = (GtkNSView *) objc_getAssociatedObject (self, "gtknsview");
++  ns_view = (GtkNSView *) objc_getAssociatedObject (view, "gtknsview");
+
+-  if (! ns_view && ([self class] == [NSTextView class]))
++  if (! ns_view && ([view class] == [NSTextView class]))
+     {
+       /*  if it's not a GtkNSView, check if it's the NSWindow's cell
+        *  editor editing an NSTextField managed by a GtkNSView
+        */
+-      GtkWindow *window = (GtkWindow *) objc_getAssociatedObject (self, "gtkwindow");
++      GtkWindow *window = (GtkWindow *) objc_getAssociatedObject (view, "gtkwindow");
+
+       if (GTK_IS_WINDOW (window))
+         {
+@@ -192,15 +190,21 @@ static void   gtk_ns_view_swizzle_draw_rect_recursive (NSView      *view,
+         }
+     }
+
+-  if (! ns_view ||
+-      ns_view->priv->view != [ns_view->priv->view ancestorSharedWithView: self])
++  if (ns_view &&
++      ns_view->priv->view != [ns_view->priv->view ancestorSharedWithView: view])
+     {
+-      [self myDrawRect: dirtyRect];
+-      return;
++      return NULL;
+     }
+
+-  cg_context = [[NSGraphicsContext currentContext] graphicsPort];
+-  CGContextSaveGState (cg_context);
++  return ns_view;
++}
++
++static CGContextRef
++clip_to_parent_viewports (GtkNSView *ns_view,
++                          NSView    *view)
++{
++  CGContextRef cg_context = nil;
++  GtkWidget *viewport;
+
+   for (viewport = gtk_widget_get_ancestor (GTK_WIDGET (ns_view), GTK_TYPE_VIEWPORT);
+        viewport;
+@@ -245,23 +249,44 @@ static void   gtk_ns_view_swizzle_draw_rect_recursive (NSView      *view,
+       rect.size.height = viewport_allocation.height;
+
+       /*  need to translate rect if this is not the view itself but a subview  */
+-      if (ns_view->priv->view != self)
++      if (ns_view->priv->view != view)
+         {
+           NSRect offset = NSMakeRect (0, 0, 0, 0);
+
+           offset = [ns_view->priv->view convertRect: offset
+-                                           fromView: self];
++                                           fromView: view];
+
+           rect.origin.x -= offset.origin.x;
+           rect.origin.y -= offset.origin.y;
+         }
+
++      if (! cg_context)
++        {
++          cg_context = [[NSGraphicsContext currentContext] graphicsPort];
++          CGContextSaveGState (cg_context);
++        }
++
+       CGContextClipToRect (cg_context, rect);
+     }
+
++  return cg_context;
++}
++
++@implementation NSView (myDrawRect)
++- (void) myDrawRect: (NSRect) dirtyRect
++{
++  GtkNSView *ns_view;
++  CGContextRef cg_context = nil;
++
++  ns_view = get_associated_gtknsview (self);
++
++  if (ns_view)
++    cg_context = clip_to_parent_viewports (ns_view, self);
++
+   [self myDrawRect: dirtyRect];
+
+-  CGContextRestoreGState (cg_context);
++  if (cg_context)
++    CGContextRestoreGState (cg_context);
+ }
+ @end
+
+@@ -271,101 +296,19 @@ static void   gtk_ns_view_swizzle_draw_rect_recursive (NSView      *view,
+                            turnedOn: (BOOL) flag
+ {
+   GtkNSView *ns_view;
+-  GtkWidget *viewport;
+-  CGContextRef cg_context;
+-
+-  ns_view = (GtkNSView *) objc_getAssociatedObject (self, "gtknsview");
+-
+-  if (! ns_view && ([self class] == [NSTextView class]))
+-    {
+-      /*  if it's not a GtkNSView, check if it's the NSWindow's cell
+-       *  editor editing an NSTextField managed by a GtkNSView
+-       */
+-      GtkWindow *window = (GtkWindow *) objc_getAssociatedObject (self, "gtkwindow");
+-
+-      if (GTK_IS_WINDOW (window))
+-        {
+-          GtkWidget *focus = gtk_window_get_focus (window);
+-
+-          if (GTK_IS_NS_VIEW (focus))
+-            ns_view = GTK_NS_VIEW (focus);
+-        }
+-    }
+-
+-  if (! ns_view ||
+-      ns_view->priv->view != [ns_view->priv->view ancestorSharedWithView: self])
+-    {
+-      [self myDrawInsertionPointInRect: aRect
+-                                 color: aColor
+-                              turnedOn: flag];
+-      return;
+-    }
+-
+-  cg_context = [[NSGraphicsContext currentContext] graphicsPort];
+-  CGContextSaveGState (cg_context);
+-
+-  for (viewport = gtk_widget_get_ancestor (GTK_WIDGET (ns_view), GTK_TYPE_VIEWPORT);
+-       viewport;
+-       viewport = gtk_widget_get_ancestor (gtk_widget_get_parent (viewport),
+-                                           GTK_TYPE_VIEWPORT))
+-    {
+-      GdkWindow *window;
+-      GtkAllocation viewport_allocation;
+-      CGRect rect;
+-
+-      gtk_widget_get_allocation (viewport, &viewport_allocation);
+-
+-      /* evil: don't clip to the viewport's width/height but to that
+-       * of its parent window, because we know we hacked an
+-       * overshoot_window into GtkScrolledWindow and need to restrict
+-       * rendering to its area
+-       */
+-      window = gtk_widget_get_parent_window (viewport);
+-
+-      viewport_allocation.width = gdk_window_get_width (window);
+-      viewport_allocation.height = gdk_window_get_height (window);
+-
+-      if (gtk_viewport_get_shadow_type (GTK_VIEWPORT (viewport)) != GTK_SHADOW_NONE)
+-        {
+-          GtkStyle *style = gtk_widget_get_style (viewport);
+-
+-          viewport_allocation.x += style->xthickness;
+-          viewport_allocation.y += style->ythickness;
+-          viewport_allocation.width -= 2 * style->xthickness;
+-          viewport_allocation.height -= 2 * style->ythickness;
+-        }
+-
+-      gtk_widget_translate_coordinates (viewport, GTK_WIDGET (ns_view),
+-                                        viewport_allocation.x,
+-                                        viewport_allocation.y,
+-                                        &viewport_allocation.x,
+-                                        &viewport_allocation.y);
++  CGContextRef cg_context = nil;;
+
+-      rect.origin.x = viewport_allocation.x;
+-      rect.origin.y = viewport_allocation.y;
+-      rect.size.width = viewport_allocation.width;
+-      rect.size.height = viewport_allocation.height;
++  ns_view = get_associated_gtknsview (self);
+
+-      /*  need to translate rect if this is not the view itself but a subview  */
+-      if (ns_view->priv->view != self)
+-        {
+-          NSRect offset = NSMakeRect (0, 0, 0, 0);
+-
+-          offset = [ns_view->priv->view convertRect: offset
+-                                           fromView: self];
+-
+-          rect.origin.x -= offset.origin.x;
+-          rect.origin.y -= offset.origin.y;
+-        }
+-
+-      CGContextClipToRect (cg_context, rect);
+-    }
++  if (ns_view)
++    cg_context = clip_to_parent_viewports (ns_view, self);
+
+   [self myDrawInsertionPointInRect: aRect
+                              color: aColor
+                           turnedOn: flag];
+
+-  CGContextRestoreGState (cg_context);
++  if (cg_context)
++    CGContextRestoreGState (cg_context);
+ }
+ @end
+
+--
+1.7.10.2 (Apple Git-33)

@@ -1,0 +1,92 @@
+From 6437422a8153939d06563d02fc938b90f36204d0 Mon Sep 17 00:00:00 2001
+From: Michael Natterer <mitch@gimp.org>
+Date: Fri, 23 Mar 2012 12:22:31 +0100
+Subject: [PATCH 37/68] quartz: return events on embedded foreign NSViews back
+ to Cocoa
+
+---
+ gdk/gdkmarshalers.list        |    1 +
+ gdk/gdkwindow.c               |   14 ++++++++++++++
+ gdk/quartz/gdkevents-quartz.c |   20 ++++++++++++++++++++
+ 3 files changed, 35 insertions(+)
+
+diff --git a/gdk/gdkmarshalers.list b/gdk/gdkmarshalers.list
+index ea36bae..7b37163 100644
+--- a/gdk/gdkmarshalers.list
++++ b/gdk/gdkmarshalers.list
+@@ -4,3 +4,4 @@ VOID:POINTER,POINTER,POINTER
+ OBJECT:VOID
+ OBJECT:DOUBLE,DOUBLE
+ VOID:DOUBLE,DOUBLE,POINTER,POINTER
++VOID:POINTER,POINTER
+diff --git a/gdk/gdkwindow.c b/gdk/gdkwindow.c
+index 2db0c0b..a6b582c 100644
+--- a/gdk/gdkwindow.c
++++ b/gdk/gdkwindow.c
+@@ -126,6 +126,7 @@ enum {
+   PICK_EMBEDDED_CHILD, /* only called if children are embedded */
+   TO_EMBEDDER,
+   FROM_EMBEDDER,
++  NATIVE_CHILD_EVENT,
+   LAST_SIGNAL
+ };
+
+@@ -595,6 +596,19 @@ gdk_window_class_init (GdkWindowObjectClass *klass)
+		  G_TYPE_DOUBLE,
+		  G_TYPE_POINTER,
+		  G_TYPE_POINTER);
++
++  signals[NATIVE_CHILD_EVENT] =
++    g_signal_new (g_intern_static_string ("native-child-event"),
++		  G_OBJECT_CLASS_TYPE (object_class),
++		  G_SIGNAL_RUN_LAST,
++		  0,
++		  NULL, NULL,
++		  _gdk_marshal_VOID__POINTER_POINTER,
++		  G_TYPE_NONE,
++		  2,
++		  G_TYPE_POINTER,
++		  G_TYPE_POINTER);
++
+ }
+
+ static void
+diff --git a/gdk/quartz/gdkevents-quartz.c b/gdk/quartz/gdkevents-quartz.c
+index f3ba2c8..f6742f0 100644
+--- a/gdk/quartz/gdkevents-quartz.c
++++ b/gdk/quartz/gdkevents-quartz.c
+@@ -841,12 +841,32 @@ find_window_for_ns_event (NSEvent *nsevent,
+               {
+                 GdkWindowObject *toplevel_private;
+                 GdkWindowImplQuartz *toplevel_impl;
++                guint n_subviews;
++                guint i;
+
+                 toplevel = toplevel_under_pointer;
+
+                 toplevel_private = (GdkWindowObject *)toplevel;
+                 toplevel_impl = (GdkWindowImplQuartz *)toplevel_private->impl;
+
++                n_subviews = [[toplevel_impl->view subviews] count];
++
++                for (i = 0; i < n_subviews; ++i)
++                  {
++                    NSView* sv = [[toplevel_impl->view subviews] objectAtIndex:i];
++                    NSRect r = [sv frame];
++
++                    if (r.origin.x <= *x && r.origin.x + r.size.width >= *x &&
++                        r.origin.y <= *y && r.origin.y + r.size.height >= *y)
++                      {
++                        g_signal_emit_by_name (toplevel, "native-child-event",
++                                               sv, nsevent);
++
++                        /* event is within subview, forward back to Cocoa */
++                        return NULL;
++                      }
++                  }
++
+                 *x = x_tmp;
+                 *y = y_tmp;
+               }
+--
+1.7.10.2 (Apple Git-33)

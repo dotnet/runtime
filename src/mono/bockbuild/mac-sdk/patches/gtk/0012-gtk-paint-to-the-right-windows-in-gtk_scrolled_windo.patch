@@ -1,0 +1,35 @@
+From f8b99185c4fe6a281f2075c5780bc71b35b46de9 Mon Sep 17 00:00:00 2001
+From: Michael Natterer <mitch@gimp.org>
+Date: Thu, 14 Jun 2012 09:27:09 +0200
+Subject: [PATCH 12/68] gtk: paint to the right windows in
+ gtk_scrolled_window_expose()
+
+so we don't paint everything twice.
+---
+ gtk/gtkscrolledwindow.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/gtk/gtkscrolledwindow.c b/gtk/gtkscrolledwindow.c
+index 694d20a..821981f 100644
+--- a/gtk/gtkscrolledwindow.c
++++ b/gtk/gtkscrolledwindow.c
+@@ -1310,11 +1310,14 @@ static gboolean
+ gtk_scrolled_window_expose (GtkWidget      *widget,
+			    GdkEventExpose *event)
+ {
++  GtkScrolledWindowPrivate *priv = GTK_SCROLLED_WINDOW_GET_PRIVATE (widget);
++
+   if (gtk_widget_is_drawable (widget))
+     {
+-      gtk_scrolled_window_paint (widget, &event->area);
+-
+-      GTK_WIDGET_CLASS (gtk_scrolled_window_parent_class)->expose_event (widget, event);
++      if (event->window == priv->overshoot_window)
++        GTK_WIDGET_CLASS (gtk_scrolled_window_parent_class)->expose_event (widget, event);
++      else
++        gtk_scrolled_window_paint (widget, &event->area);
+     }
+
+   return FALSE;
+--
+1.7.10.2 (Apple Git-33)

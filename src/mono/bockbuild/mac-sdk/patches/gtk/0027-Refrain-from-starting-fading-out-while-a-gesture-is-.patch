@@ -1,0 +1,69 @@
+From d35ff9d66c8d76d509819dabc7b97972b76d7438 Mon Sep 17 00:00:00 2001
+From: Kristian Rietveld <kris@lanedo.com>
+Date: Mon, 8 Oct 2012 11:48:38 +0200
+Subject: [PATCH 27/68] Refrain from starting fading out while a gesture is in
+ progress
+
+---
+ gtk/gtkscrolledwindow.c |   20 ++++++++++++++++----
+ 1 file changed, 16 insertions(+), 4 deletions(-)
+
+diff --git a/gtk/gtkscrolledwindow.c b/gtk/gtkscrolledwindow.c
+index 1fba87b..a04436b 100644
+--- a/gtk/gtkscrolledwindow.c
++++ b/gtk/gtkscrolledwindow.c
+@@ -153,6 +153,7 @@ typedef struct {
+
+   gboolean       overlay_scrollbars;
+   gboolean       is_snapping_back;
++  gboolean       gesture_in_progress;
+ } GtkScrolledWindowPrivate;
+
+ #define GTK_SCROLLED_WINDOW_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), GTK_TYPE_SCROLLED_WINDOW, GtkScrolledWindowPrivate))
+@@ -2151,7 +2152,10 @@ gtk_scrolled_window_scroll_event (GtkWidget      *widget,
+        * FIXME: check if overshoot has really ended.
+        */
+       if (event->phase == GDK_EVENT_SCROLL_PHASE_START)
+-        priv->is_snapping_back = FALSE;
++        {
++          priv->is_snapping_back = FALSE;
++          priv->gesture_in_progress = TRUE;
++        }
+
+       if (is_momentum_event && !is_overshot)
+         gtk_scrolled_window_calculate_velocity (scrolled_window, (GdkEvent *)event);
+@@ -2291,13 +2295,20 @@ gtk_scrolled_window_scroll_event (GtkWidget      *widget,
+        /* Reset force if gesture has ended. */
+        if (event->phase == GDK_EVENT_SCROLL_PHASE_END)
+          {
++           priv->gesture_in_progress = FALSE;
++
+            priv->x_force = 0.0;
+            priv->y_force = 0.0;
+          }
+
+-       /* Stop fade out timeout while we're overshot */
+-       if (new_overshoot_x != 0 || new_overshoot_y != 0)
++       /* Stop fade out timeout while we're overshot or while
++        * a gesture is in progress.
++        */
++       if (new_overshoot_x != 0 || new_overshoot_y != 0 ||
++           priv->gesture_in_progress)
+          gtk_scrolled_window_stop_fade_out_timeout (scrolled_window);
++       else
++         gtk_scrolled_window_start_fade_out_timeout (scrolled_window);
+
+       /* If we should start a snap back and no current deceleration
+        * is active, start the snap back.
+@@ -3598,7 +3609,8 @@ gtk_scrolled_window_start_fade_in_animation (GtkScrolledWindow *scrolled_window)
+   g_object_add_weak_pointer (G_OBJECT (priv->opacity_anim),
+                              (gpointer *) &priv->opacity_anim);
+
+-  gtk_scrolled_window_start_fade_out_timeout (scrolled_window);
++  if (!priv->gesture_in_progress)
++    gtk_scrolled_window_start_fade_out_timeout (scrolled_window);
+ }
+
+ static void
+--
+1.7.10.2 (Apple Git-33)

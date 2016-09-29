@@ -1,0 +1,39 @@
+From 4eab270368617383e2e287c434f71e037e686047 Mon Sep 17 00:00:00 2001
+From: Kristian Rietveld <kris@lanedo.com>
+Date: Sun, 17 Feb 2013 13:06:59 +0100
+Subject: [PATCH 33/68] Never intervene in the event stream for legacy mice
+
+This is necessary for devices (e.g. Mighty Mouse) which do emit
+precise deltas but no phase.
+---
+ gdk/gdkwindow.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/gdk/gdkwindow.c b/gdk/gdkwindow.c
+index 7a3732c..2db0c0b 100644
+--- a/gdk/gdkwindow.c
++++ b/gdk/gdkwindow.c
+@@ -10849,12 +10849,20 @@ proxy_button_event (GdkEvent *source_event,
+    */
+   if (type == GDK_SCROLL && source_event->scroll.has_deltas)
+     {
++      gboolean legacy_mouse =
++          source_event->scroll.phase == GDK_EVENT_SCROLL_PHASE_NONE &&
++          source_event->scroll.momentum_phase == GDK_EVENT_SCROLL_PHASE_NONE;
++
+       if (source_event->scroll.phase == GDK_EVENT_SCROLL_PHASE_START)
+         {
+           set_last_scroll_event_windows (display, pointer_window, event_win);
+         }
+-      else
++      else if (!legacy_mouse)
+         {
++          /* Never override pointer and event windows for legacy devices
++           * which are not capable of momentum scrolling. (The windows
++           * will be NULL, because they have never been set).
++           */
+           pointer_window = g_object_get_qdata (G_OBJECT (display),
+                                                quark_last_scroll_pointer_window);
+           event_win = g_object_get_qdata (G_OBJECT (display),
+--
+1.7.10.2 (Apple Git-33)

@@ -1,0 +1,74 @@
+From aa3e5322000437f02e04916abf278dbbc407a403 Mon Sep 17 00:00:00 2001
+From: Michael Natterer <mitch@gimp.org>
+Date: Fri, 22 Feb 2013 11:06:58 +0100
+Subject: [PATCH 43/68] tests: add a scrolled window test widget to
+ testnsview.c
+
+---
+ tests/testnsview.c |   51 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 51 insertions(+)
+
+diff --git a/tests/testnsview.c b/tests/testnsview.c
+index 45b1d60..1a523e6 100644
+--- a/tests/testnsview.c
++++ b/tests/testnsview.c
+@@ -139,6 +139,57 @@ main (gint   argc,
+                               ns_view);
+   }
+
++  /* add an entry in a scrolled window to test scrolling / clipping */
++  {
++    GtkWidget *sw;
++    GtkWidget *abox;
++    GtkWidget *hbox;
++    NSRect label_rect = { { 0.0, 0.0 }, { 100.0, 12.0 } };
++    NSRect text_rect = { { 0.0, 0.0 }, { 100.0, 12.0 } };
++    NSTextField *text_field;
++
++    sw = gtk_scrolled_window_new (NULL, NULL);
++    gtk_widget_set_size_request (sw, -1, 100);
++    gtk_box_pack_start (GTK_BOX (vbox), sw, FALSE, FALSE, 0);
++    gtk_widget_show (sw);
++
++    abox = gtk_alignment_new (0.5, 0.5, 0.0, 0.0);
++    gtk_widget_set_size_request (abox, -1, 200);
++    gtk_container_set_border_width (GTK_CONTAINER (abox), 10);
++    gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW (sw), abox);
++    gtk_widget_show (abox);
++
++    hbox = gtk_hbox_new (FALSE, 10);
++    gtk_container_add (GTK_CONTAINER (abox), hbox);
++    gtk_widget_show (hbox);
++
++    /* a non-editable text label */
++    text_field = [[NSTextField alloc] initWithFrame:label_rect];
++    [text_field setEditable:NO];
++    [text_field setDrawsBackground:NO];
++    [text_field setBordered:NO];
++    [text_field setStringValue:@"A Text Label"];
++
++    ns_view = gtk_ns_view_new ((NSView *) text_field);
++    gtk_widget_set_size_request (ns_view, 100, 20);
++    gtk_box_pack_start (GTK_BOX (hbox), ns_view, FALSE, FALSE, 0);
++    gtk_widget_show (ns_view);
++
++    [text_field release];
++
++    /* an editable text field */
++    text_field = [[NSTextField alloc] initWithFrame:text_rect];
++    [text_field setEditable:YES];
++    [text_field setStringValue:@"An editable text entry"];
++
++    ns_view = gtk_ns_view_new ((NSView *) text_field);
++    gtk_widget_set_size_request (ns_view, 100, 20);
++    gtk_box_pack_start (GTK_BOX (hbox), ns_view, TRUE, TRUE, 0);
++    gtk_widget_show (ns_view);
++
++    [text_field release];
++  }
++
+   /* add an entry in an event box to test living inside another gdkwindow */
+   {
+     GtkWidget *event_box;
+--
+1.7.10.2 (Apple Git-33)

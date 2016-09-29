@@ -1,0 +1,13 @@
+diff --git a/gdk/quartz/GdkQuartzWindow.c b/gdk/quartz/GdkQuartzWindow.c
+index 06d11cf..c11924c 100644
+--- a/gdk/quartz/GdkQuartzWindow.c
++++ b/gdk/quartz/GdkQuartzWindow.c
+@@ -412,7 +412,7 @@
+
+ -(BOOL)isInManualResize
+ {
+-  return inManualResize;
++  return inManualResize || inManualMove;
+ }
+
+ -(void)beginManualResize

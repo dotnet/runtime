@@ -1,0 +1,101 @@
+diff --git a/gtk/gtknsview.c b/gtk/gtknsview.c
+index ad003d9..483f105 100644
+--- a/gtk/gtknsview.c
++++ b/gtk/gtknsview.c
+@@ -41,7 +41,8 @@
+ enum
+ {
+   PROP_0,
+-  PROP_VIEW
++  PROP_VIEW,
++  PROP_ENABLE_SWIZZLE
+ };
+
+
+@@ -49,6 +50,7 @@ struct _GtkNSViewPrivate
+ {
+   NSView *view;
+   guint   map_timeout;
++  gboolean enable_swizzle;
+ };
+
+ #define GTK_NS_VIEW_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), \
+@@ -130,6 +132,14 @@ gtk_ns_view_class_init (GtkNSViewClass *klass)
+                                                          P_("The NSView"),
+                                                          GTK_PARAM_READWRITE |
+                                                          G_PARAM_CONSTRUCT_ONLY));
++
++  g_object_class_install_property (object_class,
++				   PROP_ENABLE_SWIZZLE,
++				   g_param_spec_boolean ("enable-swizzle",
++							 P_("Enable swizzle"),
++							 P_("Enable swizzle"),
++							 FALSE,
++							 GTK_PARAM_READWRITE));
+ }
+
+ static void
+@@ -149,12 +159,18 @@ static void   gtk_ns_view_swizzle_draw_rect_recursive (NSView      *view,
+ - (void) myDidAddSubview: (NSView *) aView
+ {
+   void *associated_object;
++  GtkNSView *gtknsview;
+
+   associated_object = objc_getAssociatedObject (self, "gtknsview");
+
+   if (associated_object)
+     {
+-      gtk_ns_view_swizzle_draw_rect_recursive (aView, "gtknsview", associated_object);
++      gtknsview = (GtkNSView *)associated_object;
++
++      if (gtknsview->priv->enable_swizzle)
++	{
++	  gtk_ns_view_swizzle_draw_rect_recursive (aView, "gtknsview", associated_object);
++	}
+     }
+   else
+     {
+@@ -443,8 +459,11 @@ gtk_ns_view_constructed (GObject *object)
+ #endif
+
+   gtk_ns_view_replace_draw_insertion_point ();
+-  gtk_ns_view_swizzle_draw_rect_recursive (ns_view->priv->view,
+-                                           "gtknsview", ns_view);
++  if (ns_view->priv->enable_swizzle)
++    {
++      gtk_ns_view_swizzle_draw_rect_recursive (ns_view->priv->view,
++					       "gtknsview", ns_view);
++    }
+ }
+
+ static void
+@@ -477,6 +496,10 @@ gtk_ns_view_set_property (GObject      *object,
+         [ns_view->priv->view retain];
+       break;
+
++    case PROP_ENABLE_SWIZZLE:
++      ns_view->priv->enable_swizzle = g_value_get_boolean (value);
++      break;
++
+     default:
+       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+       break;
+@@ -497,6 +520,9 @@ gtk_ns_view_get_property (GObject      *object,
+       g_value_set_pointer (value, ns_view->priv->view);
+       break;
+
++    case PROP_ENABLE_SWIZZLE:
++      g_value_set_boolean (value, ns_view->priv->enable_swizzle);
++
+     default:
+       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+       break;
+@@ -617,7 +643,7 @@ really_map (GtkWidget *widget) {
+       NSText *text = [window fieldEditor: YES
+                                forObject: nil];
+
+-      if (text)
++      if (text && ns_view->priv->enable_swizzle)
+         {
+           gtk_ns_view_swizzle_draw_rect_recursive (text, "gtkwindow", toplevel);
+         }

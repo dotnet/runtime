@@ -1,0 +1,76 @@
+From 87d285a9e186e7745d4f3a2b2e6a489b1b803b94 Mon Sep 17 00:00:00 2001
+From: Michael Natterer <mitch@gimp.org>
+Date: Fri, 22 Feb 2013 11:06:26 +0100
+Subject: [PATCH 42/68] gtk: connect GtkNSView to "move-native-children" and
+ reposition
+
+---
+ gtk/gtknsview.c |   32 ++++++++++++++++++++++++++------
+ 1 file changed, 26 insertions(+), 6 deletions(-)
+
+diff --git a/gtk/gtknsview.c b/gtk/gtknsview.c
+index 40c6a9b..a19a94e 100644
+--- a/gtk/gtknsview.c
++++ b/gtk/gtknsview.c
+@@ -77,12 +77,14 @@ static gboolean   gtk_ns_view_key_press     (GtkWidget      *widget,
+ static gboolean   gtk_ns_view_key_release   (GtkWidget      *widget,
+                                              GdkEventKey    *event);
+
+-static void       gtk_ns_view_native_child_event (GdkWindow     *window,
+-                                                  NSView        *view,
+-                                                  NSEvent       *event,
+-                                                  GtkNSView     *ns_view);
+-static gboolean   gtk_ns_view_forward_event      (GtkWidget     *widget,
+-                                                  GdkEventKey   *event);
++static void       gtk_ns_view_native_child_event   (GdkWindow     *window,
++                                                    NSView        *view,
++                                                    NSEvent       *event,
++                                                    GtkNSView     *ns_view);
++static void       gtk_ns_view_move_native_children (GdkWindow     *window,
++                                                    GtkNSView     *ns_view);
++static gboolean   gtk_ns_view_forward_event        (GtkWidget     *widget,
++                                                    GdkEventKey   *event);
+
+
+ G_DEFINE_TYPE (GtkNSView, gtk_ns_view, GTK_TYPE_WIDGET)
+@@ -287,6 +289,10 @@ gtk_ns_view_map (GtkWidget *widget)
+                            G_CALLBACK (gtk_ns_view_native_child_event),
+                            G_OBJECT (widget), 0);
+
++  g_signal_connect_object (gtk_widget_get_window (widget), "move-native-children",
++                           G_CALLBACK (gtk_ns_view_move_native_children),
++                           G_OBJECT (widget), 0);
++
+   GTK_WIDGET_CLASS (gtk_ns_view_parent_class)->map (widget);
+ }
+
+@@ -296,6 +302,10 @@ gtk_ns_view_unmap (GtkWidget *widget)
+   GtkNSView *ns_view = GTK_NS_VIEW (widget);
+   GtkWidget *toplevel = gtk_widget_get_toplevel (widget);
+
++  g_signal_handlers_disconnect_by_func (gtk_widget_get_window (widget),
++                                        gtk_ns_view_move_native_children,
++                                        widget);
++
+   g_signal_handlers_disconnect_by_func (gtk_widget_get_window (toplevel),
+                                         gtk_ns_view_native_child_event,
+                                         widget);
+@@ -412,6 +422,16 @@ gtk_ns_view_native_child_event (GdkWindow *window,
+     }
+ }
+
++static void
++gtk_ns_view_move_native_children (GdkWindow *window,
++                                  GtkNSView *ns_view)
++{
++  GtkAllocation allocation;
++
++  gtk_widget_get_allocation (GTK_WIDGET (ns_view), &allocation);
++  gtk_ns_view_position_view (ns_view, &allocation);
++}
++
+ static gboolean
+ gtk_ns_view_forward_event (GtkWidget   *widget,
+                            GdkEventKey *event)
+--
+1.7.10.2 (Apple Git-33)

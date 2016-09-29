@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+        <key>CFBundleGetInfoString</key>
+        <string>@@MONO_VERSION_RELEASE@@</string>
+        <key>CFBundleIdentifier</key>
+        <string>com.ximian.mono-@@MONO_VERSION@@-csdk</string>
+        <key>CFBundleName</key>
+        <string>Mono.framework</string>
+        <key>CFBundleShortVersionString</key>
+        <string>@@MONO_VERSION@@</string>
+        <key>IFPkgFlagAllowBackRev</key>
+        <true/>
+        <key>IFPkgFlagAuthorizationAction</key>
+        <string>AdminAuthorization</string>
+        <key>IFPkgFlagDefaultLocation</key>
+        <string>/</string>
+        <key>IFPkgFlagInstallFat</key>
+        <false/>
+        <key>IFPkgFlagIsRequired</key>
+        <false/>
+        <key>IFPkgFlagRelocatable</key>
+        <false/>
+        <key>IFPkgFlagRestartAction</key>
+        <string>NoRestart</string>
+        <key>IFPkgFlagRootVolumeOnly</key>
+        <true/>
+        <key>IFPkgFlagUpdateInstalledLanguages</key>
+        <false/>
+        <key>IFPkgFormatVersion</key>
+        <real>0.10000000149011612</real>
+</dict>
+</plist>

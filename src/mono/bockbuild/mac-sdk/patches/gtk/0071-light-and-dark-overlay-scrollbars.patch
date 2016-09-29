@@ -1,0 +1,114 @@
+diff --git a/gtk/gtkscrolledwindow.c b/gtk/gtkscrolledwindow.c
+index a643b7d..02920ce 100644
+--- a/gtk/gtkscrolledwindow.c
++++ b/gtk/gtkscrolledwindow.c
+@@ -282,6 +282,10 @@ static gboolean gtk_scrolled_window_calculate_velocity  (GtkScrolledWindow *scro
+                                                          GdkEvent          *event);
+ static void gtk_scrolled_window_init_overlay_scrollbars (GtkScrolledWindow *window);
+
++static void gtk_scrolled_window_style_changed (GtkWidget  *widget,
++					       GParamSpec *property,
++					       gpointer    user_data);
++static void update_overlay_scrollbar_color (GtkWidget *widget);
+
+ static guint signals[LAST_SIGNAL] = {0};
+
+@@ -1149,7 +1153,7 @@ gtk_scrolled_window_set_property (GObject      *object,
+				  GParamSpec   *pspec)
+ {
+   GtkScrolledWindow *scrolled_window = GTK_SCROLLED_WINDOW (object);
+-
++
+   switch (prop_id)
+     {
+     case PROP_HADJUSTMENT:
+@@ -1457,7 +1461,6 @@ gtk_scrolled_window_expose (GtkWidget      *widget,
+			    GdkEventExpose *event)
+ {
+   GtkScrolledWindow *scrolled_window = GTK_SCROLLED_WINDOW (widget);
+-  GtkScrolledWindowPrivate *priv = GTK_SCROLLED_WINDOW_GET_PRIVATE (widget);
+
+   if (gtk_widget_is_drawable (widget))
+     {
+@@ -3085,6 +3088,11 @@ gtk_scrolled_window_add (GtkContainer *container,
+   bin->child = child;
+   gtk_widget_set_parent (child, GTK_WIDGET (bin));
+
++  g_signal_connect (scrolled_window,
++		    "notify::style",
++		    G_CALLBACK (gtk_scrolled_window_style_changed),
++		    NULL);
++
+   /* this is a temporary message */
+   if (!gtk_widget_set_scroll_adjustments (child,
+                                           gtk_range_get_adjustment (GTK_RANGE (scrolled_window->hscrollbar)),
+@@ -3224,6 +3232,43 @@ _gtk_scrolled_window_get_scrollbar_spacing (GtkScrolledWindow *scrolled_window)
+ }
+
+ static void
++gtk_scrolled_window_style_changed (GtkWidget  *widget,
++				   GParamSpec *property,
++				   gpointer    user_data)
++{
++  update_overlay_scrollbar_color (widget);
++}
++
++static void
++update_overlay_scrollbar_color (GtkWidget *widget)
++{
++  GtkScrolledWindowPrivate *priv = GTK_SCROLLED_WINDOW_GET_PRIVATE (widget);
++  GtkStyle *style;
++  GdkColor c;
++  gdouble r, g, b;
++  gfloat cc;
++  gint brightness;
++
++  style = gtk_widget_get_style (widget);
++  c = style->bg[GTK_STATE_NORMAL];
++
++  r = (gdouble)c.red;
++  g = (gdouble)c.green;
++  b = (gdouble)c.blue;
++
++  brightness = (int)(sqrt (r * r * 0.241 +
++			   g * g * 0.691 +
++			   b * b * 0.068) / 256.0);
++
++  cc = brightness < 130 ? 1.0 : 0.0;
++
++  [priv->vbar_layer setBackgroundColor: CGColorCreateGenericRGB (cc, cc, cc, 0.5)];
++  [priv->vslider_layer setBackgroundColor: CGColorCreateGenericRGB (cc, cc, cc, 1.0)];
++  [priv->hbar_layer setBackgroundColor: CGColorCreateGenericRGB (cc, cc, cc, 0.5)];
++  [priv->hslider_layer setBackgroundColor: CGColorCreateGenericRGB (cc, cc, cc, 1.0)];
++}
++
++static void
+ gtk_scrolled_window_realize (GtkWidget *widget)
+ {
+   GtkScrolledWindow *scrolled_window = GTK_SCROLLED_WINDOW (widget);
+@@ -3313,21 +3358,22 @@ gtk_scrolled_window_realize (GtkWidget *widget)
+   parent_layer = [layer_view layer];
+
+   priv->vbar_layer = [[CALayer layer] retain];
+-  priv->vbar_layer.backgroundColor = CGColorCreateGenericRGB (0.0, 0.0, 0.0, 0.5);
+   priv->vbar_layer.hidden = YES;
+
+   priv->vslider_layer = [[CALayer layer] retain];
+-  priv->vslider_layer.backgroundColor = CGColorCreateGenericRGB (0.0, 0.0, 0.0, 1.0);
+   priv->vslider_layer.hidden = YES;
+
+   priv->hbar_layer = [[CALayer layer] retain];
+-  priv->hbar_layer.backgroundColor = CGColorCreateGenericRGB (0.0, 0.0, 0.0, 0.5);
+   priv->hbar_layer.hidden = YES;
+
+   priv->hslider_layer = [[CALayer layer] retain];
+-  priv->hslider_layer.backgroundColor = CGColorCreateGenericRGB (0.0, 0.0, 0.0, 1.0);
+   priv->hslider_layer.hidden = YES;
+
++  priv->vbar_layer.backgroundColor = CGColorCreateGenericRGB (0, 0, 0, 0.5);
++  priv->vslider_layer.backgroundColor = CGColorCreateGenericRGB (0, 0, 0, 1.0);
++  priv->hbar_layer.backgroundColor = CGColorCreateGenericRGB (0, 0, 0, 0.5);
++  priv->hslider_layer.backgroundColor = CGColorCreateGenericRGB (0, 0, 0, 1.0);
++
+   [parent_layer addSublayer:priv->vbar_layer];
+   [parent_layer addSublayer:priv->vslider_layer];

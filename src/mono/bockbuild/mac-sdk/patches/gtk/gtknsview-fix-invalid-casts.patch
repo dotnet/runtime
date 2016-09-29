@@ -1,0 +1,22 @@
+diff --git a/gtk/gtknsview.c b/gtk/gtknsview.c
+index bb9ae06..6820113 100644
+--- a/gtk/gtknsview.c
++++ b/gtk/gtknsview.c
+@@ -534,7 +534,7 @@ gtk_ns_view_notify (GObject    *object,
+                     GParamSpec *pspec)
+ {
+   GtkNSView *ns_view = GTK_NS_VIEW (object);
+-  GtkWindow *window = GTK_WINDOW (gtk_widget_get_toplevel (GTK_WIDGET (object)));
++  GtkWidget *toplevel = gtk_widget_get_toplevel (GTK_WIDGET (object));
+
+   if (G_OBJECT_CLASS (gtk_ns_view_parent_class)->notify)
+     G_OBJECT_CLASS (gtk_ns_view_parent_class)->notify (object, pspec);
+@@ -551,7 +551,7 @@ gtk_ns_view_notify (GObject    *object,
+
+       if (gtk_widget_has_focus (GTK_WIDGET (object)))
+         [ns_window makeFirstResponder:ns_view->priv->view];
+-      else if ([ns_window firstResponder] == ns_view->priv->view || !gtk_window_is_active (window))
++      else if ([ns_window firstResponder] == ns_view->priv->view || (GTK_IS_WINDOW (toplevel) && !gtk_window_is_active (GTK_WINDOW (toplevel))))
+         [ns_window makeFirstResponder:nil];
+     }
+ }

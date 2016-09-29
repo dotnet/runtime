@@ -1,0 +1,23 @@
+commit 124e814f478936e017e58359240c540ad6678f3b
+Author: John Ralls <jralls@ceridwen.us>
+Date:   Sat Sep 28 10:55:22 2013 -0700
+
+    Bug 651224 - Potential NULL display ptr from quartz gtk_clipboard_wait_for_contents
+
+diff --git a/gtk/gtkclipboard-quartz.c b/gtk/gtkclipboard-quartz.c
+index ab7732b..a68d1cf 100644
+--- a/gtk/gtkclipboard-quartz.c
++++ b/gtk/gtkclipboard-quartz.c
+@@ -701,10 +701,12 @@ gtk_clipboard_wait_for_contents (GtkClipboard *clipboard,
+       GdkAtom *atoms;
+
+       length = [types count] * sizeof (GdkAtom);
+-
++
+       selection_data = g_slice_new0 (GtkSelectionData);
+       selection_data->selection = clipboard->selection;
+       selection_data->target = target;
++      if (!selection_data->display)
++	selection_data->display = gdk_display_get_default ();
+
+       atoms = g_malloc (length);

@@ -1,0 +1,50 @@
+From a790bc42e0fdaf73fbc7561f7497e5b1fbdc1f81 Mon Sep 17 00:00:00 2001
+From: Michael Natterer <mitch@gimp.org>
+Date: Fri, 22 Feb 2013 11:05:17 +0100
+Subject: [PATCH 39/68] gdk: add a "move-native-children" signal to GdkWindow
+
+and emit it from move_native_children(), so GtkNSView has
+a chance to do the right thing on scrolling.
+---
+ gdk/gdkwindow.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/gdk/gdkwindow.c b/gdk/gdkwindow.c
+index a6b582c..3040321 100644
+--- a/gdk/gdkwindow.c
++++ b/gdk/gdkwindow.c
+@@ -127,6 +127,7 @@ enum {
+   TO_EMBEDDER,
+   FROM_EMBEDDER,
+   NATIVE_CHILD_EVENT,
++  MOVE_NATIVE_CHILDREN,
+   LAST_SIGNAL
+ };
+
+@@ -609,6 +610,15 @@ gdk_window_class_init (GdkWindowObjectClass *klass)
+		  G_TYPE_POINTER,
+		  G_TYPE_POINTER);
+
++  signals[MOVE_NATIVE_CHILDREN] =
++    g_signal_new (g_intern_static_string ("move-native-children"),
++                  G_OBJECT_CLASS_TYPE (object_class),
++                  G_SIGNAL_RUN_LAST,
++                  0,
++                  NULL, NULL,
++                  g_cclosure_marshal_VOID__VOID,
++                  G_TYPE_NONE,
++                  0);
+ }
+
+ static void
+@@ -7474,6 +7484,8 @@ move_native_children (GdkWindowObject *private)
+       else
+	move_native_children  (child);
+     }
++
++  g_signal_emit_by_name (private, "move-native-children");
+ }
+
+ static gboolean
+--
+1.7.10.2 (Apple Git-33)

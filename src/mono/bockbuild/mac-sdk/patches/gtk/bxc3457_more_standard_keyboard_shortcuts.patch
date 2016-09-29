@@ -1,0 +1,22 @@
+diff --git a/gtk/gtkrc.key.mac b/gtk/gtkrc.key.mac
+index 980f3e4..91033a6 100644
+--- a/gtk/gtkrc.key.mac
++++ b/gtk/gtkrc.key.mac
+@@ -10,6 +10,8 @@ binding "gtk-mac-alt-arrows"
+   bind "<shift><alt>KP_Right" { "move-cursor" (words, 1, 1) }
+   bind "<shift><alt>Left"     { "move-cursor" (words, -1, 1) }
+   bind "<shift><alt>KP_Left"  { "move-cursor" (words, -1, 1) }
++  bind "<ctrl>p"              { "move-cursor" (display-lines, -1, 0) }
++  bind "<ctrl>n"              { "move-cursor" (display-lines, 1, 0) }
+ }
+
+ class "GtkTextView" binding "gtk-mac-alt-arrows"
+@@ -19,6 +21,8 @@ class "GtkEntry" binding "gtk-mac-alt-arrows"
+
+ binding "gtk-mac-alt-delete"
+ {
++  bind "<ctrl>d" { "delete-from-cursor" (chars, 1) }
++  bind "<ctrl>k" { "delete-from-cursor" (paragraph-ends, 1) }
+   bind "<alt>Delete" { "delete-from-cursor" (word-ends, 1) }
+   bind "<alt>KP_Delete" { "delete-from-cursor" (word-ends, 1) }
+   bind "<alt>BackSpace" { "delete-from-cursor" (word-ends, -1) }

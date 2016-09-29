@@ -1,0 +1,2097 @@
+From b7ce8de6d7b964eef99aa46ee90a09605acdd5ed Mon Sep 17 00:00:00 2001
+From: Michael Natterer <mitch@gimp.org>
+Date: Fri, 1 Jun 2012 13:08:26 +0200
+Subject: [PATCH 13/68] GtkScrolledWindow: add overlay scrollbars
+
+based on code from gnome-builder by Christian Hergert.
+---
+ gtk/Makefile.am         |    4 +
+ gtk/gb-animation.c      |  998 +++++++++++++++++++++++++++++++++++++++++++++++
+ gtk/gb-animation.h      |   87 +++++
+ gtk/gb-frame-source.c   |  134 +++++++
+ gtk/gb-frame-source.h   |   32 ++
+ gtk/gtkscrolledwindow.c |  577 +++++++++++++++++++++++++--
+ 6 files changed, 1806 insertions(+), 26 deletions(-)
+ create mode 100644 gtk/gb-animation.c
+ create mode 100644 gtk/gb-animation.h
+ create mode 100644 gtk/gb-frame-source.c
+ create mode 100644 gtk/gb-frame-source.h
+
+diff --git a/gtk/Makefile.am b/gtk/Makefile.am
+index 7fbe429..31dfd19 100644
+--- a/gtk/Makefile.am
++++ b/gtk/Makefile.am
+@@ -361,6 +361,8 @@ gtk_semi_private_h_sources =    \
+
+ # GTK+ header files that don't get installed
+ gtk_private_h_sources =		\
++	gb-animation.h		\
++	gb-frame-source.h	\
+	gtkquery.h		\
+	gtksearchengine.h	\
+	gtksearchenginesimple.h	\
+@@ -411,6 +413,8 @@ gtk_private_h_sources =		\
+
+ # GTK+ C sources to build the library from
+ gtk_base_c_sources =            \
++	gb-animation.c		\
++	gb-frame-source.c	\
+	gtkquery.c		\
+	gtksearchengine.c	\
+	gtksearchenginesimple.c	\
+diff --git a/gtk/gb-animation.c b/gtk/gb-animation.c
+new file mode 100644
+index 0000000..9452b4a
+--- /dev/null
++++ b/gtk/gb-animation.c
+@@ -0,0 +1,998 @@
++/* gb-animation.c
++ *
++ * Copyright (C) 2010 Christian Hergert <christian@hergert.me>
++ *
++ * This library is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation; either
++ * version 2.1 of the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public icense along with this library; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
++ */
++
++#include <glib/gi18n.h>
++#include <gobject/gvaluecollector.h>
++#include <gtk/gtk.h>
++#include <string.h>
++
++#include "gb-animation.h"
++#include "gb-frame-source.h"
++
++G_DEFINE_TYPE(GbAnimation, _gb_animation, G_TYPE_INITIALLY_UNOWNED)
++
++typedef gdouble (*AlphaFunc) (gdouble       offset);
++typedef void    (*TweenFunc) (const GValue *begin,
++                              const GValue *end,
++                              GValue       *value,
++                              gdouble       offset);
++
++typedef struct
++{
++   gboolean    is_child; /* Does GParamSpec belong to parent widget */
++   GParamSpec *pspec;    /* GParamSpec of target property */
++   GValue      begin;    /* Begin value in animation */
++   GValue      end;      /* End value in animation */
++} Tween;
++
++
++struct _GbAnimationPrivate
++{
++   gpointer  target;        /* Target object to animate */
++   guint64   begin_msec;    /* Time in which animation started */
++   guint     duration_msec; /* Duration of animation */
++   guint     mode;          /* Tween mode */
++   guint     tween_handler; /* GSource performing tweens */
++   GArray   *tweens;        /* Array of tweens to perform */
++   guint     frame_rate;    /* The frame-rate to use */
++   guint     frame_count;   /* Counter for debugging frames rendered */
++};
++
++
++enum
++{
++   PROP_0,
++   PROP_DURATION,
++   PROP_FRAME_RATE,
++   PROP_MODE,
++   PROP_TARGET,
++   LAST_PROP
++};
++
++
++enum
++{
++   TICK,
++   LAST_SIGNAL
++};
++
++
++/*
++ * Helper macros.
++ */
++#define TIMEVAL_TO_MSEC(t) (((t).tv_sec * 1000UL) + ((t).tv_usec / 1000UL))
++#define LAST_FUNDAMENTAL 64
++#define TWEEN(type)                                         \
++    static void                                             \
++    tween_##type (const GValue *begin,                      \
++                  const GValue *end,                        \
++                  GValue *value,                            \
++                  gdouble offset)                           \
++    {                                                       \
++      g##type x = g_value_get_##type(begin);              \
++      g##type y = g_value_get_##type(end);                \
++      g_value_set_##type(value, x + ((y - x) * offset));  \
++    }
++
++
++/*
++ * Globals.
++ */
++static AlphaFunc   gAlphaFuncs[GB_ANIMATION_LAST];
++static gboolean    gDebug;
++static GParamSpec *gParamSpecs[LAST_PROP];
++static guint       gSignals[LAST_SIGNAL];
++static TweenFunc   gTweenFuncs[LAST_FUNDAMENTAL];
++
++
++/*
++ * Tweeners for basic types.
++ */
++TWEEN(int);
++TWEEN(uint);
++TWEEN(long);
++TWEEN(ulong);
++TWEEN(float);
++TWEEN(double);
++
++
++/**
++ * _gb_animation_alpha_ease_in_cubic:
++ * @offset: (in): The position within the animation; 0.0 to 1.0.
++ *
++ * An alpha function to transform the offset within the animation.
++ * @GB_ANIMATION_CUBIC means the valu ewill be transformed into
++ * cubic acceleration (x * x * x).
++ */
++static gdouble
++_gb_animation_alpha_ease_in_cubic (gdouble offset)
++{
++   return offset * offset * offset;
++}
++
++
++/**
++ * _gb_animation_alpha_linear:
++ * @offset: (in): The position within the animation; 0.0 to 1.0.
++ *
++ * An alpha function to transform the offset within the animation.
++ * @GB_ANIMATION_LINEAR means no tranformation will be made.
++ *
++ * Returns: @offset.
++ * Side effects: None.
++ */
++static gdouble
++_gb_animation_alpha_linear (gdouble offset)
++{
++   return offset;
++}
++
++
++/**
++ * _gb_animation_alpha_ease_in_quad:
++ * @offset: (in): The position within the animation; 0.0 to 1.0.
++ *
++ * An alpha function to transform the offset within the animation.
++ * @GB_ANIMATION_EASE_IN_QUAD means that the value will be transformed
++ * into a quadratic acceleration.
++ *
++ * Returns: A tranformation of @offset.
++ * Side effects: None.
++ */
++static gdouble
++_gb_animation_alpha_ease_in_quad (gdouble offset)
++{
++   return offset * offset;
++}
++
++
++/**
++ * _gb_animation_alpha_ease_out_quad:
++ * @offset: (in): The position within the animation; 0.0 to 1.0.
++ *
++ * An alpha function to transform the offset within the animation.
++ * @GB_ANIMATION_EASE_OUT_QUAD means that the value will be transformed
++ * into a quadratic deceleration.
++ *
++ * Returns: A tranformation of @offset.
++ * Side effects: None.
++ */
++static gdouble
++_gb_animation_alpha_ease_out_quad (gdouble offset)
++{
++   return -1.0 * offset * (offset - 2.0);
++}
++
++
++/**
++ * _gb_animation_alpha_ease_in_out_quad:
++ * @offset: (in): The position within the animation; 0.0 to 1.0.
++ *
++ * An alpha function to transform the offset within the animation.
++ * @GB_ANIMATION_EASE_IN_OUT_QUAD means that the value will be transformed
++ * into a quadratic acceleration for the first half, and quadratic
++ * deceleration the second half.
++ *
++ * Returns: A tranformation of @offset.
++ * Side effects: None.
++ */
++static gdouble
++_gb_animation_alpha_ease_in_out_quad (gdouble offset)
++{
++   offset *= 2.0;
++   if (offset < 1.0) {
++      return 0.5 * offset * offset;
++   }
++   offset -= 1.0;
++   return -0.5 * (offset * (offset - 2.0) - 1.0);
++}
++
++
++/**
++ * _gb_animation_load_begin_values:
++ * @animation: (in): A #GbAnimation.
++ *
++ * Load the begin values for all the properties we are about to
++ * animate.
++ *
++ * Returns: None.
++ * Side effects: None.
++ */
++static void
++_gb_animation_load_begin_values (GbAnimation *animation)
++{
++   GbAnimationPrivate *priv;
++   GtkContainer *container;
++   Tween *tween;
++   gint i;
++
++   g_return_if_fail(GB_IS_ANIMATION(animation));
++
++   priv = animation->priv;
++
++   for (i = 0; i < priv->tweens->len; i++) {
++      tween = &g_array_index(priv->tweens, Tween, i);
++      g_value_reset(&tween->begin);
++      if (tween->is_child) {
++         container = GTK_CONTAINER(gtk_widget_get_parent(priv->target));
++         gtk_container_child_get_property(container, priv->target,
++                                          tween->pspec->name,
++                                          &tween->begin);
++      } else {
++         g_object_get_property(priv->target, tween->pspec->name,
++                               &tween->begin);
++      }
++   }
++}
++
++
++/**
++ * _gb_animation_unload_begin_values:
++ * @animation: (in): A #GbAnimation.
++ *
++ * Unloads the begin values for the animation. This might be particularly
++ * useful once we support pointer types.
++ *
++ * Returns: None.
++ * Side effects: None.
++ */
++static void
++_gb_animation_unload_begin_values (GbAnimation *animation)
++{
++   GbAnimationPrivate *priv;
++   Tween *tween;
++   gint i;
++
++   g_return_if_fail(GB_IS_ANIMATION(animation));
++
++   priv = animation->priv;
++
++   for (i = 0; i < priv->tweens->len; i++) {
++      tween = &g_array_index(priv->tweens, Tween, i);
++      g_value_reset(&tween->begin);
++   }
++}
++
++
++/**
++ * _gb_animation_get_offset:
++ * @animation: (in): A #GbAnimation.
++ *
++ * Retrieves the position within the animation from 0.0 to 1.0. This
++ * value is calculated using the msec of the beginning of the animation
++ * and the current time.
++ *
++ * Returns: The offset of the animation from 0.0 to 1.0.
++ * Side effects: None.
++ */
++static gdouble
++_gb_animation_get_offset (GbAnimation *animation)
++{
++   GbAnimationPrivate *priv;
++   GTimeVal now;
++   guint64 msec;
++   gdouble offset;
++
++   g_return_val_if_fail(GB_IS_ANIMATION(animation), 0.0);
++
++   priv = animation->priv;
++
++   g_get_current_time(&now);
++   msec = TIMEVAL_TO_MSEC(now);
++   offset = (gdouble)(msec - priv->begin_msec)
++          / (gdouble)priv->duration_msec;
++   return CLAMP(offset, 0.0, 1.0);
++}
++
++
++/**
++ * _gb_animation_update_property:
++ * @animation: (in): A #GbAnimation.
++ * @target: (in): A #GObject.
++ * @tween: (in): a #Tween containing the property.
++ * @value: (in) The new value for the property.
++ *
++ * Updates the value of a property on an object using @value.
++ *
++ * Returns: None.
++ * Side effects: The property of @target is updated.
++ */
++static void
++_gb_animation_update_property (GbAnimation *animation,
++                               gpointer      target,
++                               Tween        *tween,
++                               const GValue *value)
++{
++   g_object_set_property(target, tween->pspec->name, value);
++}
++
++
++/**
++ * _gb_animation_update_child_property:
++ * @animation: (in): A #GbAnimation.
++ * @target: (in): A #GObject.
++ * @tween: (in): A #Tween containing the property.
++ * @value: (in): The new value for the property.
++ *
++ * Updates the value of the parent widget of the target to @value.
++ *
++ * Returns: None.
++ * Side effects: The property of @target<!-- -->'s parent widget is updated.
++ */
++static void
++_gb_animation_update_child_property (GbAnimation *animation,
++                                     gpointer      target,
++                                     Tween        *tween,
++                                     const GValue *value)
++{
++   GtkWidget *parent = gtk_widget_get_parent(GTK_WIDGET(target));
++   gtk_container_child_set_property(GTK_CONTAINER(parent), target,
++                                    tween->pspec->name, value);
++}
++
++
++/**
++ * _gb_animation_get_value_at_offset:
++ * @animation: (in): A #GbAnimation.
++ * @offset: (in): The offset in the animation from 0.0 to 1.0.
++ * @tween: (in): A #Tween containing the property.
++ * @value: (out): A #GValue in which to store the property.
++ *
++ * Retrieves a value for a particular position within the animation.
++ *
++ * Returns: None.
++ * Side effects: None.
++ */
++static void
++_gb_animation_get_value_at_offset (GbAnimation *animation,
++                                   gdouble       offset,
++                                   Tween        *tween,
++                                   GValue       *value)
++{
++   g_return_if_fail(GB_IS_ANIMATION(animation));
++   g_return_if_fail(offset >= 0.0);
++   g_return_if_fail(offset <= 1.0);
++   g_return_if_fail(tween != NULL);
++   g_return_if_fail(value != NULL);
++   g_return_if_fail(value->g_type == tween->pspec->value_type);
++
++   if (value->g_type < LAST_FUNDAMENTAL) {
++      /*
++       * If you hit the following assertion, you need to add a function
++       * to create the new value at the given offset.
++       */
++      g_assert(gTweenFuncs[value->g_type]);
++      gTweenFuncs[value->g_type](&tween->begin, &tween->end, value, offset);
++   } else {
++      /*
++       * TODO: Support complex transitions.
++       */
++      if (offset >= 1.0) {
++         g_value_copy(&tween->end, value);
++      }
++   }
++}
++
++
++/**
++ * _gb_animation_tick:
++ * @animation: (in): A #GbAnimation.
++ *
++ * Moves the object properties to the next position in the animation.
++ *
++ * Returns: %TRUE if the animation has not completed; otherwise %FALSE.
++ * Side effects: None.
++ */
++static gboolean
++_gb_animation_tick (GbAnimation *animation)
++{
++   GbAnimationPrivate *priv;
++   GdkWindow *window;
++   gdouble offset;
++   gdouble alpha;
++   GValue value = { 0 };
++   Tween *tween;
++   gint i;
++
++   g_return_val_if_fail(GB_IS_ANIMATION(animation), FALSE);
++
++   priv = animation->priv;
++
++   priv->frame_count++;
++   offset = _gb_animation_get_offset(animation);
++   alpha = gAlphaFuncs[priv->mode](offset);
++
++   /*
++    * Update property values.
++    */
++   for (i = 0; i < priv->tweens->len; i++) {
++      tween = &g_array_index(priv->tweens, Tween, i);
++      g_value_init(&value, tween->pspec->value_type);
++      _gb_animation_get_value_at_offset(animation, alpha, tween, &value);
++      if (!tween->is_child) {
++         _gb_animation_update_property(animation, priv->target,
++                                       tween, &value);
++      } else {
++         _gb_animation_update_child_property(animation, priv->target,
++                                             tween, &value);
++      }
++      g_value_unset(&value);
++   }
++
++   /*
++    * Notify anyone interested in the tick signal.
++    */
++   g_signal_emit(animation, gSignals[TICK], 0);
++
++   /*
++    * Flush any outstanding events to the graphics server (in the case of X).
++    */
++   if (GTK_IS_WIDGET(priv->target)) {
++      if ((window = gtk_widget_get_window(GTK_WIDGET(priv->target)))) {
++         gdk_window_flush(window);
++      }
++   }
++
++   return (offset < 1.0);
++}
++
++
++/**
++ * _gb_animation_timeout:
++ * @data: (in): A #GbAnimation.
++ *
++ * Timeout from the main loop to move to the next step of the animation.
++ *
++ * Returns: %TRUE until the animation has completed; otherwise %FALSE.
++ * Side effects: None.
++ */
++static gboolean
++_gb_animation_timeout (gpointer data)
++{
++   GbAnimation *animation = (GbAnimation *)data;
++   gboolean ret;
++
++   if (!(ret = _gb_animation_tick(animation))) {
++      _gb_animation_stop(animation);
++   }
++
++   return ret;
++}
++
++
++/**
++ * _gb_animation_start:
++ * @animation: (in): A #GbAnimation.
++ *
++ * Start the animation. When the animation stops, the internal reference will
++ * be dropped and the animation may be finalized.
++ *
++ * Returns: None.
++ * Side effects: None.
++ */
++void
++_gb_animation_start (GbAnimation *animation)
++{
++   GbAnimationPrivate *priv;
++   GTimeVal now;
++
++   g_return_if_fail(GB_IS_ANIMATION(animation));
++   g_return_if_fail(!animation->priv->tween_handler);
++
++   priv = animation->priv;
++
++   g_get_current_time(&now);
++   g_object_ref_sink(animation);
++   _gb_animation_load_begin_values(animation);
++
++   priv->begin_msec = TIMEVAL_TO_MSEC(now);
++   priv->tween_handler = _gb_frame_source_add(priv->frame_rate,
++                                              _gb_animation_timeout,
++                                              animation);
++}
++
++
++/**
++ * _gb_animation_stop:
++ * @animation: (in): A #GbAnimation.
++ *
++ * Stops a running animation. The internal reference to the animation is
++ * dropped and therefore may cause the object to finalize.
++ *
++ * Returns: None.
++ * Side effects: None.
++ */
++void
++_gb_animation_stop (GbAnimation *animation)
++{
++   GbAnimationPrivate *priv;
++
++   g_return_if_fail(GB_IS_ANIMATION(animation));
++
++   priv = animation->priv;
++
++   if (priv->tween_handler) {
++      g_source_remove(priv->tween_handler);
++      priv->tween_handler = 0;
++      _gb_animation_unload_begin_values(animation);
++      g_object_unref(animation);
++   }
++}
++
++
++/**
++ * _gb_animation_add_property:
++ * @animation: (in): A #GbAnimation.
++ * @pspec: (in): A #ParamSpec of @target or a #GtkWidget<!-- -->'s parent.
++ * @value: (in): The new value for the property at the end of the animation.
++ *
++ * Adds a new property to the set of properties to be animated during the
++ * lifetime of the animation.
++ *
++ * Returns: None.
++ * Side effects: None.
++ */
++void
++_gb_animation_add_property (GbAnimation  *animation,
++                            GParamSpec   *pspec,
++                            const GValue *value)
++{
++   GbAnimationPrivate *priv;
++   Tween tween = { 0 };
++   GType type;
++
++   g_return_if_fail(GB_IS_ANIMATION(animation));
++   g_return_if_fail(pspec != NULL);
++   g_return_if_fail(value != NULL);
++   g_return_if_fail(value->g_type);
++   g_return_if_fail(animation->priv->target);
++   g_return_if_fail(!animation->priv->tween_handler);
++
++   priv = animation->priv;
++
++   type = G_TYPE_FROM_INSTANCE(priv->target);
++   tween.is_child = !g_type_is_a(type, pspec->owner_type);
++   if (tween.is_child) {
++      if (!GTK_IS_WIDGET(priv->target)) {
++         g_critical("Cannot locate property %s in class %s",
++                    pspec->name, g_type_name(type));
++         return;
++      }
++   }
++
++   tween.pspec = g_param_spec_ref(pspec);
++   g_value_init(&tween.begin, pspec->value_type);
++   g_value_init(&tween.end, pspec->value_type);
++   g_value_copy(value, &tween.end);
++   g_array_append_val(priv->tweens, tween);
++}
++
++
++/**
++ * _gb_animation_dispose:
++ * @object: (in): A #GbAnimation.
++ *
++ * Releases any object references the animation contains.
++ *
++ * Returns: None.
++ * Side effects: None.
++ */
++static void
++_gb_animation_dispose (GObject *object)
++{
++   GbAnimationPrivate *priv = GB_ANIMATION(object)->priv;
++   gpointer instance;
++
++   if ((instance = priv->target)) {
++      priv->target = NULL;
++      g_object_unref(instance);
++   }
++
++   G_OBJECT_CLASS(_gb_animation_parent_class)->dispose(object);
++}
++
++
++/**
++ * _gb_animation_finalize:
++ * @object: (in): A #GbAnimation.
++ *
++ * Finalizes the object and releases any resources allocated.
++ *
++ * Returns: None.
++ * Side effects: None.
++ */
++static void
++_gb_animation_finalize (GObject *object)
++{
++   GbAnimationPrivate *priv = GB_ANIMATION(object)->priv;
++   Tween *tween;
++   gint i;
++
++   for (i = 0; i < priv->tweens->len; i++) {
++      tween = &g_array_index(priv->tweens, Tween, i);
++      g_value_unset(&tween->begin);
++      g_value_unset(&tween->end);
++      g_param_spec_unref(tween->pspec);
++   }
++
++   g_array_unref(priv->tweens);
++
++   if (gDebug) {
++      g_print("Rendered %d frames in %d msec animation.\n",
++              priv->frame_count, priv->duration_msec);
++   }
++
++   G_OBJECT_CLASS(_gb_animation_parent_class)->finalize(object);
++}
++
++
++/**
++ * _gb_animation_set_property:
++ * @object: (in): A #GObject.
++ * @prop_id: (in): The property identifier.
++ * @value: (in): The given property.
++ * @pspec: (in): A #ParamSpec.
++ *
++ * Set a given #GObject property.
++ */
++static void
++_gb_animation_set_property (GObject      *object,
++                            guint         prop_id,
++                            const GValue *value,
++                            GParamSpec   *pspec)
++{
++   GbAnimation *animation = GB_ANIMATION(object);
++
++   switch (prop_id) {
++   case PROP_DURATION:
++      animation->priv->duration_msec = g_value_get_uint(value);
++      break;
++   case PROP_FRAME_RATE:
++      animation->priv->frame_rate = g_value_get_uint(value);
++      break;
++   case PROP_MODE:
++      animation->priv->mode = g_value_get_enum(value);
++      break;
++   case PROP_TARGET:
++      animation->priv->target = g_value_dup_object(value);
++      break;
++   default:
++      G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
++   }
++}
++
++
++/**
++ * _gb_animation_class_init:
++ * @klass: (in): A #GbAnimationClass.
++ *
++ * Initializes the GObjectClass.
++ *
++ * Returns: None.
++ * Side effects: Properties, signals, and vtables are initialized.
++ */
++static void
++_gb_animation_class_init (GbAnimationClass *klass)
++{
++   GObjectClass *object_class;
++
++   gDebug = !!g_getenv("GB_ANIMATION_DEBUG");
++
++   object_class = G_OBJECT_CLASS(klass);
++   object_class->dispose = _gb_animation_dispose;
++   object_class->finalize = _gb_animation_finalize;
++   object_class->set_property = _gb_animation_set_property;
++   g_type_class_add_private(object_class, sizeof(GbAnimationPrivate));
++
++   /**
++    * GbAnimation:duration:
++    *
++    * The "duration" property is the total number of milliseconds that the
++    * animation should run before being completed.
++    */
++   gParamSpecs[PROP_DURATION] =
++      g_param_spec_uint("duration",
++                        _("Duration"),
++                        _("The duration of the animation"),
++                        0,
++                        G_MAXUINT,
++                        250,
++                        G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY);
++   g_object_class_install_property(object_class, PROP_DURATION,
++                                   gParamSpecs[PROP_DURATION]);
++
++   /**
++    * GbAnimation:mode:
++    *
++    * The "mode" property is the Alpha function that should be used to
++    * determine the offset within the animation based on the current
++    * offset in the animations duration.
++    */
++   gParamSpecs[PROP_MODE] =
++      g_param_spec_enum("mode",
++                        _("Mode"),
++                        _("The animation mode"),
++                        GB_TYPE_ANIMATION_MODE,
++                        GB_ANIMATION_LINEAR,
++                        G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY);
++   g_object_class_install_property(object_class, PROP_MODE,
++                                   gParamSpecs[PROP_MODE]);
++
++   /**
++    * GbAnimation:target:
++    *
++    * The "target" property is the #GObject that should have it's properties
++    * animated.
++    */
++   gParamSpecs[PROP_TARGET] =
++      g_param_spec_object("target",
++                          _("Target"),
++                          _("The target of the animation"),
++                          G_TYPE_OBJECT,
++                          G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY);
++   g_object_class_install_property(object_class, PROP_TARGET,
++                                   gParamSpecs[PROP_TARGET]);
++
++   /**
++    * GbAnimation:frame-rate:
++    *
++    * The "frame-rate" is the number of frames that the animation should
++    * try to perform per-second. The default is 60 frames-per-second.
++    */
++   gParamSpecs[PROP_FRAME_RATE] =
++      g_param_spec_uint("frame-rate",
++                          _("Frame Rate"),
++                          _("The number of frames per second."),
++                          1,
++                          G_MAXUINT,
++                          60,
++                          G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY);
++   g_object_class_install_property(object_class, PROP_FRAME_RATE,
++                                   gParamSpecs[PROP_FRAME_RATE]);
++
++   /**
++    * GbAnimation::tick:
++    *
++    * The "tick" signal is emitted on each frame in the animation.
++    */
++   gSignals[TICK] = g_signal_new("tick",
++                                 GB_TYPE_ANIMATION,
++                                 G_SIGNAL_RUN_FIRST,
++                                 0,
++                                 NULL,
++                                 NULL,
++                                 g_cclosure_marshal_VOID__VOID,
++                                 G_TYPE_NONE,
++                                 0);
++
++#define SET_ALPHA(_T, _t) \
++   gAlphaFuncs[GB_ANIMATION_##_T] = _gb_animation_alpha_##_t
++
++   SET_ALPHA(LINEAR, linear);
++   SET_ALPHA(EASE_IN_QUAD, ease_in_quad);
++   SET_ALPHA(EASE_OUT_QUAD, ease_out_quad);
++   SET_ALPHA(EASE_IN_OUT_QUAD, ease_in_out_quad);
++   SET_ALPHA(EASE_IN_CUBIC, ease_in_cubic);
++
++#define SET_TWEEN(_T, _t) \
++   G_STMT_START { \
++      guint idx = G_TYPE_##_T; \
++      gTweenFuncs[idx] = tween_##_t; \
++   } G_STMT_END
++
++   SET_TWEEN(INT, int);
++   SET_TWEEN(UINT, uint);
++   SET_TWEEN(LONG, long);
++   SET_TWEEN(ULONG, ulong);
++   SET_TWEEN(FLOAT, float);
++   SET_TWEEN(DOUBLE, double);
++}
++
++
++/**
++ * _gb_animation_init:
++ * @animation: (in): A #GbAnimation.
++ *
++ * Initializes the #GbAnimation instance.
++ *
++ * Returns: None.
++ * Side effects: Everything.
++ */
++static void
++_gb_animation_init (GbAnimation *animation)
++{
++   GbAnimationPrivate *priv;
++
++   priv = G_TYPE_INSTANCE_GET_PRIVATE(animation, GB_TYPE_ANIMATION,
++                                      GbAnimationPrivate);
++   animation->priv = priv;
++
++   priv->duration_msec = 250;
++   priv->frame_rate = 60;
++   priv->mode = GB_ANIMATION_LINEAR;
++   priv->tweens = g_array_new(FALSE, FALSE, sizeof(Tween));
++}
++
++
++/**
++ * _gb_animation_mode_get_type:
++ *
++ * Retrieves the GType for #GbAnimationMode.
++ *
++ * Returns: A GType.
++ * Side effects: GType registered on first call.
++ */
++GType
++_gb_animation_mode_get_type (void)
++{
++   static GType type_id = 0;
++   static const GEnumValue values[] = {
++      { GB_ANIMATION_LINEAR, "GB_ANIMATION_LINEAR", "LINEAR" },
++      { GB_ANIMATION_EASE_IN_QUAD, "GB_ANIMATION_EASE_IN_QUAD", "EASE_IN_QUAD" },
++      { GB_ANIMATION_EASE_IN_OUT_QUAD, "GB_ANIMATION_EASE_IN_OUT_QUAD", "EASE_IN_OUT_QUAD" },
++      { GB_ANIMATION_EASE_OUT_QUAD, "GB_ANIMATION_EASE_OUT_QUAD", "EASE_OUT_QUAD" },
++      { GB_ANIMATION_EASE_IN_CUBIC, "GB_ANIMATION_EASE_IN_CUBIC", "EASE_IN_CUBIC" },
++      { 0 }
++   };
++
++   if (G_UNLIKELY(!type_id)) {
++      type_id = g_enum_register_static("GbAnimationMode", values);
++   }
++   return type_id;
++}
++
++/**
++ * _gb_object_animatev:
++ * Returns: (transfer none): A #GbAnimation.
++ */
++GbAnimation*
++_gb_object_animatev (gpointer         object,
++                     GbAnimationMode  mode,
++                     guint            duration_msec,
++                     guint            frame_rate,
++                     const gchar     *first_property,
++                     va_list          args)
++{
++   GbAnimation *animation;
++   GObjectClass *klass;
++   GObjectClass *pklass;
++   const gchar *name;
++   GParamSpec *pspec;
++   GtkWidget *parent;
++   GValue value = { 0 };
++   gchar *error = NULL;
++   GType type;
++   GType ptype;
++
++   g_return_val_if_fail(first_property != NULL, NULL);
++   g_return_val_if_fail(mode < GB_ANIMATION_LAST, NULL);
++
++   name = first_property;
++   type = G_TYPE_FROM_INSTANCE(object);
++   klass = G_OBJECT_GET_CLASS(object);
++   animation = g_object_new(GB_TYPE_ANIMATION,
++                            "duration", duration_msec,
++                            "frame-rate", frame_rate ? frame_rate : 60,
++                            "mode", mode,
++                            "target", object,
++                            NULL);
++
++   do {
++      /*
++       * First check for the property on the object. If that does not exist
++       * then check if the object has a parent and look at its child
++       * properties (if its a GtkWidget).
++       */
++      if (!(pspec = g_object_class_find_property(klass, name))) {
++         if (!g_type_is_a(type, GTK_TYPE_WIDGET)) {
++            g_critical("Failed to find property %s in %s",
++                       name, g_type_name(type));
++            goto failure;
++         }
++         if (!(parent = gtk_widget_get_parent(object))) {
++            g_critical("Failed to find property %s in %s",
++                       name, g_type_name(type));
++            goto failure;
++         }
++         pklass = G_OBJECT_GET_CLASS(parent);
++         ptype = G_TYPE_FROM_INSTANCE(parent);
++         if (!(pspec = gtk_container_class_find_child_property(pklass, name))) {
++            g_critical("Failed to find property %s in %s or parent %s",
++                       name, g_type_name(type), g_type_name(ptype));
++            goto failure;
++         }
++      }
++
++      g_value_init(&value, pspec->value_type);
++      G_VALUE_COLLECT(&value, args, 0, &error);
++      if (error != NULL) {
++         g_critical("Failed to retrieve va_list value: %s", error);
++         g_free(error);
++         goto failure;
++      }
++
++      _gb_animation_add_property(animation, pspec, &value);
++      g_value_unset(&value);
++   } while ((name = va_arg(args, const gchar *)));
++
++   _gb_animation_start(animation);
++
++   return animation;
++
++failure:
++   g_object_ref_sink(animation);
++   g_object_unref(animation);
++   return NULL;
++}
++
++/**
++ * _gb_object_animate:
++ * @object: (in): A #GObject.
++ * @mode: (in): The animation mode.
++ * @duration_msec: (in): The duration in milliseconds.
++ * @first_property: (in): The first property to animate.
++ *
++ * Animates the properties of @object. The can be set in a similar
++ * manner to g_object_set(). They will be animated from their current
++ * value to the target value over the time period.
++ *
++ * Return value: (transfer none): A #GbAnimation.
++ * Side effects: None.
++ */
++GbAnimation*
++_gb_object_animate (gpointer         object,
++                    GbAnimationMode  mode,
++                    guint            duration_msec,
++                    const gchar     *first_property,
++                    ...)
++{
++   GbAnimation *animation;
++   va_list args;
++
++   va_start(args, first_property);
++   animation = _gb_object_animatev(object, mode, duration_msec, 0,
++                                   first_property, args);
++   va_end(args);
++   return animation;
++}
++
++/**
++ * _gb_object_animate_full:
++ *
++ * Return value: (transfer none): A #GbAnimation.
++ */
++GbAnimation*
++_gb_object_animate_full (gpointer         object,
++                         GbAnimationMode  mode,
++                         guint            duration_msec,
++                         guint            frame_rate,
++                         GDestroyNotify   notify,
++                         gpointer         notify_data,
++                         const gchar     *first_property,
++                         ...)
++{
++   GbAnimation *animation;
++   va_list args;
++
++   va_start(args, first_property);
++   animation = _gb_object_animatev(object, mode, duration_msec,
++                                   frame_rate, first_property, args);
++   va_end(args);
++   g_object_weak_ref(G_OBJECT(animation), (GWeakNotify)notify, notify_data);
++   return animation;
++}
+diff --git a/gtk/gb-animation.h b/gtk/gb-animation.h
+new file mode 100644
+index 0000000..bf9268d
+--- /dev/null
++++ b/gtk/gb-animation.h
+@@ -0,0 +1,87 @@
++/* gb-animation.h
++ *
++ * Copyright (C) 2010 Christian Hergert <chris@dronelabs.com>
++ *
++ * This program is free software: you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation, either version 3 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#ifndef GB_ANIMATION_H
++#define GB_ANIMATION_H
++
++#include <glib-object.h>
++
++G_BEGIN_DECLS
++
++#define GB_TYPE_ANIMATION            (_gb_animation_get_type())
++#define GB_TYPE_ANIMATION_MODE       (_gb_animation_mode_get_type())
++#define GB_ANIMATION(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), GB_TYPE_ANIMATION, GbAnimation))
++#define GB_ANIMATION_CONST(obj)      (G_TYPE_CHECK_INSTANCE_CAST ((obj), GB_TYPE_ANIMATION, GbAnimation const))
++#define GB_ANIMATION_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass),  GB_TYPE_ANIMATION, GbAnimationClass))
++#define GB_IS_ANIMATION(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), GB_TYPE_ANIMATION))
++#define GB_IS_ANIMATION_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass),  GB_TYPE_ANIMATION))
++#define GB_ANIMATION_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj),  GB_TYPE_ANIMATION, GbAnimationClass))
++
++typedef struct _GbAnimation        GbAnimation;
++typedef struct _GbAnimationClass   GbAnimationClass;
++typedef struct _GbAnimationPrivate GbAnimationPrivate;
++typedef enum   _GbAnimationMode    GbAnimationMode;
++
++enum _GbAnimationMode
++{
++	GB_ANIMATION_LINEAR,
++	GB_ANIMATION_EASE_IN_QUAD,
++	GB_ANIMATION_EASE_OUT_QUAD,
++	GB_ANIMATION_EASE_IN_OUT_QUAD,
++	GB_ANIMATION_EASE_IN_CUBIC,
++
++	GB_ANIMATION_LAST
++};
++
++struct _GbAnimation
++{
++	GInitiallyUnowned parent;
++
++	/*< private >*/
++	GbAnimationPrivate *priv;
++};
++
++struct _GbAnimationClass
++{
++	GInitiallyUnownedClass parent_class;
++};
++
++GType _gb_animation_get_type         (void) G_GNUC_CONST;
++GType _gb_animation_mode_get_type    (void) G_GNUC_CONST;
++void  _gb_animation_start            (GbAnimation      *animation);
++void  _gb_animation_stop             (GbAnimation      *animation);
++void  _gb_animation_add_property     (GbAnimation      *animation,
++                                      GParamSpec       *pspec,
++                                      const GValue     *value);
++GbAnimation* _gb_object_animate      (gpointer          object,
++                                      GbAnimationMode   mode,
++                                      guint             duration_msec,
++                                      const gchar      *first_property,
++                                      ...) G_GNUC_NULL_TERMINATED;
++GbAnimation* _gb_object_animate_full (gpointer          object,
++                                      GbAnimationMode   mode,
++                                      guint             duration_msec,
++                                      guint             frame_rate,
++                                      GDestroyNotify    notify,
++                                      gpointer          notify_data,
++                                      const gchar      *first_property,
++                                      ...) G_GNUC_NULL_TERMINATED;
++
++G_END_DECLS
++
++#endif /* GB_ANIMATION_H */
+diff --git a/gtk/gb-frame-source.c b/gtk/gb-frame-source.c
+new file mode 100644
+index 0000000..be04c1b
+--- /dev/null
++++ b/gtk/gb-frame-source.c
+@@ -0,0 +1,134 @@
++/*
++ * Based upon code from Clutter:
++ *
++ * Authored By Neil Roberts <neil@linux.intel.com>
++ *
++ * Copyright (C) 2009 Intel Corporation.
++ * Copyright (C) 2012 Christian Hergert.
++ *
++ * This library is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation; either
++ * version 2 of the License, or (at your option) any later version.
++ *
++ * This library is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++ * Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with this library. If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include "gb-frame-source.h"
++
++typedef struct
++{
++   GSource parent;
++   guint   fps;
++   guint   frame_count;
++   gint64  start_time;
++} GbFrameSource;
++
++static gboolean
++gb_frame_source_prepare (GSource *source,
++                         gint    *timeout_)
++{
++   GbFrameSource *fsource = (GbFrameSource *)source;
++   gint64 current_time;
++   guint elapsed_time;
++   guint new_frame_num;
++   guint frame_time;
++
++   current_time = g_source_get_time(source) / 1000;
++   elapsed_time = current_time - fsource->start_time;
++   new_frame_num = elapsed_time * fsource->fps / 1000;
++
++   /* If time has gone backwards or the time since the last frame is
++    * greater than the two frames worth then reset the time and do a
++    * frame now */
++   if (new_frame_num < fsource->frame_count ||
++       new_frame_num - fsource->frame_count > 2) {
++      /* Get the frame time rounded up to the nearest ms */
++      frame_time = (1000 + fsource->fps - 1) / fsource->fps;
++
++      /* Reset the start time */
++      fsource->start_time = current_time;
++
++      /* Move the start time as if one whole frame has elapsed */
++      fsource->start_time -= frame_time;
++      fsource->frame_count = 0;
++      *timeout_ = 0;
++      return TRUE;
++   } else if (new_frame_num > fsource->frame_count) {
++      *timeout_ = 0;
++      return TRUE;
++   } else {
++      *timeout_ = (fsource->frame_count + 1) * 1000 / fsource->fps - elapsed_time;
++      return FALSE;
++   }
++}
++
++static gboolean
++gb_frame_source_check (GSource *source)
++{
++   gint timeout_;
++   return gb_frame_source_prepare(source, &timeout_);
++}
++
++static gboolean
++gb_frame_source_dispatch (GSource     *source,
++                          GSourceFunc  source_func,
++                          gpointer     user_data)
++{
++   GbFrameSource *fsource = (GbFrameSource *)source;
++   gboolean ret;
++
++   if ((ret = source_func(user_data)))
++      fsource->frame_count++;
++   return ret;
++}
++
++static GSourceFuncs source_funcs = {
++   gb_frame_source_prepare,
++   gb_frame_source_check,
++   gb_frame_source_dispatch,
++};
++
++/**
++ * gb_frame_source_add:
++ * @frames_per_sec: (in): Target frames per second.
++ * @callback: (in) (scope notified): A #GSourceFunc to execute.
++ * @user_data: (in): User data for @callback.
++ *
++ * Creates a new frame source that will execute when the timeout interval
++ * for the source has elapsed. The timing will try to synchronize based
++ * on the end time of the animation.
++ *
++ * Returns: A source id that can be removed with g_source_remove().
++ */
++guint
++_gb_frame_source_add (guint       frames_per_sec,
++                      GSourceFunc callback,
++                      gpointer    user_data)
++{
++   GbFrameSource *fsource;
++   GSource *source;
++   guint ret;
++
++   g_return_val_if_fail(frames_per_sec > 0, 0);
++   g_return_val_if_fail(frames_per_sec < 120, 0);
++
++   source = g_source_new(&source_funcs, sizeof(GbFrameSource));
++   fsource = (GbFrameSource *)source;
++   fsource->fps = frames_per_sec;
++   fsource->frame_count = 0;
++   fsource->start_time = g_get_monotonic_time() / 1000;
++   g_source_set_callback(source, callback, user_data, NULL);
++   g_source_set_name(source, "GbFrameSource");
++
++   ret = g_source_attach(source, NULL);
++   g_source_unref(source);
++
++   return ret;
++}
+diff --git a/gtk/gb-frame-source.h b/gtk/gb-frame-source.h
+new file mode 100644
+index 0000000..502d86e
+--- /dev/null
++++ b/gtk/gb-frame-source.h
+@@ -0,0 +1,32 @@
++/* gb-frame-source.h
++ *
++ * Copyright (C) 2012 Christian Hergert <chris@dronelabs.com>
++ *
++ * This program is free software: you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation, either version 3 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#ifndef GB_FRAME_SOURCE_H
++#define GB_FRAME_SOURCE_H
++
++#include <glib.h>
++
++G_BEGIN_DECLS
++
++guint _gb_frame_source_add (guint       frames_per_sec,
++                            GSourceFunc callback,
++                            gpointer    user_data);
++
++G_END_DECLS
++
++#endif /* GB_FRAME_SOURCE_H */
+diff --git a/gtk/gtkscrolledwindow.c b/gtk/gtkscrolledwindow.c
+index 821981f..77d485f 100644
+--- a/gtk/gtkscrolledwindow.c
++++ b/gtk/gtkscrolledwindow.c
+@@ -32,6 +32,7 @@
+ #include "gtkscrolledwindow.h"
+ #include "gtkwindow.h"
+ #include "gtkprivate.h"
++#include "gb-animation.h"
+ #include "gtkintl.h"
+ #include "gtkmain.h"
+ #include "gtkdnd.h"
+@@ -111,6 +112,17 @@ typedef struct {
+
+   gdouble                unclamped_hadj_value;
+   gdouble                unclamped_vadj_value;
++
++  GtkAdjustment *opacity;
++  GbAnimation   *opacity_anim;
++
++  gint           sb_min_height;
++  gint           sb_padding;
++  gint           sb_radius;
++  gint           sb_width;
++  gboolean       sb_fading_in;
++  gint           sb_fade_out_delay;
++  guint          sb_fade_out_id;
+ } GtkScrolledWindowPrivate;
+
+ #define GTK_SCROLLED_WINDOW_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), GTK_TYPE_SCROLLED_WINDOW, GtkScrolledWindowPrivate))
+@@ -206,10 +218,21 @@ static gboolean _gtk_scrolled_window_set_adjustment_value      (GtkScrolledWindo
+                                                                 gboolean           allow_overshooting,
+                                                                 gboolean           snap_to_border);
+
++static void gtk_scrolled_window_cancel_animation         (GtkScrolledWindow *scrolled_window);
++static void gtk_scrolled_window_start_fade_in_animation  (GtkScrolledWindow *scrolled_window);
++static void gtk_scrolled_window_start_fade_out_animation (GtkScrolledWindow *scrolled_window);
++static gboolean gtk_scrolled_window_child_expose (GtkWidget         *widget,
++                                                  GdkEventExpose    *eevent,
++                                                  GtkScrolledWindow *scrolled_window);
++static void  gtk_scrolled_window_expose_scrollbars (GtkAdjustment     *adj,
++                                                    GtkScrolledWindow *scrolled_window);
++
+ static guint signals[LAST_SIGNAL] = {0};
+
+ G_DEFINE_TYPE (GtkScrolledWindow, gtk_scrolled_window, GTK_TYPE_BIN)
+
++static gboolean overlay_scrollbars = TRUE;
++
+ static void
+ add_scroll_binding (GtkBindingSet  *binding_set,
+		    guint           keyval,
+@@ -444,6 +467,8 @@ gtk_scrolled_window_class_init (GtkScrolledWindowClass *class)
+ static void
+ gtk_scrolled_window_init (GtkScrolledWindow *scrolled_window)
+ {
++  GtkScrolledWindowPrivate *priv = GTK_SCROLLED_WINDOW_GET_PRIVATE (scrolled_window);
++
+   gtk_widget_set_has_window (GTK_WIDGET (scrolled_window), FALSE);
+   gtk_widget_set_can_focus (GTK_WIDGET (scrolled_window), TRUE);
+
+@@ -462,6 +487,24 @@ gtk_scrolled_window_init (GtkScrolledWindow *scrolled_window)
+       gtk_scrolled_window_set_kinetic_scrolling (scrolled_window, TRUE);
+       gtk_scrolled_window_set_capture_button_press (scrolled_window, TRUE);
+     }
++
++  if (overlay_scrollbars)
++    {
++      priv->opacity = g_object_new (GTK_TYPE_ADJUSTMENT,
++                                    "lower", 0.0,
++                                    "upper", 0.5,
++                                    "value", 0.0,
++                                    NULL);
++      priv->sb_min_height = 20;
++      priv->sb_padding = 2;
++      priv->sb_radius = 3;
++      priv->sb_width = 6;
++      priv->sb_fade_out_delay = 1000;
++
++      g_signal_connect (priv->opacity, "value-changed",
++                        G_CALLBACK (gtk_scrolled_window_expose_scrollbars),
++                        scrolled_window);
++    }
+ }
+
+ /**
+@@ -541,6 +584,17 @@ gtk_scrolled_window_set_hadjustment (GtkScrolledWindow *scrolled_window,
+       g_signal_handlers_disconnect_by_func (old_adjustment,
+					    gtk_scrolled_window_adjustment_changed,
+					    scrolled_window);
++
++      if (overlay_scrollbars)
++        {
++          g_signal_handlers_disconnect_by_func (old_adjustment,
++                                                gtk_scrolled_window_adjustment_value_changed,
++                                                scrolled_window);
++          g_signal_handlers_disconnect_by_func (old_adjustment,
++                                                gtk_scrolled_window_expose_scrollbars,
++                                                scrolled_window);
++        }
++
+       gtk_range_set_adjustment (GTK_RANGE (scrolled_window->hscrollbar),
+				hadjustment);
+     }
+@@ -556,10 +610,24 @@ gtk_scrolled_window_set_hadjustment (GtkScrolledWindow *scrolled_window,
+   gtk_scrolled_window_adjustment_changed (hadjustment, scrolled_window);
+   gtk_scrolled_window_adjustment_value_changed (hadjustment, scrolled_window);
+
++  if (overlay_scrollbars)
++    {
++      g_signal_connect (hadjustment, "value-changed",
++                        G_CALLBACK (gtk_scrolled_window_adjustment_value_changed),
++                        scrolled_window);
++
++      g_signal_connect (hadjustment, "changed",
++                        G_CALLBACK (gtk_scrolled_window_expose_scrollbars),
++                        scrolled_window);
++      g_signal_connect (hadjustment, "value-changed",
++                        G_CALLBACK (gtk_scrolled_window_expose_scrollbars),
++                        scrolled_window);
++    }
++
+   if (bin->child)
+     gtk_widget_set_scroll_adjustments (bin->child,
+-				       gtk_range_get_adjustment (GTK_RANGE (scrolled_window->hscrollbar)),
+-				       gtk_range_get_adjustment (GTK_RANGE (scrolled_window->vscrollbar)));
++                                       gtk_range_get_adjustment (GTK_RANGE (scrolled_window->hscrollbar)),
++                                       gtk_range_get_adjustment (GTK_RANGE (scrolled_window->vscrollbar)));
+
+   g_object_notify (G_OBJECT (scrolled_window), "hadjustment");
+ }
+@@ -607,6 +675,17 @@ gtk_scrolled_window_set_vadjustment (GtkScrolledWindow *scrolled_window,
+       g_signal_handlers_disconnect_by_func (old_adjustment,
+					    gtk_scrolled_window_adjustment_changed,
+					    scrolled_window);
++
++      if (overlay_scrollbars)
++        {
++          g_signal_handlers_disconnect_by_func (old_adjustment,
++                                                gtk_scrolled_window_adjustment_value_changed,
++                                                scrolled_window);
++          g_signal_handlers_disconnect_by_func (old_adjustment,
++                                                gtk_scrolled_window_expose_scrollbars,
++                                                scrolled_window);
++        }
++
+       gtk_range_set_adjustment (GTK_RANGE (scrolled_window->vscrollbar),
+				vadjustment);
+     }
+@@ -622,10 +701,25 @@ gtk_scrolled_window_set_vadjustment (GtkScrolledWindow *scrolled_window,
+   gtk_scrolled_window_adjustment_changed (vadjustment, scrolled_window);
+   gtk_scrolled_window_adjustment_value_changed (vadjustment, scrolled_window);
+
++  if (overlay_scrollbars)
++    {
++      g_signal_connect (vadjustment,
++                        "value-changed",
++                        G_CALLBACK (gtk_scrolled_window_adjustment_value_changed),
++                        scrolled_window);
++
++      g_signal_connect (vadjustment, "changed",
++                        G_CALLBACK (gtk_scrolled_window_expose_scrollbars),
++                        scrolled_window);
++      g_signal_connect (vadjustment, "value-changed",
++                        G_CALLBACK (gtk_scrolled_window_expose_scrollbars),
++                        scrolled_window);
++    }
++
+   if (bin->child)
+     gtk_widget_set_scroll_adjustments (bin->child,
+-				       gtk_range_get_adjustment (GTK_RANGE (scrolled_window->hscrollbar)),
+-				       gtk_range_get_adjustment (GTK_RANGE (scrolled_window->vscrollbar)));
++                                       gtk_range_get_adjustment (GTK_RANGE (scrolled_window->hscrollbar)),
++                                       gtk_range_get_adjustment (GTK_RANGE (scrolled_window->vscrollbar)));
+
+   g_object_notify (G_OBJECT (scrolled_window), "vadjustment");
+ }
+@@ -1073,11 +1167,24 @@ gtk_scrolled_window_destroy (GtkObject *object)
+   GtkScrolledWindow *scrolled_window = GTK_SCROLLED_WINDOW (object);
+   GtkScrolledWindowPrivate *priv = GTK_SCROLLED_WINDOW_GET_PRIVATE (scrolled_window);
+
++  gtk_scrolled_window_cancel_animation (scrolled_window);
++
+   if (scrolled_window->hscrollbar)
+     {
+       g_signal_handlers_disconnect_by_func (gtk_range_get_adjustment (GTK_RANGE (scrolled_window->hscrollbar)),
+					    gtk_scrolled_window_adjustment_changed,
+					    scrolled_window);
++
++      if (overlay_scrollbars)
++        {
++          g_signal_handlers_disconnect_by_func (gtk_range_get_adjustment (GTK_RANGE (scrolled_window->hscrollbar)),
++                                                gtk_scrolled_window_adjustment_value_changed,
++                                                scrolled_window);
++          g_signal_handlers_disconnect_by_func (gtk_range_get_adjustment (GTK_RANGE (scrolled_window->hscrollbar)),
++                                                gtk_scrolled_window_expose_scrollbars,
++                                                scrolled_window);
++        }
++
+       gtk_widget_unparent (scrolled_window->hscrollbar);
+       gtk_widget_destroy (scrolled_window->hscrollbar);
+       g_object_unref (scrolled_window->hscrollbar);
+@@ -1088,6 +1195,17 @@ gtk_scrolled_window_destroy (GtkObject *object)
+       g_signal_handlers_disconnect_by_func (gtk_range_get_adjustment (GTK_RANGE (scrolled_window->vscrollbar)),
+					    gtk_scrolled_window_adjustment_changed,
+					    scrolled_window);
++
++      if (overlay_scrollbars)
++        {
++          g_signal_handlers_disconnect_by_func (gtk_range_get_adjustment (GTK_RANGE (scrolled_window->vscrollbar)),
++                                                gtk_scrolled_window_adjustment_value_changed,
++                                                scrolled_window);
++          g_signal_handlers_disconnect_by_func (gtk_range_get_adjustment (GTK_RANGE (scrolled_window->vscrollbar)),
++                                                gtk_scrolled_window_expose_scrollbars,
++                                                scrolled_window);
++        }
++
+       gtk_widget_unparent (scrolled_window->vscrollbar);
+       gtk_widget_destroy (scrolled_window->vscrollbar);
+       g_object_unref (scrolled_window->vscrollbar);
+@@ -1515,7 +1633,7 @@ gtk_scrolled_window_size_request (GtkWidget      *widget,
+
+       if (scrolled_window->hscrollbar_policy == GTK_POLICY_NEVER)
+	requisition->width += child_requisition.width;
+-      else
++      else if (! overlay_scrollbars)
+	{
+	  GtkWidgetAuxInfo *aux_info = _gtk_widget_get_aux_info (bin->child, FALSE);
+
+@@ -1530,7 +1648,7 @@ gtk_scrolled_window_size_request (GtkWidget      *widget,
+
+       if (scrolled_window->vscrollbar_policy == GTK_POLICY_NEVER)
+	requisition->height += child_requisition.height;
+-      else
++      else if (! overlay_scrollbars)
+	{
+	  GtkWidgetAuxInfo *aux_info = _gtk_widget_get_aux_info (bin->child, FALSE);
+
+@@ -1544,20 +1662,23 @@ gtk_scrolled_window_size_request (GtkWidget      *widget,
+	}
+     }
+
+-  if (scrolled_window->hscrollbar_policy == GTK_POLICY_AUTOMATIC ||
+-      scrolled_window->hscrollbar_policy == GTK_POLICY_ALWAYS)
++  if (! overlay_scrollbars)
+     {
+-      requisition->width = MAX (requisition->width, hscrollbar_requisition.width);
+-      if (!extra_height || scrolled_window->hscrollbar_policy == GTK_POLICY_ALWAYS)
+-	extra_height = scrollbar_spacing + hscrollbar_requisition.height;
+-    }
++      if (scrolled_window->hscrollbar_policy == GTK_POLICY_AUTOMATIC ||
++          scrolled_window->hscrollbar_policy == GTK_POLICY_ALWAYS)
++        {
++          requisition->width = MAX (requisition->width, hscrollbar_requisition.width);
++          if (!extra_height || scrolled_window->hscrollbar_policy == GTK_POLICY_ALWAYS)
++            extra_height = scrollbar_spacing + hscrollbar_requisition.height;
++        }
+
+-  if (scrolled_window->vscrollbar_policy == GTK_POLICY_AUTOMATIC ||
+-      scrolled_window->vscrollbar_policy == GTK_POLICY_ALWAYS)
+-    {
+-      requisition->height = MAX (requisition->height, vscrollbar_requisition.height);
+-      if (!extra_height || scrolled_window->vscrollbar_policy == GTK_POLICY_ALWAYS)
+-	extra_width = scrollbar_spacing + vscrollbar_requisition.width;
++      if (scrolled_window->vscrollbar_policy == GTK_POLICY_AUTOMATIC ||
++          scrolled_window->vscrollbar_policy == GTK_POLICY_ALWAYS)
++        {
++          requisition->height = MAX (requisition->height, vscrollbar_requisition.height);
++          if (!extra_height || scrolled_window->vscrollbar_policy == GTK_POLICY_ALWAYS)
++            extra_width = scrollbar_spacing + vscrollbar_requisition.width;
++        }
+     }
+
+   requisition->width += GTK_CONTAINER (widget)->border_width * 2 + MAX (0, extra_width);
+@@ -1598,6 +1719,9 @@ gtk_scrolled_window_relative_allocation (GtkWidget     *widget,
+   allocation->width = MAX (1, (gint)widget->allocation.width - allocation->x * 2);
+   allocation->height = MAX (1, (gint)widget->allocation.height - allocation->y * 2);
+
++  if (overlay_scrollbars)
++    return;
++
+   if (scrolled_window->vscrollbar_visible)
+     {
+       GtkRequisition vscrollbar_requisition;
+@@ -1754,6 +1878,9 @@ gtk_scrolled_window_size_allocate (GtkWidget     *widget,
+   scrolled_window = GTK_SCROLLED_WINDOW (widget);
+   bin = GTK_BIN (scrolled_window);
+
++  if (overlay_scrollbars)
++    gtk_scrolled_window_expose_scrollbars (NULL, scrolled_window);
++
+   scrollbar_spacing = _gtk_scrolled_window_get_scrollbar_spacing (scrolled_window);
+   gtk_widget_style_get (widget, "scrollbars-within-bevel", &scrollbars_within_bevel, NULL);
+
+@@ -1812,7 +1939,7 @@ gtk_scrolled_window_size_allocate (GtkWidget     *widget,
+       gtk_scrolled_window_relative_allocation (widget, &relative_allocation);
+     }
+
+-  if (scrolled_window->hscrollbar_visible)
++  if (!overlay_scrollbars && scrolled_window->hscrollbar_visible)
+     {
+       GtkRequisition hscrollbar_requisition;
+       gtk_widget_get_child_requisition (scrolled_window->hscrollbar,
+@@ -1860,7 +1987,7 @@ gtk_scrolled_window_size_allocate (GtkWidget     *widget,
+   else if (gtk_widget_get_visible (scrolled_window->hscrollbar))
+     gtk_widget_hide (scrolled_window->hscrollbar);
+
+-  if (scrolled_window->vscrollbar_visible)
++  if (!overlay_scrollbars && scrolled_window->vscrollbar_visible)
+     {
+       GtkRequisition vscrollbar_requisition;
+       if (!gtk_widget_get_visible (scrolled_window->vscrollbar))
+@@ -1930,7 +2057,7 @@ gtk_scrolled_window_scroll_event (GtkWidget      *widget,
+   if (gdk_event_get_scroll_deltas ((GdkEvent *) event, &delta_x, &delta_y))
+     {
+       if (delta_x != 0.0 && scrolled_window->hscrollbar &&
+-          gtk_widget_get_visible (scrolled_window->hscrollbar))
++          (overlay_scrollbars || gtk_widget_get_visible (scrolled_window->hscrollbar)))
+         {
+           GtkAdjustment *adj;
+           gdouble new_value;
+@@ -1948,7 +2075,7 @@ gtk_scrolled_window_scroll_event (GtkWidget      *widget,
+         }
+
+       if (delta_y != 0.0 && scrolled_window->vscrollbar &&
+-          gtk_widget_get_visible (scrolled_window->vscrollbar))
++          (overlay_scrollbars || gtk_widget_get_visible (scrolled_window->vscrollbar)))
+         {
+           GtkAdjustment *adj;
+           gdouble new_value;
+@@ -1974,7 +2101,7 @@ gtk_scrolled_window_scroll_event (GtkWidget      *widget,
+       else
+         range = scrolled_window->hscrollbar;
+
+-      if (range && gtk_widget_get_visible (range))
++      if (range && (overlay_scrollbars || gtk_widget_get_visible (range)))
+         {
+           GtkAdjustment *adj = GTK_RANGE (range)->adjustment;
+           gdouble delta, new_value;
+@@ -2614,6 +2741,9 @@ gtk_scrolled_window_adjustment_changed (GtkAdjustment *adjustment,
+	    gtk_widget_queue_resize (GTK_WIDGET (scrolled_win));
+	}
+     }
++
++  if (overlay_scrollbars)
++    gtk_scrolled_window_start_fade_in_animation (scrolled_win);
+ }
+
+ static void
+@@ -2634,6 +2764,9 @@ gtk_scrolled_window_adjustment_value_changed (GtkAdjustment *adjustment,
+   else if (scrolled_window->hscrollbar &&
+            adjustment == gtk_range_get_adjustment (GTK_RANGE (scrolled_window->hscrollbar)))
+     priv->unclamped_hadj_value = gtk_adjustment_get_value (adjustment);
++
++  if (overlay_scrollbars)
++    gtk_scrolled_window_start_fade_in_animation (scrolled_window);
+ }
+
+ static void
+@@ -2658,10 +2791,17 @@ gtk_scrolled_window_add (GtkContainer *container,
+
+   /* this is a temporary message */
+   if (!gtk_widget_set_scroll_adjustments (child,
+-					  gtk_range_get_adjustment (GTK_RANGE (scrolled_window->hscrollbar)),
+-					  gtk_range_get_adjustment (GTK_RANGE (scrolled_window->vscrollbar))))
++                                          gtk_range_get_adjustment (GTK_RANGE (scrolled_window->hscrollbar)),
++                                          gtk_range_get_adjustment (GTK_RANGE (scrolled_window->vscrollbar))))
+     g_warning ("gtk_scrolled_window_add(): cannot add non scrollable widget "
+	       "use gtk_scrolled_window_add_with_viewport() instead");
++
++  if (overlay_scrollbars)
++    {
++      g_signal_connect_after (child, "expose-event",
++                              G_CALLBACK (gtk_scrolled_window_child_expose),
++                              container);
++    }
+ }
+
+ static void
+@@ -2671,7 +2811,14 @@ gtk_scrolled_window_remove (GtkContainer *container,
+   g_return_if_fail (GTK_IS_SCROLLED_WINDOW (container));
+   g_return_if_fail (child != NULL);
+   g_return_if_fail (GTK_BIN (container)->child == child);
+-
++
++  if (overlay_scrollbars)
++    {
++      g_signal_handlers_disconnect_by_func (child,
++                                            gtk_scrolled_window_child_expose,
++                                            container);
++    }
++
+   gtk_widget_set_scroll_adjustments (child, NULL, NULL);
+
+   /* chain parent class handler to remove child */
+@@ -2871,5 +3018,383 @@ gtk_scrolled_window_grab_notify (GtkWidget *widget,
+     }
+ }
+
++static void
++gtk_scrolled_window_rounded_rectangle (cairo_t *cr,
++                                       gint     x,
++                                       gint     y,
++                                       gint     width,
++                                       gint     height,
++                                       gint     x_radius,
++                                       gint     y_radius)
++{
++  gint x1, x2;
++  gint y1, y2;
++  gint xr1, xr2;
++  gint yr1, yr2;
++
++  x1 = x;
++  x2 = x1 + width;
++  y1 = y;
++  y2 = y1 + height;
++
++  x_radius = MIN (x_radius, width  / 2.0);
++  y_radius = MIN (y_radius, height / 2.0);
++
++  xr1 = x_radius;
++  xr2 = x_radius / 2.0;
++  yr1 = y_radius;
++  yr2 = y_radius / 2.0;
++
++  cairo_move_to    (cr, x1 + xr1, y1);
++  cairo_line_to    (cr, x2 - xr1, y1);
++  cairo_curve_to   (cr, x2 - xr2, y1, x2, y1 + yr2, x2, y1 + yr1);
++  cairo_line_to    (cr, x2, y2 - yr1);
++  cairo_curve_to   (cr, x2, y2 - yr2, x2 - xr2, y2, x2 - xr1, y2);
++  cairo_line_to    (cr, x1 + xr1, y2);
++  cairo_curve_to   (cr, x1 + xr2, y2, x1, y2 - yr2, x1, y2 - yr1);
++  cairo_line_to    (cr, x1, y1 + yr1);
++  cairo_curve_to   (cr, x1, y1 + yr2, x1 + xr2, y1, x1 + xr1, y1);
++  cairo_close_path (cr);
++}
++
++static void
++gtk_scrolled_window_get_child_scroll_areas (GtkScrolledWindow *scrolled_window,
++                                            GtkWidget         *child,
++                                            GdkWindow         *child_window,
++                                            GdkRectangle      *vbar_rect,
++                                            GdkRectangle      *vslider_rect,
++                                            GdkRectangle      *hbar_rect,
++                                            GdkRectangle      *hslider_rect)
++{
++   GtkScrolledWindowPrivate *priv = GTK_SCROLLED_WINDOW_GET_PRIVATE (scrolled_window);
++   GtkAdjustment *adj;
++   GtkAllocation allocation;
++   gdouble lower;
++   gdouble page_size;
++   gdouble upper;
++   gdouble value_h = 0.0;
++   gdouble value_v = 0.0;
++   gdouble ratio;
++   gdouble width;
++   gdouble height;
++   gdouble x;
++   gdouble y;
++   gint window_width;
++   gint window_height;
++   gint viewport_width;
++   gint viewport_height;
++
++   window_width = gdk_window_get_width (child_window);
++   window_height = gdk_window_get_height (child_window);
++
++   gtk_widget_get_allocation (child, &allocation);
++
++   viewport_width = MIN (window_width, allocation.width);
++   viewport_height = MIN (window_height, allocation.height);
++
++   if (scrolled_window->vscrollbar)
++     {
++       adj = gtk_range_get_adjustment (GTK_RANGE (scrolled_window->vscrollbar));
++
++       value_v = gtk_adjustment_get_value (adj);
++     }
++
++   if (scrolled_window->hscrollbar)
++     {
++       adj = gtk_range_get_adjustment (GTK_RANGE (scrolled_window->hscrollbar));
++
++       value_h = gtk_adjustment_get_value (adj);
++     }
++
++   if ((vbar_rect || vslider_rect) && scrolled_window->vscrollbar)
++     {
++       adj = gtk_range_get_adjustment (GTK_RANGE (scrolled_window->vscrollbar));
++
++       g_object_get (adj,
++                     "lower", &lower,
++                     "upper", &upper,
++                     "page-size", &page_size,
++                     NULL);
++
++       ratio = page_size / (upper - lower);
++       if (ratio < 1.0)
++         {
++           height = ratio * (viewport_height - (2 * priv->sb_padding));
++           height = MAX (height, 20);
++           height = MIN (height, viewport_height - (2 * priv->sb_padding));
++
++           ratio = (value_v - lower) / (upper - page_size - lower);
++           y = ratio * (viewport_height - (2 * priv->sb_padding) - height) + priv->sb_padding;
++           x = viewport_width - priv->sb_width - priv->sb_padding;
++
++           if (window_width > allocation.width)
++             x += value_h;
++
++           if (window_height > allocation.height)
++             y += value_v;
++
++           if (vbar_rect)
++             {
++               vbar_rect->x = x - priv->sb_padding;
++               vbar_rect->y = 0;
++               vbar_rect->width = priv->sb_width + 2 * priv->sb_padding;
++               vbar_rect->height = viewport_height;
++             }
++
++           if (vslider_rect)
++             {
++               vslider_rect->x = x;
++               vslider_rect->y = y;
++               vslider_rect->width = priv->sb_width;
++               vslider_rect->height = height;
++             }
++         }
++       else
++         {
++           if (vbar_rect)
++             {
++               vbar_rect->x = 0;
++               vbar_rect->y = 0;
++               vbar_rect->width = 0;
++               vbar_rect->height = 0;
++             }
++
++           if (vslider_rect)
++             {
++               vslider_rect->x = 0;
++               vslider_rect->y = 0;
++               vslider_rect->width = 0;
++               vslider_rect->height = 0;
++             }
++         }
++     }
++
++   if ((hbar_rect || hslider_rect) && scrolled_window->hscrollbar)
++     {
++       adj = gtk_range_get_adjustment (GTK_RANGE (scrolled_window->hscrollbar));
++
++       g_object_get (adj,
++                     "lower", &lower,
++                     "upper", &upper,
++                     "page-size", &page_size,
++                     NULL);
++
++       ratio = page_size / (upper - lower);
++       if (ratio < 1.0)
++         {
++           width = ratio * (viewport_width - (2 * priv->sb_padding));
++           width = MAX (width, 20);
++           width = MIN (width, viewport_width - (2 * priv->sb_padding));
++
++           ratio = (value_h - lower) / (upper - page_size - lower);
++           x = ratio * (viewport_width - (2 * priv->sb_padding) - width) + priv->sb_padding;
++           y = viewport_height - priv->sb_width - priv->sb_padding;
++
++           if (window_width > allocation.width)
++             x += value_h;
++
++           if (window_height > allocation.height)
++             y += value_v;
++
++           if (hbar_rect)
++             {
++               hbar_rect->x = 0;
++               hbar_rect->y = y - priv->sb_padding;
++               hbar_rect->width = viewport_width;
++               hbar_rect->height = priv->sb_width + 2 * priv->sb_padding;
++             }
++
++           if (hslider_rect)
++             {
++               hslider_rect->x = x;
++               hslider_rect->y = y;
++               hslider_rect->width = width;
++               hslider_rect->height = priv->sb_width;
++             }
++         }
++       else
++         {
++           if (hbar_rect)
++             {
++               hbar_rect->x = 0;
++               hbar_rect->y = 0;
++               hbar_rect->width = 0;
++               hbar_rect->height = 0;
++             }
++
++           if (hslider_rect)
++             {
++               hslider_rect->x = 0;
++               hslider_rect->y = 0;
++               hslider_rect->width = 0;
++               hslider_rect->height = 0;
++             }
++         }
++     }
++}
++
++static gboolean
++gtk_scrolled_window_child_expose (GtkWidget         *widget,
++                                  GdkEventExpose    *eevent,
++                                  GtkScrolledWindow *scrolled_window)
++{
++   GtkScrolledWindowPrivate *priv = GTK_SCROLLED_WINDOW_GET_PRIVATE (scrolled_window);
++   GdkRectangle vbar_rect;
++   GdkRectangle vslider_rect;
++   GdkRectangle hbar_rect;
++   GdkRectangle hslider_rect;
++   cairo_t   *cr;
++
++   cr = gdk_cairo_create (eevent->window);
++   gdk_cairo_region (cr, eevent->region);
++   cairo_clip (cr);
++
++   gtk_scrolled_window_get_child_scroll_areas (scrolled_window,
++                                               gtk_bin_get_child (GTK_BIN (scrolled_window)),
++                                               eevent->window,
++                                               &vbar_rect, &vslider_rect,
++                                               &hbar_rect, &hslider_rect);
++
++   if (TRUE)
++     {
++       if (scrolled_window->vscrollbar && vbar_rect.width > 0)
++         gdk_cairo_rectangle (cr, &vbar_rect);
++
++       if (scrolled_window->hscrollbar && hbar_rect.width > 0)
++         gdk_cairo_rectangle (cr, &hbar_rect);
++
++       cairo_set_source_rgba (cr, 0, 0, 0, 0.2);
++       cairo_fill (cr);
++     }
++
++   if (scrolled_window->vscrollbar && vslider_rect.width > 0)
++     gtk_scrolled_window_rounded_rectangle (cr,
++                                            vslider_rect.x,
++                                            vslider_rect.y,
++                                            vslider_rect.width,
++                                            vslider_rect.height,
++                                            priv->sb_radius,
++                                            priv->sb_radius);
++
++   if (scrolled_window->hscrollbar && hslider_rect.width > 0)
++     gtk_scrolled_window_rounded_rectangle (cr,
++                                            hslider_rect.x,
++                                            hslider_rect.y,
++                                            hslider_rect.width,
++                                            hslider_rect.height,
++                                            priv->sb_radius,
++                                            priv->sb_radius);
++
++   cairo_set_source_rgba (cr, 0, 0, 0, gtk_adjustment_get_value (priv->opacity));
++   cairo_fill (cr);
++
++   cairo_destroy (cr);
++
++   return FALSE;
++}
++
++static void
++gtk_scrolled_window_cancel_animation (GtkScrolledWindow *scrolled_window)
++{
++  GtkScrolledWindowPrivate *priv = GTK_SCROLLED_WINDOW_GET_PRIVATE (scrolled_window);
++  GbAnimation *anim = priv->opacity_anim;
++
++  if (anim)
++    {
++      priv->opacity_anim = NULL;
++      g_object_remove_weak_pointer (G_OBJECT (anim),
++                                    (gpointer *) &priv->opacity_anim);
++      _gb_animation_stop (anim);
++    }
++
++  if (priv->sb_fade_out_id)
++    {
++      g_source_remove (priv->sb_fade_out_id);
++      priv->sb_fade_out_id = 0;
++    }
++
++  priv->sb_fading_in = FALSE;
++}
++
++static gboolean
++gtk_scrolled_window_fade_out_timeout (GtkScrolledWindow *scrolled_window)
++{
++  gtk_scrolled_window_start_fade_out_animation (scrolled_window);
++
++  return FALSE;
++}
++
++static void
++gtk_scrolled_window_start_fade_in_animation (GtkScrolledWindow *scrolled_window)
++{
++  GtkScrolledWindowPrivate *priv = GTK_SCROLLED_WINDOW_GET_PRIVATE (scrolled_window);
++  gdouble upper;
++
++  if (priv->sb_fading_in)
++    return;
++
++  gtk_scrolled_window_cancel_animation (scrolled_window);
++
++  priv->sb_fading_in = TRUE;
++
++  upper = gtk_adjustment_get_upper (priv->opacity);
++  priv->opacity_anim = _gb_object_animate (priv->opacity,
++                                           GB_ANIMATION_EASE_OUT_QUAD,
++                                           100,
++                                           "value", upper,
++                                           NULL);
++  g_object_add_weak_pointer (G_OBJECT (priv->opacity_anim),
++                             (gpointer *) &priv->opacity_anim);
++
++  priv->sb_fade_out_id =
++    gdk_threads_add_timeout (priv->sb_fade_out_delay,
++                             (GSourceFunc) gtk_scrolled_window_fade_out_timeout,
++                             scrolled_window);
++}
++
++static void
++gtk_scrolled_window_start_fade_out_animation (GtkScrolledWindow *scrolled_window)
++{
++  GtkScrolledWindowPrivate *priv = GTK_SCROLLED_WINDOW_GET_PRIVATE (scrolled_window);
++
++  gtk_scrolled_window_cancel_animation (scrolled_window);
++
++  priv->opacity_anim = _gb_object_animate (priv->opacity,
++                                           GB_ANIMATION_EASE_IN_QUAD,
++                                           300,
++                                           "value", 0.0,
++                                           NULL);
++  g_object_add_weak_pointer (G_OBJECT (priv->opacity_anim),
++                             (gpointer *) &priv->opacity_anim);
++}
++
++static void
++gtk_scrolled_window_expose_scrollbars (GtkAdjustment     *adj,
++                                       GtkScrolledWindow *scrolled_window)
++{
++  GtkWidget *child = gtk_bin_get_child (GTK_BIN (scrolled_window));
++
++  if (child && gtk_widget_get_visible (child))
++    {
++      GtkAllocation alloc;
++
++      gtk_widget_get_allocation (child, &alloc);
++
++      if (scrolled_window->vscrollbar)
++        gtk_widget_queue_draw_area (child,
++                                    alloc.width - 20,
++                                    0,
++                                    20,
++                                    alloc.height);
++
++      if (scrolled_window->hscrollbar)
++        gtk_widget_queue_draw_area (child,
++                                    0,
++                                    alloc.height - 20,
++                                    alloc.width,
++                                    20);
++    }
++}
++
+ #define __GTK_SCROLLED_WINDOW_C__
+ #include "gtkaliasdef.c"
+--
+1.7.10.2 (Apple Git-33)

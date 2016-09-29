@@ -1,0 +1,58 @@
+diff --git a/gdk/quartz/gdkkeys-quartz.c b/gdk/quartz/gdkkeys-quartz.c
+index a034bbd..e81ea4d 100644
+--- a/gdk/quartz/gdkkeys-quartz.c
++++ b/gdk/quartz/gdkkeys-quartz.c
+@@ -812,9 +812,41 @@ gdk_keymap_map_virtual_modifiers (GdkKeymap       *keymap,
+ GdkEventType
+ _gdk_quartz_keys_event_type (NSEvent *event)
+ {
+-  unsigned short keycode;
+-  unsigned int flags;
++  unsigned short keycode = [event keyCode];
++  unsigned int flags = [event modifierFlags];
++  CFArrayRef global_keys = NULL;
++  unsigned int eventmods = (flags & NSCommandKeyMask ? cmdKey : 0) |
++                           (flags & NSAlternateKeyMask ? optionKey : 0) |
++                           (flags & NSControlKeyMask ? controlKey : 0) |
++                           (flags & NSShiftKeyMask ? shiftKey : 0);
+   int i;
++
++  if (CopySymbolicHotKeys (&global_keys) == noErr && global_keys != NULL)
++    {
++      CFIndex length = CFArrayGetCount (global_keys);
++
++      for (i = 0; i < length; i++)
++	{
++	  CFDictionaryRef key_info = CFArrayGetValueAtIndex (global_keys, i);
++
++	  CFNumberRef code = CFDictionaryGetValue (key_info, kHISymbolicHotKeyCode);
++	  CFNumberRef mods = CFDictionaryGetValue (key_info, kHISymbolicHotKeyModifiers);
++	  CFBooleanRef enabled = CFDictionaryGetValue (key_info, kHISymbolicHotKeyEnabled);
++
++	  gint32 mod_value;
++	  gushort tmp_keycode;
++
++	  CFNumberGetValue (mods, kCFNumberSInt32Type, &mod_value);
++	  CFNumberGetValue (code, kCFNumberShortType, &tmp_keycode);
++
++	  if (CFBooleanGetValue (enabled) && keycode == tmp_keycode && mod_value == eventmods)
++	    {
++	      return GDK_NOTHING;
++	    }
++	}
++    }
++
++    CFRelease (global_keys);
+
+   switch ([event type])
+     {
+@@ -830,9 +862,6 @@ _gdk_quartz_keys_event_type (NSEvent *event)
+
+   /* For flags-changed events, we have to find the special key that caused the
+    * event, and see if it's in the modifier mask. */
+-  keycode = [event keyCode];
+-  flags = [event modifierFlags];
+-
+   for (i = 0; i < G_N_ELEMENTS (modifier_keys); i++)
+     {
+       if (modifier_keys[i].keycode == keycode)

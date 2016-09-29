@@ -1,0 +1,197 @@
+From 318b7822a8a737a826aab50e1a829a6b59c9704f Mon Sep 17 00:00:00 2001
+From: Carlos Garnacho <carlosg@gnome.org>
+Date: Fri, 14 Jun 2013 15:47:44 +0200
+Subject: [PATCH 65/68] Make usual calls to get a GdkPixbuf attach a 2x
+ variant if available
+
+---
+ gtk/gtkiconfactory.c |   24 ++++++++++++++++++---
+ gtk/gtkicontheme.c   |   57 +++++++++++++++++++++++++++++++++++++++++++++-----
+ gtk/gtkwidget.c      |   20 ++++++++++++++----
+ 3 files changed, 89 insertions(+), 12 deletions(-)
+
+diff --git a/gtk/gtkiconfactory.c b/gtk/gtkiconfactory.c
+index ab9a212..291c05e 100644
+--- a/gtk/gtkiconfactory.c
++++ b/gtk/gtkiconfactory.c
+@@ -1731,14 +1731,32 @@ gtk_icon_set_render_icon (GtkIconSet        *icon_set,
+                           GtkWidget         *widget,
+                           const char        *detail)
+ {
++  GdkPixbuf *pixbuf, *variant;
+   gdouble scale = 1;
+
+   g_return_val_if_fail (icon_set != NULL, NULL);
+   g_return_val_if_fail (style == NULL || GTK_IS_STYLE (style), NULL);
+
+-  return gtk_icon_set_render_icon_internal (icon_set, style, direction,
+-                                            state, size, widget, detail,
+-                                            &scale);
++  pixbuf = gtk_icon_set_render_icon_internal (icon_set, style, direction,
++                                              state, size, widget, detail,
++                                              &scale);
++  if (pixbuf && scale == 1)
++    {
++      scale = 2;
++      variant = gtk_icon_set_render_icon_internal (icon_set, style, direction,
++                                                   state, size, widget, detail,
++                                                   &scale);
++      if (variant &&
++	  gdk_pixbuf_get_width (variant) > gdk_pixbuf_get_width (pixbuf))
++        g_object_set_data_full (G_OBJECT (pixbuf),
++                                "gdk-pixbuf-2x-variant",
++                                variant,
++                                (GDestroyNotify) g_object_unref);
++      else if (variant)
++        g_object_unref (variant);
++    }
++
++  return pixbuf;
+ }
+
+ GdkPixbuf*
+diff --git a/gtk/gtkicontheme.c b/gtk/gtkicontheme.c
+index 500f0ab..0e42adc 100644
+--- a/gtk/gtkicontheme.c
++++ b/gtk/gtkicontheme.c
+@@ -1403,6 +1403,8 @@ gtk_icon_theme_lookup_icon (GtkIconTheme       *icon_theme,
+			    gint                size,
+			    GtkIconLookupFlags  flags)
+ {
++  GtkIconInfo *retval, *variant;
++
+   g_return_val_if_fail (GTK_IS_ICON_THEME (icon_theme), NULL);
+   g_return_val_if_fail (icon_name != NULL, NULL);
+   g_return_val_if_fail ((flags & GTK_ICON_LOOKUP_NO_SVG) == 0 ||
+@@ -1411,8 +1413,22 @@ gtk_icon_theme_lookup_icon (GtkIconTheme       *icon_theme,
+   GTK_NOTE (ICONTHEME,
+	    g_print ("gtk_icon_theme_lookup_icon %s\n", icon_name));
+
+-  return gtk_icon_theme_lookup_icon_for_scale (icon_theme, icon_name,
+-                                               size, 1, flags);
++  retval = gtk_icon_theme_lookup_icon_for_scale (icon_theme, icon_name,
++                                                 size, 1, flags);
++
++  variant = gtk_icon_theme_lookup_icon_for_scale (icon_theme, icon_name,
++                                                  size, 2, flags);
++  if (retval && variant &&
++      retval->pixbuf && variant->pixbuf &&
++      gdk_pixbuf_get_width (variant->pixbuf) > gdk_pixbuf_get_width (retval->pixbuf))
++    g_object_set_data_full (G_OBJECT (retval->pixbuf),
++                            "gdk-pixbuf-2x-variant",
++                            g_object_ref (variant->pixbuf),
++                            (GDestroyNotify) g_object_unref);
++  if (variant)
++    gtk_icon_info_free (variant);
++
++  return retval;
+ }
+
+ GtkIconInfo *
+@@ -1501,12 +1517,27 @@ gtk_icon_theme_choose_icon (GtkIconTheme       *icon_theme,
+			    gint                size,
+			    GtkIconLookupFlags  flags)
+ {
++  GtkIconInfo *retval, *variant;
++
+   g_return_val_if_fail (GTK_IS_ICON_THEME (icon_theme), NULL);
+   g_return_val_if_fail (icon_names != NULL, NULL);
+   g_return_val_if_fail ((flags & GTK_ICON_LOOKUP_NO_SVG) == 0 ||
+			(flags & GTK_ICON_LOOKUP_FORCE_SVG) == 0, NULL);
+
+-  return choose_icon (icon_theme, icon_names, size, 1, flags);
++  retval = choose_icon (icon_theme, icon_names, size, 1, flags);
++  variant = choose_icon (icon_theme, icon_names, size, 2, flags);
++
++  if (retval && variant &&
++      retval->pixbuf && variant->pixbuf &&
++      gdk_pixbuf_get_width (variant->pixbuf) > gdk_pixbuf_get_width (retval->pixbuf))
++    g_object_set_data_full (G_OBJECT (retval->pixbuf),
++                            "gdk-pixbuf-2x-variant",
++                            g_object_ref (variant->pixbuf),
++                            (GDestroyNotify) g_object_unref);
++  if (variant)
++    gtk_icon_info_free (variant);
++
++  return retval;
+ }
+
+ GtkIconInfo *
+@@ -1569,14 +1600,30 @@ gtk_icon_theme_load_icon (GtkIconTheme         *icon_theme,
+			  GtkIconLookupFlags    flags,
+			  GError              **error)
+ {
++  GdkPixbuf *pixbuf, *variant;
++
+   g_return_val_if_fail (GTK_IS_ICON_THEME (icon_theme), NULL);
+   g_return_val_if_fail (icon_name != NULL, NULL);
+   g_return_val_if_fail ((flags & GTK_ICON_LOOKUP_NO_SVG) == 0 ||
+			(flags & GTK_ICON_LOOKUP_FORCE_SVG) == 0, NULL);
+   g_return_val_if_fail (error == NULL || *error == NULL, NULL);
+
+-  return gtk_icon_theme_load_icon_for_scale (icon_theme, icon_name,
+-                                             size, 1, flags, error);
++  pixbuf = gtk_icon_theme_load_icon_for_scale (icon_theme, icon_name,
++                                               size, 1, flags, error);
++
++  variant = gtk_icon_theme_load_icon_for_scale (icon_theme, icon_name,
++                                               size, 2, flags, NULL);
++
++  if (pixbuf && variant &&
++      gdk_pixbuf_get_width (variant) > gdk_pixbuf_get_width (pixbuf))
++    g_object_set_data_full (G_OBJECT (pixbuf),
++                            "gdk-pixbuf-2x-variant",
++                            g_object_ref (variant),
++                            (GDestroyNotify) g_object_unref);
++  if (variant)
++    g_object_unref (variant);
++
++  return pixbuf;
+ }
+
+ GdkPixbuf *
+diff --git a/gtk/gtkwidget.c b/gtk/gtkwidget.c
+index f093c39..464cb59 100644
+--- a/gtk/gtkwidget.c
++++ b/gtk/gtkwidget.c
+@@ -7477,15 +7477,16 @@ gtk_widget_render_icon (GtkWidget      *widget,
+                         GtkIconSize     size,
+                         const gchar    *detail)
+ {
++  GdkPixbuf *retval, *variant;
+   GtkIconSet *icon_set;
+-  GdkPixbuf *retval;
+-
++  gdouble scale = 2;
++
+   g_return_val_if_fail (GTK_IS_WIDGET (widget), NULL);
+   g_return_val_if_fail (stock_id != NULL, NULL);
+   g_return_val_if_fail (size > GTK_ICON_SIZE_INVALID || size == -1, NULL);
+-
++
+   gtk_widget_ensure_style (widget);
+-
++
+   icon_set = gtk_style_lookup_icon_set (widget->style, stock_id);
+
+   if (icon_set == NULL)
+@@ -7499,6 +7500,17 @@ gtk_widget_render_icon (GtkWidget      *widget,
+                                      widget,
+                                      detail);
+
++  variant = gtk_icon_set_render_icon_scaled (icon_set, widget->style,
++                                             gtk_widget_get_direction (widget),
++                                             gtk_widget_get_state (widget),
++                                             size, widget, detail, &scale);
++
++  if (variant)
++    g_object_set_data_full (G_OBJECT (retval),
++                            "gdk-pixbuf-2x-variant",
++                            variant,
++                            (GDestroyNotify) g_object_unref);
++
+   return retval;
+ }
+
+--
+1.7.10.2 (Apple Git-33)

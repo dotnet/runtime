@@ -1,0 +1,29 @@
+diff --git a/gtk/gtknsview.c b/gtk/gtknsview.c
+index 2540a81..e5c48c3 100644
+--- a/gtk/gtknsview.c
++++ b/gtk/gtknsview.c
+@@ -914,5 +914,13 @@ gtk_ns_view_new (gpointer nsview)
+                        NULL);
+ }
+
++gpointer
++gtk_ns_view_get_nsview (GtkNSView *gtknsview)
++{
++  g_return_val_if_fail (GTK_IS_NS_VIEW (gtknsview), NULL);
++
++  return gtknsview->priv->view;
++}
++
+ #define __GTK_NS_VIEW_C__
+ #include "gtkaliasdef.c"
+diff --git a/gtk/gtknsview.h b/gtk/gtknsview.h
+index 2c0aab7..a923827 100644
+--- a/gtk/gtknsview.h
++++ b/gtk/gtknsview.h
+@@ -56,6 +56,7 @@ struct _GtkNSViewClass
+
+ GType       gtk_ns_view_get_type (void) G_GNUC_CONST;
+ GtkWidget * gtk_ns_view_new      (gpointer  nsview);
++gpointer    gtk_ns_view_get_nsview (GtkNSView *gtknsview);
+
+ G_END_DECLS

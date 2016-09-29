@@ -1,0 +1,20 @@
+--- gio/gdbusprivate.c.orig	2012-04-30 11:24:02.000000000 -0500
++++ gio/gdbusprivate.c	2012-05-02 01:57:47.000000000 -0500
+@@ -2094,7 +2094,7 @@
+   /* TODO: use PACKAGE_LOCALSTATEDIR ? */
+   ret = NULL;
+   first_error = NULL;
+-  if (!g_file_get_contents ("/var/lib/dbus/machine-id",
++  if (!g_file_get_contents ("@@PREFIX@@/var/lib/dbus/machine-id",
+                             &ret,
+                             NULL,
+                             &first_error) &&
+@@ -2104,7 +2104,7 @@
+                             NULL))
+     {
+       g_propagate_prefixed_error (error, first_error,
+-                                  _("Unable to load /var/lib/dbus/machine-id or /etc/machine-id: "));
++                                  _("Unable to load @@PREFIX@@/var/lib/dbus/machine-id or /etc/machine-id: "));
+     }
+   else
+     {

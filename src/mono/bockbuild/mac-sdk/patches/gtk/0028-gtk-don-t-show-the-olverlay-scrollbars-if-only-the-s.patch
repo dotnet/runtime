@@ -1,0 +1,179 @@
+From 133655d890a4513783e4cb13e25770a84d5c41d8 Mon Sep 17 00:00:00 2001
+From: Michael Natterer <mitch@gimp.org>
+Date: Fri, 2 Nov 2012 16:02:32 +0100
+Subject: [PATCH 28/68] gtk: don't show the olverlay scrollbars if only the
+ size of the content changes
+
+This commit also optimizes away many signal connections and thus
+double and triple updates.
+---
+ gtk/gtkscrolledwindow.c |   57 ++++++++++++++++++++---------------------------
+ 1 file changed, 24 insertions(+), 33 deletions(-)
+
+diff --git a/gtk/gtkscrolledwindow.c b/gtk/gtkscrolledwindow.c
+index a04436b..7f56793 100644
+--- a/gtk/gtkscrolledwindow.c
++++ b/gtk/gtkscrolledwindow.c
+@@ -626,9 +626,6 @@ gtk_scrolled_window_set_hadjustment (GtkScrolledWindow *scrolled_window,
+       g_signal_handlers_disconnect_by_func (old_adjustment,
+                                             gtk_scrolled_window_adjustment_value_changed,
+                                             scrolled_window);
+-      g_signal_handlers_disconnect_by_func (old_adjustment,
+-                                            gtk_scrolled_window_update_scrollbars,
+-                                            scrolled_window);
+
+       gtk_range_set_adjustment (GTK_RANGE (scrolled_window->hscrollbar),
+				hadjustment);
+@@ -645,13 +642,6 @@ gtk_scrolled_window_set_hadjustment (GtkScrolledWindow *scrolled_window,
+   gtk_scrolled_window_adjustment_changed (hadjustment, scrolled_window);
+   gtk_scrolled_window_adjustment_value_changed (hadjustment, scrolled_window);
+
+-  g_signal_connect_swapped (hadjustment, "changed",
+-                            G_CALLBACK (gtk_scrolled_window_update_scrollbars),
+-                            scrolled_window);
+-  g_signal_connect_swapped (hadjustment, "value-changed",
+-                            G_CALLBACK (gtk_scrolled_window_update_scrollbars),
+-                            scrolled_window);
+-
+   if (bin->child)
+     gtk_widget_set_scroll_adjustments (bin->child,
+                                        gtk_range_get_adjustment (GTK_RANGE (scrolled_window->hscrollbar)),
+@@ -708,9 +698,6 @@ gtk_scrolled_window_set_vadjustment (GtkScrolledWindow *scrolled_window,
+       g_signal_handlers_disconnect_by_func (old_adjustment,
+                                             gtk_scrolled_window_adjustment_value_changed,
+                                             scrolled_window);
+-      g_signal_handlers_disconnect_by_func (old_adjustment,
+-                                            gtk_scrolled_window_update_scrollbars,
+-                                            scrolled_window);
+
+       gtk_range_set_adjustment (GTK_RANGE (scrolled_window->vscrollbar),
+				vadjustment);
+@@ -727,13 +714,6 @@ gtk_scrolled_window_set_vadjustment (GtkScrolledWindow *scrolled_window,
+   gtk_scrolled_window_adjustment_changed (vadjustment, scrolled_window);
+   gtk_scrolled_window_adjustment_value_changed (vadjustment, scrolled_window);
+
+-  g_signal_connect_swapped (vadjustment, "changed",
+-                            G_CALLBACK (gtk_scrolled_window_update_scrollbars),
+-                            scrolled_window);
+-  g_signal_connect_swapped (vadjustment, "value-changed",
+-                            G_CALLBACK (gtk_scrolled_window_update_scrollbars),
+-                            scrolled_window);
+-
+   if (bin->child)
+     gtk_widget_set_scroll_adjustments (bin->child,
+                                        gtk_range_get_adjustment (GTK_RANGE (scrolled_window->hscrollbar)),
+@@ -1071,9 +1051,6 @@ gtk_scrolled_window_destroy (GtkObject *object)
+       g_signal_handlers_disconnect_by_func (gtk_range_get_adjustment (GTK_RANGE (scrolled_window->hscrollbar)),
+                                             gtk_scrolled_window_adjustment_value_changed,
+                                             scrolled_window);
+-      g_signal_handlers_disconnect_by_func (gtk_range_get_adjustment (GTK_RANGE (scrolled_window->hscrollbar)),
+-                                            gtk_scrolled_window_update_scrollbars,
+-                                            scrolled_window);
+
+       gtk_widget_unparent (scrolled_window->hscrollbar);
+       gtk_widget_destroy (scrolled_window->hscrollbar);
+@@ -1088,9 +1065,6 @@ gtk_scrolled_window_destroy (GtkObject *object)
+       g_signal_handlers_disconnect_by_func (gtk_range_get_adjustment (GTK_RANGE (scrolled_window->vscrollbar)),
+                                             gtk_scrolled_window_adjustment_value_changed,
+                                             scrolled_window);
+-      g_signal_handlers_disconnect_by_func (gtk_range_get_adjustment (GTK_RANGE (scrolled_window->vscrollbar)),
+-                                            gtk_scrolled_window_update_scrollbars,
+-                                            scrolled_window);
+
+       gtk_widget_unparent (scrolled_window->vscrollbar);
+       gtk_widget_destroy (scrolled_window->vscrollbar);
+@@ -1805,7 +1779,8 @@ _gtk_scrolled_window_get_overshoot (GtkScrolledWindow *scrolled_window,
+ }
+
+ static void
+-_gtk_scrolled_window_allocate_overshoot_window (GtkScrolledWindow *scrolled_window)
++_gtk_scrolled_window_allocate_overshoot_window (GtkScrolledWindow *scrolled_window,
++                                                gboolean           update_scrollbars)
+ {
+   GtkAllocation window_allocation, relative_allocation, allocation;
+   GtkScrolledWindowPrivate *priv;
+@@ -1880,7 +1855,7 @@ _gtk_scrolled_window_allocate_overshoot_window (GtkScrolledWindow *scrolled_wind
+   else
+     gdk_window_hide (priv->hbackground_window);
+
+-  if (priv->overlay_scrollbars)
++  if (priv->overlay_scrollbars && update_scrollbars)
+     {
+       gtk_scrolled_window_start_fade_in_animation (scrolled_window);
+       gtk_scrolled_window_update_scrollbars (scrolled_window);
+@@ -1948,12 +1923,15 @@ gtk_scrolled_window_size_allocate (GtkWidget     *widget,
+   GtkBin *bin;
+   GtkAllocation relative_allocation;
+   GtkAllocation child_allocation;
++  GtkAllocation old_allocation;
+   gboolean scrollbars_within_bevel;
+   gint scrollbar_spacing;
+
+   g_return_if_fail (GTK_IS_SCROLLED_WINDOW (widget));
+   g_return_if_fail (allocation != NULL);
+
++  old_allocation = widget->allocation;
++
+   scrolled_window = GTK_SCROLLED_WINDOW (widget);
+   priv = GTK_SCROLLED_WINDOW_GET_PRIVATE (scrolled_window);
+   bin = GTK_BIN (scrolled_window);
+@@ -2117,7 +2095,12 @@ gtk_scrolled_window_size_allocate (GtkWidget     *widget,
+   else if (gtk_widget_get_visible (scrolled_window->vscrollbar))
+     gtk_widget_hide (scrolled_window->vscrollbar);
+
+-  _gtk_scrolled_window_allocate_overshoot_window (scrolled_window);
++  /* need to update the overlay scrollbars only if the allocation has
++   * actually changed, not if only the content changed
++   */
++  _gtk_scrolled_window_allocate_overshoot_window (scrolled_window,
++                                                  allocation->x != old_allocation.x ||
++                                                  allocation->y != old_allocation.y);
+ }
+
+ static gboolean
+@@ -2280,7 +2263,7 @@ gtk_scrolled_window_scroll_event (GtkWidget      *widget,
+
+       if (old_overshoot_x != new_overshoot_x ||
+           old_overshoot_y != new_overshoot_y)
+-        _gtk_scrolled_window_allocate_overshoot_window (scrolled_window);
++        _gtk_scrolled_window_allocate_overshoot_window (scrolled_window, TRUE);
+
+       /* In two cases we want to start snapping back:
+        *  1) The view is overshot and the gesture has ended.
+@@ -2480,7 +2463,7 @@ scrolled_window_snap_back_cb (gpointer user_data)
+
+   if (old_overshoot_x != overshoot_x ||
+       old_overshoot_y != overshoot_y)
+-    _gtk_scrolled_window_allocate_overshoot_window (scrolled_window);
++    _gtk_scrolled_window_allocate_overshoot_window (scrolled_window, TRUE);
+
+   if (overshoot_x != 0 || overshoot_y != 0)
+     return TRUE;
+@@ -2960,7 +2943,12 @@ gtk_scrolled_window_adjustment_changed (GtkAdjustment *adjustment,
+     }
+
+   if (priv->overlay_scrollbars)
+-    gtk_scrolled_window_start_fade_in_animation (scrolled_win);
++    {
++      /* dont't fade in if the extent of the content changes, but update
++       * the scrollbar's dimensions anyway.
++       */
++      gtk_scrolled_window_update_scrollbars (scrolled_win);
++    }
+ }
+
+ static void
+@@ -2983,7 +2971,10 @@ gtk_scrolled_window_adjustment_value_changed (GtkAdjustment *adjustment,
+     priv->unclamped_hadj_value = gtk_adjustment_get_value (adjustment);
+
+   if (priv->overlay_scrollbars)
+-    gtk_scrolled_window_start_fade_in_animation (scrolled_window);
++    {
++      gtk_scrolled_window_start_fade_in_animation (scrolled_window);
++      gtk_scrolled_window_update_scrollbars (scrolled_window);
++    }
+ }
+
+ static void
+--
+1.7.10.2 (Apple Git-33)

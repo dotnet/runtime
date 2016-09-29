@@ -1,0 +1,216 @@
+include "/Library/Frameworks/Mono.framework/Versions/Current/share/themes/Clearlooks/gtk-2.0/gtkrc"
+#gtk-icon-theme-name = "OSX"
+gtk-icon-theme-name = "Tango"
+gtk_color_scheme = "fg_color:#222\nbg_color:#e6e6e6\nbase_color:#f9f9f9\ntext_color:#222\nselected_bg_color:#788ab0\nselected_fg_color:#fff"
+gtk-menu-popup-delay = 1
+gtk-button-images = 0
+gtk-menu-images = 0
+gtk-enable-mnemonics = 0
+
+style "theme-default"
+{
+    GtkButton      ::default_border    = { 0, 0, 0, 0 }
+    GtkRange       ::trough_border     = 0
+    GtkPaned       ::handle_size       = 8
+    GtkRange       ::slider_width      = 15
+    GtkRange       ::stepper_size      = 15
+    GtkScrollbar   ::min_slider_length = 30
+    GtkCheckButton ::indicator_size    = 14
+    GtkMenuBar     ::internal-padding  = 0
+    GtkTreeView    ::expander_size     = 12
+    GtkExpander    ::expander_size     = 14
+
+    xthickness = 2
+    ythickness = 2
+
+    fg[NORMAL]        = @fg_color #"#000000" # black
+    fg[PRELIGHT]      = @fg_color #"#000000" # black
+    fg[SELECTED]      = @selected_fg_color #"#ffffff" # white
+    fg[ACTIVE]        = @fg_color #"#000000" # black
+    fg[INSENSITIVE]   = darker (@bg_color) #"#b5b3ac" # dark beige
+
+    bg[NORMAL]        = @bg_color # "#ede9e3"
+    bg[PRELIGHT]      = shade (1.02, @bg_color) #"#f9f7f3" # very light beige
+    bg[SELECTED]      = @selected_bg_color # "#5598d7" # deepsky
+    bg[INSENSITIVE]   = @bg_color # "#efebe5" # beige
+    bg[ACTIVE]        = shade (0.9, @bg_color) #"#dcd4c9" #"#d7d3ca" # dark beige
+
+    base[NORMAL]      = @base_color # "#ffffff" # white
+    base[PRELIGHT]    = shade (0.95, @bg_color) # "#5f8ec4" # dark beige
+    base[ACTIVE]      = shade (0.9, @selected_bg_color) # "#a69f91" # darker deepsky
+    base[SELECTED]    = @selected_bg_color # "#5598d7" # deepsky
+    base[INSENSITIVE] = @bg_color # "#e8e5de" # beige
+
+    text[NORMAL]      = @text_color # "#000000" # black
+    text[PRELIGHT]    = @text_color # "#000000" # black
+    text[ACTIVE]      = @selected_fg_color # "#ffffff" # white
+    text[SELECTED]    = @selected_fg_color # "#ffffff" # white
+    text[INSENSITIVE] = darker (@bg_color) # "#b5b3ac" # dark beige
+
+    engine "clearlooks"  {
+      style               = GUMMY   # gummy look
+      toolbarstyle        = 0       # flat toolbars
+      animation           = TRUE    # animated progressbars
+      menubarstyle        = 2       # rounded menus
+      colorize_scrollbar  = TRUE    # colored slider
+    }
+
+    font              = "Lucida Grande 14"
+}
+
+style "theme-wide" = "theme-default"
+{
+    xthickness = 3
+    ythickness = 3
+}
+
+style "theme-text" = "theme-default"
+{
+    #base[SELECTED]     = "#fc9747"  # Outline?
+}
+
+style "theme-toolbar" = "theme-default"
+{
+    #top and bottom border
+    bg[NORMAL] = @bg_color
+}
+
+style "theme-scrollbar" = "theme-default"
+{
+    bg[SELECTED] = shade (1.1, @selected_bg_color)
+}
+
+style "theme-tasklist" = "theme-default"
+{
+    xthickness = 5
+    ythickness = 3
+}
+
+style "theme-menu" = "theme-default"
+{
+    xthickness = 3
+    ythickness = 3
+    bg[NORMAL] = shade (1.1,@bg_color)
+}
+
+style "theme-menu-item" = "theme-default"
+{
+    xthickness = 2
+    ythickness = 4
+    fg[PRELIGHT] = @selected_fg_color
+    text[PRELIGHT] = @selected_fg_color
+    base[PRELIGHT] = @selected_bg_color # Selection color
+}
+
+style "theme-menu-itembar" = "theme-default"
+{
+    xthickness = 0
+    ythickness = 0
+}
+
+style "theme-tree" = "theme-default"
+{
+    xthickness = 2
+    ythickness = 2
+    GtkTreeView::odd-row-color = shade(0.9, @base_color)
+    GtkTreeView::even-row-color = @base_color
+}
+
+style "theme-frame-title" = "theme-default"
+{
+    #fg[NORMAL] = "#f00" #button frames
+}
+
+style "theme-tooltips" = "theme-default"
+{
+    xthickness = 4
+    ythickness = 4
+    bg[NORMAL] = { 1.0,1.0,0.75 }
+}
+
+style "theme-progressbar" = "theme-default"
+{
+    xthickness = 1
+    ythickness = 1
+    fg[PRELIGHT]  = @base_color
+}
+
+style "theme-combo" = "theme-default"
+{
+    xthickness = 2
+    ythickness = 4
+}
+
+style "theme-button" = "theme-wide"
+{
+    bg[NORMAL] = @bg_color
+    bg[PRELIGHT] = shade (1.1, @bg_color)
+    bg[ACTIVE] = shade (0.9, @bg_color)
+    #xthickness = 4
+    #ythickness = 2
+}
+
+style "theme-check" = "theme-button"
+{
+}
+
+style "theme-panel" = "theme-default"
+{
+    xthickness = 3
+    ythickness = 3
+    bg[ACTIVE] = shade (1.1, @selected_bg_color)
+    fg[ACTIVE] = @selected_fg_color
+}
+
+style "theme-notebook" = "theme-wide"
+{
+    base[SELECTED]    = @selected_bg_color  # Tab selection color
+    bg[ACTIVE]        = shade(0.9, @bg_color)  # Unselected tabs
+
+#    engine "clearlooks" {
+#        style = CLASSIC
+#    }
+}
+
+# widget styles
+class "GtkWidget" style "theme-default"
+class "GtkButton" style "theme-button"
+class "GtkCombo"  style "theme-button"
+class "GtkRange"  style "theme-wide"
+class "GtkFrame"  style "theme-wide"
+class "GtkMenu"   style "theme-menu"
+class "GtkEntry"  style "theme-button"
+class "GtkMenuItem"    style "theme-menu-item"
+class "GtkStatusbar"   style "theme-wide"
+class "GtkNotebook"    style "theme-notebook"
+class "GtkProgressBar" style "theme-progressbar"
+class "GtkCheckButton" style "theme-check"
+class "GtkRadioButton" style "theme-check"
+class "GtkToolbar" style "theme-toolbar"
+
+widget_class "*MenuItem.*" style "theme-menu-item"
+
+# combobox stuff
+widget_class "*.GtkComboBox.GtkButton" style "theme-combo"
+widget_class "*.GtkCombo.GtkButton"    style "theme-combo"
+
+# tooltips stuff
+widget_class "*.tooltips.*.GtkToggleButton" style "theme-tasklist"
+widget "gtk-tooltips" style "theme-tooltips"
+
+# treeview stuff
+widget "*GtkTreeView*" style "theme-tree"
+widget_class "*.GtkTreeView.GtkButton" style "theme-tree"
+widget_class "*.GtkCTree.GtkButton" style "theme-tree"
+widget_class "*.GtkList.GtkButton" style "theme-tree"
+widget_class "*.GtkCList.GtkButton" style "theme-tree"
+widget_class "*.GtkFrame.GtkLabel" style "theme-frame-title"
+
+# notebook stuff
+widget_class "*.GtkNotebook.*.GtkEventBox" style "theme-notebook"
+widget_class "*.GtkNotebook.*.GtkViewport" style "theme-notebook"
+
+# scrollbar stuff
+class "GtkScrollbar" style "theme-scrollbar"
+
+gtk-font-name = "Lucida Grande 12"
