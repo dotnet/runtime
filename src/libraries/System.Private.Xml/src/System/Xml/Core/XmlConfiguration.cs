@@ -25,24 +25,8 @@ namespace System.Xml.XmlConfiguration
     }
 
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-    internal sealed class XmlReaderSection : ConfigurationSection
+    internal sealed class XmlReaderSection
     {
-        public string ProhibitDefaultResolverString
-        {
-            get { return (string)this[XmlConfigurationString.ProhibitDefaultResolverName]; }
-            set { this[XmlConfigurationString.ProhibitDefaultResolverName] = value; }
-        }
-
-        private bool _ProhibitDefaultResolver
-        {
-            get
-            {
-                string value = ProhibitDefaultResolverString;
-                bool result;
-                XmlConvert.TryToBoolean(value, out result);
-                return result;
-            }
-        }
 
         internal static XmlResolver CreateDefaultResolver()
         {
@@ -54,65 +38,14 @@ namespace System.Xml.XmlConfiguration
     }
 
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-    internal sealed class XsltConfigSection : ConfigurationSection
+    internal sealed class XsltConfigSection
     {
-        public string ProhibitDefaultResolverString
-        {
-            get { return (string)this[XmlConfigurationString.ProhibitDefaultResolverName]; }
-            set { this[XmlConfigurationString.ProhibitDefaultResolverName] = value; }
-        }
-
-        private bool _ProhibitDefaultResolver
-        {
-            get
-            {
-                string value = ProhibitDefaultResolverString;
-                bool result;
-                XmlConvert.TryToBoolean(value, out result);
-                return result;
-            }
-        }
-
         internal static XmlResolver CreateDefaultResolver()
         {
             if (LocalAppContextSwitches.s_ProhibitDefaultUrlResolver)
                 return XmlNullResolver.Singleton;
             else
                 return new XmlUrlResolver();
-        }
-
-        internal string LimitXPathComplexityString
-        {
-            get { return (string)this[XmlConfigurationString.LimitXPathComplexityName]; }
-            set { this[XmlConfigurationString.LimitXPathComplexityName] = value; }
-        }
-
-        private bool _LimitXPathComplexity
-        {
-            get
-            {
-                string value = LimitXPathComplexityString;
-                bool result = true;
-                XmlConvert.TryToBoolean(value, out result);
-                return result;
-            }
-        }
-
-        internal string EnableMemberAccessForXslCompiledTransformString
-        {
-            get { return (string)this[XmlConfigurationString.EnableMemberAccessForXslCompiledTransformName]; }
-            set { this[XmlConfigurationString.EnableMemberAccessForXslCompiledTransformName] = value; }
-        }
-
-        private bool _EnableMemberAccessForXslCompiledTransform
-        {
-            get
-            {
-                string value = EnableMemberAccessForXslCompiledTransformString;
-                bool result = false;
-                XmlConvert.TryToBoolean(value, out result);
-                return result;
-            }
         }
     }
 }

@@ -60,6 +60,10 @@ namespace System.Xml.Xsl
         }
         public void Load(XmlReader stylesheet, XmlResolver resolver)
         {
+            if (stylesheet == null)
+            {
+                throw new ArgumentNullException(nameof(stylesheet));
+            }
             Load(new XPathDocument(stylesheet, XmlSpace.Preserve), resolver);
         }
 
@@ -84,20 +88,20 @@ namespace System.Xml.Xsl
             }
             Load(stylesheet, XsltConfigSection.CreateDefaultResolver());
         }
+
         public void Load(XPathNavigator stylesheet, XmlResolver resolver)
         {
             if (stylesheet == null)
             {
                 throw new ArgumentNullException(nameof(stylesheet));
             }
-            Compile(stylesheet, resolver, /*evidence:*/null);
+            Compile(stylesheet, resolver);
         }
 
         public void Load(string url)
         {
             XmlTextReaderImpl tr = new XmlTextReaderImpl(url);
-            Evidence evidence = XmlSecureResolver.CreateEvidenceForUrl(tr.BaseURI); // We should ask BaseURI before we start reading because it's changing with each node
-            Compile(Compiler.LoadDocument(tr).CreateNavigator(), XsltConfigSection.CreateDefaultResolver(), evidence);
+            Compile(Compiler.LoadDocument(tr).CreateNavigator(), XsltConfigSection.CreateDefaultResolver());
         }
 
         public void Load(string url, XmlResolver resolver)
@@ -106,38 +110,7 @@ namespace System.Xml.Xsl
             {
                 tr.XmlResolver = resolver;
             }
-            Evidence evidence = XmlSecureResolver.CreateEvidenceForUrl(tr.BaseURI); // We should ask BaseURI before we start reading because it's changing with each node
-            Compile(Compiler.LoadDocument(tr).CreateNavigator(), resolver, evidence);
-        }
-
-        internal void Load(IXPathNavigable stylesheet, XmlResolver resolver, Evidence evidence)
-        {
-            if (stylesheet == null)
-            {
-                throw new ArgumentNullException(nameof(stylesheet));
-            }
-            Load(stylesheet.CreateNavigator(), resolver, evidence);
-        }
-        internal void Load(XmlReader stylesheet, XmlResolver resolver, Evidence evidence)
-        {
-            if (stylesheet == null)
-            {
-                throw new ArgumentNullException(nameof(stylesheet));
-            }
-            Load(new XPathDocument(stylesheet, XmlSpace.Preserve), resolver, evidence);
-        }
-        internal void Load(XPathNavigator stylesheet, XmlResolver resolver, Evidence evidence)
-        {
-            if (stylesheet == null)
-            {
-                throw new ArgumentNullException(nameof(stylesheet));
-            }
-            if (evidence == null)
-            {
-                evidence = new Evidence();
-            }
-
-            Compile(stylesheet, resolver, evidence);
+            Compile(Compiler.LoadDocument(tr).CreateNavigator(), resolver);
         }
 
         // ------------------------------------ Transform() ------------------------------------ //
@@ -296,13 +269,13 @@ namespace System.Xml.Xsl
 
         // Implementation
 
-        private void Compile(XPathNavigator stylesheet, XmlResolver resolver, Evidence evidence)
+        private void Compile(XPathNavigator stylesheet, XmlResolver resolver)
         {
             Debug.Assert(stylesheet != null);
 
             Compiler compiler = (Debugger == null) ? new Compiler() : new DbgCompiler(this.Debugger);
             NavigatorInput input = new NavigatorInput(stylesheet);
-            compiler.Compile(input, resolver ?? XmlNullResolver.Singleton, evidence);
+            compiler.Compile(input, resolver ?? XmlNullResolver.Singleton);
 
             Debug.Assert(compiler.CompiledStylesheet != null);
             Debug.Assert(compiler.QueryStore != null);
