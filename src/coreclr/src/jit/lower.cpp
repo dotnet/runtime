@@ -3321,8 +3321,6 @@ bool Lowering::AreSourcesPossiblyModifiedLocals(GenTree* addr, GenTree* base, Ge
             return true;
         }
     }
-
-    unreached();
 }
 
 //------------------------------------------------------------------------
