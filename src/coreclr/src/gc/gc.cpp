@@ -9972,8 +9972,8 @@ gc_heap::init_semi_shared()
         {
             goto cleanup;
         }
-#endif //BACKGROUND_GC
     }
+#endif //BACKGROUND_GC
 
     memset (&current_no_gc_region_info, 0, sizeof (current_no_gc_region_info));
 
