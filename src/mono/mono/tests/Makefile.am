@@ -468,7 +468,8 @@ BASE_TEST_CS_SRC_UNIVERSAL=		\
 	bug-29585.cs	\
 	priority.cs	\
 	abort-cctor.cs	\
-	namedmutex-destroy-race.cs
+	namedmutex-destroy-race.cs	\
+	thread-native-exit.cs
 
 if INSTALL_MOBILE_STATIC
 BASE_TEST_CS_SRC= \
