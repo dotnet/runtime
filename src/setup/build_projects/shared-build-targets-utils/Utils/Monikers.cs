@@ -47,7 +47,7 @@ namespace Microsoft.DotNet.Cli.Build
                      return "openSUSE_42_1_x64";
             }
 
-            return $"{CurrentPlatform.Current}_{CurrentArchitecture.Current}";
+            return $"{CurrentPlatform.Current}_{Environment.GetEnvironmentVariable("TARGETPLATFORM") ?? CurrentArchitecture.Current.ToString()}";
         }
 
         public static string GetDebianHostFxrPackageName(string hostfxrNugetVersion)
