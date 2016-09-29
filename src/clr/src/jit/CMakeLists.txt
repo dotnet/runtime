@@ -23,6 +23,7 @@ set( JIT_SOURCES
   bitset.cpp
   block.cpp
   codegencommon.cpp
+  codegenlinear.cpp
   compiler.cpp
   copyprop.cpp
   disasm.cpp

@@ -90,6 +90,7 @@
         <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='True'" Include="..\CodeGenLegacy.cpp" />
         <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\Lower.cpp" />
         <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\LSRA.cpp" />
+        <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\codegenlinear.cpp" />
     </ItemGroup>
     <ItemGroup Condition="'$(TargetArch)'=='i386'">
         <CppCompile Include="..\emitXArch.cpp" />
