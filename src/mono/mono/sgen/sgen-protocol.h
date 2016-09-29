@@ -15,6 +15,12 @@
 #include "sgen-gc.h"
 
 #define PROTOCOL_HEADER_CHECK 0xde7ec7ab1ec0de
+/*
+ * The version needs to be bumped every time we introduce breaking changes (like
+ * adding new protocol entries or various format changes). The latest protocol grepper
+ * should be able to handle all the previous versions, while an old grepper will
+ * be able to tell if it cannot handle the format.
+ */
 #define PROTOCOL_HEADER_VERSION 1
 
 /* Special indices returned by MATCH_INDEX. */
