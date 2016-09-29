@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 
@@ -9,12 +10,17 @@ namespace System.Net
 {
     public class ServicePoint
     {
-        private int _connectionLeaseTimeout;
-        private int _maxIdleTime;
-        private int _receiveBufferSize;
+        private int _connectionLeaseTimeout = -1;
+        private int _maxIdleTime = 100 * 1000;
+        private int _receiveBufferSize = -1;
         private int _connectionLimit;
 
-        internal ServicePoint() { }
+        internal ServicePoint(Uri address)
+        {
+            Debug.Assert(address != null);
+            Address = address;
+            ConnectionName = address.Scheme;
+        }
 
         public BindIPEndPoint BindIPEndPointDelegate { get; set; }
 
@@ -31,7 +37,7 @@ namespace System.Net
             }
         }
 
-        public Uri Address { get; internal set; }
+        public Uri Address { get; }
 
         public int MaxIdleTime
         {
@@ -67,9 +73,9 @@ namespace System.Net
 
         public virtual Version ProtocolVersion { get; internal set; } = new Version(1, 1);
 
-        public string ConnectionName { get; internal set; }
+        public string ConnectionName { get; }
 
-        public bool CloseConnectionGroup(string connectionGroupName) => false;
+        public bool CloseConnectionGroup(string connectionGroupName) => true;
 
         public int ConnectionLimit
         {
@@ -84,13 +90,13 @@ namespace System.Net
             }
         }
 
-        public int CurrentConnections { get; internal set; }
+        public int CurrentConnections => 0;
 
         public X509Certificate Certificate { get; internal set; }
 
         public X509Certificate ClientCertificate { get; internal set; }
 
-        public bool SupportsPipelining { get; internal set; }
+        public bool SupportsPipelining { get; internal set; } = true;
 
         public void SetTcpKeepAlive(bool enabled, int keepAliveTime, int keepAliveInterval)
         {

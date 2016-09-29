@@ -183,4 +183,7 @@
   <data name="net_webstatus_Timeout" xml:space="preserve">
     <value>The operation has timed out.</value>
   </data>
+  <data name="net_proxyschemenotsupported" xml:space="preserve">
+    <value>The ServicePointManager does not support proxies with the {0} scheme.</value>
+  </data>
 </root>
