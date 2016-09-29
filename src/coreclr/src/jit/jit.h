@@ -488,6 +488,25 @@ typedef ptrdiff_t ssize_t;
 #define LOOP_HOIST_STATS 0  // You can set this to 1 to get loop hoist stats in retail, as well
 #endif
 
+// Timing calls to clr.dll is only available under certain conditions.
+#ifndef FEATURE_JIT_METHOD_PERF
+#define MEASURE_CLRAPI_CALLS 0 // Can't time these calls without METHOD_PERF.
+#endif
+#ifdef DEBUG
+#define MEASURE_CLRAPI_CALLS 0 // No point in measuring DEBUG code.
+#endif
+#if !defined(_HOST_X86_) && !defined(_HOST_AMD64_)
+#define MEASURE_CLRAPI_CALLS 0 // Cycle counters only hooked up on x86/x64.
+#endif
+#if !defined(_MSC_VER) && !defined(__clang__)
+#define MEASURE_CLRAPI_CALLS 0 // Only know how to do this with VC and Clang.
+#endif
+
+// If none of the above set the flag to 0, it's available.
+#ifndef MEASURE_CLRAPI_CALLS
+#define MEASURE_CLRAPI_CALLS 0 // Set to 1 to measure time in ICorJitInfo calls.
+#endif
+
 /*****************************************************************************/
 /* Portability Defines */
 /*****************************************************************************/
