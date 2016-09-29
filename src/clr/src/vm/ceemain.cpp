@@ -195,7 +195,6 @@
 #include "finalizerthread.h"
 #include "threadsuspend.h"
 #include "disassembler.h"
-#include "gcenv.ee.h"
 
 #ifndef FEATURE_PAL
 #include "dwreport.h"
@@ -3720,15 +3719,7 @@ void InitializeGarbageCollector()
     g_pFreeObjectMethodTable->SetBaseSize(ObjSizeOf (ArrayBase));
     g_pFreeObjectMethodTable->SetComponentSize(1);
 
-#ifdef FEATURE_STANDALONE_GC
-    IGCToCLR* gcToClr = new (nothrow) GCToEEInterface();
-    if (!gcToClr)
-        ThrowOutOfMemory();
-#else
-    IGCToCLR* gcToClr = nullptr;
-#endif
-
-    IGCHeap *pGCHeap = InitializeGarbageCollector(gcToClr);
+    IGCHeap *pGCHeap = InitializeGarbageCollector(nullptr);
     g_pGCHeap = pGCHeap;
     if (!pGCHeap)
         ThrowOutOfMemory();
