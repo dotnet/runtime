@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
+using System.Net.Security;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -394,6 +395,15 @@ namespace System.Net
                 else
                 {
                     handler.Proxy = _proxy;
+                }
+
+                // Set relevant properties from ServicePointManager
+                handler.CheckCertificateRevocationList = ServicePointManager.CheckCertificateRevocationList;
+                RemoteCertificateValidationCallback rcvc = ServicePointManager.ServerCertificateValidationCallback; // TODO #11881: When HttpWebRequest.ServerCertificateValidationCallback added, check that first
+                if (rcvc != null)
+                {
+                    RemoteCertificateValidationCallback localRcvc = rcvc;
+                    handler.ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => localRcvc(this, cert, chain, errors);
                 }
 
                 // Copy the HttpWebRequest request headers from the WebHeaderCollection into HttpRequestMessage.Headers and
