@@ -3962,7 +3962,7 @@ inline bool jitStaticFldIsGlobAddr(CORINFO_FIELD_HANDLE fldHnd)
     return (fldHnd == FLD_GLOBAL_DS || fldHnd == FLD_GLOBAL_FS);
 }
 
-#if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD)
+#if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD) || defined(FEATURE_TRACELOGGING)
 
 inline bool Compiler::eeIsNativeMethod(CORINFO_METHOD_HANDLE method)
 {
@@ -4423,6 +4423,36 @@ inline void Compiler::EndPhase(Phases phase)
     }
 #endif
 }
+
+/*****************************************************************************/
+#if MEASURE_CLRAPI_CALLS
+
+inline void Compiler::CLRApiCallEnter(unsigned apix)
+{
+    if (pCompJitTimer != nullptr)
+    {
+        pCompJitTimer->CLRApiCallEnter(apix);
+    }
+}
+inline void Compiler::CLRApiCallLeave(unsigned apix)
+{
+    if (pCompJitTimer != nullptr)
+    {
+        pCompJitTimer->CLRApiCallLeave(apix);
+    }
+}
+
+inline void Compiler::CLR_API_Enter(API_ICorJitInfo_Names ename)
+{
+    CLRApiCallEnter(ename);
+}
+
+inline void Compiler::CLR_API_Leave(API_ICorJitInfo_Names ename)
+{
+    CLRApiCallLeave(ename);
+}
+
+#endif // MEASURE_CLRAPI_CALLS
 
 /*****************************************************************************/
 bool Compiler::fgExcludeFromSsa(unsigned lclNum)

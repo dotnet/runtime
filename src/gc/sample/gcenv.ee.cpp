@@ -129,7 +129,7 @@ void ThreadStore::AttachCurrentThread()
     g_pThreadList = pThread;
 }
 
-void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
+void GCToEEInterface::SuspendEE(GCToEEInterface::SUSPEND_REASON reason)
 {
     g_theGCHeap->SetGCInProgress(TRUE);
 
