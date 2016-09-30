@@ -819,6 +819,7 @@ GenTree* DecomposeLongs::DecomposeInd(LIR::Use& use)
     GenTreePtr addrHigh =
         new (m_compiler, GT_LEA) GenTreeAddrMode(TYP_REF, addrBaseHigh, nullptr, 0, genTypeSize(TYP_INT));
     GenTreePtr indHigh = new (m_compiler, GT_IND) GenTreeIndir(GT_IND, TYP_INT, addrHigh, nullptr);
+    indHigh->gtFlags |= (indLow->gtFlags & (GTF_GLOB_REF | GTF_EXCEPT | GTF_IND_FLAGS));
 
     m_compiler->lvaIncRefCnts(addrBaseHigh);
 
@@ -1309,6 +1310,7 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
         GenTreeArgList* argList = m_compiler->gtNewArgList(loOp1, hiOp1, shiftByOp);
 
         GenTree* call = m_compiler->gtNewHelperCallNode(helper, TYP_LONG, 0, argList);
+        call->gtFlags |= tree->gtFlags & GTF_ALL_EFFECT;
 
         GenTreeCall*    callNode    = call->AsCall();
         ReturnTypeDesc* retTypeDesc = callNode->GetReturnTypeDesc();
