@@ -186,9 +186,13 @@ namespace System.Net.Tests
             }
         }
 
+        protected virtual bool EnableConcurrentReadWriteTests => true;
+
         [Fact]
         public async Task ConcurrentReadWrite_ResponseBlocksThenGetsNullStream()
         {
+            if (!EnableConcurrentReadWriteTests) return;
+
             string path = Path.GetTempFileName();
             try
             {
@@ -261,8 +265,18 @@ namespace System.Net.Tests
 
     public sealed class SyncFileWebRequestTestBase : FileWebRequestTestBase
     {
+        protected override bool EnableConcurrentReadWriteTests => false;
         public override Task<WebResponse> GetResponseAsync(WebRequest request) => Task.Run(() => request.GetResponse());
         public override Task<Stream> GetRequestStreamAsync(WebRequest request) => Task.Run(() => request.GetRequestStream());
+    }
+
+    public sealed class BeginEndFileWebRequestTestBase : FileWebRequestTestBase
+    {
+        public override Task<WebResponse> GetResponseAsync(WebRequest request) =>
+            Task.Factory.FromAsync(request.BeginGetResponse, request.EndGetResponse, null);
+
+        public override Task<Stream> GetRequestStreamAsync(WebRequest request) =>
+            Task.Factory.FromAsync(request.BeginGetRequestStream, request.EndGetRequestStream, null);
     }
 
     public sealed class TaskFileWebRequestTestBase : FileWebRequestTestBase
