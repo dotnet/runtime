@@ -5125,6 +5125,7 @@ mono_thread_try_resume_interruption (void)
 	return mono_thread_resume_interruption ();
 }
 
+#if 0
 /* Returns TRUE if the current thread is ready to be interrupted. */
 gboolean
 mono_threads_is_ready_to_be_interrupted (void)
@@ -5146,6 +5147,7 @@ mono_threads_is_ready_to_be_interrupted (void)
 	UNLOCK_THREAD (thread);
 	return TRUE;
 }
+#endif
 
 void
 mono_thread_internal_describe (MonoInternalThread *internal, GString *text)
