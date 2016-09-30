@@ -75,6 +75,9 @@ void
 mono_error_set_type_load_class (MonoError *error, MonoClass *klass, const char *msg_format, ...) MONO_ATTR_FORMAT_PRINTF(3,4);
 
 void
+mono_error_vset_type_load_class (MonoError *error, MonoClass *klass, const char *msg_format, va_list args);
+
+void
 mono_error_set_type_load_name (MonoError *error, const char *type_name, const char *assembly_name, const char *msg_format, ...) MONO_ATTR_FORMAT_PRINTF(4,5);
 
 void

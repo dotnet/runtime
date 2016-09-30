@@ -303,12 +303,21 @@ mono_error_set_assembly_load_simple (MonoError *oerror, const char *assembly_nam
 void
 mono_error_set_type_load_class (MonoError *oerror, MonoClass *klass, const char *msg_format, ...)
 {
+	va_list args;
+	va_start (args, msg_format);
+	mono_error_vset_type_load_class (oerror, klass, msg_format, args);
+	va_end (args);
+}
+
+void
+mono_error_vset_type_load_class (MonoError *oerror, MonoClass *klass, const char *msg_format, va_list args)
+{
 	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
 	mono_error_prepare (error);
 
 	error->error_code = MONO_ERROR_TYPE_LOAD;
 	mono_error_set_class (oerror, klass);
-	set_error_message ();
+	set_error_messagev ();
 }
 
 /*
