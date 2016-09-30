@@ -10,10 +10,9 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Security.Cryptography.Csp.Tests</AssemblyName>
     <RootNamespace>System.Security.Cryptography.Csp.Tests</RootNamespace>
-    <NugetTargetMoniker Condition="'$(TargetGroup)'=='netstandard1.7' AND '$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.7</NugetTargetMoniker>
-    <NugetTargetMoniker Condition="'$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
-    <!-- Default configurations to help VS understand the configurations -->
+  <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_NT_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_NT_Release|AnyCPU'" />
   <ItemGroup>
@@ -53,7 +52,7 @@
       <Link>CommonTest\System\IO\PositionValueStream.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
+  <ItemGroup Condition="'$(TargetGroup)'==''">
     <Compile Include="DSACryptoServiceProviderProvider.cs" />
     <Compile Include="DSACryptoServiceProviderTests.cs" />
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAFactory.cs">
