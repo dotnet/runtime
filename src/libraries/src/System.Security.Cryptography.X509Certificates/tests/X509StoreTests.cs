@@ -88,11 +88,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                             break;
                         }
                     }
-                }
 
-                if (toAdd != null)
-                {
-                    Assert.ThrowsAny<CryptographicException>(() => store.Add(toAdd));
+                    if (toAdd != null)
+                    {
+                        Assert.ThrowsAny<CryptographicException>(() => store.Add(toAdd));
+                    }
                 }
             }
         }
