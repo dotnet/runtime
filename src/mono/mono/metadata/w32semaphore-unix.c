@@ -184,7 +184,7 @@ namedsem_create (gint32 initial, gint32 max, const gunichar2 *name)
 	gchar *utf8_name;
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: creating %s handle, initial %d max %d name \"%s\"",
-		__func__, mono_w32handle_ops_typename (MONO_W32HANDLE_NAMEDSEM), initial, max, name);
+		    __func__, mono_w32handle_ops_typename (MONO_W32HANDLE_NAMEDSEM), initial, max, (const char*)name);
 
 	/* w32 seems to guarantee that opening named objects can't race each other */
 	mono_w32handle_namespace_lock ();

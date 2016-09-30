@@ -70,7 +70,7 @@ coop_tls_pop (gpointer received_cookie)
 
 	stack = mono_native_tls_get_value (coop_reset_count_stack_key);
 	if (!stack || 0 == stack->len)
-		mono_fatal_with_history ("Received cookie %p but found no stack at all, %x\n", received_cookie);
+		mono_fatal_with_history ("Received cookie %p but found no stack at all\n", received_cookie);
 
 	expected_cookie = g_array_index (stack, gpointer, stack->len - 1);
 	stack->len --;

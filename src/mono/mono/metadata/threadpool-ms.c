@@ -658,7 +658,7 @@ worker_thread (gpointer data)
 		tpdomain->outstanding_request --;
 		g_assert (tpdomain->outstanding_request >= 0);
 
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] worker running in domain %p",
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] worker running in domain %p (outstanding requests %d) ",
 			mono_native_thread_id_get (), tpdomain->domain, tpdomain->outstanding_request);
 
 		g_assert (tpdomain->domain);
@@ -778,7 +778,7 @@ worker_try_create (void)
 	if ((thread = mono_thread_create_internal (mono_get_root_domain (), worker_thread, NULL, TRUE, 0, &error)) != NULL) {
 		threadpool->worker_creation_current_count += 1;
 
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] try create worker, created %p, now = %d count = %d", mono_native_thread_id_get (), thread->tid, now, threadpool->worker_creation_current_count);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] try create worker, created %p, now = %d count = %d", mono_native_thread_id_get (), GUINT_TO_POINTER(thread->tid), now, threadpool->worker_creation_current_count);
 		mono_coop_mutex_unlock (&threadpool->worker_creation_lock);
 		return TRUE;
 	}

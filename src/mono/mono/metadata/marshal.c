@@ -10531,7 +10531,7 @@ mono_marshal_alloc (gulong size, MonoError *error)
 #else
 	res = g_try_malloc ((gulong)size);
 	if (!res)
-		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", size);
+		mono_error_set_out_of_memory (error, "Could not allocate %lu bytes", size);
 #endif
 	return res;
 }

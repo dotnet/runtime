@@ -165,7 +165,7 @@ set_type_load_exception_type (const char *format, MonoClass *klass)
 	g_free (parent_name);
 	g_free (type_name);
 	
-	mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_SECURITY, message);
+	mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_SECURITY, "%s", message);
 	mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, message);
 	// note: do not free string given to mono_class_set_failure
 }
@@ -188,7 +188,7 @@ set_type_load_exception_methods (const char *format, MonoMethod *override, MonoM
 	g_free (base_name);
 	g_free (method_name);
 
-	mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_SECURITY, message);
+	mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_SECURITY, "%s", message);
 	mono_class_set_failure (override->klass, MONO_EXCEPTION_TYPE_LOAD, message);
 	// note: do not free string given to mono_class_set_failure
 }
@@ -561,7 +561,7 @@ get_argument_exception (const char *format, MonoMethod *caller, MonoMethod *call
 	g_free (callee_name);
 	g_free (caller_name);
 
-	mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_SECURITY, message);
+	mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_SECURITY, "%s", message);
 	ex = mono_get_exception_argument ("method", message);
 	g_free (message);
 
@@ -586,7 +586,7 @@ get_field_access_exception (const char *format, MonoMethod *caller, MonoClassFie
 	g_free (field_name);
 	g_free (caller_name);
 
-	mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_SECURITY, message);
+	mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_SECURITY, "%s", message);
 	ex = mono_get_exception_field_access_msg (message);
 	g_free (message);
 
@@ -611,7 +611,7 @@ get_method_access_exception (const char *format, MonoMethod *caller, MonoMethod 
 	g_free (callee_name);
 	g_free (caller_name);
 
-	mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_SECURITY, message);
+	mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_SECURITY, "%s", message);
 	ex = mono_get_exception_method_access_msg (message);
 	g_free (message);
 

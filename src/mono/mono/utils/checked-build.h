@@ -12,6 +12,7 @@
 
 #include <config.h>
 #include <mono/utils/atomic.h>
+#include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-publib.h>
 
 typedef enum {
@@ -207,7 +208,7 @@ void check_metadata_store_local(void *from, void *to);
 
 void checked_build_thread_transition(const char *transition, void *info, int from_state, int suspend_count, int next_state, int suspend_count_delta);
 
-G_GNUC_NORETURN void mono_fatal_with_history(const char *msg, ...) MONO_ATTR_FORMAT_PRINTF(1,2);
+G_GNUC_NORETURN MONO_ATTR_FORMAT_PRINTF(1,2) void mono_fatal_with_history(const char *msg, ...);
 
 #else
 
