@@ -207,7 +207,7 @@ void check_metadata_store_local(void *from, void *to);
 
 void checked_build_thread_transition(const char *transition, void *info, int from_state, int suspend_count, int next_state, int suspend_count_delta);
 
-G_GNUC_NORETURN void mono_fatal_with_history(const char *msg, ...);
+G_GNUC_NORETURN void mono_fatal_with_history(const char *msg, ...) MONO_ATTR_FORMAT_PRINTF(1,2);
 
 #else
 

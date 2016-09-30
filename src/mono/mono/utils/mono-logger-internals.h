@@ -2,6 +2,7 @@
 #define __MONO_LOGGER_INTERNAL_H__
 
 #include <glib.h>
+#include <mono/utils/mono-compiler.h>
 #include "mono-logger.h"
 
 G_BEGIN_DECLS
@@ -74,8 +75,8 @@ mono_tracev (GLogLevelFlags level, MonoTraceMask mask, const char *format, va_li
  * Traces a new message, depending on the current logging level
  * and trace mask.
  */
-G_GNUC_UNUSED static void
-mono_trace (GLogLevelFlags level, MonoTraceMask mask, const char *format, ...) 
+G_GNUC_UNUSED MONO_ATTR_FORMAT_PRINTF(3,4) static void
+mono_trace (GLogLevelFlags level, MonoTraceMask mask, const char *format, ...)
 {
 	if(G_UNLIKELY (level <= mono_internal_current_level && mask & mono_internal_current_mask)) {
 		va_list args;

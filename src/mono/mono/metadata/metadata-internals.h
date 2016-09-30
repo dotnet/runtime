@@ -643,7 +643,7 @@ char*
 mono_image_strdup_vprintf (MonoImage *image, const char *format, va_list args);
 
 char*
-mono_image_strdup_printf (MonoImage *image, const char *format, ...);
+mono_image_strdup_printf (MonoImage *image, const char *format, ...) MONO_ATTR_FORMAT_PRINTF(2,3);;
 
 GList*
 g_list_prepend_image (MonoImage *image, GList *list, gpointer data);
