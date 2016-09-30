@@ -510,9 +510,6 @@
   <data name="InvalidLvalue" xml:space="preserve">
     <value>Invalid lvalue for assignment: {0}.</value>
   </data>
-  <data name="InvalidMemberType" xml:space="preserve">
-    <value>Invalid member type: {0}.</value>
-  </data>
   <data name="UnknownLiftType" xml:space="preserve">
     <value>unknown lift type: '{0}'.</value>
   </data>
