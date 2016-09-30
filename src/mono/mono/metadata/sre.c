@@ -1548,7 +1548,7 @@ is_sre_pointer (MonoClass *klass)
 static gboolean
 is_sre_generic_instance (MonoClass *klass)
 {
-	check_corlib_type_cached (klass, "System.Reflection", "MonoGenericClass");
+	check_corlib_type_cached (klass, "System.Reflection.Emit", "TypeBuilderInstantiation");
 }
 
 static gboolean
