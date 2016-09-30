@@ -77,50 +77,18 @@ namespace Microsoft.Win32
             int i = keyName.IndexOf('\\');
             int length = i != -1 ? i : keyName.Length;
 
-            // Determine the potential base key from the length. Note that
-            // HKEY_CLASSES_ROOT and HKEY_CURRENT_USER are the same length,
-            // so for that case, switch on a char at a position with a
-            // unique char to determine the potential base key.
+            // Determine the potential base key from the length.
             RegistryKey baseKey = null;
             switch (length)
             {
-                case 10:
-                    baseKey = Users; // HKEY_USERS
-                    break;
-
-                case 17:
-                    const int UniqueCharIndex = 6;
-                    switch (keyName[UniqueCharIndex])
-                    {
-                        case 'l':
-                        case 'L':
-                            Debug.Assert(ClassesRoot.Name[UniqueCharIndex] == 'L');
-                            baseKey = ClassesRoot; // HKEY_C[L]ASSES_ROOT
-                            break;
-
-                        case 'u':
-                        case 'U':
-                            Debug.Assert(CurrentUser.Name[UniqueCharIndex] == 'U');
-                            baseKey = CurrentUser; // HKEY_C[U]RRENT_USER
-                            break;
-                    }
-                    break;
-
-                case 18:
-                    baseKey = LocalMachine; // HKEY_LOCAL_MACHINE
-                    break;
-
-                case 19:
-                    baseKey = CurrentConfig; // HKEY_CURRENT_CONFIG
-                    break;
-
-                case 21:
-                    baseKey = PerformanceData; // HKEY_PERFORMANCE_DATA
-                    break;
+                case 10: baseKey = Users; break; // HKEY_USERS
+                case 17: baseKey = char.ToUpperInvariant(keyName[6]) == 'L' ? ClassesRoot : CurrentUser; break; // HKEY_C[L]ASSES_ROOT, otherwise HKEY_CURRENT_USER
+                case 18: baseKey = LocalMachine; break; // HKEY_LOCAL_MACHINE
+                case 19: baseKey = CurrentConfig; break; // HKEY_CURRENT_CONFIG
+                case 21: baseKey = PerformanceData; break; // HKEY_PERFORMANCE_DATA
             }
 
-            Debug.Assert(baseKey == null || baseKey.Name.Length == length);
-
+            // If a potential base key was found, see if keyName actually starts with the potential base key's name.
             if (baseKey != null && keyName.StartsWith(baseKey.Name, StringComparison.OrdinalIgnoreCase))
             {
                 subKeyName = (i == -1 || i == keyName.Length) ?
