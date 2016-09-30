@@ -3507,6 +3507,8 @@
       <Member Name="#ctor(System.String,System.String,System.Int32)" /> <!-- Used by EE, do not remove -->
       <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="get_FileName" />
+      <Member Name="get_FusionLog" />
+      <Member MemberType="Property" Name="FusionLog" />
     </Type>
     <Type Name="System.IObservable&lt;T&gt;">
       <Member Name="Subscribe(System.IObserver&lt;T&gt;)"/>
@@ -9080,8 +9082,10 @@
       <Member Name="#ctor(System.String,System.String)" />
       <Member Name="#ctor(System.String,System.String,System.Exception)" />
       <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
-      <Member Name="get_FileName" />
+      <Member Name="get_FileName" />      
+      <Member Name="get_FusionLog" />
       <Member MemberType="Property" Name="FileName" />
+      <Member MemberType="Property" Name="FusionLog" />
       <Member Status="ImplRoot" Name="#ctor(System.String,System.String,System.Int32)" />
     </Type>
     <Type Name="System.IO.IOException">
@@ -9182,6 +9186,7 @@
       <Member Name="CopyToAsync(System.IO.Stream,System.Int32)"  />
       <Member Name="CopyToAsync(System.IO.Stream,System.Int32,System.Threading.CancellationToken)"  />
       <Member Name="Close" />
+      <Member Name="CreateWaitHandle" />
       <Member Name="Dispose" />
       <Member Name="Dispose(System.Boolean)" />
       <Member Name="EndRead(System.IAsyncResult)" />
@@ -9197,6 +9202,7 @@
       <Member Name="get_Position" />
       <Member Name="get_ReadTimeout" />
       <Member Name="get_WriteTimeout" />
+      <Member Name="ObjectInvariant" />
       <Member Name="Read(System.Byte[],System.Int32,System.Int32)" />
       <Member Name="ReadByte" />
       <Member Name="ReadAsync(System.Byte[],System.Int32,System.Int32)"  />
@@ -9206,6 +9212,7 @@
       <Member Name="set_ReadTimeout(System.Int32)" />
       <Member Name="set_WriteTimeout(System.Int32)" />
       <Member Name="SetLength(System.Int64)" />
+      <Member Name="Synchronized(System.IO.Stream)" />
       <Member Name="Write(System.Byte[],System.Int32,System.Int32)" />
       <Member Name="WriteAsync(System.Byte[],System.Int32,System.Int32)"  />
       <Member Name="WriteAsync(System.Byte[],System.Int32,System.Int32,System.Threading.CancellationToken)"  />
@@ -9336,6 +9343,7 @@
       <Member Name="ReadLineAsync"  />
       <Member Name="ReadToEnd" />
       <Member Name="ReadToEndAsync"  />
+      <Member Name="Synchronized(System.IO.TextReader)" />
     </Type>
     <Type Name="System.IO.TextWriter">
       <Member MemberType="Field" Name="CoreNewLine" />
@@ -9350,6 +9358,7 @@
       <Member Name="get_FormatProvider" />
       <Member Name="get_NewLine" />
       <Member Name="set_NewLine(System.String)" />
+      <Member Name="Synchronized(System.IO.TextWriter)" />
       <Member Name="Write(System.Boolean)" />
       <Member Name="Write(System.Char)" />
       <Member Name="Write(System.Char[])" />
@@ -9409,6 +9418,8 @@
       <Member Name="get_Capacity" />
       <Member Name="get_IsOpen" />
       <Member Name="Initialize(System.Runtime.InteropServices.SafeBuffer,System.Int64,System.Int64,System.IO.FileAccess)" />
+      <Member Name="Read&lt;T&gt;(System.Int64,T@)" />
+      <Member Name="ReadArray&lt;T&gt;(System.Int64,T[],System.Int32,System.Int32)" />
       <Member Name="ReadBoolean(System.Int64)" />
       <Member Name="ReadByte(System.Int64)" />
       <Member Name="ReadChar(System.Int64)" />
@@ -9435,6 +9446,8 @@
       <Member Name="Write(System.Int64,System.UInt16)" />
       <Member Name="Write(System.Int64,System.UInt32)" />
       <Member Name="Write(System.Int64,System.UInt64)" />
+      <Member Name="Write&lt;T&gt;(System.Int64,T@)" />
+      <Member Name="WriteArray&lt;T&gt;(System.Int64,T[],System.Int32,System.Int32)" />
       <Member MemberType="Property" Name="CanRead" />
       <Member MemberType="Property" Name="CanWrite" />
       <Member MemberType="Property" Name="Capacity" />
