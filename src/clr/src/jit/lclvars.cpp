@@ -2689,6 +2689,10 @@ void Compiler::lvaSortByRefCount()
     lvaTrackedCount             = 0;
     lvaTrackedCountInSizeTUnits = 0;
 
+#ifdef DEBUG
+    VarSetOps::AssignNoCopy(this, lvaTrackedVars, VarSetOps::MakeEmpty(this));
+#endif
+
     if (lvaCount == 0)
     {
         return;
