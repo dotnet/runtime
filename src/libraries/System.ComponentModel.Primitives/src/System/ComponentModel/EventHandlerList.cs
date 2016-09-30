@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics.CodeAnalysis;
-
 namespace System.ComponentModel
 {
     /// <summary>
@@ -12,11 +10,20 @@ namespace System.ComponentModel
     public sealed class EventHandlerList : IDisposable
     {
         private ListEntry _head;
+        private Component _parent;
+
+        /// <summary>
+        ///     Creates a new event handler list.  The parent component is used to check the component's
+        ///     CanRaiseEvents property.
+        /// </summary>
+        internal EventHandlerList(Component parent)
+        {
+            _parent = parent;
+        }
 
         /// <summary>
         ///    Creates a new event handler list.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands")]
         public EventHandlerList()
         {
         }
@@ -26,10 +33,14 @@ namespace System.ComponentModel
         /// </summary>
         public Delegate this[object key]
         {
-            [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands")]
             get
             {
-                ListEntry e = Find(key);
+                ListEntry e = null;
+                if (_parent == null || _parent.CanRaiseEventsInternal)
+                {
+                    e = Find(key);
+                }
+
                 if (e != null)
                 {
                     return e.handler;
@@ -56,7 +67,6 @@ namespace System.ComponentModel
         /// <summary>
         ///    <para>[To be supplied.]</para>
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands")]
         public void AddHandler(object key, Delegate value)
         {
             ListEntry e = Find(key);
@@ -106,7 +116,6 @@ namespace System.ComponentModel
         /// <summary>
         ///    <para>[To be supplied.]</para>
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands")]
         public void RemoveHandler(object key, Delegate value)
         {
             ListEntry e = Find(key);

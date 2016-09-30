@@ -1236,14 +1236,6 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// A string like "Invalid member type: {0}."
-        /// </summary>
-        internal static string InvalidMemberType(object p0)
-        {
-            return SR.Format(SR.InvalidMemberType, p0);
-        }
-
-        /// <summary>
         /// A string like "unknown lift type: '{0}'."
         /// </summary>
         internal static string UnknownLiftType(object p0)

@@ -797,15 +797,10 @@ namespace System.Linq.Expressions.Compiler
             }
             else
             {
-                var prop = member as PropertyInfo;
-                if ((object)prop != null)
-                {
-                    EmitCall(objectType, prop.GetSetMethod(true));
-                }
-                else
-                {
-                    throw Error.InvalidMemberType(member);
-                }
+                // MemberExpression.Member can only be a FieldInfo or a PropertyInfo
+                Debug.Assert(member is PropertyInfo);
+                var prop = (PropertyInfo)member;
+                EmitCall(objectType, prop.GetSetMethod(true));
             }
 
             if (emitAs != CompilationFlags.EmitAsVoidType)
@@ -848,15 +843,10 @@ namespace System.Linq.Expressions.Compiler
             }
             else
             {
-                var prop = member as PropertyInfo;
-                if ((object)prop != null)
-                {
-                    EmitCall(objectType, prop.GetGetMethod(true));
-                }
-                else
-                {
-                    throw ContractUtils.Unreachable;
-                }
+                // MemberExpression.Member or MemberBinding.Member can only be a FieldInfo or a PropertyInfo
+                Debug.Assert(member is PropertyInfo);
+                var prop = (PropertyInfo)member;
+                EmitCall(objectType, prop.GetGetMethod(true));
             }
         }
 
