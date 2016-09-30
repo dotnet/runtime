@@ -21,6 +21,7 @@ namespace Microsoft.Win32.RegistryTests
         {
             new object[] { string.Empty }, // Not a valid base key name.
             new object[] { "HHHH_MMMM" }, // Not a valid base key name.
+            new object[] { "HHHH_CURRENT_USER" }, // Not a valid base key name.
             new object[] { "HKEY_CURRENT_USER_FOOBAR" }, // Starts with one of the valid base key names but isn't valid.
             new object[] { new string('a', 10) }, // String of length 10 that isn't HKEY_USERS.
             new object[] { new string('a', 17) }, // String of length 17 that isn't HKEY_CURRENT_USER or HKEY_CLASSES_ROOT.
