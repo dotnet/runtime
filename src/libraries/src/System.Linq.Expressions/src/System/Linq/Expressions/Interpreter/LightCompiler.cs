@@ -80,10 +80,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal bool IsCatchBlockExist
-        {
-            get { return (_handlers != null); }
-        }
+        internal bool IsCatchBlockExist => _handlers != null;
 
         /// <summary>
         /// No finally block
@@ -226,7 +223,7 @@ namespace System.Linq.Expressions.Interpreter
         public static DebugInfo GetMatchingDebugInfo(DebugInfo[] debugInfos, int index)
         {
             //Create a faked DebugInfo to do the search
-            DebugInfo d = new DebugInfo { Index = index };
+            var d = new DebugInfo { Index = index };
 
             //to find the closest debug info before the current index
 
@@ -309,15 +306,8 @@ namespace System.Linq.Expressions.Interpreter
             _parent = parent;
         }
 
-        public InstructionList Instructions
-        {
-            get { return _instructions; }
-        }
-
-        public LocalVariables Locals
-        {
-            get { return _locals; }
-        }
+        public InstructionList Instructions => _instructions;
+        public LocalVariables Locals => _locals;
 
         public LightDelegateCreator CompileTop(LambdaExpression node)
         {
@@ -670,7 +660,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private void CompileMemberAssignment(bool asVoid, MemberInfo refMember, Expression value, bool forBinding)
         {
-            PropertyInfo pi = refMember as PropertyInfo;
+            var pi = refMember as PropertyInfo;
             if (pi != null)
             {
                 var method = pi.GetSetMethod(true);
@@ -698,7 +688,7 @@ namespace System.Linq.Expressions.Interpreter
             else
             {
                 // other types inherited from MemberInfo (EventInfo\MethodBase\Type) cannot be used in MemberAssignment
-                FieldInfo fi = (FieldInfo)refMember;
+                var fi = (FieldInfo)refMember;
                 Debug.Assert(fi != null);
                 if (fi.IsLiteral)
                 {
@@ -1666,7 +1656,7 @@ namespace System.Linq.Expressions.Interpreter
                 int caseOffset = _instructions.Count - switchIndex;
                 foreach (ConstantExpression testValue in switchCase.TestValues)
                 {
-                    string key = (string)testValue.Value;
+                    var key = (string)testValue.Value;
                     if (key == null)
                     {
                         if (nullCase.Value == 1)
@@ -2250,7 +2240,7 @@ namespace System.Linq.Expressions.Interpreter
 
                         return new ParameterByRefUpdater(ResolveLocal((ParameterExpression)node), index);
                     case ExpressionType.ArrayIndex:
-                        BinaryExpression array = (BinaryExpression)node;
+                        var array = (BinaryExpression)node;
 
                         return CompileArrayIndexAddress(array.Left, array.Right, index);
                     case ExpressionType.Index:
@@ -2266,7 +2256,7 @@ namespace System.Linq.Expressions.Interpreter
                                 _instructions.EmitStoreLocal(objTmp.Value.Index);
                             }
 
-                            List<LocalDefinition> indexLocals = new List<LocalDefinition>();
+                            var indexLocals = new List<LocalDefinition>();
                             for (int i = 0; i < indexNode.ArgumentCount; i++)
                             {
                                 var arg = indexNode.GetArgument(i);
@@ -2303,7 +2293,7 @@ namespace System.Linq.Expressions.Interpreter
                             _instructions.EmitStoreLocal(memberTemp.Value.Index);
                         }
 
-                        FieldInfo field = member.Member as FieldInfo;
+                        var field = member.Member as FieldInfo;
                         if (field != null)
                         {
                             _instructions.EmitLoadField(field);
@@ -2314,7 +2304,7 @@ namespace System.Linq.Expressions.Interpreter
                             return null;
                         }
                         Debug.Assert(member.Member is PropertyInfo);
-                        PropertyInfo property = (PropertyInfo)member.Member;
+                        var property = (PropertyInfo)member.Member;
                         _instructions.EmitCall(property.GetGetMethod(true));
                         if (property.CanWrite)
                         {
@@ -2327,7 +2317,7 @@ namespace System.Linq.Expressions.Interpreter
                         // get the address of a member of a multi-dimensional array, we'll be trying to
                         // get the address of a Get method, and it will fail to do so. Instead, detect
                         // this situation and replace it with a call to the Address method.
-                        MethodCallExpression call = (MethodCallExpression)node;
+                        var call = (MethodCallExpression)node;
                         if (!call.Method.IsStatic &&
                             call.Object.Type.IsArray &&
                             call.Method == call.Object.Type.GetMethod("Get", BindingFlags.Public | BindingFlags.Instance))
@@ -2353,7 +2343,7 @@ namespace System.Linq.Expressions.Interpreter
             _instructions.EmitDup();
             _instructions.EmitStoreLocal(objTmp.Index);
 
-            List<LocalDefinition> indexLocals = new List<LocalDefinition>();
+            var indexLocals = new List<LocalDefinition>();
             for (int i = 0; i < arguments.ArgumentCount; i++)
             {
                 var arg = arguments.GetArgument(i);
@@ -2430,7 +2420,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private void CompileMember(Expression from, MemberInfo member, bool forBinding)
         {
-            FieldInfo fi = member as FieldInfo;
+            var fi = member as FieldInfo;
             if (fi != null)
             {
                 if (fi.IsLiteral)
@@ -2467,7 +2457,7 @@ namespace System.Linq.Expressions.Interpreter
             else
             {
                 // MemberExpression can use either FieldInfo or PropertyInfo - other types derived from MemberInfo are not permitted
-                PropertyInfo pi = (PropertyInfo)member;
+                var pi = (PropertyInfo)member;
                 if (pi != null)
                 {
                     var method = pi.GetGetMethod(true);
@@ -2733,9 +2723,9 @@ namespace System.Linq.Expressions.Interpreter
 
         private static Type GetMemberType(MemberInfo member)
         {
-            FieldInfo fi = member as FieldInfo;
+            var fi = member as FieldInfo;
             if (fi != null) return fi.FieldType;
-            PropertyInfo pi = member as PropertyInfo;
+            var pi = member as PropertyInfo;
             if (pi != null) return pi.PropertyType;
             throw new InvalidOperationException("MemberNotFieldOrProperty");
         }
@@ -2743,12 +2733,12 @@ namespace System.Linq.Expressions.Interpreter
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "expr")]
         private void CompileQuoteUnaryExpression(Expression expr)
         {
-            UnaryExpression unary = (UnaryExpression)expr;
+            var unary = (UnaryExpression)expr;
 
             var visitor = new QuoteVisitor();
             visitor.Visit(unary.Operand);
 
-            Dictionary<ParameterExpression, LocalVariable> mapping = new Dictionary<ParameterExpression, LocalVariable>();
+            var mapping = new Dictionary<ParameterExpression, LocalVariable>();
 
             foreach (var local in visitor._hoistedParameters)
             {
@@ -3218,7 +3208,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override void Update(InterpretedFrame frame, object value)
         {
-            object[] args = new object[_args.Length + 1];
+            var args = new object[_args.Length + 1];
             for (int i = 0; i < args.Length - 1; i++)
             {
                 args[i] = frame.Data[_args[i].Index];
