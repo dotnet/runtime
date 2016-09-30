@@ -166,7 +166,7 @@ set_type_load_exception_type (const char *format, MonoClass *klass)
 	g_free (type_name);
 	
 	mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_SECURITY, "%s", message);
-	mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, message);
+	mono_class_set_type_load_failure (klass, "%s", message);
 	// note: do not free string given to mono_class_set_failure
 }
 
@@ -189,7 +189,7 @@ set_type_load_exception_methods (const char *format, MonoMethod *override, MonoM
 	g_free (method_name);
 
 	mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_SECURITY, "%s", message);
-	mono_class_set_failure (override->klass, MONO_EXCEPTION_TYPE_LOAD, message);
+	mono_class_set_type_load_failure (override->klass, "%s", message);
 	// note: do not free string given to mono_class_set_failure
 }
 

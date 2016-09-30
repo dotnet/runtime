@@ -1258,7 +1258,7 @@ const char*
 mono_lookup_jit_icall_symbol (const char *name);
 
 gboolean
-mono_class_set_failure (MonoClass *klass, guint32 ex_type, void *ex_data);
+mono_class_set_type_load_failure (MonoClass *klass, const char * fmt, ...) MONO_ATTR_FORMAT_PRINTF(2,3);
 
 gpointer
 mono_class_get_exception_data (MonoClass *klass);

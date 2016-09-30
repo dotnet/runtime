@@ -3053,7 +3053,7 @@ ensure_runtime_vtable (MonoClass *klass, MonoError *error)
 		}
 	} else if (klass->generic_class){
 		if (!ensure_generic_class_runtime_vtable (klass, error)) {
-			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
+			mono_class_set_type_load_failure (klass, "");
 			return FALSE;
 		}
 	}
@@ -3185,8 +3185,7 @@ typebuilder_setup_fields (MonoClass *klass, MonoError *error)
 
 	if (tb->class_size) {
 		if ((tb->packing_size & 0xffffff00) != 0) {
-			char *err_msg = mono_image_strdup_printf (klass->image, "Could not load struct '%s' with packing size %d >= 256", klass->name, tb->packing_size);
-			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, err_msg);
+			mono_class_set_type_load_failure (klass, "Could not load struct '%s' with packing size %d >= 256", klass->name, tb->packing_size);
 			return;
 		}
 		klass->packing_size = tb->packing_size;
@@ -3381,7 +3380,7 @@ remove_instantiations_of_and_ensure_contents (gpointer key,
 		MonoClass *inst_klass = mono_class_from_mono_type (type);
 		//Ensure it's safe to use it.
 		if (!fix_partial_generic_class (inst_klass, error)) {
-			mono_class_set_failure (inst_klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
+			mono_class_set_type_load_failure (inst_klass, "");
 			// Marked the class with failure, but since some other instantiation already failed,
 			// just report that one, and swallow the error from this one.
 			if (already_failed)
@@ -3513,7 +3512,7 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	mono_loader_unlock ();
 
 	if (klass->enumtype && !mono_class_is_valid_enum (klass)) {
-		mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
+		mono_class_set_type_load_failure (klass, "");
 		mono_error_set_type_load_class (&error, klass, "Not a valid enumeration");
 		goto failure_unlocked;
 	}
@@ -3527,7 +3526,7 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	return res;
 
 failure:
-	mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
+	mono_class_set_type_load_failure (klass, "");
 	klass->wastypebuilder = TRUE;
 	mono_domain_unlock (domain);
 	mono_loader_unlock ();

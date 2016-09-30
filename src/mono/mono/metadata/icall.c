@@ -6144,7 +6144,6 @@ static void
 check_for_invalid_type (MonoClass *klass, MonoError *error)
 {
 	char *name;
-	MonoString *str;
 
 	mono_error_init (error);
 
@@ -6152,10 +6151,7 @@ check_for_invalid_type (MonoClass *klass, MonoError *error)
 		return;
 
 	name = mono_type_get_full_name (klass);
-	str =  mono_string_new (mono_domain_get (), name);
-	g_free (name);
-	mono_error_set_exception_instance (error, mono_get_exception_type_load (str, NULL));
-
+	mono_error_set_type_load_name (error, name, g_strdup (""), "");
 }
 ICALL_EXPORT MonoReflectionType *
 ves_icall_RuntimeType_make_array_type (MonoReflectionType *type, int rank)
