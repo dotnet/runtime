@@ -15639,6 +15639,12 @@ bool GenTree::isContained() const
         return false;
     }
 
+    // these either produce a result in register or set flags reg.
+    if (IsSIMDEqualityOrInequality())
+    {
+        return false;
+    }
+
     // TODO-Cleanup : this is not clean, would be nice to have some way of marking this.
     switch (OperGet())
     {
