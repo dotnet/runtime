@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
@@ -10,8 +10,10 @@
     <ProjectGuid>{20411A66-C7A4-4941-8FA2-66308365FD22}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.IO.FileSystem.Watcher.Tests</AssemblyName>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
-  </PropertyGroup>
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NugetTargetMoniker>
+    </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.IO.FileSystem.Watcher.pkgproj">
       <Project>{77E702D9-C6D8-4CE4-9941-D3056C3CCBED}</Project>
@@ -22,7 +24,7 @@
   <ItemGroup>
     <Compile Include="Args.ErrorEventArgs.cs" />
     <Compile Include="Args.FileSystemEventArgs.cs" />
-    <Compile Include="Args.RenamedEventArgs.cs" />    
+    <Compile Include="Args.RenamedEventArgs.cs" />
     <Compile Include="FileSystemWatcher.Directory.Changed.cs" />
     <Compile Include="FileSystemWatcher.Directory.Create.cs" />
     <Compile Include="FileSystemWatcher.Directory.Delete.cs" />
@@ -36,9 +38,10 @@
     <Compile Include="FileSystemWatcher.InternalBufferSize.cs" />
     <Compile Include="FileSystemWatcher.WaitForChanged.cs" />
     <Compile Include="FileSystemWatcher.unit.cs" />
+    <Compile Include="InternalBufferOverflowException.cs" Condition="'$(TargetGroup)' == 'netstandard1.7'"/>
     <!-- Helpers -->
     <Compile Include="Utility\TestFileSystemWatcher.cs" />
-    <Compile Include="Utility\FileSystemWatcherTest.cs" />    
+    <Compile Include="Utility\FileSystemWatcherTest.cs" />
     <Compile Include="$(CommonTestPath)\System\IO\FileCleanupTestBase.cs">
       <Link>Common\System\IO\FileCleanupTestBase.cs</Link>
     </Compile>
@@ -50,6 +53,9 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\System\PlatformDetection.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs" Condition="'$(TargetGroup)' == 'netstandard1.7'">
+      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
