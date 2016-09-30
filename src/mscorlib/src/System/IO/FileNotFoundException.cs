@@ -93,7 +93,6 @@ namespace System.IO {
             if (StackTrace != null)
                 s += Environment.NewLine + StackTrace;
 
-#if FEATURE_FUSION            
             try
             {
                 if(FusionLog!=null)
@@ -109,7 +108,6 @@ namespace System.IO {
             {
             
             }
-#endif            
             return s;
             
         }
@@ -118,7 +116,6 @@ namespace System.IO {
             // Base class constructor will check info != null.
 
             _fileName = info.GetString("FileNotFound_FileName");
-#if FEATURE_FUSION
             try
             {
                 _fusionLog = info.GetString("FileNotFound_FusionLog");
@@ -127,7 +124,6 @@ namespace System.IO {
             {
                 _fusionLog = null;
             }
-#endif
         }
 
         private FileNotFoundException(String fileName, String fusionLog,int hResult)
@@ -139,13 +135,10 @@ namespace System.IO {
             SetMessageField();
         }
 
-#if FEATURE_FUSION
         public String FusionLog {
             [System.Security.SecuritySafeCritical]  // auto-generated
-            [SecurityPermissionAttribute( SecurityAction.Demand, Flags = SecurityPermissionFlag.ControlEvidence | SecurityPermissionFlag.ControlPolicy)]
             get { return _fusionLog; }
         }
-#endif
 
         [System.Security.SecurityCritical]  // auto-generated_required
         public override void GetObjectData(SerializationInfo info, StreamingContext context) {
@@ -155,7 +148,6 @@ namespace System.IO {
             // Serialize data for this class
             info.AddValue("FileNotFound_FileName", _fileName, typeof(String));
 
-#if FEATURE_FUSION
             try
             {
                 info.AddValue("FileNotFound_FusionLog", FusionLog, typeof(String));
@@ -163,7 +155,6 @@ namespace System.IO {
             catch (SecurityException)
             {
             }
-#endif
         }
     }
 }
