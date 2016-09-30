@@ -1185,7 +1185,6 @@ struct _MonoReflectionGenericClass {
 	MonoReflectionType type;
 	MonoReflectionType *generic_type; /*Can be either a MonoType or a TypeBuilder*/
 	MonoArray *type_arguments;
-	guint32 initialized;
 };
 
 typedef struct {
@@ -1281,26 +1280,6 @@ typedef struct {
 	MonoArray *modreqs;
 	MonoArray *modopts;
 } MonoReflectionSigHelper;
-
-typedef struct {
-	MonoObject object;
-	MonoReflectionGenericClass *inst;
-	MonoObject *fb; /*can be either a MonoField or a FieldBuilder*/
-} MonoReflectionFieldOnTypeBuilderInst;
-
-typedef struct {
-	MonoObject object;
-	MonoReflectionGenericClass *inst;
-	MonoObject *cb; /*can be either a MonoCMethod or ConstructorBuilder*/
-} MonoReflectionCtorOnTypeBuilderInst;
-
-typedef struct {
-	MonoObject object;
-	MonoReflectionType *inst;
-	MonoObject *mb; /*can be either a MonoMethod or MethodBuilder*/
-	MonoArray *method_args;
-	MonoReflectionMethodBuilder *generic_method_definition;
-} MonoReflectionMethodOnTypeBuilderInst;
 
 typedef struct {
 	MonoObject object;
@@ -1811,7 +1790,7 @@ void
 ves_icall_ModuleBuilder_set_wrappers_type (MonoReflectionModuleBuilder *moduleb, MonoReflectionType *type);
 
 void
-ves_icall_GenericTypeParameterBuilder_initialize_generic_parameter (MonoReflectionGenericParam *gparam);
+ves_icall_GenericTypeParameterBuilder_initialize (MonoReflectionGenericParam *gparam);
 
 MonoReflectionMethod*
 ves_icall_MethodBuilder_MakeGenericMethod (MonoReflectionMethod *rmethod, MonoArray *types);

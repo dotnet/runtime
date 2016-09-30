@@ -1691,9 +1691,6 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 {
 	guint32 code_idx = GPOINTER_TO_UINT (value);
 	MonoReflectionILTokenInfo *iltoken;
-	MonoReflectionFieldBuilder *field;
-	MonoReflectionCtorBuilder *ctor;
-	MonoReflectionMethodBuilder *method;
 	MonoReflectionTypeBuilder *tb;
 	MonoReflectionArrayMethod *am;
 	guint32 i, idx = 0;
@@ -1705,8 +1702,7 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 		switch (target [3]) {
 		case MONO_TABLE_FIELD:
 			if (!strcmp (iltoken->member->vtable->klass->name, "FieldBuilder")) {
-				field = (MonoReflectionFieldBuilder *)iltoken->member;
-				idx = field->table_idx;
+				g_assert_not_reached ();
 			} else if (!strcmp (iltoken->member->vtable->klass->name, "MonoField")) {
 				MonoClassField *f = ((MonoReflectionField*)iltoken->member)->field;
 				idx = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->field_to_table_idx, f));
@@ -1716,11 +1712,9 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 			break;
 		case MONO_TABLE_METHOD:
 			if (!strcmp (iltoken->member->vtable->klass->name, "MethodBuilder")) {
-				method = (MonoReflectionMethodBuilder *)iltoken->member;
-				idx = method->table_idx;
+				g_assert_not_reached ();
 			} else if (!strcmp (iltoken->member->vtable->klass->name, "ConstructorBuilder")) {
-				ctor = (MonoReflectionCtorBuilder *)iltoken->member;
-				idx = ctor->table_idx;
+				g_assert_not_reached ();
 			} else if (!strcmp (iltoken->member->vtable->klass->name, "MonoMethod") || 
 					   !strcmp (iltoken->member->vtable->klass->name, "MonoCMethod")) {
 				MonoMethod *m = ((MonoReflectionMethod*)iltoken->member)->method;
@@ -1730,47 +1724,67 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 			}
 			break;
 		case MONO_TABLE_TYPEDEF:
-			if (strcmp (iltoken->member->vtable->klass->name, "TypeBuilder"))
+			if (!strcmp (iltoken->member->vtable->klass->name, "TypeBuilder")) {
 				g_assert_not_reached ();
-			tb = (MonoReflectionTypeBuilder *)iltoken->member;
-			idx = tb->table_idx;
+			} else if (!strcmp (iltoken->member->vtable->klass->name, "RuntimeType")) {
+				MonoClass *k = mono_class_from_mono_type (((MonoReflectionType*)iltoken->member)->type);
+				MonoObject *obj = mono_class_get_ref_info (k);
+				g_assert (obj);
+				g_assert (!strcmp (obj->vtable->klass->name, "TypeBuilder"));
+				tb = (MonoReflectionTypeBuilder*)obj;
+				idx = tb->table_idx;
+			} else {
+				g_assert_not_reached ();
+			}
 			break;
 		case MONO_TABLE_MEMBERREF:
 			if (!strcmp (iltoken->member->vtable->klass->name, "MonoArrayMethod")) {
 				am = (MonoReflectionArrayMethod*)iltoken->member;
 				idx = am->table_idx;
 			} else if (!strcmp (iltoken->member->vtable->klass->name, "MonoMethod") ||
-				   !strcmp (iltoken->member->vtable->klass->name, "MonoCMethod") ||
-				   !strcmp (iltoken->member->vtable->klass->name, "MonoGenericMethod") ||
-				   !strcmp (iltoken->member->vtable->klass->name, "MonoGenericCMethod")) {
+					   !strcmp (iltoken->member->vtable->klass->name, "MonoCMethod")) {
 				MonoMethod *m = ((MonoReflectionMethod*)iltoken->member)->method;
 				g_assert (m->klass->generic_class || m->klass->generic_container);
 				continue;
 			} else if (!strcmp (iltoken->member->vtable->klass->name, "FieldBuilder")) {
+				g_assert_not_reached ();
 				continue;
 			} else if (!strcmp (iltoken->member->vtable->klass->name, "MonoField")) {
 				continue;
 			} else if (!strcmp (iltoken->member->vtable->klass->name, "MethodBuilder") ||
 					!strcmp (iltoken->member->vtable->klass->name, "ConstructorBuilder")) {
+				g_assert_not_reached ();
 				continue;
 			} else if (!strcmp (iltoken->member->vtable->klass->name, "FieldOnTypeBuilderInst")) {
+				g_assert_not_reached ();
 				continue;
 			} else if (!strcmp (iltoken->member->vtable->klass->name, "MethodOnTypeBuilderInst")) {
+				g_assert_not_reached ();
 				continue;
 			} else if (!strcmp (iltoken->member->vtable->klass->name, "ConstructorOnTypeBuilderInst")) {
+				g_assert_not_reached ();
 				continue;
 			} else {
 				g_assert_not_reached ();
 			}
 			break;
 		case MONO_TABLE_METHODSPEC:
-			if (!strcmp (iltoken->member->vtable->klass->name, "MonoGenericMethod")) {
+			if (!strcmp (iltoken->member->vtable->klass->name, "MonoMethod")) {
 				MonoMethod *m = ((MonoReflectionMethod*)iltoken->member)->method;
 				g_assert (mono_method_signature (m)->generic_param_count);
 				continue;
 			} else if (!strcmp (iltoken->member->vtable->klass->name, "MethodBuilder")) {
+				g_assert_not_reached ();
 				continue;
 			} else if (!strcmp (iltoken->member->vtable->klass->name, "MethodOnTypeBuilderInst")) {
+				g_assert_not_reached ();
+				continue;
+			} else {
+				g_assert_not_reached ();
+			}
+			break;
+		case MONO_TABLE_TYPESPEC:
+			if (!strcmp (iltoken->member->vtable->klass->name, "RuntimeType")) {
 				continue;
 			} else {
 				g_assert_not_reached ();

@@ -80,9 +80,6 @@ mono_reflection_create_generic_class (MonoReflectionTypeBuilder *tb, MonoError *
 MonoMethod*
 mono_reflection_method_builder_to_mono_method (MonoReflectionMethodBuilder *mb, MonoError *error);
 
-MonoMethod*
-mono_reflection_method_on_tb_inst_get_handle (MonoReflectionMethodOnTypeBuilderInst *m, MonoError *error);
-
 gpointer
 mono_reflection_resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, MonoGenericContext *context, MonoError *error);
 

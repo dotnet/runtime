@@ -53,8 +53,6 @@ static MonoType* mono_reflection_get_type_with_rootimage (MonoImage *rootimage, 
 /* Class lazy loading functions */
 static GENERATE_GET_CLASS_WITH_CACHE (mono_assembly, System.Reflection, MonoAssembly)
 static GENERATE_GET_CLASS_WITH_CACHE (mono_module, System.Reflection, MonoModule)
-static GENERATE_GET_CLASS_WITH_CACHE (mono_generic_method, System.Reflection, MonoGenericMethod);
-static GENERATE_GET_CLASS_WITH_CACHE (mono_generic_cmethod, System.Reflection, MonoGenericCMethod);
 static GENERATE_GET_CLASS_WITH_CACHE (mono_method, System.Reflection, MonoMethod);
 static GENERATE_GET_CLASS_WITH_CACHE (mono_cmethod, System.Reflection, MonoCMethod);
 static GENERATE_GET_CLASS_WITH_CACHE (mono_field, System.Reflection, MonoField);
@@ -574,33 +572,6 @@ mono_method_get_object_checked (MonoDomain *domain, MonoMethod *method, MonoClas
 	MonoReflectionMethod *ret;
 
 	mono_error_init (error);
-
-	if (method->is_inflated) {
-		MonoReflectionGenericMethod *gret;
-
-		if (!refclass)
-			refclass = method->klass;
-		CHECK_OBJECT (MonoReflectionMethod *, method, refclass);
-		if ((*method->name == '.') && (!strcmp (method->name, ".ctor") || !strcmp (method->name, ".cctor"))) {
-			klass = mono_class_get_mono_generic_cmethod_class ();
-		} else {
-			klass = mono_class_get_mono_generic_method_class ();
-		}
-		gret = (MonoReflectionGenericMethod*)mono_object_new_checked (domain, klass, error);
-		if (!mono_error_ok (error))
-			goto leave;
-		gret->method.method = method;
-
-		MONO_OBJECT_SETREF (gret, method.name, mono_string_new (domain, method->name));
-
-		rt = mono_type_get_object_checked (domain, &refclass->byval_arg, error);
-		if (!mono_error_ok (error))
-		    goto leave;
-
-		MONO_OBJECT_SETREF (gret, method.reftype, rt);
-
-		CACHE_OBJECT (MonoReflectionMethod *, method, (MonoReflectionMethod*)gret, refclass);
-	}
 
 	if (!refclass)
 		refclass = method->klass;
@@ -2149,9 +2120,7 @@ mono_reflection_get_token_checked (MonoObject *obj, MonoError *error)
 
 		token = mc->type_token;
 	} else if (strcmp (klass->name, "MonoCMethod") == 0 ||
-		   strcmp (klass->name, "MonoMethod") == 0 ||
-		   strcmp (klass->name, "MonoGenericMethod") == 0 ||
-		   strcmp (klass->name, "MonoGenericCMethod") == 0) {
+			   strcmp (klass->name, "MonoMethod") == 0) {
 		MonoReflectionMethod *m = (MonoReflectionMethod *)obj;
 		if (m->method->is_inflated) {
 			MonoMethodInflated *inflated = (MonoMethodInflated *) m->method;
