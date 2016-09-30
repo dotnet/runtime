@@ -40,6 +40,10 @@
 #include <string.h>
 #include <errno.h>
 
+#if defined(HOST_WIN32)
+#include <oleauto.h>
+#endif
+
 /*
 Code shared between the DISABLE_COM and !DISABLE_COM
 */
