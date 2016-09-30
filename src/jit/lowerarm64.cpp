@@ -1370,7 +1370,6 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
             // CopyBlk
             unsigned   size                  = blkNode->gtBlkSize;
             GenTreePtr dstAddr               = blkNode->Addr();
-            GenTreePtr srcAddr               = blkNode->Data();
             short      internalIntCount      = 0;
             regMaskTP  internalIntCandidates = RBM_NONE;
 
