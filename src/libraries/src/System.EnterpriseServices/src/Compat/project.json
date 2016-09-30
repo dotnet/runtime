@@ -1,7 +1,7 @@
 {
   "dependencies": {
-    "NETStandard.Library": "1.6.1-beta-24530-01",
-    "Microsoft.Win32.Registry": "4.3.0-beta-24530-01"
+    "NETStandard.Library": "1.6.1-beta-24530-02",
+    "Microsoft.Win32.Registry": "4.3.0-beta-24530-02"
   },
   "frameworks": {
     "netstandard1.5": {}
