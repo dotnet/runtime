@@ -27,6 +27,11 @@
       "dependencies": {
         "System.Runtime.Serialization.Formatters": "4.3.0-beta-24522-03"
       }
+    },
+    "netcoreapp1.1": {
+      "dependencies": {
+        "System.Runtime.Serialization.Formatters": "4.3.0-beta-24522-03"
+      }
     }
   },
   "supports": {
