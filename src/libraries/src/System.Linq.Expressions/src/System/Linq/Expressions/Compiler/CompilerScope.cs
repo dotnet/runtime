@@ -169,10 +169,10 @@ namespace System.Linq.Expressions.Compiler
 
         internal void EmitVariableAccess(LambdaCompiler lc, ReadOnlyCollection<ParameterExpression> vars)
         {
-            if (NearestHoistedLocals != null)
+            if (NearestHoistedLocals != null && vars.Count > 0)
             {
                 // Find what array each variable is on & its index
-                var indexes = new List<long>(vars.Count);
+                var indexes = new ArrayBuilder<long>(vars.Count);
 
                 foreach (var variable in vars)
                 {
@@ -193,18 +193,15 @@ namespace System.Linq.Expressions.Compiler
                     indexes.Add((long)index);
                 }
 
-                if (indexes.Count > 0)
-                {
-                    EmitGet(NearestHoistedLocals.SelfVariable);
-                    lc.EmitConstantArray(indexes.ToArray());
-                    lc.IL.Emit(OpCodes.Call, RuntimeOps_CreateRuntimeVariables_ObjectArray_Int64Array);
-                    return;
-                }
+                EmitGet(NearestHoistedLocals.SelfVariable);
+                lc.EmitConstantArray(indexes.ToArray());
+                lc.IL.Emit(OpCodes.Call, RuntimeOps_CreateRuntimeVariables_ObjectArray_Int64Array);
             }
-
-            // No visible variables
-            lc.IL.Emit(OpCodes.Call, RuntimeOps_CreateRuntimeVariables);
-            return;
+            else
+            {
+                // No visible variables
+                lc.IL.Emit(OpCodes.Call, RuntimeOps_CreateRuntimeVariables);
+            }
         }
 
         #endregion
