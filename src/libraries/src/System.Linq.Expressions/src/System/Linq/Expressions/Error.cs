@@ -1047,13 +1047,6 @@ namespace System.Linq.Expressions
             return new InvalidOperationException(Strings.InvalidLvalue(p0));
         }
         /// <summary>
-        /// InvalidOperationException with message like "Invalid member type: {0}."
-        /// </summary>
-        internal static Exception InvalidMemberType(object p0)
-        {
-            return new InvalidOperationException(Strings.InvalidMemberType(p0));
-        }
-        /// <summary>
         /// InvalidOperationException with message like "unknown lift type: '{0}'."
         /// </summary>
         internal static Exception UnknownLiftType(object p0)

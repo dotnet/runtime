@@ -287,6 +287,20 @@ namespace System.Linq.Expressions.Tests
         public void GenericMethod<T>() { }
         public static void StaticMethod() { }
     }
+    
+    public class InvalidTypes : IEnumerable<object[]>
+    {
+        private static readonly object[] GenericTypeDefinition = new object[] { typeof(GenericClass<>) };
+        private static readonly object[] ContainsGenericParameters = new object[] { typeof(GenericClass<>).MakeGenericType(typeof(GenericClass<>)) };
+
+        public IEnumerator<object[]> GetEnumerator()
+        {
+            yield return GenericTypeDefinition;
+            yield return ContainsGenericParameters;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
 
     public enum ByteEnum : byte { A = Byte.MaxValue }
     public enum SByteEnum : sbyte { A = SByte.MaxValue }
@@ -296,4 +310,19 @@ namespace System.Linq.Expressions.Tests
     public enum UInt32Enum : uint { A = UInt32.MaxValue }
     public enum Int64Enum : long { A = Int64.MaxValue }
     public enum UInt64Enum : ulong { A = UInt64.MaxValue }
+
+    public class FakeExpression : Expression
+    {
+        public FakeExpression(ExpressionType customNodeType, Type customType)
+        {
+            CustomNodeType = customNodeType;
+            CustomType = customType;
+        }
+
+        public ExpressionType CustomNodeType { get; set; }
+        public Type CustomType { get; set; }
+
+        public override ExpressionType NodeType => CustomNodeType;
+        public override Type Type => CustomType;
+    }
 }
