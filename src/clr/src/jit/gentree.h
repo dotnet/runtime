@@ -5099,23 +5099,22 @@ inline GenTreePtr GenTree::gtGetOp2()
 
 inline GenTreePtr GenTree::gtEffectiveVal(bool commaOnly)
 {
-    switch (gtOper)
+    GenTree* effectiveVal = this;
+    for (;;)
     {
-        case GT_COMMA:
-            return gtOp.gtOp2->gtEffectiveVal(commaOnly);
-
-        case GT_NOP:
-            if (!commaOnly && gtOp.gtOp1 != nullptr)
-            {
-                return gtOp.gtOp1->gtEffectiveVal();
-            }
-            break;
-
-        default:
-            break;
+        if (effectiveVal->gtOper == GT_COMMA)
+        {
+            effectiveVal = effectiveVal->gtOp.gtOp2;
+        }
+        else if (!commaOnly && (effectiveVal->gtOper == GT_NOP) && (effectiveVal->gtOp.gtOp1 != nullptr))
+        {
+            effectiveVal = effectiveVal->gtOp.gtOp1;
+        }
+        else
+        {
+            return effectiveVal;
+        }
     }
-
-    return this;
 }
 
 inline GenTree* GenTree::gtSkipReloadOrCopy()
