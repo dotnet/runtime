@@ -201,29 +201,3 @@ mono_btls_ssl_set_verify_param (MonoBtlsSsl *ptr, const MonoBtlsX509VerifyParam 
 {
 	return SSL_set1_param (ptr->ssl, mono_btls_x509_verify_param_peek_param (param));
 }
-
-void
-mono_btls_ssl_test (MonoBtlsSsl *ptr)
-{
-	SSL_SESSION *session;
-	const char *version;
-	const SSL_CIPHER *cipher;
-	int test;
-
-//	SSL_get_ciphers(<#const SSL *ssl#>)
-
-	test = SSL_version (ptr->ssl);
-	debug_printf(ptr, "TEST: %d\n", test);
-	session = SSL_get_session(ptr->ssl);
-	if (session) {
-		version = SSL_SESSION_get_version(session);
-		debug_printf (ptr, "SESSION: %p - %s\n", session, version);
-	}
-
-	cipher = SSL_get_current_cipher (ptr->ssl);
-	if (cipher) {
-		test = SSL_CIPHER_get_id (cipher);
-		version = SSL_CIPHER_get_name (cipher);
-		debug_printf (ptr, "CIPHER: %p - %x:%s\n", cipher, test, version);
-	}
-}

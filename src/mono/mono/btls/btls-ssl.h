@@ -77,7 +77,4 @@ mono_btls_ssl_set_verify_param (MonoBtlsSsl *ptr, const MonoBtlsX509VerifyParam 
 void
 mono_btls_ssl_destroy (MonoBtlsSsl *ptr);
 
-void
-mono_btls_ssl_test (MonoBtlsSsl *ptr);
-
 #endif /* defined(__btls__btls_ssl__) */

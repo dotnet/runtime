@@ -43,9 +43,6 @@ mono_btls_x509_store_ctx_get_current_cert (MonoBtlsX509StoreCtx *ctx);
 X509 *
 mono_btls_x509_store_ctx_get_current_issuer (MonoBtlsX509StoreCtx *ctx);
 
-void
-mono_btls_x509_store_ctx_test (MonoBtlsX509StoreCtx *ctx);
-
 int
 mono_btls_x509_store_ctx_init (MonoBtlsX509StoreCtx *ctx,
 				   MonoBtlsX509Store *store, MonoBtlsX509Chain *chain);

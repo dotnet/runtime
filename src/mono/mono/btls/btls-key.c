@@ -60,24 +60,3 @@ mono_btls_key_get_bytes (EVP_PKEY *pkey, uint8_t **buffer, int *size, int includ
 	*size = (int)len;
 	return 1;
 }
-
-int
-mono_btls_key_test (EVP_PKEY *pkey)
-{
-	RSA *rsa;
-	unsigned char *p = NULL;
-	int ret;
-
-	if (pkey->type != EVP_PKEY_RSA)
-		return 0;
-
-	rsa = EVP_PKEY_get1_RSA (pkey);
-	if (!rsa)
-		return 0;
-
-	ret = i2d_RSA_PUBKEY (rsa, &p);
-
-	RSA_free (rsa);
-	return ret;
-
-}

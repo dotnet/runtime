@@ -26,9 +26,6 @@ int
 mono_btls_key_is_rsa (EVP_PKEY *pkey);
 
 int
-mono_btls_key_test (EVP_PKEY *pkey);
-
-int
 mono_btls_key_get_bytes (EVP_PKEY *pkey, uint8_t **buffer, int *size, int include_private_bits);
 
 #endif /* __btls__btls_key__ */

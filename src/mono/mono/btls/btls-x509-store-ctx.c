@@ -124,18 +124,6 @@ mono_btls_x509_store_ctx_get_untrusted (MonoBtlsX509StoreCtx *ctx)
 	return mono_btls_x509_chain_from_certs (untrusted);
 }
 
-void
-mono_btls_x509_store_ctx_test (MonoBtlsX509StoreCtx *ctx)
-{
-	X509_VERIFY_PARAM *param;
-	char *peer;
-
-	fprintf (stderr, "TEST: %p!\n", ctx);
-	param = X509_STORE_CTX_get0_param (ctx->ctx);
-	peer = X509_VERIFY_PARAM_get0_peername(param);
-	fprintf (stderr, "TEST #1: %s\n", peer);
-}
-
 int
 mono_btls_x509_store_ctx_init (MonoBtlsX509StoreCtx *ctx,
 				   MonoBtlsX509Store *store, MonoBtlsX509Chain *chain)
