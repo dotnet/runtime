@@ -10,9 +10,9 @@
     </Project>
     <Project Include="System.IO.FileSystem.Watcher.csproj">
       <OSGroup>Windows_NT</OSGroup>
-    </Project>
+    </Project>    
     <Project Include="System.IO.FileSystem.Watcher.csproj">
-      <TargetGroup>net46</TargetGroup>
+      <TargetGroup>net463</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
