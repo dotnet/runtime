@@ -103,6 +103,8 @@ void Compiler::fgResetForSsa()
     {
         lvaTable[i].lvPerSsaData.Reset();
     }
+    lvHeapPerSsaData.Reset();
+    m_heapSsaMap = nullptr;
     for (BasicBlock* blk = fgFirstBB; blk != nullptr; blk = blk->bbNext)
     {
         // Eliminate phis.
