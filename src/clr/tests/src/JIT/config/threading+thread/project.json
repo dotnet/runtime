@@ -1,12 +1,12 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.2-beta-24514-06",
-    "System.Console": "4.3.0-beta-24514-06",
-    "System.Numerics.Vectors": "4.3.0-beta-24514-06",
-    "System.Runtime": "4.3.0-beta-24514-06",
-    "System.Runtime.Extensions": "4.3.0-beta-24514-06",
-    "System.Threading": "4.3.0-beta-24514-06",
-    "System.Threading.Thread": "4.3.0-beta-24514-06"
+    "Microsoft.NETCore.Platforms": "1.0.2-beta-24530-02",
+    "System.Console": "4.3.0-beta-24530-02",
+    "System.Numerics.Vectors": "4.3.0-beta-24530-02",
+    "System.Runtime": "4.3.0-beta-24530-02",
+    "System.Runtime.Extensions": "4.3.0-beta-24530-02",
+    "System.Threading": "4.3.0-beta-24530-02",
+    "System.Threading.Thread": "4.3.0-beta-24530-02"
   },
   "frameworks": {
     "netcoreapp1.0": {}
