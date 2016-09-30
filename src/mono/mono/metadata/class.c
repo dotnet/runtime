@@ -78,6 +78,7 @@ static void mono_class_setup_vtable_full (MonoClass *klass, GList *in_setup);
 static void mono_generic_class_setup_parent (MonoClass *klass, MonoClass *gklass);
 
 static gboolean mono_class_set_failure (MonoClass *klass, guint32 ex_type, void *ex_data);
+static guint8 mono_class_get_failure (MonoClass *klass);
 
 
 /*
@@ -9928,6 +9929,21 @@ mono_class_set_failure (MonoClass *klass, guint32 ex_type, void *ex_data)
 
 	return TRUE;
 }
+
+static guint8
+mono_class_get_failure (MonoClass *klass)
+{
+	g_assert (klass != NULL);
+	return klass->exception_type;
+}
+
+gboolean
+mono_class_has_failure (MonoClass *klass)
+{
+	g_assert (klass != NULL);
+	return mono_class_get_failure (klass) != MONO_EXCEPTION_NONE;
+}
+
 
 /**
  * mono_class_set_type_load_failure:
