@@ -4,6 +4,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace System.Linq.Expressions.Tests
 {
@@ -300,6 +301,40 @@ namespace System.Linq.Expressions.Tests
         }
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    public class UnreadableExpressionsData : IEnumerable<object[]>
+    {
+        private static readonly object[] Property = new object[] { Expression.Property(null, typeof(Unreadable<bool>), nameof(Unreadable<bool>.WriteOnly)) };
+        private static readonly object[] Indexer = new object[] { Expression.Property(null, typeof(Unreadable<bool>).GetProperty(nameof(Unreadable<bool>.WriteOnly)), new Expression[0]) };
+
+        public IEnumerator<object[]> GetEnumerator()
+        {
+            yield return Property;
+            yield return Indexer;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+    }
+
+    public class OpenGenericMethodsData : IEnumerable<object[]>
+    {
+        private static readonly object[] GenericClass = new object[] { typeof(GenericClass<>).GetMethod(nameof(GenericClass<string>.Method)) };
+        private static readonly object[] GenericMethod = new object[] { typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.GenericMethod)) };
+
+        public IEnumerator<object[]> GetEnumerator()
+        {
+            yield return GenericClass;
+            yield return GenericMethod;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
     }
 
     public enum ByteEnum : byte { A = Byte.MaxValue }
