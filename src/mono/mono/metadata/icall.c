@@ -4433,8 +4433,8 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 		/* need to report exceptions ? */
 		if (throwOnError && mono_class_has_failure (klass)) {
 			/* report SecurityException (or others) that occured when loading the assembly */
-			MonoException *exc = mono_class_get_exception_for_failure (klass);
-			mono_set_pending_exception (exc);
+			mono_error_set_for_class_failure (&error, klass);
+			mono_error_set_pending_exception (&error);
 			return NULL;
 		}
 	}
@@ -6166,7 +6166,8 @@ ves_icall_RuntimeType_make_array_type (MonoReflectionType *type, int rank)
 
 	klass = mono_class_from_mono_type (type->type);
 	check_for_invalid_type (klass, &error);
-	mono_error_set_pending_exception (&error);
+	if (mono_error_set_pending_exception (&error))
+		return NULL;
 
 	if (rank == 0) //single dimentional array
 		aklass = mono_array_class_get (klass, 1);

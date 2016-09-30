@@ -1391,7 +1391,8 @@ mono_error_set_for_class_failure (MonoError *oerror, MonoClass *klass)
 		return;
 	}
 	case MONO_EXCEPTION_INVALID_PROGRAM: {
-		mono_error_set_invalid_program (oerror, "%s", (const char *)exception_data);
+		MonoErrorBoxed *box = (MonoErrorBoxed*)exception_data;
+		mono_error_set_from_boxed (oerror, box);
 		return;
 	}
 	case MONO_EXCEPTION_MISSING_METHOD:
@@ -6721,7 +6722,11 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 
 	if (eclass->byval_arg.type == MONO_TYPE_TYPEDBYREF || eclass->byval_arg.type == MONO_TYPE_VOID) {
 		/*Arrays of those two types are invalid.*/
-		mono_class_set_failure (klass, MONO_EXCEPTION_INVALID_PROGRAM, NULL);
+		MonoError prepared_error;
+		mono_error_init (&prepared_error);
+		mono_error_set_invalid_program (&prepared_error, "Arrays of void or System.TypedReference types are invalid.");
+		mono_class_set_failure (klass, MONO_EXCEPTION_INVALID_PROGRAM, mono_error_box (&prepared_error, klass->image));
+		mono_error_cleanup (&prepared_error);
 	} else if (eclass->enumtype && !mono_class_enum_basetype (eclass)) {
 		if (!eclass->ref_info_handle || eclass->wastypebuilder) {
 			g_warning ("Only incomplete TypeBuilder objects are allowed to be an enum without base_type");
@@ -10001,35 +10006,17 @@ mono_class_get_exception_for_failure (MonoClass *klass)
 		g_free (astr);
 		return ex;
 	}
-	case MONO_EXCEPTION_MISSING_METHOD: {
-		char *class_name = (char *)exception_data;
-		char *assembly_name = class_name + strlen (class_name) + 1;
-
-		return mono_get_exception_missing_method (class_name, assembly_name);
-	}
-	case MONO_EXCEPTION_MISSING_FIELD: {
-		char *class_name = (char *)exception_data;
-		char *member_name = class_name + strlen (class_name) + 1;
-
-		return mono_get_exception_missing_field (class_name, member_name);
-	}
-	case MONO_EXCEPTION_FILE_NOT_FOUND: {
-		char *msg_format = (char *)exception_data;
-		char *assembly_name = msg_format + strlen (msg_format) + 1;
-		char *msg = g_strdup_printf (msg_format, assembly_name);
-		MonoException *ex;
-
-		ex = mono_get_exception_file_not_found2 (msg, mono_string_new (mono_domain_get (), assembly_name));
-
-		g_free (msg);
-
-		return ex;
-	}
-	case MONO_EXCEPTION_BAD_IMAGE: {
-		return mono_get_exception_bad_image_format ((const char *)exception_data);
-	}
+	case MONO_EXCEPTION_MISSING_METHOD:
+	case MONO_EXCEPTION_MISSING_FIELD:
+	case MONO_EXCEPTION_FILE_NOT_FOUND:
+	case MONO_EXCEPTION_BAD_IMAGE:
+		g_assert_not_reached ();
 	case MONO_EXCEPTION_INVALID_PROGRAM: {
-		return mono_exception_from_name_msg (mono_defaults.corlib, "System", "InvalidProgramException", "");
+		MonoErrorBoxed *box = (MonoErrorBoxed*)exception_data;
+		MonoError unboxed_error;
+		mono_error_init (&unboxed_error);
+		mono_error_set_from_boxed (&unboxed_error, box);
+		return mono_error_convert_to_exception (&unboxed_error);
 	}
 	default: {
 		/* TODO - handle other class related failures */
