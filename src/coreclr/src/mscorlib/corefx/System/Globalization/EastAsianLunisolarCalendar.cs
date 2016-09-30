@@ -38,14 +38,13 @@ namespace System.Globalization
         internal const int DatePartMonth = 2;
         internal const int DatePartDay = 3;
 
-        // Return the type of the East Asian Lunisolar calendars.
-        //
-
-        //public override CalendarAlgorithmType AlgorithmType {
-        //    get {
-        //        return CalendarAlgorithmType.LunisolarCalendar;
-        //    }
-        //}
+        public override CalendarAlgorithmType AlgorithmType
+        {
+            get
+            {
+                return CalendarAlgorithmType.LunisolarCalendar;
+            }
+        }
 
         // Return the year number in the 60-year cycle.
         //
