@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public static class AttributeTests
+    public static partial class AttributeTests
     {
         [Fact]
         [StringValue("\uDFFF")]

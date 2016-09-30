@@ -337,8 +337,8 @@ namespace System
         protected Attribute() { }
         public override bool Equals(object obj) { return default(bool); }
         public override int GetHashCode() { return default(int); }
-        public virtual bool IsDefaultAttribute(){ return default(bool); }
-        public virtual bool Match(object obj){ return default(bool); }
+        public virtual bool IsDefaultAttribute() { return default(bool); }
+        public virtual bool Match(object obj) { return default(bool); }
         public virtual object TypeId { get { return default(bool); } }
     }
     [System.FlagsAttribute]
