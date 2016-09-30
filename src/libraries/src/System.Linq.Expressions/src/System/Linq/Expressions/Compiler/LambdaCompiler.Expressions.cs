@@ -867,11 +867,25 @@ namespace System.Linq.Expressions.Compiler
                 return false;
             }
         }
+
         private void EmitInstance(Expression instance, out Type type)
         {
             type = instance.Type;
 
-            if (type.GetTypeInfo().IsValueType)
+            // NB: Instance can be a ByRef type due to stack spilling introducing ref locals for
+            //     accessing an instance of a value type. In that case, we don't have to take the
+            //     address of the instance anymore; we just load the ref local.
+
+            if (type.IsByRef)
+            {
+                type = type.GetElementType();
+
+                Debug.Assert(instance.NodeType == ExpressionType.Parameter);
+                Debug.Assert(type.GetTypeInfo().IsValueType);
+
+                EmitExpression(instance);
+            }
+            else if (type.GetTypeInfo().IsValueType)
             {
                 EmitAddress(instance, type);
             }
@@ -919,9 +933,15 @@ namespace System.Linq.Expressions.Compiler
             return;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "expr")]
-        private static void EmitExtensionExpression(Expression expr)
+        private void EmitExtensionExpression(Expression expr)
         {
+            var byRef = expr as RefExpression;
+            if (byRef != null)
+            {
+                EmitAddress(byRef.Operand, byRef.Operand.Type);
+                return;
+            }
+
             throw Error.ExtensionNotReduced();
         }
 
