@@ -324,12 +324,7 @@ struct _MonoClass {
 	guint has_finalize_inited    : 1; /* has_finalize is initialized */
 	guint fields_inited : 1; /* fields is initialized */
 	guint setup_fields_called : 1; /* to prevent infinite loops in setup_fields */
-
-	guint8     exception_type;	/* MONO_EXCEPTION_* */
-
-	/* Additional information about the exception */
-	/* Stored as property MONO_CLASS_PROP_EXCEPTION_DATA */
-	//void       *exception_data;
+	guint has_failure : 1; /* See MONO_CLASS_PROP_EXCEPTION_DATA for a MonoErrorBoxed with the details */
 
 	MonoClass  *parent;
 	MonoClass  *nested_in;
@@ -1260,9 +1255,6 @@ mono_lookup_jit_icall_symbol (const char *name);
 gboolean
 mono_class_set_type_load_failure (MonoClass *klass, const char * fmt, ...) MONO_ATTR_FORMAT_PRINTF(2,3);
 
-gpointer
-mono_class_get_exception_data (MonoClass *klass);
-
 MonoException*
 mono_class_get_exception_for_failure (MonoClass *klass);
 
@@ -1437,9 +1429,9 @@ MonoClass*
 mono_class_try_load_from_name (MonoImage *image, const char* name_space, const char *name);
 
 void
-mono_error_set_for_class_failure (MonoError *orerror, MonoClass *klass);
+mono_error_set_for_class_failure (MonoError *orerror, const MonoClass *klass);
 
 gboolean
-mono_class_has_failure (MonoClass *klass);
+mono_class_has_failure (const MonoClass *klass);
 
 #endif /* __MONO_METADATA_CLASS_INTERNALS_H__ */

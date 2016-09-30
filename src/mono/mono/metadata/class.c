@@ -77,8 +77,8 @@ static guint32 mono_field_resolve_flags (MonoClassField *field);
 static void mono_class_setup_vtable_full (MonoClass *klass, GList *in_setup);
 static void mono_generic_class_setup_parent (MonoClass *klass, MonoClass *gklass);
 
-static gboolean mono_class_set_failure (MonoClass *klass, guint32 ex_type, void *ex_data);
-static guint8 mono_class_get_failure (MonoClass *klass);
+static gboolean mono_class_set_failure (MonoClass *klass, MonoErrorBoxed *boxed_error);
+static gpointer mono_class_get_exception_data (const MonoClass *klass);
 
 
 /*
@@ -1365,7 +1365,7 @@ fail:
 }
 
 /*
- * Checks for MonoClass::exception_type without resolving all MonoType's into MonoClass'es
+ * Checks for MonoClass::has_failure without resolving all MonoType's into MonoClass'es
  */
 static gboolean
 mono_type_has_exceptions (MonoType *type)
@@ -1385,24 +1385,11 @@ mono_type_has_exceptions (MonoType *type)
 }
 
 void
-mono_error_set_for_class_failure (MonoError *oerror, MonoClass *klass)
+mono_error_set_for_class_failure (MonoError *oerror, const MonoClass *klass)
 {
-	gpointer exception_data = mono_class_get_exception_data (klass);
-
-	switch (mono_class_get_failure(klass)) {
-	case MONO_EXCEPTION_TYPE_LOAD:
-	case MONO_EXCEPTION_INVALID_PROGRAM: {
-		MonoErrorBoxed *box = (MonoErrorBoxed*)exception_data;
-		mono_error_set_from_boxed (oerror, box);
-		return;
-	}
-	case MONO_EXCEPTION_MISSING_METHOD:
-	case MONO_EXCEPTION_MISSING_FIELD:
-	case MONO_EXCEPTION_FILE_NOT_FOUND:
-	case MONO_EXCEPTION_BAD_IMAGE:
-	default:
-		g_assert_not_reached ();
-	}
+	g_assert (mono_class_has_failure (klass));
+	MonoErrorBoxed *box = (MonoErrorBoxed*)mono_class_get_exception_data (klass);
+	mono_error_set_from_boxed (oerror, box);
 }
 
 
@@ -2193,7 +2180,7 @@ create_array_method (MonoClass *klass, const char *name, MonoMethodSignature *si
  * Methods belonging to an interface are assigned a sequential slot starting
  * from 0.
  *
- * On failure this function sets klass->exception_type
+ * On failure this function sets klass->has_failure and stores a MonoErrorBoxed with details
  */
 void
 mono_class_setup_methods (MonoClass *klass)
@@ -3501,7 +3488,7 @@ mono_class_interface_match (const uint8_t *bitmap, int id)
 
 /*
  * LOCKING: this is supposed to be called with the loader lock held.
- * Return -1 on failure and set exception_type
+ * Return -1 on failure and set klass->has_failure and store a MonoErrorBoxed with the details.
  */
 static int
 setup_interface_offsets (MonoClass *klass, int cur_slot, gboolean overwrite)
@@ -3818,7 +3805,8 @@ mono_class_check_vtable_constraints (MonoClass *klass, GList *in_setup)
  * - vtable
  * - vtable_size
  * Plus all the fields initialized by setup_interface_offsets ().
- * If there is an error during vtable construction, klass->exception_type is set.
+ * If there is an error during vtable construction, klass->has_failure
+ * is set and details are stored in a MonoErrorBoxed.
  *
  * LOCKING: Acquires the loader lock.
  */
@@ -6723,7 +6711,7 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 		MonoError prepared_error;
 		mono_error_init (&prepared_error);
 		mono_error_set_invalid_program (&prepared_error, "Arrays of void or System.TypedReference types are invalid.");
-		mono_class_set_failure (klass, MONO_EXCEPTION_INVALID_PROGRAM, mono_error_box (&prepared_error, klass->image));
+		mono_class_set_failure (klass, mono_error_box (&prepared_error, klass->image));
 		mono_error_cleanup (&prepared_error);
 	} else if (eclass->enumtype && !mono_class_enum_basetype (eclass)) {
 		if (!eclass->ref_info_handle || eclass->wastypebuilder) {
@@ -9916,32 +9904,26 @@ mono_class_get_method_from_name_flags (MonoClass *klass, const char *name, int p
  * LOCKING: Acquires the loader lock.
  */
 static gboolean
-mono_class_set_failure (MonoClass *klass, guint32 ex_type, void *ex_data)
+mono_class_set_failure (MonoClass *klass, MonoErrorBoxed *boxed_error)
 {
+	g_assert (boxed_error != NULL);
+
 	if (mono_class_has_failure (klass))
 		return FALSE;
 
 	mono_loader_lock ();
-	klass->exception_type = ex_type;
-	if (ex_data)
-		mono_image_property_insert (klass->image, klass, MONO_CLASS_PROP_EXCEPTION_DATA, ex_data);
+	klass->has_failure = 1;
+	mono_image_property_insert (klass->image, klass, MONO_CLASS_PROP_EXCEPTION_DATA, boxed_error);
 	mono_loader_unlock ();
 
 	return TRUE;
 }
 
-static guint8
-mono_class_get_failure (MonoClass *klass)
-{
-	g_assert (klass != NULL);
-	return klass->exception_type;
-}
-
 gboolean
-mono_class_has_failure (MonoClass *klass)
+mono_class_has_failure (const MonoClass *klass)
 {
 	g_assert (klass != NULL);
-	return mono_class_get_failure (klass) != MONO_EXCEPTION_NONE;
+	return klass->has_failure != 0;
 }
 
 
@@ -9951,7 +9933,7 @@ mono_class_has_failure (MonoClass *klass)
  * @fmt: Printf-style error message string.
  *
  * Collect detected failure informaion in the class for later processing.
- * The error is stored as a MONO_EXCEPTION_TYPE_LOAD failure.
+ * The error is stored as a MonoErrorBoxed as with mono_error_set_type_load_class ()
  * Note that only the first failure is kept.
  *
  * Returns FALSE if a failure was already set on the class, or TRUE otherwise.
@@ -9975,7 +9957,7 @@ mono_class_set_type_load_failure (MonoClass *klass, const char * fmt, ...)
 
 	MonoErrorBoxed *box = mono_error_box (&prepare_error, klass->image);
 	mono_error_cleanup (&prepare_error);
-	return mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, box);
+	return mono_class_set_failure (klass, box);
 }
 
 /*
@@ -9985,10 +9967,10 @@ mono_class_set_type_load_failure (MonoClass *klass, const char * fmt, ...)
  *
  * LOCKING: Acquires the loader lock.
  */
-gpointer
-mono_class_get_exception_data (MonoClass *klass)
+static gpointer
+mono_class_get_exception_data (const MonoClass *klass)
 {
-	return mono_image_property_lookup (klass->image, klass, MONO_CLASS_PROP_EXCEPTION_DATA);
+	return mono_image_property_lookup (klass->image, (MonoClass*)klass, MONO_CLASS_PROP_EXCEPTION_DATA);
 }
 
 /**
@@ -10038,27 +10020,12 @@ mono_classes_cleanup (void)
 MonoException*
 mono_class_get_exception_for_failure (MonoClass *klass)
 {
-	gpointer exception_data = mono_class_get_exception_data (klass);
-
-	switch (mono_class_get_failure(klass)) {
-	case MONO_EXCEPTION_MISSING_METHOD:
-	case MONO_EXCEPTION_MISSING_FIELD:
-	case MONO_EXCEPTION_FILE_NOT_FOUND:
-	case MONO_EXCEPTION_BAD_IMAGE:
-		g_assert_not_reached ();
-	case MONO_EXCEPTION_TYPE_LOAD:
-	case MONO_EXCEPTION_INVALID_PROGRAM: {
-		MonoErrorBoxed *box = (MonoErrorBoxed*)exception_data;
-		MonoError unboxed_error;
-		mono_error_init (&unboxed_error);
-		mono_error_set_from_boxed (&unboxed_error, box);
-		return mono_error_convert_to_exception (&unboxed_error);
-	}
-	default: {
-		/* TODO - handle other class related failures */
-		return mono_get_exception_execution_engine ("Unknown class failure");
-	}
-	}
+	if (!mono_class_has_failure (klass))
+		return NULL;
+	MonoError unboxed_error;
+	mono_error_init (&unboxed_error);
+	mono_error_set_for_class_failure (&unboxed_error, klass);
+	return mono_error_convert_to_exception (&unboxed_error);
 }
 
 static gboolean
