@@ -84,6 +84,15 @@ namespace System.Globalization
             }
         }
 
+        [System.Runtime.InteropServices.ComVisible(false)]
+        public override CalendarAlgorithmType AlgorithmType
+        {
+            get
+            {
+                return CalendarAlgorithmType.SolarCalendar;
+            }
+        }
+
         /*=================================GetDefaultInstance==========================
         **Action: Internal method to provide a default intance of GregorianCalendar.  Used by NLS+ implementation
         **       and other calendars.

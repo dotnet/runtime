@@ -56,6 +56,15 @@ namespace System.Globalization
             }
         }
 
+        [System.Runtime.InteropServices.ComVisible(false)]
+        public override CalendarAlgorithmType AlgorithmType
+        {
+            get
+            {
+                return CalendarAlgorithmType.SolarCalendar;
+            }
+        }
+
         public ThaiBuddhistCalendar()
         {
             helper = new GregorianCalendarHelper(this, thaiBuddhistEraInfo);

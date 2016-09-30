@@ -67,17 +67,14 @@ namespace System.Globalization
             }
         }
 
-        // Return the type of the Julian calendar.
-        //
-
-        //[System.Runtime.InteropServices.ComVisible(false)]
-        //public override CalendarAlgorithmType AlgorithmType
-        //{
-        //    get
-        //    {
-        //        return CalendarAlgorithmType.SolarCalendar;
-        //    }
-        //}
+        [System.Runtime.InteropServices.ComVisible(false)]
+        public override CalendarAlgorithmType AlgorithmType
+        {
+            get
+            {
+                return CalendarAlgorithmType.SolarCalendar;
+            }
+        }
 
         public JulianCalendar()
         {

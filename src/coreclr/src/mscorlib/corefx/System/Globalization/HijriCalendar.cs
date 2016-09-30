@@ -48,7 +48,7 @@ namespace System.Globalization
     [System.Runtime.InteropServices.ComVisible(true)]
     public partial class HijriCalendar : Calendar
     {
-        internal static readonly int HijriEra = 1;
+        public static readonly int HijriEra = 1;
 
         internal const int DatePartYear = 0;
         internal const int DatePartDayOfYear = 1;
@@ -88,6 +88,15 @@ namespace System.Globalization
             get
             {
                 return (calendarMaxValue);
+            }
+        }
+
+        [System.Runtime.InteropServices.ComVisible(false)]
+        public override CalendarAlgorithmType AlgorithmType
+        {
+            get
+            {
+                return CalendarAlgorithmType.LunarCalendar;
             }
         }
 
