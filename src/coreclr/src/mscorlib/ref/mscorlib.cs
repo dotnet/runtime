@@ -6627,6 +6627,7 @@ namespace System.IO
         public FileLoadException(string message, string fileName, System.Exception inner) { }
         protected FileLoadException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
         public string FileName { get { throw null; } }
+        public string FusionLog { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
         public override string Message { get { throw null; } }
         public override string ToString() { throw null; }
     }
@@ -6640,6 +6641,7 @@ namespace System.IO
         public FileNotFoundException(string message, string fileName, System.Exception innerException) { }
         protected FileNotFoundException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
         public string FileName { get { throw null; } }
+        public string FusionLog { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
         public override string Message { get { throw null; } }
         public override string ToString() { throw null; }
     }
@@ -6759,6 +6761,8 @@ namespace System.IO
         public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize) { throw null; }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public virtual System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize, System.Threading.CancellationToken cancellationToken) { throw null; }
+        [System.ObsoleteAttribute("CreateWaitHandle will be removed eventually.  Please use \"new ManualResetEvent(false)\" instead.")]
+        protected virtual System.Threading.WaitHandle CreateWaitHandle() { return default(System.Threading.WaitHandle); }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public virtual int EndRead(System.IAsyncResult asyncResult) { throw null; }
@@ -6768,6 +6772,8 @@ namespace System.IO
         public System.Threading.Tasks.Task FlushAsync() { throw null; }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public virtual System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
+        [System.ObsoleteAttribute("Do not call or override this method.")]
+        protected virtual void ObjectInvariant() { }
         public abstract int Read(byte[] buffer, int offset, int count);
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count) { throw null; }
@@ -6776,6 +6782,7 @@ namespace System.IO
         public virtual int ReadByte() { throw null; }
         public abstract long Seek(long offset, System.IO.SeekOrigin origin);
         public abstract void SetLength(long value);
+        public static System.IO.Stream Synchronized(System.IO.Stream stream) { throw null; }
         public abstract void Write(byte[] buffer, int offset, int count);
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count) { throw null; }
@@ -6819,6 +6826,7 @@ namespace System.IO
         public override string ReadToEnd() { throw null; }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public override System.Threading.Tasks.Task<string> ReadToEndAsync() { throw null; }
+        public static System.IO.TextReader Synchronized(System.IO.TextReader reader) { throw null; }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class StreamWriter : System.IO.TextWriter
@@ -6950,6 +6958,7 @@ namespace System.IO
         public virtual void Flush() { }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public virtual System.Threading.Tasks.Task FlushAsync() { throw null; }
+        public static System.IO.TextWriter Synchronized(System.IO.TextWriter writer) { throw null; }
         public virtual void Write(bool value) { }
         public virtual void Write(char value) { }
         public virtual void Write(char[] buffer) { }
@@ -7024,6 +7033,10 @@ namespace System.IO
         [System.Security.SecuritySafeCriticalAttribute]
         [System.Security.Permissions.SecurityPermissionAttribute(System.Security.Permissions.SecurityAction.Demand, Flags=(System.Security.Permissions.SecurityPermissionFlag)(2))]
         protected void Initialize(System.Runtime.InteropServices.SafeBuffer buffer, long offset, long capacity, System.IO.FileAccess access) { }
+        [System.Security.SecurityCriticalAttribute]
+        public void Read<T>(long position, out T structure) where T : struct { structure = default(T); throw null; }
+        [System.Security.SecurityCriticalAttribute]
+        public int ReadArray<T>(long position, T[] array, int offset, int count) where T : struct { throw null; }
         public bool ReadBoolean(long position) { throw null; }
         public byte ReadByte(long position) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
@@ -7080,6 +7093,10 @@ namespace System.IO
         [System.CLSCompliantAttribute(false)]
         [System.Security.SecuritySafeCriticalAttribute]
         public void Write(long position, ulong value) { }
+        [System.Security.SecurityCriticalAttribute]
+        public void Write<T>(long position, ref T structure) where T : struct { }
+        [System.Security.SecurityCriticalAttribute]
+        public void WriteArray<T>(long position, T[] array, int offset, int count) where T : struct { }
     }
     public partial class UnmanagedMemoryStream : System.IO.Stream
     {
