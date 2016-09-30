@@ -340,7 +340,7 @@ namespace System.Linq.Expressions.Compiler
             // Emit indexes. We don't allow byref args, so no need to worry
             // about write-backs or EmitAddress
             var n = node.ArgumentCount;
-            List<LocalBuilder> args = new List<LocalBuilder>(n);
+            var args = new LocalBuilder[n];
             for (var i = 0; i < n; i++)
             {
                 var arg = node.GetArgument(i);
@@ -349,7 +349,7 @@ namespace System.Linq.Expressions.Compiler
                 var argLocal = GetLocal(arg.Type);
                 _ilg.Emit(OpCodes.Dup);
                 _ilg.Emit(OpCodes.Stloc, argLocal);
-                args.Add(argLocal);
+                args[i] = argLocal;
             }
 
             // emit the get

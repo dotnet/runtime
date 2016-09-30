@@ -2256,8 +2256,9 @@ namespace System.Linq.Expressions.Interpreter
                                 _instructions.EmitStoreLocal(objTmp.Value.Index);
                             }
 
-                            var indexLocals = new List<LocalDefinition>();
-                            for (int i = 0; i < indexNode.ArgumentCount; i++)
+                            int count = indexNode.ArgumentCount;
+                            var indexLocals = new LocalDefinition[count];
+                            for (int i = 0; i < count; i++)
                             {
                                 var arg = indexNode.GetArgument(i);
                                 Compile(arg);
@@ -2266,12 +2267,12 @@ namespace System.Linq.Expressions.Interpreter
                                 _instructions.EmitDup();
                                 _instructions.EmitStoreLocal(argTmp.Index);
 
-                                indexLocals.Add(argTmp);
+                                indexLocals[i] = argTmp;
                             }
 
                             EmitIndexGet(indexNode);
 
-                            return new IndexMethodByRefUpdater(objTmp, indexLocals.ToArray(), indexNode.Indexer.GetSetMethod(), index);
+                            return new IndexMethodByRefUpdater(objTmp, indexLocals, indexNode.Indexer.GetSetMethod(), index);
                         }
                         else if (indexNode.ArgumentCount == 1)
                         {
@@ -2343,8 +2344,9 @@ namespace System.Linq.Expressions.Interpreter
             _instructions.EmitDup();
             _instructions.EmitStoreLocal(objTmp.Index);
 
-            var indexLocals = new List<LocalDefinition>();
-            for (int i = 0; i < arguments.ArgumentCount; i++)
+            int count = arguments.ArgumentCount;
+            var indexLocals = new LocalDefinition[count];
+            for (int i = 0; i < count; i++)
             {
                 var arg = arguments.GetArgument(i);
                 Compile(arg);
@@ -2353,12 +2355,12 @@ namespace System.Linq.Expressions.Interpreter
                 _instructions.EmitDup();
                 _instructions.EmitStoreLocal(argTmp.Index);
 
-                indexLocals.Add(argTmp);
+                indexLocals[i] = argTmp;
             }
 
             _instructions.EmitCall(array.Type.GetMethod("Get", BindingFlags.Public | BindingFlags.Instance));
 
-            return new IndexMethodByRefUpdater(objTmp, indexLocals.ToArray(), array.Type.GetMethod("Set", BindingFlags.Public | BindingFlags.Instance), index);
+            return new IndexMethodByRefUpdater(objTmp, indexLocals, array.Type.GetMethod("Set", BindingFlags.Public | BindingFlags.Instance), index);
         }
 
         private void CompileNewExpression(Expression expr)

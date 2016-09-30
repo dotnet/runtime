@@ -144,6 +144,7 @@
     <Compile Include="System\Linq\Expressions\StackGuard.cs" />
     <Compile Include="System\Linq\IQueryable.cs" />
     <Compile Include="System\Runtime\CompilerServices\IRuntimeVariables.cs" />
+    <Compile Include="System\Linq\Expressions\Common\ArrayBuilder.cs" />
     <Compile Include="System\Linq\Expressions\Common\ConstantCheck.cs" />
     <Compile Include="System\Linq\Expressions\Common\CachedReflectionInfo.cs" />
     <Compile Include="System\Runtime\CompilerServices\ReadOnlyCollectionBuilder.cs" />
