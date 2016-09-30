@@ -20,6 +20,10 @@
     <CommonPathXPath>$(CommonPath)\System\Xml\XPath</CommonPathXPath>
   </PropertyGroup>
   <ItemGroup>
+    <!-- TODO: remove this P2P reference when new packages are produced and updated -->
+    <ProjectReference Include="..\..\..\..\System.Xml.XPath.XmlDocument\pkg\System.Xml.XPath.XmlDocument.pkgproj" />
+  </ItemGroup>
+  <ItemGroup>
     <!-- XPath.XmlDocument navigator -->
     <Compile Include="$(CommonPathXPath)\XmlDocument\CreateNavigatorFromXmlDocument.cs" />
     <Compile Include="XmlDocumentXPathTest.cs" />
