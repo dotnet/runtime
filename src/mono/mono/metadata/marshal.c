@@ -52,6 +52,10 @@
 #include <string.h>
 #include <errno.h>
 
+#if defined(HOST_WIN32)
+#include <objbase.h>
+#endif
+
 /* #define DEBUG_RUNTIME_CODE */
 
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \

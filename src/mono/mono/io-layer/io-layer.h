@@ -11,6 +11,9 @@
 #ifndef _MONO_IOLAYER_IOLAYER_H_
 #define _MONO_IOLAYER_IOLAYER_H_
 
+#include <config.h>
+#include <glib.h>
+
 #if defined(__WIN32__) || defined(_WIN32)
 /* Native win32 */
 #define __USE_W32_SOCKETS
@@ -25,8 +28,8 @@
 #include <ws2tcpip.h>
 #endif
 #include <psapi.h>
-#include <shlobj.h>
-/*
+
+ /*
  * Workaround for missing WSAPOLLFD typedef in mingw's winsock2.h that is required for mswsock.h below.
  * Remove once http://sourceforge.net/p/mingw/bugs/1980/ is fixed.
  */
@@ -37,7 +40,11 @@ typedef struct pollfd {
   short  revents;
 } WSAPOLLFD, *PWSAPOLLFD, *LPWSAPOLLFD;
 #endif
+
+#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 #include <mswsock.h>
+#endif
+
 #else	/* EVERYONE ELSE */
 #include "mono/io-layer/wapi.h"
 #include "mono/io-layer/uglify.h"
