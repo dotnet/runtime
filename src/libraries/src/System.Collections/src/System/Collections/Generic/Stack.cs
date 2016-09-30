@@ -200,6 +200,17 @@ namespace System.Collections.Generic
             return _array[_size - 1];
         }
 
+        public bool TryPeek(out T result)
+        {
+            if (_size == 0)
+            {
+                result = default(T);
+                return false;
+            }
+            result = _array[_size - 1];
+            return true;
+        }
+
         // Pops an item from the top of the stack.  If the stack is empty, Pop
         // throws an InvalidOperationException.
         public T Pop()
@@ -210,6 +221,20 @@ namespace System.Collections.Generic
             T item = _array[--_size];
             _array[_size] = default(T);     // Free memory quicker.
             return item;
+        }
+
+        public bool TryPop(out T result)
+        {
+            if (_size == 0)
+            {
+                result = default(T);
+                return false;
+            }
+
+            _version++;
+            result = _array[--_size];
+            _array[_size] = default(T);     // Free memory quicker.
+            return true;
         }
 
         // Pushes an item to the top of the stack.

@@ -240,6 +240,22 @@ namespace System.Collections.Generic
             return removed;
         }
 
+        public bool TryDequeue(out T result)
+        {
+            if (_size == 0)
+            {
+            	result = default(T);
+            	return false;
+            }
+
+            result = _array[_head];
+            _array[_head] = default(T);
+            MoveNext(ref _head);
+            _size--;
+            _version++;
+            return true;
+        }
+
         // Returns the object at the head of the queue. The object remains in the
         // queue. If the queue is empty, this method throws an 
         // InvalidOperationException.
@@ -251,6 +267,18 @@ namespace System.Collections.Generic
             }
             
             return _array[_head];
+        }
+
+        public bool TryPeek(out T result)
+        {
+            if (_size == 0)
+            {
+            	result = default(T);
+            	return false;
+            }
+
+            result = _array[_head];
+            return true;
         }
 
         // Returns true if the queue contains at least one object equal to item.

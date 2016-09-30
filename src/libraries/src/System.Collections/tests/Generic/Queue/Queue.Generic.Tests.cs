@@ -11,7 +11,7 @@ namespace System.Collections.Tests
     /// <summary>
     /// Contains tests that ensure the correctness of the Queue class.
     /// </summary>
-    public abstract class Queue_Generic_Tests<T> : IGenericSharedAPI_Tests<T>
+    public abstract partial class Queue_Generic_Tests<T> : IGenericSharedAPI_Tests<T>
     {
         #region Queue<T> Helper Methods
 
