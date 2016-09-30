@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Dynamic.Utils;
@@ -179,7 +180,7 @@ namespace System.Linq.Expressions.Compiler
 
             if (cr.Action == RewriteAction.SpillStack)
             {
-                RequireNotRefInstance(index.Object);
+                cr.MarkRefInstance(index.Object);
             }
 
             if (cr.Rewrite)
@@ -355,7 +356,7 @@ namespace System.Linq.Expressions.Compiler
 
             if (cr.Action == RewriteAction.SpillStack)
             {
-                RequireNotRefInstance(lvalue.Expression);
+                cr.MarkRefInstance(lvalue.Expression);
             }
 
             if (cr.Rewrite)
@@ -405,7 +406,7 @@ namespace System.Linq.Expressions.Compiler
 
             if (cr.Action == RewriteAction.SpillStack)
             {
-                RequireNotRefInstance(node.Object);
+                cr.MarkRefInstance(node.Object);
             }
 
             if (cr.Rewrite)
@@ -435,8 +436,8 @@ namespace System.Linq.Expressions.Compiler
 
             if (cr.Action == RewriteAction.SpillStack)
             {
-                RequireNotRefInstance(node.Object);
-                RequireNoRefArgs(node.Method);
+                cr.MarkRefInstance(node.Object);
+                cr.MarkRefArgs(node.Method, startIndex: 1);
             }
 
             if (cr.Rewrite)
@@ -500,7 +501,7 @@ namespace System.Linq.Expressions.Compiler
 
                 if (cr.Action == RewriteAction.SpillStack)
                 {
-                    RequireNoRefArgs(Expression.GetInvokeMethod(node.Expression));
+                    cr.MarkRefArgs(Expression.GetInvokeMethod(node.Expression), startIndex: 0);
                 }
 
                 // Lambda body also executes on current stack 
@@ -526,7 +527,7 @@ namespace System.Linq.Expressions.Compiler
 
             if (cr.Action == RewriteAction.SpillStack)
             {
-                RequireNoRefArgs(Expression.GetInvokeMethod(node.Expression));
+                cr.MarkRefArgs(Expression.GetInvokeMethod(node.Expression), startIndex: 1);
             }
 
             return cr.Finish(cr.Rewrite ? new InvocationExpressionN(cr[0], cr[1, -1], node.Type) : expr);
@@ -544,7 +545,7 @@ namespace System.Linq.Expressions.Compiler
 
             if (cr.Action == RewriteAction.SpillStack)
             {
-                RequireNoRefArgs(node.Constructor);
+                cr.MarkRefArgs(node.Constructor, startIndex: 0);
             }
 
             return cr.Finish(cr.Rewrite ? new NewExpression(node.Constructor, cr[0, -1], node.Members) : expr);
@@ -659,19 +660,30 @@ namespace System.Linq.Expressions.Compiler
                     expr = new ListInitExpression((NewExpression)rewrittenNew, new TrueReadOnlyCollection<ElementInit>(newInits));
                     break;
                 case RewriteAction.SpillStack:
-                    RequireNotRefInstance(node.NewExpression);
+                    bool isRefNew = IsRefInstance(node.NewExpression);
 
+                    var commaBuilder = new ArrayBuilder<Expression>(inits.Count + 2 + (isRefNew ? 1 : 0));
+                    
                     ParameterExpression tempNew = MakeTemp(rewrittenNew.Type);
-                    Expression[] comma = new Expression[inits.Count + 2];
-                    comma[0] = new AssignBinaryExpression(tempNew, rewrittenNew);
+                    commaBuilder.UncheckedAdd(new AssignBinaryExpression(tempNew, rewrittenNew));
+
+                    ParameterExpression refTempNew = tempNew;
+                    if (isRefNew)
+                    {
+                        refTempNew = MakeTemp(tempNew.Type.MakeByRefType());
+                        commaBuilder.UncheckedAdd(new AssignBinaryExpression(refTempNew, new RefExpression(tempNew)));
+                    }
 
                     for (int i = 0; i < inits.Count; i++)
                     {
                         ChildRewriter cr = cloneCrs[i];
-                        Result add = cr.Finish(new InstanceMethodCallExpressionN(inits[i].AddMethod, tempNew, cr[0, -1]));
-                        comma[i + 1] = add.Node;
+                        Result add = cr.Finish(new InstanceMethodCallExpressionN(inits[i].AddMethod, refTempNew, cr[0, -1]));
+                        commaBuilder.UncheckedAdd(add.Node);
                     }
-                    comma[inits.Count + 1] = tempNew;
+
+                    commaBuilder.UncheckedAdd(tempNew);
+
+                    Expression[] comma = commaBuilder.ToArray();
                     expr = MakeBlock(comma);
                     break;
                 default:
@@ -715,18 +727,30 @@ namespace System.Linq.Expressions.Compiler
                     expr = new MemberInitExpression((NewExpression)rewrittenNew, new TrueReadOnlyCollection<MemberBinding>(newBindings));
                     break;
                 case RewriteAction.SpillStack:
-                    RequireNotRefInstance(node.NewExpression);
+                    bool isRefNew = IsRefInstance(node.NewExpression);
+
+                    var commaBuilder = new ArrayBuilder<Expression>(bindings.Count + 2 + (isRefNew ? 1 : 0));
 
                     ParameterExpression tempNew = MakeTemp(rewrittenNew.Type);
-                    Expression[] comma = new Expression[bindings.Count + 2];
-                    comma[0] = new AssignBinaryExpression(tempNew, rewrittenNew);
+                    commaBuilder.UncheckedAdd(new AssignBinaryExpression(tempNew, rewrittenNew));
+
+                    ParameterExpression refTempNew = tempNew;
+                    if (isRefNew)
+                    {
+                        refTempNew = MakeTemp(tempNew.Type.MakeByRefType());
+                        commaBuilder.UncheckedAdd(new AssignBinaryExpression(refTempNew, new RefExpression(tempNew)));
+                    }
+
                     for (int i = 0; i < bindings.Count; i++)
                     {
                         BindingRewriter cr = bindingRewriters[i];
-                        Expression initExpr = cr.AsExpression(tempNew);
-                        comma[i + 1] = initExpr;
+                        Expression initExpr = cr.AsExpression(refTempNew);
+                        commaBuilder.UncheckedAdd(initExpr);
                     }
-                    comma[bindings.Count + 1] = tempNew;
+
+                    commaBuilder.UncheckedAdd(tempNew);
+
+                    Expression[] comma = commaBuilder.ToArray();
                     expr = MakeBlock(comma);
                     break;
                 default:
@@ -1030,9 +1054,6 @@ namespace System.Linq.Expressions.Compiler
         /// the method call.
         /// 
         /// Used for:
-        ///   NewExpression,
-        ///   MethodCallExpression,
-        ///   InvocationExpression,
         ///   DynamicExpression,
         ///   UnaryExpression,
         ///   BinaryExpression.
@@ -1055,26 +1076,25 @@ namespace System.Linq.Expressions.Compiler
         /// okay because they're immutable).
         /// 
         /// Used for:
-        ///  MethodCallExpression,
-        ///  MemberExpression (for properties),
-        ///  IndexExpression,
-        ///  ListInitExpression,
-        ///  MemberInitExpression,
-        ///  assign to MemberExpression,
-        ///  assign to IndexExpression.
+        ///  MemberExpression (for properties).
         /// </summary>
         /// <remarks>
         /// We could support this if spilling happened later in the compiler.
         /// </remarks>
         private static void RequireNotRefInstance(Expression instance)
         {
-            // Primitive value types are okay because they are all readonly,
-            // but we can't rely on this for non-primitive types. So we throw
-            // NotSupported.
-            if (instance != null && instance.Type.GetTypeInfo().IsValueType && instance.Type.GetTypeCode() == TypeCode.Object)
+            if (IsRefInstance(instance))
             {
                 throw Error.TryNotSupportedForValueTypeInstances(instance.Type);
             }
+        }
+
+        private static bool IsRefInstance(Expression instance)
+        {
+            // Primitive value types are okay because they are all readonly,
+            // but we can't rely on this for non-primitive types. So we have
+            // to either throw NotSupported or use ref locals.
+            return instance != null && instance.Type.GetTypeInfo().IsValueType && instance.Type.GetTypeCode() == TypeCode.Object;
         }
     }
 }

@@ -284,7 +284,8 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]
-        public static void Left_ValueTypeContainsChildTryExpression_ThrowsNotSupportedExceptionOnCompilation(bool useInterpreter)
+        [ActiveIssue(13007)]
+        public static void Left_ValueTypeContainsChildTryExpression(bool useInterpreter)
         {
             Expression tryExpression = Expression.TryFinally(
                 Expression.Constant(1),
@@ -299,14 +300,24 @@ namespace System.Linq.Expressions.Tests
                     )
                 );
 
-            if (useInterpreter)
-            {
-                Assert.True(func.Compile(useInterpreter)());
-            }
-            else
-            {
-                Assert.Throws<NotSupportedException>(() => func.Compile(useInterpreter));
-            }
+            Assert.True(func.Compile(useInterpreter)());
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        [ActiveIssue(13007)]
+        public static void ValueTypeIndexAssign(bool useInterpreter)
+        {
+            Expression index = Expression.Property(Expression.Constant(new StructWithPropertiesAndFields()), typeof(StructWithPropertiesAndFields).GetProperty("Item"), new Expression[] { Expression.Constant(1) });
+
+            Expression<Func<bool>> func = Expression.Lambda<Func<bool>>(
+                Expression.Block(
+                    Expression.Assign(index, Expression.Constant(123)),
+                    Expression.Equal(index, Expression.Constant(123))
+                    )
+                );
+
+            Assert.True(func.Compile(useInterpreter)());
         }
 
         [Theory]

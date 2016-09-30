@@ -134,6 +134,7 @@ namespace System.Linq.Expressions.Compiler
             private RewriteAction _action;
             private Stack _stack;
             private bool _done;
+            private bool[] _byRefs;
 
             internal ChildRewriter(StackSpiller self, Stack stack, int count)
             {
@@ -194,7 +195,7 @@ namespace System.Linq.Expressions.Compiler
                             if (ShouldSaveToTemp(current))
                             {
                                 Expression temp;
-                                clone[i] = _self.ToTemp(current, out temp);
+                                clone[i] = _self.ToTemp(current, out temp, _byRefs?[i] ?? false);
                                 comma.Add(temp);
                             }
                         }
@@ -267,6 +268,37 @@ namespace System.Linq.Expressions.Compiler
             internal bool Rewrite => _action != RewriteAction.None;
 
             internal RewriteAction Action => _action;
+
+            internal void MarkRefInstance(Expression expr)
+            {
+                if (IsRefInstance(expr))
+                {
+                    MarkRef(0);
+                }
+            }
+
+            internal void MarkRefArgs(MethodBase method, int startIndex)
+            {
+                var parameters = method.GetParametersCached();
+
+                for (int i = 0, n = parameters.Length; i < n;  i++)
+                {
+                    if (parameters[i].ParameterType.IsByRef)
+                    {
+                        MarkRef(startIndex + i);
+                    }
+                }
+            }
+
+            private void MarkRef(int index)
+            {
+                if (_byRefs == null)
+                {
+                    _byRefs = new bool[_expressions.Length];
+                }
+
+                _byRefs[index] = true;
+            }
 
             internal Result Finish(Expression expr)
             {
@@ -349,8 +381,13 @@ namespace System.Linq.Expressions.Compiler
         ///     save: temp = expression
         ///     return value: temp
         /// </summary>
-        private ParameterExpression ToTemp(Expression expression, out Expression save)
+        private ParameterExpression ToTemp(Expression expression, out Expression save, bool byRef)
         {
+            if (byRef)
+            {
+                expression = new RefExpression(expression);
+            }
+
             ParameterExpression temp = MakeTemp(expression.Type);
             save = Expression.Assign(temp, expression);
             return temp;
@@ -392,6 +429,35 @@ namespace System.Linq.Expressions.Compiler
         internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args)
         {
             throw ContractUtils.Unreachable;
+        }
+    }
+
+    /// <summary>
+    /// An extension expression node used to obtain a reference to the
+    /// specified operand, much like `ref x` in C#. This node is used by
+    /// the stack spiller when spilling value type instances or arguments
+    /// passed to ref parameters.
+    /// </summary>
+    internal sealed class RefExpression : Expression
+    {
+        public RefExpression(Expression operand)
+        {
+            Operand = operand;
+        }
+
+        public Expression Operand { get; }
+        public override ExpressionType NodeType => ExpressionType.Extension;
+        public override bool CanReduce => false;
+        public override Type Type => Operand.Type.MakeByRefType();
+
+        internal Expression Update(Expression operand)
+        {
+            if (Operand != operand)
+            {
+                return new RefExpression(operand);
+            }
+
+            return this;
         }
     }
 }
