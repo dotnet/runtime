@@ -177,11 +177,13 @@ namespace System.Collections.Generic
         }
 
         // Equals method for the comparer itself.
+        // If in the future this type is made sealed, change the is check to obj != null && GetType() == obj.GetType().
         public override bool Equals(Object obj) =>
-            obj != null && GetType() == obj.GetType();
+            obj is GenericEqualityComparer<T>;
 
+        // If in the future this type is made sealed, change typeof(...) to GetType().
         public override int GetHashCode() =>
-            GetType().GetHashCode();
+            typeof(GenericEqualityComparer<T>).GetHashCode();
     }
 
     [Serializable]
