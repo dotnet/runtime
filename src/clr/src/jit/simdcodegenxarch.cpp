@@ -1033,11 +1033,10 @@ void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
 //
 void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
 {
-    GenTree*  op1       = simdNode->gtGetOp1();
-    GenTree*  op2       = simdNode->gtGetOp2();
-    var_types baseType  = simdNode->gtSIMDBaseType;
-    regNumber targetReg = simdNode->gtRegNum;
-    assert(targetReg != REG_NA);
+    GenTree*       op1        = simdNode->gtGetOp1();
+    GenTree*       op2        = simdNode->gtGetOp2();
+    var_types      baseType   = simdNode->gtSIMDBaseType;
+    regNumber      targetReg  = simdNode->gtRegNum;
     var_types      targetType = simdNode->TypeGet();
     InstructionSet iset       = compiler->getSIMDInstructionSet();
 
@@ -1051,6 +1050,8 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
         case SIMDIntrinsicEqual:
         case SIMDIntrinsicGreaterThan:
         {
+            assert(targetReg != REG_NA);
+
             // SSE2: vector<(u)long> relation op should be implemented in terms of TYP_INT comparison operations
             assert(((iset == InstructionSet_AVX) || (baseType != TYP_LONG)) && (baseType != TYP_ULONG));
 
@@ -1093,6 +1094,8 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
         case SIMDIntrinsicLessThan:
         case SIMDIntrinsicLessThanOrEqual:
         {
+            assert(targetReg != REG_NA);
+
             // Int vectors use ">" and ">=" with swapped operands
             assert(varTypeIsFloating(baseType));
 
@@ -1115,8 +1118,6 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
         case SIMDIntrinsicOpEquality:
         case SIMDIntrinsicOpInEquality:
         {
-            assert(genIsValidIntReg(targetReg));
-
             var_types simdType = op1->TypeGet();
             // TODO-1stClassStructs: Temporary to minimize asmDiffs
             if (simdType == TYP_DOUBLE)
@@ -1140,16 +1141,15 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
             }
             else
             {
+                // We need two additional XMM registers as scratch.
+                regMaskTP floatRsvdRegs = (simdNode->gtRsvdRegs & RBM_ALLFLOAT);
+                assert(floatRsvdRegs != RBM_NONE);
+                assert(genCountBits(floatRsvdRegs) == 2);
 
-                // We need two additional XMM register as scratch
-                assert(simdNode->gtRsvdRegs != RBM_NONE);
-                assert(genCountBits(simdNode->gtRsvdRegs) == 2);
-
-                regMaskTP tmpRegsMask = simdNode->gtRsvdRegs;
-                regMaskTP tmpReg1Mask = genFindLowestBit(tmpRegsMask);
-                tmpRegsMask &= ~tmpReg1Mask;
-                regNumber tmpReg1 = genRegNumFromMask(tmpReg1Mask);
-                regNumber tmpReg2 = genRegNumFromMask(tmpRegsMask);
+                regMaskTP tmpRegMask = genFindLowestBit(floatRsvdRegs);
+                floatRsvdRegs &= ~tmpRegMask;
+                regNumber tmpReg1 = genRegNumFromMask(tmpRegMask);
+                regNumber tmpReg2 = genRegNumFromMask(floatRsvdRegs);
 
                 // tmpReg1 = (op1Reg == op2Reg)
                 // Call this value of tmpReg1 as 'compResult' for further reference below.
@@ -1220,11 +1220,36 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
                 // That is tmpReg1[0] = compResult[0] & compResult[1] & compResult[2] & compResult[3]
                 inst_RV_RV(INS_pand, tmpReg1, tmpReg2, simdType, emitActualTypeSize(simdType)); // ??? INS_andps??
 
-                // targetReg = lower 32-bits of tmpReg1 = compResult[0] & compResult[1] & compResult[2] & compResult[3]
-                // (Note that for mov_xmm2i, the int register is always in the reg2 position.
-                inst_RV_RV(INS_mov_xmm2i, tmpReg1, targetReg, TYP_INT);
+                regNumber intReg;
+                if (targetReg == REG_NA)
+                {
+                    // If we are not materializing result into a register,
+                    // we would have reserved an int type internal register.
+                    regMaskTP intRsvdRegs = (simdNode->gtRsvdRegs & RBM_ALLINT);
+                    assert(genCountBits(intRsvdRegs) == 1);
+                    intReg = genRegNumFromMask(intRsvdRegs);
+                }
+                else
+                {
+                    // We can use targetReg for setting flags.
+                    intReg = targetReg;
 
-                // Since we need to compute a bool result, targetReg needs to be set to 1 on true and zero on false.
+                    // Must have not reserved any int type internal registers.
+                    assert(genCountBits(simdNode->gtRsvdRegs & RBM_ALLINT) == 0);
+                }
+
+                // intReg = lower 32-bits of tmpReg1 = compResult[0] & compResult[1] & compResult[2] & compResult[3]
+                // (Note that for mov_xmm2i, the int register is always in the reg2 position.
+                inst_RV_RV(INS_mov_xmm2i, tmpReg1, intReg, TYP_INT);
+
+                //   cmp intReg, 0xFFFFFFFF
+                getEmitter()->emitIns_R_I(INS_cmp, EA_4BYTE, intReg, 0xFFFFFFFF);
+            }
+
+            if (targetReg != REG_NA)
+            {
+                // If we need to materialize result into a register,  targetReg needs to
+                // be set to 1 on true and zero on false.
                 // Equality:
                 //   cmp targetReg, 0xFFFFFFFF
                 //   sete targetReg
@@ -1235,14 +1260,12 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
                 //   setne targetReg
                 //   movzx targetReg, targetReg
                 //
-                getEmitter()->emitIns_R_I(INS_cmp, EA_4BYTE, targetReg, 0xFFFFFFFF);
+                assert(simdNode->TypeGet() == TYP_INT);
+                inst_RV((simdNode->gtSIMDIntrinsicID == SIMDIntrinsicOpEquality) ? INS_sete : INS_setne, targetReg,
+                        TYP_INT, EA_1BYTE);
+                // Set the higher bytes to 0
+                inst_RV_RV(ins_Move_Extend(TYP_UBYTE, true), targetReg, targetReg, TYP_UBYTE, emitTypeSize(TYP_UBYTE));
             }
-
-            inst_RV((simdNode->gtSIMDIntrinsicID == SIMDIntrinsicOpEquality) ? INS_sete : INS_setne, targetReg, TYP_INT,
-                    EA_1BYTE);
-            assert(simdNode->TypeGet() == TYP_INT);
-            // Set the higher bytes to 0
-            inst_RV_RV(ins_Move_Extend(TYP_UBYTE, true), targetReg, targetReg, TYP_UBYTE, emitTypeSize(TYP_UBYTE));
         }
         break;
 

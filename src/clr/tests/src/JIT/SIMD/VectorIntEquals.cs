@@ -39,6 +39,46 @@ internal partial class VectorTest
             return Fail;
         }
 
+        if (Vector<int>.Zero.Equals(B))
+        {
+            return Fail;
+        }
+
+        if (!(A == B))
+        {
+            return Fail;
+        }
+
+        if (A == Vector<int>.Zero)
+        {
+            return Fail;
+        }
+
+        if (!(A != Vector<int>.Zero))
+        {
+            return Fail;
+        }
+
+        if (A != B)
+        {
+            return Fail;
+        }
+
+        if (!(A != C))
+        {
+            return Fail;
+        }
+
+        if (!(Vector<int>.Zero != A))
+        {
+            return Fail;
+        }
+
+        if (Vector<int>.Zero != Vector<int>.Zero)
+        {
+            return Fail;
+        }
+
         return Pass;
     }
 
