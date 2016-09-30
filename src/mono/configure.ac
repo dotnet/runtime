@@ -4245,6 +4245,7 @@ llvm/Makefile
 scripts/mono-find-provides
 scripts/mono-find-requires
 mono/Makefile
+mono/btls/Makefile
 mono/utils/Makefile
 mono/metadata/Makefile
 mono/dis/Makefile
