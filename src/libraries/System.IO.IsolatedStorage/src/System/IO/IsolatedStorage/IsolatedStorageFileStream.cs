@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.Win32.SafeHandles;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -52,10 +53,35 @@ namespace System.IO.IsolatedStorage
         {
         }
 
-        // If the isolated storage file is null, then we default to using a file
-        // that is scoped by user, appdomain, and assembly.
-        public IsolatedStorageFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, IsolatedStorageFile isf) :
-            base (path, mode, access, share)
+        public IsolatedStorageFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, IsolatedStorageFile isf)
+            : this(path, mode, access, share, bufferSize, InitializeFileStream(path, mode, access, share, bufferSize, isf))
+        {
+        }
+
+        // On NetFX FileStream has an internal no arg constructor that we utilize to provide the facade. We don't have access
+        // to internals in CoreFX so we'll do the next best thing and contort ourselves into the SafeFileHandle constructor.
+        // (A path constructor would try and create the requested file and give us two open handles.)
+        //
+        // We only expose our own nested FileStream so the base class having a handle doesn't matter. Passing a new SafeFileHandle
+        // with ownsHandle: false avoids the parent class closing without our knowledge.
+        private IsolatedStorageFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, InitialiationData initializationData)
+            : base(new SafeFileHandle(initializationData.NestedStream.SafeFileHandle.DangerousGetHandle(), ownsHandle: false), access, bufferSize)
+        {
+            _isf = initializationData.StorageFile;
+            _givenPath = path;
+            _fullPath = initializationData.FullPath;
+            _fs = initializationData.NestedStream;
+        }
+
+        private struct InitialiationData
+        {
+            public FileStream NestedStream;
+            public IsolatedStorageFile StorageFile;
+            public string FullPath;
+        }
+
+        // If IsolatedStorageFile is null, then we default to using a file that is scoped by user, appdomain, and assembly.
+        private static InitialiationData InitializeFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, IsolatedStorageFile isf)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
@@ -64,9 +90,11 @@ namespace System.IO.IsolatedStorage
                 throw new ArgumentException(
                    SR.IsolatedStorage_Path);
 
+            bool createdStore = false;
             if (isf == null)
             {
-                throw new ArgumentNullException(nameof(isf));
+                isf = IsolatedStorageFile.GetUserStoreForDomain();
+                createdStore = true;
             }
 
             if (isf.Disposed)
@@ -86,18 +114,30 @@ namespace System.IO.IsolatedStorage
                     throw new ArgumentException(SR.IsolatedStorage_FileOpenMode);
             }
 
-            _isf = isf;
-            _givenPath = path;
-            _fullPath = _isf.GetFullPath(_givenPath);
+            InitialiationData data = new InitialiationData
+            {
+                FullPath = isf.GetFullPath(path),
+                StorageFile = isf
+            };
 
             try
             {
-                _fs = new
-                   FileStream(_fullPath, mode, access, share, bufferSize,
-                       FileOptions.None);
+                data.NestedStream = new FileStream(data.FullPath, mode, access, share, bufferSize, FileOptions.None);
             }
             catch (Exception e)
             {
+                // Make an attempt to clean up the StorageFile if we created it
+                try
+                {
+                    if (createdStore)
+                    {
+                        data.StorageFile?.Dispose();
+                    }
+                }
+                catch
+                {
+                }
+
                 // Exception message might leak the IsolatedStorage path. The desktop prevented this by calling an
                 // internal API which made sure that the exception message was scrubbed. However since the innerException
                 // is never returned to the user(GetIsolatedStorageException() does not populate the innerexception
@@ -105,6 +145,8 @@ namespace System.IO.IsolatedStorage
                 // they can any way look at via IsolatedStorageFile instance as well.
                 throw IsolatedStorageFile.GetIsolatedStorageException("IsolatedStorage_Operation_ISFS", e);
             }
+
+            return data;
         }
 
         public override bool CanRead
@@ -239,11 +281,11 @@ namespace System.IO.IsolatedStorage
             _fs.EndWrite(asyncResult);
         }
 
-        // https://github.com/dotnet/corefx/issues/11127
-        //public override IntPtr Handle
-        //{
-        //    get { return _fs.Handle; }
-        //}
+        [Obsolete("This property has been deprecated.  Please use IsolatedStorageFileStream's SafeFileHandle property instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
+        public override IntPtr Handle
+        {
+            get { return _fs.Handle; }
+        }
 
         public override void Unlock(long position, long length)
         {
