@@ -2,16 +2,16 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <Project Include="System.Threading.Tasks.Tests.csproj"/>
+    <Project Include="System.Threading.Tasks.Tests.csproj" />
     <Project Include="System.Threading.Tasks.Tests.csproj">
-      <TargetGroup>netstandard1.7</TargetGroup>
-      <TestTFMs>netcoreapp1.1</TestTFMs>
+      <TargetGroup>netcoreapp1.0</TargetGroup>
+      <TestTFMs>netcoreapp1.0</TestTFMs>
     </Project>
     <Project Include="System.Threading.Tasks.Tests.csproj">
       <TestTFMs>net462</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netcoreapp1.0</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
-

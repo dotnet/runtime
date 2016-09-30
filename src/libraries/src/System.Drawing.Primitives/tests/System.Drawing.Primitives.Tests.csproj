@@ -7,8 +7,8 @@
     <RootNamespace>System.Drawing.Primitives.Tests</RootNamespace>
     <AssemblyName>System.Drawing.Primitives.Tests</AssemblyName>
     <ProjectGuid>{297A9116-1005-499D-A895-2063D03E4C94}</ProjectGuid>
+    <NugetTargetMoniker Condition="'$(TargetGroup)'==''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
-
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.7_Debug|AnyCPU' ">
   </PropertyGroup>
@@ -18,7 +18,6 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU' ">
   </PropertyGroup>
-  
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
@@ -36,7 +35,7 @@
     <Compile Include="SizeFTests.cs" />
     <Compile Include="SizeTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7'">
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
     <Compile Include="ColorTests.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
