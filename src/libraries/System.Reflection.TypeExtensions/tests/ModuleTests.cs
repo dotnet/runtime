@@ -4,20 +4,20 @@
 
 using Xunit;
 
-namespace System.Reflection.TypeExtensions.Tests
+namespace System.Reflection.Tests
 {
-    public class ModuleVersionIdTests
+    public class ModuleTests
     {
-        // This applies on all platforms. See S.R.TE.CoreCLR.Tests for more test cases that rely on
-        // that rely platform-specific capabilities.
+        // This applies on all platforms. See System.Reflection.TypeExtensions.CoreCLR.Tests for more
+        // test cases that rely on platform-specific capabilities.
         [Fact]
-        public void HasMvidAndGetMvidBehaveConsistently()
+        public void GetModuleVersionId_HasModuleVersionId_BehaveConsistently()
         {
-            Module module = typeof(ModuleVersionIdTests).GetTypeInfo().Assembly.ManifestModule;
+            Module module = typeof(ModuleTests).GetTypeInfo().Assembly.ManifestModule;
 
             if (module.HasModuleVersionId())
             {
-                Assert.True(module.GetModuleVersionId() != default(Guid));
+                Assert.NotEqual(Guid.Empty, module.GetModuleVersionId());
             }
             else
             {

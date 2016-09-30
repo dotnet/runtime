@@ -4,12 +4,12 @@
 
 using Xunit;
 
-namespace System.Reflection.TypeExtensions.Tests
+namespace System.Reflection.Tests
 {
-    public class ModuleVersionIdTests
+    public class ModuleTests
     {
         [Fact]
-        public void KnownMvid()
+        public void GetModuleVersionId_KnownAssembly_ReturnsExpected()
         {
             Module module = Assembly.Load(new AssemblyName("TinyAssembly")).ManifestModule;
             Assert.True(module.HasModuleVersionId());
