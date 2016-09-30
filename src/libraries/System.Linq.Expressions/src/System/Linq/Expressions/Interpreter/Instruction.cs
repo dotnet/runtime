@@ -2,12 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Dynamic.Utils;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions.Interpreter
 {
@@ -15,42 +11,23 @@ namespace System.Linq.Expressions.Interpreter
     {
         public const int UnknownInstrIndex = int.MaxValue;
 
-        public virtual int ConsumedStack { get { return 0; } }
-        public virtual int ProducedStack { get { return 0; } }
-        public virtual int ConsumedContinuations { get { return 0; } }
-        public virtual int ProducedContinuations { get { return 0; } }
+        public virtual int ConsumedStack => 0;
+        public virtual int ProducedStack => 0;
+        public virtual int ConsumedContinuations => 0;
+        public virtual int ProducedContinuations => 0;
 
-        public int StackBalance
-        {
-            get { return ProducedStack - ConsumedStack; }
-        }
-
-        public int ContinuationsBalance
-        {
-            get { return ProducedContinuations - ConsumedContinuations; }
-        }
+        public int StackBalance => ProducedStack - ConsumedStack;
+        public int ContinuationsBalance => ProducedContinuations - ConsumedContinuations;
 
         public abstract int Run(InterpretedFrame frame);
 
-        public abstract string InstructionName
-        {
-            get;
-        }
+        public abstract string InstructionName { get; }
 
-        public override string ToString()
-        {
-            return InstructionName + "()";
-        }
+        public override string ToString() => InstructionName + "()";
 
-        public virtual string ToDebugString(int instructionIndex, object cookie, Func<int, int> labelIndexer, IList<object> objects)
-        {
-            return ToString();
-        }
+        public virtual string ToDebugString(int instructionIndex, object cookie, Func<int, int> labelIndexer, IList<object> objects) => ToString();
 
-        public virtual object GetDebugCookie(LightCompiler compiler)
-        {
-            return null;
-        }
+        public virtual object GetDebugCookie(LightCompiler compiler) => null;
 
         // throws NRE when o is null
         protected static void NullCheck(object o)
@@ -67,16 +44,10 @@ namespace System.Linq.Expressions.Interpreter
         public static readonly Instruction Instance = new NullCheckInstruction();
 
         private NullCheckInstruction() { }
-        public override int ConsumedStack { get { return 1; } }
-        public override int ProducedStack { get { return 1; } }
 
-        public override string InstructionName
-        {
-            get
-            {
-                return "Unbox";
-            }
-        }
+        public override int ConsumedStack => 1;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "Unbox";
 
         public override int Run(InterpretedFrame frame)
         {
@@ -94,13 +65,10 @@ namespace System.Linq.Expressions.Interpreter
         public static Instruction _Bool, _Int64, _Int32, _Int16, _UInt64, _UInt32, _UInt16, _Byte, _SByte;
 
         private NotInstruction() { }
-        public override int ConsumedStack { get { return 1; } }
-        public override int ProducedStack { get { return 1; } }
 
-        public override string InstructionName
-        {
-            get { return "Not"; }
-        }
+        public override int ConsumedStack => 1;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "Not";
 
         private class BoolNot : NotInstruction
         {

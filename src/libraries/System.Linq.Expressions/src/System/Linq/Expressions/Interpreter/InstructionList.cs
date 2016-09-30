@@ -243,30 +243,12 @@ namespace System.Linq.Expressions.Interpreter
 #endif
         }
 
-        public int Count
-        {
-            get { return _instructions.Count; }
-        }
+        public int Count => _instructions.Count;
+        public int CurrentStackDepth => _currentStackDepth;
+        public int CurrentContinuationsDepth => _currentContinuationsDepth;
+        public int MaxStackDepth => _maxStackDepth;
 
-        public int CurrentStackDepth
-        {
-            get { return _currentStackDepth; }
-        }
-
-        public int CurrentContinuationsDepth
-        {
-            get { return _currentContinuationsDepth; }
-        }
-
-        public int MaxStackDepth
-        {
-            get { return _maxStackDepth; }
-        }
-
-        internal Instruction GetInstruction(int index)
-        {
-            return _instructions[index];
-        }
+        internal Instruction GetInstruction(int index) => _instructions[index];
 
 #if STATS
         private static Dictionary<string, int> _executedInstructions = new Dictionary<string, int>();

@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
 using System.Dynamic.Utils;
-using System.Reflection;
 
 namespace System.Linq.Expressions.Interpreter
 {
@@ -13,17 +11,11 @@ namespace System.Linq.Expressions.Interpreter
     {
         private static Instruction s_int16, s_int32, s_int64, s_UInt16, s_UInt32, s_UInt64, s_single, s_double;
 
-        public override int ConsumedStack { get { return 2; } }
-        public override int ProducedStack { get { return 1; } }
-        public override string InstructionName
-        {
-            get { return "Add"; }
-        }
+        public override int ConsumedStack => 2;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "Add";
 
-
-        private AddInstruction()
-        {
-        }
+        private AddInstruction() { }
 
         internal sealed class AddInt32 : AddInstruction
         {
@@ -200,17 +192,11 @@ namespace System.Linq.Expressions.Interpreter
     {
         private static Instruction s_int16, s_int32, s_int64, s_UInt16, s_UInt32, s_UInt64;
 
-        public override int ConsumedStack { get { return 2; } }
-        public override int ProducedStack { get { return 1; } }
+        public override int ConsumedStack => 2;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "AddOvf";
 
-        public override string InstructionName
-        {
-            get { return "AddOvf"; }
-        }
-
-        private AddOvfInstruction()
-        {
-        }
+        private AddOvfInstruction() { }
 
         internal sealed class AddOvfInt32 : AddOvfInstruction
         {
