@@ -12,7 +12,7 @@ namespace System.Timers
     /// <summary>
     ///    <para>Handles recurring events in an application.</para>
     /// </summary>
-    [DefaultProperty("Interval"), DefaultEvent("Elapsed"), HostProtection(Synchronization = true, ExternalThreading = true)]
+    [DefaultProperty("Interval"), DefaultEvent("Elapsed")]
     public partial class Timer : Component, ISupportInitialize
     {
         private double _interval;
@@ -61,7 +61,7 @@ namespace System.Timers
 
             _interval = (int)roundedInterval;
         }
-        
+
         /// <summary>
         /// <para>Gets or sets a value indicating whether the Timer raises the Tick event each time the specified
         /// Interval has elapsed,
@@ -145,7 +145,6 @@ namespace System.Timers
                             UpdateTimer();
                         }
                     }
-
                 }
             }
         }
