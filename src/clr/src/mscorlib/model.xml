@@ -2604,7 +2604,7 @@
       <Member Name="#ctor" />
       <Member Name="AddMonths(System.DateTime,System.Int32)" />
       <Member Name="AddYears(System.DateTime,System.Int32)" />
-      <Member Name="get_AlgorithmType" Condition="not FEATURE_COREFX_GLOBALIZATION" />
+      <Member Name="get_AlgorithmType" />
       <Member Name="get_Eras" />
       <Member Name="get_MaxSupportedDateTime" />
       <Member Name="get_MinSupportedDateTime" />
@@ -2640,7 +2640,7 @@
     <Type Name="System.Globalization.EastAsianLunisolarCalendar">
       <Member Name="AddMonths(System.DateTime,System.Int32)" />
       <Member Name="AddYears(System.DateTime,System.Int32)" />
-      <Member Name="get_AlgorithmType" Condition="not FEATURE_COREFX_GLOBALIZATION" />
+      <Member Name="get_AlgorithmType" />
       <Member Name="get_TwoDigitYearMax" />
       <Member Name="GetCelestialStem(System.Int32)" />
       <Member Name="GetDayOfMonth(System.DateTime)" />
@@ -2753,7 +2753,7 @@
       <Member Name="#ctor" />
       <Member Name="AddMonths(System.DateTime,System.Int32)" />
       <Member Name="AddYears(System.DateTime,System.Int32)" />
-      <Member Name="get_AlgorithmType" Condition="not FEATURE_COREFX_GLOBALIZATION" />
+      <Member Name="get_AlgorithmType" />
       <Member Name="get_Eras" />
       <Member Name="get_MaxSupportedDateTime" />
       <Member Name="get_MinSupportedDateTime" />

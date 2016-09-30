@@ -65,15 +65,13 @@ namespace System.Globalization
             }
         }
 
-        // Return the type of the Persian calendar.
-        //
-
-
-        //public override CalendarAlgorithmType AlgorithmType {
-        //    get {
-        //        return CalendarAlgorithmType.SolarCalendar;
-        //    }
-        //}
+        public override CalendarAlgorithmType AlgorithmType
+        {
+            get
+            {
+                return CalendarAlgorithmType.SolarCalendar;
+            }
+        }
 
         // Construct an instance of Persian calendar.
 
