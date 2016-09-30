@@ -301,15 +301,62 @@ namespace System.IO {
             return result;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private unsafe Int32 UnsafeReadInt32(byte* pointer)
+        {
+            Int32 result;
+            // check if pointer is aligned
+            if (((int)pointer & (sizeof(Int32) - 1)) == 0)
+            {
+                result = *((Int32*)pointer);
+            }
+            else
+            {
+                result = (Int32)(*(pointer) | *(pointer + 1) << 8 | *(pointer + 2) << 16 | *(pointer + 3) << 24);
+            }
+
+            return result;
+        }
         [System.Security.SecuritySafeCritical]  // auto-generated
         public Decimal ReadDecimal(Int64 position) {
+            const int ScaleMask = 0x00FF0000;
+            const int SignMask = unchecked((int)0x80000000);
+
             int sizeOfType = sizeof(Decimal);
             EnsureSafeToRead(position, sizeOfType);
 
-            int[] decimalArray = new int[4];
-            ReadArray<int>(position, decimalArray, 0, decimalArray.Length);
+            unsafe
+            {
+                byte* pointer = null;
+                try
+                {
+                    _buffer.AcquirePointer(ref pointer);
+                    pointer += (_offset + position);
 
-            return new Decimal(decimalArray);
+                    int lo = UnsafeReadInt32(pointer);
+                    int mid = UnsafeReadInt32(pointer + 4);
+                    int hi = UnsafeReadInt32(pointer + 8);
+                    int flags = UnsafeReadInt32(pointer + 12);
+
+                    // Check for invalid Decimal values
+                    if (!((flags & ~(SignMask | ScaleMask)) == 0 && (flags & ScaleMask) <= (28 << 16)))
+                    {
+                        throw new ArgumentException(Environment.GetResourceString("Arg_BadDecimal")); // Throw same Exception type as Decimal(int[]) ctor for compat
+                    }
+
+                    bool isNegative = (flags & SignMask) != 0;
+                    byte scale = (byte)(flags >> 16);
+
+                    return new decimal(lo, mid, hi, isNegative, scale);
+                }
+                finally
+                {
+                    if (pointer != null)
+                    {
+                        _buffer.ReleasePointer();
+                    }
+                }
+            }
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
@@ -789,25 +836,55 @@ namespace System.IO {
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private unsafe void UnsafeWriteInt32(byte* pointer, Int32 value)
+        {
+            // check if pointer is aligned
+            if (((int)pointer & (sizeof(Int32) - 1)) == 0)
+            {
+                *((Int32*)pointer) = value;
+            }
+            else
+            {
+                *(pointer) = (byte)value;
+                *(pointer + 1) = (byte)(value >> 8);
+                *(pointer + 2) = (byte)(value >> 16);
+                *(pointer + 3) = (byte)(value >> 24);
+            }
+        }
+
         [System.Security.SecuritySafeCritical]  // auto-generated
         public void Write(Int64 position, Decimal value) {
             int sizeOfType = sizeof(Decimal);
             EnsureSafeToWrite(position, sizeOfType);
 
-            byte[] decimalArray = new byte[16];
-            Decimal.GetBytes(value, decimalArray);
+            unsafe
+            {
+                byte* pointer = null;
+                try
+                {
+                    _buffer.AcquirePointer(ref pointer);
+                    pointer += (_offset + position);
 
-            int[] bits = new int[4];
-            int flags = ((int)decimalArray[12]) | ((int)decimalArray[13] << 8) | ((int)decimalArray[14] << 16) | ((int)decimalArray[15] << 24);
-            int lo = ((int)decimalArray[0]) | ((int)decimalArray[1] << 8) | ((int)decimalArray[2] << 16) | ((int)decimalArray[3] << 24);
-            int mid = ((int)decimalArray[4]) | ((int)decimalArray[5] << 8) | ((int)decimalArray[6] << 16) | ((int)decimalArray[7] << 24);
-            int hi = ((int)decimalArray[8]) | ((int)decimalArray[9] << 8) | ((int)decimalArray[10] << 16) | ((int)decimalArray[11] << 24);
-            bits[0] = lo;
-            bits[1] = mid;
-            bits[2] = hi;
-            bits[3] = flags;
+                    int* valuePtr = (int*)(&value);
+                    int flags = *valuePtr;
+                    int hi = *(valuePtr + 1);
+                    int lo = *(valuePtr + 2);
+                    int mid = *(valuePtr + 3);
 
-            WriteArray<int>(position, bits, 0, bits.Length);
+                    UnsafeWriteInt32(pointer, lo);
+                    UnsafeWriteInt32(pointer + 4, mid);
+                    UnsafeWriteInt32(pointer + 8, hi);
+                    UnsafeWriteInt32(pointer + 12, flags);
+                }
+                finally
+                {
+                    if (pointer != null)
+                    {
+                        _buffer.ReleasePointer();
+                    }
+                }
+            }
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
@@ -1111,7 +1188,7 @@ namespace System.IO {
 
         [System.Security.SecuritySafeCritical]  // auto-generated
         private void InternalWrite(Int64 position, byte value) {
-            Contract.Assert(CanWrite, "UMA not writeable");
+            Contract.Assert(CanWrite, "UMA not writable");
             Contract.Assert(position >= 0, "position less than 0");
             Contract.Assert(position <= _capacity - sizeof(byte), "position is greater than capacity - sizeof(byte)");
 
