@@ -5935,18 +5935,42 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
 {
     assert(treeNode->OperIsCompare());
 
-    GenTreeOp* tree    = treeNode->AsOp();
-    GenTreePtr op1     = tree->gtOp1;
-    GenTreePtr op2     = tree->gtOp2;
-    var_types  op1Type = op1->TypeGet();
-    var_types  op2Type = op2->TypeGet();
+    GenTreeOp* tree      = treeNode->AsOp();
+    GenTreePtr op1       = tree->gtOp1;
+    GenTreePtr op2       = tree->gtOp2;
+    var_types  op1Type   = op1->TypeGet();
+    var_types  op2Type   = op2->TypeGet();
+    regNumber  targetReg = treeNode->gtRegNum;
+
+#ifdef FEATURE_SIMD
+    // If we have GT_JTRUE(GT_EQ/NE(GT_SIMD((in)Equality, v1, v2), true/false)),
+    // then we don't need to generate code for GT_EQ/GT_NE, since SIMD (in)Equality intrinsic
+    // would set or clear Zero flag.
+    //
+    // Is treeNode == or != that doesn't need to materialize result into a register?
+    if ((tree->OperGet() == GT_EQ || tree->OperGet() == GT_NE) && (targetReg == REG_NA))
+    {
+        // Is it a SIMD (in)Equality that doesn't need to
+        // materialize result into a register?
+        if (op1->gtRegNum == REG_NA && op1->IsSIMDEqualityOrInequality())
+        {
+            // Must be comparing against true or false.
+            assert(op2->IsIntegralConst(0) || op2->IsIntegralConst(1));
+            assert(op2->isContainedIntOrIImmed());
+
+            // In this case SIMD (in)Equality will set or clear
+            // Zero flag, based on which GT_JTRUE would generate
+            // the right conditional jump.
+            return;
+        }
+    }
+#endif // FEATURE_SIMD
 
     genConsumeOperands(tree);
 
     instruction ins;
     emitAttr    cmpAttr;
 
-    regNumber targetReg = treeNode->gtRegNum;
     // TODO-CQ: We should be able to support swapping op1 and op2 to generate cmp reg, imm.
     // https://github.com/dotnet/coreclr/issues/7270
     assert(!op1->isContainedIntOrIImmed()); // We no longer support
