@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions.Tests
@@ -19,13 +20,41 @@ namespace System.Linq.Expressions.Tests
             return s_typeFactory;
         }
 
-        public static string GetIL(this LambdaExpression expression)
+        public static string GetIL(this LambdaExpression expression, bool appendInnerLambdas = false)
         {
-            var d = expression.Compile();
+            Delegate d = expression.Compile();
 
-            var method = d.GetMethodInfo();
+            MethodInfo method = d.GetMethodInfo();
+            ITypeFactory typeFactory = GetTypeFactory(expression);
 
             var sw = new StringWriter();
+
+            AppendIL(method, sw, typeFactory);
+
+            if (appendInnerLambdas)
+            {
+                var closure = (Closure)d.Target;
+
+                int i = 0;
+                foreach (object constant in closure.Constants)
+                {
+                    var innerMethod = constant as DynamicMethod;
+                    if (innerMethod != null)
+                    {
+                        sw.WriteLine();
+                        sw.WriteLine("// closure.Constants[" + i + "]");
+                        AppendIL(innerMethod, sw, typeFactory);
+                    }
+
+                    i++;
+                }
+            }
+
+            return sw.ToString();
+        }
+
+        private static void AppendIL(MethodInfo method, StringWriter sw, ITypeFactory typeFactory)
+        {
             var reader = ILReaderFactory.Create(method);
             var exceptions = reader.ILProvider.GetExceptionInfos();
             var writer = new RichILStringToTextWriter(sw, exceptions);
@@ -34,7 +63,6 @@ namespace System.Linq.Expressions.Tests
             sw.WriteLine("{");
             sw.WriteLine("  .maxstack " + reader.ILProvider.MaxStackSize);
 
-            var typeFactory = GetTypeFactory(expression);
             var sig = reader.ILProvider.GetLocalSignature();
             var lsp = new LocalsSignatureParser(reader.Resolver, typeFactory);
             var locals = default(Type[]);
@@ -57,8 +85,6 @@ namespace System.Linq.Expressions.Tests
             writer.Dedent();
 
             sw.WriteLine("}");
-
-            return sw.ToString();
         }
     }
 
