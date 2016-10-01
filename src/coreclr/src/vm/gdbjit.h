@@ -16,6 +16,7 @@
 
 #include <stdint.h>
 #include "method.hpp"
+#include "dbginterface.h"
 #include "../inc/llvm/ELF.h"
 #include "../inc/llvm/Dwarf.h"
 
@@ -69,7 +70,45 @@ struct SymbolsInfo
     int lineNumber, ilOffset, nativeOffset, fileIndex;
     char fileName[2*MAX_PATH_FNAME];
 };
+struct LocalsInfo
+{
+    int size;
+    char** localsName;
+    ULONG32 countVars;
+    ICorDebugInfo::NativeVarInfo *pVars;
+};
 
+struct ArgsDebugInfo
+{
+    int m_type_index;
+    const char* m_type_name;
+    int  m_type_name_offset;
+    int m_type_encoding;
+    int m_type_size;
+    int m_type_abbrev;
+    int m_type_offset;
+    int m_il_index;
+    const char* m_arg_name;
+    int m_arg_name_offset;
+    int m_arg_abbrev;
+    int m_native_offset;
+};
+
+struct LocalsDebugInfo
+{
+    int m_type_index;
+    const char* m_type_name;
+    int  m_type_name_offset;
+    int m_type_encoding;
+    int m_type_size;
+    int m_type_abbrev;
+    int m_type_offset;
+    int m_il_index;
+    char* m_var_name;
+    int m_var_name_offset;
+    int m_var_abbrev;
+    int m_native_offset;
+};
 
 class NotifyGdb
 {
@@ -90,9 +129,17 @@ private:
     static bool BuildSectionTable(MemBuf& buf);
     static bool BuildSymbolTableSection(MemBuf& buf, PCODE addr, TADDR codeSize);
     static bool BuildStringTableSection(MemBuf& strTab);
-    static bool BuildDebugStrings(MemBuf& buf);
-    static bool BuildDebugAbbrev(MemBuf& buf);    
-    static bool BuildDebugInfo(MemBuf& buf);
+    static bool BuildDebugStrings(MemBuf& buf,
+                                  NewArrayHolder<ArgsDebugInfo>& argsDebug,
+                                  unsigned int argsDebugSize,
+                                  NewArrayHolder<LocalsDebugInfo>& localsDebug,
+                                  unsigned int localsDebugSize, const char *retTypeStr);
+    static bool BuildDebugAbbrev(MemBuf& buf);
+    static bool BuildDebugInfo(MemBuf& buf,
+                               NewArrayHolder<ArgsDebugInfo>& argsDebug,
+                               unsigned int argsDebugSize,
+                               NewArrayHolder<LocalsDebugInfo>& localsDebug,
+                               unsigned int localsDebugSize);
     static bool BuildDebugPub(MemBuf& buf, const char* name, uint32_t size, uint32_t dieOffset);
     static bool BuildLineTable(MemBuf& buf, PCODE startAddr, SymbolsInfo* lines, unsigned nlines);
     static bool BuildFileTable(MemBuf& buf, SymbolsInfo* lines, unsigned nlines);

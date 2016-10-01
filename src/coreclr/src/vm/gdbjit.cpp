@@ -11,16 +11,217 @@
 //*****************************************************************************
 
 #include "common.h"
+#include "formattype.h"
 #include "gdbjit.h"
 #include "gdbjithelpers.h"
 
-struct DebuggerILToNativeMap
+void GetTypeInfoFromSignature(PCCOR_SIGNATURE typePtr,
+                              unsigned typeLen,
+                              unsigned ilIndex,
+                              const char** typeStr,
+                              ULONG& typeSize,
+                              int& typeEncoding)
 {
-    ULONG ilOffset;
-    ULONG nativeStartOffset;
-    ULONG nativeEndOffset;
-    ICorDebugInfo::SourceTypes source;
-};
+    unsigned numArgs;
+    PCCOR_SIGNATURE typeEnd = typePtr + typeLen;
+
+     // get the calling convention out
+    CorSigUncompressData(typePtr);
+
+    numArgs = CorSigUncompressData(typePtr);
+    int typ;
+    mdToken tk;
+    int i = 0;
+    while (typePtr < typeEnd)
+    {
+        if (i > ilIndex)
+            break;
+
+        SigParser sigTemp(typePtr);
+        sigTemp.PeekElemTypeSize(&typeSize);
+
+        switch (typ = *typePtr)
+        {
+            case ELEMENT_TYPE_VOID:
+                *typeStr = "void";
+                typeEncoding = DW_ATE_address;
+                break;
+            case ELEMENT_TYPE_BOOLEAN:
+                *typeStr = "bool";
+                typeEncoding = DW_ATE_boolean;
+                break;
+            case ELEMENT_TYPE_CHAR:
+                *typeStr = "char";
+                typeEncoding = DW_ATE_signed;
+                break;
+            case ELEMENT_TYPE_I1:
+                *typeStr = "int8";
+                typeEncoding = DW_ATE_signed;
+                break;
+            case ELEMENT_TYPE_U1:
+                *typeStr = "uint8";
+                typeEncoding = DW_ATE_unsigned;
+                break;
+            case ELEMENT_TYPE_I2:
+                *typeStr = "int16";
+                typeEncoding = DW_ATE_signed;
+                break;
+            case ELEMENT_TYPE_U2:
+                *typeStr = "uint16";
+                typeEncoding = DW_ATE_unsigned;
+                break;
+            case ELEMENT_TYPE_I4:
+                *typeStr = "int32";
+                typeEncoding = DW_ATE_signed;
+                break;
+            case ELEMENT_TYPE_U4:
+                *typeStr = "uint32";
+                typeEncoding = DW_ATE_unsigned;
+                break;
+            case ELEMENT_TYPE_I8:
+                *typeStr = "int64";
+                typeEncoding = DW_ATE_signed;
+                break;
+            case ELEMENT_TYPE_U8:
+                *typeStr = "uint64";
+                typeEncoding = DW_ATE_unsigned;
+                break;
+            case ELEMENT_TYPE_R4:
+                *typeStr = "float32";
+                typeEncoding = DW_ATE_float;
+                break;
+            case ELEMENT_TYPE_R8:
+                *typeStr = "float64";
+                typeEncoding = DW_ATE_float;
+                break;
+            case ELEMENT_TYPE_U:
+                *typeStr = "native uint";
+                typeEncoding = DW_ATE_unsigned;
+                break;
+            case ELEMENT_TYPE_I:
+                *typeStr = "native int";
+                typeEncoding = DW_ATE_signed;
+                break;
+            case ELEMENT_TYPE_CLASS:
+                *typeStr = "class";
+                typeEncoding = DW_ATE_address; // FIXME: Add DW_TAG_class_type
+                typePtr += CorSigUncompressToken(typePtr, &tk);
+                break;
+            case ELEMENT_TYPE_ARRAY:
+            case ELEMENT_TYPE_SZARRAY:
+                *typeStr = "array";
+                typeEncoding = DW_ATE_address; // FIXME: Add arr type
+                typePtr++;
+                break;
+            default:
+                *typeStr = "unknown";
+                typeEncoding = DW_ATE_address;
+        }
+        i++;
+        typePtr++;
+    }
+}
+
+void GetArgTypeInfo(MethodDesc* MethodDescPtr,
+                    unsigned ilIndex,
+                    const char** typeStr,
+                    ULONG& typeSize,
+                    int& typeEncoding)
+{
+    DWORD cbSigLen;
+    PCCOR_SIGNATURE pComSig;
+    MethodDescPtr->GetSig(&pComSig, &cbSigLen);
+    GetTypeInfoFromSignature(pComSig, cbSigLen, ilIndex, typeStr, typeSize, typeEncoding);
+}
+
+void GetLocalTypeInfo(MethodDesc *MethodDescPtr,
+                      unsigned ilIndex,
+                      const char** typeStr,
+                      ULONG& typeSize,
+                      int& typeEncoding)
+{
+    COR_ILMETHOD_DECODER method(MethodDescPtr->GetILHeader());
+    if (method.GetLocalVarSigTok())
+    {
+        DWORD cbSigLen;
+        PCCOR_SIGNATURE pComSig;
+        CQuickBytes qbMemberSig;
+        size_t dwL;
+
+        if (FAILED(MethodDescPtr->GetMDImport()->GetSigFromToken(method.GetLocalVarSigTok(), &cbSigLen, &pComSig)))
+        {
+            printf("\nInvalid record");
+            return;
+        }
+
+        _ASSERTE(*pComSig == IMAGE_CEE_CS_CALLCONV_LOCAL_SIG);
+        GetTypeInfoFromSignature(pComSig, cbSigLen, ilIndex, typeStr, typeSize, typeEncoding);
+    }
+}
+
+HRESULT GetArgNameByILIndex(MethodDesc* MethodDescPtr, unsigned index, LPCSTR &paramName)
+{
+    IMDInternalImport* mdImport = MethodDescPtr->GetMDImport();
+    mdParamDef paramToken;
+    USHORT seq;
+    DWORD attr;
+    HRESULT status;
+
+    // Param indexing is 1-based.
+    ULONG32 mdIndex = index + 1;
+
+    MetaSig* sig = new MetaSig(MethodDescPtr);
+    if (sig->HasThis())
+    {
+        mdIndex--;
+    }
+    delete sig;
+    status = mdImport->FindParamOfMethod(MethodDescPtr->GetMemberDef(), mdIndex, &paramToken);
+    if (status == S_OK)
+    {
+        status = mdImport->GetParamDefProps(paramToken, &seq, &attr, &paramName);
+    }
+    return status;
+}
+
+// Copy-pasted from src/debug/di/module.cpp
+HRESULT FindNativeInfoInILVariable(DWORD dwIndex,
+                                   SIZE_T ip,
+                                   ICorDebugInfo::NativeVarInfo** nativeInfoList,
+                                   unsigned int nativeInfoCount,
+                                   ICorDebugInfo::NativeVarInfo** ppNativeInfo)
+{
+    _ASSERTE(ppNativeInfo != NULL);
+    *ppNativeInfo = NULL;
+    int lastGoodOne = -1;
+    for (unsigned int i = 0; i < (unsigned)nativeInfoCount; i++)
+    {
+        if ((*nativeInfoList)[i].varNumber == dwIndex)
+        {
+            if ((lastGoodOne == -1) || ((*nativeInfoList)[lastGoodOne].startOffset < (*nativeInfoList)[i].startOffset))
+            {
+                lastGoodOne = i;
+            }
+
+            if (((*nativeInfoList)[i].startOffset <= ip) &&
+                ((*nativeInfoList)[i].endOffset > ip))
+            {
+                *ppNativeInfo = &((*nativeInfoList)[i]);
+
+                return S_OK;
+            }
+        }
+    }
+
+    if ((lastGoodOne > -1) && ((*nativeInfoList)[lastGoodOne].endOffset == ip))
+    {
+        *ppNativeInfo = &((*nativeInfoList)[lastGoodOne]);
+        return S_OK;
+    }
+
+    return CORDBG_E_IL_VAR_NOT_AVAILABLE;
+}
+
 BYTE* DebugInfoStoreNew(void * pData, size_t cBytes)
 {
     return new (nothrow) BYTE[cBytes];
@@ -30,7 +231,9 @@ BYTE* DebugInfoStoreNew(void * pData, size_t cBytes)
 HRESULT
 GetMethodNativeMap(MethodDesc* methodDesc,
                    ULONG32* numMap,
-                   DebuggerILToNativeMap** map)
+                   DebuggerILToNativeMap** map,
+                   ULONG32* pcVars,
+                   ICorDebugInfo::NativeVarInfo** ppVars)
 {
     // Use the DebugInfoStore to get IL->Native maps.
     // It doesn't matter whether we're jitted, ngenned etc.
@@ -48,8 +251,8 @@ GetMethodNativeMap(MethodDesc* methodDesc,
                                                           NULL, // allocator
                                                           &countMapCopy,
                                                           &mapCopy,
-                                                          NULL,
-                                                          NULL);
+                                                          pcVars,
+                                                          ppVars);
 
     if (!success)
     {
@@ -83,9 +286,72 @@ GetMethodNativeMap(MethodDesc* methodDesc,
     return S_OK;
 }
 
+HRESULT GetLocalsDebugInfo(MethodDesc* MethodDescPtr,
+                           LocalsInfo& locals,
+                           NewArrayHolder<LocalsDebugInfo>& localsDebug,
+                           int localsDebugSize,
+                           NewArrayHolder<ArgsDebugInfo>& argsDebug,
+                           int nArgsCount,
+                           int startNativeOffset)
+{
+
+    ICorDebugInfo::NativeVarInfo* nativeVar = NULL;
+
+    int thisOffs = 0;
+    ULONG typeSize = 0;
+    int typeEncoding = 0;
+    const char* typeStr;
+    if (!MethodDescPtr->IsStatic())
+        thisOffs = 1;
+
+    for (int i = 0; i < nArgsCount - thisOffs; i++)
+    {
+        if (FindNativeInfoInILVariable(i + thisOffs, startNativeOffset, &locals.pVars, locals.countVars, &nativeVar) ==
+            S_OK)
+        {
+            GetArgTypeInfo(MethodDescPtr, i + 1, &typeStr, typeSize, typeEncoding);
+            argsDebug[i + thisOffs].m_type_encoding = typeEncoding;
+            argsDebug[i + thisOffs].m_type_name = typeStr;
+            GetArgNameByILIndex(MethodDescPtr, i + thisOffs, argsDebug[i + thisOffs].m_arg_name);
+            argsDebug[i + thisOffs].m_type_size = typeSize;
+            argsDebug[i + thisOffs].m_il_index = i;
+            argsDebug[i + thisOffs].m_native_offset = nativeVar->loc.vlStk.vlsOffset;
+        }
+    }
+    //Add info about 'this' as first argument
+    if (thisOffs == 1)
+    {
+        if (FindNativeInfoInILVariable(0, startNativeOffset, &locals.pVars, locals.countVars, &nativeVar) == S_OK)
+        {
+            argsDebug[0].m_type_encoding = DW_ATE_address;
+            argsDebug[0].m_type_name = "this";
+            argsDebug[0].m_arg_name = "this";
+            argsDebug[0].m_type_size = sizeof(TADDR);
+            argsDebug[0].m_il_index = 0;
+            argsDebug[0].m_native_offset = nativeVar->loc.vlStk.vlsOffset;
+        }
+    }
+
+
+    for (int i = 0; i < localsDebugSize; i++)
+    {
+        if (FindNativeInfoInILVariable(
+                i + nArgsCount, startNativeOffset, &locals.pVars, locals.countVars, &nativeVar) == S_OK)
+        {
+            GetLocalTypeInfo(MethodDescPtr, i, &typeStr, typeSize, typeEncoding);
+            localsDebug[i].m_type_encoding = typeEncoding;
+            localsDebug[i].m_type_name = typeStr;
+            localsDebug[i].m_var_name = locals.localsName[i];
+            localsDebug[i].m_type_size = typeSize;
+            localsDebug[i].m_il_index = i;
+            localsDebug[i].m_native_offset = nativeVar->loc.vlStk.vlsOffset;
+        }
+    }
+    return S_OK;
+}
 /* Get mapping of IL offsets to source line numbers */
 HRESULT
-GetDebugInfoFromPDB(MethodDesc* MethodDescPtr, SymbolsInfo** symInfo, unsigned int &symInfoLen)
+GetDebugInfoFromPDB(MethodDesc* MethodDescPtr, SymbolsInfo** symInfo, unsigned int &symInfoLen,  LocalsInfo &locals)
 {
     DebuggerILToNativeMap* map = NULL;
 
@@ -93,8 +359,8 @@ GetDebugInfoFromPDB(MethodDesc* MethodDescPtr, SymbolsInfo** symInfo, unsigned i
 
     if (!getInfoForMethodDelegate)
         return E_FAIL;
-    
-    if (GetMethodNativeMap(MethodDescPtr, &numMap, &map) != S_OK)
+ 
+    if (GetMethodNativeMap(MethodDescPtr, &numMap, &map, &locals.countVars, &locals.pVars) != S_OK)
         return E_FAIL;
 
     const Module* mod = MethodDescPtr->GetMethodTable()->GetModule();
@@ -122,6 +388,19 @@ GetDebugInfoFromPDB(MethodDesc* MethodDescPtr, SymbolsInfo** symInfo, unsigned i
     *symInfo = new (nothrow) SymbolsInfo[symInfoLen];
     if (*symInfo == nullptr)
         return E_FAIL;
+    locals.size = methodDebugInfo->localsSize;
+    locals.localsName = new (nothrow) char *[locals.size];
+    if (locals.localsName == nullptr)
+        return E_FAIL;
+
+    for (ULONG32 i = 0; i < locals.size; i++)
+    {
+        size_t sizeRequired = WideCharToMultiByte(CP_UTF8, 0, methodDebugInfo->locals[i], -1, NULL, 0, NULL, NULL);
+        locals.localsName[i] = new (nothrow) char[sizeRequired];
+
+        int len = WideCharToMultiByte(
+            CP_UTF8, 0, methodDebugInfo->locals[i], -1, locals.localsName[i], sizeRequired, NULL, NULL);
+    }
 
     for (ULONG32 i = 0; i < symInfoLen; i++)
     {
@@ -135,7 +414,6 @@ GetDebugInfoFromPDB(MethodDesc* MethodDescPtr, SymbolsInfo** symInfo, unsigned i
                 s.nativeOffset = map[j].nativeStartOffset;
                 s.ilOffset = map[j].ilOffset;
                 s.fileIndex = 0;
-                //wcscpy(s.fileName, sp.fileName);
                 int len = WideCharToMultiByte(CP_UTF8, 0, sp.fileName, -1, s.fileName, sizeof(s.fileName), NULL, NULL);
                 s.fileName[len] = 0;
                 s.lineNumber = sp.lineNumber;
@@ -212,7 +490,7 @@ struct SectionHeader {
 
 /* Static data for .debug_str section */
 const char* DebugStrings[] = {
-    "CoreCLR", "" /* module name */, "" /* module path */, "" /* method name */, "int"
+  "CoreCLR", "" /* module name */, "" /* module path */, "" /* method name */
 };
 
 const int DebugStringCount = sizeof(DebugStrings) / sizeof(DebugStrings[0]);
@@ -222,11 +500,34 @@ const unsigned char AbbrevTable[] = {
     1, DW_TAG_compile_unit, DW_CHILDREN_yes,
         DW_AT_producer, DW_FORM_strp, DW_AT_language, DW_FORM_data2, DW_AT_name, DW_FORM_strp,
         DW_AT_stmt_list, DW_FORM_sec_offset, 0, 0,
-    2, DW_TAG_subprogram, DW_CHILDREN_no,
+
+    2, DW_TAG_base_type, DW_CHILDREN_no,
+        DW_AT_name, DW_FORM_strp, DW_AT_encoding, DW_FORM_data1, DW_AT_byte_size, DW_FORM_data1, 0, 0,
+
+    3, DW_TAG_typedef, DW_CHILDREN_no,
         DW_AT_name, DW_FORM_strp, DW_AT_decl_file, DW_FORM_data1, DW_AT_decl_line, DW_FORM_data1,
-        DW_AT_type, DW_FORM_ref4, DW_AT_external, DW_FORM_flag_present, 0, 0,
-    3, DW_TAG_base_type, DW_CHILDREN_no,
-        DW_AT_name, DW_FORM_strp, DW_AT_encoding, DW_FORM_data1, DW_AT_byte_size, DW_FORM_data1,0, 0,
+        DW_AT_type, DW_FORM_ref4, 0, 0,
+
+    4, DW_TAG_subprogram, DW_CHILDREN_yes,
+        DW_AT_name, DW_FORM_strp, DW_AT_decl_file, DW_FORM_data1, DW_AT_decl_line, DW_FORM_data1,
+        DW_AT_type, DW_FORM_ref4, DW_AT_external, DW_FORM_flag_present,
+        DW_AT_low_pc, DW_FORM_addr, DW_AT_high_pc,
+#if defined(_TARGET_AMD64_)
+        DW_FORM_data8,
+#elif defined(_TARGET_ARM_)
+        DW_FORM_data4,
+#else
+#error Unsupported platform!
+#endif
+        DW_AT_frame_base, DW_FORM_exprloc, 0, 0,
+
+    5, DW_TAG_variable, DW_CHILDREN_no,
+        DW_AT_name, DW_FORM_strp, DW_AT_decl_file, DW_FORM_data1, DW_AT_decl_line, DW_FORM_data1, DW_AT_type,
+        DW_FORM_ref4, DW_AT_location, DW_FORM_exprloc, 0, 0,
+
+    6, DW_TAG_formal_parameter, DW_CHILDREN_no,
+        DW_AT_name, DW_FORM_strp, DW_AT_decl_file, DW_FORM_data1, DW_AT_decl_line, DW_FORM_data1, DW_AT_type,
+        DW_FORM_ref4, DW_AT_location, DW_FORM_exprloc, 0, 0,
     0
 };
 
@@ -242,27 +543,62 @@ DwarfLineNumHeader LineNumHeader = {
 };
 
 /* Static data for .debug_info */
-struct __attribute__((packed)) DebugInfo
+struct __attribute__((packed)) DebugInfoCU
 {
     uint8_t m_cu_abbrev;
     uint32_t m_prod_off;
     uint16_t m_lang;
     uint32_t m_cu_name;
     uint32_t m_line_num;
-    
+} debugInfoCU = {
+    1, 0, DW_LANG_C89, 0, 0
+};
+
+struct __attribute__((packed)) DebugInfoSub
+{
     uint8_t m_sub_abbrev;
     uint32_t m_sub_name;
     uint8_t m_file, m_line;
     uint32_t m_sub_type;
-    
+#if defined(_TARGET_AMD64_)
+    uint64_t m_sub_low_pc, m_sub_high_pc;
+#elif defined(_TARGET_ARM_)
+    uint32_t m_sub_low_pc, m_sub_high_pc;
+#else
+#error Unsupported platform!
+#endif
+    uint8_t m_sub_loc[2];
+} debugInfoSub = {
+    4, 0, 1, 1, 0x1a, 0, 0, {1,
+#if defined(_TARGET_AMD64_)
+        DW_OP_reg6
+#elif defined(_TARGET_ARM_)
+        DW_OP_reg11
+#else
+#error Unsupported platform!
+#endif
+    },
+};
+
+
+
+struct __attribute__((packed)) DebugInfoType
+{
     uint8_t m_type_abbrev;
     uint32_t m_type_name;
     uint8_t m_encoding;
     uint8_t m_byte_size;
-} debugInfo = {
-    1, 0, DW_LANG_C89, 0, 0,
-    2, 0, 1, 1, 37,
-    3, 0, DW_ATE_signed, 4
+};
+
+DebugInfoType retType;
+
+struct __attribute__((packed)) DebugInfoVar
+{
+    uint8_t m_var_abbrev;
+    uint32_t m_var_name;
+    uint8_t m_var_file, m_var_line;
+    uint32_t m_var_type;
+    uint8_t m_var_loc[3];
 };
 
 /* static data for symbol strings */
@@ -282,18 +618,20 @@ TADDR MinCallAddr, MaxCallAddr;
 void NotifyGdb::MethodCompiled(MethodDesc* MethodDescPtr)
 {
     PCODE pCode = MethodDescPtr->GetNativeCode();
-
     if (pCode == NULL)
         return;
     unsigned int symInfoLen = 0;
     NewArrayHolder<SymbolsInfo> symInfo = nullptr;
+    LocalsInfo locals;
+
+
 
     /* Get method name & size of jitted code */
     LPCUTF8 methodName = MethodDescPtr->GetName();
     EECodeInfo codeInfo(pCode);
     TADDR codeSize = codeInfo.GetCodeManager()->GetFunctionSize(codeInfo.GetGCInfoToken());
     
-#ifdef _TARGET_ARM_    
+#ifdef _TARGET_ARM_
     pCode &= ~1; // clear thumb flag for debug info
 #endif    
 
@@ -377,11 +715,31 @@ void NotifyGdb::MethodCompiled(MethodDesc* MethodDescPtr)
     pCH->SetCalledMethods(NULL);
 
     /* Get debug info for method from portable PDB */
-    HRESULT hr = GetDebugInfoFromPDB(MethodDescPtr, &symInfo, symInfoLen);
+    HRESULT hr = GetDebugInfoFromPDB(MethodDescPtr, &symInfo, symInfoLen, locals);
     if (FAILED(hr) || symInfoLen == 0)
     {
         return;
     }
+
+    NewArrayHolder<LocalsDebugInfo> localsDebug = new(nothrow) LocalsDebugInfo[locals.size];
+
+    MetaSig* sig = new MetaSig(MethodDescPtr);
+    int nArgsCount = sig->NumFixedArgs();
+    if (sig->HasThis())
+        nArgsCount++;
+    delete sig;
+
+    ULONG typeSize = 0;
+    int typeEncoding = 0;
+    const char* typeStr;
+    GetArgTypeInfo(MethodDescPtr, 0, &typeStr, typeSize, typeEncoding);
+    retType.m_type_abbrev = 2;
+    retType.m_encoding = typeEncoding;
+    retType.m_byte_size = typeSize;
+
+    NewArrayHolder<ArgsDebugInfo> argsDebug = new(nothrow) ArgsDebugInfo[nArgsCount];
+
+    GetLocalsDebugInfo(MethodDescPtr, locals, localsDebug, locals.size, argsDebug, nArgsCount, symInfo[0].nativeOffset);
 
     MemBuf elfHeader, sectHeaders, sectStr, sectSymTab, sectStrTab, dbgInfo, dbgAbbrev, dbgPubname, dbgPubType, dbgLine,
         dbgStr, elfFile;
@@ -391,7 +749,8 @@ void NotifyGdb::MethodCompiled(MethodDesc* MethodDescPtr)
     {
         return;
     }
-    
+    debugInfoSub.m_sub_low_pc = pCode;
+    debugInfoSub.m_sub_high_pc = codeSize;
     /* Build .debug_line section */
     if (!BuildLineTable(dbgLine, pCode, symInfo, symInfoLen))
     {
@@ -402,25 +761,29 @@ void NotifyGdb::MethodCompiled(MethodDesc* MethodDescPtr)
     DebugStrings[3] = methodName;
     
     /* Build .debug_str section */
-    if (!BuildDebugStrings(dbgStr))
+    if (!BuildDebugStrings(dbgStr, argsDebug, nArgsCount, localsDebug, locals.size, typeStr))
     {
         return;
     }
     
     /* Build .debug_info section */
-    if (!BuildDebugInfo(dbgInfo))
+    if (!BuildDebugInfo(dbgInfo, argsDebug, nArgsCount, localsDebug, locals.size))
     {
         return;
     }
-    
+
+    for (int i = 0; i < locals.size; i++)
+    {
+        delete[] locals.localsName[i];
+    }
     /* Build .debug_pubname section */
-    if (!BuildDebugPub(dbgPubname, methodName, dbgInfo.MemSize, 26))
+    if (!BuildDebugPub(dbgPubname, methodName, dbgInfo.MemSize, 0x28))
     {
         return;
     }
     
     /* Build debug_pubtype section */
-    if (!BuildDebugPub(dbgPubType, "int", dbgInfo.MemSize, 37))
+    if (!BuildDebugPub(dbgPubType, "int", dbgInfo.MemSize, 0x1a))
     {
         return;
     }
@@ -501,7 +864,7 @@ void NotifyGdb::MethodCompiled(MethodDesc* MethodDescPtr)
     ++pShdr; // .thunks
     pShdr->sh_addr = MinCallAddr;
     pShdr->sh_size = (MaxCallAddr - MinCallAddr) + 8;
-    
+
     /* Build ELF header */
     if (!BuildELFHeader(elfHeader))
     {
@@ -560,8 +923,8 @@ void NotifyGdb::MethodCompiled(MethodDesc* MethodDescPtr)
 
 #ifdef GDBJIT_DUMPELF
     DumpElf(methodName, elfFile);
-#endif    
-    
+#endif
+
     /* Create GDB JIT structures */
     jit_code_entry* jit_symbols = new (nothrow) jit_code_entry;
     
@@ -843,7 +1206,11 @@ bool NotifyGdb::BuildLineProg(MemBuf& buf, PCODE startAddr, SymbolsInfo* lines, 
 }
 
 /* Build the DWARF .debug_str section */
-bool NotifyGdb::BuildDebugStrings(MemBuf& buf)
+bool NotifyGdb::BuildDebugStrings(MemBuf& buf,
+                                  NewArrayHolder<ArgsDebugInfo>& argsDebug,
+                                  unsigned int argsDebugSize,
+                                  NewArrayHolder<LocalsDebugInfo>& localsDebug,
+                                  unsigned int localsDebugSize, const char *retTypeStr)
 {
     uint32_t totalLength = 0;
     
@@ -852,7 +1219,28 @@ bool NotifyGdb::BuildDebugStrings(MemBuf& buf)
     {
         totalLength += strlen(DebugStrings[i]) + 1;
     }
-    
+
+    retType.m_type_name = totalLength;
+    totalLength += strlen(retTypeStr) + 1;
+
+    for (int i = 0; i < argsDebugSize; ++i)
+    {
+        argsDebug[i].m_type_name_offset = totalLength;
+        totalLength += strlen(argsDebug[i].m_type_name) + 1;
+
+        argsDebug[i].m_arg_name_offset = totalLength;
+        totalLength += strlen(argsDebug[i].m_arg_name) + 1;
+    }
+
+    for (int i = 0; i < localsDebugSize; ++i)
+    {
+        localsDebug[i].m_type_name_offset = totalLength;
+        totalLength += strlen(localsDebug[i].m_type_name) + 1;
+
+        localsDebug[i].m_var_name_offset = totalLength;
+        totalLength += strlen(localsDebug[i].m_var_name) + 1;
+    }
+
     buf.MemSize = totalLength;
     buf.MemPtr = new (nothrow) char[totalLength];
     
@@ -866,7 +1254,27 @@ bool NotifyGdb::BuildDebugStrings(MemBuf& buf)
         strcpy(bufPtr, DebugStrings[i]);
         bufPtr += strlen(DebugStrings[i]) + 1;
     }
-    
+
+    strcpy(bufPtr, retTypeStr);
+    bufPtr += strlen(retTypeStr) + 1;
+    for (int i = 0; i < argsDebugSize; ++i)
+    {
+        strcpy(bufPtr, argsDebug[i].m_type_name);
+        bufPtr += strlen(argsDebug[i].m_type_name) + 1;
+
+        strcpy(bufPtr, argsDebug[i].m_arg_name);
+        bufPtr += strlen(argsDebug[i].m_arg_name) + 1;
+    }
+
+    for (int i = 0; i < localsDebugSize; ++i)
+    {
+        strcpy(bufPtr, localsDebug[i].m_type_name);
+        bufPtr += strlen(localsDebug[i].m_type_name) + 1;
+
+        strcpy(bufPtr, localsDebug[i].m_var_name);
+        bufPtr += strlen(localsDebug[i].m_var_name) + 1;
+    }
+
     return true;
 }
 
@@ -875,7 +1283,7 @@ bool NotifyGdb::BuildDebugAbbrev(MemBuf& buf)
 {
     buf.MemPtr = new (nothrow) char[AbbrevTableSize];
     buf.MemSize = AbbrevTableSize;
-    
+
     if (buf.MemPtr == nullptr)
         return false;
     
@@ -884,30 +1292,101 @@ bool NotifyGdb::BuildDebugAbbrev(MemBuf& buf)
 }
 
 /* Build tge DWARF .debug_info section */
-bool NotifyGdb::BuildDebugInfo(MemBuf& buf)
+bool NotifyGdb::BuildDebugInfo(MemBuf& buf, NewArrayHolder<ArgsDebugInfo> &argsDebug, unsigned int argsDebugSize,
+                               NewArrayHolder<LocalsDebugInfo> &localsDebug, unsigned int localsDebugSize)
 {
-    buf.MemSize = sizeof(DwarfCompUnit) + sizeof(DebugInfo) + 1;
+
+    buf.MemSize = sizeof(DwarfCompUnit) + sizeof(DebugInfoCU) + sizeof(DebugInfoSub) + sizeof(DebugInfoType) +
+      (sizeof(DebugInfoVar) + sizeof(DebugInfoType)) * (localsDebugSize + argsDebugSize) + 2;
     buf.MemPtr = new (nothrow) char[buf.MemSize];
 
     if (buf.MemPtr == nullptr)
         return false;
-    
+    int offset = 0;
     /* Compile uint header */
     DwarfCompUnit* cu = reinterpret_cast<DwarfCompUnit*>(buf.MemPtr.GetValue());
     cu->m_length = buf.MemSize - sizeof(uint32_t);
     cu->m_version = 4;
     cu->m_abbrev_offset = 0;
     cu->m_addr_size = ADDRESS_SIZE;
-    
+    offset += sizeof(DwarfCompUnit);
+    DebugInfoCU* diCU =
+       reinterpret_cast<DebugInfoCU*>(buf.MemPtr + offset);
+    memcpy(buf.MemPtr + offset, &debugInfoCU, sizeof(DebugInfoCU));
+    offset += sizeof(DebugInfoCU);
+    diCU->m_prod_off = 0;
+    diCU->m_cu_name = strlen(DebugStrings[0]) + 1;
+    debugInfoSub.m_sub_type = offset;
+
+
+    memcpy(buf.MemPtr + offset, &retType, sizeof(DebugInfoType));
+    offset += sizeof(DebugInfoType);
+
+    DebugInfoType* bufType = new (nothrow) DebugInfoType[localsDebugSize + argsDebugSize];
+    if (bufType == nullptr)
+        return false;
+    // TODO: args
+    for (int i = 0; i < argsDebugSize; i++)
+    {
+        bufType[i].m_type_abbrev = 2;
+        bufType[i].m_type_name = argsDebug[i].m_type_name_offset;
+        bufType[i].m_encoding = argsDebug[i].m_type_encoding;
+        bufType[i].m_byte_size = argsDebug[i].m_type_size;
+        argsDebug[i].m_type_offset = offset + i * sizeof(DebugInfoType);
+    }
+ 
+    for (int i = argsDebugSize; i < (localsDebugSize + argsDebugSize); i++)
+    {
+        bufType[i].m_type_abbrev = 2;
+        bufType[i].m_type_name = localsDebug[i-argsDebugSize].m_type_name_offset;
+        bufType[i].m_encoding = localsDebug[i-argsDebugSize].m_type_encoding;
+        bufType[i].m_byte_size = localsDebug[i-argsDebugSize].m_type_size;
+        localsDebug[i - argsDebugSize].m_type_offset = offset + i * sizeof(DebugInfoType);
+    }
+    memcpy(buf.MemPtr + offset, bufType, sizeof(DebugInfoType) * (localsDebugSize + argsDebugSize));
+    offset += sizeof(DebugInfoType) * (localsDebugSize + argsDebugSize);
+
     /* copy debug information */
-    DebugInfo* di = reinterpret_cast<DebugInfo*>(buf.MemPtr + sizeof(DwarfCompUnit));
-    memcpy(buf.MemPtr + sizeof(DwarfCompUnit), &debugInfo, sizeof(DebugInfo));
-    di->m_prod_off = 0;
-    di->m_cu_name = strlen(DebugStrings[0]) + 1;
-    di->m_sub_name = strlen(DebugStrings[0]) + 1 + strlen(DebugStrings[1]) + 1 + strlen(DebugStrings[2]) + 1;
-    di->m_type_name = strlen(DebugStrings[0]) + 1 + strlen(DebugStrings[1]) + 1 + strlen(DebugStrings[2]) + 1 + strlen(DebugStrings[3]) + 1;
-    
+    DebugInfoSub* diSub = reinterpret_cast<DebugInfoSub*>(buf.MemPtr + offset);
+    memcpy(buf.MemPtr + offset, &debugInfoSub, sizeof(DebugInfoSub));
+    diSub->m_sub_name = strlen(DebugStrings[0]) + 1 + strlen(DebugStrings[1]) + 1 + strlen(DebugStrings[2]) + 1;
+    offset += sizeof(DebugInfoSub);
+    DebugInfoVar* bufVar = new (nothrow) DebugInfoVar[localsDebugSize + argsDebugSize];
+    if (bufVar == nullptr)
+        return false;
+
+    for (int i = 0; i < argsDebugSize; i++)
+    {
+        bufVar[i].m_var_abbrev = 6;
+        bufVar[i].m_var_name = argsDebug[i].m_arg_name_offset;
+        bufVar[i].m_var_file = 1;
+        bufVar[i].m_var_line = 1;
+        bufVar[i].m_var_type = argsDebug[i].m_type_offset;
+        char cnv_buf[2];
+        int len = Leb128Encode(static_cast<uint32_t>(argsDebug[i].m_native_offset), cnv_buf, sizeof(cnv_buf));
+        bufVar[i].m_var_loc[0] = 2;
+        bufVar[i].m_var_loc[1] = DW_OP_fbreg;
+        bufVar[i].m_var_loc[2] = cnv_buf[0];
+    }
+
+    for (int i = argsDebugSize; i < (localsDebugSize + argsDebugSize); i++)
+    {
+        bufVar[i].m_var_abbrev = 5;
+        bufVar[i].m_var_name = localsDebug[i-argsDebugSize].m_var_name_offset;
+        bufVar[i].m_var_file = 1;
+        bufVar[i].m_var_line = 1;
+        bufVar[i].m_var_type = localsDebug[i-argsDebugSize].m_type_offset;
+        char cnv_buf[2];
+        int len = Leb128Encode(
+            static_cast<uint32_t>(localsDebug[i - argsDebugSize].m_native_offset), cnv_buf, sizeof(cnv_buf));
+        bufVar[i].m_var_loc[0] = 2;
+        bufVar[i].m_var_loc[1] = DW_OP_fbreg;
+        bufVar[i].m_var_loc[2] = cnv_buf[0];
+    }
+    memcpy(buf.MemPtr + offset, bufVar, sizeof(DebugInfoVar) * (localsDebugSize + argsDebugSize));
+
     /* zero end marker */
+    buf.MemPtr[buf.MemSize-2] = 0;
     buf.MemPtr[buf.MemSize-1] = 0;
     return true;
 }
@@ -967,7 +1446,7 @@ bool NotifyGdb::CollectCalledMethods(CalledMethod* pCalledMethods)
         char buf[256];
         MethodDesc* pMD = pList->GetMethodDesc();
         sprintf(buf, "__thunk_%s", pMD->GetName());
-        SymbolNames[i].m_name = new char[strlen(buf)];
+        SymbolNames[i].m_name = new char[strlen(buf) + 1];
         strcpy((char*)SymbolNames[i].m_name, buf);
         TADDR callAddr = (TADDR)pList->GetCallAddr();
         SymbolNames[i].m_value = callAddr - MinCallAddr;

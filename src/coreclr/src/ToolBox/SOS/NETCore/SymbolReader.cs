@@ -28,6 +28,9 @@ namespace SOS
         {
             public IntPtr points;
             public int size;
+            public IntPtr locals;
+            public int localsSize;
+
         }
 
         /// <summary>
@@ -378,7 +381,48 @@ namespace SOS
             }
             return false;
         }
+        internal static bool GetLocalsInfoForMethod(string assemblyPath, int methodToken, out List<string> locals)
+        {
+            locals = null;
 
+            OpenedReader openedReader = GetReader(assemblyPath, isFileLayout: true, peStream: null, pdbStream: null);
+            if (openedReader == null)
+                return false;
+
+            using (openedReader)
+            {
+                try
+                {
+                    Handle handle = MetadataTokens.Handle(methodToken);
+                    if (handle.Kind != HandleKind.MethodDefinition)
+                        return false;
+
+                    locals = new List<string>();
+
+                    MethodDebugInformationHandle methodDebugHandle =
+                        ((MethodDefinitionHandle)handle).ToDebugInformationHandle();
+                    LocalScopeHandleCollection localScopes = openedReader.Reader.GetLocalScopes(methodDebugHandle);
+                    foreach (LocalScopeHandle scopeHandle in localScopes)
+                    {
+                        LocalScope scope = openedReader.Reader.GetLocalScope(scopeHandle);
+                        LocalVariableHandleCollection localVars = scope.GetLocalVariables();
+                        foreach (LocalVariableHandle varHandle in localVars)
+                        {
+                            LocalVariable localVar = openedReader.Reader.GetLocalVariable(varHandle);
+                            if (localVar.Attributes == LocalVariableAttributes.DebuggerHidden)
+                                continue;
+                            locals.Add(openedReader.Reader.GetString(localVar.Name));
+                        }
+                    }
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+            return true;
+
+        }
         /// <summary>
         /// Returns source name, line numbers and IL offsets for given method token.
         /// </summary>
@@ -392,8 +436,14 @@ namespace SOS
             try
             {
                 List<DebugInfo> points = null;
+                List<string> locals = null;
 
                 if (!GetDebugInfoForMethod(assemblyPath, methodToken, out points))
+                {
+                    return false;
+                }
+
+                if (!GetLocalsInfoForMethod(assemblyPath, methodToken, out locals))
                 {
                     return false;
                 }
@@ -406,6 +456,14 @@ namespace SOS
                 {
                     Marshal.StructureToPtr(info, ptr, false);
                     ptr = (IntPtr)(ptr.ToInt64() + structSize);
+                }
+                debugInfo.localsSize = locals.Count;
+                debugInfo.locals = Marshal.AllocHGlobal(debugInfo.localsSize * Marshal.SizeOf<IntPtr>());
+                IntPtr ptrLocals = debugInfo.locals;
+                foreach (string s in locals)
+                {
+                    Marshal.WriteIntPtr(ptrLocals, Marshal.StringToHGlobalUni(s));
+                    ptrLocals += Marshal.SizeOf<IntPtr>();
                 }
                 return true;
             }

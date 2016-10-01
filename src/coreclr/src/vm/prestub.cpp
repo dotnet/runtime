@@ -228,7 +228,7 @@ void DACNotifyCompilationFinished(MethodDesc *methodDesc)
         // Are we listed?
         USHORT jnt = jn.Requested((TADDR) modulePtr, t);
         if (jnt & CLRDATA_METHNOTIFY_GENERATED)
-        {            
+        {
             // If so, throw an exception!
 #endif
             DACNotify::DoJITNotification(methodDesc);
