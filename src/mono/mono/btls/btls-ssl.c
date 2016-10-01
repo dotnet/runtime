@@ -201,3 +201,9 @@ mono_btls_ssl_set_verify_param (MonoBtlsSsl *ptr, const MonoBtlsX509VerifyParam 
 {
 	return SSL_set1_param (ptr->ssl, mono_btls_x509_verify_param_peek_param (param));
 }
+
+int
+mono_btls_ssl_set_server_name (MonoBtlsSsl *ptr, const char *name)
+{
+	return SSL_set_tlsext_host_name (ptr->ssl, name);
+}
