@@ -138,9 +138,13 @@ namespace System
         public static string TargetFrameworkName { get { throw null; } }
         [System.Security.SecuritySafeCriticalAttribute]
         public static object GetData(string name) { throw null; }
+        [System.Security.SecuritySafeCriticalAttribute]
+        public static void SetData(string name, object data) { }
         public static void SetSwitch(string switchName, bool isEnabled) { }
         public static bool TryGetSwitch(string switchName, out bool isEnabled) { isEnabled = default(bool); throw null; }
         public static event UnhandledExceptionEventHandler UnhandledException { add { } remove { } }
+        public static event System.EventHandler<System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs> FirstChanceException { add { } remove { } }
+        public static event System.EventHandler ProcessExit { add { } remove { } }
     }
     [System.Runtime.InteropServices.ClassInterfaceAttribute((System.Runtime.InteropServices.ClassInterfaceType)(0))]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
@@ -10259,6 +10263,11 @@ namespace System.Runtime.ExceptionServices
     public sealed partial class HandleProcessCorruptedStateExceptionsAttribute : System.Attribute
     {
         public HandleProcessCorruptedStateExceptionsAttribute() { }
+    }
+    public sealed partial class FirstChanceExceptionEventArgs : EventArgs
+    {
+        public FirstChanceExceptionEventArgs(Exception exception) { }
+        public Exception Exception { get { throw null; } }
     }
 }
 namespace System.Runtime.InteropServices
