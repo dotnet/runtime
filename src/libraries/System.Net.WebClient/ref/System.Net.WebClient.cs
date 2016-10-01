@@ -81,7 +81,7 @@ namespace System.Net
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public bool AllowWriteStreamBuffering { get { throw null; } set { } }
         public string BaseAddress { get { throw null; } set { } }
-        //public System.Net.Cache.RequestCachePolicy CachePolicy { get { throw null; } set { } } // TODO: Add back when System.Net.Cache types are available
+        public System.Net.Cache.RequestCachePolicy CachePolicy { get { throw null; } set { } }
         public System.Net.ICredentials Credentials { get { throw null; } set { } }
         public System.Text.Encoding Encoding { get { throw null; } set { } }
         public System.Net.WebHeaderCollection Headers { get { throw null; } set { } }

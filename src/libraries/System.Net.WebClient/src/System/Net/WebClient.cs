@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Net.Cache;
 using System.Net.Http;
 using System.Security;
 using System.Text;
@@ -37,7 +38,6 @@ namespace System.Net
         private ProgressData _progress;
         private IWebProxy _proxy;
         private bool _proxySet;
-        //private RequestCachePolicy _cachePolicy;
         private int _callNesting; // > 0 if we're in a Read/Write call
         private AsyncOperation _asyncOp;
 
@@ -207,11 +207,7 @@ namespace System.Net
             }
         }
 
-        //public RequestCachePolicy CachePolicy
-        //{
-        //    get { return _cachePolicy; }
-        //    set { _cachePolicy = value; }
-        //}
+        public RequestCachePolicy CachePolicy { get; set; }
 
         public bool IsBusy => _asyncOp != null;
 
@@ -240,11 +236,10 @@ namespace System.Net
                 request.Proxy = _proxy;
             }
 
-            // TODO #11881: Uncomment once member is available
-            //if (_cachePolicy != null)
-            //{
-            //    request.CachePolicy = _cachePolicy;
-            //}
+            if (CachePolicy != null)
+            {
+                request.CachePolicy = CachePolicy;
+            }
 
             return request;
         }
