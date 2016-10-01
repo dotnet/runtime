@@ -48,10 +48,10 @@
     <Compile Include="TC_SchemaSet_XmlNameTable.cs" />
     <Compile Include="TC_SchemaSet_XmlResolver.cs" />
     <Compile Include="XmlSystemPathResolverTests.cs" />
-    <Content Include="..\TestFiles\**\*.*">
+    <SupplementalTestData Include="..\TestFiles\**\*.*">
       <Link>TestFiles\%(RecursiveDir)%(Filename)%(Extension)</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+      <DestinationDir>TestFiles\%(RecursiveDir)</DestinationDir>
+    </SupplementalTestData>
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />

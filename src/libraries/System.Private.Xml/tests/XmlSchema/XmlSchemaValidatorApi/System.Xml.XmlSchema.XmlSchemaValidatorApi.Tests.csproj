@@ -33,10 +33,10 @@
     <Compile Include="ValidatorModule.cs" />
     <Compile Include="XmlTestSettings.cs" />
     <Compile Include="CXmlTestResolver.cs" />
-    <Content Include="..\TestFiles\**\*.*">
+    <SupplementalTestData Include="..\TestFiles\**\*.*">
       <Link>TestFiles\%(RecursiveDir)%(Filename)%(Extension)</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+      <DestinationDir>TestFiles\%(RecursiveDir)</DestinationDir>
+    </SupplementalTestData>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\System.Xml.ReaderWriter\pkg\System.Xml.ReaderWriter.pkgproj" />
