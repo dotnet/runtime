@@ -119,7 +119,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// Tests various values of FileAccess used to construct a FileStream and MemoryMappedFileAccess used
         /// to construct a map over that stream on Windows.  The combinations should all be invalid, resulting in exception.
         /// </summary>
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [Theory]
         [InlineData(FileAccess.Read, MemoryMappedFileAccess.ReadWrite)]
         [InlineData(FileAccess.Read, MemoryMappedFileAccess.ReadExecute)]
@@ -146,7 +146,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// Tests various values of FileAccess used to construct a FileStream and MemoryMappedFileAccess used
         /// to construct a map over that stream on Unix.  The combinations should all be invalid, resulting in exception.
         /// </summary>
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [Theory]
         [InlineData(FileAccess.Read, MemoryMappedFileAccess.ReadWrite)]
         [InlineData(FileAccess.Read, MemoryMappedFileAccess.ReadExecute)]
@@ -192,7 +192,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test to verify that map names are left unsupported on Unix.
         /// </summary>
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [Theory]
         [MemberData(nameof(CreateValidMapNames))]
         public void MapNamesNotSupported_Unix(string mapName)
@@ -576,7 +576,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// Test exceptional behavior when trying to create a map for a read-write file that's currently in use.
         /// </summary>
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // FileShare is limited on Unix, with None == exclusive, everything else == concurrent
+        [PlatformSpecific(TestPlatforms.Windows)] // FileShare is limited on Unix, with None == exclusive, everything else == concurrent
         public void FileInUse_CreateFromFile_FailsWithExistingReadWriteFile()
         {
             // Already opened with a FileStream
@@ -591,7 +591,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// Test exceptional behavior when trying to create a map for a non-shared file that's currently in use.
         /// </summary>
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // FileShare is limited on Unix, with None == exclusive, everything else == concurrent
+        [PlatformSpecific(TestPlatforms.Windows)] // FileShare is limited on Unix, with None == exclusive, everything else == concurrent
         public void FileInUse_CreateFromFile_FailsWithExistingReadWriteMap()
         {
             // Already opened with another read-write map
@@ -636,7 +636,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test the exceptional behavior of *Execute access levels.
         /// </summary>
-        [PlatformSpecific(PlatformID.Windows)] // Unix model for executable differs from Windows
+        [PlatformSpecific(TestPlatforms.Windows)] // Unix model for executable differs from Windows
         [Theory]
         [InlineData(MemoryMappedFileAccess.ReadExecute)]
         [InlineData(MemoryMappedFileAccess.ReadWriteExecute)]
@@ -813,7 +813,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test the exceptional behavior when attempting to create a map so large it's not supported.
         /// </summary>
-        [PlatformSpecific(~PlatformID.OSX)] // Because of the file-based backing, OS X pops up a warning dialog about being out-of-space (even though we clean up immediately)
+        [PlatformSpecific(~TestPlatforms.OSX)] // Because of the file-based backing, OS X pops up a warning dialog about being out-of-space (even though we clean up immediately)
         [Fact]
         public void TooLargeCapacity()
         {
@@ -836,7 +836,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// Test to verify map names are handled appropriately, causing a conflict when they're active but
         /// reusable in a sequential manner.
         /// </summary>
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [Theory]
         [MemberData(nameof(CreateValidMapNames))]
         public void ReusingNames_Windows(string name)

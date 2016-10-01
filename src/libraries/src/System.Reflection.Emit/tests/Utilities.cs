@@ -71,7 +71,7 @@ namespace System.Reflection.Emit.Tests
                 Assert.Equal(createdType, module.GetType(name, false, false));
                 Assert.Equal(createdType, module.GetType(name, true, false));
 
-                // [ActiveIssue(10989, PlatformID.AnyUnix)]
+                // [ActiveIssue(10989, TestPlatforms.AnyUnix)]
                 // Assert.Equal(createdType, module.GetType(name, true, true));
                 // Assert.Equal(createdType, module.GetType(name.ToLowerInvariant(), true, true));
                 // Assert.Equal(createdType, module.GetType(name.ToUpperInvariant(), true, true));

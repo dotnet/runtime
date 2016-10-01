@@ -44,7 +44,7 @@ namespace System.IO.Pipes.Tests
         [InlineData(PipeDirection.In)]
         [InlineData(PipeDirection.InOut)]
         [InlineData(PipeDirection.Out)]
-        [PlatformSpecific(PlatformID.Windows)] // "anonymous" only reserved on Windows
+        [PlatformSpecific(TestPlatforms.Windows)] // "anonymous" only reserved on Windows
         public static void ReservedPipeName_Throws_ArgumentOutOfRangeException(PipeDirection direction)
         {
             const string reservedName = "anonymous";
@@ -68,7 +68,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // can't access SafePipeHandle on Unix until after connection created
+        [PlatformSpecific(TestPlatforms.Windows)] // can't access SafePipeHandle on Unix until after connection created
         public static void CreateWithNegativeOneServerInstances_DefaultsToMaxServerInstances()
         {
             // When passed -1 as the maxnumberofserverisntances, the NamedPipeServerStream.Windows class
@@ -194,7 +194,7 @@ namespace System.IO.Pipes.Tests
         [InlineData(PipeDirection.In)]
         [InlineData(PipeDirection.InOut)]
         [InlineData(PipeDirection.Out)]
-        [PlatformSpecific(PlatformID.Windows)] // accessing SafePipeHandle on Unix fails for a non-connected stream
+        [PlatformSpecific(TestPlatforms.Windows)] // accessing SafePipeHandle on Unix fails for a non-connected stream
         public static void Windows_CreateFromDisposedServerHandle_Throws_ObjectDisposedException(PipeDirection direction)
         {
             // The pipe is closed when we try to make a new Stream with it
@@ -205,7 +205,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void Unix_GetHandleOfNewServerStream_Throws_InvalidOperationException()
         {
             using (var pipe = new NamedPipeServerStream(GetUniquePipeName(), PipeDirection.Out, 1, PipeTransmissionMode.Byte))
@@ -218,7 +218,7 @@ namespace System.IO.Pipes.Tests
         [InlineData(PipeDirection.In)]
         [InlineData(PipeDirection.InOut)]
         [InlineData(PipeDirection.Out)]
-        [PlatformSpecific(PlatformID.Windows)] // accessing SafePipeHandle on Unix fails for a non-connected stream
+        [PlatformSpecific(TestPlatforms.Windows)] // accessing SafePipeHandle on Unix fails for a non-connected stream
         public static void Windows_CreateFromAlreadyBoundHandle_Throws_ArgumentException(PipeDirection direction)
         {
             // The pipe is already bound
@@ -229,7 +229,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // NumberOfServerInstances > 1 isn't supported and has undefined behavior on Unix
+        [PlatformSpecific(TestPlatforms.Windows)] // NumberOfServerInstances > 1 isn't supported and has undefined behavior on Unix
         public static void ServerCountOverMaxServerInstances_Throws_IOException()
         {
             string uniqueServerName = GetUniquePipeName();
@@ -240,7 +240,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // NumberOfServerInstances > 1 isn't supported and has undefined behavior on Unix
+        [PlatformSpecific(TestPlatforms.Windows)] // NumberOfServerInstances > 1 isn't supported and has undefined behavior on Unix
         public static void Windows_ServerCloneWithDifferentDirection_Throws_UnauthorizedAccessException()
         {
             string uniqueServerName = GetUniquePipeName();

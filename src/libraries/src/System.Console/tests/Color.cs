@@ -31,7 +31,7 @@ public class Color
     }
 
     [Fact]
-    [PlatformSpecific(PlatformID.AnyUnix)]
+    [PlatformSpecific(TestPlatforms.AnyUnix)]
     public static void RedirectedOutputDoesNotUseAnsiSequences()
     {
         // Make sure that redirecting to a memory stream causes Console not to write out the ANSI sequences
@@ -53,7 +53,7 @@ public class Color
     }
 
     //[Fact] // the CI system redirects stdout, so we can't easily test non-redirected behavior
-    [PlatformSpecific(PlatformID.AnyUnix)]
+    [PlatformSpecific(TestPlatforms.AnyUnix)]
     public static void NonRedirectedOutputDoesUseAnsiSequences()
     {
         // Make sure that when writing out to a UnixConsoleStream, the ANSI escape sequences are properly

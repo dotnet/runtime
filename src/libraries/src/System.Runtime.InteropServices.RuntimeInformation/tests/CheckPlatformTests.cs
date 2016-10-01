@@ -9,7 +9,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
 {
     public class CheckPlatformTests
     {
-        [Fact, PlatformSpecific(PlatformID.Linux)]
+        [Fact, PlatformSpecific(TestPlatforms.Linux)]
         public void CheckLinux()
         {
             Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Linux));
@@ -27,7 +27,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
         }
 
-        [Fact, PlatformSpecific(PlatformID.NetBSD)]
+        [Fact, PlatformSpecific(TestPlatforms.NetBSD)]
         public void CheckNetBSD()
         {
             Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD")));
@@ -45,7 +45,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
         }
 
-        [Fact, PlatformSpecific(PlatformID.OSX)]
+        [Fact, PlatformSpecific(TestPlatforms.OSX)]
         public void CheckOSX()
         {
             Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
@@ -63,7 +63,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
         }
 
-        [Fact, PlatformSpecific(PlatformID.Windows)]
+        [Fact, PlatformSpecific(TestPlatforms.Windows)]
         public void CheckWindows()
         {
             Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));

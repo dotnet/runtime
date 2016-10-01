@@ -113,7 +113,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // see comment below
+        [PlatformSpecific(TestPlatforms.Windows)] // see comment below
         public async Task MulticastInterface_Set_Loopback_Succeeds()
         {
             // On Windows, we can apparently assume interface 1 is "loopback."  On other platforms, this is not a
@@ -281,7 +281,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Theory]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData(false, null, null, true)]
         [InlineData(false, null, false, true)]
         [InlineData(false, false, null, true)]

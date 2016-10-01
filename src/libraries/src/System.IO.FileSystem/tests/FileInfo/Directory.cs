@@ -48,7 +48,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(Xunit.PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void UNCShares()
         {
             var directory = Directory(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Directory", "File"));

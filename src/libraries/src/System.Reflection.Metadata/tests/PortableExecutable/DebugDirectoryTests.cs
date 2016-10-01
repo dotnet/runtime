@@ -35,14 +35,14 @@ namespace System.Reflection.PortableExecutable.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void CodeView_Loaded()
         {
             LoaderUtilities.LoadPEAndValidate(Misc.Debug, ValidateCodeView);
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void CodeView_Loaded_FromStream()
         {
             LoaderUtilities.LoadPEAndValidate(Misc.Debug, ValidateCodeView, useStream: true);
@@ -85,7 +85,7 @@ namespace System.Reflection.PortableExecutable.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void Deterministic_Loaded()
         {
             LoaderUtilities.LoadPEAndValidate(Misc.Deterministic, ValidateDeterministic);
@@ -133,14 +133,14 @@ namespace System.Reflection.PortableExecutable.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void EmbeddedPortablePdb_Loaded()
         {
             LoaderUtilities.LoadPEAndValidate(PortablePdbs.DocumentsEmbeddedDll, ValidateEmbeddedPortablePdb);
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void EmbeddedPortablePdb_Loaded_FromStream()
         {
             LoaderUtilities.LoadPEAndValidate(PortablePdbs.DocumentsEmbeddedDll, ValidateEmbeddedPortablePdb, useStream: true);

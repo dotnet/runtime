@@ -764,7 +764,7 @@ namespace System.Numerics.Tests
             VerifyRealImaginaryProperties(result, expected.Real, expected.Imaginary);
         }
 
-        [ActiveIssue(6022, PlatformID.AnyUnix)]
+        [ActiveIssue(6022, TestPlatforms.AnyUnix)]
         [Fact]
         public static void Exp_MaxReal()
         {
