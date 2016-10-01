@@ -80,6 +80,8 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
+        internal ExceptionHandler[] Handlers => _handlers;
+
         internal bool IsCatchBlockExist => _handlers != null;
 
         /// <summary>
