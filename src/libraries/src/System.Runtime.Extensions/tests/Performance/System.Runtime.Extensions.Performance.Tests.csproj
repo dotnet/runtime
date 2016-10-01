@@ -9,7 +9,7 @@
     <AssemblyName>System.Runtime.Extensions.Performance.Tests</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludePerformanceTests>true</IncludePerformanceTests>
-    <NugetTargetMoniker Condition="'$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.5</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />

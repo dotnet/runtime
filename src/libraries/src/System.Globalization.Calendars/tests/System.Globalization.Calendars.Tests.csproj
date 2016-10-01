@@ -8,7 +8,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Globalization.Calendars.Tests</AssemblyName>
     <RootNamespace>System.Globalization.Calendars.Tests</RootNamespace>
-    <NugetTargetMoniker Condition="'$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -121,11 +121,9 @@
       <Link>Common\System\PlatformDetection.cs</Link>
     </Compile>
   </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7'">
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
     <Compile Include="Misc\Calendars.netstandard1.7.cs" />
   </ItemGroup>
-
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
