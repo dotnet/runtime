@@ -129,7 +129,7 @@ namespace System.Net
         private static Exception CreateRequestAbortedException() =>
             new WebException(SR.Format(SR.net_requestaborted, WebExceptionStatus.RequestCanceled), WebExceptionStatus.RequestCanceled);
 
-        public override IAsyncResult BeginGetRequestStream(AsyncCallback callback, object state)
+        private void CheckAndMarkAsyncGetRequestStreamPending()
         {
             if (Aborted)
             {
@@ -155,25 +155,44 @@ namespace System.Net
                 }
                 _writePending = true;
             }
-
-            return TaskToApm.Begin(Task.Factory.StartNew<Stream>(s =>
-            {
-                FileWebRequest thisRef = (FileWebRequest)s;
-                try
-                {
-                    if (thisRef._stream == null)
-                    {
-                        thisRef._stream = new WebFileStream(thisRef, thisRef._uri.LocalPath, FileMode.Create, FileAccess.Write, FileShare.Read);
-                        thisRef._fileAccess = FileAccess.Write;
-                        thisRef._writing = true;
-                    }
-                    return thisRef._stream;
-                }
-                catch (Exception e) { throw new WebException(e.Message, e); }
-            }, this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default), callback, state);
         }
 
-        public override IAsyncResult BeginGetResponse(AsyncCallback callback, object state)
+        private Stream CreateWriteStream()
+        {
+            try
+            {
+                if (_stream == null)
+                {
+                    _stream = new WebFileStream(this, _uri.LocalPath, FileMode.Create, FileAccess.Write, FileShare.Read);
+                    _fileAccess = FileAccess.Write;
+                    _writing = true;
+                }
+                return _stream;
+            }
+            catch (Exception e) { throw new WebException(e.Message, e); }
+        }
+
+        public override IAsyncResult BeginGetRequestStream(AsyncCallback callback, object state)
+        {
+            CheckAndMarkAsyncGetRequestStreamPending();
+            Task<Stream> t = Task.Factory.StartNew(s => ((FileWebRequest)s).CreateWriteStream(),
+                this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            return TaskToApm.Begin(t, callback, state);
+        }
+
+        public override Task<Stream> GetRequestStreamAsync()
+        {
+            CheckAndMarkAsyncGetRequestStreamPending();
+            return Task.Factory.StartNew(s =>
+            {
+                FileWebRequest thisRef = (FileWebRequest)s;
+                Stream writeStream = thisRef.CreateWriteStream();
+                thisRef._writePending = false;
+                return writeStream;
+            }, this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+        }
+
+        private void CheckAndMarkAsyncGetResponsePending()
         {
             if (Aborted)
             {
@@ -188,32 +207,50 @@ namespace System.Net
                 }
                 _readPending = true;
             }
+        }
 
-            return TaskToApm.Begin(Task.Factory.StartNew<WebResponse>(s =>
+        private WebResponse CreateResponse()
+        {
+            if (_writePending || _writing)
             {
-                FileWebRequest thisRef = (FileWebRequest)s;
-
-                if (thisRef._writePending || thisRef._writing)
+                lock (this)
                 {
-                    lock (thisRef)
+                    if (_writePending || _writing)
                     {
-                        if (thisRef._writePending || thisRef._writing)
-                        {
-                            thisRef._blockReaderUntilRequestStreamDisposed = new ManualResetEventSlim();
-                        }
+                        _blockReaderUntilRequestStreamDisposed = new ManualResetEventSlim();
                     }
                 }
-                thisRef._blockReaderUntilRequestStreamDisposed?.Wait();
+            }
+            _blockReaderUntilRequestStreamDisposed?.Wait();
 
-                try
-                {
-                    return thisRef._response ?? (thisRef._response = new FileWebResponse(thisRef, thisRef._uri, thisRef._fileAccess, !thisRef._syncHint));
-                }
-                catch (Exception e)
-                {
-                    throw new WebException(e.Message, e);
-                }
-            }, this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default), callback, state);
+            try
+            {
+                return _response ?? (_response = new FileWebResponse(this, _uri, _fileAccess, !_syncHint));
+            }
+            catch (Exception e)
+            {
+                throw new WebException(e.Message, e);
+            }
+        }
+
+        public override IAsyncResult BeginGetResponse(AsyncCallback callback, object state)
+        {
+            CheckAndMarkAsyncGetResponsePending();
+            Task<WebResponse> t = Task.Factory.StartNew(s => ((FileWebRequest)s).CreateResponse(),
+                 this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            return TaskToApm.Begin(t, callback, state);
+        }
+
+        public override Task<WebResponse> GetResponseAsync()
+        {
+            CheckAndMarkAsyncGetResponsePending();
+            return Task.Factory.StartNew(s =>
+            {
+                var thisRef = (FileWebRequest)s;
+                WebResponse response = thisRef.CreateResponse();
+                _readPending = false;
+                return response;
+            }, this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
         public override Stream EndGetRequestStream(IAsyncResult asyncResult)
