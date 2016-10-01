@@ -27,11 +27,11 @@ namespace System.Linq.Expressions.Tests
                     .maxcontinuation 0
                   
                     IP_0000: InitParameter(0)
-                    IP_0001: LoadLocal(s: 0)
+                    IP_0001: LoadLocal(0)
                     IP_0002: LoadObject(null)
                     IP_0003: Call(Boolean op_Inequality(System.String, System.String))
                     IP_0004: BranchFalse(10) -> 14
-                    IP_0005: LoadLocal(s: 0)
+                    IP_0005: LoadLocal(0)
                     IP_0006: LoadObject(1)
                     IP_0007: Call(System.String Substring(Int32))
                     IP_0008: Call(Int32 get_Length())
@@ -79,7 +79,7 @@ namespace System.Linq.Expressions.Tests
                     {
                       IP_0001: EnterTryFinally[0] -> 11
                       IP_0002: LoadObject(42)
-                      IP_0003: LoadLocal(x: 0)
+                      IP_0003: LoadLocal(0)
                       IP_0004: Div()
                       IP_0005: Call(Int32 Abs(Int32))
                       IP_0006: Goto[1] -> 13

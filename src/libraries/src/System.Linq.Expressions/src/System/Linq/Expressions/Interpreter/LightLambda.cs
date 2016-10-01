@@ -150,7 +150,8 @@ namespace System.Linq.Expressions.Interpreter
                 sb.AppendLine();
 
                 Instruction[] instructions = _interpreter.Instructions.Instructions;
-                InstructionList.DebugView.InstructionView[] instructionViews = new InstructionArray.DebugView(_interpreter.Instructions).A0;
+                InstructionArray.DebugView debugView = new InstructionArray.DebugView(_interpreter.Instructions);
+                InstructionList.DebugView.InstructionView[] instructionViews = debugView.GetInstructionViews(includeDebugCookies: false);
 
                 for (int i = 0; i < instructions.Length; i++)
                 {
