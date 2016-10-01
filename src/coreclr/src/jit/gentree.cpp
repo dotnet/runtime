@@ -3673,17 +3673,8 @@ void Compiler::gtWalkOp(GenTree** op1WB, GenTree** op2WB, GenTree* adr, bool con
 {
     GenTreePtr op1 = *op1WB;
     GenTreePtr op2 = *op2WB;
-    GenTreePtr op1EffectiveVal;
 
-    if (op1->gtOper == GT_COMMA)
-    {
-        op1EffectiveVal = op1->gtEffectiveVal();
-        if ((op1EffectiveVal->gtOper == GT_ADD) && (!op1EffectiveVal->gtOverflow()) &&
-            (!constOnly || (op1EffectiveVal->gtOp.gtOp2->IsCnsIntOrI())))
-        {
-            op1 = op1EffectiveVal;
-        }
-    }
+    op1 = op1->gtEffectiveVal();
 
     // Now we look for op1's with non-overflow GT_ADDs [of constants]
     while ((op1->gtOper == GT_ADD) && (!op1->gtOverflow()) && (!constOnly || (op1->gtOp.gtOp2->IsCnsIntOrI())))
@@ -3708,20 +3699,12 @@ void Compiler::gtWalkOp(GenTree** op1WB, GenTree** op2WB, GenTree* adr, bool con
             op2 = tmp;
         }
 
-        if (op1->gtOper == GT_COMMA)
-        {
-            op1EffectiveVal = op1->gtEffectiveVal();
-            if ((op1EffectiveVal->gtOper == GT_ADD) && (!op1EffectiveVal->gtOverflow()) &&
-                (!constOnly || (op1EffectiveVal->gtOp.gtOp2->IsCnsIntOrI())))
-            {
-                op1 = op1EffectiveVal;
-            }
-        }
-
         if (!constOnly && ((op2 == adr) || (!op2->IsCnsIntOrI())))
         {
             break;
         }
+
+        op1 = op1->gtEffectiveVal();
     }
 
     *op1WB = op1;
@@ -3755,15 +3738,7 @@ GenTreePtr Compiler::gtWalkOpEffectiveVal(GenTreePtr op)
 {
     for (;;)
     {
-        if (op->gtOper == GT_COMMA)
-        {
-            GenTreePtr opEffectiveVal = op->gtEffectiveVal();
-            if ((opEffectiveVal->gtOper == GT_ADD) && (!opEffectiveVal->gtOverflow()) &&
-                (opEffectiveVal->gtOp.gtOp2->IsCnsIntOrI()))
-            {
-                op = opEffectiveVal;
-            }
-        }
+        op = op->gtEffectiveVal();
 
         if ((op->gtOper != GT_ADD) || op->gtOverflow() || !op->gtOp.gtOp2->IsCnsIntOrI())
         {
