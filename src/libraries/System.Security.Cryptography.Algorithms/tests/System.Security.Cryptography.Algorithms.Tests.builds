@@ -4,17 +4,18 @@
   <ItemGroup>
     <Project Include="System.Security.Cryptography.Algorithms.Tests.csproj">
       <OSGroup>Unix</OSGroup>
+      <TargetGroup>netstandard1.6</TargetGroup>
+      <TestTFMs>netcoreapp1.0</TestTFMs>
     </Project>
     <Project Include="System.Security.Cryptography.Algorithms.Tests.csproj">
-      <TargetGroup>netstandard1.7</TargetGroup>
-      <TestTFMs>netcoreapp1.1</TestTFMs>
       <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="System.Security.Cryptography.Algorithms.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netstandard1.6</TargetGroup>
+      <TestTFMs>netcoreapp1.0</TestTFMs>
     </Project>
     <Project Include="System.Security.Cryptography.Algorithms.Tests.csproj">
-      <TargetGroup>netstandard1.7</TargetGroup>
       <TestTFMs>netcoreapp1.1;net463</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
     </Project>

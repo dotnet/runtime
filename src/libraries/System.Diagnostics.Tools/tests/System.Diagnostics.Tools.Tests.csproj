@@ -8,7 +8,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>System</RootNamespace>
     <AssemblyName>System.Diagnostics.Tools.Tests</AssemblyName>
-    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -17,12 +17,12 @@
     <Compile Include="System\CodeDom\Compiler\GeneratedCodeAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\SuppressMessageAttributeTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
-    <Compile Include="System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttributeTests.cs" />    
+  <ItemGroup Condition="'$(TargetGroup)'==''">
+    <Compile Include="System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttributeTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- Compile tests against the contract, but copy our local-built implementation for testing -->
-   <ProjectReference Include="..\pkg\System.Diagnostics.Tools.pkgproj">
+    <ProjectReference Include="..\pkg\System.Diagnostics.Tools.pkgproj">
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

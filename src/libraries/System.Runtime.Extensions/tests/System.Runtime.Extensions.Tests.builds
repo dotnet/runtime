@@ -2,14 +2,18 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
+    <Project Include="Performance\System.Runtime.Extensions.Performance.Tests.csproj" />
     <Project Include="System.Runtime.Extensions.Tests.csproj">
       <OSGroup>Unix</OSGroup>
+      <TargetGroup>netstandard1.5</TargetGroup>
+      <TestTFMs>netcoreapp1.0</TestTFMs>
     </Project>
     <Project Include="System.Runtime.Extensions.Tests.csproj">
       <TestTFMs>netcoreapp1.0;net462</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netstandard1.5</TargetGroup>
     </Project>
-<!--
+    <!--
     Can't reliably test multiple target groups against the same TestTFM (at least in parallel).
     Need to hunt down colliding usages of TestTFM, such as _TestDependencyListRoot in tests.targets.
 
@@ -30,19 +34,12 @@
 -->
     <Project Include="System.Runtime.Extensions.Tests.csproj">
       <TargetGroup>netcoreapp1.1</TargetGroup>
-      <TestTFMs>netcoreapp1.1</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="System.Runtime.Extensions.Tests.csproj">
       <TargetGroup>netcoreapp1.1</TargetGroup>
-      <TestTFMs>netcoreapp1.1</TestTFMs>
       <OSGroup>Unix</OSGroup>
-    </Project>
-    <Project Include="Performance\System.Runtime.Extensions.Performance.Tests.csproj">
-      <TargetGroup>netstandard1.7</TargetGroup>
-      <TestTFMs>netcoreapp1.1</TestTFMs>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
-
