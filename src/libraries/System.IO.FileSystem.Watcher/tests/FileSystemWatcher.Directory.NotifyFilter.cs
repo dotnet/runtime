@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Xunit;
-using XunitPlatformID = Xunit.PlatformID;
 
 namespace System.IO.Tests
 {
@@ -143,7 +142,7 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(FilterTypes))]
-        [PlatformSpecific(XunitPlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void FileSystemWatcher_Directory_NotifyFilter_Security(NotifyFilters filter)
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))

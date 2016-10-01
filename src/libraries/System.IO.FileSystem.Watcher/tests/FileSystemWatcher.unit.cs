@@ -9,7 +9,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Xunit;
-using XunitPlatformID = Xunit.PlatformID;
 
 namespace System.IO.Tests
 {
@@ -362,7 +361,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(XunitPlatformID.OSX | XunitPlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.OSX | TestPlatforms.Windows)]
         public void FileSystemWatcher_OnCreatedWithMismatchedCasingGivesExpectedFullPath()
         {
             using (var dir = new TempDirectory(GetTestFilePath()))
@@ -455,7 +454,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(XunitPlatformID.Windows)] // Unix FSW don't trigger on a file rename.
+        [PlatformSpecific(TestPlatforms.Windows)] // Unix FSW don't trigger on a file rename.
         public void FileSystemWatcher_Windows_OnRenameGivesExpectedFullPath()
         {
             using (var dir = new TempDirectory(GetTestFilePath()))
@@ -544,7 +543,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(XunitPlatformID.Linux)]
+        [PlatformSpecific(TestPlatforms.Linux)]
         [OuterLoop("This test has high system resource demands and may cause failures in other concurrent tests")]
         public void FileSystemWatcher_CreateManyConcurrentInstances()
         {
@@ -575,7 +574,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(XunitPlatformID.Linux)]
+        [PlatformSpecific(TestPlatforms.Linux)]
         [OuterLoop("This test has high system resource demands and may cause failures in other concurrent tests")]
         public void FileSystemWatcher_CreateManyConcurrentWatches()
         {

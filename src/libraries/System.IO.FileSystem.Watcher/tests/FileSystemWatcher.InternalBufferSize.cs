@@ -4,7 +4,6 @@
 
 using System.Threading;
 using Xunit;
-using XunitPlatformID = Xunit.PlatformID;
 
 namespace System.IO.Tests
 {
@@ -42,7 +41,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [PlatformSpecific(XunitPlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void FileSystemWatcher_InternalBufferSize(bool setToHigherCapacity)
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))

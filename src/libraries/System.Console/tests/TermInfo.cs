@@ -25,7 +25,7 @@ public class TermInfo
     private const string TerminfoLocationsField = "_terminfoLocations";
 
     [Fact]
-    [PlatformSpecific(PlatformID.AnyUnix)]
+    [PlatformSpecific(TestPlatforms.AnyUnix)]
     public void VerifyInstalledTermInfosParse()
     {
         bool foundAtLeastOne = false;
@@ -59,7 +59,7 @@ public class TermInfo
     }
 
     [Theory]
-    [PlatformSpecific(PlatformID.AnyUnix)]
+    [PlatformSpecific(TestPlatforms.AnyUnix)]
     [InlineData("xterm-256color", "\u001B\u005B\u00330m", "\u001B\u005B\u00340m", 0)]
     [InlineData("xterm-256color", "\u001B\u005B\u00331m", "\u001B\u005B\u00341m", 1)]
     [InlineData("xterm-256color", "\u001B\u005B90m", "\u001B\u005B100m", 8)]
@@ -87,7 +87,7 @@ public class TermInfo
     }
 
     [Fact]
-    [PlatformSpecific(PlatformID.OSX)]
+    [PlatformSpecific(TestPlatforms.OSX)]
     public void EmuTermInfoDoesntBreakParser()
     {
         // This file (available by default on OS X) is called out specifically since it contains a format where it has %i
@@ -96,7 +96,7 @@ public class TermInfo
     }
 
     [Fact]
-    [PlatformSpecific(PlatformID.AnyUnix)]
+    [PlatformSpecific(TestPlatforms.AnyUnix)]
     public void TryingToLoadTermThatDoesNotExistDoesNotThrow()
     {
         const string NonexistentTerm = "foobar____";

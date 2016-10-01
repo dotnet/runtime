@@ -29,7 +29,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void TestModulesContainsCorerun()
         {
             ProcessModuleCollection modules = Process.GetCurrentProcess().Modules;
@@ -37,7 +37,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Linux)] // OSX only includes the main module
+        [PlatformSpecific(TestPlatforms.Linux)] // OSX only includes the main module
         public void TestModulesContainsUnixNativeLibs()
         {
             ProcessModuleCollection modules = Process.GetCurrentProcess().Modules;

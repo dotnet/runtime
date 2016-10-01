@@ -258,7 +258,7 @@ Wry5FNNo
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public static void TestArchive_Windows()
         {
             using (var c = new X509Certificate2(TestData.MsCertificate))
@@ -274,7 +274,7 @@ Wry5FNNo
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void TestArchive_Unix()
         {
             using (var c = new X509Certificate2(TestData.MsCertificate))
@@ -290,7 +290,7 @@ Wry5FNNo
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public static void TestFriendlyName_Windows()
         {
             using (var c = new X509Certificate2(TestData.MsCertificate))
@@ -306,7 +306,7 @@ Wry5FNNo
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void TestFriendlyName_Unix()
         {
             using (var c = new X509Certificate2(TestData.MsCertificate))

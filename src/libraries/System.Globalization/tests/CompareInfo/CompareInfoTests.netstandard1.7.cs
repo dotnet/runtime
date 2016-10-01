@@ -240,7 +240,7 @@ namespace System.Globalization.Tests
         [Theory]
         
         [MemberData(nameof(CompareInfo_TestData))]
-        [ActiveIssue(11608, Xunit.PlatformID.AnyUnix)]
+        [ActiveIssue(11608, TestPlatforms.AnyUnix)]
         public static void LcidTest(string cultureName, int lcid)
         {
             var ci = CompareInfo.GetCompareInfo(lcid);
@@ -260,7 +260,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(SortKey_TestData))]
-        [ActiveIssue(11608, Xunit.PlatformID.AnyUnix)]
+        [ActiveIssue(11608, TestPlatforms.AnyUnix)]
         public void SortKeyTest(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expected)
         {
             SortKey sk1 = compareInfo.GetSortKey(string1, options);
@@ -272,7 +272,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(11608, Xunit.PlatformID.AnyUnix)]
+        [ActiveIssue(11608, TestPlatforms.AnyUnix)]
         public void SortKeyMiscTest()
         {
             CompareInfo ci = new CultureInfo("en-US").CompareInfo;
@@ -307,7 +307,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(IndexOf_TestData))]
-        [ActiveIssue(11608, Xunit.PlatformID.AnyUnix)]
+        [ActiveIssue(11608, TestPlatforms.AnyUnix)]
         public void IndexOfTest(CompareInfo compareInfo, string source, string value, int startIndex, int indexOfExpected, int lastIndexOfExpected)
         {
             Assert.Equal(indexOfExpected, compareInfo.IndexOf(source, value, startIndex));
@@ -325,7 +325,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(IsSortable_TestData))]
-        [ActiveIssue(11608, Xunit.PlatformID.AnyUnix)]
+        [ActiveIssue(11608, TestPlatforms.AnyUnix)]
         public void IndexOfTest(string source, bool hasSurrogate, bool expected)
         {
             Assert.Equal(expected, CompareInfo.IsSortable(source));
