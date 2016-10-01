@@ -23,6 +23,7 @@ namespace System.CodeDom.Tests
             Assert.Equal(provider.GetType(), provider2.GetType());
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [Fact]
         public void Compilation_NotSupported()
         {
