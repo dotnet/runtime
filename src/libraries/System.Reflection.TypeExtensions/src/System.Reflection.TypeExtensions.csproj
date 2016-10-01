@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.Reflection.TypeExtensions</AssemblyName>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' != 'netcore50aot'">true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <ProjectGuid>{1E689C1B-690C-4799-BDE9-6E7990585894}</ProjectGuid>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.5</NuGetTargetMoniker>
     <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.5;uap10.1</PackageTargetFramework>
@@ -17,8 +17,9 @@
     <Compile Include="System\Reflection\Requires.cs" />
     <Compile Include="System\Reflection\TypeExtensions.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net462'">
-    <TargetingPackReference Include="mscorlib" />
+  <ItemGroup>
+    <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' == 'net462'" />
+    <TargetingPackReference Include="System.Private.CoreLib" Condition="'$(TargetGroup)' != 'net462'" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

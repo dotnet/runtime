@@ -145,7 +145,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='uap101aot'">
-    <TargetingPackReference Include="System.Private.CoreLib" />
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
     <Compile Include="$(CommonPath)\System\SR.Core.cs">
       <Link>Common\System\SR.Core.cs</Link>
@@ -165,6 +164,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLastError.cs" Condition="'$(TargetsWindows)'=='true'">
       <Link>Common\Interop\Windows\mincore\Interop.GetLastError.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <TargetingPackReference Include="System.Private.CoreLib" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

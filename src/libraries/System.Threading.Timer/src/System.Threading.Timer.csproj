@@ -12,7 +12,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU'" />
   <ItemGroup>
-    <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' != 'netcore50aot'" />
+    <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' == 'net46'" />
+    <TargetingPackReference Include="System.Private.CoreLib" Condition="'$(TargetGroup)' != 'net46' and '$(TargetGroup)' != 'netcore50aot'" />
     <TargetingPackReference Include="System.Private.Threading" Condition="'$(TargetGroup)' == 'netcore50aot'" />
   </ItemGroup>
   <ItemGroup>

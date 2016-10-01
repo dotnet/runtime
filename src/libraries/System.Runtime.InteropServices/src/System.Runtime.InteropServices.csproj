@@ -31,16 +31,14 @@
     <Compile Include="System\Runtime\InteropServices\ComTypes\tymed.cs" />
     <Compile Include="System\Runtime\CompilerServices\Attributes.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netcore50aot'">
-    <TargetingPackReference Include="mscorlib" />
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
+    <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System.Core" />
     <TargetingPackReference Include="System" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
     <TargetingPackReference Include="System.Private.CoreLib" />
-    <TargetingPackReference Include="System.Private.Interop" />
+    <TargetingPackReference Include="System.Private.Interop" Condition="'$(TargetGroup)' == 'netcore50aot'" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

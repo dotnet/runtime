@@ -34,9 +34,10 @@
     <TargetingPackReference Include="System" />
     <TargetingPackReference Include="System.Core" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
-    <TargetingPackReference Include="System.Private.CoreLib.Threading" />
-    <TargetingPackReference Include="System.Private.Threading" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
+    <TargetingPackReference Include="System.Private.CoreLib" Condition="'$(TargetGroup)' != 'netcore50aot'" />
+    <TargetingPackReference Include="System.Private.CoreLib.Threading" Condition="'$(TargetGroup)' == 'netcore50aot'" />
+    <TargetingPackReference Include="System.Private.Threading" Condition="'$(TargetGroup)' == 'netcore50aot'" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

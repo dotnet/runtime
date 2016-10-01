@@ -17,15 +17,11 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
-  <!-- Work around a bug that will be fixed by buildtools/#731 -->
-  <PropertyGroup Condition="'$(TargetGroup)' == ''">
-    <SkipValidatePackageTargetFramework>true</SkipValidatePackageTargetFramework>
-  </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)'!='netcore50aot'">
-    <TargetingPackReference Include="mscorlib" />
+  <ItemGroup>
+    <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' == 'net46'" />
+    <TargetingPackReference Include="System.Private.CoreLib" Condition="'$(TargetGroup)' != 'net46'" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcore50aot'">
-    <TargetingPackReference Include="System.Private.CoreLib" />
     <TargetingPackReference Include="System.Private.Reflection" />
     <ProjectReference Include="..\..\System.Runtime\src\redist\System.Runtime.depproj" />
   </ItemGroup>
