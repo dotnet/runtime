@@ -92,7 +92,7 @@
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
     <TargetingPackReference Include="System.Private.CoreLib" />
   </ItemGroup>
   <ItemGroup>

@@ -22,7 +22,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)'=='true'">
-    <TargetingPackReference Include="mscorlib" />
+    <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' == 'net463'" />
+    <TargetingPackReference Include="System.Private.CoreLib" Condition="'$(TargetGroup)' != 'net463'" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

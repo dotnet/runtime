@@ -100,8 +100,9 @@
     </Compile>
     <EmbeddedResource Include="$(MsBuildThisFileDirectory)Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
-  <ItemGroup>
-    <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' != 'netcore50aot'" />
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)'=='true'">
+    <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' == 'net462'" />
+    <TargetingPackReference Include="System.Private.CoreLib" Condition="'$(TargetGroup)' != 'net462'" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

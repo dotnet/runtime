@@ -371,8 +371,10 @@
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'net462' Or '$(TargetGroup)' != 'net463'">
     <TargetingPackReference Include="System.Private.CoreLib" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot'">
     <TargetingPackReference Include="System.Private.CoreLib.InteropServices" />
     <TargetingPackReference Include="System.Private.Interop" />
     <!-- can remove once we remove the Environment reflection workaround -->
