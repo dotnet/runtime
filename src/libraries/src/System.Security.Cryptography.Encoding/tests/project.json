@@ -10,8 +10,8 @@
     "System.Security.Cryptography.Primitives": "4.3.0-beta-24530-03",
     "System.Text.RegularExpressions": "4.3.0-beta-24530-03",
     "System.Xml.XmlSerializer": "4.3.0-beta-24530-03",
-    "Microsoft.xunit.netcore.extensions": "1.0.0-prerelease-00807-03",
-    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00807-03",
+    "Microsoft.xunit.netcore.extensions": "1.0.0-prerelease-00830-02",
+    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00830-02",
     "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0040",
     "test-runtime": {
       "target": "project",
