@@ -135,9 +135,5 @@
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
-  <!-- TODO: Replace this with a package reference. -->
-  <ItemGroup>
-    <ProjectReference Include="..\..\System.IO\pkg\System.IO.pkgproj" />
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
