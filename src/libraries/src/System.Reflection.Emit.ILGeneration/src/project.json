@@ -7,16 +7,6 @@
       "imports": [
         "dotnet5.4"
       ]
-    },
-    "netcore50": {
-      "dependencies": {
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.2.0-beta-24601-01"
-      }
-    },
-    "net46": {
-      "dependencies": {
-        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
-      }
     }
   }
 }

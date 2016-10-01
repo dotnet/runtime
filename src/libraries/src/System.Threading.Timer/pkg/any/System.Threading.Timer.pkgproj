@@ -8,9 +8,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Threading.Timer.csproj" />
-    <ProjectReference Include="..\..\src\System.Threading.Timer.csproj">
-      <TargetGroup>netcore50</TargetGroup>
-    </ProjectReference>
 
     <!-- AOT implementation comes from AOT package -->
     <File Include="$(PlaceholderFile)">
