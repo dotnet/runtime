@@ -13459,13 +13459,6 @@ namespace System.Threading
         public WaitHandleCannotBeOpenedException(string message, System.Exception innerException) { }
         protected WaitHandleCannotBeOpenedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
-    public static partial class WaitHandleExtensions
-    {
-        [System.Security.SecurityCriticalAttribute]
-        public static Microsoft.Win32.SafeHandles.SafeWaitHandle GetSafeWaitHandle(this System.Threading.WaitHandle waitHandle) { throw null; }
-        [System.Security.SecurityCriticalAttribute]
-        public static void SetSafeWaitHandle(this System.Threading.WaitHandle waitHandle, Microsoft.Win32.SafeHandles.SafeWaitHandle value) { }
-    }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public delegate void WaitOrTimerCallback(object state, bool timedOut);
 }
