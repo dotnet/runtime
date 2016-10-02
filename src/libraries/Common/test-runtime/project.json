@@ -1,8 +1,8 @@
 {
   "dependencies": {
     "NETStandard.Library": "1.6.1-beta-24601-02",
-    "Microsoft.NETCore.TestHost": "1.2.0-beta-24602-02",
-    "Microsoft.NETCore.Runtime.CoreCLR": "1.2.0-beta-24602-02",
+    "Microsoft.NETCore.TestHost": "1.2.0-beta-24602-03",
+    "Microsoft.NETCore.Runtime.CoreCLR": "1.2.0-beta-24602-03",
     "System.Diagnostics.Contracts": "4.3.0-beta-24601-02",
     "System.Linq.Parallel": "4.3.0-beta-24601-02",
     "coveralls.io": "1.4",

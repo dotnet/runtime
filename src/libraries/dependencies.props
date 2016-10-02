@@ -2,7 +2,7 @@
   <!-- Source of truth for dependency tooling: the commit hash of the dotnet/versions master branch as of the last auto-upgrade. -->
   <PropertyGroup>
     <CoreFxCurrentRef>766fd1fb47b790f81d28e68f920793b2a1d6ed1b</CoreFxCurrentRef>
-    <CoreClrCurrentRef>766fd1fb47b790f81d28e68f920793b2a1d6ed1b</CoreClrCurrentRef>
+    <CoreClrCurrentRef>204256b30895b4d98511da2340bfe86916175880</CoreClrCurrentRef>
     <ExternalCurrentRef>0db1f9d8996a6a05960f79712299652a4b04147f</ExternalCurrentRef>
     <ProjectNTfsCurrentRef>0db1f9d8996a6a05960f79712299652a4b04147f</ProjectNTfsCurrentRef>
   </PropertyGroup>
@@ -10,7 +10,7 @@
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
     <CoreFxExpectedPrerelease>beta-24601-02</CoreFxExpectedPrerelease>
-    <CoreClrExpectedPrerelease>beta-24602-02</CoreClrExpectedPrerelease>
+    <CoreClrExpectedPrerelease>beta-24602-03</CoreClrExpectedPrerelease>
     <ExternalExpectedPrerelease>beta-24523-00</ExternalExpectedPrerelease>
     <ProjectNTfsExpectedPrerelease>beta-24530-00</ProjectNTfsExpectedPrerelease>
   </PropertyGroup>
