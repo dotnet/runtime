@@ -12,7 +12,7 @@ using Xunit;
 
 namespace System.Net.Security.Tests
 {
-    [PlatformSpecific(PlatformID.Windows)] // NegotiateStream only supports client-side functionality on Unix
+    [PlatformSpecific(TestPlatforms.Windows)] // NegotiateStream only supports client-side functionality on Unix
     public abstract class NegotiateStreamStreamToStreamTest
     {
         private readonly byte[] _sampleMsg = Encoding.UTF8.GetBytes("Sample Test Message");

@@ -46,25 +46,25 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             Assert.Same(RuntimeInformation.OSDescription, RuntimeInformation.OSDescription);
         }
 
-        [Fact, PlatformSpecific(PlatformID.Windows)]
+        [Fact, PlatformSpecific(TestPlatforms.Windows)]
         public void VerifyWindowsDebugName()
         {
             Assert.Contains("windows", RuntimeInformation.OSDescription, StringComparison.OrdinalIgnoreCase);
         }
 
-        [Fact, PlatformSpecific(PlatformID.Linux)]
+        [Fact, PlatformSpecific(TestPlatforms.Linux)]
         public void VerifyLinuxDebugName()
         {
             Assert.Contains("linux", RuntimeInformation.OSDescription, StringComparison.OrdinalIgnoreCase);
         }
 
-        [Fact, PlatformSpecific(PlatformID.NetBSD)]
+        [Fact, PlatformSpecific(TestPlatforms.NetBSD)]
         public void VerifyNetBSDDebugName()
         {
             Assert.Contains("netbsd", RuntimeInformation.OSDescription, StringComparison.OrdinalIgnoreCase);
         }
 
-        [Fact, PlatformSpecific(PlatformID.OSX)]
+        [Fact, PlatformSpecific(TestPlatforms.OSX)]
         public void VerifyOSXDebugName()
         {
             Assert.Contains("darwin", RuntimeInformation.OSDescription, StringComparison.OrdinalIgnoreCase);

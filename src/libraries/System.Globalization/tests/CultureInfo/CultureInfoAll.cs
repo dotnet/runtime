@@ -12,7 +12,7 @@ namespace System.Globalization.Tests
     public class CultureInfoAll
     {
         [Fact]
-        [PlatformSpecific(Xunit.PlatformID.Windows)] // P/Invoke to Win32 function
+        [PlatformSpecific(TestPlatforms.Windows)] // P/Invoke to Win32 function
         public void TestAllCultures()
         {
             Assert.True(EnumSystemLocalesEx(EnumLocales, LOCALE_WINDOWS, IntPtr.Zero, IntPtr.Zero), "EnumSystemLocalesEx has failed");

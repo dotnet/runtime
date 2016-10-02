@@ -31,7 +31,7 @@ public class PathInternal_Unix_Tests
         InlineData(@"a//", @"a/"),
         InlineData(@"a\\", @"a\\"),
         ]
-    [PlatformSpecific(PlatformID.AnyUnix)]
+    [PlatformSpecific(TestPlatforms.AnyUnix)]
     public void NormalizeDirectorySeparatorTests(string path, string expected)
     {
         string result = PathInternal.NormalizeDirectorySeparators(path);
@@ -50,7 +50,7 @@ public class PathInternal_Unix_Tests
     [InlineData("Foo:Bar", 0)]
     [InlineData("/usr/foo/", 9)]
     [InlineData("/home/bar", 6)]
-    [PlatformSpecific(PlatformID.AnyUnix)]
+    [PlatformSpecific(TestPlatforms.AnyUnix)]
     public void FindFileNameIndexTests(string path, int expected)
     {
         Assert.Equal(expected, PathInternal.FindFileNameIndex(path));
