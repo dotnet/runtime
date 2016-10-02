@@ -1,5 +1,5 @@
 /*
- * proflog.c: mono log profiler
+ * mono-profiler-log.c: mono log profiler
  *
  * Authors:
  *   Paolo Molaro (lupus@ximian.com)
@@ -11,97 +11,47 @@
  */
 
 #include <config.h>
-#include "../mini/jit.h"
-#include "../metadata/metadata-internals.h"
-#include <mono/metadata/profiler.h>
-#include <mono/metadata/threads.h>
+#include <mono/metadata/assembly.h>
 #include <mono/metadata/debug-helpers.h>
+#include "../metadata/metadata-internals.h"
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/mono-perfcounters.h>
-#include <mono/metadata/appdomain.h>
-#include <mono/metadata/assembly.h>
-#include <mono/metadata/tokentype.h>
-#include <mono/metadata/tabledefs.h>
+#include <mono/metadata/profiler.h>
 #include <mono/utils/atomic.h>
-#include <mono/utils/mono-membar.h>
-#include <mono/utils/mono-mmap.h>
-#include <mono/utils/mono-counters.h>
-#include <mono/utils/mono-os-mutex.h>
-#include <mono/utils/mono-os-semaphore.h>
-#include <mono/utils/mono-conc-hashtable.h>
-#include <mono/utils/mono-linked-list-set.h>
+#include <mono/utils/hazard-pointer.h>
 #include <mono/utils/lock-free-alloc.h>
 #include <mono/utils/lock-free-queue.h>
-#include <mono/utils/hazard-pointer.h>
+#include <mono/utils/mono-conc-hashtable.h>
+#include <mono/utils/mono-counters.h>
+#include <mono/utils/mono-linked-list-set.h>
+#include <mono/utils/mono-membar.h>
+#include <mono/utils/mono-mmap.h>
+#include <mono/utils/mono-os-mutex.h>
+#include <mono/utils/mono-os-semaphore.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-threads-api.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include <glib.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#ifdef HAVE_SCHED_GETAFFINITY
-#include <sched.h>
-#endif
-#include <fcntl.h>
-#include <errno.h>
-#if defined(HOST_WIN32) || defined(DISABLE_SOCKETS)
-#define DISABLE_HELPER_THREAD 1
-#endif
+#include "mono-profiler-log.h"
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
-#endif
-#ifdef HAVE_EXECINFO_H
-#include <execinfo.h>
 #endif
 #ifdef HAVE_LINK_H
 #include <link.h>
 #endif
-
-#ifndef DISABLE_HELPER_THREAD
-#include <sys/types.h>
-#include <sys/socket.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#if defined(__APPLE__)
+#include <mach/mach_time.h>
+#endif
 #include <netinet/in.h>
-#include <sys/select.h>
+#ifdef HAVE_SYS_MMAN_H
+#include <sys/mman.h>
 #endif
-
-#ifdef HOST_WIN32
-#include <windows.h>
-#else
-#include <pthread.h>
-#endif
-
-#ifdef HAVE_SYS_STAT_H
-#include <sys/stat.h>
-#endif
-
-#include "utils.c"
-#include "proflog.h"
-
+#include <sys/socket.h>
 #if defined (HAVE_SYS_ZLIB)
 #include <zlib.h>
-#endif
-
-#if defined(__linux__)
-
-#include <unistd.h>
-#include <sys/syscall.h>
-
-#ifdef ENABLE_PERF_EVENTS
-#include <linux/perf_event.h>
-
-#define USE_PERF_EVENTS 1
-
-static int read_perf_mmap (MonoProfiler* prof, int cpu);
-#endif
-
 #endif
 
 #define BUFFER_SIZE (4096 * 16)
@@ -113,43 +63,82 @@ static int read_perf_mmap (MonoProfiler* prof, int cpu);
 /* Size in bytes of the event prefix (ID + time). */
 #define EVENT_SIZE (BYTE_SIZE + LEB128_SIZE)
 
+static volatile gint32 runtime_inited;
+static volatile gint32 in_shutdown;
+
+static gboolean no_counters;
 static int nocalls = 0;
 static int notraces = 0;
 static int use_zip = 0;
 static int do_report = 0;
 static int do_heap_shot = 0;
 static int max_call_depth = 100;
-static volatile int runtime_inited = 0;
-static int need_helper_thread = 0;
 static int command_port = 0;
 static int heapshot_requested = 0;
-static int sample_type = 0;
 static int sample_freq = 0;
 static int do_mono_sample = 0;
-static int in_shutdown = 0;
 static int do_debug = 0;
-static int do_counters = 0;
 static int do_coverage = 0;
+static gboolean only_coverage;
 static gboolean debug_coverage = FALSE;
 static MonoProfileSamplingMode sampling_mode = MONO_PROFILER_STAT_MODE_PROCESS;
 static int max_allocated_sample_hits;
 
-static gint32 sample_hits;
-static gint32 sample_flushes;
-static gint32 sample_allocations;
-static gint32 buffer_allocations;
-static gint32 thread_starts;
-static gint32 thread_ends;
-static gint32 domain_loads;
-static gint32 domain_unloads;
-static gint32 context_loads;
-static gint32 context_unloads;
-static gint32 assembly_loads;
-static gint32 assembly_unloads;
-static gint32 image_loads;
-static gint32 image_unloads;
-static gint32 class_loads;
-static gint32 class_unloads;
+// Statistics for internal profiler data structures.
+static gint32 sample_allocations_ctr,
+              buffer_allocations_ctr;
+
+// Statistics for profiler events.
+static gint32 sync_points_ctr,
+              heap_objects_ctr,
+              heap_starts_ctr,
+              heap_ends_ctr,
+              heap_roots_ctr,
+              gc_events_ctr,
+              gc_resizes_ctr,
+              gc_allocs_ctr,
+              gc_moves_ctr,
+              gc_handle_creations_ctr,
+              gc_handle_deletions_ctr,
+              finalize_begins_ctr,
+              finalize_ends_ctr,
+              finalize_object_begins_ctr,
+              finalize_object_ends_ctr,
+              image_loads_ctr,
+              image_unloads_ctr,
+              assembly_loads_ctr,
+              assembly_unloads_ctr,
+              class_loads_ctr,
+              class_unloads_ctr,
+              method_entries_ctr,
+              method_exits_ctr,
+              method_exception_exits_ctr,
+              method_jits_ctr,
+              code_buffers_ctr,
+              exception_throws_ctr,
+              exception_clauses_ctr,
+              monitor_contentions_ctr,
+              monitor_acquisitions_ctr,
+              monitor_failures_ctr,
+              thread_starts_ctr,
+              thread_ends_ctr,
+              thread_names_ctr,
+              domain_loads_ctr,
+              domain_unloads_ctr,
+              domain_names_ctr,
+              context_loads_ctr,
+              context_unloads_ctr,
+              sample_ubins_ctr,
+              sample_usyms_ctr,
+              sample_hits_ctr,
+              counter_descriptors_ctr,
+              counter_samples_ctr,
+              perfcounter_descriptors_ctr,
+              perfcounter_samples_ctr,
+              coverage_methods_ctr,
+              coverage_statements_ctr,
+              coverage_classes_ctr,
+              coverage_assemblies_ctr;
 
 static MonoLinkedListSet profiler_thread_list;
 
@@ -217,7 +206,7 @@ static MonoLinkedListSet profiler_thread_list;
  * [time diff: uleb128] nanoseconds since last timing
  * [data]*
  * The data that follows depends on type and the extended info.
- * Type is one of the enum values in proflog.h: TYPE_ALLOC, TYPE_GC,
+ * Type is one of the enum values in mono-profiler-log.h: TYPE_ALLOC, TYPE_GC,
  * TYPE_METADATA, TYPE_METHOD, TYPE_EXCEPTION, TYPE_MONITOR, TYPE_HEAP.
  * The extended info bits are interpreted based on type, see
  * each individual event description below.
@@ -351,7 +340,6 @@ static MonoLinkedListSet profiler_thread_list;
  * type: TYPE_SAMPLE
  * exinfo: one of TYPE_SAMPLE_HIT, TYPE_SAMPLE_USYM, TYPE_SAMPLE_UBIN, TYPE_SAMPLE_COUNTERS_DESC, TYPE_SAMPLE_COUNTERS
  * if exinfo == TYPE_SAMPLE_HIT
- * 	[sample_type: byte] type of sample (SAMPLE_*)
  * 	[thread: sleb128] thread id as difference from ptr_base
  * 	[count: uleb128] number of following instruction addresses
  * 	[ip: sleb128]* instruction pointer as difference from ptr_base
@@ -467,6 +455,12 @@ struct _LogBuffer {
 typedef struct {
 	MonoLinkedListSetNode node;
 
+	// Convenience pointer to the profiler structure.
+	MonoProfiler *profiler;
+
+	// Was this thread added to the LLS?
+	gboolean attached;
+
 	// The current log buffer for this thread.
 	LogBuffer *buffer;
 
@@ -477,12 +471,86 @@ typedef struct {
 	int call_depth;
 
 	// Indicates whether this thread is currently writing to its `buffer`.
-	int busy;
+	gboolean busy;
+
+	// Has this thread written a thread end event to `buffer`?
+	gboolean ended;
 } MonoProfilerThread;
 
-static inline void
-ign_res (int G_GNUC_UNUSED unused, ...)
+static uintptr_t
+thread_id (void)
 {
+	return (uintptr_t) mono_native_thread_id_get ();
+}
+
+static uintptr_t
+process_id (void)
+{
+#ifdef HOST_WIN32
+	return (uintptr_t) GetCurrentProcessId ();
+#else
+	return (uintptr_t) getpid ();
+#endif
+}
+
+#ifdef __APPLE__
+static mach_timebase_info_data_t timebase_info;
+#elif defined (HOST_WIN32)
+static LARGE_INTEGER pcounter_freq;
+#endif
+
+#define TICKS_PER_SEC 1000000000LL
+
+static uint64_t
+current_time (void)
+{
+#ifdef __APPLE__
+	uint64_t time = mach_absolute_time ();
+
+	time *= timebase_info.numer;
+	time /= timebase_info.denom;
+
+	return time;
+#elif defined (HOST_WIN32)
+	LARGE_INTEGER value;
+
+	QueryPerformanceCounter (&value);
+
+	return value.QuadPart * TICKS_PER_SEC / pcounter_freq.QuadPart;
+#elif defined (CLOCK_MONOTONIC)
+	struct timespec tspec;
+
+	clock_gettime (CLOCK_MONOTONIC, &tspec);
+
+	return ((uint64_t) tspec.tv_sec * TICKS_PER_SEC + tspec.tv_nsec);
+#else
+	struct timeval tv;
+
+	gettimeofday (&tv, NULL);
+
+	return ((uint64_t) tv.tv_sec * TICKS_PER_SEC + tv.tv_usec * 1000);
+#endif
+}
+
+static int timer_overhead;
+
+static void
+init_time (void)
+{
+#ifdef __APPLE__
+	mach_timebase_info (&timebase_info);
+#elif defined (HOST_WIN32)
+	QueryPerformanceFrequency (&pcounter_freq);
+#endif
+
+	uint64_t time_start = current_time ();
+
+	for (int i = 0; i < 256; ++i)
+		current_time ();
+
+	uint64_t time_end = current_time ();
+
+	timer_overhead = (time_end - time_start) / 256;
 }
 
 /*
@@ -492,15 +560,27 @@ ign_res (int G_GNUC_UNUSED unused, ...)
  * FALSE, then don't use these macros.
  */
 
-#define ENTER_LOG \
+#define ENTER_LOG(COUNTER, BUFFER, SIZE) \
 	do { \
-		buffer_lock (); \
-		g_assert (!PROF_TLS_GET ()->busy++ && "Why are we trying to write a new event while already writing one?")
+		MonoProfilerThread *thread__ = PROF_TLS_GET (); \
+		if (thread__->attached) \
+			buffer_lock (); \
+		g_assert (!thread__->busy && "Why are we trying to write a new event while already writing one?"); \
+		thread__->busy = TRUE; \
+		InterlockedIncrement ((COUNTER)); \
+		LogBuffer *BUFFER = ensure_logbuf_unsafe ((SIZE))
 
-#define EXIT_LOG \
-		PROF_TLS_GET ()->busy--; \
-		buffer_unlock (); \
+#define EXIT_LOG_EXPLICIT(SEND, REQUESTS) \
+		thread__->busy = FALSE; \
+		if ((SEND)) \
+			send_log_unsafe (FALSE, TRUE); \
+		if (thread__->attached) \
+			buffer_unlock (); \
+		if ((REQUESTS)) \
+			process_requests (); \
 	} while (0)
+
+#define EXIT_LOG EXIT_LOG_EXPLICIT (TRUE, TRUE)
 
 static volatile gint32 buffer_rwlock_count;
 static volatile gpointer buffer_rwlock_exclusive;
@@ -595,15 +675,12 @@ struct _MonoProfiler {
 	char *args;
 	uint64_t startup_time;
 	int pipe_output;
-	int last_gc_gen_started;
 	int command_port;
 	int server_socket;
 	int pipes [2];
-#ifndef HOST_WIN32
-	pthread_t helper_thread;
-	pthread_t writer_thread;
-	pthread_t dumper_thread;
-#endif
+	MonoNativeThreadId helper_thread;
+	MonoNativeThreadId writer_thread;
+	MonoNativeThreadId dumper_thread;
 	volatile gint32 run_writer_thread;
 	MonoLockFreeAllocSizeClass writer_entry_size_class;
 	MonoLockFreeAllocator writer_entry_allocator;
@@ -668,26 +745,45 @@ static char*
 pstrdup (const char *s)
 {
 	int len = strlen (s) + 1;
-	char *p = (char *)malloc (len);
+	char *p = (char *) g_malloc (len);
 	memcpy (p, s, len);
 	return p;
+}
+
+static void *
+alloc_buffer (int size)
+{
+	return mono_valloc (NULL, size, MONO_MMAP_READ | MONO_MMAP_WRITE | MONO_MMAP_ANON | MONO_MMAP_PRIVATE, MONO_MEM_ACCOUNT_PROFILER);
+}
+
+static void
+free_buffer (void *buf, int size)
+{
+	mono_vfree (buf, size, MONO_MEM_ACCOUNT_PROFILER);
 }
 
 static LogBuffer*
 create_buffer (void)
 {
-	LogBuffer* buf = (LogBuffer *)alloc_buffer (BUFFER_SIZE);
+	LogBuffer* buf = (LogBuffer *) alloc_buffer (BUFFER_SIZE);
 
-	InterlockedIncrement (&buffer_allocations);
+	InterlockedIncrement (&buffer_allocations_ctr);
 
 	buf->size = BUFFER_SIZE;
 	buf->time_base = current_time ();
 	buf->last_time = buf->time_base;
 	buf->buf_end = (unsigned char*)buf + buf->size;
 	buf->cursor = buf->buf;
+
 	return buf;
 }
 
+/*
+ * Must be called with the reader lock held if thread is the current thread, or
+ * the exclusive lock if thread is a different thread. However, if thread is
+ * the current thread, and init_thread () was called with add_to_lls = FALSE,
+ * then no locking is necessary.
+ */
 static void
 init_buffer_state (MonoProfilerThread *thread)
 {
@@ -704,7 +800,7 @@ clear_hazard_pointers (MonoThreadHazardPointers *hp)
 }
 
 static MonoProfilerThread *
-init_thread (gboolean add_to_lls)
+init_thread (MonoProfiler *prof, gboolean add_to_lls)
 {
 	MonoProfilerThread *thread = PROF_TLS_GET ();
 
@@ -722,10 +818,13 @@ init_thread (gboolean add_to_lls)
 	if (thread)
 		return thread;
 
-	thread = malloc (sizeof (MonoProfilerThread));
+	thread = g_malloc (sizeof (MonoProfilerThread));
 	thread->node.key = thread_id ();
+	thread->profiler = prof;
+	thread->attached = add_to_lls;
 	thread->call_depth = 0;
 	thread->busy = 0;
+	thread->ended = FALSE;
 
 	init_buffer_state (thread);
 
@@ -748,7 +847,9 @@ init_thread (gboolean add_to_lls)
 static void
 deinit_thread (MonoProfilerThread *thread)
 {
-	free (thread);
+	g_assert (!thread->attached && "Why are we manually freeing an attached thread?");
+
+	g_free (thread);
 	PROF_TLS_SET (NULL);
 }
 
@@ -780,24 +881,56 @@ ensure_logbuf_unsafe (int bytes)
 	return new_;
 }
 
-/*
- * Any calls to this function should be wrapped in the ENTER_LOG and
- * EXIT_LOG macros to prevent the returned pointer from leaking
- * outside of the critical region created by the calls to buffer_lock ()
- * and buffer_unlock () that those macros insert. If the pointer leaks,
- * it can and will lead to crashes as the GC or helper thread may
- * invalidate the pointer at any time.
- *
- * Note: If you're calling from a thread that called init_thread () with
- * add_to_lls = FALSE, you should use ensure_logbuf_unsafe () and omit
- * the macros.
- */
-static LogBuffer*
-ensure_logbuf (int bytes)
+static void
+encode_uleb128 (uint64_t value, uint8_t *buf, uint8_t **endbuf)
 {
-	g_assert (PROF_TLS_GET ()->busy && "Why are we trying to expand our buffer without the busy flag set?");
+	uint8_t *p = buf;
 
-	return ensure_logbuf_unsafe (bytes);
+	do {
+		uint8_t b = value & 0x7f;
+		value >>= 7;
+
+		if (value != 0) /* more bytes to come */
+			b |= 0x80;
+
+		*p ++ = b;
+	} while (value);
+
+	*endbuf = p;
+}
+
+static void
+encode_sleb128 (intptr_t value, uint8_t *buf, uint8_t **endbuf)
+{
+	int more = 1;
+	int negative = (value < 0);
+	unsigned int size = sizeof (intptr_t) * 8;
+	uint8_t byte;
+	uint8_t *p = buf;
+
+	while (more) {
+		byte = value & 0x7f;
+		value >>= 7;
+
+		/* the following is unnecessary if the
+		 * implementation of >>= uses an arithmetic rather
+		 * than logical shift for a signed left operand
+		 */
+		if (negative)
+			/* sign extend */
+			value |= - ((intptr_t) 1 <<(size - 7));
+
+		/* sign bit of byte is second high order bit (0x40) */
+		if ((value == 0 && !(byte & 0x40)) ||
+		    (value == -1 && (byte & 0x40)))
+			more = 0;
+		else
+			byte |= 0x80;
+
+		*p ++= byte;
+	}
+
+	*endbuf = p;
 }
 
 static void
@@ -805,29 +938,26 @@ emit_byte (LogBuffer *logbuffer, int value)
 {
 	logbuffer->cursor [0] = value;
 	logbuffer->cursor++;
-	assert (logbuffer->cursor <= logbuffer->buf_end);
+
+	g_assert (logbuffer->cursor <= logbuffer->buf_end && "Why are we writing past the buffer end?");
 }
 
 static void
 emit_value (LogBuffer *logbuffer, int value)
 {
 	encode_uleb128 (value, logbuffer->cursor, &logbuffer->cursor);
-	assert (logbuffer->cursor <= logbuffer->buf_end);
+
+	g_assert (logbuffer->cursor <= logbuffer->buf_end && "Why are we writing past the buffer end?");
 }
 
 static void
 emit_time (LogBuffer *logbuffer, uint64_t value)
 {
 	uint64_t tdiff = value - logbuffer->last_time;
-	//if (value < logbuffer->last_time)
-	//	printf ("time went backwards\n");
-	//if (tdiff > 1000000)
-	//	printf ("large time offset: %llu\n", tdiff);
 	encode_uleb128 (tdiff, logbuffer->cursor, &logbuffer->cursor);
-	/*if (tdiff != decode_uleb128 (p, &p))
-		printf ("incorrect encoding: %llu\n", tdiff);*/
 	logbuffer->last_time = value;
-	assert (logbuffer->cursor <= logbuffer->buf_end);
+
+	g_assert (logbuffer->cursor <= logbuffer->buf_end && "Why are we writing past the buffer end?");
 }
 
 static void
@@ -847,112 +977,64 @@ static void
 emit_svalue (LogBuffer *logbuffer, int64_t value)
 {
 	encode_sleb128 (value, logbuffer->cursor, &logbuffer->cursor);
-	assert (logbuffer->cursor <= logbuffer->buf_end);
+
+	g_assert (logbuffer->cursor <= logbuffer->buf_end && "Why are we writing past the buffer end?");
 }
 
 static void
 emit_uvalue (LogBuffer *logbuffer, uint64_t value)
 {
 	encode_uleb128 (value, logbuffer->cursor, &logbuffer->cursor);
-	assert (logbuffer->cursor <= logbuffer->buf_end);
+
+	g_assert (logbuffer->cursor <= logbuffer->buf_end && "Why are we writing past the buffer end?");
 }
 
 static void
 emit_ptr (LogBuffer *logbuffer, void *ptr)
 {
 	if (!logbuffer->ptr_base)
-		logbuffer->ptr_base = (uintptr_t)ptr;
-	emit_svalue (logbuffer, (intptr_t)ptr - logbuffer->ptr_base);
-	assert (logbuffer->cursor <= logbuffer->buf_end);
+		logbuffer->ptr_base = (uintptr_t) ptr;
+
+	emit_svalue (logbuffer, (intptr_t) ptr - logbuffer->ptr_base);
+
+	g_assert (logbuffer->cursor <= logbuffer->buf_end && "Why are we writing past the buffer end?");
 }
 
 static void
 emit_method_inner (LogBuffer *logbuffer, void *method)
 {
 	if (!logbuffer->method_base) {
-		logbuffer->method_base = (intptr_t)method;
-		logbuffer->last_method = (intptr_t)method;
-	}
-	encode_sleb128 ((intptr_t)((char*)method - (char*)logbuffer->last_method), logbuffer->cursor, &logbuffer->cursor);
-	logbuffer->last_method = (intptr_t)method;
-	assert (logbuffer->cursor <= logbuffer->buf_end);
-}
-
-/*
-typedef struct {
-	MonoMethod *method;
-	MonoJitInfo *found;
-} MethodSearch;
-
-static void
-find_method (MonoDomain *domain, void *user_data)
-{
-	MethodSearch *search = user_data;
-
-	if (search->found)
-		return;
-
-	MonoJitInfo *ji = mono_get_jit_info_from_method (domain, search->method);
-
-	// It could be AOT'd, so we need to get it from the AOT runtime's cache.
-	if (!ji) {
-		void *ip = mono_aot_get_method (domain, search->method);
-
-		// Avoid a slow path in mono_jit_info_table_find ().
-		if (ip)
-			ji = mono_jit_info_table_find (domain, ip);
+		logbuffer->method_base = (intptr_t) method;
+		logbuffer->last_method = (intptr_t) method;
 	}
 
-	if (ji)
-		search->found = ji;
+	encode_sleb128 ((intptr_t) ((char *) method - (char *) logbuffer->last_method), logbuffer->cursor, &logbuffer->cursor);
+	logbuffer->last_method = (intptr_t) method;
+
+	g_assert (logbuffer->cursor <= logbuffer->buf_end && "Why are we writing past the buffer end?");
 }
-*/
 
 static void
-register_method_local (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *ji)
+register_method_local (MonoMethod *method, MonoJitInfo *ji)
 {
-	if (!mono_conc_hashtable_lookup (prof->method_table, method)) {
-		/*
-		 * FIXME: In some cases, we crash while looking up JIT info for AOT'd methods.
-		 * This usually happens for static constructors. This code is disabled for now
-		 * as we don't need this info for anything critical.
-		 *
-		 * https://bugzilla.xamarin.com/show_bug.cgi?id=35171
-		 */
-		/*
-		if (!ji) {
-			MethodSearch search = { method, NULL };
+	MonoProfilerThread *thread = PROF_TLS_GET ();
 
-			mono_domain_foreach (find_method, &search);
-
-			ji = search.found;
-		}
-		*/
-
-		/*
-		 * FIXME: We can't always find JIT info for a generic shared method, especially
-		 * if we obtained the MonoMethod during an async stack walk. For now, we deal
-		 * with this by giving the generic shared method name and dummy code start/size
-		 * information (i.e. zeroes).
-		 */
-		//g_assert (ji);
-
-		MethodInfo *info = (MethodInfo *) malloc (sizeof (MethodInfo));
+	if (!mono_conc_hashtable_lookup (thread->profiler->method_table, method)) {
+		MethodInfo *info = (MethodInfo *) g_malloc (sizeof (MethodInfo));
 
 		info->method = method;
 		info->ji = ji;
 		info->time = current_time ();
 
-		MonoProfilerThread *thread = PROF_TLS_GET ();
 		GPtrArray *arr = thread->methods ? thread->methods : (thread->methods = g_ptr_array_new ());
 		g_ptr_array_add (arr, info);
 	}
 }
 
 static void
-emit_method (MonoProfiler *prof, LogBuffer *logbuffer, MonoMethod *method)
+emit_method (LogBuffer *logbuffer, MonoMethod *method)
 {
-	register_method_local (prof, method, NULL);
+	register_method_local (method, NULL);
 	emit_method_inner (logbuffer, method);
 }
 
@@ -960,9 +1042,11 @@ static void
 emit_obj (LogBuffer *logbuffer, void *ptr)
 {
 	if (!logbuffer->obj_base)
-		logbuffer->obj_base = (uintptr_t)ptr >> 3;
-	emit_svalue (logbuffer, ((uintptr_t)ptr >> 3) - logbuffer->obj_base);
-	assert (logbuffer->cursor <= logbuffer->buf_end);
+		logbuffer->obj_base = (uintptr_t) ptr >> 3;
+
+	emit_svalue (logbuffer, ((uintptr_t) ptr >> 3) - logbuffer->obj_base);
+
+	g_assert (logbuffer->cursor <= logbuffer->buf_end && "Why are we writing past the buffer end?");
 }
 
 static void
@@ -1044,7 +1128,7 @@ dump_header (MonoProfiler *profiler)
 	const char *arch = mono_config_get_cpu ();
 	const char *os = mono_config_get_os ();
 
-	char *hbuf = malloc (
+	char *hbuf = g_malloc (
 		sizeof (gint32) /* header id */ +
 		sizeof (gint8) /* major version */ +
 		sizeof (gint8) /* minor version */ +
@@ -1067,7 +1151,7 @@ dump_header (MonoProfiler *profiler)
 	*p++ = LOG_DATA_VERSION;
 	*p++ = sizeof (void *);
 	p = write_int64 (p, ((uint64_t) time (NULL)) * 1000);
-	p = write_int32 (p, get_timer_overhead ());
+	p = write_int32 (p, timer_overhead);
 	p = write_int32 (p, 0); /* flags */
 	p = write_int32 (p, process_id ());
 	p = write_int16 (p, profiler->command_port);
@@ -1085,62 +1169,67 @@ dump_header (MonoProfiler *profiler)
 		fflush (profiler->file);
 	}
 
-	free (hbuf);
+	g_free (hbuf);
 }
 
+/*
+ * Must be called with the reader lock held if thread is the current thread, or
+ * the exclusive lock if thread is a different thread. However, if thread is
+ * the current thread, and init_thread () was called with add_to_lls = FALSE,
+ * then no locking is necessary.
+ */
 static void
-send_buffer (MonoProfiler *prof, MonoProfilerThread *thread)
+send_buffer (MonoProfilerThread *thread)
 {
-	WriterQueueEntry *entry = mono_lock_free_alloc (&prof->writer_entry_allocator);
+	WriterQueueEntry *entry = mono_lock_free_alloc (&thread->profiler->writer_entry_allocator);
 	entry->methods = thread->methods;
 	entry->buffer = thread->buffer;
 
 	mono_lock_free_queue_node_init (&entry->node, FALSE);
 
-	mono_lock_free_queue_enqueue (&prof->writer_queue, &entry->node);
-	mono_os_sem_post (&prof->writer_queue_sem);
+	mono_lock_free_queue_enqueue (&thread->profiler->writer_queue, &entry->node);
+	mono_os_sem_post (&thread->profiler->writer_queue_sem);
 }
 
 static void
-remove_thread (MonoProfiler *prof, MonoProfilerThread *thread, gboolean from_callback)
+free_thread (gpointer p)
+{
+	MonoProfilerThread *thread = p;
+
+	if (!thread->ended) {
+		/*
+		 * The thread is being cleaned up by the main thread during
+		 * shutdown. This typically happens for internal runtime
+		 * threads. We need to synthesize a thread end event.
+		 */
+
+		InterlockedIncrement (&thread_ends_ctr);
+
+		thread->buffer = ensure_logbuf_inner (thread->buffer,
+			EVENT_SIZE /* event */ +
+			BYTE_SIZE /* type */ +
+			LEB128_SIZE /* tid */
+		);
+
+		emit_event (thread->buffer, TYPE_END_UNLOAD | TYPE_METADATA);
+		emit_byte (thread->buffer, TYPE_THREAD);
+		emit_ptr (thread->buffer, (void *) thread->node.key);
+	}
+
+	send_buffer (thread);
+
+	g_free (thread);
+}
+
+static void
+remove_thread (MonoProfilerThread *thread)
 {
 	MonoThreadHazardPointers *hp = mono_hazard_pointer_get ();
 
-	if (mono_lls_remove (&profiler_thread_list, hp, &thread->node)) {
-		LogBuffer *buffer = thread->buffer;
-
-		/*
-		 * No need to take the buffer lock here as no other threads can
-		 * be accessing this buffer anymore.
-		 */
-
-		if (!from_callback) {
-			/*
-			 * The thread is being cleaned up by the main thread during
-			 * shutdown. This typically happens for internal runtime
-			 * threads. We need to synthesize a thread end event.
-			 */
-
-			buffer = ensure_logbuf_inner (buffer,
-				EVENT_SIZE /* event */ +
-				BYTE_SIZE /* type */ +
-				LEB128_SIZE /* tid */
-			);
-
-			emit_event (buffer, TYPE_END_UNLOAD | TYPE_METADATA);
-			emit_byte (buffer, TYPE_THREAD);
-			emit_ptr (buffer, (void *) thread->node.key);
-		}
-
-		send_buffer (prof, thread);
-
-		mono_thread_hazardous_try_free (thread, free);
-	}
+	if (mono_lls_remove (&profiler_thread_list, hp, &thread->node))
+		mono_thread_hazardous_try_free (thread, free_thread);
 
 	clear_hazard_pointers (hp);
-
-	if (from_callback)
-		PROF_TLS_SET (NULL);
 }
 
 static void
@@ -1152,24 +1241,26 @@ dump_buffer (MonoProfiler *profiler, LogBuffer *buf)
 	if (buf->next)
 		dump_buffer (profiler, buf->next);
 
-	p = write_int32 (p, BUF_ID);
-	p = write_int32 (p, buf->cursor - buf->buf);
-	p = write_int64 (p, buf->time_base);
-	p = write_int64 (p, buf->ptr_base);
-	p = write_int64 (p, buf->obj_base);
-	p = write_int64 (p, buf->thread_id);
-	p = write_int64 (p, buf->method_base);
+	if (buf->cursor - buf->buf) {
+		p = write_int32 (p, BUF_ID);
+		p = write_int32 (p, buf->cursor - buf->buf);
+		p = write_int64 (p, buf->time_base);
+		p = write_int64 (p, buf->ptr_base);
+		p = write_int64 (p, buf->obj_base);
+		p = write_int64 (p, buf->thread_id);
+		p = write_int64 (p, buf->method_base);
 
 #if defined (HAVE_SYS_ZLIB)
-	if (profiler->gzfile) {
-		gzwrite (profiler->gzfile, hbuf, p - hbuf);
-		gzwrite (profiler->gzfile, buf->buf, buf->cursor - buf->buf);
-	} else
+		if (profiler->gzfile) {
+			gzwrite (profiler->gzfile, hbuf, p - hbuf);
+			gzwrite (profiler->gzfile, buf->buf, buf->cursor - buf->buf);
+		} else
 #endif
-	{
-		fwrite (hbuf, p - hbuf, 1, profiler->file);
-		fwrite (buf->buf, buf->cursor - buf->buf, 1, profiler->file);
-		fflush (profiler->file);
+		{
+			fwrite (hbuf, p - hbuf, 1, profiler->file);
+			fwrite (buf->buf, buf->cursor - buf->buf, 1, profiler->file);
+			fflush (profiler->file);
+		}
 	}
 
 	free_buffer (buf, buf->size);
@@ -1185,84 +1276,53 @@ dump_buffer_threadless (MonoProfiler *profiler, LogBuffer *buf)
 }
 
 static void
-process_requests (MonoProfiler *profiler)
+process_requests (void)
 {
 	if (heapshot_requested)
 		mono_gc_collect (mono_gc_max_generation ());
 }
 
-static void counters_init (MonoProfiler *profiler);
-static void counters_sample (MonoProfiler *profiler, uint64_t timestamp);
-
+// Avoid calling this directly if possible. Use the functions below.
 static void
-safe_send (MonoProfiler *profiler)
+send_log_unsafe (gboolean lock, gboolean if_needed)
 {
-	/* We need the runtime initialized so that we have threads and hazard
-	 * pointers available. Otherwise, the lock free queue will not work and
-	 * there won't be a thread to process the data.
-	 *
-	 * While the runtime isn't initialized, we just accumulate data in the
-	 * thread local buffer list.
-	 */
-	if (!InterlockedRead (&runtime_inited))
-		return;
-
 	MonoProfilerThread *thread = PROF_TLS_GET ();
 
-	buffer_lock ();
+	if (lock)
+		buffer_lock ();
 
-	send_buffer (profiler, thread);
-	init_buffer_state (thread);
+	if (!if_needed || (if_needed && thread->buffer->next)) {
+		if (!thread->attached)
+			for (LogBuffer *iter = thread->buffer; iter; iter = iter->next)
+				iter->thread_id = 0;
 
-	buffer_unlock ();
-}
+		send_buffer (thread);
+		init_buffer_state (thread);
+	}
 
-static void
-send_if_needed (MonoProfiler *prof)
-{
-	if (PROF_TLS_GET ()->buffer->next)
-		safe_send (prof);
-}
-
-static void
-safe_send_threadless (MonoProfiler *prof)
-{
-	LogBuffer *buf = PROF_TLS_GET ()->buffer;
-
-	for (LogBuffer *iter = buf; iter; iter = iter->next)
-		iter->thread_id = 0;
-
-	safe_send (prof);
-}
-
-static void
-send_if_needed_threadless (MonoProfiler *prof)
-{
-	if (PROF_TLS_GET ()->buffer->next)
-		safe_send_threadless (prof);
+	if (lock)
+		buffer_unlock ();
 }
 
 // Assumes that the exclusive lock is held.
 static void
-sync_point_flush (MonoProfiler *prof)
+sync_point_flush (void)
 {
 	g_assert (InterlockedReadPointer (&buffer_rwlock_exclusive) == (gpointer) thread_id () && "Why don't we hold the exclusive lock?");
 
 	MONO_LLS_FOREACH_SAFE (&profiler_thread_list, MonoProfilerThread, thread) {
-		send_buffer (prof, thread);
+		send_buffer (thread);
 		init_buffer_state (thread);
 	} MONO_LLS_FOREACH_SAFE_END
 }
 
 // Assumes that the exclusive lock is held.
 static void
-sync_point_mark (MonoProfiler *prof, MonoProfilerSyncPointType type)
+sync_point_mark (MonoProfilerSyncPointType type)
 {
 	g_assert (InterlockedReadPointer (&buffer_rwlock_exclusive) == (gpointer) thread_id () && "Why don't we hold the exclusive lock?");
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&sync_points_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		LEB128_SIZE /* type */
 	);
@@ -1270,28 +1330,17 @@ sync_point_mark (MonoProfiler *prof, MonoProfilerSyncPointType type)
 	emit_event (logbuffer, TYPE_META | TYPE_SYNC_POINT);
 	emit_byte (logbuffer, type);
 
-	EXIT_LOG;
+	EXIT_LOG_EXPLICIT (FALSE, FALSE);
 
-	switch (type) {
-	case SYNC_POINT_PERIODIC:
-		safe_send_threadless (prof);
-		break;
-	case SYNC_POINT_WORLD_STOP:
-	case SYNC_POINT_WORLD_START:
-		safe_send (prof);
-		break;
-	default:
-		g_assert_not_reached ();
-		break;
-	}
+	send_log_unsafe (FALSE, FALSE);
 }
 
 // Assumes that the exclusive lock is held.
 static void
-sync_point (MonoProfiler *prof, MonoProfilerSyncPointType type)
+sync_point (MonoProfilerSyncPointType type)
 {
-	sync_point_flush (prof);
-	sync_point_mark (prof, type);
+	sync_point_flush ();
+	sync_point_mark (type);
 }
 
 static int
@@ -1301,9 +1350,7 @@ gc_reference (MonoObject *obj, MonoClass *klass, uintptr_t size, uintptr_t num, 
 	size += 7;
 	size &= ~7;
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&heap_objects_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		LEB128_SIZE /* obj */ +
 		LEB128_SIZE /* klass */ +
@@ -1329,7 +1376,7 @@ gc_reference (MonoObject *obj, MonoClass *klass, uintptr_t size, uintptr_t num, 
 		emit_obj (logbuffer, refs [i]);
 	}
 
-	EXIT_LOG;
+	EXIT_LOG_EXPLICIT (TRUE, FALSE);
 
 	return 0;
 }
@@ -1339,63 +1386,61 @@ static unsigned int hs_mode_gc = 0;
 static unsigned int hs_mode_ondemand = 0;
 static unsigned int gc_count = 0;
 static uint64_t last_hs_time = 0;
+static gboolean do_heap_walk = FALSE;
 
 static void
 heap_walk (MonoProfiler *profiler)
 {
-	if (!do_heap_shot)
-		return;
-
-	gboolean do_walk = 0;
-	uint64_t now = current_time ();
-
-	if (hs_mode_ms && (now - last_hs_time) / 1000000 >= hs_mode_ms)
-		do_walk = TRUE;
-	else if (hs_mode_gc && (gc_count % hs_mode_gc) == 0)
-		do_walk = TRUE;
-	else if (hs_mode_ondemand)
-		do_walk = heapshot_requested;
-	else if (!hs_mode_ms && !hs_mode_gc && profiler->last_gc_gen_started == mono_gc_max_generation ())
-		do_walk = TRUE;
-
-	if (!do_walk)
-		return;
-
-	heapshot_requested = 0;
-
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&heap_starts_ctr, logbuffer,
 		EVENT_SIZE /* event */
 	);
 
 	emit_event (logbuffer, TYPE_HEAP_START | TYPE_HEAP);
 
-	EXIT_LOG;
+	EXIT_LOG_EXPLICIT (TRUE, FALSE);
 
 	mono_gc_walk_heap (0, gc_reference, NULL);
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&heap_ends_ctr, logbuffer,
 		EVENT_SIZE /* event */
 	);
 
-	now = current_time ();
-
 	emit_event (logbuffer, TYPE_HEAP_END | TYPE_HEAP);
 
-	EXIT_LOG;
+	EXIT_LOG_EXPLICIT (TRUE, FALSE);
+}
 
-	last_hs_time = now;
+static void
+gc_roots (MonoProfiler *prof, int num, void **objects, int *root_types, uintptr_t *extra_info)
+{
+	ENTER_LOG (&heap_roots_ctr, logbuffer,
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* num */ +
+		LEB128_SIZE /* collections */ +
+		num * (
+			LEB128_SIZE /* object */ +
+			LEB128_SIZE /* root type */ +
+			LEB128_SIZE /* extra info */
+		)
+	);
+
+	emit_event (logbuffer, TYPE_HEAP_ROOT | TYPE_HEAP);
+	emit_value (logbuffer, num);
+	emit_value (logbuffer, mono_gc_collection_count (mono_gc_max_generation ()));
+
+	for (int i = 0; i < num; ++i) {
+		emit_obj (logbuffer, objects [i]);
+		emit_byte (logbuffer, root_types [i]);
+		emit_value (logbuffer, extra_info [i]);
+	}
+
+	EXIT_LOG_EXPLICIT (TRUE, FALSE);
 }
 
 static void
 gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation)
 {
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&gc_events_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		BYTE_SIZE /* gc event */ +
 		BYTE_SIZE /* generation */
@@ -1405,15 +1450,23 @@ gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation)
 	emit_byte (logbuffer, ev);
 	emit_byte (logbuffer, generation);
 
-	EXIT_LOG;
+	EXIT_LOG_EXPLICIT (FALSE, FALSE);
 
 	switch (ev) {
 	case MONO_GC_EVENT_START:
-		/* to deal with nested gen1 after gen0 started */
-		profiler->last_gc_gen_started = generation;
-
 		if (generation == mono_gc_max_generation ())
 			gc_count++;
+
+		uint64_t now = current_time ();
+
+		if (hs_mode_ms && (now - last_hs_time) / 1000 * 1000 >= hs_mode_ms)
+			do_heap_walk = TRUE;
+		else if (hs_mode_gc && !(gc_count % hs_mode_gc))
+			do_heap_walk = TRUE;
+		else if (hs_mode_ondemand)
+			do_heap_walk = heapshot_requested;
+		else if (!hs_mode_ms && !hs_mode_gc && generation == mono_gc_max_generation ())
+			do_heap_walk = TRUE;
 		break;
 	case MONO_GC_EVENT_PRE_STOP_WORLD_LOCKED:
 		/*
@@ -1430,10 +1483,16 @@ gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation)
 		 * committed to the log file before any object move events
 		 * that will be produced during this GC.
 		 */
-		sync_point (profiler, SYNC_POINT_WORLD_STOP);
+		sync_point (SYNC_POINT_WORLD_STOP);
 		break;
 	case MONO_GC_EVENT_PRE_START_WORLD:
-		heap_walk (profiler);
+		if (do_heap_shot && do_heap_walk) {
+			heap_walk (profiler);
+
+			do_heap_walk = FALSE;
+			heapshot_requested = 0;
+			last_hs_time = current_time ();
+		}
 		break;
 	case MONO_GC_EVENT_POST_START_WORLD_UNLOCKED:
 		/*
@@ -1442,7 +1501,7 @@ gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation)
 		 * object allocation events for certain addresses could come
 		 * after the move events that made those addresses available.
 		 */
-		sync_point_mark (profiler, SYNC_POINT_WORLD_START);
+		sync_point_mark (SYNC_POINT_WORLD_START);
 
 		/*
 		 * Finally, it is safe to allow other threads to write to
@@ -1458,9 +1517,7 @@ gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation)
 static void
 gc_resize (MonoProfiler *profiler, int64_t new_size)
 {
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&gc_resizes_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		LEB128_SIZE /* new size */
 	);
@@ -1468,7 +1525,7 @@ gc_resize (MonoProfiler *profiler, int64_t new_size)
 	emit_event (logbuffer, TYPE_GC_RESIZE | TYPE_GC);
 	emit_value (logbuffer, new_size);
 
-	EXIT_LOG;
+	EXIT_LOG_EXPLICIT (TRUE, FALSE);
 }
 
 // If you alter MAX_FRAMES, you may need to alter SAMPLE_BLOCK_SIZE too.
@@ -1520,14 +1577,14 @@ emit_bt (MonoProfiler *prof, LogBuffer *logbuffer, FrameData *data)
 	//if (*p != data.count) {
 	//	printf ("bad num frames enc at %d: %d -> %d\n", count, data.count, *p); printf ("frames end: %p->%p\n", p, logbuffer->cursor); exit(0);}
 	while (data->count) {
-		emit_method (prof, logbuffer, data->methods [--data->count]);
+		emit_method (logbuffer, data->methods [--data->count]);
 	}
 }
 
 static void
 gc_alloc (MonoProfiler *prof, MonoObject *obj, MonoClass *klass)
 {
-	init_thread (TRUE);
+	init_thread (prof, TRUE);
 
 	int do_bt = (nocalls && InterlockedRead (&runtime_inited) && !notraces) ? TYPE_ALLOC_BT : 0;
 	FrameData data;
@@ -1539,9 +1596,7 @@ gc_alloc (MonoProfiler *prof, MonoObject *obj, MonoClass *klass)
 	if (do_bt)
 		collect_bt (&data);
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&gc_allocs_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		LEB128_SIZE /* klass */ +
 		LEB128_SIZE /* obj */ +
@@ -1563,18 +1618,12 @@ gc_alloc (MonoProfiler *prof, MonoObject *obj, MonoClass *klass)
 		emit_bt (prof, logbuffer, &data);
 
 	EXIT_LOG;
-
-	send_if_needed (prof);
-
-	process_requests (prof);
 }
 
 static void
 gc_moves (MonoProfiler *prof, void **objects, int num)
 {
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&gc_moves_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		LEB128_SIZE /* num */ +
 		num * (
@@ -1588,36 +1637,7 @@ gc_moves (MonoProfiler *prof, void **objects, int num)
 	for (int i = 0; i < num; ++i)
 		emit_obj (logbuffer, objects [i]);
 
-	EXIT_LOG;
-}
-
-static void
-gc_roots (MonoProfiler *prof, int num, void **objects, int *root_types, uintptr_t *extra_info)
-{
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
-		EVENT_SIZE /* event */ +
-		LEB128_SIZE /* num */ +
-		LEB128_SIZE /* collections */ +
-		num * (
-			LEB128_SIZE /* object */ +
-			LEB128_SIZE /* root type */ +
-			LEB128_SIZE /* extra info */
-		)
-	);
-
-	emit_event (logbuffer, TYPE_HEAP_ROOT | TYPE_HEAP);
-	emit_value (logbuffer, num);
-	emit_value (logbuffer, mono_gc_collection_count (mono_gc_max_generation ()));
-
-	for (int i = 0; i < num; ++i) {
-		emit_obj (logbuffer, objects [i]);
-		emit_byte (logbuffer, root_types [i]);
-		emit_value (logbuffer, extra_info [i]);
-	}
-
-	EXIT_LOG;
+	EXIT_LOG_EXPLICIT (TRUE, FALSE);
 }
 
 static void
@@ -1629,9 +1649,9 @@ gc_handle (MonoProfiler *prof, int op, int type, uintptr_t handle, MonoObject *o
 	if (do_bt)
 		collect_bt (&data);
 
-	ENTER_LOG;
+	gint32 *ctr = op == MONO_PROFILER_GC_HANDLE_CREATED ? &gc_handle_creations_ctr : &gc_handle_deletions_ctr;
 
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		LEB128_SIZE /* type */ +
 		LEB128_SIZE /* handle */ +
@@ -1663,48 +1683,36 @@ gc_handle (MonoProfiler *prof, int op, int type, uintptr_t handle, MonoObject *o
 		emit_bt (prof, logbuffer, &data);
 
 	EXIT_LOG;
-
-	process_requests (prof);
 }
 
 static void
 finalize_begin (MonoProfiler *prof)
 {
-	ENTER_LOG;
-
-	LogBuffer *buf = ensure_logbuf (
+	ENTER_LOG (&finalize_begins_ctr, buf,
 		EVENT_SIZE /* event */
 	);
 
 	emit_event (buf, TYPE_GC_FINALIZE_START | TYPE_GC);
 
 	EXIT_LOG;
-
-	process_requests (prof);
 }
 
 static void
 finalize_end (MonoProfiler *prof)
 {
-	ENTER_LOG;
-
-	LogBuffer *buf = ensure_logbuf (
+	ENTER_LOG (&finalize_ends_ctr, buf,
 		EVENT_SIZE /* event */
 	);
 
 	emit_event (buf, TYPE_GC_FINALIZE_END | TYPE_GC);
 
 	EXIT_LOG;
-
-	process_requests (prof);
 }
 
 static void
 finalize_object_begin (MonoProfiler *prof, MonoObject *obj)
 {
-	ENTER_LOG;
-
-	LogBuffer *buf = ensure_logbuf (
+	ENTER_LOG (&finalize_object_begins_ctr, buf,
 		EVENT_SIZE /* event */ +
 		LEB128_SIZE /* obj */
 	);
@@ -1713,16 +1721,12 @@ finalize_object_begin (MonoProfiler *prof, MonoObject *obj)
 	emit_obj (buf, obj);
 
 	EXIT_LOG;
-
-	process_requests (prof);
 }
 
 static void
 finalize_object_end (MonoProfiler *prof, MonoObject *obj)
 {
-	ENTER_LOG;
-
-	LogBuffer *buf = ensure_logbuf (
+	ENTER_LOG (&finalize_object_ends_ctr, buf,
 		EVENT_SIZE /* event */ +
 		LEB128_SIZE /* obj */
 	);
@@ -1731,8 +1735,6 @@ finalize_object_end (MonoProfiler *prof, MonoObject *obj)
 	emit_obj (buf, obj);
 
 	EXIT_LOG;
-
-	process_requests (prof);
 }
 
 static char*
@@ -1766,7 +1768,7 @@ type_name (MonoClass *klass)
 	char buf [1024];
 	char *p;
 	push_nesting (buf, klass);
-	p = (char *)malloc (strlen (buf) + 1);
+	p = (char *) g_malloc (strlen (buf) + 1);
 	strcpy (p, buf);
 	return p;
 }
@@ -1780,9 +1782,7 @@ image_loaded (MonoProfiler *prof, MonoImage *image, int result)
 	const char *name = mono_image_get_filename (image);
 	int nlen = strlen (name) + 1;
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&image_loads_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		BYTE_SIZE /* type */ +
 		LEB128_SIZE /* image */ +
@@ -1796,12 +1796,6 @@ image_loaded (MonoProfiler *prof, MonoImage *image, int result)
 	logbuffer->cursor += nlen;
 
 	EXIT_LOG;
-
-	send_if_needed (prof);
-
-	process_requests (prof);
-
-	InterlockedIncrement (&image_loads);
 }
 
 static void
@@ -1810,9 +1804,7 @@ image_unloaded (MonoProfiler *prof, MonoImage *image)
 	const char *name = mono_image_get_filename (image);
 	int nlen = strlen (name) + 1;
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&image_unloads_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		BYTE_SIZE /* type */ +
 		LEB128_SIZE /* image */ +
@@ -1826,12 +1818,6 @@ image_unloaded (MonoProfiler *prof, MonoImage *image)
 	logbuffer->cursor += nlen;
 
 	EXIT_LOG;
-
-	send_if_needed (prof);
-
-	process_requests (prof);
-
-	InterlockedIncrement (&image_unloads);
 }
 
 static void
@@ -1843,9 +1829,7 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly, int result)
 	char *name = mono_stringify_assembly_name (mono_assembly_get_name (assembly));
 	int nlen = strlen (name) + 1;
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&assembly_loads_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		BYTE_SIZE /* type */ +
 		LEB128_SIZE /* assembly */ +
@@ -1861,12 +1845,6 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly, int result)
 	EXIT_LOG;
 
 	mono_free (name);
-
-	send_if_needed (prof);
-
-	process_requests (prof);
-
-	InterlockedIncrement (&assembly_loads);
 }
 
 static void
@@ -1875,9 +1853,7 @@ assembly_unloaded (MonoProfiler *prof, MonoAssembly *assembly)
 	char *name = mono_stringify_assembly_name (mono_assembly_get_name (assembly));
 	int nlen = strlen (name) + 1;
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&assembly_unloads_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		BYTE_SIZE /* type */ +
 		LEB128_SIZE /* assembly */ +
@@ -1893,12 +1869,6 @@ assembly_unloaded (MonoProfiler *prof, MonoAssembly *assembly)
 	EXIT_LOG;
 
 	mono_free (name);
-
-	send_if_needed (prof);
-
-	process_requests (prof);
-
-	InterlockedIncrement (&assembly_unloads);
 }
 
 static void
@@ -1917,9 +1887,7 @@ class_loaded (MonoProfiler *prof, MonoClass *klass, int result)
 	int nlen = strlen (name) + 1;
 	MonoImage *image = mono_class_get_image (klass);
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&class_loads_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		BYTE_SIZE /* type */ +
 		LEB128_SIZE /* klass */ +
@@ -1940,12 +1908,6 @@ class_loaded (MonoProfiler *prof, MonoClass *klass, int result)
 		mono_free (name);
 	else
 		g_free (name);
-
-	send_if_needed (prof);
-
-	process_requests (prof);
-
-	InterlockedIncrement (&class_loads);
 }
 
 static void
@@ -1961,9 +1923,7 @@ class_unloaded (MonoProfiler *prof, MonoClass *klass)
 	int nlen = strlen (name) + 1;
 	MonoImage *image = mono_class_get_image (klass);
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&class_unloads_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		BYTE_SIZE /* type */ +
 		LEB128_SIZE /* klass */ +
@@ -1984,86 +1944,58 @@ class_unloaded (MonoProfiler *prof, MonoClass *klass)
 		mono_free (name);
 	else
 		g_free (name);
-
-	send_if_needed (prof);
-
-	process_requests (prof);
-
-	InterlockedIncrement (&class_unloads);
 }
 
-#ifndef DISABLE_HELPER_THREAD
 static void process_method_enter_coverage (MonoProfiler *prof, MonoMethod *method);
-#endif /* DISABLE_HELPER_THREAD */
 
 static void
 method_enter (MonoProfiler *prof, MonoMethod *method)
 {
-#ifndef DISABLE_HELPER_THREAD
 	process_method_enter_coverage (prof, method);
-#endif /* DISABLE_HELPER_THREAD */
 
-	if (PROF_TLS_GET ()->call_depth++ <= max_call_depth) {
-		ENTER_LOG;
-
-		LogBuffer *logbuffer = ensure_logbuf (
+	if (!only_coverage && PROF_TLS_GET ()->call_depth++ <= max_call_depth) {
+		ENTER_LOG (&method_entries_ctr, logbuffer,
 			EVENT_SIZE /* event */ +
 			LEB128_SIZE /* method */
 		);
 
 		emit_event (logbuffer, TYPE_ENTER | TYPE_METHOD);
-		emit_method (prof, logbuffer, method);
+		emit_method (logbuffer, method);
 
 		EXIT_LOG;
 	}
-
-	send_if_needed (prof);
-
-	process_requests (prof);
 }
 
 static void
 method_leave (MonoProfiler *prof, MonoMethod *method)
 {
-	if (--PROF_TLS_GET ()->call_depth <= max_call_depth) {
-		ENTER_LOG;
-
-		LogBuffer *logbuffer = ensure_logbuf (
+	if (!only_coverage && --PROF_TLS_GET ()->call_depth <= max_call_depth) {
+		ENTER_LOG (&method_exits_ctr, logbuffer,
 			EVENT_SIZE /* event */ +
 			LEB128_SIZE /* method */
 		);
 
 		emit_event (logbuffer, TYPE_LEAVE | TYPE_METHOD);
-		emit_method (prof, logbuffer, method);
+		emit_method (logbuffer, method);
 
 		EXIT_LOG;
 	}
-
-	send_if_needed (prof);
-
-	process_requests (prof);
 }
 
 static void
 method_exc_leave (MonoProfiler *prof, MonoMethod *method)
 {
-	if (!nocalls && --PROF_TLS_GET ()->call_depth <= max_call_depth) {
-		ENTER_LOG;
-
-		LogBuffer *logbuffer = ensure_logbuf (
+	if (!only_coverage && !nocalls && --PROF_TLS_GET ()->call_depth <= max_call_depth) {
+		ENTER_LOG (&method_exception_exits_ctr, logbuffer,
 			EVENT_SIZE /* event */ +
 			LEB128_SIZE /* method */
 		);
 
 		emit_event (logbuffer, TYPE_EXC_LEAVE | TYPE_METHOD);
-		emit_method (prof, logbuffer, method);
+		emit_method (logbuffer, method);
 
 		EXIT_LOG;
 	}
-
-	send_if_needed (prof);
-
-	process_requests (prof);
 }
 
 static void
@@ -2072,9 +2004,9 @@ method_jitted (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *ji, int resu
 	if (result != MONO_PROFILE_OK)
 		return;
 
-	register_method_local (prof, method, ji);
+	register_method_local (method, ji);
 
-	process_requests (prof);
+	process_requests ();
 }
 
 static void
@@ -2091,9 +2023,7 @@ code_buffer_new (MonoProfiler *prof, void *buffer, int size, MonoProfilerCodeBuf
 		nlen = 0;
 	}
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&code_buffers_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		BYTE_SIZE /* type */ +
 		LEB128_SIZE /* buffer */ +
@@ -2114,8 +2044,6 @@ code_buffer_new (MonoProfiler *prof, void *buffer, int size, MonoProfilerCodeBuf
 	}
 
 	EXIT_LOG;
-
-	process_requests (prof);
 }
 
 static void
@@ -2127,9 +2055,7 @@ throw_exc (MonoProfiler *prof, MonoObject *object)
 	if (do_bt)
 		collect_bt (&data);
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&exception_throws_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		LEB128_SIZE /* object */ +
 		(do_bt ? (
@@ -2147,16 +2073,12 @@ throw_exc (MonoProfiler *prof, MonoObject *object)
 		emit_bt (prof, logbuffer, &data);
 
 	EXIT_LOG;
-
-	process_requests (prof);
 }
 
 static void
 clause_exc (MonoProfiler *prof, MonoMethod *method, int clause_type, int clause_num)
 {
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&exception_clauses_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		BYTE_SIZE /* clause type */ +
 		LEB128_SIZE /* clause num */ +
@@ -2166,11 +2088,9 @@ clause_exc (MonoProfiler *prof, MonoMethod *method, int clause_type, int clause_
 	emit_event (logbuffer, TYPE_EXCEPTION | TYPE_CLAUSE);
 	emit_byte (logbuffer, clause_type);
 	emit_value (logbuffer, clause_num);
-	emit_method (prof, logbuffer, method);
+	emit_method (logbuffer, method);
 
 	EXIT_LOG;
-
-	process_requests (prof);
 }
 
 static void
@@ -2182,9 +2102,24 @@ monitor_event (MonoProfiler *profiler, MonoObject *object, MonoProfilerMonitorEv
 	if (do_bt)
 		collect_bt (&data);
 
-	ENTER_LOG;
+	gint32 *ctr;
 
-	LogBuffer *logbuffer = ensure_logbuf (
+	switch (event) {
+	case MONO_PROFILER_MONITOR_CONTENTION:
+		ctr = &monitor_contentions_ctr;
+		break;
+	case MONO_PROFILER_MONITOR_DONE:
+		ctr = &monitor_acquisitions_ctr;
+		break;
+	case MONO_PROFILER_MONITOR_FAIL:
+		ctr = &monitor_failures_ctr;
+		break;
+	default:
+		g_assert_not_reached ();
+		break;
+	}
+
+	ENTER_LOG (ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		LEB128_SIZE /* object */ +
 		(do_bt ? (
@@ -2202,18 +2137,14 @@ monitor_event (MonoProfiler *profiler, MonoObject *object, MonoProfilerMonitorEv
 		emit_bt (profiler, logbuffer, &data);
 
 	EXIT_LOG;
-
-	process_requests (profiler);
 }
 
 static void
 thread_start (MonoProfiler *prof, uintptr_t tid)
 {
-	init_thread (TRUE);
+	init_thread (prof, TRUE);
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&thread_starts_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		BYTE_SIZE /* type */ +
 		LEB128_SIZE /* tid */
@@ -2224,20 +2155,12 @@ thread_start (MonoProfiler *prof, uintptr_t tid)
 	emit_ptr (logbuffer, (void*) tid);
 
 	EXIT_LOG;
-
-	send_if_needed (prof);
-
-	process_requests (prof);
-
-	InterlockedIncrement (&thread_starts);
 }
 
 static void
 thread_end (MonoProfiler *prof, uintptr_t tid)
 {
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&thread_ends_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		BYTE_SIZE /* type */ +
 		LEB128_SIZE /* tid */
@@ -2247,143 +2170,14 @@ thread_end (MonoProfiler *prof, uintptr_t tid)
 	emit_byte (logbuffer, TYPE_THREAD);
 	emit_ptr (logbuffer, (void*) tid);
 
-	EXIT_LOG;
+	EXIT_LOG_EXPLICIT (FALSE, FALSE);
 
-	// Don't process requests as the thread is detached from the runtime.
+	MonoProfilerThread *thread = PROF_TLS_GET ();
 
-	remove_thread (prof, PROF_TLS_GET (), TRUE);
+	thread->ended = TRUE;
+	remove_thread (thread);
 
-	InterlockedIncrement (&thread_ends);
-}
-
-static void
-domain_loaded (MonoProfiler *prof, MonoDomain *domain, int result)
-{
-	if (result != MONO_PROFILE_OK)
-		return;
-
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
-		EVENT_SIZE /* event */ +
-		BYTE_SIZE /* type */ +
-		LEB128_SIZE /* domain id */
-	);
-
-	emit_event (logbuffer, TYPE_END_LOAD | TYPE_METADATA);
-	emit_byte (logbuffer, TYPE_DOMAIN);
-	emit_ptr (logbuffer, (void*)(uintptr_t) mono_domain_get_id (domain));
-
-	EXIT_LOG;
-
-	send_if_needed (prof);
-
-	process_requests (prof);
-
-	InterlockedIncrement (&domain_loads);
-}
-
-static void
-domain_unloaded (MonoProfiler *prof, MonoDomain *domain)
-{
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
-		EVENT_SIZE /* event */ +
-		BYTE_SIZE /* type */ +
-		LEB128_SIZE /* domain id */
-	);
-
-	emit_event (logbuffer, TYPE_END_UNLOAD | TYPE_METADATA);
-	emit_byte (logbuffer, TYPE_DOMAIN);
-	emit_ptr (logbuffer, (void*)(uintptr_t) mono_domain_get_id (domain));
-
-	EXIT_LOG;
-
-	send_if_needed (prof);
-
-	process_requests (prof);
-
-	InterlockedIncrement (&domain_unloads);
-}
-
-static void
-domain_name (MonoProfiler *prof, MonoDomain *domain, const char *name)
-{
-	int nlen = strlen (name) + 1;
-
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
-		EVENT_SIZE /* event */ +
-		BYTE_SIZE /* type */ +
-		LEB128_SIZE /* domain id */ +
-		nlen /* name */
-	);
-
-	emit_event (logbuffer, TYPE_METADATA);
-	emit_byte (logbuffer, TYPE_DOMAIN);
-	emit_ptr (logbuffer, (void*)(uintptr_t) mono_domain_get_id (domain));
-	memcpy (logbuffer->cursor, name, nlen);
-	logbuffer->cursor += nlen;
-
-	EXIT_LOG;
-
-	send_if_needed (prof);
-
-	process_requests (prof);
-}
-
-static void
-context_loaded (MonoProfiler *prof, MonoAppContext *context)
-{
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
-		EVENT_SIZE /* event */ +
-		BYTE_SIZE /* type */ +
-		LEB128_SIZE /* context id */ +
-		LEB128_SIZE /* domain id */
-	);
-
-	emit_event (logbuffer, TYPE_END_LOAD | TYPE_METADATA);
-	emit_byte (logbuffer, TYPE_CONTEXT);
-	emit_ptr (logbuffer, (void*)(uintptr_t) mono_context_get_id (context));
-	emit_ptr (logbuffer, (void*)(uintptr_t) mono_context_get_domain_id (context));
-
-	EXIT_LOG;
-
-	send_if_needed (prof);
-
-	process_requests (prof);
-
-	InterlockedIncrement (&context_loads);
-}
-
-static void
-context_unloaded (MonoProfiler *prof, MonoAppContext *context)
-{
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
-		EVENT_SIZE /* event */ +
-		BYTE_SIZE /* type */ +
-		LEB128_SIZE /* context id */ +
-		LEB128_SIZE /* domain id */
-	);
-
-	emit_event (logbuffer, TYPE_END_UNLOAD | TYPE_METADATA);
-	emit_byte (logbuffer, TYPE_CONTEXT);
-	emit_ptr (logbuffer, (void*)(uintptr_t) mono_context_get_id (context));
-	emit_ptr (logbuffer, (void*)(uintptr_t) mono_context_get_domain_id (context));
-
-	EXIT_LOG;
-
-	send_if_needed (prof);
-
-	process_requests (prof);
-
-	InterlockedIncrement (&context_unloads);
+	PROF_TLS_SET (NULL);
 }
 
 static void
@@ -2391,9 +2185,7 @@ thread_name (MonoProfiler *prof, uintptr_t tid, const char *name)
 {
 	int len = strlen (name) + 1;
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&thread_names_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		BYTE_SIZE /* type */ +
 		LEB128_SIZE /* tid */ +
@@ -2407,10 +2199,98 @@ thread_name (MonoProfiler *prof, uintptr_t tid, const char *name)
 	logbuffer->cursor += len;
 
 	EXIT_LOG;
+}
 
-	send_if_needed (prof);
+static void
+domain_loaded (MonoProfiler *prof, MonoDomain *domain, int result)
+{
+	if (result != MONO_PROFILE_OK)
+		return;
 
-	process_requests (prof);
+	ENTER_LOG (&domain_loads_ctr, logbuffer,
+		EVENT_SIZE /* event */ +
+		BYTE_SIZE /* type */ +
+		LEB128_SIZE /* domain id */
+	);
+
+	emit_event (logbuffer, TYPE_END_LOAD | TYPE_METADATA);
+	emit_byte (logbuffer, TYPE_DOMAIN);
+	emit_ptr (logbuffer, (void*)(uintptr_t) mono_domain_get_id (domain));
+
+	EXIT_LOG;
+}
+
+static void
+domain_unloaded (MonoProfiler *prof, MonoDomain *domain)
+{
+	ENTER_LOG (&domain_unloads_ctr, logbuffer,
+		EVENT_SIZE /* event */ +
+		BYTE_SIZE /* type */ +
+		LEB128_SIZE /* domain id */
+	);
+
+	emit_event (logbuffer, TYPE_END_UNLOAD | TYPE_METADATA);
+	emit_byte (logbuffer, TYPE_DOMAIN);
+	emit_ptr (logbuffer, (void*)(uintptr_t) mono_domain_get_id (domain));
+
+	EXIT_LOG;
+}
+
+static void
+domain_name (MonoProfiler *prof, MonoDomain *domain, const char *name)
+{
+	int nlen = strlen (name) + 1;
+
+	ENTER_LOG (&domain_names_ctr, logbuffer,
+		EVENT_SIZE /* event */ +
+		BYTE_SIZE /* type */ +
+		LEB128_SIZE /* domain id */ +
+		nlen /* name */
+	);
+
+	emit_event (logbuffer, TYPE_METADATA);
+	emit_byte (logbuffer, TYPE_DOMAIN);
+	emit_ptr (logbuffer, (void*)(uintptr_t) mono_domain_get_id (domain));
+	memcpy (logbuffer->cursor, name, nlen);
+	logbuffer->cursor += nlen;
+
+	EXIT_LOG;
+}
+
+static void
+context_loaded (MonoProfiler *prof, MonoAppContext *context)
+{
+	ENTER_LOG (&context_loads_ctr, logbuffer,
+		EVENT_SIZE /* event */ +
+		BYTE_SIZE /* type */ +
+		LEB128_SIZE /* context id */ +
+		LEB128_SIZE /* domain id */
+	);
+
+	emit_event (logbuffer, TYPE_END_LOAD | TYPE_METADATA);
+	emit_byte (logbuffer, TYPE_CONTEXT);
+	emit_ptr (logbuffer, (void*)(uintptr_t) mono_context_get_id (context));
+	emit_ptr (logbuffer, (void*)(uintptr_t) mono_context_get_domain_id (context));
+
+	EXIT_LOG;
+}
+
+static void
+context_unloaded (MonoProfiler *prof, MonoAppContext *context)
+{
+	ENTER_LOG (&context_unloads_ctr, logbuffer,
+		EVENT_SIZE /* event */ +
+		BYTE_SIZE /* type */ +
+		LEB128_SIZE /* context id */ +
+		LEB128_SIZE /* domain id */
+	);
+
+	emit_event (logbuffer, TYPE_END_UNLOAD | TYPE_METADATA);
+	emit_byte (logbuffer, TYPE_CONTEXT);
+	emit_ptr (logbuffer, (void*)(uintptr_t) mono_context_get_id (context));
+	emit_ptr (logbuffer, (void*)(uintptr_t) mono_context_get_domain_id (context));
+
+	EXIT_LOG;
 }
 
 typedef struct {
@@ -2460,8 +2340,6 @@ enqueue_sample_hit (gpointer p)
 	mono_lock_free_queue_node_unpoison (&sample->node);
 	mono_lock_free_queue_enqueue (&sample->prof->dumper_queue, &sample->node);
 	mono_os_sem_post (&sample->prof->dumper_queue_sem);
-
-	InterlockedIncrement (&sample_flushes);
 }
 
 static void
@@ -2475,10 +2353,8 @@ mono_sample_hit (MonoProfiler *profiler, unsigned char *ip, void *context)
 	 * invoking runtime functions, which is not async-signal-safe.
 	 */
 
-	if (in_shutdown)
+	if (InterlockedRead (&in_shutdown))
 		return;
-
-	InterlockedIncrement (&sample_hits);
 
 	SampleHit *sample = (SampleHit *) mono_lock_free_queue_dequeue (&profiler->sample_reuse_queue);
 
@@ -2487,14 +2363,14 @@ mono_sample_hit (MonoProfiler *profiler, unsigned char *ip, void *context)
 		 * If we're out of reusable sample events and we're not allowed to
 		 * allocate more, we have no choice but to drop the event.
 		 */
-		if (InterlockedRead (&sample_allocations) >= max_allocated_sample_hits)
+		if (InterlockedRead (&sample_allocations_ctr) >= max_allocated_sample_hits)
 			return;
 
 		sample = mono_lock_free_alloc (&profiler->sample_allocator);
 		sample->prof = profiler;
 		mono_lock_free_queue_node_init (&sample->node, TRUE);
 
-		InterlockedIncrement (&sample_allocations);
+		InterlockedIncrement (&sample_allocations_ctr);
 	}
 
 	sample->count = 0;
@@ -2503,14 +2379,6 @@ mono_sample_hit (MonoProfiler *profiler, unsigned char *ip, void *context)
 	sample->time = current_time ();
 	sample->tid = thread_id ();
 	sample->ip = ip;
-
-	if (do_debug) {
-		int len;
-		char buf [256];
-		snprintf (buf, sizeof (buf), "hit at %p in thread %p after %llu ms\n", ip, (void *) sample->tid, (unsigned long long int) ((sample->time - profiler->startup_time) / 10000 / 100));
-		len = strlen (buf);
-		ign_res (write (2, buf, len));
-	}
 
 	mono_thread_hazardous_try_free (sample, enqueue_sample_hit);
 }
@@ -2556,7 +2424,7 @@ add_code_pointer (uintptr_t ip)
 		size_code_pages *= 2;
 		if (size_code_pages == 0)
 			size_code_pages = 16;
-		n = (uintptr_t *)calloc (sizeof (uintptr_t) * size_code_pages, 1);
+		n = (uintptr_t *) g_calloc (sizeof (uintptr_t) * size_code_pages, 1);
 		for (i = 0; i < old_size; ++i) {
 			if (code_pages [i])
 				add_code_page (n, size_code_pages, code_pages [i]);
@@ -2572,13 +2440,11 @@ add_code_pointer (uintptr_t ip)
 //#if defined(HAVE_DL_ITERATE_PHDR) && defined(ELFMAG0)
 #if 0
 static void
-dump_ubin (const char *filename, uintptr_t load_addr, uint64_t offset, uintptr_t size)
+dump_ubin (MonoProfiler *prof, const char *filename, uintptr_t load_addr, uint64_t offset, uintptr_t size)
 {
 	int len = strlen (filename) + 1;
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&sample_ubins_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		LEB128_SIZE /* load address */ +
 		LEB128_SIZE /* offset */ +
@@ -2593,18 +2459,16 @@ dump_ubin (const char *filename, uintptr_t load_addr, uint64_t offset, uintptr_t
 	memcpy (logbuffer->cursor, filename, len);
 	logbuffer->cursor += len;
 
-	EXIT_LOG;
+	EXIT_LOG_EXPLICIT (TRUE, FALSE);
 }
 #endif
 
 static void
-dump_usym (const char *name, uintptr_t value, uintptr_t size)
+dump_usym (MonoProfiler *prof, const char *name, uintptr_t value, uintptr_t size)
 {
 	int len = strlen (name) + 1;
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&sample_usyms_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		LEB128_SIZE /* value */ +
 		LEB128_SIZE /* size */ +
@@ -2617,7 +2481,7 @@ dump_usym (const char *name, uintptr_t value, uintptr_t size)
 	memcpy (logbuffer->cursor, name, len);
 	logbuffer->cursor += len;
 
-	EXIT_LOG;
+	EXIT_LOG_EXPLICIT (TRUE, FALSE);
 }
 
 /* ELF code crashes on some systems. */
@@ -2636,7 +2500,7 @@ dump_usym (const char *name, uintptr_t value, uintptr_t size)
 #endif
 
 static void
-dump_elf_symbols (ElfW(Sym) *symbols, int num_symbols, const char *strtab, void *load_addr)
+dump_elf_symbols (MonoProfiler *prof, ElfW(Sym) *symbols, int num_symbols, const char *strtab, void *load_addr)
 {
 	int i;
 	for (i = 0; i < num_symbols; ++i) {
@@ -2759,7 +2623,7 @@ elf_dl_callback (struct dl_phdr_info *info, size_t size, void *data)
 					header->e_ident [EI_MAG3] != ELFMAG3 ) {
 				header = NULL;
 			}
-			dump_ubin (filename, info->dlpi_addr + info->dlpi_phdr[i].p_vaddr, info->dlpi_phdr[i].p_offset, info->dlpi_phdr[i].p_memsz);
+			dump_ubin (prof, filename, info->dlpi_addr + info->dlpi_phdr[i].p_vaddr, info->dlpi_phdr[i].p_offset, info->dlpi_phdr[i].p_memsz);
 		} else if (info->dlpi_phdr[i].p_type == PT_DYNAMIC) {
 			dyn = (ElfW(Dyn) *)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr);
 		}
@@ -2784,7 +2648,7 @@ elf_dl_callback (struct dl_phdr_info *info, size_t size, void *data)
 	if (!hash_table)
 		return 0;
 	num_sym = hash_table [1];
-	dump_elf_symbols (symtab, num_sym, strtab, (void*)info->dlpi_addr);
+	dump_elf_symbols (prof, symtab, num_sym, strtab, (void*)info->dlpi_addr);
 	return 0;
 }
 
@@ -2850,7 +2714,7 @@ dump_unmanaged_coderefs (MonoProfiler *prof)
 			last_symbol = sym;
 			if (!sym)
 				continue;
-			dump_usym (sym, addr, 0); /* let's not guess the size */
+			dump_usym (prof, sym, addr, 0); /* let's not guess the size */
 			//printf ("found symbol at %p: %s\n", (void*)addr, sym);
 		}
 	}
@@ -2930,233 +2794,16 @@ mono_cpu_count (void)
 		return info.dwNumberOfProcessors;
 	}
 #endif
-	/* FIXME: warn */
+
+	static gboolean warned;
+
+	if (!warned) {
+		g_warning ("Don't know how to determine CPU count on this platform; assuming 1");
+		warned = TRUE;
+	}
+
 	return 1;
 }
-
-#if USE_PERF_EVENTS
-
-typedef struct {
-	int perf_fd;
-	unsigned int prev_pos;
-	void *mmap_base;
-	struct perf_event_mmap_page *page_desc;
-} PerfData ;
-
-static PerfData *perf_data = NULL;
-static int num_perf;
-#define PERF_PAGES_SHIFT 4
-static int num_pages = 1 << PERF_PAGES_SHIFT;
-static unsigned int mmap_mask;
-
-typedef struct {
-	struct perf_event_header h;
-	uint64_t ip;
-	uint32_t pid;
-	uint32_t tid;
-	uint64_t timestamp;
-	uint64_t period;
-	uint64_t nframes;
-} PSample;
-
-static int
-perf_event_syscall (struct perf_event_attr *attr, pid_t pid, int cpu, int group_fd, unsigned long flags)
-{
-	attr->size = PERF_ATTR_SIZE_VER0;
-	//printf ("perf attr size: %d\n", attr->size);
-#if defined(__x86_64__)
-	return syscall(/*__NR_perf_event_open*/ 298, attr, pid, cpu, group_fd, flags);
-#elif defined(__i386__)
-	return syscall(/*__NR_perf_event_open*/ 336, attr, pid, cpu, group_fd, flags);
-#elif defined(__arm__) || defined (__aarch64__)
-	return syscall(/*__NR_perf_event_open*/ 364, attr, pid, cpu, group_fd, flags);
-#else
-	return -1;
-#endif
-}
-
-static int
-setup_perf_map (PerfData *perf)
-{
-	perf->mmap_base = mmap (NULL, (num_pages + 1) * getpagesize (), PROT_READ|PROT_WRITE, MAP_SHARED, perf->perf_fd, 0);
-	if (perf->mmap_base == MAP_FAILED) {
-		if (do_debug)
-			printf ("failed mmap\n");
-		return 0;
-	}
-	perf->page_desc = perf->mmap_base;
-	if (do_debug)
-		printf ("mmap version: %d\n", perf->page_desc->version);
-	return 1;
-}
-
-static void
-dump_perf_hits (MonoProfiler *prof, void *buf, int size)
-{
-	int count = 1;
-	int mbt_count = 0;
-	void *end = (char*)buf + size;
-	int samples = 0;
-	int pid = getpid ();
-
-	while (buf < end) {
-		PSample *s = buf;
-		if (s->h.size == 0)
-			break;
-		if (pid != s->pid) {
-			if (do_debug)
-				printf ("event for different pid: %d\n", s->pid);
-			buf = (char*)buf + s->h.size;
-			continue;
-		}
-		/*ip = (void*)s->ip;
-		printf ("sample: %d, size: %d, ip: %p (%s), timestamp: %llu, nframes: %llu\n",
-			s->h.type, s->h.size, ip, symbol_for (ip), s->timestamp, s->nframes);*/
-
-		ENTER_LOG;
-
-		LogBuffer *logbuffer = ensure_logbuf (
-			EVENT_SIZE /* event */ +
-			BYTE_SIZE /* type */ +
-			LEB128_SIZE /* tid */ +
-			LEB128_SIZE /* count */ +
-			count * (
-				LEB128_SIZE /* ip */
-			) +
-			LEB128_SIZE /* managed count */ +
-			mbt_count * (
-				LEB128_SIZE /* method */
-			)
-		);
-
-		emit_event (logbuffer, TYPE_SAMPLE | TYPE_SAMPLE_HIT);
-		emit_byte (logbuffer, sample_type);
-		/*
-		 * No useful thread ID to write here, since throughout the
-		 * profiler we use pthread_self () but the ID we get from
-		 * perf is the kernel's thread ID.
-		 */
-		emit_ptr (logbuffer, 0);
-		emit_value (logbuffer, count);
-		emit_ptr (logbuffer, (void*)(uintptr_t)s->ip);
-		/* no support here yet for the managed backtrace */
-		emit_uvalue (logbuffer, mbt_count);
-
-		EXIT_LOG;
-
-		add_code_pointer (s->ip);
-		buf = (char*)buf + s->h.size;
-		samples++;
-	}
-	if (do_debug)
-		printf ("dumped %d samples\n", samples);
-	dump_unmanaged_coderefs (prof);
-}
-
-/* read events from the ring buffer */
-static int
-read_perf_mmap (MonoProfiler* prof, int cpu)
-{
-	PerfData *perf = perf_data + cpu;
-	unsigned char *buf;
-	unsigned char *data = (unsigned char*)perf->mmap_base + getpagesize ();
-	unsigned int head = perf->page_desc->data_head;
-	int diff, size;
-	unsigned int old;
-
-	mono_memory_read_barrier ();
-
-	old = perf->prev_pos;
-	diff = head - old;
-	if (diff < 0) {
-		if (do_debug)
-			printf ("lost mmap events: old: %d, head: %d\n", old, head);
-		old = head;
-	}
-	size = head - old;
-	if ((old & mmap_mask) + size != (head & mmap_mask)) {
-		buf = data + (old & mmap_mask);
-		size = mmap_mask + 1 - (old & mmap_mask);
-		old += size;
-		/* size bytes at buf */
-		if (do_debug)
-			printf ("found1 bytes of events: %d\n", size);
-		dump_perf_hits (prof, buf, size);
-	}
-	buf = data + (old & mmap_mask);
-	size = head - old;
-	/* size bytes at buf */
-	if (do_debug)
-		printf ("found bytes of events: %d\n", size);
-	dump_perf_hits (prof, buf, size);
-	old += size;
-	perf->prev_pos = old;
-	perf->page_desc->data_tail = old;
-	return 0;
-}
-
-static int
-setup_perf_event_for_cpu (PerfData *perf, int cpu)
-{
-	struct perf_event_attr attr;
-	memset (&attr, 0, sizeof (attr));
-	attr.type = PERF_TYPE_HARDWARE;
-	switch (sample_type) {
-	case SAMPLE_CYCLES: attr.config = PERF_COUNT_HW_CPU_CYCLES; break;
-	case SAMPLE_INSTRUCTIONS: attr.config = PERF_COUNT_HW_INSTRUCTIONS; break;
-	case SAMPLE_CACHE_MISSES: attr.config = PERF_COUNT_HW_CACHE_MISSES; break;
-	case SAMPLE_CACHE_REFS: attr.config = PERF_COUNT_HW_CACHE_REFERENCES; break;
-	case SAMPLE_BRANCHES: attr.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS; break;
-	case SAMPLE_BRANCH_MISSES: attr.config = PERF_COUNT_HW_BRANCH_MISSES; break;
-	default: attr.config = PERF_COUNT_HW_CPU_CYCLES; break;
-	}
-	attr.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_TID | PERF_SAMPLE_PERIOD | PERF_SAMPLE_TIME;
-//	attr.sample_type |= PERF_SAMPLE_CALLCHAIN;
-	attr.read_format = PERF_FORMAT_TOTAL_TIME_ENABLED | PERF_FORMAT_TOTAL_TIME_RUNNING | PERF_FORMAT_ID;
-	attr.inherit = 1;
-	attr.freq = 1;
-	attr.sample_freq = sample_freq;
-
-	perf->perf_fd = perf_event_syscall (&attr, getpid (), cpu, -1, 0);
-	if (do_debug)
-		printf ("perf fd: %d, freq: %d, event: %llu\n", perf->perf_fd, sample_freq, attr.config);
-	if (perf->perf_fd < 0) {
-		if (perf->perf_fd == -EPERM) {
-			fprintf (stderr, "Perf syscall denied, do \"echo 1 > /proc/sys/kernel/perf_event_paranoid\" as root to enable.\n");
-		} else {
-			if (do_debug)
-				perror ("open perf event");
-		}
-		return 0;
-	}
-	if (!setup_perf_map (perf)) {
-		close (perf->perf_fd);
-		perf->perf_fd = -1;
-		return 0;
-	}
-	return 1;
-}
-
-static int
-setup_perf_event (void)
-{
-	int i, count = 0;
-	mmap_mask = num_pages * getpagesize () - 1;
-	num_perf = mono_cpu_count ();
-	perf_data = g_calloc (num_perf, sizeof (PerfData));
-	for (i = 0; i < num_perf; ++i) {
-		count += setup_perf_event_for_cpu (perf_data + i, i);
-	}
-	if (count)
-		return 1;
-	g_free (perf_data);
-	perf_data = NULL;
-	return 0;
-}
-
-#endif /* USE_PERF_EVENTS */
-
-#ifndef DISABLE_HELPER_THREAD
 
 typedef struct MonoCounterAgent {
 	MonoCounter *counter;
@@ -3169,17 +2816,16 @@ typedef struct MonoCounterAgent {
 } MonoCounterAgent;
 
 static MonoCounterAgent* counters;
-static gboolean counters_initialized = FALSE;
 static int counters_index = 1;
 static mono_mutex_t counters_mutex;
 
 static void
 counters_add_agent (MonoCounter *counter)
 {
-	MonoCounterAgent *agent, *item;
-
-	if (!counters_initialized)
+	if (InterlockedRead (&in_shutdown))
 		return;
+
+	MonoCounterAgent *agent, *item;
 
 	mono_os_mutex_lock (&counters_mutex);
 
@@ -3190,12 +2836,11 @@ counters_add_agent (MonoCounter *counter)
 				g_free (agent->value);
 				agent->value = NULL;
 			}
-			mono_os_mutex_unlock (&counters_mutex);
-			return;
+			goto done;
 		}
 	}
 
-	agent = (MonoCounterAgent *)malloc (sizeof (MonoCounterAgent));
+	agent = (MonoCounterAgent *) g_malloc (sizeof (MonoCounterAgent));
 	agent->counter = counter;
 	agent->value = NULL;
 	agent->value_size = 0;
@@ -3212,6 +2857,7 @@ counters_add_agent (MonoCounter *counter)
 		item->next = agent;
 	}
 
+done:
 	mono_os_mutex_unlock (&counters_mutex);
 }
 
@@ -3225,11 +2871,7 @@ counters_init_foreach_callback (MonoCounter *counter, gpointer data)
 static void
 counters_init (MonoProfiler *profiler)
 {
-	assert (!counters_initialized);
-
 	mono_os_mutex_init (&counters_mutex);
-
-	counters_initialized = TRUE;
 
 	mono_counters_on_register (&counters_add_agent);
 	mono_counters_foreach (counters_init_foreach_callback, NULL);
@@ -3244,9 +2886,6 @@ counters_emit (MonoProfiler *profiler)
 		EVENT_SIZE /* event */ +
 		LEB128_SIZE /* len */
 	;
-
-	if (!counters_initialized)
-		return;
 
 	mono_os_mutex_lock (&counters_mutex);
 
@@ -3263,17 +2902,13 @@ counters_emit (MonoProfiler *profiler)
 			LEB128_SIZE /* index */
 		;
 
-		len += 1;
+		len++;
 	}
 
-	if (!len) {
-		mono_os_mutex_unlock (&counters_mutex);
-		return;
-	}
+	if (!len)
+		goto done;
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (size);
+	ENTER_LOG (&counter_descriptors_ctr, logbuffer, size);
 
 	emit_event (logbuffer, TYPE_SAMPLE_COUNTERS_DESC | TYPE_SAMPLE);
 	emit_value (logbuffer, len);
@@ -3295,8 +2930,9 @@ counters_emit (MonoProfiler *profiler)
 		agent->emitted = 1;
 	}
 
-	EXIT_LOG;
+	EXIT_LOG_EXPLICIT (TRUE, FALSE);
 
+done:
 	mono_os_mutex_unlock (&counters_mutex);
 }
 
@@ -3309,9 +2945,6 @@ counters_sample (MonoProfiler *profiler, uint64_t timestamp)
 	int buffer_size;
 	void *buffer;
 	int size;
-
-	if (!counters_initialized)
-		return;
 
 	counters_emit (profiler);
 
@@ -3336,9 +2969,7 @@ counters_sample (MonoProfiler *profiler, uint64_t timestamp)
 		LEB128_SIZE /* stop marker */
 	;
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (size);
+	ENTER_LOG (&counter_samples_ctr, logbuffer, size);
 
 	emit_event_time (logbuffer, TYPE_SAMPLE_COUNTERS | TYPE_SAMPLE, timestamp);
 
@@ -3348,17 +2979,15 @@ counters_sample (MonoProfiler *profiler, uint64_t timestamp)
 		counter = agent->counter;
 
 		size = mono_counter_get_size (counter);
-		if (size < 0) {
-			continue; // FIXME error
-		} else if (size > buffer_size) {
+
+		if (size > buffer_size) {
 			buffer_size = size;
 			buffer = g_realloc (buffer, buffer_size);
 		}
 
 		memset (buffer, 0, buffer_size);
 
-		if (mono_counters_sample (counter, buffer, size) < 0)
-			continue; // FIXME error
+		g_assert (mono_counters_sample (counter, buffer, size));
 
 		type = mono_counter_get_type (counter);
 
@@ -3409,7 +3038,7 @@ counters_sample (MonoProfiler *profiler, uint64_t timestamp)
 			}
 			break;
 		default:
-			assert (0);
+			g_assert_not_reached ();
 		}
 
 		if (type == MONO_COUNTER_STRING && size > agent->value_size) {
@@ -3424,7 +3053,7 @@ counters_sample (MonoProfiler *profiler, uint64_t timestamp)
 
 	emit_value (logbuffer, 0);
 
-	EXIT_LOG;
+	EXIT_LOG_EXPLICIT (TRUE, FALSE);
 
 	mono_os_mutex_unlock (&counters_mutex);
 }
@@ -3468,15 +3097,13 @@ perfcounters_emit (MonoProfiler *profiler)
 			LEB128_SIZE /* index */
 		;
 
-		len += 1;
+		len++;
 	}
 
 	if (!len)
 		return;
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (size);
+	ENTER_LOG (&perfcounter_descriptors_ctr, logbuffer, size);
 
 	emit_event (logbuffer, TYPE_SAMPLE_COUNTERS_DESC | TYPE_SAMPLE);
 	emit_value (logbuffer, len);
@@ -3496,7 +3123,7 @@ perfcounters_emit (MonoProfiler *profiler)
 		pcagent->emitted = 1;
 	}
 
-	EXIT_LOG;
+	EXIT_LOG_EXPLICIT (TRUE, FALSE);
 }
 
 static gboolean
@@ -3536,10 +3163,8 @@ static void
 perfcounters_sample (MonoProfiler *profiler, uint64_t timestamp)
 {
 	PerfCounterAgent *pcagent;
+	int len = 0;
 	int size;
-
-	if (!counters_initialized)
-		return;
 
 	mono_os_mutex_lock (&counters_mutex);
 
@@ -3564,15 +3189,18 @@ perfcounters_sample (MonoProfiler *profiler, uint64_t timestamp)
 			BYTE_SIZE /* type */ +
 			LEB128_SIZE /* value */
 		;
+
+		len++;
 	}
+
+	if (!len)
+		goto done;
 
 	size +=
 		LEB128_SIZE /* stop marker */
 	;
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (size);
+	ENTER_LOG (&perfcounter_samples_ctr, logbuffer, size);
 
 	emit_event_time (logbuffer, TYPE_SAMPLE_COUNTERS | TYPE_SAMPLE, timestamp);
 
@@ -3588,8 +3216,9 @@ perfcounters_sample (MonoProfiler *profiler, uint64_t timestamp)
 
 	emit_value (logbuffer, 0);
 
-	EXIT_LOG;
+	EXIT_LOG_EXPLICIT (TRUE, FALSE);
 
+done:
 	mono_os_mutex_unlock (&counters_mutex);
 }
 
@@ -3664,7 +3293,7 @@ parse_generic_type_names(char *name)
 	if (name == NULL || *name == '\0')
 		return g_strdup ("");
 
-	if (!(ret = new_name = (char *)calloc (strlen (name) * 4 + 1, sizeof (char))))
+	if (!(ret = new_name = (char *) g_calloc (strlen (name) * 4 + 1, sizeof (char))))
 		return NULL;
 
 	do {
@@ -3737,9 +3366,7 @@ build_method_buffer (gpointer key, gpointer value, gpointer userdata)
 	sig = sig ? sig : "";
 	method_name = method_name ? method_name : "";
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&coverage_methods_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		strlen (image_name) + 1 /* image name */ +
 		strlen (class_name) + 1 /* class name */ +
@@ -3762,16 +3389,12 @@ build_method_buffer (gpointer key, gpointer value, gpointer userdata)
 	emit_uvalue (logbuffer, method_id);
 	emit_value (logbuffer, coverage_data->len);
 
-	EXIT_LOG;
-
-	send_if_needed (prof);
+	EXIT_LOG_EXPLICIT (TRUE, FALSE);
 
 	for (i = 0; i < coverage_data->len; i++) {
 		CoverageEntry *entry = (CoverageEntry *)coverage_data->pdata[i];
 
-		ENTER_LOG;
-
-		LogBuffer *logbuffer = ensure_logbuf (
+		ENTER_LOG (&coverage_statements_ctr, logbuffer,
 			EVENT_SIZE /* event */ +
 			LEB128_SIZE /* method id */ +
 			LEB128_SIZE /* offset */ +
@@ -3787,9 +3410,7 @@ build_method_buffer (gpointer key, gpointer value, gpointer userdata)
 		emit_uvalue (logbuffer, entry->line);
 		emit_uvalue (logbuffer, entry->column);
 
-		EXIT_LOG;
-
-		send_if_needed (prof);
+		EXIT_LOG_EXPLICIT (TRUE, FALSE);
 	}
 
 	method_id++;
@@ -3810,7 +3431,7 @@ count_queue (MonoLockFreeQueue *queue)
 
 	while ((node = mono_lock_free_queue_dequeue (queue))) {
 		count++;
-		mono_thread_hazardous_try_free (node, free);
+		mono_thread_hazardous_try_free (node, g_free);
 	}
 
 	return count;
@@ -3821,7 +3442,6 @@ build_class_buffer (gpointer key, gpointer value, gpointer userdata)
 {
 	MonoClass *klass = (MonoClass *)key;
 	MonoLockFreeQueue *class_methods = (MonoLockFreeQueue *)value;
-	MonoProfiler *prof = (MonoProfiler *)userdata;
 	MonoImage *image;
 	char *class_name;
 	const char *assembly_name;
@@ -3838,9 +3458,7 @@ build_class_buffer (gpointer key, gpointer value, gpointer userdata)
 	/* We don't handle partial covered yet */
 	partially_covered = 0;
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&coverage_classes_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		strlen (assembly_name) + 1 /* assembly name */ +
 		strlen (class_name) + 1 /* class name */ +
@@ -3856,9 +3474,7 @@ build_class_buffer (gpointer key, gpointer value, gpointer userdata)
 	emit_uvalue (logbuffer, fully_covered);
 	emit_uvalue (logbuffer, partially_covered);
 
-	EXIT_LOG;
-
-	send_if_needed (prof);
+	EXIT_LOG_EXPLICIT (TRUE, FALSE);
 
 	g_free (class_name);
 }
@@ -3882,7 +3498,6 @@ static void
 build_assembly_buffer (gpointer key, gpointer value, gpointer userdata)
 {
 	MonoAssembly *assembly = (MonoAssembly *)value;
-	MonoProfiler *prof = (MonoProfiler *)userdata;
 	MonoImage *image = mono_assembly_get_image (assembly);
 	const char *name, *guid, *filename;
 	int number_of_methods = 0, partially_covered = 0;
@@ -3898,9 +3513,7 @@ build_assembly_buffer (gpointer key, gpointer value, gpointer userdata)
 
 	get_coverage_for_image (image, &number_of_methods, &fully_covered, &partially_covered);
 
-	ENTER_LOG;
-
-	LogBuffer *logbuffer = ensure_logbuf (
+	ENTER_LOG (&coverage_assemblies_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		strlen (name) + 1 /* name */ +
 		strlen (guid) + 1 /* guid */ +
@@ -3918,9 +3531,7 @@ build_assembly_buffer (gpointer key, gpointer value, gpointer userdata)
 	emit_uvalue (logbuffer, fully_covered);
 	emit_uvalue (logbuffer, partially_covered);
 
-	EXIT_LOG;
-
-	send_if_needed (prof);
+	EXIT_LOG_EXPLICIT (TRUE, FALSE);
 }
 
 static void
@@ -3933,8 +3544,8 @@ dump_coverage (MonoProfiler *prof)
 	method_id = 0;
 
 	mono_os_mutex_lock (&coverage_mutex);
-	mono_conc_hashtable_foreach (coverage_assemblies, build_assembly_buffer, prof);
-	mono_conc_hashtable_foreach (coverage_classes, build_class_buffer, prof);
+	mono_conc_hashtable_foreach (coverage_assemblies, build_assembly_buffer, NULL);
+	mono_conc_hashtable_foreach (coverage_classes, build_class_buffer, NULL);
 	mono_conc_hashtable_foreach (coverage_methods, build_method_buffer, prof);
 	mono_os_mutex_unlock (&coverage_mutex);
 
@@ -3964,7 +3575,7 @@ process_method_enter_coverage (MonoProfiler *prof, MonoMethod *method)
 static MonoLockFreeQueueNode *
 create_method_node (MonoMethod *method)
 {
-	MethodNode *node = (MethodNode *)g_malloc (sizeof (MethodNode));
+	MethodNode *node = (MethodNode *) g_malloc (sizeof (MethodNode));
 	mono_lock_free_queue_node_init ((MonoLockFreeQueueNode *) node, FALSE);
 	node->method = method;
 
@@ -3985,8 +3596,7 @@ coverage_filter (MonoProfiler *prof, MonoMethod *method)
 	MonoLockFreeQueue *image_methods, *class_methods;
 	MonoLockFreeQueueNode *node;
 
-	if (!coverage_initialized)
-		return FALSE;
+	g_assert (coverage_initialized && "Why are we being asked for coverage filter info when we're not doing coverage?");
 
 	COVERAGE_DEBUG(fprintf (stderr, "Coverage filter for %s\n", mono_method_get_name (method));)
 
@@ -4105,7 +3715,7 @@ coverage_filter (MonoProfiler *prof, MonoMethod *method)
 	image_methods = (MonoLockFreeQueue *)mono_conc_hashtable_lookup (image_to_methods, image);
 
 	if (image_methods == NULL) {
-		image_methods = (MonoLockFreeQueue *)g_malloc (sizeof (MonoLockFreeQueue));
+		image_methods = (MonoLockFreeQueue *) g_malloc (sizeof (MonoLockFreeQueue));
 		mono_lock_free_queue_init (image_methods);
 		mono_os_mutex_lock (&coverage_mutex);
 		mono_conc_hashtable_insert (image_to_methods, image, image_methods);
@@ -4118,7 +3728,7 @@ coverage_filter (MonoProfiler *prof, MonoMethod *method)
 	class_methods = (MonoLockFreeQueue *)mono_conc_hashtable_lookup (coverage_classes, klass);
 
 	if (class_methods == NULL) {
-		class_methods = (MonoLockFreeQueue *)g_malloc (sizeof (MonoLockFreeQueue));
+		class_methods = (MonoLockFreeQueue *) g_malloc (sizeof (MonoLockFreeQueue));
 		mono_lock_free_queue_init (class_methods);
 		mono_os_mutex_lock (&coverage_mutex);
 		mono_conc_hashtable_insert (coverage_classes, klass, class_methods);
@@ -4157,7 +3767,7 @@ get_file_content (FILE *stream)
 	if (filesize > MAX_FILE_SIZE)
 	  return NULL;
 
-	buffer = (char *)g_malloc ((filesize + 1) * sizeof (char));
+	buffer = (char *) g_malloc ((filesize + 1) * sizeof (char));
 	while ((bytes_read = fread (buffer + offset, 1, LINE_BUFFER_SIZE, stream)) > 0)
 		offset += bytes_read;
 
@@ -4215,13 +3825,10 @@ init_suppressed_assemblies (void)
 	fclose (sa_file);
 }
 
-#endif /* DISABLE_HELPER_THREAD */
-
 static void
 coverage_init (MonoProfiler *prof)
 {
-#ifndef DISABLE_HELPER_THREAD
-	assert (!coverage_initialized);
+	g_assert (!coverage_initialized && "Why are we initializing coverage twice?");
 
 	COVERAGE_DEBUG(fprintf (stderr, "Coverage initialized\n");)
 
@@ -4235,7 +3842,6 @@ coverage_init (MonoProfiler *prof)
 	init_suppressed_assemblies ();
 
 	coverage_initialized = TRUE;
-#endif /* DISABLE_HELPER_THREAD */
 }
 
 static void
@@ -4263,27 +3869,37 @@ cleanup_reusable_samples (MonoProfiler *prof)
 static void
 log_shutdown (MonoProfiler *prof)
 {
-	void *res;
+	InterlockedWrite (&in_shutdown, 1);
 
-	in_shutdown = 1;
-#ifndef DISABLE_HELPER_THREAD
-	counters_and_perfcounters_sample (prof);
+	if (!no_counters)
+		counters_and_perfcounters_sample (prof);
 
 	dump_coverage (prof);
 
-	if (prof->command_port) {
-		char c = 1;
-		ign_res (write (prof->pipes [1], &c, 1));
-		pthread_join (prof->helper_thread, &res);
+	char c = 1;
+
+	if (write (prof->pipes [1], &c, 1) != 1) {
+		fprintf (stderr, "Could not write to pipe: %s\n", strerror (errno));
+		exit (1);
 	}
-#endif
-#if USE_PERF_EVENTS
-	if (perf_data) {
-		int i;
-		for (i = 0; i < num_perf; ++i)
-			read_perf_mmap (prof, i);
+
+	mono_native_thread_join (prof->helper_thread);
+
+	mono_os_mutex_destroy (&counters_mutex);
+
+	MonoCounterAgent *mc_next;
+
+	for (MonoCounterAgent *cur = counters; cur; cur = mc_next) {
+		mc_next = cur->next;
+		g_free (cur);
 	}
-#endif
+
+	PerfCounterAgent *pc_next;
+
+	for (PerfCounterAgent *cur = perfcounters; cur; cur = pc_next) {
+		pc_next = cur->next;
+		g_free (cur);
+	}
 
 	/*
 	 * Ensure that we empty the LLS completely, even if some nodes are
@@ -4292,28 +3908,39 @@ log_shutdown (MonoProfiler *prof)
 	 */
 	while (profiler_thread_list.head) {
 		MONO_LLS_FOREACH_SAFE (&profiler_thread_list, MonoProfilerThread, thread) {
-			remove_thread (prof, thread, FALSE);
+			remove_thread (thread);
 		} MONO_LLS_FOREACH_SAFE_END
 	}
 
+	/*
+	 * Ensure that all threads have been freed, so that we don't miss any
+	 * buffers when we shut down the writer thread below.
+	 */
+	mono_thread_hazardous_try_free_all ();
+
 	InterlockedWrite (&prof->run_dumper_thread, 0);
 	mono_os_sem_post (&prof->dumper_queue_sem);
-	pthread_join (prof->dumper_thread, &res);
+	mono_native_thread_join (prof->dumper_thread);
 	mono_os_sem_destroy (&prof->dumper_queue_sem);
 
 	InterlockedWrite (&prof->run_writer_thread, 0);
 	mono_os_sem_post (&prof->writer_queue_sem);
-	pthread_join (prof->writer_thread, &res);
+	mono_native_thread_join (prof->writer_thread);
 	mono_os_sem_destroy (&prof->writer_queue_sem);
+
+	/*
+	 * Free all writer queue entries, and ensure that all sample hits will be
+	 * added to the sample reuse queue.
+	 */
+	mono_thread_hazardous_try_free_all ();
 
 	cleanup_reusable_samples (prof);
 
 	/*
-	 * Pump the entire hazard free queue to make sure that anything we allocated
-	 * in the profiler will be freed. If we don't do this, the runtime could get
-	 * around to freeing some items after the profiler has been unloaded, which
-	 * would mean calling into functions in the profiler library, leading to a
-	 * crash.
+	 * Finally, make sure that all sample hits are freed. This should cover all
+	 * hazardous data from the profiler. We can now be sure that the runtime
+	 * won't later invoke free functions in the profiler library after it has
+	 * been unloaded.
 	 */
 	mono_thread_hazardous_try_free_all ();
 
@@ -4386,7 +4013,7 @@ new_filename (const char* filename)
 		1900 + ts->tm_year, 1 + ts->tm_mon, ts->tm_mday, ts->tm_hour, ts->tm_min, ts->tm_sec);
 	s_date = strlen (time_buf);
 	s_pid = strlen (pid_buf);
-	d = res = (char *)malloc (strlen (filename) + s_date * count_dates + s_pid * count_pids);
+	d = res = (char *) g_malloc (strlen (filename) + s_date * count_dates + s_pid * count_pids);
 	for (p = filename; *p; p++) {
 		if (*p != '%') {
 			*d++ = *p;
@@ -4413,180 +4040,181 @@ new_filename (const char* filename)
 	return res;
 }
 
-//this is exposed by the JIT, but it's not meant to be a supported API for now.
-extern void mono_threads_attach_tools_thread (void);
-
-#ifndef DISABLE_HELPER_THREAD
-
-static void*
-helper_thread (void* arg)
+static void
+add_to_fd_set (fd_set *set, int fd, int *max_fd)
 {
-	MonoProfiler* prof = (MonoProfiler *)arg;
-	int command_socket;
-	int len;
-	char buf [64];
+	/*
+	 * This should only trigger for the basic FDs (server socket, pipes) at
+	 * startup if for some mysterious reason they're too large. In this case,
+	 * the profiler really can't function, and we're better off printing an
+	 * error and exiting.
+	 */
+	if (fd >= FD_SETSIZE) {
+		fprintf (stderr, "File descriptor is out of bounds for fd_set: %d\n", fd);
+		exit (1);
+	}
+
+	FD_SET (fd, set);
+
+	if (*max_fd < fd)
+		*max_fd = fd;
+}
+
+static void *
+helper_thread (void *arg)
+{
+	MonoProfiler *prof = (MonoProfiler *) arg;
 
 	mono_threads_attach_tools_thread ();
 	mono_native_thread_set_name (mono_native_thread_id_get (), "Profiler helper");
 
-	init_thread (FALSE);
+	MonoProfilerThread *thread = init_thread (prof, FALSE);
 
-	//fprintf (stderr, "Server listening\n");
-	command_socket = -1;
+	GArray *command_sockets = g_array_new (FALSE, FALSE, sizeof (int));
+
 	while (1) {
 		fd_set rfds;
-		struct timeval tv;
 		int max_fd = -1;
+
 		FD_ZERO (&rfds);
-		FD_SET (prof->server_socket, &rfds);
-		max_fd = prof->server_socket;
-		FD_SET (prof->pipes [0], &rfds);
-		if (max_fd < prof->pipes [0])
-			max_fd = prof->pipes [0];
-		if (command_socket >= 0) {
-			FD_SET (command_socket, &rfds);
-			if (max_fd < command_socket)
-				max_fd = command_socket;
-		}
-#if USE_PERF_EVENTS
-		if (perf_data) {
-			int i;
-			for ( i = 0; i < num_perf; ++i) {
-				if (perf_data [i].perf_fd < 0)
-					continue;
-				FD_SET (perf_data [i].perf_fd, &rfds);
-				if (max_fd < perf_data [i].perf_fd)
-					max_fd = perf_data [i].perf_fd;
-			}
-		}
-#endif
 
-		counters_and_perfcounters_sample (prof);
+		add_to_fd_set (&rfds, prof->server_socket, &max_fd);
+		add_to_fd_set (&rfds, prof->pipes [0], &max_fd);
 
-		buffer_lock_excl ();
+		for (gint i = 0; i < command_sockets->len; i++)
+			add_to_fd_set (&rfds, g_array_index (command_sockets, int, i), &max_fd);
 
-		sync_point (prof, SYNC_POINT_PERIODIC);
+		struct timeval tv = { .tv_sec = 1, .tv_usec = 0 };
 
-		buffer_unlock_excl ();
-
-		tv.tv_sec = 1;
-		tv.tv_usec = 0;
-		len = select (max_fd + 1, &rfds, NULL, NULL, &tv);
-
-		if (len < 0) {
+		// Sleep for 1sec or until a file descriptor has data.
+		if (select (max_fd + 1, &rfds, NULL, NULL, &tv) == -1) {
 			if (errno == EINTR)
 				continue;
 
-			g_warning ("Error in proflog server: %s", strerror (errno));
-			return NULL;
+			fprintf (stderr, "Error in mono-profiler-log server: %s", strerror (errno));
+			exit (1);
 		}
 
+		if (!no_counters)
+			counters_and_perfcounters_sample (prof);
+
+		buffer_lock_excl ();
+
+		sync_point (SYNC_POINT_PERIODIC);
+
+		buffer_unlock_excl ();
+
+		// Are we shutting down?
 		if (FD_ISSET (prof->pipes [0], &rfds)) {
 			char c;
 			read (prof->pipes [0], &c, 1);
-			if (do_debug)
-				fprintf (stderr, "helper shutdown\n");
-#if USE_PERF_EVENTS
-			if (perf_data) {
-				int i;
-				for ( i = 0; i < num_perf; ++i) {
-					if (perf_data [i].perf_fd < 0)
-						continue;
-					if (FD_ISSET (perf_data [i].perf_fd, &rfds))
-						read_perf_mmap (prof, i);
-				}
-			}
-#endif
-			safe_send_threadless (prof);
-			return NULL;
+			break;
 		}
-#if USE_PERF_EVENTS
-		if (perf_data) {
-			int i;
-			for ( i = 0; i < num_perf; ++i) {
-				if (perf_data [i].perf_fd < 0)
-					continue;
-				if (FD_ISSET (perf_data [i].perf_fd, &rfds)) {
-					read_perf_mmap (prof, i);
-					send_if_needed_threadless (prof);
-				}
-			}
-		}
-#endif
-		if (command_socket >= 0 && FD_ISSET (command_socket, &rfds)) {
-			len = read (command_socket, buf, sizeof (buf) - 1);
-			if (len < 0)
+
+		for (gint i = 0; i < command_sockets->len; i++) {
+			int fd = g_array_index (command_sockets, int, i);
+
+			if (!FD_ISSET (fd, &rfds))
 				continue;
-			if (len == 0) {
-				close (command_socket);
-				command_socket = -1;
+
+			char buf [64];
+			int len = read (fd, buf, sizeof (buf) - 1);
+
+			if (len == -1)
+				continue;
+
+			if (!len) {
+				// The other end disconnected.
+				g_array_remove_index (command_sockets, i);
+				close (fd);
+
 				continue;
 			}
+
 			buf [len] = 0;
-			if (strcmp (buf, "heapshot\n") == 0 && hs_mode_ondemand) {
+
+			if (!strcmp (buf, "heapshot\n") && hs_mode_ondemand) {
 				// Rely on the finalization callbacks invoking process_requests ().
 				heapshot_requested = 1;
 				mono_gc_finalize_notify ();
 			}
-			continue;
 		}
-		if (!FD_ISSET (prof->server_socket, &rfds)) {
-			continue;
+
+		if (FD_ISSET (prof->server_socket, &rfds)) {
+			int fd = accept (prof->server_socket, NULL, NULL);
+
+			if (fd != -1) {
+				if (fd >= FD_SETSIZE)
+					close (fd);
+				else
+					g_array_append_val (command_sockets, fd);
+			}
 		}
-		command_socket = accept (prof->server_socket, NULL, NULL);
-		if (command_socket < 0)
-			continue;
-		//fprintf (stderr, "Accepted connection\n");
 	}
+
+	for (gint i = 0; i < command_sockets->len; i++)
+		close (g_array_index (command_sockets, int, i));
+
+	g_array_free (command_sockets, TRUE);
+
+	send_log_unsafe (FALSE, FALSE);
+	deinit_thread (thread);
 
 	mono_thread_info_detach ();
 
 	return NULL;
 }
 
-static int
+static void
 start_helper_thread (MonoProfiler* prof)
 {
-	struct sockaddr_in server_address;
-	int r;
-	socklen_t slen;
-	if (pipe (prof->pipes) < 0) {
-		fprintf (stderr, "Cannot create pipe\n");
-		return 0;
+	if (pipe (prof->pipes) == -1) {
+		fprintf (stderr, "Cannot create pipe: %s\n", strerror (errno));
+		exit (1);
 	}
+
 	prof->server_socket = socket (PF_INET, SOCK_STREAM, 0);
-	if (prof->server_socket < 0) {
-		fprintf (stderr, "Cannot create server socket\n");
-		return 0;
+
+	if (prof->server_socket == -1) {
+		fprintf (stderr, "Cannot create server socket: %s\n", strerror (errno));
+		exit (1);
 	}
+
+	struct sockaddr_in server_address;
+
 	memset (&server_address, 0, sizeof (server_address));
 	server_address.sin_family = AF_INET;
 	server_address.sin_addr.s_addr = INADDR_ANY;
 	server_address.sin_port = htons (prof->command_port);
-	if (bind (prof->server_socket, (struct sockaddr *) &server_address, sizeof (server_address)) < 0) {
-		fprintf (stderr, "Cannot bind server socket, port: %d: %s\n", prof->command_port, strerror (errno));
+
+	if (bind (prof->server_socket, (struct sockaddr *) &server_address, sizeof (server_address)) == -1) {
+		fprintf (stderr, "Cannot bind server socket on port %d: %s\n", prof->command_port, strerror (errno));
 		close (prof->server_socket);
-		return 0;
-	}
-	if (listen (prof->server_socket, 1) < 0) {
-		fprintf (stderr, "Cannot listen server socket\n");
-		close (prof->server_socket);
-		return 0;
-	}
-	slen = sizeof (server_address);
-	if (getsockname (prof->server_socket, (struct sockaddr *)&server_address, &slen) == 0) {
-		prof->command_port = ntohs (server_address.sin_port);
-		/*fprintf (stderr, "Assigned server port: %d\n", prof->command_port);*/
+		exit (1);
 	}
 
-	r = pthread_create (&prof->helper_thread, NULL, helper_thread, prof);
-	if (r) {
+	if (listen (prof->server_socket, 1) == -1) {
+		fprintf (stderr, "Cannot listen on server socket: %s\n", strerror (errno));
 		close (prof->server_socket);
-		return 0;
+		exit (1);
 	}
-	return 1;
+
+	socklen_t slen = sizeof (server_address);
+
+	if (getsockname (prof->server_socket, (struct sockaddr *) &server_address, &slen)) {
+		fprintf (stderr, "Could not get assigned port: %s\n", strerror (errno));
+		close (prof->server_socket);
+		exit (1);
+	}
+
+	prof->command_port = ntohs (server_address.sin_port);
+
+	if (!mono_native_thread_create (&prof->helper_thread, helper_thread, prof)) {
+		fprintf (stderr, "Could not start helper thread\n");
+		close (prof->server_socket);
+		exit (1);
+	}
 }
-#endif
 
 static void
 free_writer_entry (gpointer p)
@@ -4603,7 +4231,7 @@ handle_writer_queue_entry (MonoProfiler *prof)
 		if (!entry->methods)
 			goto no_methods;
 
-		LogBuffer *buf = NULL;
+		gboolean wrote_methods = FALSE;
 
 		/*
 		 * Encode the method events in a temporary log buffer that we
@@ -4641,7 +4269,7 @@ handle_writer_queue_entry (MonoProfiler *prof)
 			void *cstart = info->ji ? mono_jit_info_get_code_start (info->ji) : NULL;
 			int csize = info->ji ? mono_jit_info_get_code_size (info->ji) : 0;
 
-			buf = ensure_logbuf_unsafe (
+			ENTER_LOG (&method_jits_ctr, logbuffer,
 				EVENT_SIZE /* event */ +
 				LEB128_SIZE /* method */ +
 				LEB128_SIZE /* start */ +
@@ -4649,15 +4277,19 @@ handle_writer_queue_entry (MonoProfiler *prof)
 				nlen /* name */
 			);
 
-			emit_event_time (buf, TYPE_JIT | TYPE_METHOD, info->time);
-			emit_method_inner (buf, info->method);
-			emit_ptr (buf, cstart);
-			emit_value (buf, csize);
+			emit_event_time (logbuffer, TYPE_JIT | TYPE_METHOD, info->time);
+			emit_method_inner (logbuffer, info->method);
+			emit_ptr (logbuffer, cstart);
+			emit_value (logbuffer, csize);
 
-			memcpy (buf->cursor, name, nlen);
-			buf->cursor += nlen;
+			memcpy (logbuffer->cursor, name, nlen);
+			logbuffer->cursor += nlen;
+
+			EXIT_LOG_EXPLICIT (FALSE, FALSE);
 
 			mono_free (name);
+
+			wrote_methods = TRUE;
 
 		free_info:
 			g_free (info);
@@ -4665,8 +4297,8 @@ handle_writer_queue_entry (MonoProfiler *prof)
 
 		g_ptr_array_free (entry->methods, TRUE);
 
-		if (buf) {
-			dump_buffer_threadless (prof, buf);
+		if (wrote_methods) {
+			dump_buffer_threadless (prof, PROF_TLS_GET ()->buffer);
 			init_buffer_state (PROF_TLS_GET ());
 		}
 
@@ -4691,7 +4323,7 @@ writer_thread (void *arg)
 
 	dump_header (prof);
 
-	MonoProfilerThread *thread = init_thread (FALSE);
+	MonoProfilerThread *thread = init_thread (prof, FALSE);
 
 	while (InterlockedRead (&prof->run_writer_thread)) {
 		mono_os_sem_wait (&prof->writer_queue_sem, MONO_SEM_FLAGS_NONE);
@@ -4709,12 +4341,15 @@ writer_thread (void *arg)
 	return NULL;
 }
 
-static int
+static void
 start_writer_thread (MonoProfiler* prof)
 {
 	InterlockedWrite (&prof->run_writer_thread, 1);
 
-	return !pthread_create (&prof->writer_thread, NULL, writer_thread, prof);
+	if (!mono_native_thread_create (&prof->writer_thread, writer_thread, prof)) {
+		fprintf (stderr, "Could not start writer thread\n");
+		exit (1);
+	}
 }
 
 static void
@@ -4748,7 +4383,7 @@ handle_dumper_queue_entry (MonoProfiler *prof)
 			}
 		}
 
-		LogBuffer *logbuffer = ensure_logbuf_unsafe (
+		ENTER_LOG (&sample_hits_ctr, logbuffer,
 			EVENT_SIZE /* event */ +
 			BYTE_SIZE /* type */ +
 			LEB128_SIZE /* tid */ +
@@ -4763,7 +4398,7 @@ handle_dumper_queue_entry (MonoProfiler *prof)
 		);
 
 		emit_event_time (logbuffer, TYPE_SAMPLE | TYPE_SAMPLE_HIT, sample->time);
-		emit_byte (logbuffer, sample_type);
+		emit_byte (logbuffer, SAMPLE_CYCLES);
 		emit_ptr (logbuffer, (void *) sample->tid);
 		emit_value (logbuffer, 1);
 
@@ -4777,13 +4412,13 @@ handle_dumper_queue_entry (MonoProfiler *prof)
 		emit_uvalue (logbuffer, sample->count);
 
 		for (int i = 0; i < sample->count; ++i)
-			emit_method (prof, logbuffer, sample->frames [i].method);
+			emit_method (logbuffer, sample->frames [i].method);
+
+		EXIT_LOG_EXPLICIT (TRUE, FALSE);
 
 		mono_thread_hazardous_try_free (sample, reuse_sample_hit);
 
 		dump_unmanaged_coderefs (prof);
-
-		send_if_needed_threadless (prof);
 	}
 
 	return FALSE;
@@ -4797,7 +4432,7 @@ dumper_thread (void *arg)
 	mono_threads_attach_tools_thread ();
 	mono_native_thread_set_name (mono_native_thread_id_get (), "Profiler dumper");
 
-	MonoProfilerThread *thread = init_thread (FALSE);
+	MonoProfilerThread *thread = init_thread (prof, FALSE);
 
 	while (InterlockedRead (&prof->run_dumper_thread)) {
 		mono_os_sem_wait (&prof->dumper_queue_sem, MONO_SEM_FLAGS_NONE);
@@ -4807,7 +4442,7 @@ dumper_thread (void *arg)
 	/* Drain any remaining entries on shutdown. */
 	while (handle_dumper_queue_entry (prof));
 
-	safe_send_threadless (prof);
+	send_log_unsafe (FALSE, FALSE);
 	deinit_thread (thread);
 
 	mono_thread_info_detach ();
@@ -4815,12 +4450,21 @@ dumper_thread (void *arg)
 	return NULL;
 }
 
-static int
+static void
 start_dumper_thread (MonoProfiler* prof)
 {
 	InterlockedWrite (&prof->run_dumper_thread, 1);
 
-	return !pthread_create (&prof->dumper_thread, NULL, dumper_thread, prof);
+	if (!mono_native_thread_create (&prof->dumper_thread, dumper_thread, prof)) {
+		fprintf (stderr, "Could not start dumper thread\n");
+		exit (1);
+	}
+}
+
+static void
+register_counter (const char *name, gint32 *counter)
+{
+	mono_counters_register (name, MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, counter);
 }
 
 static void
@@ -4828,39 +4472,66 @@ runtime_initialized (MonoProfiler *profiler)
 {
 	InterlockedWrite (&runtime_inited, 1);
 
-#ifndef DISABLE_HELPER_THREAD
-	if (hs_mode_ondemand || need_helper_thread) {
-		if (!start_helper_thread (profiler))
-			profiler->command_port = 0;
-	}
-#endif
-
 	start_writer_thread (profiler);
 	start_dumper_thread (profiler);
 
-	mono_counters_register ("Sample hits", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &sample_hits);
-	mono_counters_register ("Sample flushes", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &sample_flushes);
-	mono_counters_register ("Sample events allocated", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &sample_allocations);
-	mono_counters_register ("Log buffers allocated", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &buffer_allocations);
-	mono_counters_register ("Thread start events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &thread_starts);
-	mono_counters_register ("Thread stop events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &thread_ends);
-	mono_counters_register ("Domain load events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &domain_loads);
-	mono_counters_register ("Domain unload events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &domain_unloads);
-	mono_counters_register ("Context load events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &context_loads);
-	mono_counters_register ("Context unload events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &context_unloads);
-	mono_counters_register ("Assembly load events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &assembly_loads);
-	mono_counters_register ("Assembly unload events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &assembly_unloads);
-	mono_counters_register ("Image load events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &image_loads);
-	mono_counters_register ("Image unload events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &image_unloads);
-	mono_counters_register ("Class load events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &class_loads);
-	mono_counters_register ("Class unload events", MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, &class_unloads);
+	register_counter ("Sample events allocated", &sample_allocations_ctr);
+	register_counter ("Log buffers allocated", &buffer_allocations_ctr);
 
-#ifndef DISABLE_HELPER_THREAD
+	register_counter ("Event: Sync points", &sync_points_ctr);
+	register_counter ("Event: Heap objects", &heap_objects_ctr);
+	register_counter ("Event: Heap starts", &heap_starts_ctr);
+	register_counter ("Event: Heap ends", &heap_ends_ctr);
+	register_counter ("Event: Heap roots", &heap_roots_ctr);
+	register_counter ("Event: GC events", &gc_events_ctr);
+	register_counter ("Event: GC resizes", &gc_resizes_ctr);
+	register_counter ("Event: GC allocations", &gc_allocs_ctr);
+	register_counter ("Event: GC moves", &gc_moves_ctr);
+	register_counter ("Event: GC handle creations", &gc_handle_creations_ctr);
+	register_counter ("Event: GC handle deletions", &gc_handle_deletions_ctr);
+	register_counter ("Event: GC finalize starts", &finalize_begins_ctr);
+	register_counter ("Event: GC finalize ends", &finalize_ends_ctr);
+	register_counter ("Event: GC finalize object starts", &finalize_object_begins_ctr);
+	register_counter ("Event: GC finalize object ends", &finalize_object_ends_ctr);
+	register_counter ("Event: Image loads", &image_loads_ctr);
+	register_counter ("Event: Image unloads", &image_unloads_ctr);
+	register_counter ("Event: Assembly loads", &assembly_loads_ctr);
+	register_counter ("Event: Assembly unloads", &assembly_unloads_ctr);
+	register_counter ("Event: Class loads", &class_loads_ctr);
+	register_counter ("Event: Class unloads", &class_unloads_ctr);
+	register_counter ("Event: Method entries", &method_entries_ctr);
+	register_counter ("Event: Method exits", &method_exits_ctr);
+	register_counter ("Event: Method exception leaves", &method_exception_exits_ctr);
+	register_counter ("Event: Method JITs", &method_jits_ctr);
+	register_counter ("Event: Code buffers", &code_buffers_ctr);
+	register_counter ("Event: Exception throws", &exception_throws_ctr);
+	register_counter ("Event: Exception clauses", &exception_clauses_ctr);
+	register_counter ("Event: Monitor contentions", &monitor_contentions_ctr);
+	register_counter ("Event: Monitor acquisitions", &monitor_acquisitions_ctr);
+	register_counter ("Event: Monitor failures", &monitor_failures_ctr);
+	register_counter ("Event: Thread starts", &thread_starts_ctr);
+	register_counter ("Event: Thread ends", &thread_ends_ctr);
+	register_counter ("Event: Thread names", &thread_names_ctr);
+	register_counter ("Event: Domain loads", &domain_loads_ctr);
+	register_counter ("Event: Domain unloads", &domain_unloads_ctr);
+	register_counter ("Event: Domain names", &domain_names_ctr);
+	register_counter ("Event: Context loads", &context_loads_ctr);
+	register_counter ("Event: Context unloads", &context_unloads_ctr);
+	register_counter ("Event: Sample binaries", &sample_ubins_ctr);
+	register_counter ("Event: Sample symbols", &sample_usyms_ctr);
+	register_counter ("Event: Sample hits", &sample_hits_ctr);
+	register_counter ("Event: Counter descriptors", &counter_descriptors_ctr);
+	register_counter ("Event: Counter samples", &counter_samples_ctr);
+	register_counter ("Event: Performance counter descriptors", &perfcounter_descriptors_ctr);
+	register_counter ("Event: Performance counter samples", &perfcounter_samples_ctr);
+	register_counter ("Event: Coverage methods", &coverage_methods_ctr);
+	register_counter ("Event: Coverage statements", &coverage_statements_ctr);
+	register_counter ("Event: Coverage classes", &coverage_classes_ctr);
+	register_counter ("Event: Coverage assemblies", &coverage_assemblies_ctr);
+
 	counters_init (profiler);
-	counters_sample (profiler, 0);
-#endif
-	/* ensure the main thread data and startup are available soon */
-	safe_send (profiler);
+
+	start_helper_thread (profiler);
 }
 
 static MonoProfiler*
@@ -4869,7 +4540,7 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 	MonoProfiler *prof;
 	char *nf;
 	int force_delete = 0;
-	prof = (MonoProfiler *)calloc (1, sizeof (MonoProfiler));
+	prof = (MonoProfiler *) g_calloc (1, sizeof (MonoProfiler));
 
 	prof->args = pstrdup (args);
 	prof->command_port = command_port;
@@ -4887,7 +4558,7 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 		nf = new_filename (filename);
 		if (do_report) {
 			int s = strlen (nf) + 32;
-			char *p = (char *)malloc (s);
+			char *p = (char *) g_malloc (s);
 			snprintf (p, s, "|mprof-report '--out=%s' -", nf);
 			g_free (nf);
 			nf = p;
@@ -4908,24 +4579,11 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 		fprintf (stderr, "Cannot create profiler output: %s\n", nf);
 		exit (1);
 	}
+
 #if defined (HAVE_SYS_ZLIB)
 	if (use_zip)
 		prof->gzfile = gzdopen (fileno (prof->file), "wb");
 #endif
-#if USE_PERF_EVENTS
-	if (sample_type && sample_freq && !do_mono_sample)
-		need_helper_thread = setup_perf_event ();
-	if (!perf_data) {
-		/* FIXME: warn if different freq or sample type */
-		do_mono_sample = 1;
-	}
-#endif
-	if (do_mono_sample) {
-		need_helper_thread = 1;
-	}
-	if (do_counters && !need_helper_thread) {
-		need_helper_thread = 1;
-	}
 
 	/*
 	 * If you hit this assert while increasing MAX_FRAMES, you need to increase
@@ -4938,15 +4596,6 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 	mono_lock_free_allocator_init_allocator (&prof->sample_allocator, &prof->sample_size_class, MONO_MEM_ACCOUNT_PROFILER);
 
 	mono_lock_free_queue_init (&prof->sample_reuse_queue);
-
-#ifdef DISABLE_HELPER_THREAD
-	if (hs_mode_ondemand)
-		fprintf (stderr, "Ondemand heapshot unavailable on this arch.\n");
-
-	if (do_coverage)
-		fprintf (stderr, "Coverage unavailable on this arch.\n");
-
-#endif
 
 	g_assert (sizeof (WriterQueueEntry) * 2 < LOCK_FREE_ALLOC_SB_USABLE_SIZE (WRITER_ENTRY_BLOCK_SIZE));
 
@@ -4986,7 +4635,6 @@ usage (int do_exit)
 	printf ("\tsample[=TYPE]        use statistical sampling mode (by default cycles/100)\n");
 	printf ("\t                     TYPE: cycles,instr,cacherefs,cachemiss,branches,branchmiss\n");
 	printf ("\t                     TYPE can be followed by /FREQUENCY\n");
-	printf ("\ttime=fast            use a faster (but more inaccurate) timer\n");
 	printf ("\tmaxframes=NUM        collect up to NUM stack frames\n");
 	printf ("\tcalldepth=NUM        ignore method events for call chain depth bigger than NUM\n");
 	printf ("\toutput=FILENAME      write the data to file FILENAME (-FILENAME to overwrite)\n");
@@ -5020,7 +4668,7 @@ match_option (const char* p, const char *opt, char **rval)
 				} else {
 					l = end - opt;
 				}
-				val = (char *)malloc (l + 1);
+				val = (char *) g_malloc (l + 1);
 				memcpy (val, opt, l);
 				val [l] = 0;
 				*rval = val;
@@ -5041,62 +4689,43 @@ match_option (const char* p, const char *opt, char **rval)
 	return p;
 }
 
-typedef struct {
-	const char *name;
-	int sample_mode;
-} SampleMode;
-
-static const SampleMode sample_modes [] = {
-	{"cycles", SAMPLE_CYCLES},
-	{"instr", SAMPLE_INSTRUCTIONS},
-	{"cachemiss", SAMPLE_CACHE_MISSES},
-	{"cacherefs", SAMPLE_CACHE_REFS},
-	{"branches", SAMPLE_BRANCHES},
-	{"branchmiss", SAMPLE_BRANCH_MISSES},
-	{NULL, 0}
-};
-
 static void
-set_sample_mode (char* val, int allow_empty)
+set_sample_freq (char *val)
 {
-	char *end;
-	char *maybe_freq = NULL;
-	unsigned int count;
-	const SampleMode *smode = sample_modes;
-#ifndef USE_PERF_EVENTS
 	do_mono_sample = 1;
-#endif
-	if (allow_empty && !val) {
-		sample_type = SAMPLE_CYCLES;
-		sample_freq = 100;
+	sample_freq = 100;
+
+	if (!val)
 		return;
-	}
-	if (strcmp (val, "mono") == 0) {
-		do_mono_sample = 1;
-		sample_type = SAMPLE_CYCLES;
-		g_free (val);
-		return;
-	}
-	for (smode = sample_modes; smode->name; smode++) {
-		int l = strlen (smode->name);
-		if (strncmp (val, smode->name, l) == 0) {
-			sample_type = smode->sample_mode;
-			maybe_freq = val + l;
-			break;
-		}
-	}
-	if (!smode->name)
-		usage (1);
-	if (*maybe_freq == '/') {
-		count = strtoul (maybe_freq + 1, &end, 10);
-		if (maybe_freq + 1 == end)
+
+	char *p = val;
+
+	// Is it only the frequency (new option style)?
+	if (isdigit (*p))
+		goto parse;
+
+	// Skip the sample type for backwards compatibility.
+	while (isalpha (*p))
+		p++;
+
+	// Skip the forward slash only if we got a sample type.
+	if (p != val && *p == '/') {
+		p++;
+
+		char *end;
+
+	parse:
+		sample_freq = strtoul (p, &end, 10);
+
+		if (p == end)
 			usage (1);
-		sample_freq = count;
-	} else if (*maybe_freq != 0) {
-		usage (1);
-	} else {
-		sample_freq = 100;
+
+		p = end;
 	}
+
+	if (*p)
+		usage (1);
+
 	g_free (val);
 }
 
@@ -5152,11 +4781,8 @@ mono_profiler_startup (const char *desc)
 	char *filename = NULL;
 	const char *p;
 	const char *opt;
-	int fast_time = 0;
 	int calls_enabled = 0;
 	int allocs_enabled = 0;
-	int only_counters = 0;
-	int only_coverage = 0;
 	int events = MONO_PROFILE_GC|MONO_PROFILE_ALLOCATIONS|
 		MONO_PROFILE_GC_MOVES|MONO_PROFILE_CLASS_EVENTS|MONO_PROFILE_THREADS|
 		MONO_PROFILE_ENTER_LEAVE|MONO_PROFILE_JIT_COMPILATION|MONO_PROFILE_EXCEPTIONS|
@@ -5197,14 +4823,16 @@ mono_profiler_startup (const char *desc)
 		}
 		if ((opt = match_option (p, "noalloc", NULL)) != p) {
 			events &= ~MONO_PROFILE_ALLOCATIONS;
+			events &= ~MONO_PROFILE_GC_MOVES;
+			continue;
+		}
+		if ((opt = match_option (p, "nocounters", NULL)) != p) {
+			no_counters = TRUE;
 			continue;
 		}
 		if ((opt = match_option (p, "time", &val)) != p) {
-			if (strcmp (val, "fast") == 0)
-				fast_time = 1;
-			else if (strcmp (val, "null") == 0)
-				fast_time = 2;
-			else
+			// For backwards compatibility.
+			if (strcmp (val, "fast") && strcmp (val, "null"))
 				usage (1);
 			g_free (val);
 			continue;
@@ -5227,6 +4855,7 @@ mono_profiler_startup (const char *desc)
 		}
 		if ((opt = match_option (p, "heapshot", &val)) != p) {
 			events &= ~MONO_PROFILE_ALLOCATIONS;
+			events &= ~MONO_PROFILE_GC_MOVES;
 			events &= ~MONO_PROFILE_ENTER_LEAVE;
 			nocalls = 1;
 			do_heap_shot = 1;
@@ -5235,14 +4864,10 @@ mono_profiler_startup (const char *desc)
 		}
 		if ((opt = match_option (p, "sample", &val)) != p) {
 			events &= ~MONO_PROFILE_ALLOCATIONS;
+			events &= ~MONO_PROFILE_GC_MOVES;
 			events &= ~MONO_PROFILE_ENTER_LEAVE;
 			nocalls = 1;
-			set_sample_mode (val, 1);
-			continue;
-		}
-		if ((opt = match_option (p, "hsmode", &val)) != p) {
-			fprintf (stderr, "The hsmode profiler option is obsolete, use heapshot=MODE.\n");
-			set_hsmode (val, 0);
+			set_sample_freq (val);
 			continue;
 		}
 		if ((opt = match_option (p, "zip", NULL)) != p) {
@@ -5283,11 +4908,7 @@ mono_profiler_startup (const char *desc)
 			continue;
 		}
 		if ((opt = match_option (p, "counters", NULL)) != p) {
-			do_counters = 1;
-			continue;
-		}
-		if ((opt = match_option (p, "countersonly", NULL)) != p) {
-			only_counters = 1;
+			// For backwards compatibility.
 			continue;
 		}
 		if ((opt = match_option (p, "coverage", NULL)) != p) {
@@ -5297,7 +4918,7 @@ mono_profiler_startup (const char *desc)
 			continue;
 		}
 		if ((opt = match_option (p, "onlycoverage", NULL)) != p) {
-			only_coverage = 1;
+			only_coverage = TRUE;
 			continue;
 		}
 		if ((opt = match_option (p, "covfilter-file", &val)) != p) {
@@ -5336,18 +4957,29 @@ mono_profiler_startup (const char *desc)
 			exit (0);
 		}
 	}
+
 	if (calls_enabled) {
 		events |= MONO_PROFILE_ENTER_LEAVE;
 		nocalls = 0;
 	}
-	if (allocs_enabled)
-		events |= MONO_PROFILE_ALLOCATIONS;
-	if (only_counters)
-		events = 0;
-	if (only_coverage)
-		events = MONO_PROFILE_ENTER_LEAVE | MONO_PROFILE_INS_COVERAGE;
 
-	utils_init (fast_time);
+	if (allocs_enabled) {
+		events |= MONO_PROFILE_ALLOCATIONS;
+		events |= MONO_PROFILE_GC_MOVES;
+	}
+
+	// Only activate the bare minimum events the profiler needs to function.
+	if (only_coverage) {
+		if (!do_coverage) {
+			fprintf (stderr, "The onlycoverage option is only valid when paired with the coverage option\n");
+			exit (1);
+		}
+
+		no_counters = TRUE;
+		events = MONO_PROFILE_GC | MONO_PROFILE_THREADS | MONO_PROFILE_ENTER_LEAVE | MONO_PROFILE_INS_COVERAGE;
+	}
+
+	init_time ();
 
 	PROF_TLS_INIT ();
 
@@ -5359,7 +4991,7 @@ mono_profiler_startup (const char *desc)
 
 	mono_lls_init (&profiler_thread_list, NULL);
 
-	init_thread (TRUE);
+	init_thread (prof, TRUE);
 
 	mono_profiler_install (prof, log_shutdown);
 	mono_profiler_install_gc (gc_event, gc_resize);
@@ -5384,7 +5016,7 @@ mono_profiler_startup (const char *desc)
 	if (do_coverage)
 		mono_profiler_install_coverage_filter (coverage_filter);
 
-	if (do_mono_sample && sample_type == SAMPLE_CYCLES && sample_freq && !only_counters) {
+	if (do_mono_sample && sample_freq) {
 		events |= MONO_PROFILE_STATISTICAL;
 		mono_profiler_set_statistical_mode (sampling_mode, sample_freq);
 		mono_profiler_install_statistical (mono_sample_hit);

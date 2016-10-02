@@ -5457,7 +5457,7 @@ mono_class_get_allocation_ftn (MonoVTable *vtable, gboolean for_box, gboolean *p
 
 	*pass_size_in_words = FALSE;
 
-	if (mono_class_has_finalizer (vtable->klass) || mono_class_is_marshalbyref (vtable->klass) || (mono_profiler_get_events () & MONO_PROFILE_ALLOCATIONS))
+	if (mono_class_has_finalizer (vtable->klass) || mono_class_is_marshalbyref (vtable->klass))
 		return ves_icall_object_new_specific;
 
 	if (vtable->gc_descr != MONO_GC_DESCRIPTOR_NULL) {

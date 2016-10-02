@@ -273,7 +273,6 @@ mono_profiler_install_transition (MonoProfileMethodResult callback)
 void 
 mono_profiler_install_allocation (MonoProfileAllocFunc callback)
 {
-	mono_gc_enable_alloc_events ();
 	if (!prof_list)
 		return;
 	prof_list->allocation_cb = callback;
@@ -876,7 +875,6 @@ mono_profiler_gc_roots (int num, void **objects, int *root_types, uintptr_t *ext
 void
 mono_profiler_install_gc (MonoProfileGCFunc callback, MonoProfileGCResizeFunc heap_resize_callback)
 {
-	mono_gc_enable_events ();
 	if (!prof_list)
 		return;
 	prof_list->gc_event = callback;

@@ -335,14 +335,8 @@ MONO_SIG_HANDLER_FUNC (static, profiler_signal_handler)
 
 	/* See the comment in mono_runtime_shutdown_stat_profiler (). */
 	if (mono_native_thread_id_get () == sampling_thread) {
-#ifdef HAVE_CLOCK_NANOSLEEP
-		if (mono_profiler_get_sampling_mode () == MONO_PROFILER_STAT_MODE_PROCESS) {
-			InterlockedIncrement (&profiler_interrupt_signals_received);
-			return;
-		}
-#endif
-
-		g_error ("%s: Unexpected profiler signal received by the sampler thread", __func__);
+		InterlockedIncrement (&profiler_interrupt_signals_received);
+		return;
 	}
 
 	InterlockedIncrement (&profiler_signals_received);
@@ -761,7 +755,7 @@ mono_runtime_shutdown_stat_profiler (void)
 {
 	InterlockedWrite (&sampling_thread_running, 0);
 
-#ifdef HAVE_CLOCK_NANOSLEEP
+#ifndef PLATFORM_MACOSX
 	/*
 	 * There is a slight problem when we're using CLOCK_PROCESS_CPUTIME_ID: If
 	 * we're shutting down and there's largely no activity in the process other
@@ -774,28 +768,22 @@ mono_runtime_shutdown_stat_profiler (void)
 	 * sampling_thread_running upon an interrupt and return immediately if it's
 	 * zero. profiler_signal_handler () has a special case to ignore the signal
 	 * for the sampler thread.
-	 *
-	 * We do not need to do this on platforms where we use a regular sleep
-	 * based on a monotonic clock. The sleep will return in a reasonable amount
-	 * of time in those cases.
 	 */
-	if (mono_profiler_get_sampling_mode () == MONO_PROFILER_STAT_MODE_PROCESS) {
-		MonoThreadInfo *info;
+	MonoThreadInfo *info;
 
-		// Did it shut down already?
-		if ((info = mono_thread_info_lookup (sampling_thread))) {
-			while (!InterlockedRead (&sampling_thread_exiting)) {
-				mono_threads_pthread_kill (info, profiler_signal);
-				mono_thread_info_usleep (10 * 1000 /* 10ms */);
-			}
-
-			// Make sure info can be freed.
-			mono_hazard_pointer_clear (mono_hazard_pointer_get (), 1);
+	// Did it shut down already?
+	if ((info = mono_thread_info_lookup (sampling_thread))) {
+		while (!InterlockedRead (&sampling_thread_exiting)) {
+			mono_threads_pthread_kill (info, profiler_signal);
+			mono_thread_info_usleep (10 * 1000 /* 10ms */);
 		}
+
+		// Make sure info can be freed.
+		mono_hazard_pointer_clear (mono_hazard_pointer_get (), 1);
 	}
 #endif
 
-	pthread_join (sampling_thread, NULL);
+	mono_native_thread_join (sampling_thread);
 
 	/*
 	 * We can't safely remove the signal handler because we have no guarantee

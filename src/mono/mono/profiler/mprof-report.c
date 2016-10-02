@@ -1,5 +1,5 @@
 /*
- * decode.c: mprof-report program source: decode and analyze the log profiler data
+ * mprof-report.c: mprof-report program source: decode and analyze the log profiler data
  *
  * Authors:
  *   Paolo Molaro (lupus@ximian.com)
@@ -54,11 +54,11 @@
  *                    - column: The column on the line
  */
 #include <config.h>
-#include "utils.c"
-#include "proflog.h"
+#include "mono-profiler-log.h"
 #include <string.h>
 #include <assert.h>
 #include <stdio.h>
+#include <time.h>
 #if !defined(__APPLE__) && !defined(__FreeBSD__)
 #include <malloc.h>
 #endif
@@ -134,7 +134,7 @@ static char*
 pstrdup (const char *s)
 {
 	int len = strlen (s) + 1;
-	char *p = (char *)malloc (len);
+	char *p = (char *) g_malloc (len);
 	memcpy (p, s, len);
 	return p;
 }
@@ -197,7 +197,7 @@ add_counter_to_section (Counter *counter)
 	CounterSection *csection, *s;
 	CounterList *clist;
 
-	clist = (CounterList *)calloc (1, sizeof (CounterList));
+	clist = (CounterList *) g_calloc (1, sizeof (CounterList));
 	clist->counter = counter;
 
 	for (csection = counters_sections; csection; csection = csection->next) {
@@ -213,7 +213,7 @@ add_counter_to_section (Counter *counter)
 	}
 
 	/* If section does not exist */
-	csection = (CounterSection *)calloc (1, sizeof (CounterSection));
+	csection = (CounterSection *) g_calloc (1, sizeof (CounterSection));
 	csection->value = counter->section;
 	csection->counters = clist;
 	csection->counters_last = clist;
@@ -238,7 +238,7 @@ add_counter (const char *section, const char *name, int type, int unit, int vari
 		if (list->counter->index == index)
 			return;
 
-	counter = (Counter *)calloc (1, sizeof (Counter));
+	counter = (Counter *) g_calloc (1, sizeof (Counter));
 	counter->section = section;
 	counter->name = name;
 	counter->type = type;
@@ -246,7 +246,7 @@ add_counter (const char *section, const char *name, int type, int unit, int vari
 	counter->variance = variance;
 	counter->index = index;
 
-	list = (CounterList *)calloc (1, sizeof (CounterList));
+	list = (CounterList *) g_calloc (1, sizeof (CounterList));
 	list->counter = counter;
 
 	if (!counters) {
@@ -269,7 +269,7 @@ add_counter_to_timestamp (uint64_t timestamp, Counter *counter)
 	CounterSection *csection;
 	CounterList *clist;
 
-	clist = (CounterList *)calloc (1, sizeof (CounterList));
+	clist = (CounterList *) g_calloc (1, sizeof (CounterList));
 	clist->counter = counter;
 
 	for (ctimestamp = counters_timestamps; ctimestamp; ctimestamp = ctimestamp->next) {
@@ -287,7 +287,7 @@ add_counter_to_timestamp (uint64_t timestamp, Counter *counter)
 			}
 
 			/* if timestamp exist and section does not exist */
-			csection = (CounterSection *)calloc (1, sizeof (CounterSection));
+			csection = (CounterSection *) g_calloc (1, sizeof (CounterSection));
 			csection->value = counter->section;
 			csection->counters = clist;
 			csection->counters_last = clist;
@@ -302,12 +302,12 @@ add_counter_to_timestamp (uint64_t timestamp, Counter *counter)
 	}
 
 	/* If timestamp do not exist and section does not exist */
-	csection = (CounterSection *)calloc (1, sizeof (CounterSection));
+	csection = (CounterSection *) g_calloc (1, sizeof (CounterSection));
 	csection->value = counter->section;
 	csection->counters = clist;
 	csection->counters_last = clist;
 
-	ctimestamp = (CounterTimestamp *)calloc (1, sizeof (CounterTimestamp));
+	ctimestamp = (CounterTimestamp *) g_calloc (1, sizeof (CounterTimestamp));
 	ctimestamp->value = timestamp;
 	ctimestamp->sections = csection;
 	ctimestamp->sections_last = csection;
@@ -566,7 +566,7 @@ static void
 add_image (intptr_t image, char *name)
 {
 	int slot = ((image >> 2) & 0xffff) % SMALL_HASH_SIZE;
-	ImageDesc *cd = (ImageDesc *)malloc (sizeof (ImageDesc));
+	ImageDesc *cd = (ImageDesc *) g_malloc (sizeof (ImageDesc));
 	cd->image = image;
 	cd->filename = pstrdup (name);
 	cd->next = image_hash [slot];
@@ -589,7 +589,7 @@ static void
 add_assembly (intptr_t assembly, char *name)
 {
 	int slot = ((assembly >> 2) & 0xffff) % SMALL_HASH_SIZE;
-	AssemblyDesc *cd = (AssemblyDesc *)malloc (sizeof (AssemblyDesc));
+	AssemblyDesc *cd = (AssemblyDesc *) g_malloc (sizeof (AssemblyDesc));
 	cd->assembly = assembly;
 	cd->asmname = pstrdup (name);
 	cd->next = assembly_hash [slot];
@@ -637,7 +637,7 @@ add_class (intptr_t klass, const char *name)
 		cd->name = pstrdup (name);
 		return cd;
 	}
-	cd = (ClassDesc *)calloc (sizeof (ClassDesc), 1);
+	cd = (ClassDesc *) g_calloc (sizeof (ClassDesc), 1);
 	cd->klass = klass;
 	cd->name = pstrdup (name);
 	cd->next = class_hash [slot];
@@ -703,7 +703,7 @@ add_method (intptr_t method, const char *name, intptr_t code, int len)
 		cd->name = pstrdup (name);
 		return cd;
 	}
-	cd = (MethodDesc *)calloc (sizeof (MethodDesc), 1);
+	cd = (MethodDesc *) g_calloc (sizeof (MethodDesc), 1);
 	cd->method = method;
 	cd->name = pstrdup (name);
 	cd->code = code;
@@ -745,8 +745,8 @@ add_stat_sample (int type, uintptr_t ip) {
 		size_stat_samples *= 2;
 		if (!size_stat_samples)
 		size_stat_samples = 32;
-		stat_samples = (uintptr_t *)realloc (stat_samples, size_stat_samples * sizeof (uintptr_t));
-		stat_sample_desc = (int *)realloc (stat_sample_desc, size_stat_samples * sizeof (int));
+		stat_samples = (uintptr_t *) g_realloc (stat_samples, size_stat_samples * sizeof (uintptr_t));
+		stat_sample_desc = (int *) g_realloc (stat_sample_desc, size_stat_samples * sizeof (int));
 	}
 	stat_samples [num_stat_samples] = ip;
 	stat_sample_desc [num_stat_samples++] = type;
@@ -829,10 +829,10 @@ add_unmanaged_symbol (uintptr_t addr, char *name, uintptr_t size)
 		int new_size = usymbols_size * 2;
 		if (!new_size)
 			new_size = 16;
-		usymbols = (UnmanagedSymbol **)realloc (usymbols, sizeof (void*) * new_size);
+		usymbols = (UnmanagedSymbol **) g_realloc (usymbols, sizeof (void*) * new_size);
 		usymbols_size = new_size;
 	}
-	sym = (UnmanagedSymbol *)calloc (sizeof (UnmanagedSymbol), 1);
+	sym = (UnmanagedSymbol *) g_calloc (sizeof (UnmanagedSymbol), 1);
 	sym->addr = addr;
 	sym->name = name;
 	sym->size = size;
@@ -877,10 +877,10 @@ add_unmanaged_binary (uintptr_t addr, char *name, uintptr_t size)
 		int new_size = ubinaries_size * 2;
 		if (!new_size)
 			new_size = 16;
-		ubinaries = (UnmanagedSymbol **)realloc (ubinaries, sizeof (void*) * new_size);
+		ubinaries = (UnmanagedSymbol **) g_realloc (ubinaries, sizeof (void*) * new_size);
 		ubinaries_size = new_size;
 	}
-	sym = (UnmanagedSymbol *)calloc (sizeof (UnmanagedSymbol), 1);
+	sym = (UnmanagedSymbol *) g_calloc (sizeof (UnmanagedSymbol), 1);
 	sym->addr = addr;
 	sym->name = name;
 	sym->size = size;
@@ -967,7 +967,7 @@ dump_samples (void)
 					msize *= 2;
 					if (!msize)
 						msize = 4;
-					cachedm = (MethodDesc **)realloc (cachedm, sizeof (void*) * msize);
+					cachedm = (MethodDesc **) g_realloc (cachedm, sizeof (void*) * msize);
 				}
 				cachedm [count++] = m;
 			}
@@ -985,7 +985,7 @@ dump_samples (void)
 						usize *= 2;
 						if (!usize)
 							usize = 4;
-						cachedus = (UnmanagedSymbol **)realloc (cachedus, sizeof (void*) * usize);
+						cachedus = (UnmanagedSymbol **) g_realloc (cachedus, sizeof (void*) * usize);
 					}
 					cachedus [ucount++] = usym;
 				}
@@ -1093,7 +1093,7 @@ add_heap_class_rev (HeapClassDesc *from, HeapClassDesc *to)
 		to->rev_hash_size *= 2;
 		if (to->rev_hash_size == 0)
 			to->rev_hash_size = 4;
-		n = (HeapClassRevRef *)calloc (sizeof (HeapClassRevRef) * to->rev_hash_size, 1);
+		n = (HeapClassRevRef *) g_calloc (sizeof (HeapClassRevRef) * to->rev_hash_size, 1);
 		for (i = 0; i < old_size; ++i) {
 			if (to->rev_hash [i].klass)
 				add_rev_class_hashed (n, to->rev_hash_size, to->rev_hash [i].klass, to->rev_hash [i].count);
@@ -1135,9 +1135,9 @@ static int num_heap_shots = 0;
 static HeapShot*
 new_heap_shot (uint64_t timestamp)
 {
-	HeapShot *hs = (HeapShot *)calloc (sizeof (HeapShot), 1);
+	HeapShot *hs = (HeapShot *) g_calloc (sizeof (HeapShot), 1);
 	hs->hash_size = 4;
-	hs->class_hash = (HeapClassDesc **)calloc (sizeof (void*), hs->hash_size);
+	hs->class_hash = (HeapClassDesc **) g_calloc (sizeof (void*), hs->hash_size);
 	hs->timestamp = timestamp;
 	num_heap_shots++;
 	hs->next = heap_shots;
@@ -1183,7 +1183,7 @@ add_heap_hashed (HeapClassDesc **hash, HeapClassDesc **retv, uintptr_t hsize, Cl
 				hash [i] = *retv;
 				return 1;
 			}
-			hash [i] = (HeapClassDesc *)calloc (sizeof (HeapClassDesc), 1);
+			hash [i] = (HeapClassDesc *) g_calloc (sizeof (HeapClassDesc), 1);
 			hash [i]->klass = klass;
 			hash [i]->total_size += size;
 			hash [i]->count += count;
@@ -1210,7 +1210,7 @@ add_heap_shot_class (HeapShot *hs, ClassDesc *klass, uint64_t size)
 		hs->hash_size *= 2;
 		if (hs->hash_size == 0)
 			hs->hash_size = 4;
-		n = (HeapClassDesc **)calloc (sizeof (void*) * hs->hash_size, 1);
+		n = (HeapClassDesc **) g_calloc (sizeof (void*) * hs->hash_size, 1);
 		for (i = 0; i < old_size; ++i) {
 			res = hs->class_hash [i];
 			if (hs->class_hash [i])
@@ -1230,7 +1230,7 @@ add_heap_shot_class (HeapShot *hs, ClassDesc *klass, uint64_t size)
 static HeapObjectDesc*
 alloc_heap_obj (uintptr_t objaddr, HeapClassDesc *hklass, uintptr_t num_refs)
 {
-	HeapObjectDesc* ho = (HeapObjectDesc *)calloc (sizeof (HeapObjectDesc) + num_refs * sizeof (uintptr_t), 1);
+	HeapObjectDesc* ho = (HeapObjectDesc *) g_calloc (sizeof (HeapObjectDesc) + num_refs * sizeof (uintptr_t), 1);
 	ho->objaddr = objaddr;
 	ho->hklass = hklass;
 	ho->num_refs = num_refs;
@@ -1313,7 +1313,7 @@ add_heap_shot_obj (HeapShot *hs, HeapObjectDesc *obj)
 		hs->objects_hash_size *= 2;
 		if (hs->objects_hash_size == 0)
 			hs->objects_hash_size = 4;
-		n = (HeapObjectDesc **)calloc (sizeof (void*) * hs->objects_hash_size, 1);
+		n = (HeapObjectDesc **) g_calloc (sizeof (void*) * hs->objects_hash_size, 1);
 		for (i = 0; i < old_size; ++i) {
 			if (hs->objects_hash [i])
 				add_heap_hashed_obj (n, hs->objects_hash_size, hs->objects_hash [i]);
@@ -1367,7 +1367,7 @@ heap_shot_mark_objects (HeapShot *hs)
 	if (!debug)
 		return;
 	/* consistency checks: it seems not all the objects are walked in the heap in some cases */
-	marks = (unsigned char *)calloc (hs->objects_hash_size, 1);
+	marks = (unsigned char *) g_calloc (hs->objects_hash_size, 1);
 	if (!marks)
 		return;
 	for (i = 0; i < hs->num_roots; ++i) {
@@ -1480,14 +1480,14 @@ add_backtrace (int count, MethodDesc **methods)
 			return bt;
 		bt = bt->next;
 	}
-	bt = (BackTrace *)malloc (sizeof (BackTrace) + ((count - 1) * sizeof (void*)));
+	bt = (BackTrace *) g_malloc (sizeof (BackTrace) + ((count - 1) * sizeof (void*)));
 	bt->next = backtrace_hash [slot];
 	backtrace_hash [slot] = bt;
 	if (next_backtrace == num_backtraces) {
 		num_backtraces *= 2;
 		if (!num_backtraces)
 			num_backtraces = 16;
-		backtraces = (BackTrace **)realloc (backtraces, sizeof (void*) * num_backtraces);
+		backtraces = (BackTrace **) g_realloc (backtraces, sizeof (void*) * num_backtraces);
 	}
 	bt->id = next_backtrace++;
 	backtraces [bt->id] = bt;
@@ -1567,7 +1567,7 @@ static void
 ensure_buffer (ProfContext *ctx, int size)
 {
 	if (ctx->size < size) {
-		ctx->buf = (unsigned char *)realloc (ctx->buf, size);
+		ctx->buf = (unsigned char *) g_realloc (ctx->buf, size);
 		ctx->size = size;
 	}
 }
@@ -1605,16 +1605,16 @@ get_thread (ProfContext *ctx, intptr_t thread_id)
 		}
 		thread = thread->next;
 	}
-	thread = (ThreadContext *)calloc (sizeof (ThreadContext), 1);
+	thread = (ThreadContext *) g_calloc (sizeof (ThreadContext), 1);
 	thread->next = ctx->threads;
 	ctx->threads = thread;
 	thread->thread_id = thread_id;
 	thread->last_time = 0;
 	thread->stack_id = 0;
 	thread->stack_size = 32;
-	thread->stack = (MethodDesc **)malloc (thread->stack_size * sizeof (void*));
-	thread->time_stack = (uint64_t *)malloc (thread->stack_size * sizeof (uint64_t));
-	thread->callee_time_stack = (uint64_t *)malloc (thread->stack_size * sizeof (uint64_t));
+	thread->stack = (MethodDesc **) g_malloc (thread->stack_size * sizeof (void*));
+	thread->time_stack = (uint64_t *) g_malloc (thread->stack_size * sizeof (uint64_t));
+	thread->callee_time_stack = (uint64_t *) g_malloc (thread->stack_size * sizeof (uint64_t));
 	return thread;
 }
 
@@ -1633,7 +1633,7 @@ get_domain (ProfContext *ctx, intptr_t domain_id)
 		domain = domain->next;
 	}
 
-	domain = (DomainContext *)calloc (sizeof (DomainContext), 1);
+	domain = (DomainContext *) g_calloc (sizeof (DomainContext), 1);
 	domain->next = ctx->domains;
 	ctx->domains = domain;
 	domain->domain_id = domain_id;
@@ -1656,7 +1656,7 @@ get_remctx (ProfContext *ctx, intptr_t remctx_id)
 		remctx = remctx->next;
 	}
 
-	remctx = (RemCtxContext *)calloc (sizeof (RemCtxContext), 1);
+	remctx = (RemCtxContext *) g_calloc (sizeof (RemCtxContext), 1);
 	remctx->next = ctx->remctxs;
 	ctx->remctxs = remctx;
 	remctx->remctx_id = remctx_id;
@@ -1677,9 +1677,9 @@ ensure_thread_stack (ThreadContext *thread)
 {
 	if (thread->stack_id == thread->stack_size) {
 		thread->stack_size *= 2;
-		thread->stack = (MethodDesc **)realloc (thread->stack, thread->stack_size * sizeof (void*));
-		thread->time_stack = (uint64_t *)realloc (thread->time_stack, thread->stack_size * sizeof (uint64_t));
-		thread->callee_time_stack = (uint64_t *)realloc (thread->callee_time_stack, thread->stack_size * sizeof (uint64_t));
+		thread->stack = (MethodDesc **) g_realloc (thread->stack, thread->stack_size * sizeof (void*));
+		thread->time_stack = (uint64_t *) g_realloc (thread->time_stack, thread->stack_size * sizeof (uint64_t));
+		thread->callee_time_stack = (uint64_t *) g_realloc (thread->callee_time_stack, thread->stack_size * sizeof (uint64_t));
 	}
 }
 
@@ -1720,7 +1720,7 @@ add_trace_bt (BackTrace *bt, TraceDesc *trace, uint64_t value)
 		trace->size *= 2;
 		if (trace->size == 0)
 			trace->size = 4;
-		n = (CallContext *)calloc (sizeof (CallContext) * trace->size, 1);
+		n = (CallContext *) g_calloc (sizeof (CallContext) * trace->size, 1);
 		for (i = 0; i < old_size; ++i) {
 			if (trace->traces [i].bt)
 				add_trace_hashed (n, trace->size, trace->traces [i].bt, trace->traces [i].count);
@@ -1766,9 +1766,9 @@ thread_add_root (ThreadContext *ctx, uintptr_t obj, int root_type, uintptr_t ext
 		int new_size = ctx->size_roots * 2;
 		if (!new_size)
 			new_size = 4;
-		ctx->roots = (uintptr_t *)realloc (ctx->roots, new_size * sizeof (uintptr_t));
-		ctx->roots_extra = (uintptr_t *)realloc (ctx->roots_extra, new_size * sizeof (uintptr_t));
-		ctx->roots_types = (int *)realloc (ctx->roots_types, new_size * sizeof (int));
+		ctx->roots = (uintptr_t *) g_realloc (ctx->roots, new_size * sizeof (uintptr_t));
+		ctx->roots_extra = (uintptr_t *) g_realloc (ctx->roots_extra, new_size * sizeof (uintptr_t));
+		ctx->roots_types = (int *) g_realloc (ctx->roots_types, new_size * sizeof (int));
 		ctx->size_roots = new_size;
 	}
 	ctx->roots_types [ctx->num_roots] = root_type;
@@ -1927,7 +1927,7 @@ lookup_monitor (uintptr_t objid)
 	while (cd && cd->objid != objid)
 		cd = cd->next;
 	if (!cd) {
-		cd = (MonitorDesc *)calloc (sizeof (MonitorDesc), 1);
+		cd = (MonitorDesc *) g_calloc (sizeof (MonitorDesc), 1);
 		cd->objid = objid;
 		cd->next = monitor_hash [slot];
 		monitor_hash [slot] = cd;
@@ -1972,6 +1972,54 @@ get_root_name (int rtype)
 	}
 }
 
+static uint64_t
+decode_uleb128 (uint8_t *buf, uint8_t **endbuf)
+{
+	uint64_t res = 0;
+	int shift = 0;
+
+	while (1) {
+		uint8_t b = *buf++;
+		res |= (((uint64_t) (b & 0x7f)) << shift);
+
+		if (!(b & 0x80))
+			break;
+
+		shift += 7;
+	}
+
+	*endbuf = buf;
+
+	return res;
+}
+
+static intptr_t
+decode_sleb128 (uint8_t *buf, uint8_t **endbuf)
+{
+	uint8_t *p = buf;
+	intptr_t res = 0;
+	int shift = 0;
+
+	while (1) {
+		uint8_t b = *p;
+		p++;
+
+		res = res | (((intptr_t) (b & 0x7f)) << shift);
+		shift += 7;
+
+		if (!(b & 0x80)) {
+			if (shift < sizeof (intptr_t) * 8 && (b & 0x40))
+				res |= - ((intptr_t) 1 << shift);
+
+			break;
+		}
+	}
+
+	*endbuf = p;
+
+	return res;
+}
+
 static MethodDesc**
 decode_bt (ProfContext *ctx, MethodDesc** sframes, int *size, unsigned char *p, unsigned char **endp, intptr_t ptr_base, intptr_t *method_base)
 {
@@ -1981,7 +2029,7 @@ decode_bt (ProfContext *ctx, MethodDesc** sframes, int *size, unsigned char *p, 
 		decode_uleb128 (p, &p); /* flags */
 	int count = decode_uleb128 (p, &p);
 	if (count > *size)
-		frames = (MethodDesc **)malloc (count * sizeof (void*));
+		frames = (MethodDesc **) g_malloc (count * sizeof (void*));
 	else
 		frames = sframes;
 	for (i = 0; i < count; ++i) {
@@ -2056,7 +2104,7 @@ static void
 found_object (uintptr_t obj)
 {
 	num_tracked_objects ++;
-	tracked_objects = (uintptr_t *)realloc (tracked_objects, num_tracked_objects * sizeof (tracked_objects [0]));
+	tracked_objects = (uintptr_t *) g_realloc (tracked_objects, num_tracked_objects * sizeof (tracked_objects [0]));
 	tracked_objects [num_tracked_objects - 1] = obj;
 }
 
@@ -2971,7 +3019,7 @@ decode_buffer (ProfContext *ctx)
 					else
 						type = decode_uleb128 (p, &p);
 
-					value = (CounterValue *)calloc (1, sizeof (CounterValue));
+					value = (CounterValue *) g_calloc (1, sizeof (CounterValue));
 					value->timestamp = timestamp;
 
 					switch (type) {
@@ -2979,11 +3027,11 @@ decode_buffer (ProfContext *ctx)
 #if SIZEOF_VOID_P == 4
 					case MONO_COUNTER_WORD:
 #endif
-						value->buffer = (unsigned char *)malloc (sizeof (int32_t));
+						value->buffer = (unsigned char *)g_malloc (sizeof (int32_t));
 						*(int32_t*)value->buffer = (int32_t)decode_sleb128 (p, &p) + (previous ? (*(int32_t*)previous->buffer) : 0);
 						break;
 					case MONO_COUNTER_UINT:
-						value->buffer = (unsigned char *)malloc (sizeof (uint32_t));
+						value->buffer = (unsigned char *) g_malloc (sizeof (uint32_t));
 						*(uint32_t*)value->buffer = (uint32_t)decode_uleb128 (p, &p) + (previous ? (*(uint32_t*)previous->buffer) : 0);
 						break;
 					case MONO_COUNTER_LONG:
@@ -2991,15 +3039,15 @@ decode_buffer (ProfContext *ctx)
 					case MONO_COUNTER_WORD:
 #endif
 					case MONO_COUNTER_TIME_INTERVAL:
-						value->buffer = (unsigned char *)malloc (sizeof (int64_t));
+						value->buffer = (unsigned char *) g_malloc (sizeof (int64_t));
 						*(int64_t*)value->buffer = (int64_t)decode_sleb128 (p, &p) + (previous ? (*(int64_t*)previous->buffer) : 0);
 						break;
 					case MONO_COUNTER_ULONG:
-						value->buffer = (unsigned char *)malloc (sizeof (uint64_t));
+						value->buffer = (unsigned char *) g_malloc (sizeof (uint64_t));
 						*(uint64_t*)value->buffer = (uint64_t)decode_uleb128 (p, &p) + (previous ? (*(uint64_t*)previous->buffer) : 0);
 						break;
 					case MONO_COUNTER_DOUBLE:
-						value->buffer = (unsigned char *)malloc (sizeof (double));
+						value->buffer = (unsigned char *) g_malloc (sizeof (double));
 #if TARGET_BYTE_ORDER == G_LITTLE_ENDIAN
 						for (i = 0; i < sizeof (double); i++)
 #else
@@ -3195,7 +3243,7 @@ static ProfContext*
 load_file (char *name)
 {
 	unsigned char *p;
-	ProfContext *ctx = (ProfContext *)calloc (sizeof (ProfContext), 1);
+	ProfContext *ctx = (ProfContext *) g_calloc (sizeof (ProfContext), 1);
 	if (strcmp (name, "-") == 0)
 		ctx->file = stdin;
 	else
@@ -3370,7 +3418,7 @@ dump_monitors (void)
 	int i, j;
 	if (!num_monitors)
 		return;
-	monitors = (MonitorDesc **)malloc (sizeof (void*) * num_monitors);
+	monitors = (MonitorDesc **) g_malloc (sizeof (void*) * num_monitors);
 	for (i = 0, j = 0; i < SMALL_HASH_SIZE; ++i) {
 		MonitorDesc *mdesc = monitor_hash [i];
 		while (mdesc) {
@@ -3452,7 +3500,7 @@ dump_allocations (void)
 	intptr_t allocs = 0;
 	uint64_t size = 0;
 	int header_done = 0;
-	ClassDesc **classes = (ClassDesc **)malloc (num_classes * sizeof (void*));
+	ClassDesc **classes = (ClassDesc **) g_malloc (num_classes * sizeof (void*));
 	ClassDesc *cd;
 	c = 0;
 	for (i = 0; i < HASH_SIZE; ++i) {
@@ -3551,7 +3599,7 @@ dump_methods (void)
 	int i, c;
 	uint64_t calls = 0;
 	int header_done = 0;
-	MethodDesc **methods = (MethodDesc **)malloc (num_methods * sizeof (void*));
+	MethodDesc **methods = (MethodDesc **) g_malloc (num_methods * sizeof (void*));
 	MethodDesc *cd;
 	c = 0;
 	for (i = 0; i < HASH_SIZE; ++i) {
@@ -3646,7 +3694,7 @@ heap_shot_summary (HeapShot *hs, int hs_num, HeapShot *last_hs)
 	int i;
 	HeapClassDesc *cd;
 	HeapClassDesc **sorted;
-	sorted = (HeapClassDesc **)malloc (sizeof (void*) * hs->class_count);
+	sorted = (HeapClassDesc **) g_malloc (sizeof (void*) * hs->class_count);
 	for (i = 0; i < hs->hash_size; ++i) {
 		cd = hs->class_hash [i];
 		if (!cd)
@@ -3687,7 +3735,7 @@ heap_shot_summary (HeapShot *hs, int hs_num, HeapShot *last_hs)
 		}
 		if (!collect_traces)
 			continue;
-		rev_sorted = (HeapClassRevRef *)malloc (cd->rev_count * sizeof (HeapClassRevRef));
+		rev_sorted = (HeapClassRevRef *) g_malloc (cd->rev_count * sizeof (HeapClassRevRef));
 		k = 0;
 		for (j = 0; j < cd->rev_hash_size; ++j) {
 			if (cd->rev_hash [j].klass)
@@ -3724,7 +3772,7 @@ dump_heap_shots (void)
 	int i;
 	if (!heap_shots)
 		return;
-	hs_sorted = (HeapShot **)malloc (num_heap_shots * sizeof (void*));
+	hs_sorted = (HeapShot **) g_malloc (num_heap_shots * sizeof (void*));
 	fprintf (outfile, "\nHeap shot summary\n");
 	i = 0;
 	for (hs = heap_shots; hs; hs = hs->next)

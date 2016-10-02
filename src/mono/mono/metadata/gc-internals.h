@@ -103,8 +103,6 @@ extern void mono_gc_set_stack_end (void *stack_end);
 gboolean mono_object_is_alive (MonoObject* obj);
 gboolean mono_gc_is_finalizer_thread (MonoThread *thread);
 gpointer mono_gc_out_of_memory (size_t size);
-void     mono_gc_enable_events (void);
-void     mono_gc_enable_alloc_events (void);
 
 void mono_gchandle_set_target (guint32 gchandle, MonoObject *obj);
 

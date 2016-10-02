@@ -116,6 +116,15 @@ mono_set_allocator_vtable (MonoAllocatorVTable* vtable);
 #define MONO_RT_EXTERNAL_ONLY
 #endif /* MONO_INSIDE_RUNTIME */
 
+#ifdef __GNUC__
+#define _MONO_DEPRECATED __attribute__ ((deprecated))
+#elif defined (_MSC_VER)
+#define _MONO_DEPRECATED __declspec (deprecated)
+#else
+#define _MONO_DEPRECATED
+#endif
+
+#define MONO_DEPRECATED MONO_API MONO_RT_EXTERNAL_ONLY _MONO_DEPRECATED
 
 MONO_END_DECLS
 

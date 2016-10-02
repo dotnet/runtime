@@ -1162,20 +1162,6 @@ AC_COMPILE_IFELSE([
    AC_MSG_RESULT(no)
 ])
 
-AC_MSG_CHECKING(for deprecated __attribute__)
-AC_TRY_COMPILE([
-     int doit (void) __attribute__ ((deprecated));
-     int doit (void) { return 0; }
-], [
-	return 0;
-], [
-   have_deprecated=yes
-   AC_MSG_RESULT(yes)
-], [
-   have_deprecated=no
-   AC_MSG_RESULT(no)
-])
-
 dnl
 dnl Boehm GC configuration
 dnl
@@ -2671,12 +2657,6 @@ if test "x$ac_cv_have_dev_random" = "xno" \
 fi
 
 AC_ARG_ENABLE(bcl-opt, [  --disable-bcl-opt	BCL is compiled with no optimizations (allows accurate BCL debugging)], test_bcl_opt=$enableval, test_bcl_opt=yes)
-
-AC_ARG_ENABLE(perf-events, [  --enable-perf-events Enable using `perf` for profiling on Linux], test_perf_events=$enableval, test_perf_events=no)
-if test "x$test_perf_events" = "xyes"; then
-	AC_DEFINE(ENABLE_PERF_EVENTS, 1, [Enable using `perf` for profiling on Linux])
-	AC_SUBST(ENABLE_PERF_EVENTS)
-fi
 
 AC_MSG_CHECKING([if big-arrays are to be enabled])
 AC_ARG_ENABLE(big-arrays,  [  --enable-big-arrays	Enable the allocation and indexing of arrays greater than Int32.MaxValue], enable_big_arrays=$enableval, enable_big_arrays=no)

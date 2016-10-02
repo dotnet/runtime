@@ -187,6 +187,21 @@ mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg)
 	return CreateThread (NULL, 0, (func), (arg), 0, (tid)) != NULL;
 }
 
+gboolean
+mono_native_thread_join (MonoNativeThreadId tid)
+{
+	HANDLE handle;
+
+	if (!(handle = OpenThread (THREAD_ALL_ACCESS, TRUE, tid)))
+		return FALSE;
+
+	DWORD res = WaitForSingleObject (handle, INFINITE);
+
+	CloseHandle (handle);
+
+	return res != WAIT_FAILED;
+}
+
 #if HAVE_DECL___READFSDWORD==0
 static MONO_ALWAYS_INLINE unsigned long long
 __readfsdword (unsigned long offset)

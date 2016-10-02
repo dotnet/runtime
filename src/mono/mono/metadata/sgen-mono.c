@@ -16,6 +16,7 @@
 #include "sgen/sgen-client.h"
 #include "sgen/sgen-cardtable.h"
 #include "sgen/sgen-pinning.h"
+#include "sgen/sgen-thread-pool.h"
 #include "metadata/marshal.h"
 #include "metadata/method-builder.h"
 #include "metadata/abi-details.h"
@@ -917,20 +918,12 @@ mono_gc_clear_domain (MonoDomain * domain)
  * Allocation
  */
 
-static gboolean alloc_events = FALSE;
-
-void
-mono_gc_enable_alloc_events (void)
-{
-	alloc_events = TRUE;
-}
-
 void*
 mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 {
 	MonoObject *obj = sgen_alloc_obj (vtable, size);
 
-	if (G_UNLIKELY (alloc_events)) {
+	if (G_UNLIKELY (mono_profiler_events & MONO_PROFILE_ALLOCATIONS)) {
 		if (obj)
 			mono_profiler_allocation (obj);
 	}
@@ -943,7 +936,7 @@ mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size)
 {
 	MonoObject *obj = sgen_alloc_obj_pinned (vtable, size);
 
-	if (G_UNLIKELY (alloc_events)) {
+	if (G_UNLIKELY (mono_profiler_events & MONO_PROFILE_ALLOCATIONS)) {
 		if (obj)
 			mono_profiler_allocation (obj);
 	}
@@ -956,7 +949,7 @@ mono_gc_alloc_mature (MonoVTable *vtable, size_t size)
 {
 	MonoObject *obj = sgen_alloc_obj_mature (vtable, size);
 
-	if (G_UNLIKELY (alloc_events)) {
+	if (G_UNLIKELY (mono_profiler_events & MONO_PROFILE_ALLOCATIONS)) {
 		if (obj)
 			mono_profiler_allocation (obj);
 	}
@@ -1753,7 +1746,7 @@ mono_gc_alloc_vector (MonoVTable *vtable, size_t size, uintptr_t max_length)
 	UNLOCK_GC;
 
  done:
-	if (G_UNLIKELY (alloc_events))
+	if (G_UNLIKELY (mono_profiler_events & MONO_PROFILE_ALLOCATIONS))
 		mono_profiler_allocation (&arr->obj);
 
 	SGEN_ASSERT (6, SGEN_ALIGN_UP (size) == SGEN_ALIGN_UP (sgen_client_par_object_get_size (vtable, (GCObject*)arr)), "Vector has incorrect size.");
@@ -1801,7 +1794,7 @@ mono_gc_alloc_array (MonoVTable *vtable, size_t size, uintptr_t max_length, uint
 	UNLOCK_GC;
 
  done:
-	if (G_UNLIKELY (alloc_events))
+	if (G_UNLIKELY (mono_profiler_events & MONO_PROFILE_ALLOCATIONS))
 		mono_profiler_allocation (&arr->obj);
 
 	SGEN_ASSERT (6, SGEN_ALIGN_UP (size) == SGEN_ALIGN_UP (sgen_client_par_object_get_size (vtable, (GCObject*)arr)), "Array has incorrect size.");
@@ -1842,7 +1835,7 @@ mono_gc_alloc_string (MonoVTable *vtable, size_t size, gint32 len)
 	UNLOCK_GC;
 
  done:
-	if (G_UNLIKELY (alloc_events))
+	if (G_UNLIKELY (mono_profiler_events & MONO_PROFILE_ALLOCATIONS))
 		mono_profiler_allocation (&str->object);
 
 	return str;
@@ -2061,22 +2054,45 @@ sgen_client_collecting_major_3 (SgenPointerQueue *fin_ready_queue, SgenPointerQu
 static void *moved_objects [MOVED_OBJECTS_NUM];
 static int moved_objects_idx = 0;
 
+static SgenPointerQueue moved_objects_queue = SGEN_POINTER_QUEUE_INIT (INTERNAL_MEM_MOVED_OBJECT);
+
 void
 mono_sgen_register_moved_object (void *obj, void *destination)
 {
-	g_assert (mono_profiler_events & MONO_PROFILE_GC_MOVES);
+	/*
+	 * This function can be called from SGen's worker threads. We want to try
+	 * and avoid exposing those threads to the profiler API, so queue up move
+	 * events and send them later when the main GC thread calls
+	 * mono_sgen_gc_event_moves ().
+	 *
+	 * TODO: Once SGen has multiple worker threads, we need to switch to a
+	 * lock-free data structure for the queue as multiple threads will be
+	 * adding to it at the same time.
+	 */
+	if (sgen_thread_pool_is_thread_pool_thread (mono_native_thread_id_get ())) {
+		sgen_pointer_queue_add (&moved_objects_queue, obj);
+		sgen_pointer_queue_add (&moved_objects_queue, destination);
+	} else {
+		if (moved_objects_idx == MOVED_OBJECTS_NUM) {
+			mono_profiler_gc_moves (moved_objects, moved_objects_idx);
+			moved_objects_idx = 0;
+		}
 
-	if (moved_objects_idx == MOVED_OBJECTS_NUM) {
-		mono_profiler_gc_moves (moved_objects, moved_objects_idx);
-		moved_objects_idx = 0;
+		moved_objects [moved_objects_idx++] = obj;
+		moved_objects [moved_objects_idx++] = destination;
 	}
-	moved_objects [moved_objects_idx++] = obj;
-	moved_objects [moved_objects_idx++] = destination;
 }
 
 void
 mono_sgen_gc_event_moves (void)
 {
+	while (!sgen_pointer_queue_is_empty (&moved_objects_queue)) {
+		void *dst = sgen_pointer_queue_pop (&moved_objects_queue);
+		void *src = sgen_pointer_queue_pop (&moved_objects_queue);
+
+		mono_sgen_register_moved_object (src, dst);
+	}
+
 	if (moved_objects_idx) {
 		mono_profiler_gc_moves (moved_objects, moved_objects_idx);
 		moved_objects_idx = 0;
@@ -2512,11 +2528,6 @@ mono_gc_get_generation (MonoObject *obj)
 	return 1;
 }
 
-void
-mono_gc_enable_events (void)
-{
-}
-
 const char *
 mono_gc_get_gc_name (void)
 {
@@ -2788,6 +2799,7 @@ sgen_client_description_for_internal_mem_type (int type)
 {
 	switch (type) {
 	case INTERNAL_MEM_EPHEMERON_LINK: return "ephemeron-link";
+	case INTERNAL_MEM_MOVED_OBJECT: return "moved-object";
 	default:
 		return NULL;
 	}
@@ -3002,6 +3014,9 @@ void
 mono_gc_base_cleanup (void)
 {
 	sgen_thread_pool_shutdown ();
+
+	// We should have consumed any outstanding moves.
+	g_assert (sgen_pointer_queue_is_empty (&moved_objects_queue));
 }
 
 gboolean

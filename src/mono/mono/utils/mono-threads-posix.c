@@ -288,6 +288,14 @@ mono_native_thread_set_name (MonoNativeThreadId tid, const char *name)
 #endif
 }
 
+gboolean
+mono_native_thread_join (MonoNativeThreadId tid)
+{
+	void *res;
+
+	return !pthread_join (tid, &res);
+}
+
 void
 mono_threads_platform_set_exited (gpointer handle)
 {
