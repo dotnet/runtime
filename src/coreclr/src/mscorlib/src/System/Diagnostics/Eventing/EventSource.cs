@@ -1390,11 +1390,12 @@ namespace System.Diagnostics.Tracing
                 }
                 else
                 {
-                    List<object> arg = new List<object>();
-                    arg.Add(msg);
                     EventWrittenEventArgs eventCallbackArgs = new EventWrittenEventArgs(this);
                     eventCallbackArgs.EventId = 0;
-                    eventCallbackArgs.Payload = new ReadOnlyCollection<object>(arg);
+                    eventCallbackArgs.Message = msg;
+                    eventCallbackArgs.Payload = new ReadOnlyCollection<object>(new List<object>() { msg });
+                    eventCallbackArgs.PayloadNames = new ReadOnlyCollection<string>(new List<string> { "message" });
+                    eventCallbackArgs.EventName = "EventSourceMessage";
                     listener.OnEventWritten(eventCallbackArgs);
                 }
             }
@@ -4893,7 +4894,7 @@ namespace System.Diagnostics.Tracing
         {
             get
             {
-                if (EventId < 0)      // TraceLogging convention EventID == -1
+                if (EventId <= 0)      // TraceLogging convention EventID == -1
                     return m_opcode;
                 return (EventOpcode)m_eventSource.m_eventData[EventId].Descriptor.Opcode;
             }
@@ -4906,7 +4907,7 @@ namespace System.Diagnostics.Tracing
         {
             get
             {
-                if (EventId < 0)      // TraceLogging convention EventID == -1
+                if (EventId <= 0)      // TraceLogging convention EventID == -1
                     return EventTask.None;
 
                 return (EventTask)m_eventSource.m_eventData[EventId].Descriptor.Task;
@@ -4920,7 +4921,7 @@ namespace System.Diagnostics.Tracing
         {
             get
             {
-                if (EventId < 0)      // TraceLogging convention EventID == -1
+                if (EventId <= 0)      // TraceLogging convention EventID == -1
                     return m_tags;
                 return m_eventSource.m_eventData[EventId].Tags;
             }
@@ -4933,7 +4934,7 @@ namespace System.Diagnostics.Tracing
         {
             get
             {
-                if (EventId < 0)      // TraceLogging convention EventID == -1
+                if (EventId <= 0)      // TraceLogging convention EventID == -1
                     return m_message;
                 else
                     return m_eventSource.m_eventData[EventId].Message;
@@ -4953,7 +4954,7 @@ namespace System.Diagnostics.Tracing
         {
             get
             {
-                if (EventId < 0)      // TraceLogging convention EventID == -1
+                if (EventId <= 0)      // TraceLogging convention EventID == -1
                     return EventChannel.None;
                 return (EventChannel)m_eventSource.m_eventData[EventId].Descriptor.Channel;
             }
@@ -4967,7 +4968,7 @@ namespace System.Diagnostics.Tracing
         {
             get
             {
-                if (EventId < 0)      // TraceLogging convention EventID == -1
+                if (EventId <= 0)      // TraceLogging convention EventID == -1
                     return 0;
                 return m_eventSource.m_eventData[EventId].Descriptor.Version;
             }
@@ -4980,7 +4981,7 @@ namespace System.Diagnostics.Tracing
         {
             get
             {
-                if (EventId < 0)      // TraceLogging convention EventID == -1
+                if (EventId <= 0)      // TraceLogging convention EventID == -1
                     return m_level;
                 return (EventLevel)m_eventSource.m_eventData[EventId].Descriptor.Level;
             }
