@@ -3937,7 +3937,11 @@ if test "x$enable_btls" = "xyes"; then
 	case "$BTLS_PLATFORM" in
 	i386)
 		btls_arch=i386
-		btls_cflags="-m32 -arch i386"
+		btls_cflags="-m32"
+		case $host_os in
+			darwin*)
+				btls_cflags="$btls_cflags -arch i386"
+		esac
 		;;
 	x86_64)
 		btls_arch=x86_64
