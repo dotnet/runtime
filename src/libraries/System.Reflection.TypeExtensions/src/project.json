@@ -2,7 +2,7 @@
   "frameworks": {
     "netstandard1.5": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.2.0-beta-24601-01"
+        "Microsoft.TargetingPack.Private.CoreCLR": "1.2.0-beta-24602-02"
       }
     },
     "net462": {
@@ -23,9 +23,9 @@
     },
     "uap10.1": {
       "dependencies": {
-        "System.Runtime": "4.3.0-beta-24530-03",
-        "System.Reflection": "4.3.0-beta-24530-03",
-        "System.Resources.ResourceManager": "4.3.0-beta-24530-03"
+        "System.Runtime": "4.3.0-beta-24601-02",
+        "System.Reflection": "4.3.0-beta-24601-02",
+        "System.Resources.ResourceManager": "4.3.0-beta-24601-02"
       }
     }
   }
