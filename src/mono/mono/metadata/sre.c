@@ -4184,7 +4184,7 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilder *tb)
 }
 
 void
-ves_icall_GenericTypeParameterBuilder_initialize_generic_parameter (MonoReflectionGenericParam *gparam)
+ves_icall_GenericTypeParameterBuilder_initialize (MonoReflectionGenericParam *gparam)
 {
 	g_assert_not_reached ();
 }
