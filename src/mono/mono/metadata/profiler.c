@@ -968,7 +968,7 @@ mono_profiler_install_gc_finalize (MonoProfileGCFinalizeFunc begin, MonoProfileG
 
 	prof_list->gc_finalize_begin = begin;
 	prof_list->gc_finalize_object_begin = begin_obj;
-	prof_list->gc_finalize_object_begin = end_obj;
+	prof_list->gc_finalize_object_end = end_obj;
 	prof_list->gc_finalize_end = end;
 }
 
