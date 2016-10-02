@@ -19,10 +19,11 @@ while [ "$1" != "--" ]; do
 	file=$1; shift
 	filename=`basename $file`
 	LOFILE=$file.lo
+	echo "$HEADER" > $LOFILE
 	if [ "$STATIC" = "static" ]; then
-		echo "$HEADER\nnon_pic_object='$filename'" > $LOFILE
+		echo "non_pic_object='$filename'" >> $LOFILE
 	else
-		echo "$HEADER\npic_object='$filename'" > $LOFILE
+		echo "pic_object='$filename'" >> $LOFILE
 	fi
 	echo "$DIR/$file " >> $FILELIST
 	echo "$DIR/$LOFILE " >> $LOFILELIST
