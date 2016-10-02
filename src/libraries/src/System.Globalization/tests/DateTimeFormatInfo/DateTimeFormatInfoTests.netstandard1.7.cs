@@ -34,7 +34,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(11611, Xunit.PlatformID.AnyUnix)]
+        [ActiveIssue(11611, TestPlatforms.AnyUnix)]
         public void SeparatorsTest()
         {
             DateTimeFormatInfo dtfi = (DateTimeFormatInfo) CultureInfo.InvariantCulture.DateTimeFormat.Clone();
@@ -62,7 +62,7 @@ namespace System.Globalization.Tests
         }
 
         [Theory]
-        [ActiveIssue(11611, Xunit.PlatformID.AnyUnix)]
+        [ActiveIssue(11611, TestPlatforms.AnyUnix)]
         [MemberData(nameof(DateTimeFormatInfo_TestData))]
         public void NativeCalendarNameTest(DateTimeFormatInfo dtfi, Calendar calendar, string nativeCalendarName)
         {
@@ -79,7 +79,7 @@ namespace System.Globalization.Tests
         }
 
         [Theory]
-        [ActiveIssue(11611, Xunit.PlatformID.AnyUnix)]
+        [ActiveIssue(11611, TestPlatforms.AnyUnix)]
         [MemberData(nameof(CultureNames_TestData))]
         public void AllDateTimePatternsTest(string cultureName)
         {
@@ -117,7 +117,7 @@ namespace System.Globalization.Tests
         }
 
         [Theory]
-        [ActiveIssue(11611, Xunit.PlatformID.AnyUnix)]
+        [ActiveIssue(11611, TestPlatforms.AnyUnix)]
         [MemberData(nameof(CultureNames_TestData))]
         public void ShortestDayNamesTest(string cultureName)
         {

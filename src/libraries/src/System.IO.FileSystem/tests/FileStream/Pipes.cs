@@ -7,7 +7,6 @@ using System.IO.Pipes;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
-using XunitPlatformID = Xunit.PlatformID;
 
 namespace System.IO.Tests
 {
@@ -42,7 +41,7 @@ namespace System.IO.Tests
             }
         }
 
-        [PlatformSpecific(XunitPlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public async Task FifoReadWriteViaFileStream()
         {
             string fifoPath = GetTestFilePath();
@@ -91,7 +90,7 @@ namespace System.IO.Tests
             }
         }
 
-        [PlatformSpecific(XunitPlatformID.Windows)] // Uses P/Invokes to create async pipe handle
+        [PlatformSpecific(TestPlatforms.Windows)] // Uses P/Invokes to create async pipe handle
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -125,7 +124,7 @@ namespace System.IO.Tests
             }
         }
 
-        [PlatformSpecific(XunitPlatformID.Windows)] // Uses P/Invokes to create async pipe handle
+        [PlatformSpecific(TestPlatforms.Windows)] // Uses P/Invokes to create async pipe handle
         [Theory]
         [InlineData(true)]
         [InlineData(false)]

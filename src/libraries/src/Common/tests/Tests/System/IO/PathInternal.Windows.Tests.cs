@@ -19,7 +19,7 @@ public class PathInternal_Windows_Tests
         InlineData(@"C:\<", true)
         InlineData("\"MyFile\"", true)
         ]
-    [PlatformSpecific(PlatformID.Windows)]
+    [PlatformSpecific(TestPlatforms.Windows)]
     public void HasWildcardCharacters(string path, bool expected)
     {
         Assert.Equal(expected, PathInternal.HasWildCardCharacters(path));
@@ -35,7 +35,7 @@ public class PathInternal_Windows_Tests
         InlineData(@"//?/Foo", @"//?/Foo")
         InlineData(@"\\Server\Share", PathInternal.UncExtendedPathPrefix + @"Server\Share")
         ]
-    [PlatformSpecific(PlatformID.Windows)]
+    [PlatformSpecific(TestPlatforms.Windows)]
     public void EnsureExtendedPrefixTest(string path, string expected)
     {
         Assert.Equal(expected, PathInternal.EnsureExtendedPrefix(path));
@@ -51,7 +51,7 @@ public class PathInternal_Windows_Tests
         InlineData(@"//?/", false)
         InlineData(@"/??/", false)
         ]
-    [PlatformSpecific(PlatformID.Windows)]
+    [PlatformSpecific(TestPlatforms.Windows)]
     public void IsExtendedTest(string path, bool expected)
     {
         StringBuffer sb = new StringBuffer();
@@ -71,7 +71,7 @@ public class PathInternal_Windows_Tests
         InlineData(@"//?/", true)
         InlineData(@"/??/", false)
         ]
-    [PlatformSpecific(PlatformID.Windows)]
+    [PlatformSpecific(TestPlatforms.Windows)]
     public void IsDeviceTest(string path, bool expected)
     {
         StringBuffer sb = new StringBuffer();
@@ -104,7 +104,7 @@ public class PathInternal_Windows_Tests
         InlineData(@"Path", true)
         InlineData(@"X", true)
         ]
-    [PlatformSpecific(PlatformID.Windows)]
+    [PlatformSpecific(TestPlatforms.Windows)]
     public void IsPartiallyQualifiedTest(string path, bool expected)
     {
         StringBuffer sb = new StringBuffer();
@@ -126,7 +126,7 @@ public class PathInternal_Windows_Tests
         InlineData(@"    \\", 4),
         InlineData(@"\\", 0),
         ]
-    [PlatformSpecific(PlatformID.Windows)]
+    [PlatformSpecific(TestPlatforms.Windows)]
     public void PathStartSkipTest(string path, int expected)
     {
         Assert.Equal(expected, PathInternal.PathStartSkip(path));
@@ -169,7 +169,7 @@ public class PathInternal_Windows_Tests
         InlineData(@"    \\", @"\\"),
         InlineData(@"    //", @"\\"),
         ]
-    [PlatformSpecific(PlatformID.Windows)]
+    [PlatformSpecific(TestPlatforms.Windows)]
     public void NormalizeDirectorySeparatorTests(string path, string expected)
     {
         string result = PathInternal.NormalizeDirectorySeparators(path);
@@ -187,7 +187,7 @@ public class PathInternal_Windows_Tests
     [InlineData(@"Foo\/\/\", 8)]
     [InlineData("Foo:Bar", 4)]
     [InlineData(@"C:\Users\Foobar\", 16)]
-    [PlatformSpecific(PlatformID.Windows)]
+    [PlatformSpecific(TestPlatforms.Windows)]
     public void FindFileNameIndexTests(string path, int expected)
     {
         Assert.Equal(expected, PathInternal.FindFileNameIndex(path));
@@ -201,7 +201,7 @@ public class PathInternal_Windows_Tests
         InlineData(@"C:\", @"c:\", StringComparison.OrdinalIgnoreCase, true)
         InlineData(@"C:\", @"c:\", StringComparison.Ordinal, false)
         ]
-    [PlatformSpecific(PlatformID.Windows)]
+    [PlatformSpecific(TestPlatforms.Windows)]
     public void AreRootsEqual(string first, string second, StringComparison comparisonType, bool expected)
     {
         Assert.Equal(expected, PathInternal.AreRootsEqual(first, second, comparisonType));

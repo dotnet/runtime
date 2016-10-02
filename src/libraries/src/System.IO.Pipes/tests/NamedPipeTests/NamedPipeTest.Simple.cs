@@ -238,7 +238,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // P/Invoking to Win32 functions
+        [PlatformSpecific(TestPlatforms.Windows)] // P/Invoking to Win32 functions
         public async Task CancelTokenOff_ServerWaitForConnectionAsyncWithOuterCancellation_Throws_OperationCanceledException()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
@@ -253,7 +253,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // P/Invoking to Win32 functions
+        [PlatformSpecific(TestPlatforms.Windows)] // P/Invoking to Win32 functions
         public async Task CancelTokenOn_ServerWaitForConnectionAsyncWithOuterCancellation_Throws_IOException()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
@@ -350,7 +350,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // Unix implemented on sockets, where disposal information doesn't propagate
+        [PlatformSpecific(TestPlatforms.Windows)] // Unix implemented on sockets, where disposal information doesn't propagate
         public async Task Windows_OperationsOnNamedServerWithDisposedClient()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
@@ -366,7 +366,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/1011
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public async Task Unix_OperationsOnNamedServerWithDisposedClient()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
@@ -500,7 +500,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [PlatformSpecific(PlatformID.Windows)] // Unix named pipes are on sockets, where small writes with an empty buffer will succeed immediately
+        [PlatformSpecific(TestPlatforms.Windows)] // Unix named pipes are on sockets, where small writes with an empty buffer will succeed immediately
         [Fact]
         public async Task WriteAsync_DisconnectDuringWrite_Throws()
         {
@@ -561,7 +561,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // P/Invoking to Win32 functions
+        [PlatformSpecific(TestPlatforms.Windows)] // P/Invoking to Win32 functions
         public async Task CancelTokenOff_Server_ReadWriteCancelledToken_Throws_OperationCanceledException()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
@@ -591,7 +591,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // P/Invoking to Win32 functions
+        [PlatformSpecific(TestPlatforms.Windows)] // P/Invoking to Win32 functions
         public async Task CancelTokenOn_Server_ReadWriteCancelledToken_Throws_IOException()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
@@ -657,7 +657,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // P/Invoking to Win32 functions
+        [PlatformSpecific(TestPlatforms.Windows)] // P/Invoking to Win32 functions
         public async Task CancelTokenOff_Client_ReadWriteCancelledToken_Throws_OperationCanceledException()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
@@ -686,7 +686,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // P/Invoking to Win32 functions
+        [PlatformSpecific(TestPlatforms.Windows)] // P/Invoking to Win32 functions
         public async Task CancelTokenOn_Client_ReadWriteCancelledToken_Throws_IOException()
         {
             using (NamedPipePair pair = CreateNamedPipePair())

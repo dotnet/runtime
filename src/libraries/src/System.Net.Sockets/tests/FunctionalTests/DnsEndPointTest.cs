@@ -32,7 +32,7 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(SocketImplementationType.APM)]
         [InlineData(SocketImplementationType.Async)]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void Socket_ConnectDnsEndPoint_Success(SocketImplementationType type)
         {
             int port;
@@ -47,7 +47,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void Socket_ConnectDnsEndPoint_Failure()
         {
             using (Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -103,7 +103,7 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(SocketImplementationType.APM)]
         [InlineData(SocketImplementationType.Async)]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void Socket_BeginConnectDnsEndPoint_Success(SocketImplementationType type)
         {
             int port;
@@ -119,7 +119,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void Socket_BeginConnectDnsEndPoint_Failure()
         {
             using (Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -162,7 +162,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(SocketImplementationType.APM)]
         [InlineData(SocketImplementationType.Async)]
         [Trait("IPv4", "true")]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void Socket_ConnectAsyncDnsEndPoint_Success(SocketImplementationType type)
         {
             Assert.True(Capability.IPv4Support());
@@ -196,7 +196,7 @@ namespace System.Net.Sockets.Tests
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         [Trait("IPv4", "true")]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void Socket_ConnectAsyncDnsEndPoint_HostNotFound()
         {
             Assert.True(Capability.IPv4Support());
@@ -225,7 +225,7 @@ namespace System.Net.Sockets.Tests
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         [Trait("IPv4", "true")]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void Socket_ConnectAsyncDnsEndPoint_ConnectionRefused()
         {
             Assert.True(Capability.IPv4Support());
@@ -259,7 +259,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(SocketImplementationType.Async)]
         [Trait("IPv4", "true")]
         [Trait("IPv6", "true")]
-        [ActiveIssue(4002, PlatformID.AnyUnix)]
+        [ActiveIssue(4002, TestPlatforms.AnyUnix)]
         public void Socket_StaticConnectAsync_Success(SocketImplementationType type)
         {
             Assert.True(Capability.IPv4Support() && Capability.IPv6Support());

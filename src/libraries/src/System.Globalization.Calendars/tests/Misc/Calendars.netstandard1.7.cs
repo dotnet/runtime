@@ -32,8 +32,8 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(Calendars_TestData))]
-        [ActiveIssue(11605, Xunit.PlatformID.AnyUnix)]
-        [ActiveIssue(11605, Xunit.PlatformID.AnyUnix)]
+        [ActiveIssue(11605, TestPlatforms.AnyUnix)]
+        [ActiveIssue(11605, TestPlatforms.AnyUnix)]
         public static void CloningTest(Calendar calendar, int yearHasLeapMonth, CalendarAlgorithmType algorithmType)
         {
             Calendar cloned = (Calendar) calendar.Clone();
@@ -42,7 +42,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(Calendars_TestData))]
-        [ActiveIssue(11605, Xunit.PlatformID.AnyUnix)]
+        [ActiveIssue(11605, TestPlatforms.AnyUnix)]
         public static void GetLeapMonthTest(Calendar calendar, int yearHasLeapMonth, CalendarAlgorithmType algorithmType)
         {
             if (yearHasLeapMonth > 0)
@@ -57,7 +57,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(Calendars_TestData))]
-        [ActiveIssue(11605, Xunit.PlatformID.AnyUnix)]
+        [ActiveIssue(11605, TestPlatforms.AnyUnix)]
         public static void ReadOnlyTest(Calendar calendar, int yearHasLeapMonth, CalendarAlgorithmType algorithmType)
         {
             Assert.False(calendar.IsReadOnly);
@@ -69,14 +69,14 @@ namespace System.Globalization.Tests
         
         [Theory]
         [MemberData(nameof(Calendars_TestData))]
-        [ActiveIssue(11605, Xunit.PlatformID.AnyUnix)]
+        [ActiveIssue(11605, TestPlatforms.AnyUnix)]
         public static void AlgorithmTypeTest(Calendar calendar, int yearHasLeapMonth, CalendarAlgorithmType algorithmType)
         {
             Assert.Equal(calendar.AlgorithmType, algorithmType);
         }
 
         [Fact]
-        [ActiveIssue(11605, Xunit.PlatformID.AnyUnix)]
+        [ActiveIssue(11605, TestPlatforms.AnyUnix)]
         public static void CalendarErasTest()
         {
             Assert.Equal(1, ChineseLunisolarCalendar.ChineseEra);

@@ -21,7 +21,7 @@ namespace System.Globalization.Tests
         }
 
         [Theory]
-        [ActiveIssue(11613, Xunit.PlatformID.AnyUnix)]
+        [ActiveIssue(11613, TestPlatforms.AnyUnix)]
         [MemberData(nameof(RegionInfo_TestData))]
         public void MiscTest(int lcid, int geoId, string currencyEnglishName, string alternativeCurrencyEnglishName, string currencyNativeName, string threeLetterISORegionName, string threeLetterWindowsRegionName)
         {
@@ -35,7 +35,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(11613, Xunit.PlatformID.AnyUnix)]
+        [ActiveIssue(11613, TestPlatforms.AnyUnix)]
         public void NegativeTest()
         {
             Assert.Throws<System.ArgumentException>("name", () => new RegionInfo(""));

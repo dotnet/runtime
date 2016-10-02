@@ -24,7 +24,7 @@ namespace System.Net.Security.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public async Task SslStream_ClientAndServerUsesAuxRecord_Ok()
         {
             X509Certificate2 serverCert = Configuration.Certificates.GetServerCertificate();

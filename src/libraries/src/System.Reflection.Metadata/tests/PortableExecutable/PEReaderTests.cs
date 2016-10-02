@@ -204,7 +204,7 @@ namespace System.Reflection.PortableExecutable.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetMethodBody_Loaded()
         {
             LoaderUtilities.LoadPEAndValidate(Misc.Members, reader =>
@@ -228,7 +228,7 @@ namespace System.Reflection.PortableExecutable.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetSectionData_Loaded()
         {
             LoaderUtilities.LoadPEAndValidate(Misc.Members, ValidateSectionData);

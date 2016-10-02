@@ -116,7 +116,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void ConvertTimeFromToUtc_UnixOnly()
         {
             // DateTime Kind is Local
@@ -210,7 +210,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void HasSameRules_RomeAndVatican()
         {
             TimeZoneInfo rome = TimeZoneInfo.FindSystemTimeZoneById("Europe/Rome");
