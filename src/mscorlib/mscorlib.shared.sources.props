@@ -732,7 +732,7 @@
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\Timer.cs" />
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\Volatile.cs" />
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\WaitHandle.cs" />
-    <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\WaitHandleExtensions.cs" />
+    <ThreadingSources Condition="'$(FeatureCoreClr)'!='true'" Include="$(BclSourcesRoot)\System\Threading\WaitHandleExtensions.cs" />
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\WaitHandleCannotBeOpenedException.cs" />
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\ApartmentState.cs" />
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\SpinLock.cs" />
