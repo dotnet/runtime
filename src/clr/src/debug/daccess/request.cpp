@@ -2962,31 +2962,19 @@ ClrDataAccess::GetGCHeapData(struct DacpGcHeapData *gcheapData)
 
     // for server GC-capable builds only, we need to check and see if IGCHeap::gcHeapType
     // is GC_HEAP_INVALID, in which case we fail.
-    // IGCHeap::gcHeapType doesn't exist on non-server-GC capable builds.'
+    // IGCHeap::gcHeapType doesn't exist on non-server-GC capable builds.
 #ifdef FEATURE_SVR_GC
-    size_t gcHeapValue = 0;
-    ULONG32 returned = 0;
-
-    TADDR gcHeapTypeLocation = m_globalBase + g_dacGlobals.IGCHeap__gcHeapType;
-
-    // @todo Microsoft: we should probably be capturing the HRESULT from ReadVirtual. We could 
-    // provide a more informative error message. E_FAIL is a wretchedly vague thing to return. 
-    hr = m_pTarget->ReadVirtual(gcHeapTypeLocation, (PBYTE)&gcHeapValue, sizeof(gcHeapValue), &returned);
-    if (!SUCCEEDED(hr)) 
-    {
-        goto cleanup;
-    }
+    ULONG32 gcHeapValue = IGCHeap::gcHeapType;
 
     // GC_HEAP_TYPE has three possible values:
     //       GC_HEAP_INVALID = 0,
     //       GC_HEAP_WKS     = 1,
     //       GC_HEAP_SVR     = 2
     // If we get something other than that, we probably read the wrong location.
-    _ASSERTE(gcHeapValue >= 0 && gcHeapValue <= 2);
+    _ASSERTE(gcHeapValue >= IGCHeap::GC_HEAP_INVALID && gcHeapValue <= IGCHeap::GC_HEAP_SVR);
 
-    //@todo Microsoft: We have an enumerated type, we probably should use the symbolic name
     // we have GC_HEAP_INVALID if gcHeapValue == 0, so we're done
-    if (SUCCEEDED(hr) && ((returned != sizeof(gcHeapValue)) || (gcHeapValue == 0)))
+    if (gcHeapValue == IGCHeap::GC_HEAP_INVALID)
     {
         hr = E_FAIL;
         goto cleanup;
