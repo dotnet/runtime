@@ -8137,10 +8137,6 @@
       <Member Name="WaitOne(System.TimeSpan,System.Boolean)" />
       <Member MemberType="Property" Name="SafeWaitHandle" />
     </Type>
-   <Type Name="System.Threading.WaitHandleExtensions">
-      <Member Name="GetSafeWaitHandle(System.Threading.WaitHandle)" />
-      <Member Name="SetSafeWaitHandle(System.Threading.WaitHandle,Microsoft.Win32.SafeHandles.SafeWaitHandle)" />
-    </Type>
     <Type Name="System.Threading.WaitHandleCannotBeOpenedException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
