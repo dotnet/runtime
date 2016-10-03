@@ -5,7 +5,7 @@
         "4.0.1",
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
@@ -17,21 +17,23 @@
       "StableVersions": [
         "1.0.0",
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "1.2.0"
     },
     "Microsoft.NETCore.Targets": {
       "StableVersions": [
         "1.0.0",
         "1.0.1",
         "1.0.2"
-      ]
+      ],
+      "BaselineVersion": "1.2.0"
     },
     "Microsoft.VisualBasic": {
       "StableVersions": [
         "10.0.1",
         "10.0.0"
       ],
-      "BaselineVersion": "10.0.1",
+      "BaselineVersion": "10.2.0",
       "AssemblyVersionInPackageVersion": {
         "10.0.0.0": "10.0.0",
         "10.0.1.0": "10.0.1",
@@ -44,7 +46,7 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
@@ -56,7 +58,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
@@ -67,7 +69,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
@@ -77,12 +79,14 @@
     "NETStandard.Library": {
       "StableVersions": [
         "1.6.0"
-      ]
+      ],
+      "BaselineVersion": "1.6.2"
     },
     "runtime.any.System.Collections": {
       "StableVersions": [
         "4.0.11"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.10.0": "4.4.0",
         "4.0.11.0": "4.4.0",
@@ -93,6 +97,7 @@
       "StableVersions": [
         "4.0.1"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.2.0": "4.3.0",
         "4.0.1.0": "4.4.0",
@@ -103,6 +108,7 @@
       "StableVersions": [
         "4.1.0"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.20.0": "4.4.0",
         "4.1.1.0": "4.3.0",
@@ -113,6 +119,7 @@
       "StableVersions": [
         "4.0.11"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.12.0": "4.3.0",
         "4.1.0.0": "4.4.0",
@@ -123,6 +130,7 @@
       "StableVersions": [
         "4.0.1"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.1.0": "4.4.0",
         "4.1.0.0": "4.4.0"
@@ -132,6 +140,7 @@
       "StableVersions": [
         "4.1.0"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.10.0": "4.4.0",
         "4.1.0.0": "4.4.0",
@@ -142,6 +151,7 @@
       "StableVersions": [
         "4.1.0"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.10.0": "4.4.0",
         "4.1.0.0": "4.4.0",
@@ -162,6 +172,7 @@
       "StableVersions": [
         "4.0.1"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.4.0",
         "4.0.1.0": "4.4.0",
@@ -172,6 +183,7 @@
       "StableVersions": [
         "4.0.1"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.4.0",
         "4.0.2.0": "4.3.0",
@@ -182,6 +194,7 @@
       "StableVersions": [
         "4.1.0"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.20.0": "4.4.0",
         "4.1.1.0": "4.4.0",
@@ -192,6 +205,7 @@
       "StableVersions": [
         "4.0.1"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.1.0": "4.4.0",
         "4.1.0.0": "4.4.0"
@@ -201,6 +215,7 @@
       "StableVersions": [
         "4.1.0"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.20.0": "4.4.0",
         "4.1.0.0": "4.4.0",
@@ -211,6 +226,7 @@
       "StableVersions": [
         "4.0.11"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.11.0": "4.4.0",
         "4.1.0.0": "4.4.0"
@@ -220,6 +236,7 @@
       "StableVersions": [
         "4.0.11"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.11.0": "4.4.0",
         "4.1.0.0": "4.4.0"
@@ -229,6 +246,7 @@
       "StableVersions": [
         "4.0.11"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.11.0": "4.4.0",
         "4.1.0.0": "4.4.0"
@@ -238,6 +256,7 @@
       "StableVersions": [
         "4.0.1"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.2.0": "4.3.0",
         "4.0.1.0": "4.4.0",
@@ -248,6 +267,7 @@
       "StableVersions": [
         "4.0.10"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.10.0": "4.4.0"
       }
@@ -256,6 +276,7 @@
       "StableVersions": [
         "4.0.1"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.2.0": "4.3.0",
         "4.0.1.0": "4.4.0"
@@ -265,6 +286,7 @@
       "StableVersions": [
         "4.0.20"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.20.0": "4.4.0"
       }
@@ -273,6 +295,7 @@
       "StableVersions": [
         "4.0.11"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.12.0": "4.4.0"
       }
@@ -281,6 +304,7 @@
       "StableVersions": [
         "4.0.1"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.1.0": "4.4.0"
       }
@@ -289,6 +313,7 @@
       "StableVersions": [
         "4.1.0"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.10.0": "4.4.0",
         "4.1.0.0": "4.4.0",
@@ -299,6 +324,7 @@
       "StableVersions": [
         "4.0.10"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.10.0": "4.4.0",
         "4.2.0.0": "4.4.0"
@@ -313,6 +339,7 @@
       "StableVersions": [
         "4.0.0"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.4.0",
         "4.1.0.0": "4.4.0"
@@ -322,6 +349,7 @@
       "StableVersions": [
         "4.0.0"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.4.0"
       }
@@ -330,6 +358,7 @@
       "StableVersions": [
         "4.0.20"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.20.0": "4.4.0",
         "4.2.0.0": "4.4.0"
@@ -339,6 +368,7 @@
       "StableVersions": [
         "4.0.1"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.1.0": "4.4.0",
         "4.1.0.0": "4.4.0"
@@ -348,6 +378,7 @@
       "StableVersions": [
         "4.0.20"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.20.0": "4.4.0"
       }
@@ -356,6 +387,7 @@
       "StableVersions": [
         "4.0.11"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.11.0": "4.4.0"
       }
@@ -364,6 +396,7 @@
       "StableVersions": [
         "4.0.11"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.11.0": "4.4.0"
       }
@@ -372,6 +405,7 @@
       "StableVersions": [
         "4.0.11"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.11.0": "4.4.0"
       }
@@ -380,6 +414,7 @@
       "StableVersions": [
         "4.0.1"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.2.0": "4.3.0",
         "4.0.3.0": "4.4.0"
@@ -388,52 +423,62 @@
     "runtime.debian.8-x64.runtime.native.System": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.debian.8-x64.runtime.native.System.IO.Compression": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.debian.8-x64.runtime.native.System.Net.Http": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.debian.8-x64.runtime.native.System.Net.Security": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.debian.8-x64.runtime.native.System.Security.Cryptography": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.fedora.23-x64.runtime.native.System": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.fedora.23-x64.runtime.native.System.IO.Compression": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.fedora.23-x64.runtime.native.System.Net.Http": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.fedora.23-x64.runtime.native.System.Net.Security": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.fedora.23-x64.runtime.native.System.Security.Cryptography": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.native.System": {
       "StableVersions": [
@@ -474,132 +519,158 @@
     "runtime.opensuse.13.2-x64.runtime.native.System": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.opensuse.13.2-x64.runtime.native.System.IO.Compression": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.opensuse.13.2-x64.runtime.native.System.Net.Http": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.opensuse.13.2-x64.runtime.native.System.Net.Security": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.opensuse.13.2-x64.runtime.native.System.Security.Cryptography": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.osx.10.10-x64.runtime.native.System": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.osx.10.10-x64.runtime.native.System.IO.Compression": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.osx.10.10-x64.runtime.native.System.Net.Http": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.osx.10.10-x64.runtime.native.System.Net.Security": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.osx.10.10-x64.runtime.native.System.Security.Cryptography": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.rhel.7-x64.runtime.native.System": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.rhel.7-x64.runtime.native.System.IO.Compression": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.rhel.7-x64.runtime.native.System.Net.Http": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.rhel.7-x64.runtime.native.System.Net.Security": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.rhel.7-x64.runtime.native.System.Security.Cryptography": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.ubuntu.14.04-x64.runtime.native.System": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.ubuntu.14.04-x64.runtime.native.System.IO.Compression": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.ubuntu.14.04-x64.runtime.native.System.Net.Http": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.ubuntu.14.04-x64.runtime.native.System.Net.Security": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.ubuntu.14.04-x64.runtime.native.System.Security.Cryptography": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.ubuntu.16.04-x64.runtime.native.System": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.ubuntu.16.04-x64.runtime.native.System.IO.Compression": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.ubuntu.16.04-x64.runtime.native.System.Net.Http": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.ubuntu.16.04-x64.runtime.native.System.Net.Security": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.ubuntu.16.04-x64.runtime.native.System.Security.Cryptography": {
       "StableVersions": [
         "1.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.unix.Microsoft.Win32.Primitives": {
       "StableVersions": [
         "4.0.1"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.2.0": "4.3.0",
         "4.0.3.0": "4.4.0"
@@ -609,6 +680,7 @@
       "StableVersions": [
         "4.0.0"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.1.0": "4.4.0",
         "4.1.0.0": "4.4.0"
@@ -618,6 +690,7 @@
       "StableVersions": [
         "4.0.11"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.12.0": "4.3.0",
         "4.0.13.0": "4.4.0"
@@ -627,6 +700,7 @@
       "StableVersions": [
         "4.0.1"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.2.0": "4.4.0",
         "4.1.0.0": "4.4.0"
@@ -636,6 +710,7 @@
       "StableVersions": [
         "4.0.11"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.12.0": "4.3.0",
         "4.0.13.0": "4.4.0"
@@ -645,6 +720,7 @@
       "StableVersions": [
         "4.1.0"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.1.1.0": "4.4.0",
         "4.2.0.0": "4.4.0"
@@ -654,6 +730,7 @@
       "StableVersions": [
         "4.0.1"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.3.0": "4.3.0",
         "4.0.4.0": "4.4.0"
@@ -663,6 +740,7 @@
       "StableVersions": [
         "4.1.0"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.1.1.0": "4.4.0",
         "4.2.0.0": "4.4.0"
@@ -672,6 +750,7 @@
       "StableVersions": [
         "4.0.1"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.2.0": "4.3.0",
         "4.0.3.0": "4.4.0"
@@ -681,6 +760,7 @@
       "StableVersions": [
         "4.0.0"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.1.0": "4.4.0",
         "4.1.0.0": "4.4.0"
@@ -690,6 +770,7 @@
       "StableVersions": [
         "4.0.11"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.12.0": "4.3.0",
         "4.0.13.0": "4.4.0"
@@ -699,6 +780,7 @@
       "StableVersions": [
         "4.0.1"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.2.0": "4.4.0",
         "4.1.0.0": "4.4.0"
@@ -708,6 +790,7 @@
       "StableVersions": [
         "4.0.11"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.12.0": "4.3.0",
         "4.0.13.0": "4.4.0"
@@ -717,6 +800,7 @@
       "StableVersions": [
         "4.1.0"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.1.1.0": "4.4.0",
         "4.2.0.0": "4.4.0"
@@ -726,6 +810,7 @@
       "StableVersions": [
         "4.1.0"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.10.0": "4.4.0",
         "4.1.1.0": "4.4.0",
@@ -740,28 +825,33 @@
     "runtime.win7-x64.runtime.native.System.Data.SqlClient.sni": {
       "StableVersions": [
         "4.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.win7-x64.runtime.native.System.IO.Compression": {
       "StableVersions": [
         "4.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.win7-x86.runtime.native.System.Data.SqlClient.sni": {
       "StableVersions": [
         "4.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.win7-x86.runtime.native.System.IO.Compression": {
       "StableVersions": [
         "4.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "runtime.win7.System.Private.Uri": {
       "StableVersions": [
         "4.0.1",
         "4.0.2"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.4.0",
         "4.0.3.0": "4.3.0",
@@ -771,14 +861,15 @@
     "runtime.win8-arm.runtime.native.System.IO.Compression": {
       "StableVersions": [
         "4.0.1"
-      ]
+      ],
+      "BaselineVersion": "4.4.0"
     },
     "System.AppContext": {
       "StableVersions": [
         "4.0.0",
         "4.1.0"
       ],
-      "BaselineVersion": "4.1.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.1.0.0": "4.1.0",
@@ -789,7 +880,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
@@ -797,6 +888,7 @@
       }
     },
     "System.CodeDom": {
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.4.0"
       }
@@ -807,7 +899,7 @@
         "4.0.10",
         "4.0.11"
       ],
-      "BaselineVersion": "4.0.11",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
@@ -821,7 +913,7 @@
         "4.0.10",
         "4.0.12"
       ],
-      "BaselineVersion": "4.0.12",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
@@ -836,7 +928,7 @@
         "1.2.0",
         "1.1.36"
       ],
-      "BaselineVersion": "1.2.0",
+      "BaselineVersion": "1.4.0",
       "AssemblyVersionInPackageVersion": {
         "1.1.37.0": "1.1.37",
         "1.2.0.0": "1.2.0",
@@ -850,7 +942,7 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
@@ -862,7 +954,7 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
@@ -874,7 +966,7 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
@@ -888,7 +980,7 @@
         "4.0.10",
         "4.1.0"
       ],
-      "BaselineVersion": "4.1.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
@@ -903,7 +995,7 @@
         "4.0.11",
         "4.0.10"
       ],
-      "BaselineVersion": "4.0.11",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
@@ -916,7 +1008,7 @@
         "4.0.0",
         "4.1.0"
       ],
-      "BaselineVersion": "4.1.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.1.0.0": "4.1.0",
@@ -928,7 +1020,7 @@
         "4.0.0",
         "4.1.0"
       ],
-      "BaselineVersion": "4.1.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.1.0.0": "4.1.0",
@@ -939,7 +1031,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.4.0",
@@ -951,7 +1043,7 @@
         "4.0.0",
         "4.1.0"
       ],
-      "BaselineVersion": "4.1.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.1.0.0": "4.1.0",
@@ -963,7 +1055,7 @@
       "StableVersions": [
         "4.1.0"
       ],
-      "BaselineVersion": "4.1.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.1.0",
         "4.1.0.0": "4.1.0",
@@ -976,7 +1068,7 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
@@ -990,7 +1082,7 @@
         "4.0.10",
         "4.0.11"
       ],
-      "BaselineVersion": "4.0.11",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
@@ -1003,7 +1095,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
@@ -1014,7 +1106,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
@@ -1025,7 +1117,7 @@
       "StableVersions": [
         "4.1.0"
       ],
-      "BaselineVersion": "4.1.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.1.0",
         "4.1.0.0": "4.1.0",
@@ -1038,7 +1130,7 @@
         "4.0.0",
         "4.0.2"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.1.0": "4.0.1",
         "4.0.3.0": "4.3.0",
@@ -1051,7 +1143,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
@@ -1063,7 +1155,7 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
@@ -1074,7 +1166,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
@@ -1088,7 +1180,7 @@
         "4.0.20",
         "4.1.0"
       ],
-      "BaselineVersion": "4.1.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
@@ -1102,7 +1194,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.1.0.0": "4.4.0"
@@ -1114,7 +1206,7 @@
         "4.0.10",
         "4.0.11"
       ],
-      "BaselineVersion": "4.0.11",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
@@ -1128,7 +1220,7 @@
         "4.0.10",
         "4.0.11"
       ],
-      "BaselineVersion": "4.0.11",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
@@ -1142,7 +1234,7 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
@@ -1154,7 +1246,7 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
@@ -1167,7 +1259,7 @@
         "4.0.10",
         "4.1.0"
       ],
-      "BaselineVersion": "4.1.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
@@ -1181,7 +1273,7 @@
         "4.1.0",
         "4.1.1"
       ],
-      "BaselineVersion": "4.1.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.1.0.0": "4.1.0",
@@ -1194,7 +1286,7 @@
         "4.0.1",
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.1.0": "4.0.1",
         "4.0.2.0": "4.3.0",
@@ -1207,7 +1299,7 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
@@ -1219,7 +1311,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
@@ -1230,7 +1322,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
@@ -1242,7 +1334,7 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
@@ -1254,7 +1346,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.1.0.0": "4.4.0"
@@ -1265,7 +1357,7 @@
         "4.0.1",
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.1.0": "4.0.1",
         "4.0.0.0": "4.0.0",
@@ -1276,7 +1368,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
@@ -1287,7 +1379,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
@@ -1298,7 +1390,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
@@ -1310,7 +1402,7 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
@@ -1323,7 +1415,7 @@
         "4.0.0",
         "4.1.0"
       ],
-      "BaselineVersion": "4.1.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.1.0.0": "4.1.0",
@@ -1337,7 +1429,7 @@
         "4.0.10",
         "4.1.0"
       ],
-      "BaselineVersion": "4.1.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
@@ -1351,7 +1443,7 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
@@ -1364,7 +1456,7 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
@@ -1377,7 +1469,7 @@
         "4.0.0",
         "4.1.0"
       ],
-      "BaselineVersion": "4.1.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.1.0.0": "4.1.0",
@@ -1390,7 +1482,7 @@
         "4.0.1",
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.1.0": "4.0.1",
         "4.0.0.0": "4.0.0",
@@ -1401,7 +1493,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
@@ -1409,6 +1501,7 @@
       }
     },
     "System.Net.Mime": {
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.4.0"
       }
@@ -1417,7 +1510,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.1.0.0": "4.4.0"
@@ -1428,7 +1521,7 @@
         "4.0.0",
         "4.1.0"
       ],
-      "BaselineVersion": "4.1.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.1.0.0": "4.1.0",
@@ -1439,7 +1532,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.1.0.0": "4.4.0"
@@ -1452,7 +1545,7 @@
         "4.0.10",
         "4.0.11"
       ],
-      "BaselineVersion": "4.0.11",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "3.9.0.0": "3.9.0",
         "4.0.0.0": "4.0.0",
@@ -1469,7 +1562,7 @@
         "4.0.11",
         "4.0.10"
       ],
-      "BaselineVersion": "4.0.11",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "3.9.0.0": "3.9.0",
         "4.0.0.0": "4.0.0",
@@ -1482,7 +1575,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.1.0.0": "4.4.0"
@@ -1493,7 +1586,7 @@
         "4.1.0",
         "4.0.0"
       ],
-      "BaselineVersion": "4.1.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.1.0.0": "4.1.0",
         "4.0.0.0": "4.0.0",
@@ -1503,6 +1596,7 @@
       }
     },
     "System.Net.WebClient": {
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.4.0"
       }
@@ -1512,7 +1606,7 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
@@ -1520,6 +1614,7 @@
       }
     },
     "System.Net.WebProxy": {
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.4.0"
       }
@@ -1528,7 +1623,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.1.0.0": "4.4.0"
@@ -1538,7 +1633,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.1.0.0": "4.4.0"
@@ -1550,7 +1645,7 @@
         "4.1.0",
         "4.1.1"
       ],
-      "BaselineVersion": "4.1.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.1.0.0": "4.1.0",
@@ -1564,7 +1659,7 @@
         "4.0.1",
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.1.0": "4.0.1",
         "4.0.2.0": "4.3.0",
@@ -1578,7 +1673,7 @@
         "4.0.10",
         "4.0.12"
       ],
-      "BaselineVersion": "4.0.12",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
@@ -1593,7 +1688,7 @@
         "4.0.0",
         "4.1.0"
       ],
-      "BaselineVersion": "4.3.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.1.2.0": "4.3.0",
         "4.1.3.0": "4.4.0"
@@ -1604,7 +1699,7 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.3.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.3.0": "4.3.0",
         "4.0.0.0": "4.0.0",
@@ -1617,7 +1712,7 @@
         "4.0.10",
         "4.1.0"
       ],
-      "BaselineVersion": "4.1.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
@@ -1630,7 +1725,7 @@
         "4.0.1",
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.2.0": "4.3.0",
@@ -1643,7 +1738,7 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
@@ -1656,7 +1751,7 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
@@ -1669,7 +1764,7 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
@@ -1682,7 +1777,7 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
@@ -1695,7 +1790,7 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
@@ -1709,7 +1804,7 @@
         "1.1.0",
         "1.2.0"
       ],
-      "BaselineVersion": "1.4.0",
+      "BaselineVersion": "1.5.0",
       "AssemblyVersionInPackageVersion": {
         "1.0.22.0": "1.0.22",
         "1.3.0.0": "1.3.0",
@@ -1724,7 +1819,7 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
@@ -1736,7 +1831,7 @@
         "4.0.0",
         "4.1.0"
       ],
-      "BaselineVersion": "4.1.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.1.0.0": "4.1.0",
@@ -1748,7 +1843,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
@@ -1760,7 +1855,7 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
@@ -1772,7 +1867,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
@@ -1786,7 +1881,7 @@
         "4.0.20",
         "4.1.0"
       ],
-      "BaselineVersion": "4.1.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
@@ -1800,6 +1895,7 @@
       "StableVersions": [
         "4.0.0"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.2.0": "4.3.0",
@@ -1810,7 +1906,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.1.0.0": "4.4.0"
@@ -1822,7 +1918,7 @@
         "4.0.10",
         "4.1.0"
       ],
-      "BaselineVersion": "4.1.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
@@ -1836,7 +1932,7 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
@@ -1850,7 +1946,7 @@
         "4.0.20",
         "4.1.0"
       ],
-      "BaselineVersion": "4.1.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
@@ -1863,7 +1959,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
@@ -1875,7 +1971,7 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
@@ -1887,7 +1983,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
@@ -1899,7 +1995,7 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
@@ -1913,7 +2009,7 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.0.2",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
@@ -1929,7 +2025,7 @@
         "4.0.10",
         "4.1.0"
       ],
-      "BaselineVersion": "4.1.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.1.1.0": "4.1.1",
@@ -1945,7 +2041,7 @@
         "4.0.10",
         "4.1.0"
       ],
-      "BaselineVersion": "4.1.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.1.1.0": "4.1.1",
@@ -1961,7 +2057,7 @@
         "4.0.10",
         "4.0.11"
       ],
-      "BaselineVersion": "4.0.11",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
@@ -1975,7 +2071,7 @@
         "4.0.1",
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.1.0": "4.0.1",
         "4.0.0.0": "4.0.0",
@@ -1987,7 +2083,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
@@ -1999,7 +2095,7 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
@@ -2011,7 +2107,7 @@
       "StableVersions": [
         "4.2.0"
       ],
-      "BaselineVersion": "4.2.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.2.0",
         "4.1.0.0": "4.2.0",
@@ -2023,7 +2119,7 @@
       "StableVersions": [
         "4.2.0"
       ],
-      "BaselineVersion": "4.2.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.2.0",
         "4.1.0.0": "4.2.0",
@@ -2035,7 +2131,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.1.0.0": "4.4.0"
@@ -2045,7 +2141,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.1.0.0": "4.4.0"
@@ -2055,7 +2151,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.1.0.0": "4.4.0"
@@ -2065,6 +2161,7 @@
       "StableVersions": [
         "4.0.0"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
@@ -2075,7 +2172,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.1.0.0": "4.4.0"
@@ -2085,7 +2182,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
@@ -2096,7 +2193,7 @@
       "StableVersions": [
         "4.1.0"
       ],
-      "BaselineVersion": "4.1.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.1.0",
         "4.1.0.0": "4.1.0",
@@ -2109,7 +2206,7 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
@@ -2121,7 +2218,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.1.0.0": "4.4.0"
@@ -2131,6 +2228,7 @@
       "StableVersions": [
         "4.0.0"
       ],
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
@@ -2141,7 +2239,7 @@
       "StableVersions": [
         "4.1.0"
       ],
-      "BaselineVersion": "4.1.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.1.0.0": "4.1.0",
         "4.1.1.0": "4.3.0",
@@ -2154,7 +2252,7 @@
         "4.0.10",
         "4.0.11"
       ],
-      "BaselineVersion": "4.0.11",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
@@ -2167,7 +2265,7 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
@@ -2181,7 +2279,7 @@
         "4.0.10",
         "4.0.11"
       ],
-      "BaselineVersion": "4.0.11",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
@@ -2193,7 +2291,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
@@ -2206,7 +2304,7 @@
         "4.0.10",
         "4.1.0"
       ],
-      "BaselineVersion": "4.1.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
@@ -2220,7 +2318,7 @@
         "4.0.10",
         "4.0.11"
       ],
-      "BaselineVersion": "4.0.11",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
@@ -2233,7 +2331,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
@@ -2245,7 +2343,7 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
@@ -2259,7 +2357,7 @@
         "4.0.10",
         "4.0.11"
       ],
-      "BaselineVersion": "4.0.11",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
@@ -2272,7 +2370,7 @@
         "4.6.0",
         "4.5.25"
       ],
-      "BaselineVersion": "4.6.0",
+      "BaselineVersion": "4.8.0",
       "AssemblyVersionInPackageVersion": {
         "4.6.0.0": "4.6.0",
         "4.6.1.0": "4.7.0",
@@ -2284,7 +2382,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.1.0.0": "4.3.0",
@@ -2296,7 +2394,7 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
@@ -2308,7 +2406,7 @@
       "StableVersions": [
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.0",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
@@ -2319,7 +2417,7 @@
       "StableVersions": [
         "4.0.10"
       ],
-      "BaselineVersion": "4.0.10",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.10.0": "4.0.10",
         "4.0.11.0": "4.3.0",
@@ -2331,7 +2429,7 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
@@ -2345,7 +2443,7 @@
         "4.0.10",
         "4.0.11"
       ],
-      "BaselineVersion": "4.0.11",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
@@ -2360,7 +2458,7 @@
         "4.0.10",
         "4.0.11"
       ],
-      "BaselineVersion": "4.0.11",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
@@ -2373,7 +2471,7 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
@@ -2386,7 +2484,7 @@
         "4.0.10",
         "4.0.11"
       ],
-      "BaselineVersion": "4.0.11",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
@@ -2399,7 +2497,7 @@
         "4.0.0",
         "4.0.1"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
@@ -2411,7 +2509,7 @@
         "4.0.1",
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.1.0": "4.0.1",
         "4.0.0.0": "4.0.0",
@@ -2424,14 +2522,16 @@
         "4.0.1",
         "4.0.0"
       ],
-      "BaselineVersion": "4.0.1",
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.1.0": "4.0.1",
         "4.0.0.0": "4.0.0",
         "4.1.0.0": "4.4.0"
       }
     },
-    "Microsoft.Private.PackageBaseline": {},
+    "Microsoft.Private.PackageBaseline": {
+      "BaselineVersion": "1.2.0"
+    },
     "runtime.win10-arm-aot.runtime.native.System.IO.Compression": {
       "StableVersions": [
         "4.0.1"
@@ -2443,44 +2543,54 @@
       ]
     },
     "System.Composition.AttributedModel": {
+      "BaselineVersion": "1.1.0",
       "AssemblyVersionInPackageVersion": {
         "1.0.32.0": "1.1.0"
       }
     },
     "System.Composition.Convention": {
+      "BaselineVersion": "1.1.0",
       "AssemblyVersionInPackageVersion": {
         "1.0.32.0": "1.1.0"
       }
     },
     "System.Composition.Hosting": {
+      "BaselineVersion": "1.1.0",
       "AssemblyVersionInPackageVersion": {
         "1.0.32.0": "1.1.0"
       }
     },
     "System.Composition.Runtime": {
+      "BaselineVersion": "1.1.0",
       "AssemblyVersionInPackageVersion": {
         "1.0.32.0": "1.1.0"
       }
     },
     "System.Composition.TypedParts": {
+      "BaselineVersion": "1.1.0",
       "AssemblyVersionInPackageVersion": {
         "1.0.32.0": "1.1.0"
       }
     },
-    "System.Composition": {},
+    "System.Composition": {
+      "BaselineVersion": "1.1.0"
+    },
     "System.IO.Pipes.AccessControl": {
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.1.0": "4.3.0",
         "4.0.2.0": "4.4.0"
       }
     },
     "System.Runtime.Serialization.Formatters": {
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.1.0": "4.3.0",
         "4.0.2.0": "4.4.0"
       }
     },
     "System.ValueTuple": {
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.1.0": "4.3.0",
         "4.0.2.0": "4.4.0"
@@ -2493,34 +2603,124 @@
       "BaselineVersion": "4.4.0"
     },
     "System.Json": {
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.4.0"
       }
     },
     "System.Private.Xml": {
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.4.0"
       }
     },
     "System.Private.Xml.Linq": {
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.4.0"
       }
     },
     "System.Security.Permissions": {
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.4.0"
       }
     },
     "System.Transactions": {
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.4.0"
       }
     },
     "System.Web.HttpUtility": {
+      "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.4.0"
       }
+    },
+    "runtime.debian.8-x64.runtime.native.System.Security.Cryptography.OpenSsl": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.fedora.23-x64.runtime.native.System.Security.Cryptography.OpenSsl": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.fedora.24-x64.runtime.native.System.IO.Compression": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.fedora.24-x64.runtime.native.System.Net.Http": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.fedora.24-x64.runtime.native.System.Net.Security": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.fedora.24-x64.runtime.native.System": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.fedora.24-x64.runtime.native.System.Security.Cryptography": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.fedora.24-x64.runtime.native.System.Security.Cryptography.OpenSsl": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.opensuse.13.2-x64.runtime.native.System.Security.Cryptography.OpenSsl": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.opensuse.42.1-x64.runtime.native.System.IO.Compression": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.opensuse.42.1-x64.runtime.native.System.Net.Http": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.opensuse.42.1-x64.runtime.native.System.Net.Security": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.opensuse.42.1-x64.runtime.native.System": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.opensuse.42.1-x64.runtime.native.System.Security.Cryptography": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.opensuse.42.1-x64.runtime.native.System.Security.Cryptography.OpenSsl": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.osx.10.10-x64.runtime.native.System.Security.Cryptography.Apple": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.osx.10.10-x64.runtime.native.System.Security.Cryptography.OpenSsl": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.rhel.7-x64.runtime.native.System.Security.Cryptography.OpenSsl": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.ubuntu.14.04-x64.runtime.native.System.Security.Cryptography.OpenSsl": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.ubuntu.16.04-x64.runtime.native.System.Security.Cryptography.OpenSsl": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.ubuntu.16.10-x64.runtime.native.System.IO.Compression": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.ubuntu.16.10-x64.runtime.native.System.Net.Http": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.ubuntu.16.10-x64.runtime.native.System.Net.Security": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.ubuntu.16.10-x64.runtime.native.System": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.ubuntu.16.10-x64.runtime.native.System.Security.Cryptography": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.ubuntu.16.10-x64.runtime.native.System.Security.Cryptography.OpenSsl": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.win10-arm64.runtime.native.System.Data.SqlClient.sni": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.win10-arm64.runtime.native.System.IO.Compression": {
+      "BaselineVersion": "4.4.0"
     }
   },
   "ModulesToPackages": {
