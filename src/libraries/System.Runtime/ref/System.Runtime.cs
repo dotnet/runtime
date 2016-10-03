@@ -1420,7 +1420,7 @@ namespace System
     }
     public abstract partial class MarshalByRefObject
     {
-        internal MarshalByRefObject() { }
+        protected MarshalByRefObject() { }
     }
     public partial class Lazy<T, TMetadata> : System.Lazy<T>
     {
