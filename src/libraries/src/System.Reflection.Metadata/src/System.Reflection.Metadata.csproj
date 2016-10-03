@@ -236,7 +236,6 @@
     <Compile Include="System\Reflection\PortableExecutable\DirectoryEntry.cs" />
     <Compile Include="System\Reflection\PortableExecutable\Machine.cs" />
     <Compile Include="System\Reflection\PortableExecutable\PEBinaryReader.cs" />
-    <Compile Include="System\Reflection\PortableExecutable\PEFileConstants.cs" />
     <Compile Include="System\Reflection\PortableExecutable\PEFileFlags.cs" />
     <Compile Include="System\Reflection\PortableExecutable\PEHeader.cs" />
     <Compile Include="System\Reflection\PortableExecutable\PEHeaders.cs" />
