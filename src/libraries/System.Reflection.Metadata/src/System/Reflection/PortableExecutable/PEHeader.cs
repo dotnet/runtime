@@ -249,7 +249,7 @@ namespace System.Reflection.PortableExecutable
 
         #endregion
 
-        internal static int Size(bool is32Bit) =>
+        internal const int OffsetOfChecksum =
             sizeof(short) +                              // Magic
             sizeof(byte) +                               // MajorLinkerVersion
             sizeof(byte) +                               // MinorLinkerVersion
@@ -270,7 +270,10 @@ namespace System.Reflection.PortableExecutable
             sizeof(short) +                              // MinorSubsystemVersion
             sizeof(int) +                                // Win32VersionValue
             sizeof(int) +                                // SizeOfImage
-            sizeof(int) +                                // SizeOfHeaders
+            sizeof(int);                                 // SizeOfHeaders
+
+        internal static int Size(bool is32Bit) =>
+            OffsetOfChecksum +
             sizeof(int) +                                // Checksum
             sizeof(short) +                              // Subsystem
             sizeof(short) +                              // DllCharacteristics
