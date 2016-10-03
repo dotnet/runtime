@@ -63,11 +63,20 @@ namespace System.IO.IsolatedStorage
             //  4. Site
             //  5. Zone
             //
-            // For CoreFx StrongName and Url are the only relevant types. By default evidence for the Domain comes
+            // For CoreFX StrongName and Url are the only relevant types. By default evidence for the Domain comes
             // from the Assembly which comes from the EntryAssembly(). We'll emulate the legacy default behavior
             // by pulling directly from EntryAssembly.
+            //
+            // Note that it is possible that there won't be an EntryAssembly, which is something NetFX doesn't
+            // have to deal with and shouldn't be likely on CoreFX due to a single AppDomain. Without Evidence
+            // to pull from we'd have to dig into the use case to try and find a reasonable solution should we
+            // run into this in the wild.
 
             Assembly assembly = Assembly.GetEntryAssembly();
+
+            if (assembly == null)
+                throw new IsolatedStorageException(SR.IsolatedStorage_Init);
+
             AssemblyName assemblyName = assembly.GetName();
             Uri codeBase = new Uri(assembly.CodeBase);
 

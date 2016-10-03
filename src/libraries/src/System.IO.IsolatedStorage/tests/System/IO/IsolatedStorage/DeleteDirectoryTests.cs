@@ -9,7 +9,7 @@ namespace System.IO.IsolatedStorage
     public class DeleteDirectoryTests : IsoStorageTest
     {
         [Fact]
-        public void DeleteDirectory_ThrowsArugmentNull()
+        public void DeleteDirectory_ThrowsArgumentNull()
         {
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())
             {
@@ -79,12 +79,47 @@ namespace System.IO.IsolatedStorage
         [Theory MemberData(nameof(ValidStores))]
         public void DeleteDirectory_DeletesDirectory(PresetScopes scope)
         {
+            TestHelper.WipeStores();
+
             using (var isf = GetPresetScope(scope))
             {
-                isf.CreateDirectory("DeleteDirectory_DeletesDirectory");
-                Assert.True(isf.DirectoryExists("DeleteDirectory_DeletesDirectory"));
-                isf.DeleteDirectory("DeleteDirectory_DeletesDirectory");
-                Assert.False(isf.DirectoryExists("DeleteDirectory_DeletesDirectory"));
+                string directory = "DeleteDirectory_DeletesDirectory";
+                string subdirectory = Path.Combine(directory, directory);
+
+                isf.CreateDirectory(directory);
+                Assert.True(isf.DirectoryExists(directory), "directory exists");
+
+                isf.CreateDirectory(subdirectory);
+                Assert.True(isf.DirectoryExists(subdirectory), "subdirectory exists");
+
+                // Can't delete a directory with content
+                Assert.Throws<IsolatedStorageException>(() => isf.DeleteDirectory(directory));
+                Assert.True(isf.DirectoryExists(directory));
+
+                isf.DeleteDirectory(subdirectory);
+                Assert.False(isf.DirectoryExists(subdirectory));
+                isf.DeleteDirectory(directory);
+                Assert.False(isf.DirectoryExists(directory));
+            }
+        }
+
+        [Theory MemberData(nameof(ValidStores))]
+        public void DeleteDirectory_CannotDeleteWithContent(PresetScopes scope)
+        {
+            TestHelper.WipeStores();
+
+            // Validating that we aren't passing recursive:true
+            using (var isf = GetPresetScope(scope))
+            {
+                string directory = "DeleteDirectory_CannotDeleteWithContent";
+                isf.CreateDirectory(directory);
+                Assert.True(isf.DirectoryExists(directory), "directory exists");
+                string testFile = Path.Combine(directory, "content.file");
+                isf.CreateTestFile(testFile);
+                Assert.Throws<IsolatedStorageException>(() => isf.DeleteDirectory(directory));
+                isf.DeleteFile(testFile);
+                isf.DeleteDirectory(directory);
+                Assert.False(isf.DirectoryExists(directory));
             }
         }
     }

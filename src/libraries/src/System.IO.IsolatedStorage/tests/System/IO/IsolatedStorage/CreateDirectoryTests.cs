@@ -9,7 +9,7 @@ namespace System.IO.IsolatedStorage
     public class CreateDirectoryTests : IsoStorageTest
     {
         [Fact]
-        public void CreateDirectory_ThrowsArugmentNull()
+        public void CreateDirectory_ThrowsArgumentNull()
         {
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())
             {
