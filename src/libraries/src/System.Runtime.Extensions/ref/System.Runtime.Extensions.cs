@@ -614,6 +614,23 @@ namespace System
         public static long BigMul(int a, int b) { return default(long); }
         public static decimal Ceiling(decimal d) { return default(decimal); }
         public static double Ceiling(double a) { return default(double); }
+#if netcoreapp11
+        public static byte Clamp(byte value, byte min, byte max) { throw null; }
+        public static decimal Clamp(decimal value, decimal min, decimal max) { throw null; }
+        public static double Clamp(double value, double min, double max) { throw null; }
+        public static short Clamp(short value, short min, short max) { throw null; }
+        public static int Clamp(int value, int min, int max) { throw null; }
+        public static long Clamp(long value, long min, long max) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static sbyte Clamp(sbyte value, sbyte min, sbyte max) { throw null; }
+        public static float Clamp(float value, float min, float max) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ushort Clamp(ushort value, ushort min, ushort max) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static uint Clamp(uint value, uint min, uint max) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ulong Clamp(ulong value, ulong min, ulong max) { throw null; }
+#endif
         public static double Cos(double d) { return default(double); }
         public static double Cosh(double value) { return default(double); }
         public static int DivRem(int a, int b, out int result) { result = default(int); return default(int); }
