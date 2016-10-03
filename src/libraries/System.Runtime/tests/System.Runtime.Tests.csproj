@@ -110,6 +110,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == ''">
     <Compile Include="ArrayTests.netstandard1.7.cs" />
+    <Compile Include="System\AttributeTests.netstandard1.7.cs" />
     <Compile Include="CompareToTests.cs" />
     <Compile Include="DecimalTests.netstandard1.7.cs" />
     <Compile Include="EnumTests.netstandard1.7.cs" />
