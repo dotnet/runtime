@@ -143,7 +143,7 @@ namespace System.IO.IsolatedStorage
                 // is never returned to the user(GetIsolatedStorageException() does not populate the innerexception
                 // in retail bits we leak the path only under the debugger via IsolatedStorageException._underlyingException which
                 // they can any way look at via IsolatedStorageFile instance as well.
-                throw IsolatedStorageFile.GetIsolatedStorageException("IsolatedStorage_Operation_ISFS", e);
+                throw IsolatedStorageFile.GetIsolatedStorageException(SR.IsolatedStorage_Operation_ISFS, e);
             }
 
             return data;

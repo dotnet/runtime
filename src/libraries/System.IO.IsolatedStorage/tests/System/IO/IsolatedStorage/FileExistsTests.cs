@@ -9,7 +9,7 @@ namespace System.IO.IsolatedStorage
     public class FileExistsTests : IsoStorageTest
     {
         [Fact]
-        public void FileExists_ThrowsArugmentNull()
+        public void FileExists_ThrowsArgumentNull()
         {
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())
             {
@@ -64,9 +64,7 @@ namespace System.IO.IsolatedStorage
             {
                 string root = isf.GetUserRootDirectory();
                 string file = "FileExists_Existance";
-                using (var stream = isf.OpenFile(file, FileMode.Create))
-                {
-                }
+                isf.CreateTestFile(file);
 
                 Assert.True(File.Exists(Path.Combine(root, file)), "exists per file.io where expected");
                 Assert.True(isf.FileExists(file), "exists per iso");
@@ -77,11 +75,9 @@ namespace System.IO.IsolatedStorage
                 // Now nested
                 isf.CreateDirectory(file);
                 file = Path.Combine(file, file);
-                using (var stream = isf.OpenFile(file, FileMode.Create))
-                {
-                }
+                isf.CreateTestFile(file);
 
-                Assert.True(File.Exists(Path.Combine(root, file)), $"exists nested er file.io where expected");
+                Assert.True(File.Exists(Path.Combine(root, file)), "exists nested per file.io where expected");
                 Assert.True(isf.FileExists(file), "exists nested per iso");
                 isf.DeleteFile(file);
                 Assert.False(File.Exists(Path.Combine(root, file)), "doesn't exist nested per file.io where expected");

@@ -73,5 +73,15 @@ namespace System.IO.IsolatedStorage
             Assert.EndsWith(@"Files" + Path.DirectorySeparatorChar, root);
             Assert.True(Directory.Exists(root), "store root folder should exist");
         }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void GetStore_ThrowsPlatformNotSupported()
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => IsolatedStorageFile.GetStore(IsolatedStorageScope.User, typeof(object)));
+            Assert.Throws<PlatformNotSupportedException>(() => IsolatedStorageFile.GetStore(IsolatedStorageScope.User, typeof(object), typeof(object)));
+            Assert.Throws<PlatformNotSupportedException>(() => IsolatedStorageFile.GetStore(IsolatedStorageScope.User, new object()));
+            Assert.Throws<PlatformNotSupportedException>(() => IsolatedStorageFile.GetStore(IsolatedStorageScope.User, new object(), new object()));
+        }
     }
 }
