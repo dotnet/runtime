@@ -14,7 +14,7 @@
     <ProjectGuid>{844A2A0B-4169-49C3-B367-AFDC4894E487}</ProjectGuid>
     <PackageTargetRuntime>win8</PackageTargetRuntime>
     <PackageTargetRuntime Condition="'$(TargetGroup)' == 'netcore50aot'">win8-aot</PackageTargetRuntime>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)'==''">
     <DefineConstants>$(DefineConstants);netstandard;FEATURE_APPX</DefineConstants>
@@ -40,9 +40,8 @@
     <ProjectReference Include="..\..\System.Runtime.InteropServices.WindowsRuntime\src\System.Runtime.InteropServices.WindowsRuntime.csproj">
       <UndefineProperties>OSGroup</UndefineProperties>
     </ProjectReference>
-    <!-- ensure we use the lower-versioned UWP compatible facades so that this facade is compatible with UWP -->
-    <ProjectReference Include="..\..\System.ObjectModel\src\redist\System.ObjectModel.depproj">
-      <TargetGroup>netcore50</TargetGroup>
+    <ProjectReference Include="..\..\System.ObjectModel\src\System.ObjectModel.csproj">
+      <UndefineProperties>OSGroup</UndefineProperties>
     </ProjectReference>
     <Compile Include="System\IO\StreamOperationAsyncResult.CoreCLR.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\MarshalingHelpers.cs" />
