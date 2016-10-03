@@ -1711,7 +1711,12 @@ combinedScenarios.each { scenario ->
                                 case 'x86ryujit':
                                 case 'x86lb':
                                     def arch = architecture
-                                    if (architecture == 'x86ryujit' || architecture == 'x86lb') {
+                                    def buildOpts = ''
+                                    if (architecture == 'x86ryujit') {
+                                        arch = 'x86'
+                                        buildOpts = 'altjitcrossgen'
+                                    }
+                                    else if (architecture == 'x86lb') {
                                         arch = 'x86'
                                     }
                                     
@@ -1719,7 +1724,7 @@ combinedScenarios.each { scenario ->
                                             scenario == 'default' ||
                                             scenario == 'r2r' ||
                                             Constants.r2rJitStressScenarios.indexOf(scenario) != -1) {
-                                        buildOpts = enableCorefxTesting ? 'skiptests' : ''
+                                        buildOpts += enableCorefxTesting ? ' skiptests' : ''
                                         buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${arch} ${buildOpts}"
                                     }
 
@@ -1730,15 +1735,15 @@ combinedScenarios.each { scenario ->
                                     // 35 characters long.
 
                                     else if (scenario == 'pri1' || scenario == 'pri1r2r' || scenario == 'gcstress15_pri1r2r'|| scenario == 'coverage') {
-                                        buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${arch} -priority=1"
+                                        buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${arch} ${buildOpts} -priority=1"
                                     }
                                     else if (scenario == 'ilrt') {
                                         // First do the build with skiptests and then build the tests with ilasm roundtrip
-                                        buildCommands += "build.cmd ${lowerConfiguration} ${arch} skiptests"
+                                        buildCommands += "build.cmd ${lowerConfiguration} ${arch} ${buildOpts} skiptests"
                                         buildCommands += "set __TestIntermediateDir=int&&build-test.cmd ${lowerConfiguration} ${arch} -ilasmroundtrip"
                                     }
                                     else if (isLongGc(scenario)) {
-                                        buildCommands += "build.cmd ${lowerConfiguration} ${arch} skiptests"
+                                        buildCommands += "build.cmd ${lowerConfiguration} ${arch} ${buildOpts} skiptests"
                                         buildCommands += "set __TestIntermediateDir=int&&build-test.cmd ${lowerConfiguration} ${arch}"
                                     }
                                     else if (scenario == 'formatting') {
