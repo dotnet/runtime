@@ -346,6 +346,22 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
+        /// Finds specified byte in the blob following the current position.
+        /// </summary>
+        /// <returns>
+        /// Index relative to the current position, or -1 if the byte is not found in the blob following the current position.
+        /// </returns>
+        /// <remarks>
+        /// Doesn't change the current position.
+        /// </remarks>
+        public int IndexOf(byte value)
+        {
+            int start = Offset;
+            int absoluteIndex = _block.IndexOfUnchecked(value, start);
+            return (absoluteIndex >= 0) ? absoluteIndex - start : -1;
+        }
+
+        /// <summary>
         /// Reads UTF8 encoded string starting at the current position. 
         /// </summary>
         /// <param name="byteCount">The number of bytes to read.</param>
