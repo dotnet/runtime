@@ -71,7 +71,7 @@ namespace System.Net
         public byte[] Result { get { throw null; } }
     }
     public delegate void UploadValuesCompletedEventHandler(object sender, System.Net.UploadValuesCompletedEventArgs e);
-    public class WebClient
+    public class WebClient : System.ComponentModel.Component
     {
         public WebClient() { }
         [System.Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]

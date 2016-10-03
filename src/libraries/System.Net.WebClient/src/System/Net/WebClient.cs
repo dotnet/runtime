@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace System.Net
 {
-    public class WebClient // TODO #11271: Make WebClient inherit from Component once it's available
+    public class WebClient : Component
     {
         private const int DefaultCopyBufferLength = 8192;
         private const int DefaultDownloadBufferLength = 65536;

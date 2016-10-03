@@ -6,6 +6,7 @@
         "System.Collections": "4.3.0-beta-24601-02",
         "System.Collections.Specialized": "4.3.0-beta-24601-02",
         "System.ComponentModel": "4.3.0-beta-24601-02",
+        "System.ComponentModel.Primitives": "4.3.0-beta-24601-02",
         "System.ComponentModel.EventBasedAsync": "4.3.0-beta-24601-02",
         "System.Diagnostics.Debug": "4.3.0-beta-24601-02",
         "System.Diagnostics.Tools": "4.3.0-beta-24601-02",

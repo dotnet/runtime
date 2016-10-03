@@ -4,7 +4,7 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <!-- requires 5.5 since we needed surface area in Desktop 4.6.1 to support -->
-    <NuGetTargetMoniker>.NETStandard,Version=v1.4</NuGetTargetMoniker>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Diagnostics.Process.cs" />
