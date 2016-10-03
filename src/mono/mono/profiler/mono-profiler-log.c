@@ -736,7 +736,7 @@ static __thread MonoProfilerThread *profiler_tls;
 #define PROF_TLS_SET(VAL) (pthread_setspecific (profiler_tls, (VAL)))
 #define PROF_TLS_GET() ((MonoProfilerThread *) pthread_getspecific (profiler_tls))
 #define PROF_TLS_INIT() (pthread_key_create (&profiler_tls, NULL))
-#define PROF_TLS_FREE() (pthread_key_delete (&profiler_tls))
+#define PROF_TLS_FREE() (pthread_key_delete (profiler_tls))
 
 static pthread_key_t profiler_tls;
 
