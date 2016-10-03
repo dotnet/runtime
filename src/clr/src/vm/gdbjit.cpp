@@ -752,7 +752,7 @@ void NotifyGdb::MethodCompiled(MethodDesc* MethodDescPtr)
     debugInfoSub.m_sub_low_pc = pCode;
     debugInfoSub.m_sub_high_pc = codeSize;
     /* Build .debug_line section */
-    if (!BuildLineTable(dbgLine, pCode, symInfo, symInfoLen))
+    if (!BuildLineTable(dbgLine, pCode, codeSize, symInfo, symInfoLen))
     {
         return;
     }
@@ -992,7 +992,7 @@ void NotifyGdb::MethodDropped(MethodDesc* MethodDescPtr)
 }
 
 /* Build the DWARF .debug_line section */
-bool NotifyGdb::BuildLineTable(MemBuf& buf, PCODE startAddr, SymbolsInfo* lines, unsigned nlines)
+bool NotifyGdb::BuildLineTable(MemBuf& buf, PCODE startAddr, TADDR codeSize, SymbolsInfo* lines, unsigned nlines)
 {
     MemBuf fileTable, lineProg;
     
@@ -1000,7 +1000,7 @@ bool NotifyGdb::BuildLineTable(MemBuf& buf, PCODE startAddr, SymbolsInfo* lines,
     if (!BuildFileTable(fileTable, lines, nlines))
         return false;
     /* Build line info program */ 
-    if (!BuildLineProg(lineProg, startAddr, lines, nlines))
+    if (!BuildLineProg(lineProg, startAddr, codeSize, lines, nlines))
     {
         return false;
     }
@@ -1147,7 +1147,7 @@ bool NotifyGdb::FitIntoSpecialOpcode(int8_t line_shift, uint8_t addr_shift)
 }
 
 /* Build program for DWARF source line section */
-bool NotifyGdb::BuildLineProg(MemBuf& buf, PCODE startAddr, SymbolsInfo* lines, unsigned nlines)
+bool NotifyGdb::BuildLineProg(MemBuf& buf, PCODE startAddr, TADDR codeSize, SymbolsInfo* lines, unsigned nlines)
 {
     static char cnv_buf[16];
     
@@ -1157,6 +1157,7 @@ bool NotifyGdb::BuildLineProg(MemBuf& buf, PCODE startAddr, SymbolsInfo* lines, 
                 + 6                              /* set file command */
                 + nlines * 6                     /* advance line commands */
                 + nlines * (4 + ADDRESS_SIZE)    /* 1 extended + 1 special command */
+                + 6                              /* advance PC command */
                 + 3;                             /* end of sequence command */
     buf.MemPtr = new (nothrow) char[buf.MemSize];
     char* ptr = buf.MemPtr;
@@ -1199,6 +1200,12 @@ bool NotifyGdb::BuildLineProg(MemBuf& buf, PCODE startAddr, SymbolsInfo* lines, 
         prevAddr = lines[i].nativeOffset;
     }
     
+    // Advance PC to the end of function
+    if (prevAddr < codeSize) {
+        int len = Leb128Encode(static_cast<uint32_t>(codeSize - prevAddr), cnv_buf, sizeof(cnv_buf));
+        IssueParamCommand(ptr, DW_LNS_advance_pc, cnv_buf, len);
+    }
+
     IssueEndOfSequence(ptr); 
     
     buf.MemSize = ptr - buf.MemPtr;
