@@ -313,6 +313,9 @@ ICALL(BTLS_X509_VERIFY_PARAM_16, "mono_btls_x509_verify_param_set_mono_flags", m
 ICALL(BTLS_X509_VERIFY_PARAM_17, "mono_btls_x509_verify_param_set_name", mono_btls_x509_verify_param_set_name)
 ICALL(BTLS_X509_VERIFY_PARAM_18, "mono_btls_x509_verify_param_set_purpose", mono_btls_x509_verify_param_set_purpose)
 ICALL(BTLS_X509_VERIFY_PARAM_19, "mono_btls_x509_verify_param_set_time", mono_btls_x509_verify_param_set_time)
+#else
+ICALL_TYPE(BTLS_PROVIDER, "Mono.Btls.MonoBtlsProvider", BTLS_PROVIDER_1)
+ICALL(BTLS_PROVIDER_1, "IsSupported", ves_icall_Mono_Btls_Provider_IsSupported)
 #endif
 
 #ifndef DISABLE_COM
