@@ -59,8 +59,11 @@
 
 /* Worst-case size in bytes of a 64-bit value encoded with LEB128. */
 #define LEB128_SIZE 10
+
 /* Size of a value encoded as a single byte. */
+#undef BYTE_SIZE // mach/i386/vm_param.h on OS X defines this to 8, but it isn't used for anything.
 #define BYTE_SIZE 1
+
 /* Size in bytes of the event prefix (ID + time). */
 #define EVENT_SIZE (BYTE_SIZE + LEB128_SIZE)
 
