@@ -129,6 +129,19 @@ namespace SOS
         }
 
         /// <summary>
+        /// Quick fix for Path.GetFileName which incorrectly handles Windows-style paths on Linux
+        /// </summary>
+        /// <param name="pathName"> File path to be processed </param>
+        /// <returns>Last component of path</returns>
+        private static string GetFileName(string pathName)
+        {
+            int pos = pathName.LastIndexOfAny(new char[] { '/', '\\'});
+            if (pos < 0)
+                return pathName;
+            return pathName.Substring(pos + 1);
+        }
+
+        /// <summary>
         /// Checks availability of debugging information for given assembly.
         /// </summary>
         /// <param name="assemblyPath">
@@ -210,7 +223,7 @@ namespace SOS
 
             try
             {
-                string fileName = Path.GetFileName(filePath);
+                string fileName = GetFileName(filePath);
                 foreach (MethodDebugInformationHandle methodDebugInformationHandle in reader.MethodDebugInformation)
                 {
                     MethodDebugInformation methodDebugInfo = reader.GetMethodDebugInformation(methodDebugInformationHandle);
@@ -218,7 +231,7 @@ namespace SOS
                     foreach (SequencePoint point in sequencePoints)
                     {
                         string sourceName = reader.GetString(reader.GetDocument(point.Document).Name);
-                        if (point.StartLine == lineNumber && Path.GetFileName(sourceName) == fileName)
+                        if (point.StartLine == lineNumber && GetFileName(sourceName) == fileName)
                         {
                             methodToken = MetadataTokens.GetToken(methodDebugInformationHandle.ToDefinitionHandle());
                             ilOffset = point.Offset;
@@ -509,7 +522,7 @@ namespace SOS
 
                         DebugInfo debugInfo = new DebugInfo();
                         debugInfo.lineNumber = point.StartLine;
-                        debugInfo.fileName = openedReader.Reader.GetString(openedReader.Reader.GetDocument(point.Document).Name);
+                        debugInfo.fileName = GetFileName(openedReader.Reader.GetString(openedReader.Reader.GetDocument(point.Document).Name));
                         debugInfo.ilOffset = point.Offset;
                         points.Add(debugInfo);
                     }
@@ -667,7 +680,7 @@ namespace SOS
                 {
                     try
                     {
-                        pdbPath = Path.Combine(Path.GetDirectoryName(assemblyPath), Path.GetFileName(pdbPath));
+                        pdbPath = Path.Combine(Path.GetDirectoryName(assemblyPath), GetFileName(pdbPath));
                     }
                     catch
                     {
