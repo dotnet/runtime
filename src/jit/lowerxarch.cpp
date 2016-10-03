@@ -4087,6 +4087,20 @@ bool Lowering::SetStoreIndOpCountsIfRMWMemOp(GenTreePtr storeInd)
     }
     m_lsra->clearOperandCounts(indirCandidateChild);
 
+#ifdef _TARGET_X86_
+    if (varTypeIsByte(storeInd))
+    {
+        // If storeInd is of TYP_BYTE, set indirOpSources to byteable registers.
+        bool containedNode = indirOpSource->gtLsraInfo.dstCount == 0;
+        if (!containedNode)
+        {
+            regMaskTP regMask = indirOpSource->gtLsraInfo.getSrcCandidates(m_lsra);
+            assert(regMask != RBM_NONE);
+            indirOpSource->gtLsraInfo.setSrcCandidates(m_lsra, regMask & ~RBM_NON_BYTE_REGS);
+        }
+    }
+#endif
+
     return true;
 }
 
