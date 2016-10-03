@@ -26,9 +26,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\pkg\System.ComponentModel.TypeConverter.pkgproj">
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\System.ComponentModel.Primitives\pkg\System.ComponentModel.Primitives.pkgproj" />
+    <ProjectReference Include="..\..\pkg\System.ComponentModel.TypeConverter.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
