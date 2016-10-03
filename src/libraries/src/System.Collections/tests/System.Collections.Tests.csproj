@@ -18,6 +18,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.Collections.pkgproj" />
+    <ProjectReference Include="..\..\System.Diagnostics.Debug\pkg\System.Diagnostics.Debug.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <!-- Common Collections tests -->
