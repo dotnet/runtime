@@ -4,20 +4,20 @@
   <ItemGroup>
     <Project Include="System.Security.Cryptography.Algorithms.Tests.csproj">
       <OSGroup>Unix</OSGroup>
-      <TargetGroup>netstandard1.6</TargetGroup>
-      <TestTFMs>netcoreapp1.0</TestTFMs>
-    </Project>
-    <Project Include="System.Security.Cryptography.Algorithms.Tests.csproj">
-      <OSGroup>Unix</OSGroup>
-    </Project>
-    <Project Include="System.Security.Cryptography.Algorithms.Tests.csproj">
-      <OSGroup>Windows_NT</OSGroup>
-      <TargetGroup>netstandard1.6</TargetGroup>
-      <TestTFMs>netcoreapp1.0</TestTFMs>
     </Project>
     <Project Include="System.Security.Cryptography.Algorithms.Tests.csproj">
       <TestTFMs>netcoreapp1.1;net463</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
+    </Project>
+    <Project Include="System.Security.Cryptography.Algorithms.Tests.csproj">
+      <OSGroup>Unix</OSGroup>
+      <TargetGroup>netstandard1.6</TargetGroup>
+      <TestTFMs>netcoreapp1.0</TestTFMs>
+    </Project>
+    <Project Include="System.Security.Cryptography.Algorithms.Tests.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netstandard1.6</TargetGroup>
+      <TestTFMs>netcoreapp1.0</TestTFMs>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

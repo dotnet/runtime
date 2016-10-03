@@ -8,13 +8,13 @@
       <TestTFMs>netcoreapp1.0</TestTFMs>
     </Project>
     <Project Include="System.Drawing.Primitives.Tests.csproj">
+      <TestTFMs>net463</TestTFMs>
+      <OSGroup>Windows_NT</OSGroup>
+    </Project>
+    <Project Include="System.Drawing.Primitives.Tests.csproj">
       <TestTFMs>netcore50;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>netstandard1.3</TargetGroup>
-    </Project>
-    <Project Include="System.Drawing.Primitives.Tests.csproj">
-      <TestTFMs>net463</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
