@@ -14,7 +14,7 @@ namespace System.Reflection.PortableExecutable.Tests
         [Fact]
         public void ReadNullPaddedUTF8RemovesNullPadding()
         {
-            var headerBytes = new byte[PEFileConstants.SizeofSectionName];
+            var headerBytes = new byte[SectionHeader.NameSize];
             headerBytes[0] = 80;
             headerBytes[1] = 80;
             headerBytes[2] = 80;
@@ -23,7 +23,7 @@ namespace System.Reflection.PortableExecutable.Tests
             stream.Position = 0;
 
             var reader = new PEBinaryReader(stream, headerBytes.Length);
-            var text = reader.ReadNullPaddedUTF8(PEFileConstants.SizeofSectionName);
+            var text = reader.ReadNullPaddedUTF8(SectionHeader.NameSize);
 
             Assert.Equal(3, text.Length);
             Assert.Equal("PPP", text);
@@ -37,7 +37,7 @@ namespace System.Reflection.PortableExecutable.Tests
             stream.Position = 0;
 
             var reader = new PEBinaryReader(stream, headerBytes.Length);
-            var text = reader.ReadNullPaddedUTF8(PEFileConstants.SizeofSectionName);
+            var text = reader.ReadNullPaddedUTF8(SectionHeader.NameSize);
 
             Assert.Equal(".abcdefg", text);
         }

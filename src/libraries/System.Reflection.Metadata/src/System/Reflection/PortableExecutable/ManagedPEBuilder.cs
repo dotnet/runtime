@@ -243,7 +243,7 @@ namespace System.Reflection.PortableExecutable
             // - PE header without its alignment padding
             // - all sections including their alignment padding and excluding strong name signature blob
 
-            int remainingHeader = Header.ComputeSizeOfPeHeaders(GetSections().Length);
+            int remainingHeader = Header.ComputeSizeOfPEHeaders(GetSections().Length);
             foreach (var blob in peImage.GetBlobs())
             {
                 if (remainingHeader > 0)

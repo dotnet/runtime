@@ -124,7 +124,7 @@ namespace System.Reflection.PortableExecutable
         {
             var sections = GetSections();
             var result = ImmutableArray.CreateBuilder<SerializedSection>(sections.Length);
-            int sizeOfPeHeaders = Header.ComputeSizeOfPeHeaders(sections.Length);
+            int sizeOfPeHeaders = Header.ComputeSizeOfPEHeaders(sections.Length);
 
             var nextRva = BitArithmetic.Align(sizeOfPeHeaders, Header.SectionAlignment);
             var nextPointer = BitArithmetic.Align(sizeOfPeHeaders, Header.FileAlignment);
@@ -156,7 +156,7 @@ namespace System.Reflection.PortableExecutable
             builder.WriteBytes(s_dosHeader);
 
             // PE Signature "PE\0\0" 
-            builder.WriteUInt32(0x00004550);
+            builder.WriteUInt32(PEHeaders.PESignature);
         }
 
         private static readonly byte[] s_dosHeader = new byte[]
@@ -168,7 +168,10 @@ namespace System.Reflection.PortableExecutable
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+
+            0x80, 0x00, 0x00, 0x00, // NT Header offset (0x80 == s_dosHeader.Length)
+
             0x0e, 0x1f, 0xba, 0x0e, 0x00, 0xb4, 0x09, 0xcd,
             0x21, 0xb8, 0x01, 0x4c, 0xcd, 0x21, 0x54, 0x68,
             0x69, 0x73, 0x20, 0x70, 0x72, 0x6f, 0x67, 0x72,
@@ -178,6 +181,8 @@ namespace System.Reflection.PortableExecutable
             0x6d, 0x6f, 0x64, 0x65, 0x2e, 0x0d, 0x0d, 0x0a,
             0x24, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
         };
+
+        internal static int DosHeaderSize = s_dosHeader.Length;
 
         private void WriteCoffHeader(BlobBuilder builder, ImmutableArray<SerializedSection> sections, out Blob stampFixup)
         {
@@ -203,7 +208,7 @@ namespace System.Reflection.PortableExecutable
             // SizeOfOptionalHeader:
             // The size of the optional header, which is required for executable files but not for object files. 
             // This value should be zero for an object file (TODO).
-            builder.WriteUInt16((ushort)(Header.Is32Bit ? 224 : 240));
+            builder.WriteUInt16((ushort)PEHeader.Size(Header.Is32Bit));
 
             // Characteristics
             builder.WriteUInt16((ushort)Header.ImageCharacteristics);
@@ -262,7 +267,7 @@ namespace System.Reflection.PortableExecutable
             builder.WriteUInt32((uint)BitArithmetic.Align(lastSection.RelativeVirtualAddress + lastSection.VirtualSize, Header.SectionAlignment));
 
             // SizeOfHeaders:
-            builder.WriteUInt32((uint)BitArithmetic.Align(Header.ComputeSizeOfPeHeaders(sections.Length), Header.FileAlignment));
+            builder.WriteUInt32((uint)BitArithmetic.Align(Header.ComputeSizeOfPEHeaders(sections.Length), Header.FileAlignment));
 
             // Checksum:
             // Shall be zero for strong name signing. 
