@@ -2615,6 +2615,7 @@ void Lowering::InsertPInvokeMethodProlog()
     // --------------------------------------------------------
     // On 32-bit targets, CORINFO_HELP_INIT_PINVOKE_FRAME initializes the PInvoke frame and then pushes it onto
     // the current thread's Frame stack. On 64-bit targets, it only initializes the PInvoke frame.
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef _TARGET_64BIT_
     if (comp->opts.eeFlags & CORJIT_FLG_IL_STUB)
@@ -2690,6 +2691,7 @@ void Lowering::InsertPInvokeMethodEpilog(BasicBlock* returnBB DEBUGARG(GenTreePt
 
     // Pop the frame if necessary. This always happens in the epilog on 32-bit targets. For 64-bit targets, we only do
     // this in the epilog for IL stubs; for non-IL stubs the frame is popped after every PInvoke call.
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef _TARGET_64BIT_
     if (comp->opts.eeFlags & CORJIT_FLG_IL_STUB)
@@ -2831,6 +2833,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
 
     // Push the PInvoke frame if necessary. On 32-bit targets this only happens in the method prolog if a method
     // contains PInvokes; on 64-bit targets this is necessary in non-stubs.
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef _TARGET_64BIT_
     if (!(comp->opts.eeFlags & CORJIT_FLG_IL_STUB))
@@ -2898,6 +2901,7 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
 
     // Pop the frame if necessary. On 32-bit targets this only happens in the method epilog; on 64-bit targets thi
     // happens after every PInvoke call in non-stubs.
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef _TARGET_64BIT_
     if (!(comp->opts.eeFlags & CORJIT_FLG_IL_STUB))
