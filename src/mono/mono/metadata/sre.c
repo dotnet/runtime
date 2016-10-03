@@ -3053,7 +3053,7 @@ ensure_runtime_vtable (MonoClass *klass, MonoError *error)
 		}
 	} else if (klass->generic_class){
 		if (!ensure_generic_class_runtime_vtable (klass, error)) {
-			mono_class_set_type_load_failure (klass, "");
+			mono_class_set_type_load_failure (klass, "Could not initialize vtable for generic class due to: %s", mono_error_get_message (error));
 			return FALSE;
 		}
 	}
@@ -3380,7 +3380,7 @@ remove_instantiations_of_and_ensure_contents (gpointer key,
 		MonoClass *inst_klass = mono_class_from_mono_type (type);
 		//Ensure it's safe to use it.
 		if (!fix_partial_generic_class (inst_klass, error)) {
-			mono_class_set_type_load_failure (inst_klass, "");
+			mono_class_set_type_load_failure (inst_klass, "Could not initialized generic type instance due to: %s", mono_error_get_message (error));
 			// Marked the class with failure, but since some other instantiation already failed,
 			// just report that one, and swallow the error from this one.
 			if (already_failed)
@@ -3512,7 +3512,7 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	mono_loader_unlock ();
 
 	if (klass->enumtype && !mono_class_is_valid_enum (klass)) {
-		mono_class_set_type_load_failure (klass, "");
+		mono_class_set_type_load_failure (klass, "Not a valid enumeration");
 		mono_error_set_type_load_class (&error, klass, "Not a valid enumeration");
 		goto failure_unlocked;
 	}
@@ -3526,7 +3526,7 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	return res;
 
 failure:
-	mono_class_set_type_load_failure (klass, "");
+	mono_class_set_type_load_failure (klass, "TypeBuilder could not create runtime class due to: %s", mono_error_get_message (&error));
 	klass->wastypebuilder = TRUE;
 	mono_domain_unlock (domain);
 	mono_loader_unlock ();

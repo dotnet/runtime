@@ -1482,6 +1482,33 @@ mono_class_setup_basic_field_info (MonoClass *klass)
 	}
 }
 
+/**
+ * mono_class_set_failure_causedby_class:
+ * @klass: the class that is failing
+ * @caused_by: the class that caused the failure
+ * @msg: Why @klass is failing.
+ * 
+ * If @caused_by has a failure, sets a TypeLoadException failure on
+ * @klass with message "@msg, due to: {@caused_by message}".
+ *
+ * Returns: TRUE if a failiure was set, or FALSE if @caused_by doesn't have a failure.
+ */
+static gboolean
+mono_class_set_type_load_failure_causedby_class (MonoClass *klass, const MonoClass *caused_by, const gchar* msg)
+{
+	if (mono_class_has_failure (caused_by)) {
+		MonoError cause_error;
+		mono_error_init (&cause_error);
+		mono_error_set_for_class_failure (&cause_error, caused_by);
+		mono_class_set_type_load_failure (klass, "%s, due to: %s", msg, mono_error_get_message (&cause_error));
+		mono_error_cleanup (&cause_error);
+		return TRUE;
+	} else {
+		return FALSE;
+	}
+}
+
+
 /** 
  * mono_class_setup_fields:
  * @class: The class to initialize
@@ -1569,10 +1596,8 @@ mono_class_setup_fields (MonoClass *klass)
 
 	if (gtd) {
 		mono_class_setup_fields (gtd);
-		if (mono_class_has_failure (gtd)) {
-			mono_class_set_type_load_failure (klass, "");
+		if (mono_class_set_type_load_failure_causedby_class (klass, gtd, "Generic type definition failed"))
 			return;
-		}
 	}
 
 	instance_size = 0;
@@ -1584,10 +1609,8 @@ mono_class_setup_fields (MonoClass *klass)
 		mono_class_init (klass->parent);
 		if (!klass->parent->size_inited) {
 			mono_class_setup_fields (klass->parent);
-			if (mono_class_has_failure (klass->parent)) {
-				mono_class_set_type_load_failure (klass, "");
+			if (mono_class_set_type_load_failure_causedby_class (klass, klass->parent, "Could not set up parent class"))
 				return;
-			}
 		}
 		instance_size += klass->parent->instance_size;
 		klass->min_align = klass->parent->min_align;
@@ -1683,7 +1706,7 @@ mono_class_setup_fields (MonoClass *klass)
 					break;
 				}
 				if (field->offset < -1) { /*-1 is used to encode special static fields */
-					mono_class_set_type_load_failure (klass, "Invalid negative field offset %d for %s", field->offset, field->name);
+					mono_class_set_type_load_failure (klass, "Field '%s' has a negative offset %d", field->name, field->offset);
 					break;
 				}
 				if (klass->generic_container) {
@@ -1702,7 +1725,11 @@ mono_class_setup_fields (MonoClass *klass)
 				if (field_class) {
 					mono_class_setup_fields (field_class);
 					if (mono_class_has_failure (field_class)) {
-						mono_class_set_type_load_failure (klass, "");
+						MonoError field_error;
+						mono_error_init (&field_error);
+						mono_error_set_for_class_failure (&field_error, field_class);
+						mono_class_set_type_load_failure (klass, "Could not set up field '%s' due to: %s", field->name, mono_error_get_message (&field_error));
+						mono_error_cleanup (&field_error);
 						break;
 					}
 				}
@@ -1735,7 +1762,7 @@ mono_class_setup_fields (MonoClass *klass)
 	klass->blittable = blittable;
 
 	if (klass->enumtype && !mono_class_enum_basetype (klass)) {
-		mono_class_set_type_load_failure (klass, "");
+		mono_class_set_type_load_failure (klass, "The enumeration's base type is invalid.");
 		return;
 	}
 	if (explicit_size && real_size) {
@@ -1748,7 +1775,7 @@ mono_class_setup_fields (MonoClass *klass)
 
 	/*valuetypes can't be neither bigger than 1Mb or empty. */
 	if (klass->valuetype && (klass->instance_size <= 0 || klass->instance_size > (0x100000 + sizeof (MonoObject))))
-		mono_class_set_type_load_failure (klass, "");
+		mono_class_set_type_load_failure (klass, "Value type instance size (%d) cannot be zero, negative, or bigger than 1Mb", klass->instance_size);
 
 	mono_memory_barrier ();
 	klass->fields_inited = 1;
@@ -1933,10 +1960,8 @@ mono_class_layout_fields (MonoClass *klass, int instance_size)
 
 		if (klass->parent) {
 			mono_class_setup_fields (klass->parent);
-			if (mono_class_has_failure (klass->parent)) {
-				mono_class_set_type_load_failure (klass, "");
+			if (mono_class_set_type_load_failure_causedby_class (klass, klass->parent, "Cannot initialize parent class"))
 				return;
-			}
 			real_size = klass->parent->instance_size;
 		} else {
 			real_size = sizeof (MonoObject);
@@ -2037,7 +2062,7 @@ mono_class_layout_fields (MonoClass *klass, int instance_size)
 			ftype = mono_type_get_basic_type_from_generic (ftype);
 			if (type_has_references (klass, ftype)) {
 				if (field->offset % sizeof (gpointer)) {
-					mono_class_set_type_load_failure (klass, "");
+					mono_class_set_type_load_failure (klass, "Reference typed field '%s' has explicit offset that is not pointer-size aligned.", field->name);
 				}
 			}
 
@@ -2130,7 +2155,7 @@ mono_class_layout_fields (MonoClass *klass, int instance_size)
 			continue;
 
 		if (mono_type_has_exceptions (field->type)) {
-			mono_class_set_type_load_failure (klass, "");
+			mono_class_set_type_load_failure (klass, "Field '%s' has an invalid type.", field->name);
 			break;
 		}
 
@@ -2198,11 +2223,8 @@ mono_class_setup_methods (MonoClass *klass)
 		mono_class_init (gklass);
 		if (!mono_class_has_failure (gklass))
 			mono_class_setup_methods (gklass);
-		if (mono_class_has_failure (gklass)) {
-			/* FIXME make exception_data less opaque so it's possible to dup it here */
-			mono_class_set_type_load_failure (klass, "Generic type definition failed to load");
+		if (mono_class_set_type_load_failure_causedby_class (klass, gklass, "Generic type definition failed to load"))
 			return;
-		}
 
 		/* The + 1 makes this always non-NULL to pass the check in mono_class_setup_methods () */
 		count = gklass->method.count;
@@ -2496,10 +2518,8 @@ mono_class_setup_properties (MonoClass *klass)
 
 		mono_class_init (gklass);
 		mono_class_setup_properties (gklass);
-		if (mono_class_has_failure (gklass)) {
-			mono_class_set_type_load_failure (klass, "Generic type definition failed to load");
+		if (mono_class_set_type_load_failure_causedby_class (klass, gklass, "Generic type definition failed to load"))
 			return;
-		}
 
 		properties = mono_class_new0 (klass, MonoProperty, gklass->ext->property.count + 1);
 
@@ -2629,10 +2649,8 @@ mono_class_setup_events (MonoClass *klass)
 		MonoGenericContext *context = NULL;
 
 		mono_class_setup_events (gklass);
-		if (mono_class_has_failure (gklass)) {
-			mono_class_set_type_load_failure (klass, "Generic type definition failed to load");
+		if (mono_class_set_type_load_failure_causedby_class (klass, gklass, "Generic type definition failed to load"))
 			return;
-		}
 
 		first = gklass->ext->event.first;
 		count = gklass->ext->event.count;
@@ -2670,7 +2688,6 @@ mono_class_setup_events (MonoClass *klass)
 		if (count) {
 			mono_class_setup_methods (klass);
 			if (mono_class_has_failure (klass)) {
-				mono_class_set_type_load_failure (klass, "Generic type definition failed to load");
 				return;
 			}
 		}
@@ -3775,10 +3792,8 @@ mono_class_check_vtable_constraints (MonoClass *klass, GList *in_setup)
 	}
 
 	mono_class_setup_vtable_full (mono_class_get_generic_type_definition (klass), in_setup);
-	if (mono_class_has_failure (klass->generic_class->container_class)) {
-		mono_class_set_type_load_failure (klass, "Failed to load generic definition vtable");
+	if (mono_class_set_type_load_failure_causedby_class (klass, klass->generic_class->container_class, "Failed to load generic definition vtable"))
 		return FALSE;
-	}
 
 	ginst = klass->generic_class->context.class_inst;
 	for (i = 0; i < ginst->type_argc; ++i) {
@@ -4360,12 +4375,8 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 		mono_class_init (klass->parent);
 		mono_class_setup_vtable_full (klass->parent, in_setup);
 
-		if (mono_class_has_failure (klass->parent)) {
-			char *name = mono_type_get_full_name (klass->parent);
-			mono_class_set_type_load_failure (klass, "Parent %s failed to load", name);
-			g_free (name);
+		if (mono_class_set_type_load_failure_causedby_class (klass, klass->parent, "Parent class failed to load"))
 			return;
-		}
 
 		max_vtsize += klass->parent->vtable_size;
 		cur_slot = klass->parent->vtable_size;
@@ -4399,10 +4410,8 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 		MonoMethod **tmp;
 
 		mono_class_setup_vtable_full (gklass, in_setup);
-		if (mono_class_has_failure (gklass)) {
-			mono_class_set_type_load_failure (klass, "");
+		if (mono_class_set_type_load_failure_causedby_class (klass, gklass, "Could not load generic definition"))
 			return;
-		}
 
 		tmp = (MonoMethod **)mono_class_alloc0 (klass, sizeof (gpointer) * gklass->vtable_size);
 		klass->vtable_size = gklass->vtable_size;
@@ -4660,6 +4669,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 					m1sig = mono_method_signature (m1);
 
 					if (!cmsig || !m1sig) {
+						/* FIXME proper error message */
 						mono_class_set_type_load_failure (klass, "");
 						return;
 					}
@@ -5102,10 +5112,8 @@ mono_class_init (MonoClass *klass)
 		MonoClass *element_class = klass->element_class;
 		if (!element_class->inited) 
 			mono_class_init (element_class);
-		if (mono_class_has_failure (element_class)) {
-			mono_class_set_type_load_failure (klass, "");
+		if (mono_class_set_type_load_failure_causedby_class (klass, element_class, "Could not load array element class"))
 			goto leave;
-		}
 	}
 
 	mono_stats.initialized_class_count++;
@@ -5122,10 +5130,8 @@ mono_class_init (MonoClass *klass)
 		// FIXME: Why is this needed ?
 		if (!mono_class_has_failure (gklass))
 			mono_class_setup_methods (gklass);
-		if (mono_class_has_failure (gklass)) {
-			mono_class_set_type_load_failure (klass, "Generic Type Defintion failed to init");
+		if (mono_class_set_type_load_failure_causedby_class (klass, gklass, "Generic Type Definition failed to init"))
 			goto leave;
-		}
 
 		if (MONO_CLASS_IS_INTERFACE (klass))
 			klass->interface_id = mono_get_unique_iid (klass);
@@ -5209,10 +5215,8 @@ mono_class_init (MonoClass *klass)
 		klass->has_cctor = gklass->has_cctor;
 
 		mono_class_setup_vtable (gklass);
-		if (mono_class_has_failure (gklass)) {
-			mono_class_set_type_load_failure (klass, "");
+		if (mono_class_set_type_load_failure_causedby_class (klass, gklass, "Generic type definition failed to init"))
 			goto leave;
-		}
 
 		klass->vtable_size = gklass->vtable_size;
 	} else {
@@ -5257,18 +5261,18 @@ mono_class_init (MonoClass *klass)
 	}
 
 	if (klass->parent) {
+		MonoError parent_error;
+		mono_error_init (&parent_error);
 		int first_iface_slot;
 		/* This will compute klass->parent->vtable_size for some classes */
 		mono_class_init (klass->parent);
-		if (mono_class_has_failure (klass->parent)) {
-			mono_class_set_type_load_failure (klass, "");
+		if (mono_class_set_type_load_failure_causedby_class (klass, klass->parent, "Parent class failed to initialize")) {
 			goto leave;
 		}
 		if (!klass->parent->vtable_size) {
 			/* FIXME: Get rid of this somehow */
 			mono_class_setup_vtable (klass->parent);
-			if (mono_class_has_failure (klass->parent)) {
-				mono_class_set_type_load_failure (klass, "");
+			if (mono_class_set_type_load_failure_causedby_class (klass, klass->parent, "Parent class vtable failed to initialize")) {
 				goto leave;
 			}
 		}
@@ -5946,7 +5950,7 @@ mono_generic_class_setup_parent (MonoClass *klass, MonoClass *gtd)
 		if (!mono_error_ok (&error)) {
 			/*Set parent to something safe as the runtime doesn't handle well this kind of failure.*/
 			klass->parent = mono_defaults.object_class;
-			mono_class_set_type_load_failure (klass, "");
+			mono_class_set_type_load_failure (klass, "Parent is a generic type instantiation that failed due to: %s", mono_error_get_message (&error));
 			mono_error_cleanup (&error);
 		}
 	}
@@ -6729,8 +6733,8 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 		mono_class_init (eclass);
 	if (!eclass->size_inited)
 		mono_class_setup_fields (eclass);
-	if (mono_class_has_failure (eclass)) /*FIXME we fail the array type, but we have to let other fields be set.*/
-		mono_class_set_type_load_failure (klass, "");
+	mono_class_set_type_load_failure_causedby_class (klass, eclass, "Could not load array element type");
+	/*FIXME we fail the array type, but we have to let other fields be set.*/
 
 	klass->has_references = MONO_TYPE_IS_REFERENCE (&eclass->byval_arg) || eclass->has_references? TRUE: FALSE;
 
