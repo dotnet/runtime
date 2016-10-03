@@ -282,23 +282,23 @@ namespace System.Collections.Generic
         }
 
         // Returns true if the queue contains at least one object equal to item.
-        // Equality is determined using item.Equals().
+        // Equality is determined using EqualityComparer<T>.Default.Equals().
         public bool Contains(T item)
         {
-            int index = _head;
-            int count = _size;
-
-            EqualityComparer<T> c = EqualityComparer<T>.Default;
-            while (count-- > 0)
+            if (_size == 0)
             {
-                if (c.Equals(_array[index], item))
-                {
-                    return true;
-                }
-                MoveNext(ref index);
+                return false;
             }
 
-            return false;
+            if (_head < _tail)
+            {
+                return Array.IndexOf(_array, item, _head, _size) >= 0;
+            }
+
+            // We've wrapped around. Check both partitions, the least recently enqueued first.
+            return
+                Array.IndexOf(_array, item, _head, _array.Length - _head) >= 0 ||
+                Array.IndexOf(_array, item, 0, _tail) >= 0;
         }
 
         // Iterates over the objects in the queue, returning an array of the
