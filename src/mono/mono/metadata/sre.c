@@ -4149,12 +4149,6 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	return NULL;
 }
 
-void
-ves_icall_GenericTypeParameterBuilder_initialize (MonoReflectionGenericParam *gparam)
-{
-	g_assert_not_reached ();
-}
-
 void 
 ves_icall_DynamicMethod_create_dynamic_method (MonoReflectionDynamicMethod *mb)
 {
