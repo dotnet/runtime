@@ -42,6 +42,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp1.1'">
     <Compile Include="System\IO\Path.GetRelativePath.cs" />
+    <Compile Include="System\MathTests.netcoreapp1.1.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\AppDomainTests.cs" Condition="'$(TargetGroup)'=='netstandard1.7'" />
