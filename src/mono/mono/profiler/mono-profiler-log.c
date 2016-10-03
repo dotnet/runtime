@@ -36,6 +36,7 @@
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
 #endif
+#include <fcntl.h>
 #ifdef HAVE_LINK_H
 #include <link.h>
 #endif
