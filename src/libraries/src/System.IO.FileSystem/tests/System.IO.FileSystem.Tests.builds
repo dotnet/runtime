@@ -2,7 +2,12 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <Project Include="Performance\System.IO.FileSystem.Performance.Tests.csproj" />
+    <Project Include="System.IO.FileSystem.Tests.csproj">
+      <OSGroup>Unix</OSGroup>
+    </Project>
+    <Project Include="System.IO.FileSystem.Tests.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+    </Project>
     <Project Include="System.IO.FileSystem.Tests.csproj">
       <OSGroup>Unix</OSGroup>
       <TargetGroup>netstandard1.3</TargetGroup>
@@ -13,12 +18,7 @@
       <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>netstandard1.3</TargetGroup>
     </Project>
-    <Project Include="System.IO.FileSystem.Tests.csproj">
-      <OSGroup>Unix</OSGroup>
-    </Project>
-    <Project Include="System.IO.FileSystem.Tests.csproj">
-      <OSGroup>Windows_NT</OSGroup>
-    </Project>
+    <Project Include="Performance\System.IO.FileSystem.Performance.Tests.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>

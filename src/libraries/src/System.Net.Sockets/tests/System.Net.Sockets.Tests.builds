@@ -2,19 +2,17 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <Project Include="FunctionalTests\System.Net.Sockets.Tests.csproj"/>
     <Project Include="FunctionalTests\System.Net.Sockets.Tests.csproj">
       <TestTFMs>net463</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="PerformanceTests\System.Net.Sockets.Async.Performance.Tests.csproj">
-      <TestTFMs>netcore50;netcoreapp1.0;net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
+      <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="PerformanceTests\System.Net.Sockets.Async.Performance.Tests.csproj">
-      <OSGroup>Unix</OSGroup>
+      <TestTFMs>netcore50;netcoreapp1.0;net46</TestTFMs>
+      <OSGroup>Windows_NT</OSGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
-

@@ -4,11 +4,11 @@
   <ItemGroup>
     <Project Include="System.Security.Cryptography.OpenSsl.Tests.csproj">
       <OSGroup>Unix</OSGroup>
-      <TargetGroup>netstandard1.6</TargetGroup>
-      <TestTFMs>netcoreapp1.0</TestTFMs>
     </Project>
     <Project Include="System.Security.Cryptography.OpenSsl.Tests.csproj">
       <OSGroup>Unix</OSGroup>
+      <TargetGroup>netstandard1.6</TargetGroup>
+      <TestTFMs>netcoreapp1.0</TestTFMs>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
