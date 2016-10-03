@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Data.Common;
 using System.Data.SqlTypes;
+using System.Text;
 using System.Xml;
 using Xunit;
 
@@ -184,6 +186,64 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     cmd.ExecuteNonQuery();
                 }
             }
+        }
+
+        [CheckConnStrSetupFact]
+        public static void TestUdt()
+        {
+            SqlConnection connection = new SqlConnection(DataTestUtility.TcpConnStr);
+            connection.Open();
+            Console.WriteLine("Connected...");
+
+            SqlCommand command = connection.CreateCommand();
+            command.CommandText = "select cast('0x0000' as varbinary(max)) as col0, hierarchyid::Parse('/1/1/3/') as col1, 2 as col2, geometry::Parse('LINESTRING (100 100, 20 180, 180 180)') as col3";
+            SqlDataReader reader = command.ExecuteReader();
+            Console.WriteLine("Executed...");
+
+            foreach (DbColumn column in reader.GetColumnSchema())
+            {
+                Console.WriteLine("Schema for column: {0}", column.ColumnName);
+                Console.WriteLine("\tudt: {0}", column.UdtAssemblyQualifiedName);
+                Console.WriteLine("\ttype: {0}", column.DataTypeName);
+            }
+
+            reader.Read();
+            Console.WriteLine("Read...");
+
+            Console.WriteLine();
+            Console.WriteLine("Read column 0...");
+            SqlBytes sqlBytes = reader.GetSqlBytes(0);
+            Console.WriteLine("Value length: {0}", sqlBytes.Length);
+            Console.WriteLine("SqlBytes Value is null: {0}", sqlBytes.IsNull);
+            Console.WriteLine("SqlBytes Value length: {0}", sqlBytes.Length);
+            WriteBytes(sqlBytes.Value);
+
+            Console.WriteLine();
+            Console.WriteLine("Read column 1...");
+            byte[] bytes = (byte[])reader.GetValue(1);
+            Console.WriteLine("Value length: {0}", bytes.Length);
+            WriteBytes(bytes);
+
+            Console.WriteLine();
+            Console.WriteLine("Read column 2...");
+            Console.WriteLine(reader.GetValue(2));
+
+            Console.WriteLine();
+            Console.WriteLine("Read column 3...");
+            sqlBytes = reader.GetSqlBytes(3);
+            Console.WriteLine("Value length: {0}", sqlBytes.Length);
+            Console.WriteLine("SqlBytes Value is null: {0}", sqlBytes.IsNull);
+            Console.WriteLine("SqlBytes Value length: {0}", sqlBytes.Length);
+            WriteBytes(sqlBytes.Value);
+        }
+
+        private static void WriteBytes(byte[] bytes)
+        {
+            StringBuilder hex = new StringBuilder(bytes.Length * 2);
+            foreach (byte b in bytes)
+                hex.AppendFormat("{0:x2}", b);
+            Console.WriteLine("Value: {0}", hex.ToString());
+            Console.WriteLine();
         }
 
         private static char localByteToChar(int b)

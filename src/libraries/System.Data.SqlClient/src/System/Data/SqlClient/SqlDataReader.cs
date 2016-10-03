@@ -866,7 +866,7 @@ namespace System.Data.SqlClient
 
                 if (metaData.type == SqlDbType.Udt)
                 {
-                    throw UdtNotSupportedException();
+                    dataTypeName = metaData.udtDatabaseName + "." + metaData.udtSchemaName + "." + metaData.udtTypeName;
                 }
                 else
                 { // For all other types, including Xml - use data in MetaType.
@@ -939,7 +939,7 @@ namespace System.Data.SqlClient
 
                 if (metaData.type == SqlDbType.Udt)
                 {
-                    throw UdtNotSupportedException();
+                    fieldType = MetaType.MetaMaxVarBinary.ClassType;
                 }
                 else
                 { // For all other types, including Xml - use data in MetaType.
@@ -1020,7 +1020,7 @@ namespace System.Data.SqlClient
 
                 if (metaData.type == SqlDbType.Udt)
                 {
-                    throw UdtNotSupportedException();
+                    providerSpecificFieldType = MetaType.MetaMaxVarBinary.SqlType;
                 }
                 else
                 { // For all other types, including Xml - use data in MetaType.
@@ -2051,24 +2051,8 @@ namespace System.Data.SqlClient
             }
             else if (_typeSystem != SqlConnectionString.TypeSystem.SQLServer2000)
             {
-                // TypeSystem.SQLServer2005
-
-                if (metaData.type == SqlDbType.Udt)
-                {
-                    var connection = _connection;
-                    if (connection != null)
-                    {
-                        throw UdtNotSupportedException();
-                    }
-                    else
-                    {
-                        throw ADP.DataReaderClosed();
-                    }
-                }
-                else
-                {
-                    return data.SqlValue;
-                }
+                // CLR UDT types are not supported on .NET Core.  So, we're treating them as binary instead.
+                return data.SqlValue;
             }
             else
             {
@@ -2245,15 +2229,9 @@ namespace System.Data.SqlClient
                 }
                 else
                 {
-                    var connection = _connection;
-                    if (connection != null)
-                    {
-                        throw UdtNotSupportedException();
-                    }
-                    else
-                    {
-                        throw ADP.DataReaderClosed();
-                    }
+                    // CLR UDT types are not supported on .NET Core.  So, we're treating them as binary instead.
+
+                    return data.Value;
                 }
             }
             else
@@ -2388,7 +2366,11 @@ namespace System.Data.SqlClient
 
             MetaType metaType = null;
 
-            if (actualMetaType == MetaType.MetaXml)
+            if (actualMetaType == MetaType.MetaUdt)
+            {
+                metaType = MetaType.MetaVarBinary;
+            }
+            else if (actualMetaType == MetaType.MetaXml)
             {
                 metaType = MetaType.MetaNText;
             }
