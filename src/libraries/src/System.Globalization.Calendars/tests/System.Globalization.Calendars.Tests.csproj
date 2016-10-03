@@ -137,13 +137,7 @@
     <TargetingPackReference Include="System.Runtime" />
   </ItemGroup>
   <ItemGroup>
-    <!-- Compile tests against the contract, but copy our local-built implementation for testing -->
-    <ProjectReference Include="..\pkg\System.Globalization.Calendars.pkgproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
-    </ProjectReference>
+    <ProjectReference Include="..\pkg\System.Globalization.Calendars.pkgproj" />
     <!-- ToDo: Remove this reference to the live package of System.Globalization once prerelease gets updated again -->
     <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj">
       <Name>System.Runtime</Name>
