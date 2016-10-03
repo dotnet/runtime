@@ -15,15 +15,10 @@ class Driver
 	{
 		return new Thread (() => {
 			/* Exit bypassing completely the runtime */
-			try {
-				pthread_exit (IntPtr.Zero);
-			} catch (EntryPointNotFoundException) {
-			}
-
-			try {
-				ExitThread (IntPtr.Zero);
-			} catch (EntryPointNotFoundException) {
-			}
+			if (Environment.OSVersion.Platform == PlatformID.Unix || Environment.OSVersion.Platform == PlatformID.MacOSX)
+			    pthread_exit (IntPtr.Zero);
+			else
+			    ExitThread (IntPtr.Zero);
 		});
 	}
 
