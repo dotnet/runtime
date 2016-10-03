@@ -986,6 +986,11 @@ namespace System.Data.SqlClient
                 statistics = SqlStatistics.StartTimer(Statistics);
                 CheckMetaDataIsReady(columnIndex: i);
 
+                if (_metaData[i].type == SqlDbType.Udt)
+                {
+                    throw ADP.DbTypeNotSupported(SqlDbType.Udt.ToString());
+                }
+
                 return GetProviderSpecificFieldTypeInternal(_metaData[i]);
             }
             finally
@@ -2031,6 +2036,11 @@ namespace System.Data.SqlClient
             bool result = TryReadColumn(i, setTimeout: false);
             if (!result) { throw SQL.SynchronousCallMayNotPend(); }
 
+            if (_metaData[i].type == SqlDbType.Udt)
+            {
+                throw ADP.DbTypeNotSupported(SqlDbType.Udt.ToString());
+            }
+
             return GetSqlValueFromSqlBufferInternal(_data[i], _metaData[i]);
         }
 
@@ -2195,6 +2205,11 @@ namespace System.Data.SqlClient
             bool result = TryReadColumn(i, setTimeout: false);
             if (!result) { throw SQL.SynchronousCallMayNotPend(); }
 
+            if (_metaData[i].type == SqlDbType.Udt)
+            {
+                throw ADP.DbTypeNotSupported(SqlDbType.Udt.ToString());
+            }
+
             return GetValueFromSqlBufferInternal(_data[i], _metaData[i]);
         }
 
@@ -2251,6 +2266,11 @@ namespace System.Data.SqlClient
             Debug.Assert(_stateObj == null || _stateObj._syncOverAsync, "Should not attempt pends in a synchronous call");
             bool result = TryReadColumn(i, setTimeout: false);
             if (!result) { throw SQL.SynchronousCallMayNotPend(); }
+
+            if (_metaData[i].type == SqlDbType.Udt)
+            {
+                throw ADP.DbTypeNotSupported(SqlDbType.Udt.ToString());
+            }
 
             return GetFieldValueFromSqlBufferInternal<T>(_data[i], _metaData[i]);
         }
@@ -2336,6 +2356,11 @@ namespace System.Data.SqlClient
 
                 for (int i = 0; i < copyLen; i++)
                 {
+                    if (_metaData[i].type == SqlDbType.Udt)
+                    {
+                        throw ADP.DbTypeNotSupported(SqlDbType.Udt.ToString());
+                    }
+
                     // Get the usable, TypeSystem-compatible value from the internal buffer
                     values[_metaData.indexMap[i]] = GetValueFromSqlBufferInternal(_data[i], _metaData[i]);
 
@@ -4141,6 +4166,11 @@ namespace System.Data.SqlClient
                     var metaData = _metaData;
                     if ((data != null) && (metaData != null))
                     {
+                        if (_metaData[i].type == SqlDbType.Udt)
+                        {
+                            return Task.FromException<T>(ADP.DbTypeNotSupported(SqlDbType.Udt.ToString()));
+                        }
+
                         return Task.FromResult<T>(GetFieldValueFromSqlBufferInternal<T>(data[i], metaData[i]));
                     }
                     else
