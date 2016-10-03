@@ -4,6 +4,7 @@
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Security;
@@ -18,7 +19,7 @@ namespace System.Diagnostics
     ///       processes. Enables you to start and stop system processes.
     ///    </para>
     /// </devdoc>
-    public partial class Process : IDisposable
+    public partial class Process : Component
     {
         private bool _haveProcessId;
         private int _processId;
@@ -704,7 +705,7 @@ namespace System.Diagnostics
         ///       Free any resources associated with this component.
         ///    </para>
         /// </devdoc>
-        protected virtual void Dispose(bool disposing)
+        protected override void Dispose(bool disposing)
         {
             if (!_disposed)
             {
@@ -1357,12 +1358,6 @@ namespace System.Diagnostics
                 DataReceivedEventArgs e = new DataReceivedEventArgs(data);
                 errorDataReceived(this, e); // Call back to user informing data is available.
             }
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
         }
 
         /// <summary>

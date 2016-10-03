@@ -7,11 +7,6 @@
 
 namespace System.Diagnostics
 {
-    public partial class Process : System.IDisposable
-    {
-        public void Dispose() { }
-        protected virtual void Dispose(bool disposing) { }
-    }
     public partial class ProcessModuleCollection : System.Collections.ICollection
     {
         public int Count { get { return default(int); } }

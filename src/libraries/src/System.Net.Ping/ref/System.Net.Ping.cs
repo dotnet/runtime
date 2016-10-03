@@ -35,7 +35,7 @@ namespace System.Net.NetworkInformation
         Unknown = -1,
         UnrecognizedNextHeader = 11043,
     }
-    public partial class Ping
+    public partial class Ping : System.ComponentModel.Component
     {
         public Ping() { }
         public event System.Net.NetworkInformation.PingCompletedEventHandler PingCompleted { add { } remove { } }
