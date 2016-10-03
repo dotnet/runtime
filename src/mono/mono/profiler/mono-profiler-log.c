@@ -36,6 +36,7 @@
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
 #endif
+#include <fcntl.h>
 #ifdef HAVE_LINK_H
 #include <link.h>
 #endif
@@ -58,8 +59,11 @@
 
 /* Worst-case size in bytes of a 64-bit value encoded with LEB128. */
 #define LEB128_SIZE 10
+
 /* Size of a value encoded as a single byte. */
+#undef BYTE_SIZE // mach/i386/vm_param.h on OS X defines this to 8, but it isn't used for anything.
 #define BYTE_SIZE 1
+
 /* Size in bytes of the event prefix (ID + time). */
 #define EVENT_SIZE (BYTE_SIZE + LEB128_SIZE)
 
@@ -735,7 +739,7 @@ static __thread MonoProfilerThread *profiler_tls;
 #define PROF_TLS_SET(VAL) (pthread_setspecific (profiler_tls, (VAL)))
 #define PROF_TLS_GET() ((MonoProfilerThread *) pthread_getspecific (profiler_tls))
 #define PROF_TLS_INIT() (pthread_key_create (&profiler_tls, NULL))
-#define PROF_TLS_FREE() (pthread_key_delete (&profiler_tls))
+#define PROF_TLS_FREE() (pthread_key_delete (profiler_tls))
 
 static pthread_key_t profiler_tls;
 
