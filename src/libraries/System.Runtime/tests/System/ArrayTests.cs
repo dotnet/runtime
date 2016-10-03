@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public static class ArrayTests
+    public static partial class ArrayTests
     {
         [Fact]
         public static void IList_GetSetItem()
@@ -2665,8 +2665,8 @@ namespace System.Tests
         [Fact]
         public static void Reverse_MultidimensionalArray_ThrowsRankException()
         {
-            Assert.Throws<RankException>(() => Array.Reverse(new int[10, 10]));
-            Assert.Throws<RankException>(() => Array.Reverse(new int[10, 10], 0, 0));
+            Assert.Throws<RankException>(() => Array.Reverse((Array)new int[10, 10]));
+            Assert.Throws<RankException>(() => Array.Reverse((Array)new int[10, 10], 0, 0));
         }
 
         [Theory]
@@ -2681,7 +2681,7 @@ namespace System.Tests
         [Fact]
         public static void Reverse_NegativeLength_ThrowsArgumentOutOfRangeException()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("length", () => Array.Reverse(new int[10], 0, -1));
+            Assert.Throws<ArgumentOutOfRangeException>("length", () => Array.Reverse((Array)new int[10], 0, -1));
         }
 
         [Theory]
@@ -2691,15 +2691,15 @@ namespace System.Tests
         [InlineData(0, 11)]
         public static void Reverse_InvalidIndexPlusLength_ThrowsArgumentException(int index, int length)
         {
-            Assert.Throws<ArgumentException>(null, () => Array.Reverse(new int[10], index, length));
+            Assert.Throws<ArgumentException>(null, () => Array.Reverse((Array)new int[10], index, length));
         }
 
         [Fact]
         public static unsafe void Reverse_ArrayOfPointers_ThrowsNotSupportedException()
         {
-            Assert.Throws<NotSupportedException>(() => Array.Reverse(new int*[2]));
-            Array.Reverse(new int*[0]);
-            Array.Reverse(new int*[1]);
+            Assert.Throws<NotSupportedException>(() => Array.Reverse((Array)new int*[2]));
+            Array.Reverse((Array)new int*[0]);
+            Array.Reverse((Array)new int*[1]);
         }
 
         public static IEnumerable<object[]> Sort_Array_NonGeneric_TestData()

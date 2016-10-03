@@ -9,6 +9,10 @@
     </Project>
     <Project Include="System.Runtime.Tests.csproj" />
     <Project Include="System.Runtime.Tests.csproj">
+      <TargetGroup>netcoreapp1.1</TargetGroup>
+      <TestTFMs>netcoreapp1.1</TestTFMs>
+    </Project>
+    <Project Include="System.Runtime.Tests.csproj">
       <TestTFMs>net462</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>netstandard1.5</TargetGroup>
