@@ -3228,9 +3228,9 @@ namespace System.Data.SqlClient
 
             if (tdsType == TdsEnums.SQLUDT)
             {
-                _state = TdsParserState.Broken;
-                _connHandler.BreakConnection();
-                throw SQL.UnsupportedFeatureAndToken(_connHandler, SqlDbType.Udt.ToString());
+                if (!TryProcessUDTMetaData((SqlMetaDataPriv) rec, stateObj)) {
+                    return false;
+                }
             }
 
             if (rec.type == SqlDbType.Xml)
@@ -3682,17 +3682,20 @@ namespace System.Data.SqlClient
             {
                 if (TdsEnums.SQLUDT == tdsType)
                 {
-                    throw SQL.UnsupportedFeatureAndToken(_connHandler, SqlDbType.Udt.ToString());
+                    if (!TryProcessUDTMetaData((SqlMetaDataPriv)col, stateObj))
+                    {
+                        return false;
+                    }
                 }
 
                 if (col.length == TdsEnums.SQL_USHORTVARMAXLEN)
                 {
                     Debug.Assert(tdsType == TdsEnums.SQLXMLTYPE ||
-                                 tdsType == TdsEnums.SQLBIGVARCHAR ||
-                                 tdsType == TdsEnums.SQLBIGVARBINARY ||
-                                 tdsType == TdsEnums.SQLNVARCHAR ||
-                                 tdsType == TdsEnums.SQLUDT,
-                                 "Invalid streaming datatype");
+                                    tdsType == TdsEnums.SQLBIGVARCHAR ||
+                                    tdsType == TdsEnums.SQLBIGVARBINARY ||
+                                    tdsType == TdsEnums.SQLNVARCHAR ||
+                                    tdsType == TdsEnums.SQLUDT,
+                                    "Invalid streaming datatype");
                     col.metaType = MetaType.GetMaxMetaTypeFromMetaType(col.metaType);
                     Debug.Assert(col.metaType.IsLong, "Max datatype not IsLong");
                     col.length = Int32.MaxValue;
@@ -4425,7 +4428,6 @@ namespace System.Data.SqlClient
                     break;
 
                 case TdsEnums.SQLUDT:
-                    throw SQL.UnsupportedFeatureAndToken(_connHandler, SqlDbType.Udt.ToString());
                 case TdsEnums.SQLBINARY:
                 case TdsEnums.SQLBIGBINARY:
                 case TdsEnums.SQLBIGVARBINARY:
@@ -9405,5 +9407,57 @@ namespace System.Data.SqlClient
 
             return stateObj._longlen;
         }
+
+         private bool TryProcessUDTMetaData(SqlMetaDataPriv metaData, TdsParserStateObject stateObj) {
+
+            ushort shortLength;
+            byte byteLength;
+
+            if (!stateObj.TryReadUInt16(out shortLength)) { // max byte size
+                return false;
+            }
+            metaData.length = shortLength;
+
+            // database name
+            if (!stateObj.TryReadByte(out byteLength)) {
+                return false;
+            }
+            if (byteLength != 0) {
+                if (!stateObj.TryReadString(byteLength, out metaData.udtDatabaseName)) {
+                    return false;
+                }
+            }
+
+            // schema name
+            if (!stateObj.TryReadByte(out byteLength)) {
+                return false;
+            }
+            if (byteLength != 0) {
+                if (!stateObj.TryReadString(byteLength, out metaData.udtSchemaName)) {
+                    return false;
+                }
+            }
+
+            // type name
+            if (!stateObj.TryReadByte(out byteLength)) {
+                return false;
+            }
+            if (byteLength != 0) {
+                if (!stateObj.TryReadString(byteLength, out metaData.udtTypeName)) {
+                    return false;
+                }
+            }
+
+            if (!stateObj.TryReadUInt16(out shortLength)) {
+                return false;
+            }
+            if (shortLength != 0) {
+                if (!stateObj.TryReadString(shortLength, out metaData.udtAssemblyQualifiedName)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }       
     }    // tdsparser
 }//namespace
