@@ -137,8 +137,8 @@ mono_class_check_context_used (MonoClass *klass)
 	context_used |= type_check_context_used (&klass->this_arg, FALSE);
 	context_used |= type_check_context_used (&klass->byval_arg, FALSE);
 
-	if (klass->generic_class)
-		context_used |= mono_generic_context_check_used (&klass->generic_class->context);
+	if (mono_class_is_ginst (klass))
+		context_used |= mono_generic_context_check_used (&mono_class_get_generic_class (klass)->context);
 	else if (klass->generic_container)
 		context_used |= mono_generic_context_check_used (&klass->generic_container->context);
 
@@ -274,8 +274,8 @@ register_generic_subclass (MonoClass *klass)
 
 	g_assert (rgctx_template);
 
-	if (parent->generic_class)
-		parent = parent->generic_class->container_class;
+	if (mono_class_is_ginst (parent))
+		parent = mono_class_get_generic_class (parent)->container_class;
 
 	if (!generic_subclass_hash)
 		generic_subclass_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
@@ -475,7 +475,7 @@ mono_class_get_method_generic (MonoClass *klass, MonoMethod *method)
 		declaring = method;
 
 	m = NULL;
-	if (klass->generic_class)
+	if (mono_class_is_ginst (klass))
 		m = mono_class_get_inflated_method (klass, declaring);
 
 	if (!m) {
@@ -734,8 +734,8 @@ class_get_rgctx_template_oti (MonoClass *klass, int type_argc, guint32 slot, gbo
 static MonoClass*
 class_uninstantiated (MonoClass *klass)
 {
-	if (klass->generic_class)
-		return klass->generic_class->container_class;
+	if (mono_class_is_ginst (klass))
+		return mono_class_get_generic_class (klass)->container_class;
 	return klass;
 }
 
@@ -835,15 +835,15 @@ class_get_rgctx_template_oti (MonoClass *klass, int type_argc, guint32 slot, gbo
 
 	DEBUG (printf ("get slot: %s %d\n", mono_type_full_name (&class->byval_arg), slot));
 
-	if (klass->generic_class && !shared) {
+	if (mono_class_is_ginst (klass) && !shared) {
 		MonoRuntimeGenericContextInfoTemplate oti;
 		gboolean tmp_do_free;
 
-		oti = class_get_rgctx_template_oti (klass->generic_class->container_class,
+		oti = class_get_rgctx_template_oti (mono_class_get_generic_class (klass)->container_class,
 											type_argc, slot, TRUE, FALSE, &tmp_do_free);
 		if (oti.data) {
 			gpointer info = oti.data;
-			oti.data = inflate_info (&oti, &klass->generic_class->context, klass, temporary);
+			oti.data = inflate_info (&oti, &mono_class_get_generic_class (klass)->context, klass, temporary);
 			if (tmp_do_free)
 				free_inflated_info (oti.info_type, info);
 		}
@@ -1118,7 +1118,7 @@ get_wrapper_shared_type (MonoType *t)
 			return get_wrapper_shared_type (&mono_defaults.object_class->byval_arg);
 
 		klass = mono_class_from_mono_type (t);
-		orig_ctx = &klass->generic_class->context;
+		orig_ctx = &mono_class_get_generic_class (klass)->context;
 
 		memset (&ctx, 0, sizeof (MonoGenericContext));
 
@@ -1136,7 +1136,7 @@ get_wrapper_shared_type (MonoType *t)
 				args [i] = get_wrapper_shared_type (inst->type_argv [i]);
 			ctx.method_inst = mono_metadata_get_generic_inst (inst->type_argc, args);
 		}
-		klass = mono_class_inflate_generic_class_checked (klass->generic_class->container_class, &ctx, &error);
+		klass = mono_class_inflate_generic_class_checked (mono_class_get_generic_class (klass)->container_class, &ctx, &error);
 		mono_error_assert_ok (&error); /* FIXME don't swallow the error */
 		return &klass->byval_arg;
 	}
@@ -2058,8 +2058,8 @@ register_info (MonoClass *klass, int type_argc, gpointer data, MonoRgctxInfoType
 		MonoRuntimeGenericContextTemplate *parent_template;
 		MonoRuntimeGenericContextInfoTemplate *oti;
 
-		if (parent->generic_class)
-			parent = parent->generic_class->container_class;
+		if (mono_class_is_ginst (parent))
+			parent = mono_class_get_generic_class (parent)->container_class;
 
 		parent_template = mono_class_get_runtime_generic_context_template (parent);
 		oti = rgctx_template_get_other_slot (parent_template, type_argc, i);
@@ -2313,7 +2313,7 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 	int i, first_slot, size;
 	MonoDomain *domain = class_vtable->domain;
 	MonoClass *klass = class_vtable->klass;
-	MonoGenericContext *class_context = klass->generic_class ? &klass->generic_class->context : NULL;
+	MonoGenericContext *class_context = mono_class_is_ginst (klass) ? &mono_class_get_generic_class (klass)->context : NULL;
 	MonoRuntimeGenericContextInfoTemplate oti;
 	MonoGenericContext context = { class_context ? class_context->class_inst : NULL, method_inst };
 	int rgctx_index;
@@ -2786,14 +2786,14 @@ mono_method_is_generic_sharable_full (MonoMethod *method, gboolean allow_type_va
 		}
 	}
 
-	if (method->klass->generic_class) {
-		if (!mono_generic_context_is_sharable_full (&method->klass->generic_class->context, allow_type_vars, allow_partial))
+	if (mono_class_is_ginst (method->klass)) {
+		if (!mono_generic_context_is_sharable_full (&mono_class_get_generic_class (method->klass)->context, allow_type_vars, allow_partial))
 			return FALSE;
 
-		g_assert (method->klass->generic_class->container_class &&
-				method->klass->generic_class->container_class->generic_container);
+		g_assert (mono_class_get_generic_class (method->klass)->container_class &&
+				mono_class_get_generic_class (method->klass)->container_class->generic_container);
 
-		if (has_constraints (method->klass->generic_class->container_class->generic_container))
+		if (has_constraints (mono_class_get_generic_class (method->klass)->container_class->generic_container))
 			return FALSE;
 	}
 
@@ -2838,7 +2838,7 @@ mono_method_needs_static_rgctx_invoke (MonoMethod *method, gboolean allow_type_v
 
 	return ((method->flags & METHOD_ATTRIBUTE_STATIC) ||
 			method->klass->valuetype) &&
-		(method->klass->generic_class || method->klass->generic_container);
+		(mono_class_is_ginst (method->klass) || method->klass->generic_container);
 }
 
 static MonoGenericInst*
@@ -2867,7 +2867,7 @@ mono_method_construct_object_context (MonoMethod *method)
 {
 	MonoGenericContext object_context;
 
-	g_assert (!method->klass->generic_class);
+	g_assert (!mono_class_is_ginst (method->klass));
 	if (method->klass->generic_container) {
 		int type_argc = method->klass->generic_container->type_argc;
 
@@ -3003,8 +3003,8 @@ mono_generic_context_equal_deep (MonoGenericContext *context1, MonoGenericContex
 MonoClass*
 mini_class_get_container_class (MonoClass *klass)
 {
-	if (klass->generic_class)
-		return klass->generic_class->container_class;
+	if (mono_class_is_ginst (klass))
+		return mono_class_get_generic_class (klass)->container_class;
 
 	g_assert (klass->generic_container);
 	return klass;
@@ -3019,8 +3019,8 @@ mini_class_get_container_class (MonoClass *klass)
 MonoGenericContext*
 mini_class_get_context (MonoClass *klass)
 {
-	if (klass->generic_class)
-		return &klass->generic_class->context;
+	if (mono_class_is_ginst (klass))
+		return &mono_class_get_generic_class (klass)->context;
 
 	g_assert (klass->generic_container);
 	return &klass->generic_container->context;
@@ -3205,10 +3205,10 @@ mini_type_is_vtype (MonoType *t)
 gboolean
 mini_class_is_generic_sharable (MonoClass *klass)
 {
-	if (klass->generic_class && is_async_state_machine_class (klass))
+	if (mono_class_is_ginst (klass) && is_async_state_machine_class (klass))
 		return FALSE;
 
-	return (klass->generic_class && mono_generic_context_is_sharable (&klass->generic_class->context, FALSE));
+	return (mono_class_is_ginst (klass) && mono_generic_context_is_sharable (&mono_class_get_generic_class (klass)->context, FALSE));
 }
 
 gboolean

@@ -1210,8 +1210,8 @@ mono_custom_attrs_from_class_checked (MonoClass *klass, MonoError *error)
 
 	mono_error_init (error);
 
-	if (klass->generic_class)
-		klass = klass->generic_class->container_class;
+	if (mono_class_is_ginst (klass))
+		klass = mono_class_get_generic_class (klass)->container_class;
 
 	if (image_is_dynamic (klass->image))
 		return lookup_custom_attr (klass->image, klass);

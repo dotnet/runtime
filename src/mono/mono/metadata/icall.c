@@ -1671,8 +1671,9 @@ ves_icall_System_Reflection_FieldInfo_get_marshal_info (MonoReflectionField *fie
 	MonoType *ftype;
 	int i;
 
+	MonoGenericClass *gklass = mono_class_try_get_generic_class (klass);
 	if (klass->generic_container ||
-	    (klass->generic_class && klass->generic_class->context.class_inst->is_open))
+	    (gklass && gklass->context.class_inst->is_open))
 		return NULL;
 
 	ftype = mono_field_get_type (field->field);
@@ -2358,7 +2359,7 @@ fill_iface_array (gpointer key, gpointer value, gpointer user_data)
 	if (!mono_error_ok (data->error))
 		return;
 
-	if (data->context && ic->generic_class && ic->generic_class->context.class_inst->is_open) {
+	if (data->context && mono_class_is_ginst (ic) && mono_class_get_generic_class (ic)->context.class_inst->is_open) {
 		inflated = ret = mono_class_inflate_generic_type_checked (ret, data->context, data->error);
 		if (!mono_error_ok (data->error))
 			return;
@@ -2393,9 +2394,9 @@ ves_icall_RuntimeType_GetInterfaces (MonoReflectionType* type)
 
 	GHashTable *iface_hash = g_hash_table_new (get_interfaces_hash, NULL);
 
-	if (klass->generic_class && klass->generic_class->context.class_inst->is_open) {
+	if (mono_class_is_ginst (klass) && mono_class_get_generic_class (klass)->context.class_inst->is_open) {
 		data.context = mono_class_get_context (klass);
-		klass = klass->generic_class->container_class;
+		klass = mono_class_get_generic_class (klass)->container_class;
 	}
 
 	for (parent = klass; parent; parent = parent->parent) {
@@ -2732,8 +2733,8 @@ ves_icall_RuntimeType_GetGenericArguments (MonoReflectionType *type, MonoBoolean
 
 			mono_array_setref (res, i, rt);
 		}
-	} else if (klass->generic_class) {
-		MonoGenericInst *inst = klass->generic_class->context.class_inst;
+	} else if (mono_class_is_ginst (klass)) {
+		MonoGenericInst *inst = mono_class_get_generic_class (klass)->context.class_inst;
 		res = create_type_array (domain, runtimeTypeArray, inst->type_argc, &error);
 		if (mono_error_set_pending_exception (&error))
 			return NULL;
@@ -2780,8 +2781,8 @@ ves_icall_RuntimeTypeHandle_GetGenericTypeDefinition_impl (MonoReflectionType *t
 	if (klass->generic_container) {
 		return type; /* check this one */
 	}
-	if (klass->generic_class) {
-		MonoClass *generic_class = klass->generic_class->container_class;
+	if (mono_class_is_ginst (klass)) {
+		MonoClass *generic_class = mono_class_get_generic_class (klass)->container_class;
 		gpointer tb;
 
 		tb = mono_class_get_ref_info (generic_class);
@@ -2830,7 +2831,7 @@ ves_icall_RuntimeType_MakeGenericType (MonoReflectionType *type, MonoArray *type
 	klass = mono_class_from_mono_type (geninst);
 
 	/*we might inflate to the GTD*/
-	if (klass->generic_class && !mono_verifier_class_is_valid_generic_instantiation (klass)) {
+	if (mono_class_is_ginst (klass) && !mono_verifier_class_is_valid_generic_instantiation (klass)) {
 		mono_set_pending_exception (mono_get_exception_argument ("typeArguments", "Invalid generic arguments"));
 		return NULL;
 	}
@@ -2853,7 +2854,7 @@ ves_icall_RuntimeTypeHandle_HasInstantiation (MonoReflectionType *type)
 		return FALSE;
 
 	klass = mono_class_from_mono_type (type->type);
-	return klass->generic_class != NULL || klass->generic_container != NULL;
+	return mono_class_is_ginst (klass) || klass->generic_container != NULL;
 }
 
 ICALL_EXPORT gint32
@@ -4287,8 +4288,8 @@ ves_icall_RuntimeType_GetNestedTypes_native (MonoReflectionType *type, char *str
 	 * nested types that aren't generic.  In any case, the container of that
 	 * nested type would be the generic type definition.
 	 */
-	if (klass->generic_class)
-		klass = klass->generic_class->container_class;
+	if (mono_class_is_ginst (klass))
+		klass = mono_class_get_generic_class (klass)->container_class;
 
 	res_array = g_ptr_array_new ();
 	
@@ -5083,8 +5084,8 @@ mono_method_get_equivalent_method (MonoMethod *method, MonoClass *klass)
 		MonoGenericContext ctx;
 		ctx.method_inst = inflated->context.method_inst;
 		ctx.class_inst = inflated->context.class_inst;
-		if (klass->generic_class)
-			ctx.class_inst = klass->generic_class->context.class_inst;
+		if (mono_class_is_ginst (klass))
+			ctx.class_inst = mono_class_get_generic_class (klass)->context.class_inst;
 		else if (klass->generic_container)
 			ctx.class_inst = klass->generic_container->context.class_inst;
 		result = mono_class_inflate_generic_method_full_checked (inflated->declaring, klass, &ctx, &error);
@@ -7343,9 +7344,9 @@ ves_icall_MonoMethod_get_base_method (MonoReflectionMethod *m, gboolean definiti
 		return m;
 
 	klass = method->klass;
-	if (klass->generic_class) {
+	if (mono_class_is_ginst (klass)) {
 		generic_inst = mono_class_get_context (klass);
-		klass = klass->generic_class->container_class;
+		klass = mono_class_get_generic_class (klass)->container_class;
 	}
 
 retry:
@@ -7382,9 +7383,9 @@ retry:
 					return NULL;
 				}
 			}
-			if (parent->generic_class) {
+			if (mono_class_is_ginst (parent)) {
 				parent_inst = mono_class_get_context (parent);
-				parent = parent->generic_class->container_class;
+				parent = mono_class_get_generic_class (parent)->container_class;
 			}
 
 			mono_class_setup_vtable (parent);
@@ -7406,9 +7407,9 @@ retry:
 
 			generic_inst = NULL;
 		}
-		if (klass->generic_class) {
+		if (mono_class_is_ginst (klass)) {
 			generic_inst = mono_class_get_context (klass);
-			klass = klass->generic_class->container_class;
+			klass = mono_class_get_generic_class (klass)->container_class;
 		}
 
 	}

@@ -2422,7 +2422,7 @@ mono_codegen (MonoCompile *cfg)
 		gboolean is_generic = FALSE;
 
 		if (cfg->method->is_inflated || mono_method_get_generic_container (cfg->method) ||
-				cfg->method->klass->generic_container || cfg->method->klass->generic_class) {
+				cfg->method->klass->generic_container || mono_class_is_ginst (cfg->method->klass)) {
 			is_generic = TRUE;
 		}
 

@@ -120,6 +120,7 @@ common_sources = \
 	class.c			\
 	class-internals.h	\
 	class-inlines.h		\
+	class-accessors.c	\
 	cominterop.c		\
 	cominterop.h		\
 	console-io.h		\
