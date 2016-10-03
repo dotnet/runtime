@@ -1180,6 +1180,11 @@ typedef struct {
 	guint32 attrs;
 } MonoReflectionGenericParam;
 
+typedef struct {
+	MonoReflectionType type;
+	MonoReflectionTypeBuilder *tb;
+} MonoReflectionEnumBuilder;
+
 typedef struct _MonoReflectionGenericClass MonoReflectionGenericClass;
 struct _MonoReflectionGenericClass {
 	MonoReflectionType type;

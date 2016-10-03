@@ -497,7 +497,7 @@ mono_type_get_object_checked (MonoDomain *domain, MonoType *type, MonoError *err
 		if (klass->byval_arg.type == MONO_TYPE_MVAR || klass->byval_arg.type == MONO_TYPE_VAR) {
 			MonoGenericParam *gparam = klass->byval_arg.data.generic_param;
 
-			if (gparam->owner && gparam->owner->is_method) {
+			if (gparam->owner && gparam->owner->is_method && !gparam->owner->is_anonymous) {
 				MonoMethod *method = gparam->owner->owner.method;
 				if (method && mono_class_get_generic_type_definition (method->klass)->wastypebuilder)
 					is_type_done = FALSE;
@@ -2205,6 +2205,7 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc
 		}
 	}
 
+#if 0
 	/* FIXME: fix the CreateGenericParameters protocol to avoid the two stage setup of TypeBuilders */
 	if (tb && tb->generic_container) {
 		if (!mono_reflection_create_generic_class (tb, error)) {
@@ -2212,6 +2213,7 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc
 			return NULL;
 		}
 	}
+#endif
 
 	MonoType *t = mono_reflection_type_get_handle (type, error);
 	if (!is_ok (error)) {

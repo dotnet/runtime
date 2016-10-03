@@ -705,7 +705,6 @@ mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicImage *ass
 	values [MONO_FIELD_SIGNATURE] = mono_dynimage_encode_field_signature (assembly, fb, error);
 	return_if_nok (error);
 
-
 	if (fb->offset != -1) {
 		table = &assembly->tables [MONO_TABLE_FIELDLAYOUT];
 		table->rows ++;

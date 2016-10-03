@@ -784,9 +784,6 @@ ICALL(DYNM_1, "create_dynamic_method", ves_icall_DynamicMethod_create_dynamic_me
 ICALL_TYPE(ENUMB, "System.Reflection.Emit.EnumBuilder", ENUMB_1)
 ICALL(ENUMB_1, "setup_enum_type", ves_icall_EnumBuilder_setup_enum_type)
 
-ICALL_TYPE(GPARB, "System.Reflection.Emit.GenericTypeParameterBuilder", GPARB_1)
-ICALL(GPARB_1, "initialize", ves_icall_GenericTypeParameterBuilder_initialize)
-
 ICALL_TYPE(METHODB, "System.Reflection.Emit.MethodBuilder", METHODB_1)
 ICALL(METHODB_1, "MakeGenericMethod", ves_icall_MethodBuilder_MakeGenericMethod)
 
@@ -806,9 +803,7 @@ ICALL(SIGH_1, "get_signature_field", ves_icall_SignatureHelper_get_signature_fie
 ICALL(SIGH_2, "get_signature_local", ves_icall_SignatureHelper_get_signature_local)
 
 ICALL_TYPE(TYPEB, "System.Reflection.Emit.TypeBuilder", TYPEB_1)
-ICALL(TYPEB_1, "create_generic_class", ves_icall_TypeBuilder_create_generic_class)
-ICALL(TYPEB_3, "create_runtime_class", ves_icall_TypeBuilder_create_runtime_class)
-ICALL(TYPEB_7, "setup_internal_class", ves_icall_TypeBuilder_setup_internal_class)
+ICALL(TYPEB_1, "create_runtime_class", ves_icall_TypeBuilder_create_runtime_class)
 
 ICALL_TYPE(EVENTI, "System.Reflection.EventInfo", EVENTI_1)
 ICALL(EVENTI_1, "internal_from_handle_type", ves_icall_System_Reflection_EventInfo_internal_from_handle_type)

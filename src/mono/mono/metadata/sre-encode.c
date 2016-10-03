@@ -591,7 +591,6 @@ handle_enum:
 	return idx;
 }
 
-
 guint32
 mono_dynimage_encode_field_signature (MonoDynamicImage *assembly, MonoReflectionFieldBuilder *fb, MonoError *error)
 {
@@ -604,9 +603,6 @@ mono_dynimage_encode_field_signature (MonoDynamicImage *assembly, MonoReflection
 	guint32 typespec = 0;
 	MonoType *type;
 	MonoClass *klass;
-
-	mono_reflection_init_type_builder_generics (fb->type, error);
-	return_val_if_nok (error, 0);
 
 	type = mono_reflection_type_get_handle ((MonoReflectionType*)fb->type, error);
 	return_val_if_nok (error, 0);
