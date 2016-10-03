@@ -196,7 +196,10 @@ namespace System.Collections.Generic
         public T Peek()
         {
             if (_size == 0)
-                throw new InvalidOperationException(SR.InvalidOperation_EmptyStack);
+            {
+                ThrowForEmptyStack();
+            }
+            
             return _array[_size - 1];
         }
 
@@ -216,7 +219,10 @@ namespace System.Collections.Generic
         public T Pop()
         {
             if (_size == 0)
-                throw new InvalidOperationException(SR.InvalidOperation_EmptyStack);
+            {
+                ThrowForEmptyStack();
+            }
+            
             _version++;
             T item = _array[--_size];
             _array[_size] = default(T);     // Free memory quicker.
@@ -262,6 +268,12 @@ namespace System.Collections.Generic
                 i++;
             }
             return objArray;
+        }
+
+        private void ThrowForEmptyStack()
+        {
+            Debug.Assert(_size == 0);
+            throw new InvalidOperationException(SR.InvalidOperation_EmptyStack);
         }
 
         [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "not an expected scenario")]
