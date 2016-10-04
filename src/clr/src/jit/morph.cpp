@@ -16017,6 +16017,45 @@ void Compiler::fgMorphBlocks()
 #endif
 }
 
+//------------------------------------------------------------------------
+// fgCheckArgCnt: Check whether the maximum arg size will change codegen requirements
+//
+// Notes:
+//    fpPtrArgCntMax records the maximum number of pushed arguments.
+//    Depending upon this value of the maximum number of pushed arguments
+//    we may need to use an EBP frame or be partially interuptible.
+//    This functionality has been factored out of fgSetOptions() because
+//    the Rationalizer can create new calls.
+//
+// Assumptions:
+//    This must be called before isFramePointerRequired() is called, because it is a
+//    phased variable (can only be written before it has been read).
+//
+void Compiler::fgCheckArgCnt()
+{
+    if (!compCanEncodePtrArgCntMax())
+    {
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("Too many pushed arguments for fully interruptible encoding, marking method as partially "
+                   "interruptible\n");
+        }
+#endif
+        genInterruptible = false;
+    }
+    if (fgPtrArgCntMax >= sizeof(unsigned))
+    {
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("Too many pushed arguments for an ESP based encoding, forcing an EBP frame\n");
+        }
+#endif
+        codeGen->setFramePointerRequired(true);
+    }
+}
+
 /*****************************************************************************
  *
  *  Make some decisions about the kind of code to generate.
@@ -16094,32 +16133,7 @@ void Compiler::fgSetOptions()
 
 #endif // _TARGET_X86_
 
-    //  fpPtrArgCntMax records the maximum number of pushed arguments
-    //  Depending upon this value of the maximum number of pushed arguments
-    //  we may need to use an EBP frame or be partially interuptible
-    //
-
-    if (!compCanEncodePtrArgCntMax())
-    {
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("Too many pushed arguments for fully interruptible encoding, marking method as partially "
-                   "interruptible\n");
-        }
-#endif
-        genInterruptible = false;
-    }
-    if (fgPtrArgCntMax >= sizeof(unsigned))
-    {
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("Too many pushed arguments for an ESP based encoding, forcing an EBP frame\n");
-        }
-#endif
-        codeGen->setFramePointerRequiredGCInfo(true);
-    }
+    fgCheckArgCnt();
 
     if (info.compCallUnmanaged)
     {
