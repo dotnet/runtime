@@ -4,7 +4,11 @@ setlocal EnableDelayedExpansion
 echo Stop VBCSCompiler.exe execution.
 for /f "tokens=2 delims=," %%F in ('tasklist /nh /fi "imagename eq VBCSCompiler.exe" /fo csv') do taskkill /f /PID %%~F
 
-if [%1] == [-all] (
+:: Strip all dashes off the argument and use invariant
+:: compare to match as many versions of "all" that we can
+:: All other argument validation happens inside Run.exe
+set NO_DASHES_ARG=%1
+if /I [%NO_DASHES_ARG:-=%] == [all] (
   echo Cleaning entire working directory ...
   call git clean -xdf
   exit /b !ERRORLEVEL!
