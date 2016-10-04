@@ -260,6 +260,7 @@ ICALL(BTLS_X509_NAME_15, "mono_btls_x509_name_print_string", mono_btls_x509_name
 ICALL_TYPE(BTLS_X509_REVOKED, "Mono.Btls.MonoBtlsX509Revoked", BTLS_X509_REVOKED_1)
 ICALL(BTLS_X509_REVOKED_1, "mono_btls_x509_revoked_free", mono_btls_x509_revoked_free)
 ICALL(BTLS_X509_REVOKED_2, "mono_btls_x509_revoked_get_reason", mono_btls_x509_revoked_get_reason)
+ICALL(BTLS_X509_REVOKED_2a, "mono_btls_x509_revoked_get_revocation_date", mono_btls_x509_revoked_get_revocation_date)
 ICALL(BTLS_X509_REVOKED_3, "mono_btls_x509_revoked_get_sequence", mono_btls_x509_revoked_get_sequence)
 ICALL(BTLS_X509_REVOKED_4, "mono_btls_x509_revoked_get_serial_number", mono_btls_x509_revoked_get_serial_number)
 ICALL(BTLS_X509_REVOKED_5, "mono_btls_x509_revoked_new", mono_btls_x509_revoked_new)
