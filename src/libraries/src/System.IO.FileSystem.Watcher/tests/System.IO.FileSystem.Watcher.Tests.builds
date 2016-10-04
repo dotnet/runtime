@@ -12,19 +12,19 @@
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="System.IO.FileSystem.Watcher.Tests.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
       <OSGroup>Linux</OSGroup>
-      <TargetGroup>netstandard1.3</TargetGroup>
       <TestTFMs>netcoreapp1.0</TestTFMs>
     </Project>
     <Project Include="System.IO.FileSystem.Watcher.Tests.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
       <OSGroup>OSX</OSGroup>
-      <TargetGroup>netstandard1.3</TargetGroup>
       <TestTFMs>netcoreapp1.0</TestTFMs>
     </Project>
     <Project Include="System.IO.FileSystem.Watcher.Tests.csproj">
-      <TestTFMs>netcoreapp1.0;net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>netstandard1.3</TargetGroup>
+      <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>netcoreapp1.0;net46</TestTFMs>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

@@ -30,14 +30,14 @@
       <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="System.Runtime.Extensions.Tests.csproj">
-      <OSGroup>Unix</OSGroup>
       <TargetGroup>netstandard1.5</TargetGroup>
+      <OSGroup>Unix</OSGroup>
       <TestTFMs>netcoreapp1.0</TestTFMs>
     </Project>
     <Project Include="System.Runtime.Extensions.Tests.csproj">
-      <TestTFMs>netcoreapp1.0;net462</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>netstandard1.5</TargetGroup>
+      <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>netcoreapp1.0;net462</TestTFMs>
     </Project>
     <Project Include="Performance\System.Runtime.Extensions.Performance.Tests.csproj" />
   </ItemGroup>

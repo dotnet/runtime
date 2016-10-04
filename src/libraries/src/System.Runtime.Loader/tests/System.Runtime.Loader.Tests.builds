@@ -2,10 +2,9 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <Project Include="System.Runtime.Loader.Tests.csproj"/>
-    <Project Include="DefaultContext\System.Runtime.Loader.DefaultContext.Tests.csproj"/>
-    <Project Include="RefEmitLoadContext\System.Runtime.Loader.RefEmitLoadContext.Tests.csproj"/>
+    <Project Include="System.Runtime.Loader.Tests.csproj" />
+    <Project Include="DefaultContext\System.Runtime.Loader.DefaultContext.Tests.csproj" />
+    <Project Include="RefEmitLoadContext\System.Runtime.Loader.RefEmitLoadContext.Tests.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
-

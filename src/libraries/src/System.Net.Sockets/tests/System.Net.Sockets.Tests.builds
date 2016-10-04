@@ -3,15 +3,15 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="FunctionalTests\System.Net.Sockets.Tests.csproj">
-      <TestTFMs>net463</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>net463</TestTFMs>
     </Project>
     <Project Include="PerformanceTests\System.Net.Sockets.Async.Performance.Tests.csproj">
       <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="PerformanceTests\System.Net.Sockets.Async.Performance.Tests.csproj">
-      <TestTFMs>netcore50;netcoreapp1.0;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>netcore50;netcoreapp1.0;net46</TestTFMs>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

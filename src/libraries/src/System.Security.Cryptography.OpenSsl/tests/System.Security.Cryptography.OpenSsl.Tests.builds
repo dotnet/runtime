@@ -6,8 +6,8 @@
       <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="System.Security.Cryptography.OpenSsl.Tests.csproj">
-      <OSGroup>Unix</OSGroup>
       <TargetGroup>netstandard1.6</TargetGroup>
+      <OSGroup>Unix</OSGroup>
       <TestTFMs>netcoreapp1.0</TestTFMs>
     </Project>
   </ItemGroup>

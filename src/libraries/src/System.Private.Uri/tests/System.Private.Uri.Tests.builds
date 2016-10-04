@@ -15,21 +15,21 @@
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="FunctionalTests\System.Private.Uri.Functional.Tests.csproj">
-      <OSGroup>Unix</OSGroup>
       <TargetGroup>netstandard1.3</TargetGroup>
+      <OSGroup>Unix</OSGroup>
       <TestTFMs>netcoreapp1.0</TestTFMs>
     </Project>
     <Project Include="FunctionalTests\System.Private.Uri.Functional.Tests.csproj">
-      <TestTFMs>netcore50;netcoreapp1.0;net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>netstandard1.3</TargetGroup>
+      <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>netcore50;netcoreapp1.0;net46</TestTFMs>
     </Project>
     <Project Include="UnitTests\System.Private.Uri.Unit.Tests.csproj">
       <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="UnitTests\System.Private.Uri.Unit.Tests.csproj">
-      <TestTFMs>netcore50;netcoreapp1.0;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>netcore50;netcoreapp1.0;net46</TestTFMs>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
