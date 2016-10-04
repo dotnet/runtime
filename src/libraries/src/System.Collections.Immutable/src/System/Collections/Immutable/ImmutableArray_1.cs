@@ -534,9 +534,17 @@ namespace System.Collections.Immutable
             }
 
             T[] tmp = new T[self.Length + 1];
-            Array.Copy(self.array, 0, tmp, 0, index);
             tmp[index] = item;
-            Array.Copy(self.array, index, tmp, index + 1, self.Length - index);
+
+            if (index != 0)
+            {
+                Array.Copy(self.array, 0, tmp, 0, index);
+            }
+            if (index != self.Length)
+            {
+                Array.Copy(self.array, index, tmp, index + 1, self.Length - index);
+            }
+            
             return new ImmutableArray<T>(tmp);
         }
 
