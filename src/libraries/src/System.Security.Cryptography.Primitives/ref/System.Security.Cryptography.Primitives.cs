@@ -10,13 +10,13 @@ namespace System.Security.Cryptography
 {
     public abstract partial class AsymmetricAlgorithm : System.IDisposable
     {
+        protected int KeySizeValue;
+        protected System.Security.Cryptography.KeySizes[] LegalKeySizesValue;
         protected AsymmetricAlgorithm() { }
         public virtual int KeySize { get { return default(int); } set { } }
         public virtual System.Security.Cryptography.KeySizes[] LegalKeySizes { get { return default(System.Security.Cryptography.KeySizes[]); } }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
-        protected int KeySizeValue;
-        protected KeySizes[] LegalKeySizesValue;
     }
     public enum CipherMode
     {
@@ -28,9 +28,18 @@ namespace System.Security.Cryptography
     {
         public CryptographicException() { }
         public CryptographicException(int hr) { }
+        protected CryptographicException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public CryptographicException(string message) { }
         public CryptographicException(string message, System.Exception inner) { }
         public CryptographicException(string format, string insert) { }
+    }
+    public partial class CryptographicUnexpectedOperationException : System.Security.Cryptography.CryptographicException
+    {
+        public CryptographicUnexpectedOperationException() { }
+        protected CryptographicUnexpectedOperationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public CryptographicUnexpectedOperationException(string message) { }
+        public CryptographicUnexpectedOperationException(string message, System.Exception inner) { }
+        public CryptographicUnexpectedOperationException(string format, string insert) { }
     }
     public partial class CryptoStream : System.IO.Stream, System.IDisposable
     {
@@ -43,24 +52,32 @@ namespace System.Security.Cryptography
         public override long Position { get { return default(long); } set { } }
         protected override void Dispose(bool disposing) { }
         public override void Flush() { }
-        public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
         public void FlushFinalBlock() { }
-        public override int Read(byte[] buffer, int offset, int count) { buffer = default(byte[]); return default(int); }
+        public override int Read(byte[] buffer, int offset, int count) { return default(int); }
         public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task<int>); }
+        public override int ReadByte() { return default(int); }
         public override long Seek(long offset, System.IO.SeekOrigin origin) { return default(long); }
         public override void SetLength(long value) { }
         public override void Write(byte[] buffer, int offset, int count) { }
         public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
+        public override void WriteByte(byte value) { }
     }
     public enum CryptoStreamMode
     {
         Read = 0,
         Write = 1,
     }
-    public abstract partial class HashAlgorithm : System.IDisposable
+    public abstract partial class HashAlgorithm : System.IDisposable, System.Security.Cryptography.ICryptoTransform
     {
+        protected internal byte[] HashValue;
+        protected int State;
         protected HashAlgorithm() { }
+        public virtual bool CanReuseTransform { get { return default(bool); } }
+        public virtual bool CanTransformMultipleBlocks { get { return default(bool); } }
+        public virtual byte[] Hash { get { return default(byte[]); } }
         public virtual int HashSize { get { return default(int); } }
+        public virtual int InputBlockSize { get { return default(int); } }
+        public virtual int OutputBlockSize { get { return default(int); } }
         public byte[] ComputeHash(byte[] buffer) { return default(byte[]); }
         public byte[] ComputeHash(byte[] buffer, int offset, int count) { return default(byte[]); }
         public byte[] ComputeHash(System.IO.Stream inputStream) { return default(byte[]); }
@@ -69,6 +86,8 @@ namespace System.Security.Cryptography
         protected abstract void HashCore(byte[] array, int ibStart, int cbSize);
         protected abstract byte[] HashFinal();
         public abstract void Initialize();
+        public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset) { return default(int); }
+        public byte[] TransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount) { return default(byte[]); }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct HashAlgorithmName : System.IEquatable<System.Security.Cryptography.HashAlgorithmName>
@@ -108,6 +127,7 @@ namespace System.Security.Cryptography
     }
     public abstract partial class KeyedHashAlgorithm : System.Security.Cryptography.HashAlgorithm
     {
+        protected byte[] KeyValue;
         protected KeyedHashAlgorithm() { }
         public virtual byte[] Key { get { return default(byte[]); } set { } }
         protected override void Dispose(bool disposing) { }
@@ -127,6 +147,14 @@ namespace System.Security.Cryptography
     }
     public abstract partial class SymmetricAlgorithm : System.IDisposable
     {
+        protected int BlockSizeValue;
+        protected byte[] IVValue;
+        protected int KeySizeValue;
+        protected byte[] KeyValue;
+        protected System.Security.Cryptography.KeySizes[] LegalBlockSizesValue;
+        protected System.Security.Cryptography.KeySizes[] LegalKeySizesValue;
+        protected System.Security.Cryptography.CipherMode ModeValue;
+        protected System.Security.Cryptography.PaddingMode PaddingValue;
         protected SymmetricAlgorithm() { }
         public virtual int BlockSize { get { return default(int); } set { } }
         public virtual byte[] IV { get { return default(byte[]); } set { } }
@@ -144,13 +172,5 @@ namespace System.Security.Cryptography
         protected virtual void Dispose(bool disposing) { }
         public abstract void GenerateIV();
         public abstract void GenerateKey();
-        protected CipherMode ModeValue;
-        protected PaddingMode PaddingValue;
-        protected byte[] KeyValue;
-        protected byte[] IVValue;
-        protected int BlockSizeValue;
-        protected int KeySizeValue;
-        protected KeySizes[] LegalBlockSizesValue;
-        protected KeySizes[] LegalKeySizesValue;
     }
 }

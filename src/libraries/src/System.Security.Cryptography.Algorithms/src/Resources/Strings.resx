@@ -195,6 +195,9 @@
   <data name="Cryptography_InvalidIVSize" xml:space="preserve">
     <value>Specified initialization vector (IV) does not match the block size for this algorithm.</value>
   </data>
+  <data name="Cryptography_InvalidOperation" xml:space="preserve">
+    <value>This operation is not supported for this class.</value>
+  </data>
   <data name="Cryptography_InvalidPadding" xml:space="preserve">
     <value>Specified padding mode is not valid for this algorithm.</value>
   </data>
@@ -209,6 +212,12 @@
   </data>
   <data name="Cryptography_MissingIV" xml:space="preserve">
     <value>The cipher mode specified requires that an initialization vector (IV) be used.</value>
+  </data>
+  <data name="Cryptography_MissingKey" xml:space="preserve">
+    <value>No asymmetric key object has been associated with this formatter object.</value>
+  </data>
+  <data name="Cryptography_MissingOID" xml:space="preserve">
+    <value>Required object identifier (OID) cannot be found.</value>
   </data>
   <data name="Cryptography_MustTransformWholeBlock" xml:space="preserve">
     <value>TransformBlock may only process bytes in block sized increments.</value>
