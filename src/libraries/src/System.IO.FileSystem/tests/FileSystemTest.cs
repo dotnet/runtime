@@ -4,7 +4,6 @@
 
 using System.Runtime.InteropServices;
 using Xunit;
-using XunitPlatformID = Xunit.PlatformID;
 
 namespace System.IO.Tests
 {
@@ -12,8 +11,8 @@ namespace System.IO.Tests
     {
         public static readonly byte[] TestBuffer = { 0xBA, 0x5E, 0xBA, 0x11, 0xF0, 0x07, 0xBA, 0x11 };
 
-        protected const XunitPlatformID CaseInsensitivePlatforms = XunitPlatformID.Windows | XunitPlatformID.OSX;
-        protected const XunitPlatformID CaseSensitivePlatforms = XunitPlatformID.AnyUnix & ~XunitPlatformID.OSX;
+        protected const TestPlatforms CaseInsensitivePlatforms = TestPlatforms.Windows | TestPlatforms.OSX;
+        protected const TestPlatforms CaseSensitivePlatforms = TestPlatforms.AnyUnix & ~TestPlatforms.OSX;
 
         /// <summary>
         /// In some cases (such as when running without elevated privileges),

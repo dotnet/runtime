@@ -9,7 +9,7 @@ namespace System.Globalization.Tests
     public class SortVersionMiscTests
     {
         [Fact]
-        [ActiveIssue(11614, Xunit.PlatformID.AnyUnix)]
+        [ActiveIssue(11614, TestPlatforms.AnyUnix)]
         public void ConstructionsTest()
         {
             string guidString =  "00000001-57ee-1e5c-00b4-d0000bb1e11e";
@@ -19,7 +19,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(11614, Xunit.PlatformID.AnyUnix)]
+        [ActiveIssue(11614, TestPlatforms.AnyUnix)]
         public void EquaityTest()
         {
             SortVersion version1 = new SortVersion(393742, new Guid("00000001-57ee-1e5c-00b4-d0000bb1e11e"));

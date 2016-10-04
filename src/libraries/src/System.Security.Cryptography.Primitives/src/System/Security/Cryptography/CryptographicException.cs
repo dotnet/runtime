@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Globalization;
+using System.Runtime.Serialization;
 
 namespace System.Security.Cryptography
 {
@@ -31,6 +32,11 @@ namespace System.Security.Cryptography
 
         public CryptographicException(string format, string insert)
             : base(string.Format(CultureInfo.CurrentCulture, format, insert))
+        {
+        }
+
+        protected CryptographicException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
         {
         }
     }

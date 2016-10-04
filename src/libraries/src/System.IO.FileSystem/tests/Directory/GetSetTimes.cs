@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
-using XunitPlatformID = Xunit.PlatformID;
 
 namespace System.IO.Tests
 {
@@ -121,7 +120,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(XunitPlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void Windows_DirectoryDoesntExist_ReturnDefaultValues()
         {
             string path = GetTestFilePath();
@@ -150,7 +149,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(XunitPlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void Unix_DirectoryDoesntExist_Throws()
         {
             string path = GetTestFilePath();

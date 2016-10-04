@@ -74,7 +74,7 @@ namespace System.Xml.Serialization
         {
             if (NamespaceList == null)
                 return Array.Empty<XmlQualifiedName>();
-            return (XmlQualifiedName[])NamespaceList.ToArray();
+            return (XmlQualifiedName[])NamespaceList.ToArray(typeof(XmlQualifiedName));
         }
 
         /// <devdoc>

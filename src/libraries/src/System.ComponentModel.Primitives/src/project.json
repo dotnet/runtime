@@ -1,19 +1,17 @@
 {
   "frameworks": {
-    "netstandard1.0": {
+    "netstandard1.7": {
       "dependencies": {
-        "System.ComponentModel": "4.0.0",
-        "System.Diagnostics.Tools": "4.0.0",
-        "System.Resources.ResourceManager": "4.0.0",
-        "System.Runtime": "4.0.0"
-      },
-      "imports": [
-        "dotnet5.1"
-      ]
+        "System.Collections.NonGeneric": "4.3.0-beta-24601-02",
+        "System.ComponentModel": "4.3.0-beta-24601-02",
+        "System.Resources.ResourceManager": "4.3.0-beta-24601-02",
+        "System.Runtime": "4.3.0-beta-24601-02",
+        "System.Threading": "4.3.0-beta-24601-02"
+      }
     },
-    "net45": {
+    "net463": {
       "dependencies": {
-        "Microsoft.TargetingPack.NETFramework.v4.5": "1.0.1"
+        "Microsoft.TargetingPack.NETFramework.v4.6.2": "1.0.1"
       }
     }
   }

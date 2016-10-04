@@ -18,6 +18,10 @@ namespace System.CodeDom.Compiler
 }
 namespace System.Diagnostics.CodeAnalysis
 {
+    [System.AttributeUsageAttribute((System.AttributeTargets)748, Inherited=false, AllowMultiple=false)]
+    public sealed partial class ExcludeFromCodeCoverageAttribute : System.Attribute {
+        public ExcludeFromCodeCoverageAttribute() { }
+    }    
     [System.AttributeUsageAttribute((System.AttributeTargets)(32767), Inherited = false, AllowMultiple = true)]
     [System.Diagnostics.ConditionalAttribute("CODE_ANALYSIS")]
     public sealed partial class SuppressMessageAttribute : System.Attribute

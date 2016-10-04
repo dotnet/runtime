@@ -1,18 +1,18 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!-- Source of truth for dependency tooling: the commit hash of the dotnet/versions master branch as of the last auto-upgrade. -->
   <PropertyGroup>
-    <CoreFxCurrentRef>59880c1f2a6f0ab8c0ef8ae30bff06fcb8d4c986</CoreFxCurrentRef>
-    <CoreClrCurrentRef>bb44aedaf4cb59864dda161ce2f5c7a9843b0586</CoreClrCurrentRef>
-    <ExternalCurrentRef>59880c1f2a6f0ab8c0ef8ae30bff06fcb8d4c986</ExternalCurrentRef>
-    <ProjectNTfsCurrentRef>59880c1f2a6f0ab8c0ef8ae30bff06fcb8d4c986</ProjectNTfsCurrentRef>
+    <CoreFxCurrentRef>450606241ffd24c3c9671cd002955a68e98008a7</CoreFxCurrentRef>
+    <CoreClrCurrentRef>450606241ffd24c3c9671cd002955a68e98008a7</CoreClrCurrentRef>
+    <ExternalCurrentRef>0db1f9d8996a6a05960f79712299652a4b04147f</ExternalCurrentRef>
+    <ProjectNTfsCurrentRef>450606241ffd24c3c9671cd002955a68e98008a7</ProjectNTfsCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>beta-24522-03</CoreFxExpectedPrerelease>
-    <CoreClrExpectedPrerelease>beta-24529-01</CoreClrExpectedPrerelease>
-    <ExternalExpectedPrerelease>beta-24522-00</ExternalExpectedPrerelease>
-    <ProjectNTfsExpectedPrerelease>beta-24522-01</ProjectNTfsExpectedPrerelease>
+    <CoreFxExpectedPrerelease>beta-24601-02</CoreFxExpectedPrerelease>
+    <CoreClrExpectedPrerelease>beta-24603-02</CoreClrExpectedPrerelease>
+    <ExternalExpectedPrerelease>beta-24523-00</ExternalExpectedPrerelease>
+    <ProjectNTfsExpectedPrerelease>beta-24603-00</ProjectNTfsExpectedPrerelease>
   </PropertyGroup>
 
   <!-- Full package version strings that are used in other parts of the build. -->
@@ -93,7 +93,7 @@
     </StaticDependency>
 
     <StaticDependency Include="Microsoft.xunit.netcore.extensions;Microsoft.DotNet.BuildTools.TestSuite">
-      <Version>1.0.0-prerelease-00807-03</Version>
+      <Version>1.0.0-prerelease-00830-02</Version>
     </StaticDependency>
 
     <PerformancePackDependency Include="Microsoft.DotNet.xunit.performance" />

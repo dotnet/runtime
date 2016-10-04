@@ -2,14 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Threading;
 
 namespace System.Linq.Expressions.Interpreter
 {
@@ -27,66 +22,31 @@ namespace System.Linq.Expressions.Interpreter
         internal static readonly object NoValue = new object();
         internal const int RethrowOnReturn = Int32.MaxValue;
 
-        private readonly int _localCount;
-        private readonly HybridReferenceDictionary<LabelTarget, BranchLabel> _labelMapping;
-        private readonly Dictionary<ParameterExpression, LocalVariable> _closureVariables;
-
         private readonly InstructionArray _instructions;
         internal readonly object[] _objects;
         internal readonly RuntimeLabel[] _labels;
-
-        internal readonly string _name;
         internal readonly DebugInfo[] _debugInfos;
 
         internal Interpreter(string name, LocalVariables locals, HybridReferenceDictionary<LabelTarget, BranchLabel> labelMapping,
             InstructionArray instructions, DebugInfo[] debugInfos)
         {
-            _name = name;
-            _localCount = locals.LocalCount;
-            _closureVariables = locals.ClosureVariables;
+            Name = name;
+            LocalCount = locals.LocalCount;
+            LabelMapping = labelMapping;
+            ClosureVariables = locals.ClosureVariables;
 
             _instructions = instructions;
             _objects = instructions.Objects;
             _labels = instructions.Labels;
-            _labelMapping = labelMapping;
-
             _debugInfos = debugInfos;
         }
 
-        internal int ClosureSize
-        {
-            get
-            {
-                if (_closureVariables == null)
-                {
-                    return 0;
-                }
-                return _closureVariables.Count;
-            }
-        }
-
-        internal int LocalCount
-        {
-            get
-            {
-                return _localCount;
-            }
-        }
-
-        internal InstructionArray Instructions
-        {
-            get { return _instructions; }
-        }
-
-        internal Dictionary<ParameterExpression, LocalVariable> ClosureVariables
-        {
-            get { return _closureVariables; }
-        }
-
-        internal HybridReferenceDictionary<LabelTarget, BranchLabel> LabelMapping
-        {
-            get { return _labelMapping; }
-        }
+        internal string Name { get; }
+        internal int LocalCount { get; }
+        internal int ClosureSize => ClosureVariables?.Count ?? 0;
+        internal InstructionArray Instructions => _instructions;
+        internal Dictionary<ParameterExpression, LocalVariable> ClosureVariables { get; }
+        internal HybridReferenceDictionary<LabelTarget, BranchLabel> LabelMapping { get; }
 
         /// <summary>
         /// Runs instructions within the given frame.

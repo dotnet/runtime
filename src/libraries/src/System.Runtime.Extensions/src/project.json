@@ -2,7 +2,7 @@
   "frameworks": {
     "netstandard1.7": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.2.0-beta-24529-01"
+        "Microsoft.TargetingPack.Private.CoreCLR": "1.2.0-beta-24603-02"
       },
       "imports": [
         "dnxcore50"
@@ -10,7 +10,7 @@
     },
     "netstandard1.5": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.2.0-beta-24529-01"
+        "Microsoft.TargetingPack.Private.CoreCLR": "1.2.0-beta-24603-02"
       },
       "imports": [
         "dnxcore50"
@@ -28,7 +28,7 @@
     },
     "netcore50": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.NETNative": "1.1.0-beta-24522-01",
+        "Microsoft.TargetingPack.Private.NETNative": "1.1.0-beta-24603-00",
         "Microsoft.TargetingPack.Private.WinRT": "1.0.1"
       }
     }

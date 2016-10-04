@@ -151,7 +151,7 @@ namespace System.Drawing
             return true;
         }
 
-        private static readonly string[] s_propertySort = {"X", "Y"};
+        private static readonly string[] s_propertySort = { "X", "Y" };
 
         public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
         {

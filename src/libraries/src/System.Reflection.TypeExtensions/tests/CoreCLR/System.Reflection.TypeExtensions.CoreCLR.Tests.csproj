@@ -42,8 +42,8 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="MemberInfo\MetadataToken.CoreCLR.cs" />
-    <Compile Include="Module\ModuleVersionId.CoreCLR.cs" />
+    <Compile Include="MemberInfoTests.CoreCLR.cs" />
+    <Compile Include="ModuleTests.CoreCLR.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -24,7 +24,7 @@ namespace System.Threading.Tests
             new Semaphore(initialCount, maximumCount, null).Dispose();
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [Fact]
         public void Ctor_ValidName_Windows()
         {
@@ -37,7 +37,7 @@ namespace System.Threading.Tests
             Assert.True(createdNew);
         }
 
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [Fact]
         public void Ctor_NamesArentSupported_Unix()
         {
@@ -73,7 +73,7 @@ namespace System.Threading.Tests
             Assert.Throws<ArgumentException>(() => new Semaphore(2, 1, "CtorSemaphoreTest", out createdNew));
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [Fact]
         public void Ctor_InvalidNames()
         {
@@ -167,7 +167,7 @@ namespace System.Threading.Tests
         }
         }
 
-        [PlatformSpecific(PlatformID.Windows)] // named semaphores aren't supported on Unix
+        [PlatformSpecific(TestPlatforms.Windows)] // named semaphores aren't supported on Unix
         [Fact]
         public void NamedProducerConsumer()
         {
@@ -196,7 +196,7 @@ namespace System.Threading.Tests
                 }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default));
         }
 
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [Fact]
         public void OpenExisting_NotSupported_Unix()
         {
@@ -207,7 +207,7 @@ namespace System.Threading.Tests
             Assert.Throws<PlatformNotSupportedException>(() => Semaphore.TryOpenExisting("anything", out semaphore));
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [Fact]
         public void OpenExisting_InvalidNames_Windows()
         {
@@ -216,7 +216,7 @@ namespace System.Threading.Tests
             Assert.Throws<ArgumentException>(() => Semaphore.OpenExisting(new string('a', 10000)));
         }
 
-        [PlatformSpecific(PlatformID.Windows)] // named semaphores aren't supported on Unix
+        [PlatformSpecific(TestPlatforms.Windows)] // named semaphores aren't supported on Unix
         [Fact]
         public void OpenExisting_UnavailableName_Windows()
         {
@@ -226,7 +226,7 @@ namespace System.Threading.Tests
             Assert.False(Semaphore.TryOpenExisting(name, out ignored));
         }
 
-        [PlatformSpecific(PlatformID.Windows)] // named semaphores aren't supported on Unix
+        [PlatformSpecific(TestPlatforms.Windows)] // named semaphores aren't supported on Unix
         [Fact]
         public void OpenExisting_NameUsedByOtherSynchronizationPrimitive_Windows()
         {
@@ -239,7 +239,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [PlatformSpecific(PlatformID.Windows)] // named semaphores aren't supported on Unix
+        [PlatformSpecific(TestPlatforms.Windows)] // named semaphores aren't supported on Unix
         [Fact]
         public void OpenExisting_SameAsOriginal_Windows()
         {
@@ -277,7 +277,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [PlatformSpecific(PlatformID.Windows)] // names aren't supported on Unix
+        [PlatformSpecific(TestPlatforms.Windows)] // names aren't supported on Unix
         [Fact]
         public void PingPong()
         {

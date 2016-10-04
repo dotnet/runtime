@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
@@ -42,12 +40,8 @@ namespace System.Linq.Expressions.Interpreter
         {
         }
 
-        public override int ProducedStack { get { return 1; } }
-
-        public override string InstructionName
-        {
-            get { return "LoadLocal"; }
-        }
+        public override int ProducedStack => 1;
+        public override string InstructionName => "LoadLocal";
 
         public override int Run(InterpretedFrame frame)
         {
@@ -68,12 +62,8 @@ namespace System.Linq.Expressions.Interpreter
         {
         }
 
-        public override int ProducedStack { get { return 1; } }
-
-        public override string InstructionName
-        {
-            get { return "LoadLocalBox"; }
-        }
+        public override int ProducedStack => 1;
+        public override string InstructionName => "LoadLocalBox";
 
         public override int Run(InterpretedFrame frame)
         {
@@ -90,12 +80,8 @@ namespace System.Linq.Expressions.Interpreter
         {
         }
 
-        public override int ProducedStack { get { return 1; } }
-
-        public override string InstructionName
-        {
-            get { return "LoadLocalClosure"; }
-        }
+        public override int ProducedStack => 1;
+        public override string InstructionName => "LoadLocalClosure";
 
         public override int Run(InterpretedFrame frame)
         {
@@ -112,12 +98,8 @@ namespace System.Linq.Expressions.Interpreter
         {
         }
 
-        public override int ProducedStack { get { return 1; } }
-
-        public override string InstructionName
-        {
-            get { return "LoadLocal"; }
-        }
+        public override int ProducedStack => 1;
+        public override string InstructionName => "LoadLocal";
 
         public override int Run(InterpretedFrame frame)
         {
@@ -138,13 +120,9 @@ namespace System.Linq.Expressions.Interpreter
         {
         }
 
-        public override int ConsumedStack { get { return 1; } }
-        public override int ProducedStack { get { return 1; } }
-
-        public override string InstructionName
-        {
-            get { return "AssignLocal"; }
-        }
+        public override int ConsumedStack => 1;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "AssignLocal";
 
         public override int Run(InterpretedFrame frame)
         {
@@ -165,12 +143,8 @@ namespace System.Linq.Expressions.Interpreter
         {
         }
 
-        public override int ConsumedStack { get { return 1; } }
-
-        public override string InstructionName
-        {
-            get { return "StoreLocal"; }
-        }
+        public override int ConsumedStack => 1;
+        public override string InstructionName => "StoreLocal";
 
         public override int Run(InterpretedFrame frame)
         {
@@ -191,13 +165,9 @@ namespace System.Linq.Expressions.Interpreter
         {
         }
 
-        public override int ConsumedStack { get { return 1; } }
-        public override int ProducedStack { get { return 1; } }
-
-        public override string InstructionName
-        {
-            get { return "AssignLocalBox"; }
-        }
+        public override int ConsumedStack => 1;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "AssignLocalBox";
 
         public override int Run(InterpretedFrame frame)
         {
@@ -214,13 +184,9 @@ namespace System.Linq.Expressions.Interpreter
         {
         }
 
-        public override int ConsumedStack { get { return 1; } }
-        public override int ProducedStack { get { return 0; } }
-
-        public override string InstructionName
-        {
-            get { return "StoreLocalBox"; }
-        }
+        public override int ConsumedStack => 1;
+        public override int ProducedStack => 0;
+        public override string InstructionName => "StoreLocalBox";
 
         public override int Run(InterpretedFrame frame)
         {
@@ -237,13 +203,9 @@ namespace System.Linq.Expressions.Interpreter
         {
         }
 
-        public override int ConsumedStack { get { return 1; } }
-        public override int ProducedStack { get { return 1; } }
-
-        public override string InstructionName
-        {
-            get { return "AssignLocalClosure"; }
-        }
+        public override int ConsumedStack => 1;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "AssignLocalClosure";
 
         public override int Run(InterpretedFrame frame)
         {
@@ -257,17 +219,11 @@ namespace System.Linq.Expressions.Interpreter
     {
         public static readonly ValueTypeCopyInstruction Instruction = new ValueTypeCopyInstruction();
 
-        public ValueTypeCopyInstruction()
-        {
-        }
+        public ValueTypeCopyInstruction() { }
 
-        public override int ConsumedStack { get { return 1; } }
-        public override int ProducedStack { get { return 1; } }
-
-        public override string InstructionName
-        {
-            get { return "ValueTypeCopy"; }
-        }
+        public override int ConsumedStack => 1;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "ValueTypeCopy";
 
         public override int Run(InterpretedFrame frame)
         {
@@ -307,10 +263,7 @@ namespace System.Linq.Expressions.Interpreter
                 return (index == _index) ? InstructionList.InitImmutableRefBox(index) : null;
             }
 
-            public override string InstructionName
-            {
-                get { return "InitRef"; }
-            }
+            public override string InstructionName => "InitRef";
         }
 
         internal sealed class ImmutableValue : InitializeLocalInstruction, IBoxableInstruction
@@ -335,10 +288,7 @@ namespace System.Linq.Expressions.Interpreter
                 return (index == _index) ? new ImmutableBox(index, _defaultValue) : null;
             }
 
-            public override string InstructionName
-            {
-                get { return "InitImmutableValue"; }
-            }
+            public override string InstructionName => "InitImmutableValue";
         }
 
         internal sealed class ImmutableBox : InitializeLocalInstruction
@@ -359,10 +309,7 @@ namespace System.Linq.Expressions.Interpreter
                 return 1;
             }
 
-            public override string InstructionName
-            {
-                get { return "InitImmutableBox"; }
-            }
+            public override string InstructionName => "InitImmutableBox";
         }
 
         internal sealed class ImmutableRefBox : InitializeLocalInstruction
@@ -379,10 +326,7 @@ namespace System.Linq.Expressions.Interpreter
                 return 1;
             }
 
-            public override string InstructionName
-            {
-                get { return "InitImmutableBox"; }
-            }
+            public override string InstructionName => "InitImmutableBox";
         }
 
         internal sealed class ParameterBox : InitializeLocalInstruction
@@ -398,10 +342,7 @@ namespace System.Linq.Expressions.Interpreter
                 return 1;
             }
 
-            public override string InstructionName
-            {
-                get { return "InitParameterBox"; }
-            }
+            public override string InstructionName => "InitParameterBox";
         }
 
         internal sealed class Parameter : InitializeLocalInstruction, IBoxableInstruction
@@ -426,10 +367,7 @@ namespace System.Linq.Expressions.Interpreter
                 return null;
             }
 
-            public override string InstructionName
-            {
-                get { return "InitParameter"; }
-            }
+            public override string InstructionName => "InitParameter";
         }
 
         internal sealed class MutableValue : InitializeLocalInstruction, IBoxableInstruction
@@ -462,10 +400,7 @@ namespace System.Linq.Expressions.Interpreter
                 return (index == _index) ? new MutableBox(index, _type) : null;
             }
 
-            public override string InstructionName
-            {
-                get { return "InitMutableValue"; }
-            }
+            public override string InstructionName => "InitMutableValue";
         }
 
         internal sealed class MutableBox : InitializeLocalInstruction
@@ -497,10 +432,7 @@ namespace System.Linq.Expressions.Interpreter
                 return 1;
             }
 
-            public override string InstructionName
-            {
-                get { return "InitMutableBox"; }
-            }
+            public override string InstructionName => "InitMutableBox";
         }
     }
 
@@ -517,8 +449,8 @@ namespace System.Linq.Expressions.Interpreter
             _count = count;
         }
 
-        public override int ProducedStack { get { return 1; } }
-        public override int ConsumedStack { get { return _count; } }
+        public override int ProducedStack => 1;
+        public override int ConsumedStack => _count;
 
         public override int Run(InterpretedFrame frame)
         {
@@ -531,15 +463,9 @@ namespace System.Linq.Expressions.Interpreter
             return +1;
         }
 
-        public override string InstructionName
-        {
-            get { return "GetRuntimeVariables"; }
-        }
+        public override string InstructionName => "GetRuntimeVariables";
 
-        public override string ToString()
-        {
-            return "GetRuntimeVariables()";
-        }
+        public override string ToString() => "GetRuntimeVariables()";
     }
     #endregion
 }

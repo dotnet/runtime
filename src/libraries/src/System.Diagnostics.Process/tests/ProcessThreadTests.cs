@@ -61,7 +61,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.OSX)]
+        [PlatformSpecific(TestPlatforms.OSX)]
         public void TestStartTimeProperty_OSX()
         {
             using (Process p = Process.GetCurrentProcess())
@@ -78,7 +78,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/974
-        [PlatformSpecific(~PlatformID.OSX)] // OSX throws PNSE from StartTime
+        [PlatformSpecific(~TestPlatforms.OSX)] // OSX throws PNSE from StartTime
         public async Task TestStartTimeProperty()
         {
             TimeSpan allowedWindow = TimeSpan.FromSeconds(1);

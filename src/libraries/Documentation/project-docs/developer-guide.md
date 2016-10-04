@@ -186,7 +186,7 @@ xunit.console.netcore.exe *.dll -trait category=outerloop
 msbuild *.csproj /p:WithCategories=OuterLoop
 ```
 
-_**`PlatformSpecific(Xunit.PlatformID platforms)`:**_
+_**`PlatformSpecific(TestPlatforms platforms)`:**_
 Use this attribute on test methods to specify that this test may only be run on the specified platforms. This attribute returns the following categories based on platform
 
        - `nonwindowstests`: for tests that don't run on Windows
@@ -198,7 +198,7 @@ To run Linux-specific tests on a Linux box, use the following command line:
 xunit.console.netcore.exe *.dll -notrait category=nonlinuxtests
 ```
 
-_**`ActiveIssue(int issue, Xunit.PlatformID platforms)`:**_
+_**`ActiveIssue(int issue, TestPlatforms platforms)`:**_
 Use this attribute over test methods, to skip failing tests only on the specific platforms, if no platforms are specified, then the test is skipped on all platforms. This attribute returns the 'failing' category, so to run all acceptable tests on Linux that are not failing, use the following commandline,
 ```sh
 xunit.console.netcore.exe *.dll -notrait category=failing -notrait category=nonlinuxtests

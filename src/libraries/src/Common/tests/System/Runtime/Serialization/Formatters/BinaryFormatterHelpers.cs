@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Runtime.Serialization.Formatters.Tests
 {
-    internal static class BinaryFormatterHelpers
+    public static class BinaryFormatterHelpers
     {
         internal static T Clone<T>(T obj)
         {
@@ -21,7 +21,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             }
         }
 
-        internal static void AssertRoundtrips<T>(T expected, params Func<T, object>[] additionalGetters)
+        public static void AssertRoundtrips<T>(T expected, params Func<T, object>[] additionalGetters)
             where T : Exception
         {
             for (int i = 0; i < 2; i++)

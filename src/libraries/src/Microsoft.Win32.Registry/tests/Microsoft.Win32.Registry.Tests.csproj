@@ -25,6 +25,7 @@
     </Compile>
     <Compile Include="Helpers.cs" />
     <Compile Include="RegistryKey\RegistryKey_GetValue_CorruptData.cs" />
+    <Compile Include="Registry\Registry_Fields.cs" />
     <Compile Include="Registry\Registry_Getvalue_str_str_obj.cs" />
     <Compile Include="Registry\Registry_SetValue_str_str_obj.cs" />
     <Compile Include="Registry\Registry_SetValue_str_str_obj_valuekind.cs" />

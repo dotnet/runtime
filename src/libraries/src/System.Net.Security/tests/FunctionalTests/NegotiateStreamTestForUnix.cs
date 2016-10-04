@@ -112,7 +112,7 @@ namespace System.Net.Security.Tests
         }
     }
 
-    [PlatformSpecific(PlatformID.Linux)]
+    [PlatformSpecific(TestPlatforms.Linux)]
     [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
     public class NegotiateStreamTest : IDisposable, IClassFixture<KDCSetup>
     {
@@ -151,7 +151,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact, OuterLoop]
-        [PlatformSpecific(PlatformID.Linux)]
+        [PlatformSpecific(TestPlatforms.Linux)]
         public void NegotiateStream_StreamToStream_KerberosAuthentication_Success()
         {
             if (!_isKrbAvailable)
@@ -184,7 +184,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact, OuterLoop]
-        [PlatformSpecific(PlatformID.Linux)]
+        [PlatformSpecific(TestPlatforms.Linux)]
         public void NegotiateStream_StreamToStream_AuthToHttpTarget_Success()
         {
             if (!_isKrbAvailable)
@@ -217,7 +217,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact, OuterLoop]
-        [PlatformSpecific(PlatformID.Linux)]
+        [PlatformSpecific(TestPlatforms.Linux)]
         public void NegotiateStream_StreamToStream_KerberosAuthWithoutRealm_Success()
         {
             if (!_isKrbAvailable)
@@ -249,7 +249,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact, OuterLoop]
-        [PlatformSpecific(PlatformID.Linux)]
+        [PlatformSpecific(TestPlatforms.Linux)]
         public void NegotiateStream_StreamToStream_KerberosAuthDefaultCredentials_Success()
         {
             if (!_isKrbAvailable)
@@ -284,7 +284,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact, OuterLoop]
-        [PlatformSpecific(PlatformID.Linux)]
+        [PlatformSpecific(TestPlatforms.Linux)]
         public void NegotiateStream_EchoServer_ClientWriteRead_Successive_Sync_Success()
         {
             if (!_isKrbAvailable)
@@ -328,7 +328,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact, OuterLoop]
-        [PlatformSpecific(PlatformID.Linux)]
+        [PlatformSpecific(TestPlatforms.Linux)]
         public void NegotiateStream_EchoServer_ClientWriteRead_Successive_Async_Success()
         {
             if (!_isKrbAvailable)
@@ -385,7 +385,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact, OuterLoop]
-        [PlatformSpecific(PlatformID.Linux)]
+        [PlatformSpecific(TestPlatforms.Linux)]
         public void NegotiateStream_StreamToStream_KerberosAuthDefaultCredentialsNoSeed_Failure()
         {
             if (!_isKrbAvailable)
@@ -408,7 +408,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact, OuterLoop]
-        [PlatformSpecific(PlatformID.Linux)]
+        [PlatformSpecific(TestPlatforms.Linux)]
         public void NegotiateStream_StreamToStream_KerberosAuthInvalidUser_Failure()
         {
             if (!_isKrbAvailable)
@@ -435,7 +435,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact, OuterLoop]
-        [PlatformSpecific(PlatformID.Linux)]
+        [PlatformSpecific(TestPlatforms.Linux)]
         public void NegotiateStream_StreamToStream_KerberosAuthInvalidPassword_Failure()
         {
             if (!_isKrbAvailable)
@@ -463,7 +463,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact, OuterLoop]
-        [PlatformSpecific(PlatformID.Linux)]
+        [PlatformSpecific(TestPlatforms.Linux)]
         public void NegotiateStream_StreamToStream_KerberosAuthInvalidTarget_Failure()
         {
             if (!_isKrbAvailable)
@@ -519,7 +519,7 @@ namespace System.Net.Security.Tests
 
         [Theory, OuterLoop]
         [MemberData(nameof(ValidNtlmCredentials))]
-        [PlatformSpecific(PlatformID.Linux)]
+        [PlatformSpecific(TestPlatforms.Linux)]
         public void NegotiateStream_StreamToStream_NtlmAuthentication_ValidCredentials_Success(NetworkCredential credential)
         {
             if (!_isNtlmAvailable)
@@ -565,7 +565,7 @@ namespace System.Net.Security.Tests
      
         [Fact, OuterLoop]
         [ActiveIssue(7825)]
-        [PlatformSpecific(PlatformID.Linux)]
+        [PlatformSpecific(TestPlatforms.Linux)]
         public void NegotiateStream_StreamToStream_NtlmAuthentication_Fallback_Success()
         {
             if (!_isNtlmAvailable)
@@ -610,7 +610,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact, OuterLoop]
-        [PlatformSpecific(PlatformID.Linux)]
+        [PlatformSpecific(TestPlatforms.Linux)]
         public void NegotiateStream_StreamToStream_NtlmAuthentication_KerberosCreds_Success()
         {
             if (!_isNtlmAvailable)
@@ -656,7 +656,7 @@ namespace System.Net.Security.Tests
 
         [Fact, OuterLoop]
         [ActiveIssue(7825)]
-        [PlatformSpecific(PlatformID.Linux)]
+        [PlatformSpecific(TestPlatforms.Linux)]
         public void NegotiateStream_EchoServer_NTLM_ClientWriteRead_Successive_Sync_Success()
         {
             if (!_isNtlmAvailable)
@@ -705,7 +705,7 @@ namespace System.Net.Security.Tests
 
         [Fact, OuterLoop]
         [ActiveIssue(7825)]
-        [PlatformSpecific(PlatformID.Linux)]
+        [PlatformSpecific(TestPlatforms.Linux)]
         public void NegotiateStream_EchoServer_NTLM_ClientWriteRead_Successive_Async_Success()
         {
             if (!_isNtlmAvailable)
@@ -759,7 +759,7 @@ namespace System.Net.Security.Tests
 
         [Theory, OuterLoop]
         [MemberData(nameof(InvalidNtlmCredentials))]
-        [PlatformSpecific(PlatformID.Linux)]
+        [PlatformSpecific(TestPlatforms.Linux)]
         public void NegotiateStream_StreamToStream_NtlmAuthentication_NtlmUser_InvalidCredentials_Fail(NetworkCredential credential)
         {
             if (!_isNtlmAvailable)

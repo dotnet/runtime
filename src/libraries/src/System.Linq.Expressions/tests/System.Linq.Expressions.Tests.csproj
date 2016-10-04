@@ -108,6 +108,7 @@
     <Compile Include="Goto\MakeGoto.cs" />
     <Compile Include="Goto\Return.cs" />
     <Compile Include="HelperTypes.cs" />
+    <Compile Include="ILReader\ITypeFactory.cs" />
     <Compile Include="IndexExpression\IndexExpressionHelpers.cs" />
     <Compile Include="IndexExpression\IndexExpressionVisitorTests.cs" />
     <Compile Include="IndexExpression\SampleClassWithProperties.cs" />
@@ -216,6 +217,21 @@
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\System\PlatformDetection.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(IsInterpreting)' != 'true' ">
+    <Compile Include="ILReader\DynamicMethodILProvider.cs" />
+    <Compile Include="ILReader\DynamicScopeTokenResolver.cs" />
+    <Compile Include="ILReader\FormatProvider.cs" />
+    <Compile Include="ILReader\ILInstruction.cs" />
+    <Compile Include="ILReader\ILProvider.cs" />
+    <Compile Include="ILReader\ILReader.cs" />
+    <Compile Include="ILReader\ILReaderFactory.cs" />
+    <Compile Include="ILReader\ReadableILStringVisitor.cs" />
+    <Compile Include="ILReader\TokenResolver.cs" />
+    <Compile Include="ILReader\ILPrinter.cs" />
+    <Compile Include="ILReader\PrivateReflectionHelpers.cs" />
+    <Compile Include="ILReader\LocalsSignatureParser.cs" />
+    <Compile Include="ILReader\SigParser.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Linq.Expressions.csproj">

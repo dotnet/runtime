@@ -24,6 +24,14 @@ namespace System.Reflection.Tests
             Assert.Equal(MemberTypes.Property, property.MemberType);
         }
 
+        [Fact]
+        public void SetValue_CantWrite_ThrowsArgumentException()
+        {
+            PropertyInfo property = Helpers.GetProperty(typeof(PI_SubClass), nameof(PI_BaseClass.PublicGetPrivateSetProperty));
+            Assert.False(property.CanWrite);
+            Assert.Throws<ArgumentException>(null, () => property.SetValue(new PI_SubClass(), 5));
+        }
+
         [Theory]
         [InlineData(typeof(PI_BaseClass), nameof(PI_BaseClass.PublicGetPublicSetProperty), true, false, true, false)]
         [InlineData(typeof(PI_BaseClass), nameof(PI_BaseClass.PublicGetProperty1), true, false, false, false)]
@@ -36,6 +44,7 @@ namespace System.Reflection.Tests
         [InlineData(typeof(PI_Interface), nameof(PI_Interface.GetSetProperty), true, false, true, false)]
         [InlineData(typeof(PI_SubClass), nameof(PI_SubClass.PublicGetProperty2), true, false, false, false)]
         [InlineData(typeof(PI_AbstractClass), nameof(PI_AbstractClass.PublicGetPublicSetProperty), true, false, true, false)]
+        [InlineData(typeof(PI_SubClass), nameof(PI_BaseClass.PublicGetPrivateSetProperty), true, false, false, false)]
         public void GetGetMethod_GetSetMethod(Type type, string name, bool hasGetter, bool nonPublicGetter, bool hasSetter, bool nonPublicSetter)
         {
             PropertyInfo property = Helpers.GetProperty(type, name);
@@ -99,6 +108,7 @@ namespace System.Reflection.Tests
         public int PublicSetProperty { set { } }
 
         protected int ProtectedGetProtectedSetProperty { get { return 0; } set { } }
+        public int PublicGetPrivateSetProperty { get; private set; }
     }
 
     public interface PI_Interface

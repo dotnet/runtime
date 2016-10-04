@@ -5,20 +5,20 @@
     <ProjectGuid>{17CB2E3C-2904-4241-94DB-3894D24F35DA}</ProjectGuid>
     <AssemblyName>System.Xml.XPath.XmlDocument</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
     <ProjectReference Include="..\..\System.Private.Xml\src\System.Private.Xml.csproj" />
     <ProjectReference Include="..\..\System.Xml.XPath\src\System.Xml.XPath.csproj" />
     <ProjectReference Include="..\..\System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj" />
     <ProjectReference Include="..\..\System.Xml.XmlDocument\src\System.Xml.XmlDocument.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System.Xml" />
   </ItemGroup>

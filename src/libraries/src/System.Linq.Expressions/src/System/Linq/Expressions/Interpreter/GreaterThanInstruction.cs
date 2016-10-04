@@ -2,12 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions.Interpreter
 {
@@ -17,12 +14,9 @@ namespace System.Linq.Expressions.Interpreter
         private static Instruction s_SByte, s_int16, s_char, s_int32, s_int64, s_byte, s_UInt16, s_UInt32, s_UInt64, s_single, s_double;
         private static Instruction s_liftedToNullSByte, s_liftedToNullInt16, s_liftedToNullChar, s_liftedToNullInt32, s_liftedToNullInt64, s_liftedToNullByte, s_liftedToNullUInt16, s_liftedToNullUInt32, s_liftedToNullUInt64, s_liftedToNullSingle, s_liftedToNullDouble;
 
-        public override int ConsumedStack { get { return 2; } }
-        public override int ProducedStack { get { return 1; } }
-        public override string InstructionName
-        {
-            get { return "GreaterThan"; }
-        }
+        public override int ConsumedStack => 2;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "GreaterThan";
 
         private GreaterThanInstruction(object nullValue)
         {
@@ -327,10 +321,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        public override string ToString()
-        {
-            return "GreaterThan()";
-        }
+        public override string ToString() => "GreaterThan()";
     }
 
     internal abstract class GreaterThanOrEqualInstruction : Instruction
@@ -339,12 +330,10 @@ namespace System.Linq.Expressions.Interpreter
         private static Instruction s_SByte, s_int16, s_char, s_int32, s_int64, s_byte, s_UInt16, s_UInt32, s_UInt64, s_single, s_double;
         private static Instruction s_liftedToNullSByte, s_liftedToNullInt16, s_liftedToNullChar, s_liftedToNullInt32, s_liftedToNullInt64, s_liftedToNullByte, s_liftedToNullUInt16, s_liftedToNullUInt32, s_liftedToNullUInt64, s_liftedToNullSingle, s_liftedToNullDouble;
 
-        public override int ConsumedStack { get { return 2; } }
-        public override int ProducedStack { get { return 1; } }
-        public override string InstructionName
-        {
-            get { return "GreaterThanOrEqual"; }
-        }
+        public override int ConsumedStack => 2;
+        public override int ProducedStack => 1;
+        public override string InstructionName => "GreaterThanOrEqual";
+        
         private GreaterThanOrEqualInstruction(object nullValue)
         {
             _nullValue = nullValue;
@@ -648,9 +637,6 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        public override string ToString()
-        {
-            return "GreaterThanOrEqual()";
-        }
+        public override string ToString() => "GreaterThanOrEqual()";
     }
 }

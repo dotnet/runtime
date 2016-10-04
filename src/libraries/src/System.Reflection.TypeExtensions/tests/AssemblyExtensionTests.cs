@@ -12,7 +12,7 @@ namespace System.Reflection.Tests
         public void GetExportedTypesTest()
         {
             Assembly executingAssembly = GetType().GetTypeInfo().Assembly;
-            Assert.True(executingAssembly.GetExportedTypes().Length >= 120);
+            Assert.True(executingAssembly.GetExportedTypes().Length >= 60);
         }
 
         [Fact]
@@ -26,7 +26,7 @@ namespace System.Reflection.Tests
         public void GetTypes()
         {
             Assembly executingAssembly = GetType().GetTypeInfo().Assembly;
-            Assert.True(executingAssembly.GetTypes().Length >= 175);
+            Assert.True(executingAssembly.GetTypes().Length >= 140);
         }
     }
 }

@@ -52,7 +52,7 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        internal static void GetDefaultIdentityAndHash(ref object identity, ref string hash, char separator)
+        internal static void GetDefaultIdentityAndHash(out object identity, out string hash, char separator)
         {
             // NetFX (desktop CLR) IsolatedStorage uses identity from System.Security.Policy.Evidence to build
             // the folder structure on disk. It would use the "best" available evidence in this order:

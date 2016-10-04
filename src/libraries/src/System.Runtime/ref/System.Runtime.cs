@@ -259,6 +259,10 @@ namespace System
         public static void Resize<T>(ref T[] array, int newSize) { }
         public static void Reverse(System.Array array) { }
         public static void Reverse(System.Array array, int index, int length) { }
+#if netcoreapp11
+        public static void Reverse<T>(T[] array) { }
+        public static void Reverse<T>(T[] array, int index, int length) { }
+#endif
         public void SetValue(object value, int index) { }
         public void SetValue(object value, int index1, int index2) { }
         public void SetValue(object value, int index1, int index2, int index3) { }
@@ -337,6 +341,9 @@ namespace System
         protected Attribute() { }
         public override bool Equals(object obj) { return default(bool); }
         public override int GetHashCode() { return default(int); }
+        public virtual bool IsDefaultAttribute() { return default(bool); }
+        public virtual bool Match(object obj) { return default(bool); }
+        public virtual object TypeId { get { return default(bool); } }
     }
     [System.FlagsAttribute]
     public enum AttributeTargets
@@ -983,6 +990,10 @@ namespace System
         public static bool IsDefined(System.Type enumType, object value) { return default(bool); }
         public static object Parse(System.Type enumType, string value) { return default(object); }
         public static object Parse(System.Type enumType, string value, bool ignoreCase) { return default(object); }
+#if netcoreapp11
+        public static TEnum Parse<TEnum>(String value) where TEnum : struct { return default(TEnum); }
+        public static TEnum Parse<TEnum>(String value, bool ignoreCase) where TEnum : struct { return default(TEnum); }
+#endif
         System.TypeCode System.IConvertible.GetTypeCode() { return default(System.TypeCode); }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { return default(bool); }
         byte System.IConvertible.ToByte(System.IFormatProvider provider) { return default(byte); }
@@ -1018,6 +1029,10 @@ namespace System
         public string ToString(System.IFormatProvider provider) { return default(string); }        
         [System.ObsoleteAttribute("The provider argument is not used. Please use ToString(String).")]
         public string ToString(string format, System.IFormatProvider provider) { return default(string); }
+#if netcoreapp11
+        public static bool TryParse(System.Type enumType, string value, out object result) { result = default(object); return default(bool); }
+        public static bool TryParse(System.Type enumType, string value, bool ignoreCase, out object result) { result = default(object); return default(bool); }
+#endif
         public static bool TryParse<TEnum>(string value, out TEnum result) where TEnum : struct { result = default(TEnum); return default(bool); }
         public static bool TryParse<TEnum>(string value, bool ignoreCase, out TEnum result) where TEnum : struct { result = default(TEnum); return default(bool); }
     }
@@ -1332,6 +1347,9 @@ namespace System
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct IntPtr
+#if netcoreapp11
+: IEquatable<IntPtr>
+#endif
     {
         public static readonly System.IntPtr Zero;
         public IntPtr(int value) { throw new System.NotImplementedException(); }
@@ -1342,6 +1360,9 @@ namespace System
         public static int Size { get { return default(int); } }
         public static System.IntPtr Add(System.IntPtr pointer, int offset) { return default(System.IntPtr); }
         public override bool Equals(object obj) { return default(bool); }
+#if netcoreapp11
+        bool IEquatable<IntPtr>.Equals(IntPtr other) { return default(bool); }
+#endif
         public override int GetHashCode() { return default(int); }
         public static System.IntPtr operator +(System.IntPtr pointer, int offset) { return default(System.IntPtr); }
         public static bool operator ==(System.IntPtr value1, System.IntPtr value2) { return default(bool); }
@@ -1409,6 +1430,9 @@ namespace System
     public partial class Lazy<T>
     {
         public Lazy() { }
+#if netcoreapp11
+        public Lazy(T value) { }
+#endif
         public Lazy(bool isThreadSafe) { }
         public Lazy(System.Func<T> valueFactory) { }
         public Lazy(System.Func<T> valueFactory, bool isThreadSafe) { }
@@ -1420,7 +1444,7 @@ namespace System
     }
     public abstract partial class MarshalByRefObject
     {
-        internal MarshalByRefObject() { }
+        protected MarshalByRefObject() { }
     }
     public partial class Lazy<T, TMetadata> : System.Lazy<T>
     {
@@ -2596,6 +2620,9 @@ namespace System
     [System.CLSCompliantAttribute(false)]
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct UIntPtr
+#if netcoreapp11
+: IEquatable<UIntPtr>    
+#endif
     {
         public static readonly System.UIntPtr Zero;
         public UIntPtr(uint value) { throw new System.NotImplementedException(); }
@@ -2606,6 +2633,9 @@ namespace System
         public static int Size { get { return default(int); } }
         public static System.UIntPtr Add(System.UIntPtr pointer, int offset) { return default(System.UIntPtr); }
         public override bool Equals(object obj) { return default(bool); }
+#if netcoreapp11
+        bool IEquatable<UIntPtr>.Equals(UIntPtr other) { return default(bool); }
+#endif
         public override int GetHashCode() { return default(int); }
         public static System.UIntPtr operator +(System.UIntPtr pointer, int offset) { return default(System.UIntPtr); }
         public static bool operator ==(System.UIntPtr value1, System.UIntPtr value2) { return default(bool); }
@@ -5593,6 +5623,9 @@ namespace System.Runtime.CompilerServices
         public static void PrepareMethod(System.RuntimeMethodHandle method, System.RuntimeTypeHandle[] instantiation) { }
         [System.Security.SecurityCriticalAttribute]
         public static void ProbeForSufficientStack() { }
+#if netcoreapp11
+        public static bool TryEnsureSufficientExecutionStack() { return default(bool); }
+#endif
    }
    [System.AttributeUsageAttribute((System.AttributeTargets)(64), Inherited = false, AllowMultiple = false)]
     public partial class StateMachineAttribute : System.Attribute

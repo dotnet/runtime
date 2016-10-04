@@ -27,7 +27,7 @@ namespace System.Net.Sockets.Tests
 
         [Fact]
         [OuterLoop("Issue #11345")]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void Disconnect_Success()
         {
             AutoResetEvent completed = new AutoResetEvent(false);
@@ -61,7 +61,7 @@ namespace System.Net.Sockets.Tests
 
         [Fact]
         [OuterLoop("Issue #11345")]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void DisconnectAsync_Success()
         {
             AutoResetEvent completed = new AutoResetEvent(false);
@@ -97,7 +97,7 @@ namespace System.Net.Sockets.Tests
 
         [Fact]
         [OuterLoop("Issue #11345")]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void BeginDisconnect_Success()
         {
             AutoResetEvent completed = new AutoResetEvent(false);
@@ -129,7 +129,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~PlatformID.Windows)]
+        [PlatformSpecific(~TestPlatforms.Windows)]
         public void Disconnect_NonWindows_NotSupported()
         {
             using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -139,7 +139,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~PlatformID.Windows)]
+        [PlatformSpecific(~TestPlatforms.Windows)]
         public void DisconnectAsync_NonWindows_NotSupported()
         {
             using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -151,7 +151,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~PlatformID.Windows)]
+        [PlatformSpecific(~TestPlatforms.Windows)]
         public void BeginDisconnect_NonWindows_NotSupported()
         {
             using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))

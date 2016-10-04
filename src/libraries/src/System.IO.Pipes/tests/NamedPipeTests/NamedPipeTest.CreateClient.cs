@@ -67,7 +67,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void NotSupportedPipePath_Throws_PlatformNotSupportedException()
         {
             string hostName;

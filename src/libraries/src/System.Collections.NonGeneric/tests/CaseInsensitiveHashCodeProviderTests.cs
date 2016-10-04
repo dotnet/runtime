@@ -158,6 +158,7 @@ namespace System.Collections.Tests
             Assert.Throws<ArgumentNullException>("obj", () => new CaseInsensitiveHashCodeProvider().GetHashCode(null));
         }
 
+        [ActiveIssue(11598)]
         [Theory]
         [InlineData("hello", "HELLO", true)]
         [InlineData("hello", "hello", true)]

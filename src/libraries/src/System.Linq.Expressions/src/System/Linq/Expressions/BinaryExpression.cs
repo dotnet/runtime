@@ -266,25 +266,25 @@ namespace System.Linq.Expressions
 
             var index = (IndexExpression)_left;
 
-            var vars = new List<ParameterExpression>(index.ArgumentCount + 2);
-            var exprs = new List<Expression>(index.ArgumentCount + 3);
+            var vars = new ArrayBuilder<ParameterExpression>(index.ArgumentCount + 2);
+            var exprs = new ArrayBuilder<Expression>(index.ArgumentCount + 3);
 
             var tempObj = Expression.Variable(index.Object.Type, "tempObj");
             vars.Add(tempObj);
             exprs.Add(Expression.Assign(tempObj, index.Object));
 
             var n = index.ArgumentCount;
-            var tempArgs = new List<Expression>(n);
+            var tempArgs = new ArrayBuilder<Expression>(n);
             for (var i = 0; i < n; i++)
             {
                 var arg = index.GetArgument(i);
-                var tempArg = Expression.Variable(arg.Type, "tempArg" + tempArgs.Count);
+                var tempArg = Expression.Variable(arg.Type, "tempArg" + i);
                 vars.Add(tempArg);
                 tempArgs.Add(tempArg);
                 exprs.Add(Expression.Assign(tempArg, arg));
             }
 
-            var tempIndex = Expression.MakeIndex(tempObj, index.Indexer, tempArgs);
+            var tempIndex = Expression.MakeIndex(tempObj, index.Indexer, tempArgs.ToReadOnly());
 
             // tempValue = tempObj[tempArg0, ... tempArgN] (op) r
             ExpressionType binaryOp = GetBinaryOpFromAssignmentOp(NodeType);
@@ -301,7 +301,7 @@ namespace System.Linq.Expressions
             // tempObj[tempArg0, ... tempArgN] = tempValue
             exprs.Add(Expression.Assign(tempIndex, tempValue));
 
-            return Expression.Block(vars, exprs);
+            return Expression.Block(vars.ToReadOnly(), exprs.ToReadOnly());
         }
 
         /// <summary>

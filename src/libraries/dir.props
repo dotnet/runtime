@@ -499,17 +499,11 @@
 
   <!-- Default Test platform to deploy the netstandard compiled tests to -->
   <PropertyGroup>
-    <TestTFM Condition="'$(TestTFM)'=='' and ('$(TargetGroup)'=='netstandard1.7' or '$(TargetGroup)'=='netcoreapp1.1')">netcoreapp1.1</TestTFM>
-    <TestTFM Condition="'$(TestTFM)'==''">netcoreapp1.0</TestTFM>
-    <!-- we default FilterToTestTFM to netcoreapp1.1 if it is not explicity defined -->
-    <FilterToTestTFM Condition="'$(FilterToTestTFM)'==''">netcoreapp1.1</FilterToTestTFM>
+    <DefaultTestTFM>netcoreapp1.1</DefaultTestTFM>
+    <TestTFM Condition="'$(TestTFM)'==''">$(DefaultTestTFM)</TestTFM>
+    <!-- we default FilterToTestTFM to DefaultTestTFM if it is not explicity defined -->
+    <FilterToTestTFM Condition="'$(FilterToTestTFM)'==''">$(DefaultTestTFM)</FilterToTestTFM>
   </PropertyGroup>
-
-  <ItemGroup>
-    <TestNugetTargetMoniker Include=".NETCoreApp,Version=v1.1" Condition="'$(TestTFM)' == 'netcoreapp1.1'">
-      <Folder>netcoreapp1.1</Folder>
-    </TestNugetTargetMoniker>
-  </ItemGroup>
 
   <PropertyGroup>
     <IsRedistAssembly Condition="'$(IsRedistAssembly)'=='' AND ($(MSBuildProjectFullPath.Contains('\redist\')) OR $(MSBuildProjectFullPath.Contains('/redist/')))">true</IsRedistAssembly>

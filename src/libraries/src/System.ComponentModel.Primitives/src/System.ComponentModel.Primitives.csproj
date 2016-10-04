@@ -5,8 +5,8 @@
     <ProjectGuid>{F620F382-30D1-451E-B125-2A612F92068B}</ProjectGuid>
     <RootNamespace>System.ComponentModel.Primitives</RootNamespace>
     <AssemblyName>System.ComponentModel.Primitives</AssemblyName>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net45'">true</IsPartialFacadeAssembly>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net463'">true</IsPartialFacadeAssembly>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -37,7 +37,10 @@
     <Compile Include="System\ComponentModel\RefreshProperties.cs" />
     <Compile Include="System\ComponentModel\RefreshPropertiesAttribute.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='net45'">
+  <ItemGroup Condition="'$(TargetGroup)'==''">
+    <Compile Include="System\ComponentModel\Component.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='net463'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
   </ItemGroup>

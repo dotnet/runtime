@@ -44,6 +44,15 @@ namespace System.Reflection.PortableExecutable
         /// </summary>
         public Characteristics Characteristics { get; }
 
+        internal const int Size =
+            sizeof(short) + // Machine
+            sizeof(short) + // NumberOfSections
+            sizeof(int) +   // TimeDateStamp:
+            sizeof(int) +   // PointerToSymbolTable
+            sizeof(int) +   // NumberOfSymbols
+            sizeof(short) + // SizeOfOptionalHeader:
+            sizeof(ushort); // Characteristics
+
         internal CoffHeader(ref PEBinaryReader reader)
         {
             Machine = (Machine)reader.ReadUInt16();

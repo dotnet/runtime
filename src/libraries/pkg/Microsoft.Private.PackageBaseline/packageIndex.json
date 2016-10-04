@@ -630,7 +630,8 @@
         "4.1.0"
       ],
       "AssemblyVersionInPackageVersion": {
-        "4.2.0.0": "4.3.0"
+        "4.2.0.0": "4.3.0",
+        "4.1.1.0": "4.3.0"
       }
     },
     "runtime.unix.System.Private.Uri": {
@@ -697,7 +698,8 @@
         "4.1.0"
       ],
       "AssemblyVersionInPackageVersion": {
-        "4.2.0.0": "4.3.0"
+        "4.2.0.0": "4.3.0",
+        "4.1.1.0": "4.3.0"
       }
     },
     "runtime.win.System.Runtime.Extensions": {
@@ -892,7 +894,7 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.1.0.0": "4.1.0",
-        "4.1.1.0": "4.3.0"
+        "4.2.0.0": "4.3.0"
       }
     },
     "System.ComponentModel.TypeConverter": {
@@ -1031,7 +1033,7 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
-        "4.0.2.0": "4.3.0"
+        "4.1.0.0": "4.3.0"
       }
     },
     "System.Diagnostics.TraceSource": {
@@ -1215,7 +1217,7 @@
       "BaselineVersion": "4.0.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
-        "4.0.1.0": "4.3.0"
+        "4.1.0.0": "4.3.0"
       }
     },
     "System.IO.IsolatedStorage": {
@@ -1446,7 +1448,8 @@
         "4.1.0.0": "4.1.0",
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.1.0",
-        "4.2.0.0": "4.3.0"
+        "4.2.0.0": "4.3.0",
+        "4.1.1.0": "4.3.0"
       }
     },
     "System.Net.WebClient": {
@@ -1998,7 +2001,8 @@
       "BaselineVersion": "4.0.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
-        "4.0.1.0": "4.3.0"
+        "4.0.1.0": "4.0.1",
+        "4.1.0.0": "4.3.0"
       }
     },
     "System.Security.Cryptography.ProtectedData": {
@@ -2329,8 +2333,8 @@
       "BaselineVersion": "4.0.1",
       "AssemblyVersionInPackageVersion": {
         "4.0.1.0": "4.0.1",
-        "4.0.2.0": "4.3.0",
-        "4.0.0.0": "4.0.0"
+        "4.0.0.0": "4.0.0",
+        "4.1.0.0": "4.3.0"
       }
     },
     "Microsoft.Private.PackageBaseline": {},

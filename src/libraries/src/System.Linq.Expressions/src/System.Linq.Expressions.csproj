@@ -144,6 +144,7 @@
     <Compile Include="System\Linq\Expressions\StackGuard.cs" />
     <Compile Include="System\Linq\IQueryable.cs" />
     <Compile Include="System\Runtime\CompilerServices\IRuntimeVariables.cs" />
+    <Compile Include="System\Linq\Expressions\Common\ArrayBuilder.cs" />
     <Compile Include="System\Linq\Expressions\Common\ConstantCheck.cs" />
     <Compile Include="System\Linq\Expressions\Common\CachedReflectionInfo.cs" />
     <Compile Include="System\Runtime\CompilerServices\ReadOnlyCollectionBuilder.cs" />
@@ -195,20 +196,26 @@
       <Link>Common\System\Dynamic\Utils\DelegateHelpers.cs</Link>
     </Compile>
     <Compile Include="System\Linq\Expressions\Interpreter\AddInstruction.cs" />
+    <Compile Include="System\Linq\Expressions\Interpreter\AndInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\ArrayOperations.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\BranchLabel.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\CallInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\CallInstruction.Generated.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\ControlFlowInstructions.cs" />
+    <Compile Include="System\Linq\Expressions\Interpreter\DecrementInstruction.cs" />
+    <Compile Include="System\Linq\Expressions\Interpreter\DefaultValueInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\DivInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\EqualInstruction.cs" />
+    <Compile Include="System\Linq\Expressions\Interpreter\ExclusiveOrInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\FieldOperations.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\GreaterThanInstruction.cs" />
+    <Compile Include="System\Linq\Expressions\Interpreter\IncrementInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\Instruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\InstructionList.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\InterpretedFrame.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\Interpreter.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\LabelInfo.cs" />
+    <Compile Include="System\Linq\Expressions\Interpreter\LeftShiftInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\LessThanInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\LightCompiler.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\LightDelegateCreator.cs" />
@@ -217,8 +224,13 @@
     <Compile Include="System\Linq\Expressions\Interpreter\LocalAccess.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\LocalVariables.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\MulInstruction.cs" />
+    <Compile Include="System\Linq\Expressions\Interpreter\NegateInstruction.cs" />
+    <Compile Include="System\Linq\Expressions\Interpreter\NewInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\NotEqualInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\NumericConvertInstruction.cs" />
+    <Compile Include="System\Linq\Expressions\Interpreter\OrInstruction.cs" />
+    <Compile Include="System\Linq\Expressions\Interpreter\OnesComplementInstruction.cs" />
+    <Compile Include="System\Linq\Expressions\Interpreter\RightShiftInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\RuntimeVariables.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\StackOperations.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\SubInstruction.cs" />

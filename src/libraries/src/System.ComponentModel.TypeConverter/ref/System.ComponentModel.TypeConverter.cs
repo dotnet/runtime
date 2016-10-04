@@ -5,6 +5,8 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.ComponentModel.Component))]
+
 namespace System
 {
     public partial class UriTypeConverter : System.ComponentModel.TypeConverter
@@ -103,18 +105,6 @@ namespace System.ComponentModel
         public override System.ComponentModel.PropertyDescriptorCollection GetProperties(System.ComponentModel.ITypeDescriptorContext context, object value, System.Attribute[] attributes) { throw null; }
         public override bool GetPropertiesSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
     }
-    public partial class Component : System.IDisposable
-    {
-        public Component() { }
-        protected virtual bool CanRaiseEvents { get { throw null; } }
-        protected bool DesignMode { get { throw null; } }
-        public virtual System.ComponentModel.ISite Site { get { throw null; } set { } }
-        public void Dispose() { }
-        protected virtual void Dispose(bool disposing) { }
-        ~Component() { }
-        protected virtual object GetService(System.Type service) { throw null; }
-        public override string ToString() { throw null; }
-    }
     public abstract partial class CustomTypeDescriptor : System.ComponentModel.ICustomTypeDescriptor
     {
         protected CustomTypeDescriptor() { }
@@ -193,9 +183,9 @@ namespace System.ComponentModel
     }
     public abstract partial class EventDescriptor : System.ComponentModel.MemberDescriptor
     {
-        protected EventDescriptor(System.ComponentModel.MemberDescriptor descr) : base (default(string)) { }
-        protected EventDescriptor(System.ComponentModel.MemberDescriptor descr, System.Attribute[] attrs) : base (default(string)) { }
-        protected EventDescriptor(string name, System.Attribute[] attrs) : base (default(string)) { }
+        protected EventDescriptor(System.ComponentModel.MemberDescriptor descr) : base(default(string)) { }
+        protected EventDescriptor(System.ComponentModel.MemberDescriptor descr, System.Attribute[] attrs) : base(default(string)) { }
+        protected EventDescriptor(string name, System.Attribute[] attrs) : base(default(string)) { }
         public abstract System.Type ComponentType { get; }
         public abstract System.Type EventType { get; }
         public abstract bool IsMulticast { get; }
@@ -382,9 +372,9 @@ namespace System.ComponentModel
     }
     public abstract partial class PropertyDescriptor : System.ComponentModel.MemberDescriptor
     {
-        protected PropertyDescriptor(System.ComponentModel.MemberDescriptor descr) : base (default(string)) { }
-        protected PropertyDescriptor(System.ComponentModel.MemberDescriptor descr, System.Attribute[] attrs) : base (default(string)) { }
-        protected PropertyDescriptor(string name, System.Attribute[] attrs) : base (default(string)) { }
+        protected PropertyDescriptor(System.ComponentModel.MemberDescriptor descr) : base(default(string)) { }
+        protected PropertyDescriptor(System.ComponentModel.MemberDescriptor descr, System.Attribute[] attrs) : base(default(string)) { }
+        protected PropertyDescriptor(string name, System.Attribute[] attrs) : base(default(string)) { }
         public abstract System.Type ComponentType { get; }
         public virtual System.ComponentModel.TypeConverter Converter { get { throw null; } }
         public virtual bool IsLocalizable { get { throw null; } }
@@ -457,7 +447,7 @@ namespace System.ComponentModel
         void System.Collections.IList.Insert(int index, object value) { }
         void System.Collections.IList.Remove(object value) { }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(4), AllowMultiple=true)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(4), AllowMultiple = true)]
     public sealed partial class ProvidePropertyAttribute : System.Attribute
     {
         public ProvidePropertyAttribute(string propertyName, string receiverTypeName) { }
@@ -540,8 +530,8 @@ namespace System.ComponentModel
         protected System.ComponentModel.PropertyDescriptorCollection SortProperties(System.ComponentModel.PropertyDescriptorCollection props, string[] names) { throw null; }
         protected abstract partial class SimplePropertyDescriptor : System.ComponentModel.PropertyDescriptor
         {
-            protected SimplePropertyDescriptor(System.Type componentType, string name, System.Type propertyType) : base (default(string), default(System.Attribute[])) { }
-            protected SimplePropertyDescriptor(System.Type componentType, string name, System.Type propertyType, System.Attribute[] attributes) : base (default(string), default(System.Attribute[])) { }
+            protected SimplePropertyDescriptor(System.Type componentType, string name, System.Type propertyType) : base(default(string), default(System.Attribute[])) { }
+            protected SimplePropertyDescriptor(System.Type componentType, string name, System.Type propertyType, System.Attribute[] attributes) : base(default(string), default(System.Attribute[])) { }
             public override System.Type ComponentType { get { throw null; } }
             public override bool IsReadOnly { get { throw null; } }
             public override System.Type PropertyType { get { throw null; } }
@@ -589,7 +579,7 @@ namespace System.ComponentModel
         public virtual System.ComponentModel.ICustomTypeDescriptor GetTypeDescriptor(System.Type objectType, object instance) { throw null; }
         public virtual bool IsSupportedType(System.Type type) { throw null; }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(4), Inherited=true)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(4), Inherited = true)]
     public sealed partial class TypeDescriptionProviderAttribute : System.Attribute
     {
         public TypeDescriptionProviderAttribute(string typeName) { }

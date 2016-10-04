@@ -88,11 +88,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                             break;
                         }
                     }
-                }
 
-                if (toAdd != null)
-                {
-                    Assert.ThrowsAny<CryptographicException>(() => store.Add(toAdd));
+                    if (toAdd != null)
+                    {
+                        Assert.ThrowsAny<CryptographicException>(() => store.Add(toAdd));
+                    }
                 }
             }
         }
@@ -155,7 +155,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public static void OpenMachineMyStore_Supported()
         {
             using (X509Store store = new X509Store(StoreName.My, StoreLocation.LocalMachine))
@@ -165,7 +165,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void OpenMachineMyStore_NotSupported()
         {
             using (X509Store store = new X509Store(StoreName.My, StoreLocation.LocalMachine))
@@ -175,7 +175,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Theory]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [InlineData(OpenFlags.ReadOnly, false)]
         [InlineData(OpenFlags.MaxAllowed, false)]
         [InlineData(OpenFlags.ReadWrite, true)]

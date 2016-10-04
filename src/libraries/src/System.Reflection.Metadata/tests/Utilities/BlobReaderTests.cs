@@ -319,5 +319,41 @@ namespace System.Reflection.Metadata.Tests
                 Assert.Equal(bytesRead, 0);
             }
         }
+
+        [Fact]
+        public unsafe void IndexOf()
+        {
+            byte[] buffer = new byte[]
+            {
+                0xF0, 0x90, 0x8D,
+            };
+
+            fixed (byte* bufferPtr = buffer)
+            {
+                var reader = new BlobReader(bufferPtr, buffer.Length);
+
+                Assert.Equal(0, reader.IndexOf(0xF0));
+                Assert.Equal(1, reader.IndexOf(0x90));
+                Assert.Equal(2, reader.IndexOf(0x8D));
+                Assert.Equal(-1, reader.IndexOf(0x8C));
+                Assert.Equal(-1, reader.IndexOf(0));
+                Assert.Equal(-1, reader.IndexOf(0xff));
+
+                reader.ReadByte();
+                Assert.Equal(-1, reader.IndexOf(0xF0));
+                Assert.Equal(0, reader.IndexOf(0x90));
+                Assert.Equal(1, reader.IndexOf(0x8D));
+
+                reader.ReadByte();
+                Assert.Equal(-1, reader.IndexOf(0xF0));
+                Assert.Equal(-1, reader.IndexOf(0x90));
+                Assert.Equal(0, reader.IndexOf(0x8D));
+
+                reader.ReadByte();
+                Assert.Equal(-1, reader.IndexOf(0xF0));
+                Assert.Equal(-1, reader.IndexOf(0x90));
+                Assert.Equal(-1, reader.IndexOf(0x8D));
+            }
+        }
     }
 }

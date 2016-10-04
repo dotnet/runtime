@@ -9,7 +9,7 @@ namespace System.IO.Tests
     public class Directory_Move_Tests : FileSystemWatcherTest
     {
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void Directory_Move_To_Same_Directory()
         {
             DirectoryMove_SameDirectory(WatcherChangeTypes.Renamed);
@@ -22,14 +22,14 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void Windows_Directory_Move_To_Different_Watched_Directory()
         {
             DirectoryMove_DifferentWatchedDirectory(WatcherChangeTypes.Changed);
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void Unix_Directory_Move_To_Different_Watched_Directory()
         {
             DirectoryMove_DifferentWatchedDirectory(0);

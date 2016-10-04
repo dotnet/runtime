@@ -24,7 +24,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(CultureInfo_TestData))]
-        [ActiveIssue(11609, Xunit.PlatformID.AnyUnix)]
+        [ActiveIssue(11609, TestPlatforms.AnyUnix)]
         public void LcidTest(string cultureName, int lcid, string specificCultureName, string threeLetterISOLanguageName, string threeLetterWindowsLanguageName)
         {
             CultureInfo ci = new CultureInfo(lcid);
@@ -75,7 +75,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(11609, Xunit.PlatformID.AnyUnix)]
+        [ActiveIssue(11609, TestPlatforms.AnyUnix)]
         public void InstalledUICultureTest()
         {
             // as we didn't change current UI culture, Installed UI culture should match current UI culture
@@ -83,7 +83,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(11609, Xunit.PlatformID.AnyUnix)]
+        [ActiveIssue(11609, TestPlatforms.AnyUnix)]
         public void GetCulturesTest()
         {
             foreach (CultureInfo ci in CultureInfo.GetCultures(CultureTypes.NeutralCultures))
@@ -94,7 +94,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(11609, Xunit.PlatformID.AnyUnix)]
+        [ActiveIssue(11609, TestPlatforms.AnyUnix)]
         public void ClearCachedDataTest()
         {
             CultureInfo ci = CultureInfo.GetCultureInfo("ja-JP");
@@ -104,7 +104,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(11609, Xunit.PlatformID.AnyUnix)]
+        [ActiveIssue(11609, TestPlatforms.AnyUnix)]
         public void CultureNotFoundExceptionTest()
         {
             Assert.Throws<CultureNotFoundException>("name", () => new CultureInfo("!@#$%^&*()"));

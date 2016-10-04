@@ -1,10 +1,10 @@
 {
   "dependencies": {
-    "NETStandard.Library": "1.6.1-beta-24522-03",
-    "Microsoft.NETCore.TestHost": "1.2.0-beta-24529-01",
-    "Microsoft.NETCore.Runtime.CoreCLR": "1.2.0-beta-24529-01",
-    "System.Diagnostics.Contracts": "4.3.0-beta-24522-03",
-    "System.Linq.Parallel": "4.3.0-beta-24522-03",
+    "NETStandard.Library": "1.6.1-beta-24601-02",
+    "Microsoft.NETCore.TestHost": "1.2.0-beta-24603-02",
+    "Microsoft.NETCore.Runtime.CoreCLR": "1.2.0-beta-24603-02",
+    "System.Diagnostics.Contracts": "4.3.0-beta-24601-02",
+    "System.Linq.Parallel": "4.3.0-beta-24601-02",
     "coveralls.io": "1.4",
     "OpenCover": "4.6.519",
     "ReportGenerator": "2.4.3",
@@ -12,7 +12,7 @@
     "Microsoft.DotNet.xunit.performance.analysis.cli": "1.0.0-alpha-build0040",
     "Microsoft.DotNet.xunit.performance.runner.cli": "1.0.0-alpha-build0040",
     "Microsoft.DotNet.xunit.performance.runner.Windows": "1.0.0-alpha-build0040",
-    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00807-03",
+    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00830-02",
     "xunit.console.netcore": "1.0.3-prerelease-00607-01"
   },
   "frameworks": {
@@ -60,7 +60,7 @@
         "System.Text.Encoding.CodePages": "4.0.1",
         "System.Xml.XmlSerializer": "4.0.11",
         "Microsoft.NETCore.UniversalWindowsPlatform": "5.2.1-beta-000547-00",
-        "System.Console": "4.3.0-beta-24522-03",
+        "System.Console": "4.3.0-beta-24601-02",
         "microsoft.xunit.runner.uwp": "1.0.3-prerelease-00826-05",
         "Microsoft.DotNet.TestILC": {
           "version": "1.4.24208-prerelease",

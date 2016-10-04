@@ -123,7 +123,7 @@ namespace System.Linq.Expressions.Compiler
                 Type objectType = null;
                 if (node.Expression != null)
                 {
-                    EmitInstance(node.Expression, objectType = node.Expression.Type);
+                    EmitInstance(node.Expression, out objectType);
                 }
                 EmitMemberAddress(node.Member, objectType);
             }
@@ -281,7 +281,7 @@ namespace System.Linq.Expressions.Compiler
             Type instanceType = null;
             if (node.Expression != null)
             {
-                EmitInstance(node.Expression, instanceType = node.Expression.Type);
+                EmitInstance(node.Expression, out instanceType);
 
                 // store in local
                 _ilg.Emit(OpCodes.Dup);
@@ -330,7 +330,7 @@ namespace System.Linq.Expressions.Compiler
             Type instanceType = null;
             if (node.Object != null)
             {
-                EmitInstance(node.Object, instanceType = node.Object.Type);
+                EmitInstance(node.Object, out instanceType);
 
                 // store in local
                 _ilg.Emit(OpCodes.Dup);
@@ -340,7 +340,7 @@ namespace System.Linq.Expressions.Compiler
             // Emit indexes. We don't allow byref args, so no need to worry
             // about write-backs or EmitAddress
             var n = node.ArgumentCount;
-            List<LocalBuilder> args = new List<LocalBuilder>(n);
+            var args = new LocalBuilder[n];
             for (var i = 0; i < n; i++)
             {
                 var arg = node.GetArgument(i);
@@ -349,7 +349,7 @@ namespace System.Linq.Expressions.Compiler
                 var argLocal = GetLocal(arg.Type);
                 _ilg.Emit(OpCodes.Dup);
                 _ilg.Emit(OpCodes.Stloc, argLocal);
-                args.Add(argLocal);
+                args[i] = argLocal;
             }
 
             // emit the get

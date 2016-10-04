@@ -614,6 +614,9 @@ namespace System.Net.Sockets
         // Returns:
         // 
         //     An IASyncResult, representing the read.
+#if !netcore50
+        override
+#endif
         public IAsyncResult BeginRead(byte[] buffer, int offset, int size, AsyncCallback callback, Object state)
         {
 #if DEBUG
@@ -727,6 +730,9 @@ namespace System.Net.Sockets
         // Returns:
         // 
         //     The number of bytes read. May throw an exception.
+#if !netcore50
+        override
+#endif
         public int EndRead(IAsyncResult asyncResult)
         {
 #if DEBUG
@@ -785,6 +791,9 @@ namespace System.Net.Sockets
         // Returns:
         // 
         //     An IASyncResult, representing the write.
+#if !netcore50
+        override
+#endif
         public IAsyncResult BeginWrite(byte[] buffer, int offset, int size, AsyncCallback callback, Object state)
         {
 #if DEBUG
@@ -908,6 +917,9 @@ namespace System.Net.Sockets
         // This method is called when an async write is completed. All we
         // do is call through to the core socket EndSend functionality.
         // Returns:  The number of bytes read. May throw an exception.
+#if !netcore50
+        override
+#endif
         public void EndWrite(IAsyncResult asyncResult)
         {
 #if DEBUG

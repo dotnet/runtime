@@ -55,7 +55,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void TestBasePriorityOnWindows()
         {
             ProcessPriorityClass originalPriority = _process.PriorityClass;
@@ -80,7 +80,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact] 
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [OuterLoop]
         [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
         public void TestBasePriorityOnUnix()
@@ -149,7 +149,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [Fact]
         public void TestUseShellExecute_Unix_Succeeds()
         {
@@ -418,7 +418,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/968
-        [PlatformSpecific(~PlatformID.OSX)] // getting/setting affinity not supported on OSX
+        [PlatformSpecific(~TestPlatforms.OSX)] // getting/setting affinity not supported on OSX
         public void TestProcessorAffinity()
         {
             IntPtr curProcessorAffinity = _process.ProcessorAffinity;
@@ -453,7 +453,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact] 
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [OuterLoop]
         [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
         public void TestPriorityClassUnix()
@@ -473,7 +473,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact, PlatformSpecific(PlatformID.Windows)]
+        [Fact, PlatformSpecific(TestPlatforms.Windows)]
         public void TestPriorityClassWindows()
         {
             ProcessPriorityClass priorityClass = _process.PriorityClass;
@@ -598,7 +598,7 @@ namespace System.Diagnostics.Tests
             return true;
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [ConditionalTheory(nameof(ProcessPeformanceCounterEnabled))]
         [MemberData(nameof(GetTestProcess))]
         public void TestProcessOnRemoteMachineWindows(Process currentProcess, Process remoteProcess)
@@ -611,7 +611,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<NotSupportedException>(() => remoteProcess.MainModule);
         }
 
-        [Fact, PlatformSpecific(PlatformID.AnyUnix)]
+        [Fact, PlatformSpecific(TestPlatforms.AnyUnix)]
         public void TestProcessOnRemoteMachineUnix()
         {
             Process currentProcess = Process.GetCurrentProcess();
@@ -726,7 +726,7 @@ namespace System.Diagnostics.Tests
             Assert.NotEqual(0, e.NativeErrorCode);
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         // NativeErrorCode not 193 on Windows Nano for ERROR_BAD_EXE_FORMAT, issue #10290
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void TestStartOnWindowsWithBadFileFormat()
@@ -738,7 +738,7 @@ namespace System.Diagnostics.Tests
             Assert.NotEqual(0, e.NativeErrorCode);
         }
 
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [Fact]
         public void TestStartOnUnixWithBadPermissions()
         {
@@ -750,7 +750,7 @@ namespace System.Diagnostics.Tests
             Assert.NotEqual(0, e.NativeErrorCode);
         }
 
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [Fact]
         public void TestStartOnUnixWithBadFormat()
         {

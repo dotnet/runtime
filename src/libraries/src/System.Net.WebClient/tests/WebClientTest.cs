@@ -5,7 +5,7 @@
 using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
+using System.Net.Cache;
 using System.Net.Test.Common;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,7 +22,7 @@ namespace System.Net.Tests
             var wc = new WebClient();
 
             Assert.Empty(wc.BaseAddress);
-            //Assert.Null(wc.CachePolicy); // TODO: Uncomment when member added
+            Assert.Null(wc.CachePolicy);
             Assert.Null(wc.Credentials);
             Assert.Equal(Encoding.Default, wc.Encoding);
             Assert.Empty(wc.Headers);
@@ -261,15 +261,14 @@ namespace System.Net.Tests
             Assert.Equal(string.Empty, wc.BaseAddress);
         }
 
-        // TODO: Uncomment when member added
-        //[Fact]
-        //public static void CachePolicy_Roundtrips()
-        //{
-        //    var wc = new WebClient();
-        //    var c = new RequestCachePolicy(RequestCacheLevel.BypassCache);
-        //    wc.CachePolicy = c;
-        //    Assert.Same(c, wc.CachePolicy);
-        //}
+        [Fact]
+        public static void CachePolicy_Roundtrips()
+        {
+            var wc = new WebClient();
+            var c = new RequestCachePolicy(RequestCacheLevel.BypassCache);
+            wc.CachePolicy = c;
+            Assert.Same(c, wc.CachePolicy);
+        }
 
         [Fact]
         public static void Credentials_Roundtrips()

@@ -167,6 +167,9 @@ namespace System.Reflection.Tests
         [InlineData(typeof(IGenericInterfaceInherits<int, string>), new Type[] { typeof(IGenericInterface<int>), typeof(IGenericInterface2<string, int>) })]
         [InlineData(typeof(GenericClassUsingNestedInterfaces<int, string>), new Type[] { typeof(IGenericInterfaceInherits<int, string>), typeof(IGenericInterface<int>), typeof(IGenericInterface2<string, int>) })]
         [InlineData(typeof(NonGenericClassWithGenericInterface), new Type[] { typeof(IGenericInterface<int>) })]
+        [InlineData(typeof(TI_StructWithInterfaces), new Type[] { typeof(TI_Interface1), typeof(TI_Interface3) })]
+        [InlineData(typeof(TI_StructWithInterfaces?), new Type[0])]
+        [InlineData(typeof(TI_Struct?), new Type[0])]
         public void GetInterfaces(Type type, Type[] expected)
         {
             Type[] interfaces = type.GetInterfaces();
@@ -508,6 +511,13 @@ namespace System.Reflection.Tests
             yield return new object[] { typeof(uint[]), typeof(int[]), true };
             yield return new object[] { typeof(IList<int>), typeof(uint[]), true };
             yield return new object[] { typeof(IList<uint>), typeof(int[]), true };
+
+            yield return new object[] { typeof(int?), typeof(int), true };
+            yield return new object[] { typeof(int), typeof(int?), false };
+            yield return new object[] { typeof(int?[]), typeof(int[]), false };
+
+            yield return new object[] { typeof(TI_Interface1), typeof(TI_StructWithInterfaces), true };
+            yield return new object[] { typeof(TI_StructWithInterfaces), typeof(TI_Interface1), false };
         }
 
         [Theory]
@@ -517,6 +527,26 @@ namespace System.Reflection.Tests
             TypeInfo typeInfo = type.GetTypeInfo();
             Assert.Equal(expected, typeInfo.IsAssignableFrom(type2?.GetTypeInfo()));
             Assert.True(typeInfo.IsAssignableFrom(typeInfo));
+        }
+
+        public static IEnumerable<object[]> IsInstanceOfType_TestData()
+        {
+            yield return new object[] { typeof(float), 1.0234F, true };
+            yield return new object[] { typeof(string), "this is a string", true };
+            yield return new object[] { typeof(int?), 100, true };
+        }
+
+        [Theory]
+        [MemberData(nameof(IsInstanceOfType_TestData))]
+        public void IsInstanceOfType(Type type, object value, bool expected)
+        {
+            Assert.Equal(expected, type.IsInstanceOfType(value));
+        }
+
+        [Fact]
+        public void IsInstanceOfType_NullableTypeAndValue_ReturnsTrue()
+        {
+            Assert.True(typeof(int?).IsInstanceOfType((int?)100));
         }
 
         [Theory]
@@ -563,6 +593,22 @@ namespace System.Reflection.Tests
             Assert.Equal(type.GetTypeInfo().IsImport, typeInfo.IsImport);
             Assert.Equal(type.GetTypeInfo().IsEnum, typeInfo.IsEnum);
             Assert.Equal(type.GetTypeInfo().IsGenericTypeDefinition, typeInfo.IsGenericTypeDefinition);
+        }
+
+        [Fact]
+        public static void GetType_NullableObject_ReturnsUnderlyingObjectType()
+        {
+            TI_GenericStruct<Type> notNullable = new TI_GenericStruct<Type>();
+            Assert.IsType<TI_GenericStruct<Type>>(notNullable);
+
+            TI_GenericStruct<Type>? nullable = notNullable;
+            Assert.IsType<TI_GenericStruct<Type>>(nullable);
+
+            object boxed = nullable;
+            Assert.IsType<TI_GenericStruct<Type>>(boxed);
+
+            TI_GenericStruct<Type>? unboxed = (TI_GenericStruct<Type>?)boxed;
+            Assert.IsType<TI_GenericStruct<Type>>(boxed);
         }
     }
 
@@ -812,15 +858,8 @@ namespace System.Reflection.Tests
 
         public List<object> PStuffConsumed
         {
-            get
-            {
-                return _pStuffConsumed;
-            }
-
-            set
-            {
-                _pStuffConsumed = value;
-            }
+            get { return _pStuffConsumed; }
+            set { _pStuffConsumed = value; }
         }
 
         public void Eat(object ThingEaten) => PStuffConsumed.Add(ThingEaten);
@@ -902,8 +941,17 @@ namespace System.Reflection.Tests
 
     internal interface TI_Interface1 { }
     internal interface TI_Interface2 { }
+    internal interface TI_Interface3 { void DoSomething(); }
 
     internal struct TI_StructWithInterface : TI_Interface1 { }
+
+    internal struct TI_Struct { }
+    internal struct TI_StructWithInterfaces : TI_Interface1, TI_Interface3
+    {
+        public void DoSomething() { }
+    }
+
+    internal struct TI_GenericStruct<T> { public T field; }
 
     internal class TI_BaseClassWithInterface : TI_Interface1, TI_Interface2 { }
     internal class TI_SubClassWithInterface : TI_BaseClassWithInterface { }

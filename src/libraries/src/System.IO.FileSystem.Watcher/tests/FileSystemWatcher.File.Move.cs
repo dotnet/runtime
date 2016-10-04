@@ -9,14 +9,14 @@ namespace System.IO.Tests
     public class File_Move_Tests : FileSystemWatcherTest
     {
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void Windows_File_Move_To_Same_Directory()
         {
             FileMove_SameDirectory(WatcherChangeTypes.Renamed);
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void Unix_File_Move_To_Same_Directory()
         {
             FileMove_SameDirectory(WatcherChangeTypes.Created | WatcherChangeTypes.Deleted);
@@ -29,21 +29,21 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void Windows_File_Move_To_Different_Watched_Directory()
         {
             FileMove_DifferentWatchedDirectory(WatcherChangeTypes.Changed);
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.OSX)]
+        [PlatformSpecific(TestPlatforms.OSX)]
         public void OSX_File_Move_To_Different_Watched_Directory()
         {
             FileMove_DifferentWatchedDirectory(WatcherChangeTypes.Changed);
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Linux)]
+        [PlatformSpecific(TestPlatforms.Linux)]
         public void Linux_File_Move_To_Different_Watched_Directory()
         {
             FileMove_DifferentWatchedDirectory(0);
@@ -58,7 +58,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void Windows_File_Move_In_Nested_Directory(bool includeSubdirectories)
         {
             FileMove_NestedDirectory(includeSubdirectories ? WatcherChangeTypes.Renamed : 0, includeSubdirectories);
@@ -67,21 +67,21 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void Unix_File_Move_In_Nested_Directory(bool includeSubdirectories)
         {
             FileMove_NestedDirectory(includeSubdirectories ? WatcherChangeTypes.Created | WatcherChangeTypes.Deleted : 0, includeSubdirectories);
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void Windows_File_Move_With_Set_NotifyFilter()
         {
             FileMove_WithNotifyFilter(WatcherChangeTypes.Renamed);
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void Unix_File_Move_With_Set_NotifyFilter()
         {
             FileMove_WithNotifyFilter(WatcherChangeTypes.Deleted);

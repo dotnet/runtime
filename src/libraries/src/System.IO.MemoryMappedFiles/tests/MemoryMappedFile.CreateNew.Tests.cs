@@ -87,7 +87,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test the exceptional behavior when attempting to create a map so large it's not supported.
         /// </summary>
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [Fact]
         public void TooLargeCapacity_Windows()
         {
@@ -104,7 +104,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test the exceptional behavior when attempting to create a map so large it's not supported.
         /// </summary>
-        [PlatformSpecific(PlatformID.AnyUnix & ~PlatformID.OSX)] // Because of the file-based backing, OS X pops up a warning dialog about being out-of-space (even though we clean up immediately)
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.OSX)] // Because of the file-based backing, OS X pops up a warning dialog about being out-of-space (even though we clean up immediately)
         [Fact]
         public void TooLargeCapacity_Unix()
         {
@@ -125,7 +125,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test to verify that map names are left unsupported on Unix.
         /// </summary>
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [Theory]
         [MemberData(nameof(CreateValidMapNames))]
         public void MapNamesNotSupported_Unix(string mapName)
@@ -138,7 +138,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test to verify a variety of map names work correctly on Windows.
         /// </summary>
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [Theory]
         [MemberData(nameof(CreateValidMapNames))]
         [InlineData(null)]
@@ -162,7 +162,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// Test to verify map names are handled appropriately, causing a conflict when they're active but
         /// reusable in a sequential manner.
         /// </summary>
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [Theory]
         [MemberData(nameof(CreateValidMapNames))]
         public void ReusingNames_Windows(string name)
@@ -254,7 +254,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test to verify that two unrelated maps don't share data.
         /// </summary>
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [Theory]
         [MemberData(nameof(CreateValidMapNames))]
         [InlineData(null)]
@@ -307,7 +307,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test to verify expected capacity with regards to page size and automatically rounding up to the nearest.
         /// </summary>
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [Fact]
         public void RoundedUpCapacity_Windows()
         {
@@ -326,7 +326,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test to verify expected capacity with regards to page size and automatically rounding up to the nearest.
         /// </summary>
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [Fact]
         public void RoundedUpCapacity_Unix()
         {
