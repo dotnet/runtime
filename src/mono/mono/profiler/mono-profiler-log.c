@@ -558,10 +558,12 @@ init_time (void)
 }
 
 /*
- * These macros create a scope to avoid leaking the buffer returned
- * from ensure_logbuf () as it may have been invalidated by a GC
- * thread during STW. If you called init_thread () with add_to_lls =
- * FALSE, then don't use these macros.
+ * These macros should be used when writing an event to a log buffer. They take
+ * care of a bunch of stuff that can be repetitive and error-prone, such as
+ * acquiring/releasing the buffer lock, incrementing the event counter,
+ * expanding the log buffer, processing requests, etc. They also create a scope
+ * so that it's harder to leak the LogBuffer pointer, which can be problematic
+ * as the pointer is unstable when the buffer lock isn't acquired.
  */
 
 #define ENTER_LOG(COUNTER, BUFFER, SIZE) \
@@ -572,19 +574,25 @@ init_time (void)
 		g_assert (!thread__->busy && "Why are we trying to write a new event while already writing one?"); \
 		thread__->busy = TRUE; \
 		InterlockedIncrement ((COUNTER)); \
-		LogBuffer *BUFFER = ensure_logbuf_unsafe ((SIZE))
+		LogBuffer *BUFFER = ensure_logbuf_unsafe (thread__, (SIZE))
 
 #define EXIT_LOG_EXPLICIT(SEND, REQUESTS) \
 		thread__->busy = FALSE; \
 		if ((SEND)) \
-			send_log_unsafe (FALSE, TRUE); \
+			send_log_unsafe (TRUE); \
 		if (thread__->attached) \
 			buffer_unlock (); \
 		if ((REQUESTS)) \
 			process_requests (); \
 	} while (0)
 
-#define EXIT_LOG EXIT_LOG_EXPLICIT (TRUE, TRUE)
+// Pass these to EXIT_LOG_EXPLICIT () for easier reading.
+#define DO_SEND TRUE
+#define NO_SEND FALSE
+#define DO_REQUESTS TRUE
+#define NO_REQUESTS FALSE
+
+#define EXIT_LOG EXIT_LOG_EXPLICIT (DO_SEND, DO_REQUESTS)
 
 static volatile gint32 buffer_rwlock_count;
 static volatile gpointer buffer_rwlock_exclusive;
@@ -767,7 +775,7 @@ free_buffer (void *buf, int size)
 }
 
 static LogBuffer*
-create_buffer (void)
+create_buffer (uintptr_t tid)
 {
 	LogBuffer* buf = (LogBuffer *) alloc_buffer (BUFFER_SIZE);
 
@@ -776,8 +784,9 @@ create_buffer (void)
 	buf->size = BUFFER_SIZE;
 	buf->time_base = current_time ();
 	buf->last_time = buf->time_base;
-	buf->buf_end = (unsigned char*)buf + buf->size;
+	buf->buf_end = (unsigned char *) buf + buf->size;
 	buf->cursor = buf->buf;
+	buf->thread_id = tid;
 
 	return buf;
 }
@@ -791,7 +800,7 @@ create_buffer (void)
 static void
 init_buffer_state (MonoProfilerThread *thread)
 {
-	thread->buffer = create_buffer ();
+	thread->buffer = create_buffer (thread->node.key);
 	thread->methods = NULL;
 }
 
@@ -857,29 +866,17 @@ deinit_thread (MonoProfilerThread *thread)
 	PROF_TLS_SET (NULL);
 }
 
+// Only valid if init_thread () was called with add_to_lls = FALSE.
 static LogBuffer *
-ensure_logbuf_inner (LogBuffer *old, int bytes)
+ensure_logbuf_unsafe (MonoProfilerThread *thread, int bytes)
 {
+	LogBuffer *old = thread->buffer;
+
 	if (old && old->cursor + bytes + 100 < old->buf_end)
 		return old;
 
-	LogBuffer *new_ = create_buffer ();
+	LogBuffer *new_ = create_buffer (thread->node.key);
 	new_->next = old;
-
-	return new_;
-}
-
-// Only valid if init_thread () was called with add_to_lls = FALSE.
-static LogBuffer *
-ensure_logbuf_unsafe (int bytes)
-{
-	MonoProfilerThread *thread = PROF_TLS_GET ();
-	LogBuffer *old = thread->buffer;
-	LogBuffer *new_ = ensure_logbuf_inner (old, bytes);
-
-	if (new_ == old)
-		return old; // Still enough space.
-
 	thread->buffer = new_;
 
 	return new_;
@@ -1209,15 +1206,15 @@ free_thread (gpointer p)
 
 		InterlockedIncrement (&thread_ends_ctr);
 
-		thread->buffer = ensure_logbuf_inner (thread->buffer,
+		LogBuffer *buf = ensure_logbuf_unsafe (thread,
 			EVENT_SIZE /* event */ +
 			BYTE_SIZE /* type */ +
 			LEB128_SIZE /* tid */
 		);
 
-		emit_event (thread->buffer, TYPE_END_UNLOAD | TYPE_METADATA);
-		emit_byte (thread->buffer, TYPE_THREAD);
-		emit_ptr (thread->buffer, (void *) thread->node.key);
+		emit_event (buf, TYPE_END_UNLOAD | TYPE_METADATA);
+		emit_byte (buf, TYPE_THREAD);
+		emit_ptr (buf, (void *) thread->node.key);
 	}
 
 	send_buffer (thread);
@@ -1286,14 +1283,11 @@ process_requests (void)
 		mono_gc_collect (mono_gc_max_generation ());
 }
 
-// Avoid calling this directly if possible. Use the functions below.
+// Only valid if init_thread () was called with add_to_lls = FALSE.
 static void
-send_log_unsafe (gboolean lock, gboolean if_needed)
+send_log_unsafe (gboolean if_needed)
 {
 	MonoProfilerThread *thread = PROF_TLS_GET ();
-
-	if (lock)
-		buffer_lock ();
 
 	if (!if_needed || (if_needed && thread->buffer->next)) {
 		if (!thread->attached)
@@ -1303,9 +1297,6 @@ send_log_unsafe (gboolean lock, gboolean if_needed)
 		send_buffer (thread);
 		init_buffer_state (thread);
 	}
-
-	if (lock)
-		buffer_unlock ();
 }
 
 // Assumes that the exclusive lock is held.
@@ -1315,6 +1306,8 @@ sync_point_flush (void)
 	g_assert (InterlockedReadPointer (&buffer_rwlock_exclusive) == (gpointer) thread_id () && "Why don't we hold the exclusive lock?");
 
 	MONO_LLS_FOREACH_SAFE (&profiler_thread_list, MonoProfilerThread, thread) {
+		g_assert (thread->attached && "Why is a thread in the LLS not attached?");
+
 		send_buffer (thread);
 		init_buffer_state (thread);
 	} MONO_LLS_FOREACH_SAFE_END
@@ -1334,9 +1327,9 @@ sync_point_mark (MonoProfilerSyncPointType type)
 	emit_event (logbuffer, TYPE_META | TYPE_SYNC_POINT);
 	emit_byte (logbuffer, type);
 
-	EXIT_LOG_EXPLICIT (FALSE, FALSE);
+	EXIT_LOG_EXPLICIT (NO_SEND, NO_REQUESTS);
 
-	send_log_unsafe (FALSE, FALSE);
+	send_log_unsafe (FALSE);
 }
 
 // Assumes that the exclusive lock is held.
@@ -1380,7 +1373,7 @@ gc_reference (MonoObject *obj, MonoClass *klass, uintptr_t size, uintptr_t num, 
 		emit_obj (logbuffer, refs [i]);
 	}
 
-	EXIT_LOG_EXPLICIT (TRUE, FALSE);
+	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 
 	return 0;
 }
@@ -1401,7 +1394,7 @@ heap_walk (MonoProfiler *profiler)
 
 	emit_event (logbuffer, TYPE_HEAP_START | TYPE_HEAP);
 
-	EXIT_LOG_EXPLICIT (TRUE, FALSE);
+	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 
 	mono_gc_walk_heap (0, gc_reference, NULL);
 
@@ -1411,7 +1404,7 @@ heap_walk (MonoProfiler *profiler)
 
 	emit_event (logbuffer, TYPE_HEAP_END | TYPE_HEAP);
 
-	EXIT_LOG_EXPLICIT (TRUE, FALSE);
+	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 }
 
 static void
@@ -1438,7 +1431,7 @@ gc_roots (MonoProfiler *prof, int num, void **objects, int *root_types, uintptr_
 		emit_value (logbuffer, extra_info [i]);
 	}
 
-	EXIT_LOG_EXPLICIT (TRUE, FALSE);
+	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 }
 
 static void
@@ -1454,7 +1447,7 @@ gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation)
 	emit_byte (logbuffer, ev);
 	emit_byte (logbuffer, generation);
 
-	EXIT_LOG_EXPLICIT (FALSE, FALSE);
+	EXIT_LOG_EXPLICIT (NO_SEND, NO_REQUESTS);
 
 	switch (ev) {
 	case MONO_GC_EVENT_START:
@@ -1529,7 +1522,7 @@ gc_resize (MonoProfiler *profiler, int64_t new_size)
 	emit_event (logbuffer, TYPE_GC_RESIZE | TYPE_GC);
 	emit_value (logbuffer, new_size);
 
-	EXIT_LOG_EXPLICIT (TRUE, FALSE);
+	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 }
 
 // If you alter MAX_FRAMES, you may need to alter SAMPLE_BLOCK_SIZE too.
@@ -1641,7 +1634,7 @@ gc_moves (MonoProfiler *prof, void **objects, int num)
 	for (int i = 0; i < num; ++i)
 		emit_obj (logbuffer, objects [i]);
 
-	EXIT_LOG_EXPLICIT (TRUE, FALSE);
+	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 }
 
 static void
@@ -2174,7 +2167,7 @@ thread_end (MonoProfiler *prof, uintptr_t tid)
 	emit_byte (logbuffer, TYPE_THREAD);
 	emit_ptr (logbuffer, (void*) tid);
 
-	EXIT_LOG_EXPLICIT (FALSE, FALSE);
+	EXIT_LOG_EXPLICIT (NO_SEND, NO_REQUESTS);
 
 	MonoProfilerThread *thread = PROF_TLS_GET ();
 
@@ -2463,7 +2456,7 @@ dump_ubin (MonoProfiler *prof, const char *filename, uintptr_t load_addr, uint64
 	memcpy (logbuffer->cursor, filename, len);
 	logbuffer->cursor += len;
 
-	EXIT_LOG_EXPLICIT (TRUE, FALSE);
+	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 }
 #endif
 
@@ -2485,7 +2478,7 @@ dump_usym (MonoProfiler *prof, const char *name, uintptr_t value, uintptr_t size
 	memcpy (logbuffer->cursor, name, len);
 	logbuffer->cursor += len;
 
-	EXIT_LOG_EXPLICIT (TRUE, FALSE);
+	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 }
 
 /* ELF code crashes on some systems. */
@@ -2934,7 +2927,7 @@ counters_emit (MonoProfiler *profiler)
 		agent->emitted = 1;
 	}
 
-	EXIT_LOG_EXPLICIT (TRUE, FALSE);
+	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 
 done:
 	mono_os_mutex_unlock (&counters_mutex);
@@ -3057,7 +3050,7 @@ counters_sample (MonoProfiler *profiler, uint64_t timestamp)
 
 	emit_value (logbuffer, 0);
 
-	EXIT_LOG_EXPLICIT (TRUE, FALSE);
+	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 
 	mono_os_mutex_unlock (&counters_mutex);
 }
@@ -3127,7 +3120,7 @@ perfcounters_emit (MonoProfiler *profiler)
 		pcagent->emitted = 1;
 	}
 
-	EXIT_LOG_EXPLICIT (TRUE, FALSE);
+	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 }
 
 static gboolean
@@ -3220,7 +3213,7 @@ perfcounters_sample (MonoProfiler *profiler, uint64_t timestamp)
 
 	emit_value (logbuffer, 0);
 
-	EXIT_LOG_EXPLICIT (TRUE, FALSE);
+	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 
 done:
 	mono_os_mutex_unlock (&counters_mutex);
@@ -3393,7 +3386,7 @@ build_method_buffer (gpointer key, gpointer value, gpointer userdata)
 	emit_uvalue (logbuffer, method_id);
 	emit_value (logbuffer, coverage_data->len);
 
-	EXIT_LOG_EXPLICIT (TRUE, FALSE);
+	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 
 	for (i = 0; i < coverage_data->len; i++) {
 		CoverageEntry *entry = (CoverageEntry *)coverage_data->pdata[i];
@@ -3414,7 +3407,7 @@ build_method_buffer (gpointer key, gpointer value, gpointer userdata)
 		emit_uvalue (logbuffer, entry->line);
 		emit_uvalue (logbuffer, entry->column);
 
-		EXIT_LOG_EXPLICIT (TRUE, FALSE);
+		EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 	}
 
 	method_id++;
@@ -3478,7 +3471,7 @@ build_class_buffer (gpointer key, gpointer value, gpointer userdata)
 	emit_uvalue (logbuffer, fully_covered);
 	emit_uvalue (logbuffer, partially_covered);
 
-	EXIT_LOG_EXPLICIT (TRUE, FALSE);
+	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 
 	g_free (class_name);
 }
@@ -3535,7 +3528,7 @@ build_assembly_buffer (gpointer key, gpointer value, gpointer userdata)
 	emit_uvalue (logbuffer, fully_covered);
 	emit_uvalue (logbuffer, partially_covered);
 
-	EXIT_LOG_EXPLICIT (TRUE, FALSE);
+	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 }
 
 static void
@@ -3912,6 +3905,8 @@ log_shutdown (MonoProfiler *prof)
 	 */
 	while (profiler_thread_list.head) {
 		MONO_LLS_FOREACH_SAFE (&profiler_thread_list, MonoProfilerThread, thread) {
+			g_assert (thread->attached && "Why is a thread in the LLS not attached?");
+
 			remove_thread (thread);
 		} MONO_LLS_FOREACH_SAFE_END
 	}
@@ -4161,7 +4156,7 @@ helper_thread (void *arg)
 
 	g_array_free (command_sockets, TRUE);
 
-	send_log_unsafe (FALSE, FALSE);
+	send_log_unsafe (FALSE);
 	deinit_thread (thread);
 
 	mono_thread_info_detach ();
@@ -4289,7 +4284,7 @@ handle_writer_queue_entry (MonoProfiler *prof)
 			memcpy (logbuffer->cursor, name, nlen);
 			logbuffer->cursor += nlen;
 
-			EXIT_LOG_EXPLICIT (FALSE, FALSE);
+			EXIT_LOG_EXPLICIT (NO_SEND, NO_REQUESTS);
 
 			mono_free (name);
 
@@ -4418,7 +4413,7 @@ handle_dumper_queue_entry (MonoProfiler *prof)
 		for (int i = 0; i < sample->count; ++i)
 			emit_method (logbuffer, sample->frames [i].method);
 
-		EXIT_LOG_EXPLICIT (TRUE, FALSE);
+		EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 
 		mono_thread_hazardous_try_free (sample, reuse_sample_hit);
 
@@ -4446,7 +4441,7 @@ dumper_thread (void *arg)
 	/* Drain any remaining entries on shutdown. */
 	while (handle_dumper_queue_entry (prof));
 
-	send_log_unsafe (FALSE, FALSE);
+	send_log_unsafe (FALSE);
 	deinit_thread (thread);
 
 	mono_thread_info_detach ();
