@@ -194,7 +194,7 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 	fname = mono_metadata_string_heap (image, cols [MONO_MEMBERREF_NAME]);
 
 	if (!mono_verifier_verify_memberref_field_signature (image, cols [MONO_MEMBERREF_SIGNATURE], NULL)) {
-		mono_error_set_bad_image (error, image, "Bad field '%s' signature 0x%08x", class_index, token);
+		mono_error_set_bad_image (error, image, "Bad field '%u' signature 0x%08x", class_index, token);
 		return NULL;
 	}
 
@@ -209,7 +209,7 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 		klass = mono_class_get_and_inflate_typespec_checked (image, MONO_TOKEN_TYPE_SPEC | nindex, context, error);
 		break;
 	default:
-		mono_error_set_bad_image (error, image, "Bad field field '%s' signature 0x%08x", class_index, token);
+		mono_error_set_bad_image (error, image, "Bad field field '%u' signature 0x%08x", class_index, token);
 	}
 
 	if (!klass)

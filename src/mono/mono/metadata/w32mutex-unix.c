@@ -412,7 +412,7 @@ ves_icall_System_Threading_Mutex_ReleaseMutex_internal (gpointer handle)
 		ret = FALSE;
 
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: we don't own %s handle %p (owned by %ld, me %ld)",
-			__func__, mono_w32handle_ops_typename (type), handle, mutex_handle->tid, tid);
+			    __func__, mono_w32handle_ops_typename (type), handle, (long)mutex_handle->tid, (long)tid);
 	} else {
 		ret = TRUE;
 

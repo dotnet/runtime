@@ -1391,7 +1391,7 @@ mono_error_set_for_class_failure (MonoError *oerror, MonoClass *klass)
 		return;
 	}
 	case MONO_EXCEPTION_INVALID_PROGRAM: {
-		mono_error_set_invalid_program (oerror, (const char *)exception_data);
+		mono_error_set_invalid_program (oerror, "%s", (const char *)exception_data);
 		return;
 	}
 	case MONO_EXCEPTION_MISSING_METHOD:
@@ -5696,7 +5696,7 @@ static void
 mono_class_set_failure_and_error (MonoClass *klass, MonoError *error, const char *msg)
 {
 	mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, mono_image_strdup (klass->image, msg));
-	mono_error_set_type_load_class (error, klass, msg);
+	mono_error_set_type_load_class (error, klass, "%s", msg);
 }
 
 /**

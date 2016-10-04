@@ -1052,7 +1052,7 @@ mini_method_verify (MonoCompile *cfg, MonoMethod *method, gboolean fail_compile)
 					else if (info->exception_type == MONO_EXCEPTION_FIELD_ACCESS)
 						mono_error_set_generic_error (&cfg->error, "System", "FieldAccessException", "%s", msg);
 					else if (info->exception_type == MONO_EXCEPTION_UNVERIFIABLE_IL)
-						mono_error_set_generic_error (&cfg->error, "System.Security", "VerificationException", msg);
+						mono_error_set_generic_error (&cfg->error, "System.Security", "VerificationException", "%s", msg);
 					if (!mono_error_ok (&cfg->error)) {
 						mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
 						g_free (msg);
@@ -4053,7 +4053,7 @@ void
 mono_cfg_set_exception_invalid_program (MonoCompile *cfg, char *msg)
 {
 	mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
-	mono_error_set_generic_error (&cfg->error, "System", "InvalidProgramException", msg);
+	mono_error_set_generic_error (&cfg->error, "System", "InvalidProgramException", "%s", msg);
 }
 
 #endif /* DISABLE_JIT */
