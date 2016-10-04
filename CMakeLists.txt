@@ -496,6 +496,11 @@ if(CLR_CROSS_COMPONENTS_BUILD)
   include(crosscomponents.cmake)
 endif(CLR_CROSS_COMPONENTS_BUILD)
 
+#-------------------
+# Enable PGO support
+#-------------------
+include(pgosupport.cmake)
+
 #-----------------------------------------
 # Add Projects
 #     - project which require platform header not clr's
