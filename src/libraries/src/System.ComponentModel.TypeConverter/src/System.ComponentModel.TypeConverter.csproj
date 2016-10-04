@@ -258,10 +258,5 @@
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
-  <!-- TODO: Replace this with a package reference. -->
-  <ItemGroup Condition="'$(TargetGroup)'==''">
-    <ProjectReference Include="..\..\System.ComponentModel.Primitives\pkg\System.ComponentModel.Primitives.pkgproj" />
-    <ProjectReference Include="..\..\System.Drawing.Primitives\pkg\System.Drawing.Primitives.pkgproj"/>
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

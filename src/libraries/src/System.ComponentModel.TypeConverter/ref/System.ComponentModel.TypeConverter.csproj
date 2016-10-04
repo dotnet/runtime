@@ -12,12 +12,6 @@
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
-  <!-- TODO: Replace this with a package reference. -->
-  <!-- This is needed until the updated primitives package is ready -->
-  <ItemGroup>
-    <ProjectReference Include="..\..\System.Drawing.Primitives\pkg\System.Drawing.Primitives.pkgproj"/>
-    <ProjectReference Include="..\..\System.ComponentModel.Primitives\ref\System.ComponentModel.Primitives.csproj" />
-  </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

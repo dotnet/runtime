@@ -86,11 +86,6 @@
     <ProjectReference Include="..\pkg\System.ComponentModel.TypeConverter.pkgproj">
     </ProjectReference>
   </ItemGroup>
-  <!-- TODO: Replace this with a package reference. -->
-  <ItemGroup>
-    <ProjectReference Include="..\..\System.Drawing.Primitives\pkg\System.Drawing.Primitives.pkgproj" />
-    <ProjectReference Include="..\..\System.ComponentModel.Primitives\pkg\System.ComponentModel.Primitives.pkgproj" />
-  </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
