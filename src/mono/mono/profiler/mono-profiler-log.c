@@ -586,7 +586,13 @@ init_time (void)
 			process_requests (); \
 	} while (0)
 
-#define EXIT_LOG EXIT_LOG_EXPLICIT (TRUE, TRUE)
+// Pass these to EXIT_LOG_EXPLICIT () for easier reading.
+#define DO_SEND TRUE
+#define NO_SEND FALSE
+#define DO_REQUESTS TRUE
+#define NO_REQUESTS FALSE
+
+#define EXIT_LOG EXIT_LOG_EXPLICIT (DO_SEND, DO_REQUESTS)
 
 static volatile gint32 buffer_rwlock_count;
 static volatile gpointer buffer_rwlock_exclusive;
@@ -1321,7 +1327,7 @@ sync_point_mark (MonoProfilerSyncPointType type)
 	emit_event (logbuffer, TYPE_META | TYPE_SYNC_POINT);
 	emit_byte (logbuffer, type);
 
-	EXIT_LOG_EXPLICIT (FALSE, FALSE);
+	EXIT_LOG_EXPLICIT (NO_SEND, NO_REQUESTS);
 
 	send_log_unsafe (FALSE);
 }
@@ -1367,7 +1373,7 @@ gc_reference (MonoObject *obj, MonoClass *klass, uintptr_t size, uintptr_t num, 
 		emit_obj (logbuffer, refs [i]);
 	}
 
-	EXIT_LOG_EXPLICIT (TRUE, FALSE);
+	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 
 	return 0;
 }
@@ -1388,7 +1394,7 @@ heap_walk (MonoProfiler *profiler)
 
 	emit_event (logbuffer, TYPE_HEAP_START | TYPE_HEAP);
 
-	EXIT_LOG_EXPLICIT (TRUE, FALSE);
+	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 
 	mono_gc_walk_heap (0, gc_reference, NULL);
 
@@ -1398,7 +1404,7 @@ heap_walk (MonoProfiler *profiler)
 
 	emit_event (logbuffer, TYPE_HEAP_END | TYPE_HEAP);
 
-	EXIT_LOG_EXPLICIT (TRUE, FALSE);
+	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 }
 
 static void
@@ -1425,7 +1431,7 @@ gc_roots (MonoProfiler *prof, int num, void **objects, int *root_types, uintptr_
 		emit_value (logbuffer, extra_info [i]);
 	}
 
-	EXIT_LOG_EXPLICIT (TRUE, FALSE);
+	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 }
 
 static void
@@ -1441,7 +1447,7 @@ gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation)
 	emit_byte (logbuffer, ev);
 	emit_byte (logbuffer, generation);
 
-	EXIT_LOG_EXPLICIT (FALSE, FALSE);
+	EXIT_LOG_EXPLICIT (NO_SEND, NO_REQUESTS);
 
 	switch (ev) {
 	case MONO_GC_EVENT_START:
@@ -1516,7 +1522,7 @@ gc_resize (MonoProfiler *profiler, int64_t new_size)
 	emit_event (logbuffer, TYPE_GC_RESIZE | TYPE_GC);
 	emit_value (logbuffer, new_size);
 
-	EXIT_LOG_EXPLICIT (TRUE, FALSE);
+	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 }
 
 // If you alter MAX_FRAMES, you may need to alter SAMPLE_BLOCK_SIZE too.
@@ -1628,7 +1634,7 @@ gc_moves (MonoProfiler *prof, void **objects, int num)
 	for (int i = 0; i < num; ++i)
 		emit_obj (logbuffer, objects [i]);
 
-	EXIT_LOG_EXPLICIT (TRUE, FALSE);
+	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 }
 
 static void
@@ -2161,7 +2167,7 @@ thread_end (MonoProfiler *prof, uintptr_t tid)
 	emit_byte (logbuffer, TYPE_THREAD);
 	emit_ptr (logbuffer, (void*) tid);
 
-	EXIT_LOG_EXPLICIT (FALSE, FALSE);
+	EXIT_LOG_EXPLICIT (NO_SEND, NO_REQUESTS);
 
 	MonoProfilerThread *thread = PROF_TLS_GET ();
 
@@ -2450,7 +2456,7 @@ dump_ubin (MonoProfiler *prof, const char *filename, uintptr_t load_addr, uint64
 	memcpy (logbuffer->cursor, filename, len);
 	logbuffer->cursor += len;
 
-	EXIT_LOG_EXPLICIT (TRUE, FALSE);
+	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 }
 #endif
 
@@ -2472,7 +2478,7 @@ dump_usym (MonoProfiler *prof, const char *name, uintptr_t value, uintptr_t size
 	memcpy (logbuffer->cursor, name, len);
 	logbuffer->cursor += len;
 
-	EXIT_LOG_EXPLICIT (TRUE, FALSE);
+	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 }
 
 /* ELF code crashes on some systems. */
@@ -2921,7 +2927,7 @@ counters_emit (MonoProfiler *profiler)
 		agent->emitted = 1;
 	}
 
-	EXIT_LOG_EXPLICIT (TRUE, FALSE);
+	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 
 done:
 	mono_os_mutex_unlock (&counters_mutex);
@@ -3044,7 +3050,7 @@ counters_sample (MonoProfiler *profiler, uint64_t timestamp)
 
 	emit_value (logbuffer, 0);
 
-	EXIT_LOG_EXPLICIT (TRUE, FALSE);
+	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 
 	mono_os_mutex_unlock (&counters_mutex);
 }
@@ -3114,7 +3120,7 @@ perfcounters_emit (MonoProfiler *profiler)
 		pcagent->emitted = 1;
 	}
 
-	EXIT_LOG_EXPLICIT (TRUE, FALSE);
+	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 }
 
 static gboolean
@@ -3207,7 +3213,7 @@ perfcounters_sample (MonoProfiler *profiler, uint64_t timestamp)
 
 	emit_value (logbuffer, 0);
 
-	EXIT_LOG_EXPLICIT (TRUE, FALSE);
+	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 
 done:
 	mono_os_mutex_unlock (&counters_mutex);
@@ -3380,7 +3386,7 @@ build_method_buffer (gpointer key, gpointer value, gpointer userdata)
 	emit_uvalue (logbuffer, method_id);
 	emit_value (logbuffer, coverage_data->len);
 
-	EXIT_LOG_EXPLICIT (TRUE, FALSE);
+	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 
 	for (i = 0; i < coverage_data->len; i++) {
 		CoverageEntry *entry = (CoverageEntry *)coverage_data->pdata[i];
@@ -3401,7 +3407,7 @@ build_method_buffer (gpointer key, gpointer value, gpointer userdata)
 		emit_uvalue (logbuffer, entry->line);
 		emit_uvalue (logbuffer, entry->column);
 
-		EXIT_LOG_EXPLICIT (TRUE, FALSE);
+		EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 	}
 
 	method_id++;
@@ -3465,7 +3471,7 @@ build_class_buffer (gpointer key, gpointer value, gpointer userdata)
 	emit_uvalue (logbuffer, fully_covered);
 	emit_uvalue (logbuffer, partially_covered);
 
-	EXIT_LOG_EXPLICIT (TRUE, FALSE);
+	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 
 	g_free (class_name);
 }
@@ -3522,7 +3528,7 @@ build_assembly_buffer (gpointer key, gpointer value, gpointer userdata)
 	emit_uvalue (logbuffer, fully_covered);
 	emit_uvalue (logbuffer, partially_covered);
 
-	EXIT_LOG_EXPLICIT (TRUE, FALSE);
+	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 }
 
 static void
@@ -4278,7 +4284,7 @@ handle_writer_queue_entry (MonoProfiler *prof)
 			memcpy (logbuffer->cursor, name, nlen);
 			logbuffer->cursor += nlen;
 
-			EXIT_LOG_EXPLICIT (FALSE, FALSE);
+			EXIT_LOG_EXPLICIT (NO_SEND, NO_REQUESTS);
 
 			mono_free (name);
 
@@ -4407,7 +4413,7 @@ handle_dumper_queue_entry (MonoProfiler *prof)
 		for (int i = 0; i < sample->count; ++i)
 			emit_method (logbuffer, sample->frames [i].method);
 
-		EXIT_LOG_EXPLICIT (TRUE, FALSE);
+		EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 
 		mono_thread_hazardous_try_free (sample, reuse_sample_hit);
 
