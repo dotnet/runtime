@@ -21,7 +21,10 @@
         "System.Runtime.Extensions": "4.3.0-beta-24604-02",
         "System.Security.Principal": "4.3.0-beta-24604-02",
         "System.Security.Cryptography.X509Certificates": "4.3.0-beta-24604-02",
-        "System.Threading": "4.3.0-beta-24604-02"
+        "System.Threading": "4.3.0-beta-24604-02",
+        "System.Threading.Tasks": "4.3.0-beta-24604-02",      
+        "System.Runtime.Serialization.Primitives":"4.3.0-beta-24604-02",
+        "System.Runtime.Serialization.Xml": "4.3.0-beta-24604-02"
       }
     },
     "net463": {
