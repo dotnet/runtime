@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Xunit;
@@ -188,10 +189,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
-        public static void ImportPkcs12Bytes_Single()
+        [Theory]
+        [MemberData(nameof(StorageFlags))]
+        public static void ImportPkcs12Bytes_Single(X509KeyStorageFlags keyStorageFlags)
         {
-            using (ImportedCollection ic = Cert.Import(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.DefaultKeySet))
+            using (ImportedCollection ic = Cert.Import(TestData.PfxData, TestData.PfxDataPassword, keyStorageFlags))
             {
                 X509Certificate2Collection cc2 = ic.Collection;
                 int count = cc2.Count;
@@ -199,12 +201,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
-        public static void ImportPkcs12Bytes_Single_VerifyContents()
+        [Theory]
+        [MemberData(nameof(StorageFlags))]
+        public static void ImportPkcs12Bytes_Single_VerifyContents(X509KeyStorageFlags keyStorageFlags)
         {
-            using (var pfxCer = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
+            using (var pfxCer = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, Cert.EphemeralIfPossible))
             {
-                using (ImportedCollection ic = Cert.Import(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.DefaultKeySet))
+                using (ImportedCollection ic = Cert.Import(TestData.PfxData, TestData.PfxDataPassword, keyStorageFlags))
                 {
                     X509Certificate2Collection cc2 = ic.Collection;
                     int count = cc2.Count;
@@ -222,10 +225,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
-        public static void ImportPkcs12File_Single()
+        [Theory]
+        [MemberData(nameof(StorageFlags))]
+        public static void ImportPkcs12File_Single(X509KeyStorageFlags keyStorageFlags)
         {
-            using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "My.pfx"), TestData.PfxDataPassword, X509KeyStorageFlags.DefaultKeySet))
+            using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "My.pfx"), TestData.PfxDataPassword, keyStorageFlags))
             {
                 X509Certificate2Collection cc2 = ic.Collection;
                 int count = cc2.Count;
@@ -233,10 +237,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
-        public static void ImportPkcs12Bytes_Chain()
+        [Theory]
+        [MemberData(nameof(StorageFlags))]
+        public static void ImportPkcs12Bytes_Chain(X509KeyStorageFlags keyStorageFlags)
         {
-            using (ImportedCollection ic = Cert.Import(TestData.ChainPfxBytes, TestData.ChainPfxPassword, X509KeyStorageFlags.DefaultKeySet))
+            using (ImportedCollection ic = Cert.Import(TestData.ChainPfxBytes, TestData.ChainPfxPassword, keyStorageFlags))
             {
                 X509Certificate2Collection certs = ic.Collection;
                 int count = certs.Count;
@@ -244,10 +249,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
-        public static void ImportPkcs12File_Chain()
+        [Theory]
+        [MemberData(nameof(StorageFlags))]
+        public static void ImportPkcs12File_Chain(X509KeyStorageFlags keyStorageFlags)
         {
-            using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "test.pfx"), TestData.ChainPfxPassword, X509KeyStorageFlags.DefaultKeySet))
+            using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "test.pfx"), TestData.ChainPfxPassword, keyStorageFlags))
             {
                 X509Certificate2Collection certs = ic.Collection;
                 int count = certs.Count;
@@ -255,10 +261,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
-        public static void ImportPkcs12File_Chain_VerifyContents()
+        [Theory]
+        [MemberData(nameof(StorageFlags))]
+        public static void ImportPkcs12File_Chain_VerifyContents(X509KeyStorageFlags keyStorageFlags)
         {
-            using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "test.pfx"), TestData.ChainPfxPassword, X509KeyStorageFlags.DefaultKeySet))
+            using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "test.pfx"), TestData.ChainPfxPassword, keyStorageFlags))
             {
                 X509Certificate2Collection certs = ic.Collection;
                 int count = certs.Count;
@@ -267,10 +274,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 // Verify that the read ordering is consistent across the platforms
                 string[] expectedSubjects =
                 {
-                "MS Passport Test Sub CA",
-                "MS Passport Test Root CA",
-                "test.local",
-            };
+                    "MS Passport Test Sub CA",
+                    "MS Passport Test Root CA",
+                    "test.local",
+                };
 
                 string[] actualSubjects = certs.OfType<X509Certificate2>().
                     Select(cert => cert.GetNameInfo(X509NameType.SimpleName, false)).
@@ -281,10 +288,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 // And verify that we have private keys when we expect them
                 bool[] expectedHasPrivateKeys =
                 {
-                false,
-                false,
-                true,
-            };
+                    false,
+                    false,
+                    true,
+                };
 
                 bool[] actualHasPrivateKeys = certs.OfType<X509Certificate2>().
                     Select(cert => cert.HasPrivateKey).
@@ -293,5 +300,57 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal(expectedHasPrivateKeys, actualHasPrivateKeys);
             }
         }
+
+
+        [Fact]
+        public static void InvalidStorageFlags()
+        {
+            X509Certificate2Collection coll = new X509Certificate2Collection();
+            byte[] nonEmptyBytes = new byte[1];
+
+            Assert.Throws<ArgumentException>(
+                "keyStorageFlags",
+                () => coll.Import(nonEmptyBytes, string.Empty, (X509KeyStorageFlags)0xFF));
+
+            Assert.Throws<ArgumentException>(
+                "keyStorageFlags",
+                () => coll.Import(string.Empty, string.Empty, (X509KeyStorageFlags)0xFF));
+            
+            // No test is performed here for the ephemeral flag failing downlevel, because the live
+            // binary is always used by default, meaning it doesn't know EphemeralKeySet doesn't exist.
+        }
+
+#if netcoreapp11
+        [Fact]
+        public static void InvalidStorageFlags_PersistedEphemeral()
+        {
+            const X509KeyStorageFlags PersistedEphemeral =
+                X509KeyStorageFlags.EphemeralKeySet | X509KeyStorageFlags.PersistKeySet;
+
+            byte[] nonEmptyBytes = new byte[1];
+            X509Certificate2Collection coll = new X509Certificate2Collection();
+
+            Assert.Throws<ArgumentException>(
+                "keyStorageFlags",
+                () => coll.Import(nonEmptyBytes, string.Empty, PersistedEphemeral));
+
+            Assert.Throws<ArgumentException>(
+                "keyStorageFlags",
+                () => coll.Import(string.Empty, string.Empty, PersistedEphemeral));
+        }
+#endif
+
+        public static IEnumerable<object[]> StorageFlags
+        {
+            get
+            {
+                yield return new object[] { X509KeyStorageFlags.DefaultKeySet };
+
+#if netcoreapp11
+                yield return new object[] { X509KeyStorageFlags.EphemeralKeySet };
+#endif
+            }
+        }
+
     }
 }
