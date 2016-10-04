@@ -22,7 +22,7 @@ namespace Microsoft.DotNet.ProjectModel
                     var runtimeJson =  ((PackageDescription) export.Library).PackageLibrary.Files.FirstOrDefault(f => f == RuntimeJsonFileName);
                     if (runtimeJson != null)
                     {
-                        var runtimeJsonFullName = Path.Combine(export.Library.Path, runtimeJson);
+                        var runtimeJsonFullName = Path.Combine(export.Library.Path.ToLower(), runtimeJson);
                         graph = RuntimeGraph.Merge(graph, JsonRuntimeFormat.ReadRuntimeGraph(runtimeJsonFullName));
                     }
                 }
