@@ -139,6 +139,8 @@ typedef ucontext_t native_context_t;
 /////////////////////
 // Extended state
 
+#ifdef XSTATE_SUPPORTED
+
 inline _fpx_sw_bytes *FPREG_FpxSwBytes(const ucontext_t *uc)
 {
     // Bytes 464..511 in the FXSAVE format are available for software to use for any purpose. In this case, they are used to
@@ -184,6 +186,8 @@ inline void *FPREG_Xstate_Ymmh(const ucontext_t *uc)
 
     return reinterpret_cast<_xstate *>(FPREG_Fpstate(uc))->ymmh.ymmh_space;
 }
+
+#endif // XSTATE_SUPPORTED
 
 /////////////////////
 
@@ -465,6 +469,19 @@ inline static void CONTEXTSetPC(LPCONTEXT pContext, DWORD64 pc)
     pContext->Pc = pc;
 #else
 #error don't know how to set the program counter for this architecture
+#endif
+}
+
+inline static DWORD64 CONTEXTGetFP(LPCONTEXT pContext)
+{
+#if defined(_AMD64_)
+    return pContext->Rbp;
+#elif defined(_ARM_)
+    return pContext->R7;
+#elif defined(_ARM64_)
+    return pContext->X29;    
+#else
+#error don't know how to get the frame pointer for this architecture
 #endif
 }
 

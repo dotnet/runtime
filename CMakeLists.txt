@@ -132,6 +132,16 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
         clr_unknown_arch()
     endif()
     set(CLR_CMAKE_PLATFORM_LINUX 1)
+
+    # Detect Alpine Linux
+    SET(OS_RELEASE_FILENAME "/etc/os-release")
+    if (EXISTS ${OS_RELEASE_FILENAME})
+        file(READ ${OS_RELEASE_FILENAME} OS_RELEASE)
+        string(FIND "${OS_RELEASE}" "ID=alpine" CLR_CMAKE_PLATFORM_ALPINE_LINUX)
+        if(CLR_CMAKE_PLATFORM_ALPINE_LINUX EQUAL -1)
+            unset(CLR_CMAKE_PLATFORM_ALPINE_LINUX)
+        endif(CLR_CMAKE_PLATFORM_ALPINE_LINUX EQUAL -1)
+    endif(EXISTS ${OS_RELEASE_FILENAME})
 endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
 
 if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
