@@ -22,7 +22,7 @@ namespace System.IO
         public string Name { get { return default(string); } }
     }
     public delegate void FileSystemEventHandler(object sender, System.IO.FileSystemEventArgs e);
-    public partial class FileSystemWatcher
+    public partial class FileSystemWatcher : System.ComponentModel.Component
     {
         public FileSystemWatcher() { }
         public FileSystemWatcher(string path) { }

@@ -33,7 +33,7 @@ namespace System.ComponentModel
         public static System.Threading.SynchronizationContext SynchronizationContext { get { return default(System.Threading.SynchronizationContext); } set { } }
         public static System.ComponentModel.AsyncOperation CreateOperation(object userSuppliedState) { return default(System.ComponentModel.AsyncOperation); }
     }
-    public partial class BackgroundWorker
+    public partial class BackgroundWorker : System.ComponentModel.Component
     {
         public BackgroundWorker() { }
         public bool CancellationPending { get { return default(bool); } }

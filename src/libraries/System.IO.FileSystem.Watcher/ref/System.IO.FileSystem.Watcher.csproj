@@ -7,7 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.IO.FileSystem.Watcher.cs" />
-    <Compile Include="System.IO.FileSystem.Watcher.manual.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
