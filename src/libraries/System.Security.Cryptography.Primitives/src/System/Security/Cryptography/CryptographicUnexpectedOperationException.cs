@@ -7,35 +7,29 @@ using System.Runtime.Serialization;
 
 namespace System.Security.Cryptography
 {
-    public class CryptographicException : Exception
+    public class CryptographicUnexpectedOperationException : CryptographicException
     {
-        public CryptographicException()
+        public CryptographicUnexpectedOperationException()
             : base(SR.Arg_CryptographyException)
         {
         }
 
-        public CryptographicException(int hr)
-            : base(SR.Arg_CryptographyException)
-        {
-            HResult = hr;
-        }
-
-        public CryptographicException(string message)
+        public CryptographicUnexpectedOperationException(string message)
             : base(message)
         {
         }
 
-        public CryptographicException(string message, Exception inner)
+        public CryptographicUnexpectedOperationException(string message, Exception inner)
             : base(message, inner)
         {
         }
 
-        public CryptographicException(string format, string insert)
+        public CryptographicUnexpectedOperationException(string format, string insert)
             : base(string.Format(CultureInfo.CurrentCulture, format, insert))
         {
         }
 
-        protected CryptographicException(SerializationInfo info, StreamingContext context)
+        protected CryptographicUnexpectedOperationException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
         }
