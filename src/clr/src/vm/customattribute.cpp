@@ -141,58 +141,56 @@ CustomAttributeManagedValues Attribute::GetManagedCaValue(CaValue* pCaVal)
 
     CustomAttributeManagedValues gc;
     ZeroMemory(&gc, sizeof(gc));
-   
-    CorSerializationType type = pCaVal->type.tag;
-    
-    if (type == SERIALIZATION_TYPE_ENUM)
-    {
-        gc.string = StringObject::NewString(pCaVal->type.szEnumName, pCaVal->type.cEnumName);                      
-    }
-    else if (type == SERIALIZATION_TYPE_STRING)
-    {
-        gc.string = NULL;
+    GCPROTECT_BEGIN(gc)
+    {  
+        CorSerializationType type = pCaVal->type.tag;
         
-        if (pCaVal->str.pStr)
-            gc.string = StringObject::NewString(pCaVal->str.pStr, pCaVal->str.cbStr);
-    }
-    else if (type == SERIALIZATION_TYPE_TYPE)
-    {
-        gc.string = StringObject::NewString(pCaVal->str.pStr, pCaVal->str.cbStr);              
-    }
-    else if (type == SERIALIZATION_TYPE_SZARRAY)
-    {
-        CorSerializationType arrayType = pCaVal->type.arrayType;
-        ULONG length = pCaVal->arr.length;
-        BOOL bAllBlittableCa = arrayType != SERIALIZATION_TYPE_ENUM;
-
-        if (length == (ULONG)-1)
-            return gc;
-        
-        gc.array = (CaValueArrayREF)AllocateValueSzArray(MscorlibBinder::GetClass(CLASS__CUSTOM_ATTRIBUTE_ENCODED_ARGUMENT), length);
-        CustomAttributeValue* pValues = gc.array->GetDirectPointerToNonObjectElements();
-
-        for (COUNT_T i = 0; i < length; i ++)
-            Attribute::SetBlittableCaValue(&pValues[i], &pCaVal->arr[i], &bAllBlittableCa); 
-
-        if (!bAllBlittableCa)
+        if (type == SERIALIZATION_TYPE_ENUM)
         {
-            GCPROTECT_BEGIN(gc)
-            {   
-                if (arrayType == SERIALIZATION_TYPE_ENUM)
-                    gc.string = StringObject::NewString(pCaVal->type.szEnumName, pCaVal->type.cEnumName);                      
-                
+            gc.string = StringObject::NewString(pCaVal->type.szEnumName, pCaVal->type.cEnumName);                      
+        }
+        else if (type == SERIALIZATION_TYPE_STRING)
+        {
+            gc.string = NULL;
+            
+            if (pCaVal->str.pStr)
+                gc.string = StringObject::NewString(pCaVal->str.pStr, pCaVal->str.cbStr);
+        }
+        else if (type == SERIALIZATION_TYPE_TYPE)
+        {
+            gc.string = StringObject::NewString(pCaVal->str.pStr, pCaVal->str.cbStr);              
+        }
+        else if (type == SERIALIZATION_TYPE_SZARRAY)
+        {
+            CorSerializationType arrayType = pCaVal->type.arrayType;
+            ULONG length = pCaVal->arr.length;
+            BOOL bAllBlittableCa = arrayType != SERIALIZATION_TYPE_ENUM;
+
+            if (arrayType == SERIALIZATION_TYPE_ENUM)
+                gc.string = StringObject::NewString(pCaVal->type.szEnumName, pCaVal->type.cEnumName);  
+
+            if (length != (ULONG)-1)
+            {
+                gc.array = (CaValueArrayREF)AllocateValueSzArray(MscorlibBinder::GetClass(CLASS__CUSTOM_ATTRIBUTE_ENCODED_ARGUMENT), length);
+                CustomAttributeValue* pValues = gc.array->GetDirectPointerToNonObjectElements();
+
                 for (COUNT_T i = 0; i < length; i ++)
+                    Attribute::SetBlittableCaValue(&pValues[i], &pCaVal->arr[i], &bAllBlittableCa); 
+
+                if (!bAllBlittableCa)
                 {
-                    CustomAttributeManagedValues managedCaValue = Attribute::GetManagedCaValue(&pCaVal->arr[i]);
-                    Attribute::SetManagedValue(
-                        managedCaValue,
-                        &gc.array->GetDirectPointerToNonObjectElements()[i]);
+                    for (COUNT_T i = 0; i < length; i ++)
+                    {
+                        CustomAttributeManagedValues managedCaValue = Attribute::GetManagedCaValue(&pCaVal->arr[i]);
+                        Attribute::SetManagedValue(
+                            managedCaValue,
+                            &gc.array->GetDirectPointerToNonObjectElements()[i]);
+                    }
                 }
             }
-            GCPROTECT_END();
         }
     }
-
+    GCPROTECT_END();
     return gc;
 }
 
