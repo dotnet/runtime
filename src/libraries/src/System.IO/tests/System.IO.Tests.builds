@@ -4,13 +4,13 @@
   <ItemGroup>
     <Project Include="System.IO.Tests.csproj" />
     <Project Include="System.IO.Tests.csproj">
-      <TargetGroup>netcoreapp1.0</TargetGroup>
+      <TargetGroup>netstandard1.5</TargetGroup>
       <TestTFMs>netcoreapp1.0</TestTFMs>
     </Project>
     <Project Include="System.IO.Tests.csproj">
       <TestTFMs>net462</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
-      <TargetGroup>netcoreapp1.0</TargetGroup>
+      <TargetGroup>netstandard1.5</TargetGroup>
     </Project>
     <Project Include="System.IO.Tests.csproj">
       <TestTFMs>net463</TestTFMs>
