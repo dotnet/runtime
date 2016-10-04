@@ -10,7 +10,6 @@ using System.Net.Security;
 using System.Runtime.Serialization;
 using System.Security.Principal;
 using System.Threading.Tasks;
-
 namespace System.Net
 {
     [Serializable]
@@ -446,6 +445,7 @@ namespace System.Net
                 throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
             }
         }
+
         public virtual long ContentLength
         {
             get
@@ -535,7 +535,7 @@ namespace System.Net
         {
             throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
         }
-
+   
         public virtual Task<Stream> GetRequestStreamAsync()
         {
             // Offload to a different thread to avoid blocking the caller during request submission.
@@ -608,7 +608,7 @@ namespace System.Net
             {
                 throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
             }
-        }
+        }    
 
         public virtual IWebProxy Proxy
         {

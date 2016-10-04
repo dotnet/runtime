@@ -186,4 +186,49 @@
   <data name="net_proxyschemenotsupported" xml:space="preserve">
     <value>The ServicePointManager does not support proxies with the {0} scheme.</value>
   </data>
+  <data name="net_baddate" xml:space="preserve">
+    <value>The value of the date string in the header is invalid.</value>
+  </data>
+  <data name="net_connarg" xml:space="preserve">
+    <value>Keep-Alive and Close may not be set using this property.</value>
+  </data>
+  <data name="net_fromto" xml:space="preserve">
+    <value>The From parameter cannot be less than To.</value>
+  </data>
+  <data name="net_needchunked" xml:space="preserve">
+    <value>TransferEncoding requires the SendChunked property to be set to true.</value>
+  </data>
+  <data name="net_no100" xml:space="preserve">
+    <value>100-Continue may not be set using this property.</value>
+  </data>
+  <data name="net_nochunked" xml:space="preserve">
+    <value>Chunked encoding must be set via the SendChunked property.</value>
+  </data>
+  <data name="net_nottoken" xml:space="preserve">
+    <value>The supplied string is not a valid HTTP token.</value>
+  </data>
+  <data name="net_rangetoosmall" xml:space="preserve">
+    <value>The From or To parameter cannot be less than 0.</value>
+  </data>
+  <data name="net_rangetype" xml:space="preserve">
+    <value>A different range specifier has already been added to this request.</value>
+  </data>
+  <data name="net_toosmall" xml:space="preserve">
+    <value>The specified value must be greater than 0.</value>
+  </data>
+  <data name="net_wrongversion" xml:space="preserve">
+    <value>Only HTTP/1.0 and HTTP/1.1 version requests are currently supported.</value>
+  </data>
+   <data name="net_WebHeaderInvalidControlChars" xml:space="preserve">
+    <value>Specified value has invalid Control characters.</value>
+  </data>
+  <data name="net_WebHeaderInvalidCRLFChars" xml:space="preserve">
+    <value>Specified value has invalid CRLF characters.</value>
+  </data>
+  <data name="net_WebHeaderInvalidHeaderChars" xml:space="preserve">
+    <value>Specified value has invalid HTTP Header characters.</value>
+  </data>
+  <data name="net_WebHeaderInvalidNonAsciiChars" xml:space="preserve">
+    <value>Specified value has invalid non-ASCII characters.</value>
+  </data>
 </root>

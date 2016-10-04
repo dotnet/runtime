@@ -92,12 +92,50 @@ namespace System.Net
         public override void Abort() { }
         public override System.IAsyncResult BeginGetRequestStream(System.AsyncCallback callback, object state) { return default(System.IAsyncResult); }
         public override System.IAsyncResult BeginGetResponse(System.AsyncCallback callback, object state) { return default(System.IAsyncResult); }
-        public override System.IO.Stream EndGetRequestStream(System.IAsyncResult asyncResult) { return default(System.IO.Stream); }
+        public override System.IO.Stream EndGetRequestStream(System.IAsyncResult asyncResult) { return default(System.IO.Stream); }       
         public override System.Net.WebResponse EndGetResponse(System.IAsyncResult asyncResult) { return default(System.Net.WebResponse); }
+        public override System.Net.WebResponse GetResponse() { return default(System.Net.WebResponse); }
+        public virtual bool AllowWriteStreamBuffering { get { return default(bool); } set { } }        
+        public virtual bool AllowAutoRedirect { get { return default(bool); } set { } }
+        public Uri Address { get { return default(Uri); } }
+        public DecompressionMethods AutomaticDecompression { get { return default(DecompressionMethods); } set { } }
+        public DateTime Date { get { return default(DateTime); } set { } }
+        public static int DefaultMaximumResponseHeadersLength { get { return default(int); } set { } }
+        public static int DefaultMaximumErrorResponseLength { get { return default(int); } set { } }
+        public System.Security.Cryptography.X509Certificates.X509CertificateCollection ClientCertificates {
+            get { return default(System.Security.Cryptography.X509Certificates.X509CertificateCollection); } set { } }
+        public string Expect { get { return default(string); } set { } }
+        public DateTime IfModifiedSince { get { return default(DateTime); } set { } }
+        public bool KeepAlive { get { return default(bool); } set { } }
+        public int MaximumAutomaticRedirections { get { return default(int); } set { } }
+        public int MaximumResponseHeadersLength { get { return default(int); } set { } }
+        public string MediaType { get { return default(string); } set { } }        
+        public System.IO.Stream GetRequestStream(out TransportContext context) { throw null; }
+        public bool Pipelined { get { return default(bool); } set { } }
+        public Version ProtocolVersion { get { return default(Version); } set { } }
+        public int ReadWriteTimeout { get { return default(int); } set { } }
+        public string Referer { get { return default(string); } set { } }
+        public bool SendChunked { get { return default(bool); } set { } }
+        public ServicePoint ServicePoint { get { return default(ServicePoint); } }
+        public string TransferEncoding { get { return default(string); } set { } }
+        public string UserAgent { get { return default(string); } set { } }
+        public bool UnsafeAuthenticatedConnectionSharing { get { return default(bool); } set { } }
+        public override System.IO.Stream GetRequestStream() { return default(System.IO.Stream); }
+        public void AddRange(int range) { }
+        public void AddRange(int from,int to) { }
+        public void AddRange(long range) { }
+        public void AddRange(long from,long to) { }
+        public void AddRange(string rangeSpecifier, int range) { }
+        public void AddRange(string rangeSpecifier, int from,int to) { }
+        public void AddRange(string rangeSpecifier, long range) { }
+        public void AddRange(string rangeSpecifier, long from,long to) { }
+        public string Host { get { return default(string); } set { } }
+        public override string ConnectionGroupName { get { throw null; } set { } }
+        public System.Net.Security.RemoteCertificateValidationCallback ServerCertificateValidationCallback { get; set; }
     }
     public partial class HttpWebResponse : System.Net.WebResponse
     {
-        internal HttpWebResponse() { }
+        public HttpWebResponse() { }
         public override long ContentLength { get { return default(long); } }
         public override string ContentType { get { return default(string); } }
         public virtual System.Net.CookieCollection Cookies { get { return default(System.Net.CookieCollection); } }
@@ -109,6 +147,12 @@ namespace System.Net
         public override bool SupportsHeaders { get { return default(bool); } }
         protected override void Dispose(bool disposing) { }
         public override System.IO.Stream GetResponseStream() { return default(System.IO.Stream); }
+        public string GetResponseHeader(string headerName) { return default(string); }        
+        public Version ProtocolVersion { get { return default(Version); } }        
+        public DateTime LastModified { get { return default(DateTime); } }        
+        public String ContentEncoding { get { return default(string); } }
+        public string CharacterSet { get { return default(string); } }
+        public string Server { get { return default(string); } }
     }
     public interface IAuthenticationModule
     {
@@ -203,7 +247,7 @@ namespace System.Net
         public virtual System.IO.Stream GetRequestStream() { throw null; }
         public virtual System.Threading.Tasks.Task<System.IO.Stream> GetRequestStreamAsync() { return default(System.Threading.Tasks.Task<System.IO.Stream>); }
         public virtual System.Net.WebResponse GetResponse() { throw null; }
-        public virtual System.Threading.Tasks.Task<System.Net.WebResponse> GetResponseAsync() { return default(System.Threading.Tasks.Task<System.Net.WebResponse>); }
+        public virtual System.Threading.Tasks.Task<System.Net.WebResponse> GetResponseAsync() { return default(System.Threading.Tasks.Task<System.Net.WebResponse>); }        
         public static System.Net.IWebProxy GetSystemWebProxy() { throw null; }
         public static bool RegisterPrefix(string prefix, System.Net.IWebRequestCreate creator) { return default(bool); }
     }
