@@ -343,7 +343,31 @@ namespace System
         public override int GetHashCode() { return default(int); }
         public virtual bool IsDefaultAttribute() { return default(bool); }
         public virtual bool Match(object obj) { return default(bool); }
-        public virtual object TypeId { get { return default(bool); } }
+        public virtual object TypeId { get { return default(object); } }
+        public static System.Attribute GetCustomAttribute(System.Reflection.Assembly element, System.Type attributeType) { return default(System.Attribute); }
+        public static System.Attribute GetCustomAttribute(System.Reflection.Assembly element, System.Type attributeType, bool inherit) { return default(System.Attribute); }
+        public static System.Attribute GetCustomAttribute(System.Reflection.MemberInfo element, System.Type attributeType) { return default(System.Attribute); }
+        public static System.Attribute GetCustomAttribute(System.Reflection.MemberInfo element, System.Type attributeType, bool inherit) { return default(System.Attribute); }
+        public static System.Attribute GetCustomAttribute(System.Reflection.Module element, System.Type attributeType) { return default(System.Attribute); }
+        public static System.Attribute GetCustomAttribute(System.Reflection.Module element, System.Type attributeType, bool inherit) { return default(System.Attribute); }
+        public static System.Attribute GetCustomAttribute(System.Reflection.ParameterInfo element, System.Type attributeType) { return default(System.Attribute); }
+        public static System.Attribute GetCustomAttribute(System.Reflection.ParameterInfo element, System.Type attributeType, bool inherit) { return default(System.Attribute); }
+        public static System.Attribute[] GetCustomAttributes(System.Reflection.Assembly element) { return default(System.Attribute[]); }
+        public static System.Attribute[] GetCustomAttributes(System.Reflection.Assembly element, bool inherit) { return default(System.Attribute[]); }
+        public static System.Attribute[] GetCustomAttributes(System.Reflection.Assembly element, System.Type attributeType) { return default(System.Attribute[]); }
+        public static System.Attribute[] GetCustomAttributes(System.Reflection.Assembly element, System.Type attributeType, bool inherit) { return default(System.Attribute[]); }
+        public static System.Attribute[] GetCustomAttributes(System.Reflection.MemberInfo element) { return default(System.Attribute[]); }
+        public static System.Attribute[] GetCustomAttributes(System.Reflection.MemberInfo element, bool inherit) { return default(System.Attribute[]); }
+        public static System.Attribute[] GetCustomAttributes(System.Reflection.MemberInfo element, System.Type type) { return default(System.Attribute[]); }
+        public static System.Attribute[] GetCustomAttributes(System.Reflection.MemberInfo element, System.Type type, bool inherit) { return default(System.Attribute[]); }
+        public static System.Attribute[] GetCustomAttributes(System.Reflection.Module element) { return default(System.Attribute[]); }
+        public static System.Attribute[] GetCustomAttributes(System.Reflection.Module element, bool inherit) { return default(System.Attribute[]); }
+        public static System.Attribute[] GetCustomAttributes(System.Reflection.Module element, System.Type attributeType) { return default(System.Attribute[]); }
+        public static System.Attribute[] GetCustomAttributes(System.Reflection.Module element, System.Type attributeType, bool inherit) { return default(System.Attribute[]); }
+        public static System.Attribute[] GetCustomAttributes(System.Reflection.ParameterInfo element) { return default(System.Attribute[]); }
+        public static System.Attribute[] GetCustomAttributes(System.Reflection.ParameterInfo element, bool inherit) { return default(System.Attribute[]); }
+        public static System.Attribute[] GetCustomAttributes(System.Reflection.ParameterInfo element, System.Type attributeType) { return default(System.Attribute[]); }
+        public static System.Attribute[] GetCustomAttributes(System.Reflection.ParameterInfo element, System.Type attributeType, bool inherit) { return default(System.Attribute[]); }
     }
     [System.FlagsAttribute]
     public enum AttributeTargets
@@ -1119,6 +1143,7 @@ namespace System
         public static void Collect(int generation) { }
         public static void Collect(int generation, System.GCCollectionMode mode) { }
         public static void Collect(int generation, System.GCCollectionMode mode, bool blocking) { }
+        public static void Collect(int generation, System.GCCollectionMode mode, bool blocking, bool compacting) { }
         public static int CollectionCount(int generation) { return default(int); }
         public static int GetGeneration(object obj) { return default(int); }
         public static long GetTotalMemory(bool forceFullCollection) { return default(long); }
@@ -1233,6 +1258,12 @@ namespace System
         public InsufficientExecutionStackException() { }
         public InsufficientExecutionStackException(string message) { }
         public InsufficientExecutionStackException(string message, System.Exception innerException) { }
+    }
+    public sealed partial class InsufficientMemoryException : System.OutOfMemoryException
+    {
+        public InsufficientMemoryException() { }
+        public InsufficientMemoryException(string message) { }
+        public InsufficientMemoryException(string message, System.Exception innerException) { }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct Int16 : System.IComparable, System.IComparable<short>, System.IConvertible, System.IEquatable<short>, System.IFormattable
@@ -1661,6 +1692,7 @@ namespace System
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static bool operator ==(System.RuntimeFieldHandle left, System.RuntimeFieldHandle right) { return default(bool); }
         public static bool operator !=(System.RuntimeFieldHandle left, System.RuntimeFieldHandle right) { return default(bool); }
+        public System.IntPtr Value { get { return default(System.IntPtr); } }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct RuntimeMethodHandle : System.Runtime.Serialization.ISerializable
@@ -1671,6 +1703,8 @@ namespace System
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static bool operator ==(System.RuntimeMethodHandle left, System.RuntimeMethodHandle right) { return default(bool); }
         public static bool operator !=(System.RuntimeMethodHandle left, System.RuntimeMethodHandle right) { return default(bool); }
+        public System.IntPtr Value { get { return default(System.IntPtr); } }
+        public System.IntPtr GetFunctionPointer() { return default(System.IntPtr); }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct RuntimeTypeHandle : System.Runtime.Serialization.ISerializable
@@ -1683,6 +1717,8 @@ namespace System
         public static bool operator ==(System.RuntimeTypeHandle left, object right) { return default(bool); }
         public static bool operator !=(object left, System.RuntimeTypeHandle right) { return default(bool); }
         public static bool operator !=(System.RuntimeTypeHandle left, object right) { return default(bool); }
+        public System.IntPtr Value { get { return default(System.IntPtr); } }
+        public System.ModuleHandle GetModuleHandle() { return default(System.ModuleHandle); }
     }
     [System.CLSCompliantAttribute(false)]
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -2972,7 +3008,7 @@ namespace System.Runtime.ConstrainedExecution
         WillNotCorruptState = 3,
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(1133), Inherited=false)]
-    internal sealed partial class ReliabilityContractAttribute : System.Attribute
+    public sealed partial class ReliabilityContractAttribute : System.Attribute
     {
         public ReliabilityContractAttribute(System.Runtime.ConstrainedExecution.Consistency consistencyGuarantee, System.Runtime.ConstrainedExecution.Cer cer) { }
         public System.Runtime.ConstrainedExecution.Cer Cer { get { return default(System.Runtime.ConstrainedExecution.Cer); } }
@@ -3391,6 +3427,7 @@ namespace System.Diagnostics
     [System.AttributeUsageAttribute((System.AttributeTargets)(3), AllowMultiple = false)]
     public sealed partial class DebuggableAttribute : System.Attribute
     {
+        public DebuggableAttribute(bool isJITTrackingEnabled, bool isJITOptimizerDisabled) { }
         public DebuggableAttribute(System.Diagnostics.DebuggableAttribute.DebuggingModes modes) { }
         [System.FlagsAttribute]
         public enum DebuggingModes
@@ -5446,6 +5483,13 @@ namespace System.Runtime
         public static System.Runtime.GCLargeObjectHeapCompactionMode LargeObjectHeapCompactionMode { get { return default(System.Runtime.GCLargeObjectHeapCompactionMode); }[System.Security.SecurityCriticalAttribute]set { } }
         public static System.Runtime.GCLatencyMode LatencyMode { get { return default(System.Runtime.GCLatencyMode); }[System.Security.SecurityCriticalAttribute]set { } }
     }
+    public sealed partial class MemoryFailPoint : System.Runtime.ConstrainedExecution.CriticalFinalizerObject, System.IDisposable
+    {
+        public MemoryFailPoint(int sizeInMegabytes) { }
+        public void Dispose() { }
+        ~MemoryFailPoint() { }
+    }
+
 }
 namespace System.Runtime.CompilerServices
 {
@@ -5702,6 +5746,11 @@ namespace System.Runtime.CompilerServices
     public sealed partial class StringFreezingAttribute : System.Attribute
     {
         public StringFreezingAttribute() { }
+    }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(256))]
+    public sealed partial class FixedAddressValueTypeAttribute : System.Attribute
+    {
+        public FixedAddressValueTypeAttribute() { }
     }
 }
 namespace System.Runtime.ExceptionServices
