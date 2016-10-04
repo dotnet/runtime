@@ -2,13 +2,6 @@ cmake_minimum_required(VERSION 2.8.12.2)
 
 include_directories(SYSTEM /usr/local/include)
 
-# set kernel version to detect Alpine
-EXEC_PROGRAM(uname ARGS -v OUTPUT_VARIABLE CMAKE_SYSTEM_KERNEL_VERSION)
-string(FIND "${CMAKE_SYSTEM_KERNEL_VERSION}" "Alpine" PAL_SYSTEM_ALPINE)
-if(PAL_SYSTEM_ALPINE EQUAL -1)
-    unset(PAL_SYSTEM_ALPINE)
-endif()
-
 include(configure.cmake)
 
 project(coreclrpal)
@@ -69,6 +62,16 @@ elseif(PAL_CMAKE_PLATFORM_ARCH_ARM64)
   add_definitions(-DBIT64=1)
   add_definitions(-D_WIN64=1)
 endif()
+
+if(CMAKE_SYSTEM_NAME STREQUAL Linux AND NOT CLR_CMAKE_PLATFORM_ALPINE_LINUX)
+  # Currently the _xstate is not available on Alpine Linux
+  add_definitions(-DXSTATE_SUPPORTED)
+endif(CMAKE_SYSTEM_NAME STREQUAL Linux AND NOT CLR_CMAKE_PLATFORM_ALPINE_LINUX)
+
+if(CLR_CMAKE_PLATFORM_ALPINE_LINUX)
+  # Setting RLIMIT_NOFILE breaks debugging of coreclr on Alpine Linux for some reason
+  add_definitions(-DDONT_SET_RLIMIT_NOFILE)
+endif(CLR_CMAKE_PLATFORM_ALPINE_LINUX)
 
 # turn off capability to remove unused functions (which was enabled in debug build with sanitizers)
 set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} -Wl,--no-gc-sections")
@@ -252,7 +255,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     find_library(UNWIND_ARCH NAMES unwind-x86_64)
   endif()
 
-  if(PAL_SYSTEM_ALPINE)
+  if(CLR_CMAKE_PLATFORM_ALPINE_LINUX)
     find_library(INTL intl)
   endif()
 

@@ -467,13 +467,13 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
     }
 
     // TODO: Enable for all Unix systems
-#if defined(_AMD64_) && defined(__linux__)
+#if defined(_AMD64_) && defined(XSTATE_SUPPORTED)
     if ((lpContext->ContextFlags & CONTEXT_XSTATE) == CONTEXT_XSTATE)
     {
         _ASSERTE(FPREG_HasExtendedState(native));
         memcpy_s(FPREG_Xstate_Ymmh(native), sizeof(M128A) * 16, lpContext->VectorRegister, sizeof(M128A) * 16);
     }
-#endif // _AMD64_
+#endif //_AMD64_ && XSTATE_SUPPORTED
 }
 
 /*++
@@ -564,22 +564,24 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
 #endif
     }
 
-    // TODO: Enable for all Unix systems
-#if defined(_AMD64_) && defined(__linux__)
+#ifdef _AMD64_
     if ((contextFlags & CONTEXT_XSTATE) == CONTEXT_XSTATE)
     {
+    // TODO: Enable for all Unix systems
+#if XSTATE_SUPPORTED
         if (FPREG_HasExtendedState(native))
         {
             memcpy_s(lpContext->VectorRegister, sizeof(M128A) * 16, FPREG_Xstate_Ymmh(native), sizeof(M128A) * 16);
         }
         else
+#endif // XSTATE_SUPPORTED
         {
             // Reset the CONTEXT_XSTATE bit(s) so it's clear that the extended state data in
             // the CONTEXT is not valid.
             const ULONG xstateFlags = CONTEXT_XSTATE & ~(CONTEXT_CONTROL & CONTEXT_INTEGER);
             lpContext->ContextFlags &= ~xstateFlags;
         }
-    } 
+    }
 #endif // _AMD64_
 }
 

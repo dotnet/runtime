@@ -100,6 +100,10 @@ static bool registered_sigterm_handler = false;
 struct sigaction g_previous_activation;
 #endif
 
+// Offset of the local variable containing native context in the common_signal_handler function.
+// This offset is relative to the frame pointer.
+int g_common_signal_handler_context_locvar_offset = 0;
+
 /* public function definitions ************************************************/
 
 /*++
@@ -582,6 +586,7 @@ Note:
     the "pointers" parameter should contain a valid exception record pointer,
     but the ContextRecord pointer will be overwritten.
 --*/
+__attribute__((noinline))
 static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext, int numParams, ...)
 {
     sigset_t signal_set;
@@ -590,6 +595,7 @@ static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext
     native_context_t *ucontext;
 
     ucontext = (native_context_t *)sigcontext;
+    g_common_signal_handler_context_locvar_offset = (int)((char*)&ucontext - (char*)__builtin_frame_address(0));
 
     AllocateExceptionRecords(&exceptionRecord, &contextRecord);
 

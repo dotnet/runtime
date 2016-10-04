@@ -221,15 +221,34 @@ static void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, 
 #endif
 }
 
+extern int g_common_signal_handler_context_locvar_offset;
+
 BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers)
 {
     int st;
     unw_context_t unwContext;
     unw_cursor_t cursor;
 
-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(_ARM64_) || defined(_ARM_)
-    DWORD64 curPc;
-#endif
+    DWORD64 curPc = CONTEXTGetPC(context);
+
+#ifndef __APPLE__
+    // Check if the PC is the return address from the SEHProcessException in the common_signal_handler. 
+    // If that's the case, extract its local variable containing the native_context_t of the hardware 
+    // exception and return that. This skips the hardware signal handler trampoline that the libunwind 
+    // cannot cross on some systems.
+    if ((void*)curPc == g_SEHProcessExceptionReturnAddress)
+    {
+        ULONG contextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_EXCEPTION_ACTIVE;
+
+    #if defined(_AMD64_)
+        contextFlags |= CONTEXT_XSTATE;
+    #endif
+        size_t nativeContext = *(size_t*)(CONTEXTGetFP(context) + g_common_signal_handler_context_locvar_offset);
+        CONTEXTFromNativeContext((const native_context_t *)nativeContext, context, contextFlags);
+
+        return TRUE;
+    }
+#endif 
 
     if ((context->ContextFlags & CONTEXT_EXCEPTION_ACTIVE) != 0)
     {
@@ -240,7 +259,7 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
         // So we compensate it by incrementing the PC before passing it to the unwinder.
         // Without it, the unwinder would not find unwind info if the hardware exception
         // happened in the first instruction of a function.
-        CONTEXTSetPC(context, CONTEXTGetPC(context) + 1);
+        CONTEXTSetPC(context, curPc + 1);
     }
 
 #if !UNWIND_CONTEXT_IS_UCONTEXT_T
@@ -262,18 +281,6 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
 #if !UNWIND_CONTEXT_IS_UCONTEXT_T
     // Set the unwind context to the specified windows context
     WinContextToUnwindCursor(context, &cursor);
-#endif
-
-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)  || defined(_ARM64_) || defined(_ARM_)
-    // FreeBSD, NetBSD and OSX appear to do two different things when unwinding
-    // 1: If it reaches where it cannot unwind anymore, say a 
-    // managed frame.  It wil return 0, but also update the $pc
-    // 2: If it unwinds all the way to _start it will return
-    // 0 from the step, but $pc will stay the same.
-    // The behaviour of libunwind from nongnu.org is to null the PC
-    // So we bank the original PC here, so we can compare it after
-    // the step
-    curPc = CONTEXTGetPC(context);
 #endif
 
     st = unw_step(&cursor);
@@ -303,12 +310,18 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
     // Update the passed in windows context to reflect the unwind
     //
     UnwindContextToWinContext(&cursor, context);
-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)  || defined(_ARM64_) || defined(_ARM_)
+
+    // FreeBSD, NetBSD, OSX and Alpine appear to do two different things when unwinding
+    // 1: If it reaches where it cannot unwind anymore, say a 
+    // managed frame.  It will return 0, but also update the $pc
+    // 2: If it unwinds all the way to _start it will return
+    // 0 from the step, but $pc will stay the same.
+    // So we detect that here and set the $pc to NULL in that case.
+    // This is the default behavior of the libunwind on Linux.
     if (st == 0 && CONTEXTGetPC(context) == curPc)
     {
         CONTEXTSetPC(context, 0);
     }
-#endif
 
     if (contextPointers != NULL)
     {
