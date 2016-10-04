@@ -4,13 +4,13 @@
   <ItemGroup>
     <Project Include="CoreCLR\System.Reflection.TypeExtensions.CoreCLR.Tests.csproj" />
     <Project Include="CoreCLR\System.Reflection.TypeExtensions.CoreCLR.Tests.csproj">
-      <TestTFMs>net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>net46</TestTFMs>
     </Project>
     <Project Include="System.Reflection.TypeExtensions.Tests.csproj" />
     <Project Include="System.Reflection.TypeExtensions.Tests.csproj">
-      <TestTFMs>net462</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>net462</TestTFMs>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

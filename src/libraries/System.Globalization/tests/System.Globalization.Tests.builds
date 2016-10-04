@@ -8,9 +8,9 @@
       <TestTFMs>netcoreapp1.0</TestTFMs>
     </Project>
     <Project Include="System.Globalization.Tests.csproj">
-      <TestTFMs>net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>netstandard1.3</TargetGroup>
+      <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>net46</TestTFMs>
     </Project>
     <Project Include="Performance\System.Globalization.Performance.Tests.csproj" />
   </ItemGroup>

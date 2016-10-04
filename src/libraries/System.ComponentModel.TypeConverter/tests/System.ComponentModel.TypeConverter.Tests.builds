@@ -4,8 +4,8 @@
   <ItemGroup>
     <Project Include="System.ComponentModel.TypeConverter.Tests.csproj" />
     <Project Include="System.ComponentModel.TypeConverter.Tests.csproj">
-      <TestTFMs>net463</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>net463</TestTFMs>
     </Project>
     <Project Include="System.ComponentModel.TypeConverter.Tests.csproj">
       <TargetGroup>netstandard1.5</TargetGroup>
@@ -13,8 +13,8 @@
     </Project>
     <Project Include="System.ComponentModel.TypeConverter.Tests.csproj">
       <TargetGroup>netstandard1.5</TargetGroup>
-      <TestTFMs>net462</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>net462</TestTFMs>
     </Project>
     <Project Include="Performance\System.ComponentModel.TypeConverter.Performance.Tests.csproj" />
   </ItemGroup>

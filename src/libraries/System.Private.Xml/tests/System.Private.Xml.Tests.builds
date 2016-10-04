@@ -3,64 +3,64 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="Readers\CharCheckingReader\System.Xml.RW.CharCheckingReader.Tests.csproj">
-      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
     </Project>
     <Project Include="Readers\CustomReader\System.Xml.RW.CustomReader.Tests.csproj">
-      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
     </Project>
     <Project Include="Readers\FactoryReader\System.Xml.RW.FactoryReader.Tests.csproj">
-      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
     </Project>
     <Project Include="Readers\NameTable\System.Xml.RW.NameTable.Tests.csproj">
-      <TestTFMs>netcoreapp1.0;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>netcoreapp1.0;net46</TestTFMs>
     </Project>
     <Project Include="Readers\ReaderSettings\System.Xml.RW.ReaderSettings.Tests.csproj">
-      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
     </Project>
     <Project Include="Readers\SubtreeReader\System.Xml.RW.SubtreeReader.Tests.csproj">
-      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
     </Project>
     <Project Include="Readers\WrappedReader\System.Xml.RW.WrappedReader.Tests.csproj">
-      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
     </Project>
     <Project Include="Writers\RwFactory\System.Xml.RW.RwFactory.Tests.csproj">
-      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
     </Project>
     <Project Include="Writers\XmlWriterApi\System.Xml.RW.XmlWriterApi.Tests.csproj">
-      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
     </Project>
     <Project Include="XmlConvert\System.Xml.RW.XmlConvert.Tests.csproj">
-      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
     </Project>
     <Project Include="XmlDocument\System.Xml.XmlDocument.Tests.csproj">
-      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
     </Project>
     <Project Include="XmlReaderLib\System.Xml.RW.XmlReaderLib.csproj">
-      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
     </Project>
     <Project Include="XmlReader\ReadContentAs\System.Xml.RW.XmlReader.ReadContentAs.Tests.csproj">
-      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
     </Project>
     <Project Include="XmlReader\Tests\System.Xml.RW.XmlReader.Tests.csproj">
-      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
     </Project>
     <Project Include="XmlReader\XmlResolver\System.Xml.RW.XmlSystemPathResolver.Tests.csproj">
-      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
     </Project>
     <Project Include="XmlSchema\XmlSchemaSet\System.Xml.XmlSchemaSet.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
@@ -72,16 +72,16 @@
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="XmlWriter\System.Xml.RW.XmlWriter.Tests.csproj">
-      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
     </Project>
     <Project Include="XPath\XmlDocument\System.Xml.XPath.XmlDocument.Tests.csproj">
-      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
     </Project>
     <Project Include="XPath\XPathDocument\System.Xml.XPath.Tests.csproj">
-      <TestTFMs>netcoreapp1.0;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>netcoreapp1.0;net46</TestTFMs>
     </Project>
     <Project Include="Xslt\XslCompiledTransformApi\System.Xml.Xsl.XslCompiledTransformApi.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
