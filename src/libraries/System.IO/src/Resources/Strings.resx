@@ -146,5 +146,26 @@
   </data>
   <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
     <value>Cannot access a closed Stream.</value>
+  </data>  
+  <data name="InvalidOperation_AsyncIOInProgress" xml:space="preserve">
+    <value>The stream is currently in use by a previous operation on the stream.</value>
+  </data>
+  <data name="Argument_EmptyPath" xml:space="preserve">
+    <value>Empty path name is not legal.</value>
+  </data>
+  <data name="Argument_StreamNotReadable" xml:space="preserve">
+    <value>Stream was not readable.</value>
+  </data>
+  <data name="Argument_StreamNotWritable" xml:space="preserve">
+    <value>Stream was not writable.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
+    <value>Positive number required.</value>
+  </data>
+  <data name="ObjectDisposed_WriterClosed" xml:space="preserve">
+    <value>Cannot write to a closed TextWriter.</value>
+  </data>
+  <data name="ObjectDisposed_ReaderClosed" xml:space="preserve">
+    <value>Cannot read from a closed TextReader.</value>
   </data>
 </root>
