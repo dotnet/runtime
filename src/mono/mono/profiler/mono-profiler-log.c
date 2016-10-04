@@ -558,10 +558,12 @@ init_time (void)
 }
 
 /*
- * These macros create a scope to avoid leaking the buffer returned
- * from ensure_logbuf () as it may have been invalidated by a GC
- * thread during STW. If you called init_thread () with add_to_lls =
- * FALSE, then don't use these macros.
+ * These macros should be used when writing an event to a log buffer. They take
+ * care of a bunch of stuff that can be repetitive and error-prone, such as
+ * acquiring/releasing the buffer lock, incrementing the event counter,
+ * expanding the log buffer, processing requests, etc. They also create a scope
+ * so that it's harder to leak the LogBuffer pointer, which can be problematic
+ * as the pointer is unstable when the buffer lock isn't acquired.
  */
 
 #define ENTER_LOG(COUNTER, BUFFER, SIZE) \
