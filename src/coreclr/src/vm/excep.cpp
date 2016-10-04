@@ -12913,15 +12913,6 @@ void ExceptionNotifications::DeliverNotificationInternal(ExceptionNotificationHa
     AppDomain *pCurDomain = GetAppDomain();
     _ASSERTE(pCurDomain != NULL);
 
-#ifdef FEATURE_CORECLR
-    if (true)
-    {
-        // On CoreCLR, we dont support enhanced exception notifications
-        _ASSERTE(!"CoreCLR does not support enhanced exception notifications!");
-        return;
-    }
-#endif // FEATURE_CORECLR
-
     struct
     {
         OBJECTREF oNotificationDelegate;

@@ -2240,13 +2240,6 @@ namespace System {
 
         [System.Security.SecurityCritical]  // auto-generated_required
         public void SetData (string name, object data) {
-#if FEATURE_CORECLR        
-            if (!name.Equals("LOCATION_URI"))
-            {
-                // Only LOCATION_URI can be set using AppDomain.SetData
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_SetData_OnlyLocationURI", name));
-            }
-#endif // FEATURE_CORECLR            
             SetDataHelper(name, data, null);
         }
 
