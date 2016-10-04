@@ -120,11 +120,6 @@ namespace System.Diagnostics
             _errorStreamReadMode = StreamReadMode.Undefined;
         }
 
-        ~Process()
-        {
-            Dispose(false);
-        }
-
         public SafeProcessHandle SafeHandle
         {
             get
