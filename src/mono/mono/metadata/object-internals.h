@@ -1341,12 +1341,6 @@ void          mono_dynamic_image_release_gc_roots (MonoDynamicImage *image);
 
 void        mono_reflection_setup_internal_class  (MonoReflectionTypeBuilder *tb);
 
-MonoReflectionType*
-ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilder *tb);
-
-void
-ves_icall_TypeBuilder_setup_internal_class (MonoReflectionTypeBuilder *tb);
-
 void        mono_reflection_get_dynamic_overrides (MonoClass *klass, MonoMethod ***overrides, int *num_overrides, MonoError *error);
 
 void mono_reflection_destroy_dynamic_method (MonoReflectionDynamicMethod *mb);
@@ -1775,8 +1769,8 @@ ves_icall_CustomAttributeBuilder_GetBlob (MonoReflectionAssembly *assembly, Mono
 void
 ves_icall_DynamicMethod_create_dynamic_method (MonoReflectionDynamicMethod *mb);
 
-MonoBoolean
-ves_icall_TypeBuilder_get_IsGenericParameter (MonoReflectionTypeBuilder *tb);
+MonoReflectionType*
+ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilder *tb);
 
 void
 ves_icall_EnumBuilder_setup_enum_type (MonoReflectionType *enumtype,

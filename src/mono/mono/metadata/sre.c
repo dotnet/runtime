@@ -4060,12 +4060,6 @@ mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObj
 	return NULL;
 }
 
-void
-ves_icall_TypeBuilder_setup_internal_class (MonoReflectionTypeBuilder *tb)
-{
-	g_assert_not_reached ();
-}
-
 gboolean
 mono_reflection_create_generic_class (MonoReflectionTypeBuilder *tb, MonoError *error)
 {
