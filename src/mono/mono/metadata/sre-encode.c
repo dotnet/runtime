@@ -803,32 +803,6 @@ mono_image_typedef_or_ref (MonoDynamicImage *assembly, MonoType *type)
 }
 
 guint32
-mono_dynimage_encode_generic_method_definition_sig (MonoDynamicImage *assembly, MonoReflectionMethodBuilder *mb)
-{
-	SigBuffer buf;
-	int i;
-	guint32 nparams = mono_array_length (mb->generic_params);
-	guint32 idx;
-
-	if (!assembly->save)
-		return 0;
-
-	sigbuffer_init (&buf, 32);
-
-	sigbuffer_add_value (&buf, 0xa);
-	sigbuffer_add_value (&buf, nparams);
-
-	for (i = 0; i < nparams; i++) {
-		sigbuffer_add_value (&buf, MONO_TYPE_MVAR);
-		sigbuffer_add_value (&buf, i);
-	}
-
-	idx = sigbuffer_add_to_blob_cached (assembly, &buf);
-	sigbuffer_free (&buf);
-	return idx;
-}
-
-guint32
 mono_dynimage_encode_generic_method_sig (MonoDynamicImage *assembly, MonoGenericContext *context)
 {
 	SigBuffer buf;
@@ -853,84 +827,6 @@ mono_dynimage_encode_generic_method_sig (MonoDynamicImage *assembly, MonoGeneric
 	sigbuffer_free (&buf);
 	return idx;
 }
-
-#ifndef DISABLE_REFLECTION_EMIT
-guint32
-mono_dynimage_encode_generic_typespec (MonoDynamicImage *assembly, MonoReflectionTypeBuilder *tb, MonoError *error)
-{
-	MonoDynamicTable *table;
-	MonoClass *klass;
-	MonoType *type;
-	guint32 *values;
-	guint32 token;
-	SigBuffer buf;
-	int count, i;
-
-	/*
-	 * We're creating a TypeSpec for the TypeBuilder of a generic type declaration,
-	 * ie. what we'd normally use as the generic type in a TypeSpec signature.
-	 * Because of this, we must not insert it into the `typeref' hash table.
-	 */
-	type = mono_reflection_type_get_handle ((MonoReflectionType*)tb, error);
-	return_val_if_nok (error, 0);
-	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->typespec, type));
-	if (token)
-		return token;
-
-	sigbuffer_init (&buf, 32);
-
-	g_assert (tb->generic_params);
-	klass = mono_class_from_mono_type (type);
-
-	if (tb->generic_container) {
-		if (!mono_reflection_create_generic_class (tb, error))
-			goto fail;
-	}
-
-	sigbuffer_add_value (&buf, MONO_TYPE_GENERICINST);
-	g_assert (klass->generic_container);
-	sigbuffer_add_value (&buf, klass->byval_arg.type);
-	sigbuffer_add_value (&buf, mono_dynimage_encode_typedef_or_ref_full (assembly, &klass->byval_arg, FALSE));
-
-	count = mono_array_length (tb->generic_params);
-	sigbuffer_add_value (&buf, count);
-	for (i = 0; i < count; i++) {
-		MonoReflectionGenericParam *gparam;
-
-		gparam = mono_array_get (tb->generic_params, MonoReflectionGenericParam *, i);
-		MonoType *gparam_type = mono_reflection_type_get_handle ((MonoReflectionType*)gparam, error);
-		if (!is_ok (error))
-			goto fail;
-
-		encode_type (assembly, gparam_type, &buf);
-	}
-
-	table = &assembly->tables [MONO_TABLE_TYPESPEC];
-
-	if (assembly->save) {
-		token = sigbuffer_add_to_blob_cached (assembly, &buf);
-		alloc_table (table, table->rows + 1);
-		values = table->values + table->next_idx * MONO_TYPESPEC_SIZE;
-		values [MONO_TYPESPEC_SIGNATURE] = token;
-	}
-	sigbuffer_free (&buf);
-
-	token = MONO_TYPEDEFORREF_TYPESPEC | (table->next_idx << MONO_TYPEDEFORREF_BITS);
-	g_hash_table_insert (assembly->typespec, type, GUINT_TO_POINTER(token));
-	table->next_idx ++;
-	return token;
-fail:
-	sigbuffer_free (&buf);
-	return 0;
-}
-#else /*DISABLE_REFLECTION_EMIT*/
-guint32
-mono_dynimage_encode_generic_typespec (MonoDynamicImage *assembly, MonoReflectionTypeBuilder *tb, MonoError *error)
-{
-	g_assert_not_reached ();
-	return 0;
-}
-#endif /*DISABLE_REFLECTION_EMIT*/
 
 #ifndef DISABLE_REFLECTION_EMIT
 guint32

@@ -347,7 +347,6 @@ mono_dynamic_image_create (MonoDynamicAssembly *assembly, char *assembly_name, c
 	image->handleref_managed = mono_g_hash_table_new_type ((GHashFunc)mono_object_hash, NULL, MONO_HASH_KEY_GC, MONO_ROOT_SOURCE_REFLECTION, "dynamic module reference-to-token table");
 	image->tokens = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_REFLECTION, "dynamic module tokens table");
 	image->generic_def_objects = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_REFLECTION, "dynamic module generic definitions table");
-	image->methodspec = mono_g_hash_table_new_type ((GHashFunc)mono_object_hash, NULL, MONO_HASH_KEY_GC, MONO_ROOT_SOURCE_REFLECTION, "dynamic module method specifications table");
 	image->typespec = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal);
 	image->typeref = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal);
 	image->blob_cache = g_hash_table_new ((GHashFunc)mono_blob_entry_hash, (GCompareFunc)mono_blob_entry_equal);
@@ -469,7 +468,6 @@ mono_dynamic_image_release_gc_roots (MonoDynamicImage *image)
 	release_hashtable (&image->tokens);
 	release_hashtable (&image->remapped_tokens);
 	release_hashtable (&image->generic_def_objects);
-	release_hashtable (&image->methodspec);
 }
 
 // Free dynamic image pass one: Free resources but not image itself
@@ -480,8 +478,6 @@ mono_dynamic_image_free (MonoDynamicImage *image)
 	GList *list;
 	int i;
 
-	if (di->methodspec)
-		mono_g_hash_table_destroy (di->methodspec);
 	if (di->typespec)
 		g_hash_table_destroy (di->typespec);
 	if (di->typeref)
