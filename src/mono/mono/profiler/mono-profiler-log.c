@@ -1298,6 +1298,8 @@ sync_point_flush (void)
 	g_assert (InterlockedReadPointer (&buffer_rwlock_exclusive) == (gpointer) thread_id () && "Why don't we hold the exclusive lock?");
 
 	MONO_LLS_FOREACH_SAFE (&profiler_thread_list, MonoProfilerThread, thread) {
+		g_assert (thread->attached && "Why is a thread in the LLS not attached?");
+
 		send_buffer (thread);
 		init_buffer_state (thread);
 	} MONO_LLS_FOREACH_SAFE_END
@@ -3895,6 +3897,8 @@ log_shutdown (MonoProfiler *prof)
 	 */
 	while (profiler_thread_list.head) {
 		MONO_LLS_FOREACH_SAFE (&profiler_thread_list, MonoProfilerThread, thread) {
+			g_assert (thread->attached && "Why is a thread in the LLS not attached?");
+
 			remove_thread (thread);
 		} MONO_LLS_FOREACH_SAFE_END
 	}
