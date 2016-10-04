@@ -1230,27 +1230,12 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj,
 		return 0;
 	}
 
-	if (strcmp (klass->name, "MethodBuilder") == 0) {
-		/* These are handled in managed code */
-		g_assert_not_reached ();
-	} else if (strcmp (klass->name, "ConstructorBuilder") == 0) {
-		/* These are handled in managed code */
-		g_assert_not_reached ();
-	} else if (strcmp (klass->name, "FieldBuilder") == 0) {
-		/* These are handled in managed code */
-		g_assert_not_reached ();
-	} else if (strcmp (klass->name, "TypeBuilder") == 0) {
-		/* These are handled in managed code */
-		g_assert_not_reached ();
-	} else if (strcmp (klass->name, "RuntimeType") == 0) {
+	if (strcmp (klass->name, "RuntimeType") == 0) {
 		MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType *)obj, error);
 		return_val_if_nok (error, 0);
 		MonoClass *mc = mono_class_from_mono_type (type);
 		token = mono_metadata_token_from_dor (
 			mono_dynimage_encode_typedef_or_ref_full (assembly, type, mc->generic_container == NULL || create_open_instance));
-	} else if (strcmp (klass->name, "GenericTypeParameterBuilder") == 0) {
-		/* These are handled in managed code */
-		g_assert_not_reached ();
 	} else if (strcmp (klass->name, "MonoCMethod") == 0 ||
 			   strcmp (klass->name, "MonoMethod") == 0) {
 		MonoReflectionMethod *m = (MonoReflectionMethod *)obj;
@@ -1304,18 +1289,6 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj,
 		return_val_if_nok (error, 0);
 		token = mono_metadata_token_from_dor (
 			mono_image_typedef_or_ref (assembly, type));
-	} else if (is_sre_generic_instance (klass) || is_sre_array (klass) || is_sre_byref (klass) || is_sre_pointer (klass)) {
-		/* These are handled in managed code */
-		g_assert_not_reached ();
-	} else if (strcmp (klass->name, "FieldOnTypeBuilderInst") == 0) {
-		/* These are handled in managed code */
-		g_assert_not_reached ();
-	} else if (strcmp (klass->name, "ConstructorOnTypeBuilderInst") == 0) {
-		/* These are handled in managed code */
-		g_assert_not_reached ();
-	} else if (strcmp (klass->name, "MethodOnTypeBuilderInst") == 0) {
-		/* These are handled in managed code */
-		g_assert_not_reached ();
 	} else {
 		g_error ("requested token for %s\n", klass->name);
 	}
