@@ -157,11 +157,12 @@ bool pal::get_default_servicing_directory(string_t* recv)
     recv->clear();
 
     // See https://github.com/dotnet/cli/issues/2179
-#ifdef _TARGET_X86_
-    // In WOW64 mode, PF maps to PFx86.
-    if (!pal::getenv(_X("ProgramFiles"), recv))
-#elif defined(_TARGET_AMD64_)
+#if defined(_TARGET_AMD64_)
     if (!pal::getenv(_X("ProgramFiles(x86)"), recv))
+#else
+    // In WOW64 mode, PF maps to PFx86.
+    // For Arm64, there is no wow mode as of now, so this should be fine
+    if (!pal::getenv(_X("ProgramFiles"), recv))
 #endif
     {
         return false;
