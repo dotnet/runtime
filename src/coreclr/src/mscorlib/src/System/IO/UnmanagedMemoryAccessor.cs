@@ -301,6 +301,7 @@ namespace System.IO {
             return result;
         }
 
+        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private unsafe Int32 UnsafeReadInt32(byte* pointer)
         {
@@ -836,6 +837,7 @@ namespace System.IO {
             }
         }
 
+        [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private unsafe void UnsafeWriteInt32(byte* pointer, Int32 value)
         {
