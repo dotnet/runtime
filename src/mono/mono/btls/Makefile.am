@@ -1,7 +1,43 @@
 BTLS_STATIC_LIST = build-static/mono-btls-static-lo.txt
 BTLS_SHARED_LIST = build-shared/mono-btls-shared-lo.txt
 
-BTLS_DEPS = $(BTLS_LIBS) build-shared/Makefile build-static/Makefile
+EXTRA_DIST = btls-android-utils.c \
+	btls-bio.c \
+	btls-bio.h \
+	btls-error.c \
+	btls-error.h \
+	btls-key.c \
+	btls-key.h \
+	btls-pkcs12.c \
+	btls-pkcs12.h \
+	btls-ssl.c \
+	btls-ssl-ctx.c \
+	btls-ssl-ctx.h \
+	btls-ssl.h \
+	btls-util.c \
+	btls-util.h \
+	btls-x509.c \
+	btls-x509-chain.c \
+	btls-x509-chain.h \
+	btls-x509-crl.c \
+	btls-x509-crl.h \
+	btls-x509.h \
+	btls-x509-lookup.c \
+	btls-x509-lookup.h \
+	btls-x509-lookup-mono.c \
+	btls-x509-lookup-mono.h \
+	btls-x509-name.c \
+	btls-x509-name.h \
+	btls-x509-revoked.c \
+	btls-x509-revoked.h \
+	btls-x509-store.c \
+	btls-x509-store-ctx.c \
+	btls-x509-store-ctx.h \
+	btls-x509-store.h \
+	btls-x509-verify-param.c \
+	btls-x509-verify-param.h \
+	CMakeLists.txt \
+	create-object-library.sh
 
 CMAKE_VERBOSE=$(if $(V),VERBOSE=1,)
 
