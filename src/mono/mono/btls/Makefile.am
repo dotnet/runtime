@@ -1,8 +1,6 @@
 BTLS_STATIC_LIST = build-static/mono-btls-static-lo.txt
 BTLS_SHARED_LIST = build-shared/mono-btls-shared-lo.txt
 
-BTLS_DEPS = $(BTLS_LIBS) build-shared/Makefile build-static/Makefile
-
 CMAKE_VERBOSE=$(if $(V),VERBOSE=1,)
 
 CMAKE_ARGS = -D CMAKE_INSTALL_PREFIX:PATH=$(prefix) -D BTLS_ROOT:PATH=$(BTLS_ROOT) \
