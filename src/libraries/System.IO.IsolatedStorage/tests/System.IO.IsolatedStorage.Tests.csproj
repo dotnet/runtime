@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <PropertyGroup>
     <TestTFM Condition="'$(TestTFM)' == ''">netcoreapp1.1</TestTFM>
@@ -11,7 +11,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.IO.IsolatedStorage.Tests</AssemblyName>
     <TestCategories>InnerLoop;OuterLoop</TestCategories>
-    <NugetTargetMoniker Condition="'$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.7</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
     <RuntimeTargetMonikers>.NETCoreApp,Version=v1.1</RuntimeTargetMonikers>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
@@ -23,11 +23,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
-  <ItemGroup>
-    <TestNugetTargetMoniker Include="$(NugetTargetMoniker)">
-      <Folder>netcoreapp1.1</Folder>
-    </TestNugetTargetMoniker>
-  </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
@@ -43,16 +38,32 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\IO\TempDirectory.cs">
+      <Link>Common\System\IO\TempDirectory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
+      <Link>Common\System\IO\TempFile.cs</Link>
+    </Compile>
     <Compile Include="..\src\System\IO\IsolatedStorage\Helper.cs">
       <Link>Internals\Helper.cs</Link>
     </Compile>
     <Compile Include="..\src\System\IO\IsolatedStorage\Helper.Win32.Unix.cs">
       <Link>Internals\Helper.Win32.Unix.cs</Link>
     </Compile>
+    <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="StoreTestsFixture.cs" />
+    <Compile Include="System\IO\IsolatedStorage\ContainsUnknownFilesTests.cs" />
+    <Compile Include="System\IO\IsolatedStorage\CreateDirectoryTests.cs" />
+    <Compile Include="System\IO\IsolatedStorage\DeleteDirectoryTests.cs" />
+    <Compile Include="System\IO\IsolatedStorage\DeleteFileTests.cs" />
+    <Compile Include="System\IO\IsolatedStorage\DirectoryExistsTests.cs" />
+    <Compile Include="System\IO\IsolatedStorage\FileExistsTests.cs" />
+    <Compile Include="System\IO\IsolatedStorage\GetFileNamesTests.cs" />
     <Compile Include="System\IO\IsolatedStorage\HelperTests.cs" />
     <Compile Include="System\IO\IsolatedStorage\GetStoreTests.cs" />
     <Compile Include="System\IO\IsolatedStorage\IsoStorageTest.cs" />
-    <Compile Include="System\IO\IsolatedStorage\IsoStorageTestHelper.cs" />
+    <Compile Include="System\IO\IsolatedStorage\TestHelper.cs" />
+    <Compile Include="System\IO\IsolatedStorage\RemoveTests.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

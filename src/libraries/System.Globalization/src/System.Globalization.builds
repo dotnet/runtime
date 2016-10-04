@@ -4,13 +4,7 @@
   <ItemGroup>
     <Project Include="System.Globalization.csproj" />
     <Project Include="System.Globalization.csproj">
-      <TargetGroup>netstandard1.3</TargetGroup>
-    </Project>
-    <Project Include="System.Globalization.csproj">
       <TargetGroup>net463</TargetGroup>
-    </Project>
-    <Project Include="System.Globalization.csproj">
-      <TargetGroup>netcore50</TargetGroup>
     </Project>
     <Project Include="System.Globalization.csproj">
       <TargetGroup>netcore50aot</TargetGroup>

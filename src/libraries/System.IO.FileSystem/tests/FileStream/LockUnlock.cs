@@ -5,7 +5,6 @@
 using System;
 using System.IO;
 using Xunit;
-using XunitPlatformID = Xunit.PlatformID;
 
 namespace System.IO.Tests
 {
@@ -29,7 +28,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ActiveIssue(5964, XunitPlatformID.AnyUnix)]
+        [ActiveIssue(5964, TestPlatforms.AnyUnix)]
         [Fact]
         public void FileClosed_Throws()
         {
@@ -41,7 +40,7 @@ namespace System.IO.Tests
             Assert.Throws<ObjectDisposedException>(() => fs.Lock(0, 1));
         }
 
-        [ActiveIssue(5964, XunitPlatformID.AnyUnix)]
+        [ActiveIssue(5964, TestPlatforms.AnyUnix)]
         [Theory]
         [InlineData(100, 0, 100)]
         [InlineData(200, 0, 100)]
@@ -60,7 +59,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ActiveIssue(5964, XunitPlatformID.AnyUnix)]
+        [ActiveIssue(5964, TestPlatforms.AnyUnix)]
         [Theory]
         [InlineData(10, 0, 2, 3, 5)]
         public void NonOverlappingRegions_Success(long fileLength, long firstPosition, long firstLength, long secondPosition, long secondLength)
@@ -91,7 +90,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ActiveIssue(5964, XunitPlatformID.AnyUnix)]
+        [ActiveIssue(5964, TestPlatforms.AnyUnix)]
         [Theory]
         [InlineData(10, 0, 10, 1, 2)]
         [InlineData(10, 3, 5, 3, 5)]

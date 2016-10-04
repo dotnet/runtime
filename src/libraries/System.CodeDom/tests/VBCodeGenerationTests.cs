@@ -75,7 +75,7 @@ namespace System.CodeDom.Tests
 
             var field = new CodeMemberField("System.String", "Microsoft");
             field.Attributes = MemberAttributes.Public | MemberAttributes.Static;
-            field.InitExpression = new CodePrimitiveExpression("hi" + Environment.NewLine);
+            field.InitExpression = new CodePrimitiveExpression("hi");
             cd.Members.Add(field);
 
             field = new CodeMemberField();
@@ -110,7 +110,7 @@ namespace System.CodeDom.Tests
 
             AssertEqual(cd,
                 @"Public Class ClassWithFields
-                      Public Shared Microsoft As String = ""hi""&Global.Microsoft.VisualBasic.ChrW(13)&Global.Microsoft.VisualBasic.ChrW(10)
+                      Public Shared Microsoft As String = ""hi""
                       Public Shared StaticPublicField As Integer = 5
                       Public NonStaticPublicField As Integer = 6
                       Private PrivateField As Integer = 7

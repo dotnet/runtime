@@ -24,6 +24,7 @@ namespace System.Reflection.Metadata.Tests
         public static readonly byte[] Deterministic = ResourceHelper.GetResource("Misc.Deterministic.dll");
         public static readonly byte[] Debug = ResourceHelper.GetResource("Misc.Debug.dll");
         public static readonly byte[] KeyPair = ResourceHelper.GetResource("Misc.KeyPair.snk");
+        public static readonly byte[] Signed = ResourceHelper.GetResource("Misc.Signed.exe");
 
         public static readonly byte[] KeyPair_PublicKey = new byte[] 
         {

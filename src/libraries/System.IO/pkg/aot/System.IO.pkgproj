@@ -7,9 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.IO.csproj">
-      <TargetGroup>netstandard13aot</TargetGroup>
-    </ProjectReference>
-    <ProjectReference Include="..\..\src\System.IO.csproj">
       <TargetGroup>uap101aot</TargetGroup>
     </ProjectReference>
   </ItemGroup>

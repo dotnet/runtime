@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -10,15 +10,19 @@
     <AssemblyName>System.Runtime.Tests</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>1718</NoWarn>
-    <NugetTargetMoniker Condition="'$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.5</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.7_Debug|AnyCPU' ">
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.7_Release|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.5_Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.5_Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)\System\EnumTypes.cs" >
+    <Compile Include="$(CommonTestPath)\System\EnumTypes.cs">
       <Link>Common\System\EnumTypes.cs</Link>
     </Compile>
     <Compile Include="Helpers.cs" />
@@ -50,7 +54,7 @@
     <Compile Include="System\IntPtrTests.cs" />
     <Compile Include="System\IO\DirectoryNotFoundExceptionTests.cs" />
     <Compile Include="System\IO\DirectoryNotFoundException.InteropTests.cs" />
-    <Compile Include="System\IO\EndOfStreamExceptionTests.cs" />    
+    <Compile Include="System\IO\EndOfStreamExceptionTests.cs" />
     <Compile Include="System\IO\Exceptions.HResults.cs" />
     <Compile Include="System\IO\Exceptions.Utility.cs" />
     <Compile Include="System\IO\FileLoadExceptionTests.cs" />
@@ -96,8 +100,17 @@
       <Link>Common\System\PlatformDetection.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp1.1'">
+    <Compile Include="System\ArrayTests.netcoreapp1.1.cs" />
+    <Compile Include="System\EnumTests.netcoreapp1.1.cs" />
+    <Compile Include="System\IntPtrTests.netcoreapp1.1.cs" />
+    <Compile Include="System\LazyTests.netcoreapp1.1.cs" />
+    <Compile Include="System\Runtime\CompilerServices\RuntimeHelpersTests.netcoreapp1.1.cs" />
+    <Compile Include="System\UIntPtrTests.netcoreapp1.1.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
     <Compile Include="ArrayTests.netstandard1.7.cs" />
+    <Compile Include="System\AttributeTests.netstandard1.7.cs" />
     <Compile Include="CompareToTests.cs" />
     <Compile Include="DecimalTests.netstandard1.7.cs" />
     <Compile Include="EnumTests.netstandard1.7.cs" />
@@ -110,12 +123,13 @@
     <Compile Include="System\EntryPointNotFoundExceptionTests.cs" />
     <Compile Include="System\ExceptionTests.cs" />
     <Compile Include="System\ExecutionEngineExceptionTests.cs" />
-    <Compile Include="System\GuidTests.netstandard1.7.cs" />    
+    <Compile Include="System\GuidTests.netstandard1.7.cs" />
+    <Compile Include="System\MarshalByRefObjectTests.cs" />
     <Compile Include="System\NotFiniteNumberExceptionTests.cs" />
     <Compile Include="System\StackOverflowExceptionTests.cs" />
     <Compile Include="System\SystemExceptionTests.cs" />
     <Compile Include="System\StringTests.netstandard1.7.cs" />
-    <Compile Include="System\TimeSpanTests.netstandard1.7.cs" />    
+    <Compile Include="System\TimeSpanTests.netstandard1.7.cs" />
     <Compile Include="TimeZoneInfoTests.netstandard1.7.cs" />
     <Compile Include="TimeZoneNotFoundExceptionTests.netstandard1.7.cs" />
     <Compile Include="VersionTests.netstandard1.7.cs" />
@@ -136,24 +150,36 @@
     <Compile Include="System\Reflection\TypeTests.GetInterface.cs" />
     <Compile Include="System\Reflection\TypeTests.GetMember.cs" />
     <Compile Include="System\Reflection\CustomAttributesTestData.cs" />
-    <EmbeddedResource Include="System\Reflection\EmbeddedImage.png" >
+    <EmbeddedResource Include="System\Reflection\EmbeddedImage.png">
       <LogicalName>System.Reflection.Tests.EmbeddedImage.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="System\Reflection\EmbeddedTextFile.txt" >
+    <EmbeddedResource Include="System\Reflection\EmbeddedTextFile.txt">
       <LogicalName>System.Reflection.Tests.EmbeddedTextFile.txt</LogicalName>
     </EmbeddedResource>
     <Compile Include="System\Threading\WaitHandleTests.netstandard1.7.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.netstandard1.7.cs" />
+    <Compile Include="System\Reflection\ModuleTests.cs" />
+    <Compile Include="System\Reflection\PointerTests.cs" />
+    <Compile Include="System\Reflection\RuntimeReflectionExtensionsTests.cs" />
+    <Compile Include="System\Reflection\TypeDelegatorTests.cs" />
+    <Compile Include="System\Reflection\TypeInfoTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
+      <Link>System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="TestModule\System.Reflection.TestModule.dll">
+    </Reference>
     <ProjectReference Include="..\pkg\System.Runtime.pkgproj">
-      <Project>{1e689c1b-690c-4799-bde9-6e7990585894}</Project>
+      <Project>{ADBCF120-3454-4A3C-9D1D-AC4293E795D6}</Project>
       <Name>System.Runtime</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\System.Private.Uri\pkg\System.Private.Uri.pkgproj">
+      <Project>{4AC5343E-6E31-4BA5-A795-0493AE7E9008}</Project>
+      <Name>System.Private.Uri</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

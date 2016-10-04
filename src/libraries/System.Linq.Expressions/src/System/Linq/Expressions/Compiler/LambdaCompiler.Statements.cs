@@ -667,7 +667,7 @@ namespace System.Linq.Expressions.Compiler
             // immediately. But that would cause the two code paths to be more
             // different than they really need to be.
             var initializers = new List<ElementInit>(tests);
-            var cases = new List<SwitchCase>(node.Cases.Count);
+            var cases = new ArrayBuilder<SwitchCase>(node.Cases.Count);
 
             int nullCase = -1;
             MethodInfo add = DictionaryOfStringInt32_Add_String_Int32;
@@ -743,7 +743,7 @@ namespace System.Linq.Expressions.Compiler
                         Expression.Assign(switchIndex, Expression.Constant(-1))
                     )
                 ),
-                Expression.Switch(node.Type, switchIndex, node.DefaultBody, null, cases)
+                Expression.Switch(node.Type, switchIndex, node.DefaultBody, null, cases.ToReadOnly())
             );
 
             EmitExpression(reduced, flags);

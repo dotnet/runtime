@@ -11,7 +11,7 @@ namespace System.Globalization.Tests
     public class NumberFormatInfoMiscTests
     {
         [Fact]
-        [ActiveIssue(11612, Xunit.PlatformID.AnyUnix)]
+        [ActiveIssue(11612, TestPlatforms.AnyUnix)]
         public void DigitSubstitutionTest()
         {
             // DigitSubstitution is not used in number formatting.
@@ -19,7 +19,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(11612, Xunit.PlatformID.AnyUnix)]
+        [ActiveIssue(11612, TestPlatforms.AnyUnix)]
         public void NativeDigitsTest()
         {
             string [] nativeDigits = CultureInfo.InvariantCulture.NumberFormat.NativeDigits;

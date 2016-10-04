@@ -34,10 +34,10 @@
     <Compile Include="XsltcModule.cs" />
     <Compile Include="XsltCommon.cs" />
     <Compile Include="ApiTests\XsltcApiTest.cs" />
-    <Content Include="..\TestFiles\**\*.*">
+    <SupplementalTestData Include="..\TestFiles\**\*.*">
       <Link>TestFiles\%(RecursiveDir)%(Filename)%(Extension)</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+      <DestinationDir>TestFiles\%(RecursiveDir)</DestinationDir>
+    </SupplementalTestData>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\System\Xml\ModuleCore\ModuleCore.csproj" />

@@ -494,7 +494,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [ActiveIssue(8945, PlatformID.Windows)]
+        [ActiveIssue(8945, TestPlatforms.Windows)]
         [Theory]
         [InlineData(3, 2)]
         [InlineData(3, 3)]
@@ -583,7 +583,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Theory]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [InlineData("#origFragment", "", "#origFragment", false)]
         [InlineData("#origFragment", "", "#origFragment", true)]
         [InlineData("", "#redirFragment", "#redirFragment", false)]
@@ -1347,7 +1347,7 @@ namespace System.Net.Http.Functional.Tests
                         {
                             Assert.False(contentDisposed, "Expected request content to not be disposed while request data still being sent");
                         }
-                        else // [ActiveIssue(9006, PlatformID.AnyUnix)]
+                        else // [ActiveIssue(9006, TestPlatforms.AnyUnix)]
                         {
                             await post;
                             Assert.True(contentDisposed, "Current implementation will dispose of the request content once response headers arrive");
@@ -1423,7 +1423,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [PlatformSpecific(PlatformID.Windows)] // CopyToAsync(Stream, TransportContext) isn't used on unix
+        [PlatformSpecific(TestPlatforms.Windows)] // CopyToAsync(Stream, TransportContext) isn't used on unix
         [Fact]
         public async Task PostAsync_Post_ChannelBindingHasExpectedValue()
         {
@@ -1548,7 +1548,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && method == "TRACE")
                     {
-                        // [ActiveIssue(9023, PlatformID.Windows)]
+                        // [ActiveIssue(9023, TestPlatforms.Windows)]
                         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
                     }
                     else
@@ -1592,7 +1592,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Theory, MemberData(nameof(Http2Servers))]
-        [ActiveIssue(10958, PlatformID.Windows)]
+        [ActiveIssue(10958, TestPlatforms.Windows)]
         public async Task SendAsync_RequestVersion20_ResponseVersion20IfHttp2Supported(Uri server)
         {
             // We don't currently have a good way to test whether HTTP/2 is supported without

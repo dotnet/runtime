@@ -24,7 +24,7 @@ namespace System.Net.Sockets.Tests
         private const int SmallTimeoutMicroseconds = 10 * 1000;
         private const int FailTimeoutMicroseconds  = 30 * 1000 * 1000;
 
-        [PlatformSpecific(~PlatformID.OSX)] // typical OSX install has very low max open file descriptors value
+        [PlatformSpecific(~TestPlatforms.OSX)] // typical OSX install has very low max open file descriptors value
         [Theory]
         [InlineData(90, 0)]
         [InlineData(0, 90)]
@@ -79,7 +79,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [PlatformSpecific(~PlatformID.OSX)] // typical OSX install has very low max open file descriptors value
+        [PlatformSpecific(~TestPlatforms.OSX)] // typical OSX install has very low max open file descriptors value
         [Fact]
         public void Select_ReadError_NoneReady_ManySockets()
         {
@@ -111,7 +111,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [PlatformSpecific(~PlatformID.OSX)] // typical OSX install has very low max open file descriptors value
+        [PlatformSpecific(~TestPlatforms.OSX)] // typical OSX install has very low max open file descriptors value
         public void Select_Read_OneReadyAtATime_ManySockets(int reads)
         {
             Select_Read_OneReadyAtATime(90); // value larger than the internal value in SocketPal.Unix that swaps between stack and heap allocation
@@ -145,7 +145,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [PlatformSpecific(~PlatformID.OSX)] // typical OSX install has very low max open file descriptors value
+        [PlatformSpecific(~TestPlatforms.OSX)] // typical OSX install has very low max open file descriptors value
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/989
         public void Select_Error_OneReadyAtATime()
         {

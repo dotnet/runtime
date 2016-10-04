@@ -5,7 +5,7 @@
     <RootNamespace>System.ComponentModel.TypeConverter.Performance.Tests</RootNamespace>
     <AssemblyName>System.ComponentModel.TypeConverter.Performance.Tests</AssemblyName>
     <IncludePerformanceTests>true</IncludePerformanceTests>
-    <NugetTargetMoniker>.NETStandard,Version=v1.5</NugetTargetMoniker>
+    <NugetTargetMoniker>.NETStandard,Version=v1.7</NugetTargetMoniker>
     <DefineConstants>$(DefineConstants);PERFORMANCE_TESTS</DefineConstants>
     <ProjectGuid>{89C76728-ECAF-4905-A33F-BD6BFED5E91D}</ProjectGuid>
   </PropertyGroup>
@@ -26,8 +26,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\pkg\System.ComponentModel.TypeConverter.pkgproj">
-    </ProjectReference>
+    <ProjectReference Include="..\..\pkg\System.ComponentModel.TypeConverter.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

@@ -186,38 +186,7 @@ namespace System.Net.Tests
             }
         }
 
-        [Fact]
-        public async Task ConcurrentReadWrite_ResponseBlocksThenGetsNullStream()
-        {
-            string path = Path.GetTempFileName();
-            try
-            {
-                var data = new byte[1024 * 10];
-                var random = new Random(42);
-                random.NextBytes(data);
-
-                var request = WebRequest.Create("file://" + path);
-                request.Method = WebRequestMethods.File.UploadFile;
-
-                Task<Stream> requestStreamTask = GetRequestStreamAsync(request);
-                Task<WebResponse> responseTask = GetResponseAsync(request);
-
-                using (Stream s = await requestStreamTask)
-                {
-                    await s.WriteAsync(data, 0, data.Length);
-                }
-
-                using (WebResponse response = await responseTask)
-                using (Stream s = response.GetResponseStream()) // will hand back a null stream
-                {
-                    Assert.Equal(0, s.Length);
-                }
-            }
-            finally
-            {
-                File.Delete(path);
-            }
-        }
+        protected virtual bool EnableConcurrentReadWriteTests => true;
 
         [Fact]
         public async Task RequestAfterResponse_throws()
@@ -259,13 +228,58 @@ namespace System.Net.Tests
         }
     }
 
+    public abstract class AsyncFileWebRequestTestBase : FileWebRequestTestBase
+    {
+        [Fact]
+        public async Task ConcurrentReadWrite_ResponseBlocksThenGetsNullStream()
+        {
+            string path = Path.GetTempFileName();
+            try
+            {
+                var data = new byte[1024 * 10];
+                var random = new Random(42);
+                random.NextBytes(data);
+
+                var request = WebRequest.Create("file://" + path);
+                request.Method = WebRequestMethods.File.UploadFile;
+
+                Task<Stream> requestStreamTask = GetRequestStreamAsync(request);
+                Task<WebResponse> responseTask = GetResponseAsync(request);
+
+                using (Stream s = await requestStreamTask)
+                {
+                    await s.WriteAsync(data, 0, data.Length);
+                }
+
+                using (WebResponse response = await responseTask)
+                using (Stream s = response.GetResponseStream()) // will hand back a null stream
+                {
+                    Assert.Equal(0, s.Length);
+                }
+            }
+            finally
+            {
+                File.Delete(path);
+            }
+        }
+    }
+
     public sealed class SyncFileWebRequestTestBase : FileWebRequestTestBase
     {
         public override Task<WebResponse> GetResponseAsync(WebRequest request) => Task.Run(() => request.GetResponse());
         public override Task<Stream> GetRequestStreamAsync(WebRequest request) => Task.Run(() => request.GetRequestStream());
     }
 
-    public sealed class TaskFileWebRequestTestBase : FileWebRequestTestBase
+    public sealed class BeginEndFileWebRequestTestBase : AsyncFileWebRequestTestBase
+    {
+        public override Task<WebResponse> GetResponseAsync(WebRequest request) =>
+            Task.Factory.FromAsync(request.BeginGetResponse, request.EndGetResponse, null);
+
+        public override Task<Stream> GetRequestStreamAsync(WebRequest request) =>
+            Task.Factory.FromAsync(request.BeginGetRequestStream, request.EndGetRequestStream, null);
+    }
+
+    public sealed class TaskFileWebRequestTestBase : AsyncFileWebRequestTestBase
     {
         public override Task<WebResponse> GetResponseAsync(WebRequest request) => request.GetResponseAsync();
 

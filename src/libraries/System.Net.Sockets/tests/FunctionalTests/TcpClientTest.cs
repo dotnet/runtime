@@ -33,8 +33,8 @@ namespace System.Net.Sockets.Tests
             {
                 Assert.False(client.Connected);
 
-                string host = Configuration.Sockets.SocketServer.IdnHost;
-                int port = Configuration.Sockets.SocketServer.Port;
+                string host = System.Net.Test.Common.Configuration.Sockets.SocketServer.IdnHost;
+                int port = System.Net.Test.Common.Configuration.Sockets.SocketServer.Port;
 
                 if (mode == 0)
                 {
@@ -87,7 +87,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void ExclusiveAddressUse_NullClient_Windows()
         {
             using (TcpClient client = new TcpClient())
@@ -100,7 +100,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        [PlatformSpecific(~PlatformID.Windows)]
+        [PlatformSpecific(~TestPlatforms.Windows)]
         public void ExclusiveAddressUse_NullClient_NonWindows()
         {
             using (TcpClient client = new TcpClient())
@@ -122,7 +122,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void Roundtrip_ExclusiveAddressUse_GetEqualsSet_False()
         {
             using (TcpClient client = new TcpClient())
@@ -134,7 +134,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void ExclusiveAddressUse_Set_False_NotSupported()
         {
             using (TcpClient client = new TcpClient())
@@ -237,7 +237,7 @@ namespace System.Net.Sockets.Tests
                 client.ReceiveTimeout = 42;
                 client.SendTimeout = 84;
 
-                await client.ConnectAsync(Configuration.Sockets.SocketServer.IdnHost, Configuration.Sockets.SocketServer.Port);
+                await client.ConnectAsync(System.Net.Test.Common.Configuration.Sockets.SocketServer.IdnHost, System.Net.Test.Common.Configuration.Sockets.SocketServer.Port);
 
                 // Verify their values remain as were set before connecting
                 Assert.True(client.LingerState.Enabled);

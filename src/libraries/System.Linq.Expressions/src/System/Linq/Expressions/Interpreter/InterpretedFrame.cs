@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -66,10 +64,7 @@ namespace System.Linq.Expressions.Interpreter
             return DebugInfo.GetMatchingDebugInfo(Interpreter._debugInfos, instructionIndex);
         }
 
-        public string Name
-        {
-            get { return Interpreter._name; }
-        }
+        public string Name => Interpreter.Name;
 
         #region Data Stack Operations
 
@@ -288,7 +283,7 @@ namespace System.Linq.Expressions.Interpreter
             _pendingValue = value;
             return YieldToCurrentContinuation();
         }
-        #endregion
 
+        #endregion
     }
 }

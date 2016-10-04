@@ -17,12 +17,12 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return _key.CloneByteArray();
+                return KeyValue.CloneByteArray();
             }
 
             set
             {
-                _key = value.CloneByteArray();
+                KeyValue = value.CloneByteArray();
             }
         }
 
@@ -31,16 +31,16 @@ namespace System.Security.Cryptography
             // For keyed hash algorithms, we always want to zero out the key value
             if (disposing)
             {
-                if (_key != null)
+                if (KeyValue != null)
                 {
-                    Array.Clear(_key, 0, _key.Length);
+                    Array.Clear(KeyValue, 0, KeyValue.Length);
                 }
-                _key = null;
+                KeyValue = null;
             }
             base.Dispose(disposing);
         }
 
-        private byte[] _key;
+        protected byte[] KeyValue;
     }
 }
 

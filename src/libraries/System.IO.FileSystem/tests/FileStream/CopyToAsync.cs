@@ -9,7 +9,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using XunitPlatformID = Xunit.PlatformID;
 
 namespace System.IO.Tests
 {
@@ -197,7 +196,7 @@ namespace System.IO.Tests
             Assert.Equal<byte>(expectedData, actualData);
         }
 
-        [PlatformSpecific(XunitPlatformID.Windows)] // Uses P/Invokes to create async pipe handle
+        [PlatformSpecific(TestPlatforms.Windows)] // Uses P/Invokes to create async pipe handle
         [Theory]
         [InlineData(false, 10, 1024)]
         [InlineData(true, 10, 1024)]
@@ -238,7 +237,7 @@ namespace System.IO.Tests
             Assert.Equal<byte>(expectedData, actualData);
         }
 
-        [PlatformSpecific(XunitPlatformID.Windows)] // Uses P/Invokes to create async pipe handle
+        [PlatformSpecific(TestPlatforms.Windows)] // Uses P/Invokes to create async pipe handle
         [Theory]
         public async Task NamedPipeViaFileStream_CancellationRequested_OperationCanceled()
         {

@@ -6,7 +6,7 @@
     <ProjectGuid>{02304469-722E-4723-92A1-820B9A37D275}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'!='netcore50aot'">true</IsPartialFacadeAssembly>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
     <!-- Disable 1685 (aka multiple type definitions) warning so it doesn't turn into an error -->
     <NoWarn>$(NoWarn);1685</NoWarn>
   </PropertyGroup>
@@ -34,24 +34,11 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == ''">
     <Compile Include="System\Diagnostics\StackTraceSymbols.CoreCLR.cs" />
-    <!--
-      The following references are only facades that align references for the PCL
-      libraries (Immutable/MetadataReader) this library is referencing. We reference
-      the depproj's with targetgroup netcore50 because we need these to be the older
-      version that matches what we shipped for netcore50. We cannot reference the live
-      csproj's because the version numbers are higher and aren't all supported on netcore50.
-    -->
-    <ProjectReference Include="..\..\System.Collections\src\redist\System.Collections.depproj">
-      <TargetGroup>netcore50</TargetGroup>
-    </ProjectReference>
-    <ProjectReference Include="..\..\System.IO\src\redist\System.IO.depproj">
-      <TargetGroup>netcore50</TargetGroup>
-    </ProjectReference>
-    <ProjectReference Include="..\..\System.Runtime\src\redist\System.Runtime.depproj">
-      <TargetGroup>netcore50</TargetGroup>
-    </ProjectReference>
-    <ProjectReference Include="..\..\System.Runtime.Extensions\src\redist\System.Runtime.Extensions.depproj">
-      <TargetGroup>netcore50</TargetGroup>
+    <ProjectReference Include="..\..\System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="..\..\System.IO\src\System.IO.csproj" />
+    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj">
+      <OSGroup>$(InputOSGroup)</OSGroup>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'!='netcore50aot'">

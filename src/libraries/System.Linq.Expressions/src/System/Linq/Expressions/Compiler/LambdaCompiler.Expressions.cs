@@ -230,7 +230,7 @@ namespace System.Linq.Expressions.Compiler
             Type objectType = null;
             if (node.Object != null)
             {
-                EmitInstance(node.Object, objectType = node.Object.Type);
+                EmitInstance(node.Object, out objectType);
             }
 
             // Emit indexes. We don't allow byref args, so no need to worry
@@ -254,7 +254,7 @@ namespace System.Linq.Expressions.Compiler
             Type objectType = null;
             if (index.Object != null)
             {
-                EmitInstance(index.Object, objectType = index.Object.Type);
+                EmitInstance(index.Object, out objectType);
             }
 
             // Emit indexes. We don't allow byref args, so no need to worry
@@ -369,7 +369,8 @@ namespace System.Linq.Expressions.Compiler
             Type objectType = null;
             if (!method.IsStatic)
             {
-                EmitInstance(obj, objectType = obj.Type);
+                Debug.Assert(obj != null);
+                EmitInstance(obj, out objectType);
             }
             // if the obj has a value type, its address is passed to the method call so we cannot destroy the 
             // stack by emitting a tail call
@@ -774,7 +775,7 @@ namespace System.Linq.Expressions.Compiler
             Type objectType = null;
             if (lvalue.Expression != null)
             {
-                EmitInstance(lvalue.Expression, objectType = lvalue.Expression.Type);
+                EmitInstance(lvalue.Expression, out objectType);
             }
 
             // emit value
@@ -796,15 +797,10 @@ namespace System.Linq.Expressions.Compiler
             }
             else
             {
-                var prop = member as PropertyInfo;
-                if ((object)prop != null)
-                {
-                    EmitCall(objectType, prop.GetSetMethod(true));
-                }
-                else
-                {
-                    throw Error.InvalidMemberType(member);
-                }
+                // MemberExpression.Member can only be a FieldInfo or a PropertyInfo
+                Debug.Assert(member is PropertyInfo);
+                var prop = (PropertyInfo)member;
+                EmitCall(objectType, prop.GetSetMethod(true));
             }
 
             if (emitAs != CompilationFlags.EmitAsVoidType)
@@ -822,7 +818,7 @@ namespace System.Linq.Expressions.Compiler
             Type instanceType = null;
             if (node.Expression != null)
             {
-                EmitInstance(node.Expression, instanceType = node.Expression.Type);
+                EmitInstance(node.Expression, out instanceType);
             }
 
             EmitMemberGet(node.Member, instanceType);
@@ -847,15 +843,10 @@ namespace System.Linq.Expressions.Compiler
             }
             else
             {
-                var prop = member as PropertyInfo;
-                if ((object)prop != null)
-                {
-                    EmitCall(objectType, prop.GetGetMethod(true));
-                }
-                else
-                {
-                    throw ContractUtils.Unreachable;
-                }
+                // MemberExpression.Member or MemberBinding.Member can only be a FieldInfo or a PropertyInfo
+                Debug.Assert(member is PropertyInfo);
+                var prop = (PropertyInfo)member;
+                EmitCall(objectType, prop.GetGetMethod(true));
             }
         }
 
@@ -876,18 +867,17 @@ namespace System.Linq.Expressions.Compiler
                 return false;
             }
         }
-        private void EmitInstance(Expression instance, Type type)
+        private void EmitInstance(Expression instance, out Type type)
         {
-            if (instance != null)
+            type = instance.Type;
+
+            if (type.GetTypeInfo().IsValueType)
             {
-                if (type.GetTypeInfo().IsValueType)
-                {
-                    EmitAddress(instance, type);
-                }
-                else
-                {
-                    EmitExpression(instance);
-                }
+                EmitAddress(instance, type);
+            }
+            else
+            {
+                EmitExpression(instance);
             }
         }
 

@@ -27,6 +27,11 @@ namespace System.Reflection.PortableExecutable
         private readonly int _corHeaderStartOffset = -1;
         private readonly int _peHeaderStartOffset = -1;
 
+        internal const ushort DosSignature = 0x5A4D;     // 'M' 'Z'
+        internal const int PESignatureOffsetLocation = 0x3C;
+        internal const uint PESignature = 0x00004550;    // PE00
+        internal const int PESignatureSize = sizeof(uint);
+
         /// <summary>
         /// Reads PE headers from the current location in the stream.
         /// </summary>
@@ -247,7 +252,7 @@ namespace System.Reflection.PortableExecutable
             // Look for DOS Signature "MZ"
             ushort dosSig = reader.ReadUInt16();
 
-            if (dosSig != PEFileConstants.DosSignature)
+            if (dosSig != DosSignature)
             {
                 // If image doesn't start with DOS signature, let's assume it is a 
                 // COFF (Common Object File Format), aka .OBJ file. 
@@ -272,14 +277,14 @@ namespace System.Reflection.PortableExecutable
             if (!isCOFFOnly)
             {
                 // Skip the DOS Header
-                reader.Seek(PEFileConstants.PESignatureOffsetLocation);
+                reader.Seek(PESignatureOffsetLocation);
 
                 int ntHeaderOffset = reader.ReadInt32();
                 reader.Seek(ntHeaderOffset);
 
                 // Look for PESignature "PE\0\0"
                 uint ntSignature = reader.ReadUInt32();
-                if (ntSignature != PEFileConstants.PESignature)
+                if (ntSignature != PESignature)
                 {
                     throw new BadImageFormatException(SR.InvalidPESignature);
                 }

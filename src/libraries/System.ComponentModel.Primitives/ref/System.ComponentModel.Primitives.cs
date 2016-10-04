@@ -41,9 +41,37 @@ namespace System.ComponentModel
         public override int GetHashCode() { return default(int); }
         protected virtual string GetLocalizedString(string value) { return default(string); }
     }
-    public partial class ComponentCollection
+    [System.ComponentModel.DesignerCategoryAttribute("Component")]
+    public partial class Component : /*TODO NETSTANDARD2.0 System.MarshalByRefObject,*/ System.ComponentModel.IComponent, System.IDisposable
+    {
+        public Component() { }
+        protected virtual bool CanRaiseEvents { get { throw null; } }
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
+        public System.ComponentModel.IContainer Container { get { throw null; } }
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
+        protected bool DesignMode { get { throw null; } }
+        protected System.ComponentModel.EventHandlerList Events { get { throw null; } }
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
+        public virtual System.ComponentModel.ISite Site { get { throw null; } set { } }
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(2))]
+        public event System.EventHandler Disposed { add { } remove { } }
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
+        ~Component() { }
+        protected virtual object GetService(System.Type service) { throw null; }
+        public override string ToString() { throw null; }
+    }
+    public partial class ComponentCollection : System.Collections.ReadOnlyCollectionBase
     {
         internal ComponentCollection() { }
+        public ComponentCollection(System.ComponentModel.IComponent[] components) { }
+        public virtual System.ComponentModel.IComponent this[int index] { get { throw null; } }
+        public virtual System.ComponentModel.IComponent this[string name] { get { throw null; } }
+        public void CopyTo(System.ComponentModel.IComponent[] array, int index) { }
     }
     public partial class DescriptionAttribute : System.Attribute
     {
@@ -167,6 +195,7 @@ namespace System.ComponentModel
         public override bool Equals(object obj) { return default(bool); }
         public override int GetHashCode() { return default(int); }
     }
+
     public sealed partial class NotifyParentPropertyAttribute : System.Attribute
     {
         public static readonly System.ComponentModel.NotifyParentPropertyAttribute Default;

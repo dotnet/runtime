@@ -496,7 +496,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public static void ImportStoreSavedAsSerializedCerData_Windows()
         {
             using (var pfxCer = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
@@ -520,7 +520,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void ImportStoreSavedAsSerializedCerData_Unix()
         {
             X509Certificate2Collection cc2 = new X509Certificate2Collection();
@@ -529,7 +529,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public static void ImportStoreSavedAsSerializedStoreData_Windows()
         {
             using (var msCer = new X509Certificate2(TestData.MsCertificate))
@@ -554,7 +554,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void ImportStoreSavedAsSerializedStoreData_Unix()
         {
             X509Certificate2Collection cc2 = new X509Certificate2Collection();
@@ -615,7 +615,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(2745, PlatformID.AnyUnix)]
+        [ActiveIssue(2745, TestPlatforms.AnyUnix)]
         public static void ImportMultiplePrivateKeysPfx()
         {
             using (ImportedCollection ic = Cert.Import(TestData.MultiPrivateKeyPfx))
@@ -638,14 +638,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public static void ExportSerializedCert_Windows()
         {
             TestExportSingleCert(X509ContentType.SerializedCert);
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void ExportSerializedCert_Unix()
         {
             using (var msCer = new X509Certificate2(TestData.MsCertificate))
@@ -657,14 +657,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public static void ExportSerializedStore_Windows()
         {
             TestExportStore(X509ContentType.SerializedStore);
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void ExportSerializedStore_Unix()
         {
             using (var msCer = new X509Certificate2(TestData.MsCertificate))
@@ -699,7 +699,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(2746, PlatformID.AnyUnix)]
+        [ActiveIssue(2746, TestPlatforms.AnyUnix)]
         public static void ExportEmpty_Pkcs12()
         {
             var collection = new X509Certificate2Collection();
@@ -775,7 +775,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(2743, PlatformID.AnyUnix)]
+        [ActiveIssue(2743, TestPlatforms.AnyUnix)]
         public static void ExportMultiplePrivateKeys()
         {
             var collection = new X509Certificate2Collection();
@@ -798,7 +798,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 }
                 catch (PlatformNotSupportedException)
                 {
-                    // [ActiveIssue(2743, PlatformID.AnyUnix)]
+                    // [ActiveIssue(2743, TestPlatforms.AnyUnix)]
                     // Our Unix builds can't export more than one private key in a single PFX, so this is
                     // their exit point.
                     //

@@ -22,7 +22,7 @@ namespace System.Net.NetworkInformation.Tests
         [InlineData(1)]
         [InlineData(50)]
         [InlineData(1000)]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static async Task PacketSizeIsRespected(int payloadSize)
         {
             IPAddress localAddress = await TestSettings.GetLocalIPAddress();

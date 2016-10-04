@@ -26,14 +26,14 @@ namespace System.Threading.Tests
             Assert.Throws<ArgumentException>(() => new EventWaitHandle(true, (EventResetMode)12345));
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [Fact]
         public void Ctor_InvalidNames()
         {
             Assert.Throws<ArgumentException>(() => new EventWaitHandle(true, EventResetMode.AutoReset, new string('a', 1000)));
         }
 
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [Fact]
         public void Ctor_NamesArentSupported_Unix()
         {
@@ -42,7 +42,7 @@ namespace System.Threading.Tests
             Assert.Throws<PlatformNotSupportedException>(() => new EventWaitHandle(false, EventResetMode.AutoReset, "anything", out createdNew));
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [Theory]
         [InlineData(false, EventResetMode.AutoReset)]
         [InlineData(false, EventResetMode.ManualReset)]
@@ -62,7 +62,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [PlatformSpecific(PlatformID.Windows)] // named semaphores aren't supported on Unix
+        [PlatformSpecific(TestPlatforms.Windows)] // named semaphores aren't supported on Unix
         [Theory]
         [InlineData(EventResetMode.AutoReset)]
         [InlineData(EventResetMode.ManualReset)]
@@ -100,7 +100,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [Fact]
         public void OpenExisting_Windows()
         {
@@ -131,7 +131,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [Fact]
         public void OpenExisting_NotSupported_Unix()
         {
@@ -140,7 +140,7 @@ namespace System.Threading.Tests
             Assert.Throws<PlatformNotSupportedException>(() => EventWaitHandle.TryOpenExisting("anything", out ewh));
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [Fact]
         public void OpenExisting_InvalidNames_Windows()
         {
@@ -149,7 +149,7 @@ namespace System.Threading.Tests
             Assert.Throws<ArgumentException>(() => EventWaitHandle.OpenExisting(new string('a', 10000)));
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [Fact]
         public void OpenExisting_UnavailableName_Windows()
         {
@@ -159,7 +159,7 @@ namespace System.Threading.Tests
             Assert.False(EventWaitHandle.TryOpenExisting(name, out ignored));
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [Fact]
         public void OpenExisting_NameUsedByOtherSynchronizationPrimitive_Windows()
         {
@@ -172,7 +172,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [PlatformSpecific(PlatformID.Windows)] // names aren't supported on Unix
+        [PlatformSpecific(TestPlatforms.Windows)] // names aren't supported on Unix
         [Theory]
         [InlineData(EventResetMode.ManualReset)]
         [InlineData(EventResetMode.AutoReset)]

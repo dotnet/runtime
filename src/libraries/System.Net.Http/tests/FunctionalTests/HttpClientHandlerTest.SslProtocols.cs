@@ -191,7 +191,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [ActiveIssue(8538, PlatformID.Windows)]
+        [ActiveIssue(8538, TestPlatforms.Windows)]
         [Fact]
         public async Task GetAsync_DisallowTls10_AllowTls11_AllowTls12()
         {
