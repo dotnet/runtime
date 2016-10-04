@@ -31,6 +31,10 @@
 #include "debuginfostore.h"
 #include "strsafe.h"
 
+#ifdef FEATURE_CORECLR
+#include "configuration.h"
+#endif
+
 #ifdef _WIN64
 #define CHECK_DUPLICATED_STRUCT_LAYOUTS
 #include "../debug/daccess/fntableaccess.h"
@@ -1196,9 +1200,11 @@ EEJitManager::EEJitManager()
 #ifdef _TARGET_AMD64_
     m_pEmergencyJumpStubReserveList = NULL;
 #endif
-#ifdef _TARGET_AMD64_
+#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
     m_JITCompilerOther = NULL;
 #endif
+    m_fLegacyJitUsed   = FALSE;
+
 #ifdef ALLOW_SXS_JIT
     m_alternateJit     = NULL;
     m_AltJITCompiler   = NULL;
@@ -1356,7 +1362,7 @@ void EEJitManager::SetCpuInfo()
 enum JIT_LOAD_JIT_ID
 {
     JIT_LOAD_MAIN = 500,    // The "main" JIT. Normally, this is named "clrjit.dll". Start at a number that is somewhat uncommon (i.e., not zero or 1) to help distinguish from garbage, in process dumps.
-    JIT_LOAD_LEGACY,        // The "legacy" JIT. Normally, this is named "compatjit.dll" (aka, JIT64). This only applies to AMD64.
+    JIT_LOAD_LEGACY,        // The "legacy" JIT. Normally, this is named "compatjit.dll". This applies to AMD64 on Windows desktop, or x86 on Windows .NET Core.
     JIT_LOAD_ALTJIT         // An "altjit". By default, named "protojit.dll". Used both internally, as well as externally for JIT CTP builds.
 };
 
@@ -1432,33 +1438,43 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT I
 #ifdef FEATURE_CORECLR
     PathString CoreClrFolderHolder;
     extern HINSTANCE g_hThisInst;
+    bool havePath = false;
 
 #if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
     if (g_CLRJITPath != nullptr)
     {
-        // If we have been asked to load a specific JIT binary, load it.
+        // If we have been asked to load a specific JIT binary, load from that path.
+        // The main JIT load will use exactly that name because pwzJitName will have
+        // been computed as the last component of g_CLRJITPath by ExecutionManager::GetJitName().
+        // Non-primary JIT names (such as compatjit or altjit) will be loaded from the
+        // same directory.
+        // (Ideally, g_CLRJITPath would just be the JIT path without the filename component,
+        // but that's not how the JIT_PATH variable was originally defined.)
         CoreClrFolderHolder.Set(g_CLRJITPath);
+        havePath = true;
     }
     else 
 #endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
     if (WszGetModuleFileName(g_hThisInst, CoreClrFolderHolder))
     {
         // Load JIT from next to CoreCLR binary
+        havePath = true;
+    }
+
+    if (havePath && !CoreClrFolderHolder.IsEmpty())
+    {
         SString::Iterator iter = CoreClrFolderHolder.End();
         BOOL findSep = CoreClrFolderHolder.FindBack(iter, DIRECTORY_SEPARATOR_CHAR_W);
         if (findSep)
         {
             SString sJitName(pwzJitName);
             CoreClrFolderHolder.Replace(iter + 1, CoreClrFolderHolder.End() - (iter + 1), sJitName);
-        }
-    }
 
-    if (!CoreClrFolderHolder.IsEmpty())
-    {
-        *phJit = CLRLoadLibrary(CoreClrFolderHolder.GetUnicode());
-        if (*phJit != NULL)
-        {
-            hr = S_OK;
+            *phJit = CLRLoadLibrary(CoreClrFolderHolder.GetUnicode());
+            if (*phJit != NULL)
+            {
+                hr = S_OK;
+            }
         }
     }
 
@@ -1614,7 +1630,7 @@ BOOL EEJitManager::LoadJIT()
 #else // !FEATURE_MERGE_JIT_AND_ENGINE
 
     m_JITCompiler = NULL;
-#ifdef _TARGET_AMD64_
+#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
     m_JITCompilerOther = NULL;
 #endif
 
@@ -1623,8 +1639,8 @@ BOOL EEJitManager::LoadJIT()
 
     // Set as a courtesy to code:CorCompileGetRuntimeDll
     s_ngenCompilerDll = m_JITCompiler;
-    
-#if defined(_TARGET_AMD64_) && !defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR)
+
+#if (defined(_TARGET_AMD64_) && !defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR)) || (defined(_TARGET_X86_) && defined(FEATURE_CORECLR))
     // If COMPlus_UseLegacyJit=1, then we fall back to compatjit.dll.
     //
     // This fallback mechanism was introduced for Visual Studio "14" Preview, when JIT64 (the legacy JIT) was replaced with
@@ -1645,8 +1661,16 @@ BOOL EEJitManager::LoadJIT()
     // is set, we also must use JIT64 for all NGEN compilations as well.
     //
     // See the document "RyuJIT Compatibility Fallback Specification.docx" for details.
+    //
+    // For .NET Core 1.2, RyuJIT for x86 is the primary jit (clrjit.dll) and JIT32 for x86 is the fallback, legacy JIT (compatjit.dll).
+    // Thus, the COMPlus_useLegacyJit=1 mechanism has been enabled for x86 CoreCLR. This scenario does not have the UseRyuJIT
+    // registry key, nor the AppX binder mode.
 
+#if defined(FEATURE_CORECLR)
+    bool fUseRyuJit = true;
+#else
     bool fUseRyuJit = UseRyuJit();
+#endif
 
     if ((!IsCompilationProcess() || !fUseRyuJit) &&     // Use RyuJIT for all NGEN, unless we're falling back to JIT64 for everything.
         (newJitCompiler != nullptr))    // the main JIT must successfully load before we try loading the fallback JIT
@@ -1660,7 +1684,11 @@ BOOL EEJitManager::LoadJIT()
 
         if (!fUsingCompatJit)
         {
+#if defined(FEATURE_CORECLR)
+            DWORD useLegacyJit = Configuration::GetKnobBooleanValue(W("System.JIT.UseWindowsX86CoreLegacyJit"), CLRConfig::EXTERNAL_UseWindowsX86CoreLegacyJit);
+#else
             DWORD useLegacyJit = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_UseLegacyJit); // uncached access, since this code is run no more than one time
+#endif
             if (useLegacyJit == 1)
             {
                 fUsingCompatJit = TRUE;
@@ -1702,10 +1730,13 @@ BOOL EEJitManager::LoadJIT()
                 // Tell the main JIT to fall back to the "fallback" JIT compiler, in case some
                 // obfuscator tries to directly call the main JIT's getJit() function.
                 newJitCompiler->setRealJit(fallbackICorJitCompiler);
+
+                // Now, the compat JIT will be used.
+                m_fLegacyJitUsed = TRUE;
             }
         }
     }
-#endif // defined(_TARGET_AMD64_) && !defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR)
+#endif // (defined(_TARGET_AMD64_) && !defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR)) || (defined(_TARGET_X86_) && defined(FEATURE_CORECLR))
 
 #endif // !FEATURE_MERGE_JIT_AND_ENGINE
 
@@ -4359,7 +4390,22 @@ LPCWSTR ExecutionManager::GetJitName()
 
     LPCWSTR  pwzJitName = NULL;
 
-#if !defined(FEATURE_CORECLR)
+#if defined(FEATURE_CORECLR)
+#if !defined(CROSSGEN_COMPILE)
+    if (g_CLRJITPath != nullptr)
+    {
+        const wchar_t* p = wcsrchr(g_CLRJITPath, DIRECTORY_SEPARATOR_CHAR_W);
+        if (p != nullptr)
+        {
+            pwzJitName = p + 1; // Return just the filename, not the directory name
+        }
+        else
+        {
+            pwzJitName = g_CLRJITPath;
+        }
+    }
+#endif // !defined(CROSSGEN_COMPILE)
+#else // !FEATURE_CORECLR
     // Try to obtain a name for the jit library from the env. variable
     IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitName, const_cast<LPWSTR *>(&pwzJitName)));
 #endif // !FEATURE_CORECLR
