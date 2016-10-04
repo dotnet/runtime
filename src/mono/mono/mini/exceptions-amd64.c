@@ -152,6 +152,7 @@ void win32_seh_set_handler(int type, MonoW32ExceptionHandler handler)
 
 #endif /* TARGET_WIN32 */
 
+#ifndef DISABLE_JIT
 /*
  * mono_arch_get_restore_context:
  *
@@ -285,6 +286,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 
 	return start;
 }
+#endif /* !DISABLE_JIT */
 
 /* 
  * The first few arguments are dummy, to force the other arguments to be passed on
@@ -350,6 +352,7 @@ mono_amd64_resume_unwind (guint64 dummy1, guint64 dummy2, guint64 dummy3, guint6
 	mono_resume_unwind (&ctx);
 }
 
+#ifndef DISABLE_JIT
 /*
  * get_throw_trampoline:
  *
@@ -496,6 +499,7 @@ mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 {
 	return get_throw_trampoline (info, FALSE, TRUE, FALSE, FALSE, "throw_corlib_exception", aot);
 }
+#endif /* !DISABLE_JIT */
 
 /*
  * mono_arch_unwind_frame:
@@ -833,6 +837,7 @@ mono_amd64_get_original_ip (void)
 	return lmf->rip;
 }
 
+#ifndef DISABLE_JIT
 GSList*
 mono_amd64_get_exception_trampolines (gboolean aot)
 {
@@ -851,6 +856,7 @@ mono_amd64_get_exception_trampolines (gboolean aot)
 
 	return tramps;
 }
+#endif /* !DISABLE_JIT */
 
 void
 mono_arch_exceptions_init (void)
@@ -878,7 +884,7 @@ mono_arch_exceptions_init (void)
 	}
 }
 
-#ifdef TARGET_WIN32
+#if defined(TARGET_WIN32) && !defined(DISABLE_JIT)
 
 /*
  * The mono_arch_unwindinfo* methods are used to build and add
@@ -1118,9 +1124,9 @@ mono_arch_unwindinfo_install_unwind_info (gpointer* monoui, gpointer code, guint
 	RtlInstallFunctionTableCallback (((DWORD64)code) | 0x3, (DWORD64)code, code_size, MONO_GET_RUNTIME_FUNCTION_CALLBACK, code, NULL);
 }
 
-#endif
+#endif /* defined(TARGET_WIN32) !defined(DISABLE_JIT) */
 
-#if MONO_SUPPORT_TASKLETS
+#if MONO_SUPPORT_TASKLETS && !defined(DISABLE_JIT)
 MonoContinuationRestore
 mono_tasklets_arch_restore (void)
 {
@@ -1172,7 +1178,7 @@ mono_tasklets_arch_restore (void)
 	saved = start;
 	return (MonoContinuationRestore)saved;
 }
-#endif
+#endif /* MONO_SUPPORT_TASKLETS && !defined(DISABLE_JIT) */
 
 /*
  * mono_arch_setup_resume_sighandler_ctx:
@@ -1190,3 +1196,56 @@ mono_arch_setup_resume_sighandler_ctx (MonoContext *ctx, gpointer func)
 		MONO_CONTEXT_SET_SP (ctx, (guint64)MONO_CONTEXT_GET_SP (ctx) - 8);
 	MONO_CONTEXT_SET_IP (ctx, func);
 }
+
+#ifdef DISABLE_JIT
+gpointer
+mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+gpointer
+mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+gpointer
+mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+gpointer
+mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+gpointer
+mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+GSList*
+mono_amd64_get_exception_trampolines (gboolean aot)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+#endif /* DISABLE_JIT */
+
+#if !MONO_SUPPORT_TASKLETS || defined(DISABLE_JIT)
+MonoContinuationRestore
+mono_tasklets_arch_restore (void)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+#endif /* !MONO_SUPPORT_TASKLETS || defined(DISABLE_JIT) */

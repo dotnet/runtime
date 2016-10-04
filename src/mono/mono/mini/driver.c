@@ -2113,7 +2113,7 @@ mono_main (int argc, char* argv[])
 			exit (1);
 		}
 
-#ifdef HOST_WIN32
+#if defined(HOST_WIN32) && G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 		/* Detach console when executing IMAGE_SUBSYSTEM_WINDOWS_GUI on win32 */
 		if (!enable_debugging && !mono_compile_aot && ((MonoCLIImageInfo*)(mono_assembly_get_image (assembly)->image_info))->cli_header.nt.pe_subsys_required == IMAGE_SUBSYSTEM_WINDOWS_GUI)
 			FreeConsole ();

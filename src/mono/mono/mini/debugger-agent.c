@@ -71,6 +71,7 @@
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/networking.h>
+#include <mono/utils/mono-proclib.h>
 #include "debugger-agent.h"
 #include "mini.h"
 #include "seq-points.h"
@@ -932,7 +933,7 @@ mono_debugger_agent_parse_options (char *options)
 		/* Waiting for deferred attachment */
 		agent_config.defer = TRUE;
 		if (agent_config.address == NULL) {
-			agent_config.address = g_strdup_printf ("0.0.0.0:%u", 56000 + (getpid () % 1000));
+			agent_config.address = g_strdup_printf ("0.0.0.0:%u", 56000 + (mono_process_current_pid () % 1000));
 		}
 	}
 

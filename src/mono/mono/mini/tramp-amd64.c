@@ -33,6 +33,7 @@
 
 #define IS_REX(inst) (((inst) >= 0x40) && ((inst) <= 0x4f))
 
+#ifndef DISABLE_JIT
 /*
  * mono_arch_get_unbox_trampoline:
  * @m: method pointer
@@ -110,6 +111,7 @@ mono_arch_get_static_rgctx_trampoline (MonoMethod *m, MonoMethodRuntimeGenericCo
 
 	return start;
 }
+#endif /* !DISABLE_JIT */
 
 #ifdef _WIN64
 // Workaround lack of Valgrind support for 64-bit Windows
@@ -171,6 +173,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 	}
 }
 
+#ifndef DISABLE_JIT
 guint8*
 mono_arch_create_llvm_native_thunk (MonoDomain *domain, guint8 *addr)
 {
@@ -190,6 +193,7 @@ mono_arch_create_llvm_native_thunk (MonoDomain *domain, guint8 *addr)
 	mono_profiler_code_buffer_new (thunk_start, thunk_code - thunk_start, MONO_PROFILER_CODE_BUFFER_HELPER, NULL);
 	return addr;
 }
+#endif /* !DISABLE_JIT */
 
 void
 mono_arch_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *addr)
@@ -208,6 +212,7 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *a
 	InterlockedExchangePointer (plt_jump_table_entry, addr);
 }
 
+#ifndef DISABLE_JIT
 static void
 stack_unaligned (MonoTrampolineType tramp_type)
 {
@@ -756,6 +761,7 @@ mono_arch_invalidate_method (MonoJitInfo *ji, void *func, gpointer func_arg)
 	x86_push_imm (code, (guint64)func_arg);
 	amd64_call_reg (code, AMD64_R11);
 }
+#endif /* !DISABLE_JIT */
 
 gpointer
 mono_amd64_handler_block_trampoline_helper (void)
@@ -764,6 +770,7 @@ mono_amd64_handler_block_trampoline_helper (void)
 	return jit_tls->handler_block_return_address;
 }
 
+#ifndef DISABLE_JIT
 gpointer
 mono_arch_create_handler_block_trampoline (MonoTrampInfo **info, gboolean aot)
 {
@@ -832,6 +839,7 @@ mono_arch_create_handler_block_trampoline (MonoTrampInfo **info, gboolean aot)
 
 	return buf;
 }
+#endif /* !DISABLE_JIT */
 
 /*
  * mono_arch_get_call_target:
@@ -862,6 +870,7 @@ mono_arch_get_plt_info_offset (guint8 *plt_entry, mgreg_t *regs, guint8 *code)
 	return *(guint32*)(plt_entry + 6);
 }
 
+#ifndef DISABLE_JIT
 /*
  * mono_arch_create_sdb_trampoline:
  *
@@ -960,3 +969,69 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 
 	return buf;
 }
+#endif /* !DISABLE_JIT */
+
+#ifdef DISABLE_JIT
+gpointer
+mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+gpointer
+mono_arch_get_static_rgctx_trampoline (MonoMethod *m, MonoMethodRuntimeGenericContext *mrgctx, gpointer addr)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+gpointer
+mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info, gboolean aot)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+guchar*
+mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInfo **info, gboolean aot)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+gpointer
+mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+gpointer
+mono_arch_create_general_rgctx_lazy_fetch_trampoline (MonoTrampInfo **info, gboolean aot)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+gpointer
+mono_arch_create_handler_block_trampoline (MonoTrampInfo **info, gboolean aot)
+{
+        g_assert_not_reached ();
+        return NULL;
+}
+
+void
+mono_arch_invalidate_method (MonoJitInfo *ji, void *func, gpointer func_arg)
+{
+	g_assert_not_reached ();
+	return;
+}
+
+guint8*
+mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gboolean aot)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+#endif /* DISABLE_JIT */
