@@ -213,7 +213,7 @@
       <Link>Common\Interop\Unix\Interop.FLock.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetControlCharacters.cs">
-      <Link>Common\Interop\Unix\Interop.GetControlCharacters.cs"</Link>
+      <Link>Common\Interop\Unix\Interop.GetControlCharacters.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.IsATty.cs">
       <Link>Common\Interop\Unix\Interop.IsATty.cs</Link>
@@ -252,21 +252,21 @@
       <Link>Common\Interop\Unix\Interop.Write.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetWindowWidth.cs">
-      <Link>Common\Interop\Unix\Interop.GetWindowWidth.cs"</Link>
+      <Link>Common\Interop\Unix\Interop.GetWindowWidth.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.InitializeConsole.cs">
-      <Link>Common\Interop\Unix\Interop.InitializeConsole.cs"</Link>
+      <Link>Common\Interop\Unix\Interop.InitializeConsole.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.ReadStdinUnbuffered.cs">
-      <Link>Common\Interop\Unix\Interop.ReadStdinUnbuffered.cs"</Link>
+      <Link>Common\Interop\Unix\Interop.ReadStdinUnbuffered.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.StdinReady.cs">
-      <Link>Common\Interop\Unix\Interop.StdinReady.cs"</Link>
+      <Link>Common\Interop\Unix\Interop.StdinReady.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.3' Or '$(TargetGroup)' == 'netcore50'">
     <Compile Include="$(CommonPath)\System\SerializableAttribute.cs">
-      <Link>Common\System\SerializableAttribute.cs"</Link>
+      <Link>Common\System\SerializableAttribute.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'net463'">
