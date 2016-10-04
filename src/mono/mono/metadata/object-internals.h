@@ -1769,9 +1769,6 @@ ves_icall_AssemblyBuilder_basic_init (MonoReflectionAssemblyBuilder *assemblyb);
 MonoReflectionModule*
 ves_icall_AssemblyBuilder_InternalAddModule (MonoReflectionAssemblyBuilder *ab, MonoString *fileName);
 
-void
-ves_icall_TypeBuilder_create_generic_class (MonoReflectionTypeBuilder *tb);
-
 MonoArray*
 ves_icall_CustomAttributeBuilder_GetBlob (MonoReflectionAssembly *assembly, MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *propValues, MonoArray *fields, MonoArray* fieldValues);
 
@@ -1793,11 +1790,5 @@ ves_icall_ModuleBuilder_getUSIndex (MonoReflectionModuleBuilder *module, MonoStr
 
 void
 ves_icall_ModuleBuilder_set_wrappers_type (MonoReflectionModuleBuilder *moduleb, MonoReflectionType *type);
-
-void
-ves_icall_GenericTypeParameterBuilder_initialize (MonoReflectionGenericParam *gparam);
-
-MonoReflectionMethod*
-ves_icall_MethodBuilder_MakeGenericMethod (MonoReflectionMethod *rmethod, MonoArray *types);
 
 #endif /* __MONO_OBJECT_INTERNALS_H__ */

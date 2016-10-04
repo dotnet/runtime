@@ -2268,13 +2268,9 @@ reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, MonoAr
 
 	mono_error_init (error);
 
-	/*FIXME but this no longer should happen*/
-	if (!strcmp (rmethod->object.vtable->klass->name, "MethodBuilder")) {
-		method = mono_reflection_method_builder_to_mono_method ((MonoReflectionMethodBuilder*)rmethod, error);
-		return_val_if_nok (error, NULL);
-	} else {
-		method = rmethod->method;
-	}
+	g_assert (strcmp (rmethod->object.vtable->klass->name, "MethodBuilder"));
+
+	method = rmethod->method;
 
 	klass = method->klass;
 
@@ -2321,17 +2317,7 @@ reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, MonoAr
 		return NULL;
 	}
 	
-	MonoReflectionMethod *ret = mono_method_get_object_checked (mono_object_domain (rmethod), inflated, NULL, error);
-	return ret;
-}
-
-MonoReflectionMethod*
-ves_icall_MethodBuilder_MakeGenericMethod (MonoReflectionMethod *rmethod, MonoArray *types)
-{
-	MonoError error;
-	MonoReflectionMethod *result = reflection_bind_generic_method_parameters (rmethod, types, &error);
-	mono_error_set_pending_exception (&error);
-	return result;
+	return mono_method_get_object_checked (mono_object_domain (rmethod), inflated, NULL, error);
 }
 
 MonoReflectionMethod*
