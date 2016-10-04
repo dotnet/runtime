@@ -4,16 +4,11 @@
 
 using System;
 using System.IO;
-using System.Text;
 using System.Diagnostics;
-using System.Globalization;
 using System.Runtime.InteropServices;
-
-using Internal.Cryptography;
-using Internal.Cryptography.Pal.Native;
-
-using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+
+using Internal.Cryptography.Pal.Native;
 
 namespace Internal.Cryptography.Pal
 {
@@ -172,7 +167,13 @@ namespace Internal.Cryptography.Pal
                         if ((!pCertContext.IsInvalid) && pCertContext.ContainsPrivateKey)
                         {
                             // We already found our chosen one. Free up this one's key and move on.
-                            SafeCertContextHandleWithKeyContainerDeletion.DeleteKeyContainer(pEnumContext);
+
+                            // If this one has a persisted private key, clean up the key file.
+                            // If it was an ephemeral private key no action is required.
+                            if (pEnumContext.HasPersistedPrivateKey)
+                            {
+                                SafeCertContextHandleWithKeyContainerDeletion.DeleteKeyContainer(pEnumContext);
+                            }
                         }
                         else
                         {
@@ -205,7 +206,7 @@ namespace Internal.Cryptography.Pal
 
         private static PfxCertStoreFlags MapKeyStorageFlags(X509KeyStorageFlags keyStorageFlags)
         {
-            if ((keyStorageFlags & (X509KeyStorageFlags)~0x1F) != 0)
+            if ((keyStorageFlags & X509Certificate.KeyStorageFlagsAll) != keyStorageFlags)
                 throw new ArgumentException(SR.Argument_InvalidFlag, nameof(keyStorageFlags));
 
             PfxCertStoreFlags pfxCertStoreFlags = 0;
@@ -218,6 +219,13 @@ namespace Internal.Cryptography.Pal
                 pfxCertStoreFlags |= PfxCertStoreFlags.CRYPT_EXPORTABLE;
             if ((keyStorageFlags & X509KeyStorageFlags.UserProtected) == X509KeyStorageFlags.UserProtected)
                 pfxCertStoreFlags |= PfxCertStoreFlags.CRYPT_USER_PROTECTED;
+
+            // If a user is asking for an Ephemeral key they should be willing to test their code to find out
+            // that it will no longer import into CAPI. This solves problems of legacy CSPs being
+            // difficult to do SHA-2 RSA signatures with, simplifies the story for UWP, and reduces the
+            // complexity of pointer interpretation.
+            if ((keyStorageFlags & X509KeyStorageFlags.EphemeralKeySet) == X509KeyStorageFlags.EphemeralKeySet)
+                pfxCertStoreFlags |= PfxCertStoreFlags.PKCS12_NO_PERSIST_KEY | PfxCertStoreFlags.PKCS12_ALWAYS_CNG_KSP;
 
             // In the full .NET Framework loading a PFX then adding the key to the Windows Certificate Store would
             // enable a native application compiled against CAPI to find that private key and interoperate with it.

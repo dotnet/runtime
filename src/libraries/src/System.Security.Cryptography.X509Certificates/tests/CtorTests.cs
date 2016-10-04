@@ -320,5 +320,57 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal("error:0D07803A:asn1 encoding routines:ASN1_ITEM_EX_D2I:nested asn1 error", ex.Message);
             }
         }
+
+        [Fact]
+        public static void InvalidStorageFlags()
+        {
+            byte[] nonEmptyBytes = new byte[1];
+
+            Assert.Throws<ArgumentException>(
+                "keyStorageFlags",
+                () => new X509Certificate(nonEmptyBytes, string.Empty, (X509KeyStorageFlags)0xFF));
+
+            Assert.Throws<ArgumentException>(
+                "keyStorageFlags",
+                () => new X509Certificate(string.Empty, string.Empty, (X509KeyStorageFlags)0xFF));
+
+            Assert.Throws<ArgumentException>(
+                "keyStorageFlags",
+                () => new X509Certificate2(nonEmptyBytes, string.Empty, (X509KeyStorageFlags)0xFF));
+
+            Assert.Throws<ArgumentException>(
+                "keyStorageFlags",
+                () => new X509Certificate2(string.Empty, string.Empty, (X509KeyStorageFlags)0xFF));
+
+            // No test is performed here for the ephemeral flag failing downlevel, because the live
+            // binary is always used by default, meaning it doesn't know EphemeralKeySet doesn't exist.
+        }
+
+#if netcoreapp11
+        [Fact]
+        public static void InvalidStorageFlags_PersistedEphemeral()
+        {
+            const X509KeyStorageFlags PersistedEphemeral =
+                X509KeyStorageFlags.EphemeralKeySet | X509KeyStorageFlags.PersistKeySet;
+
+            byte[] nonEmptyBytes = new byte[1];
+
+            Assert.Throws<ArgumentException>(
+                "keyStorageFlags",
+                () => new X509Certificate(nonEmptyBytes, string.Empty, PersistedEphemeral));
+
+            Assert.Throws<ArgumentException>(
+                "keyStorageFlags",
+                () => new X509Certificate(string.Empty, string.Empty, PersistedEphemeral));
+
+            Assert.Throws<ArgumentException>(
+                "keyStorageFlags",
+                () => new X509Certificate2(nonEmptyBytes, string.Empty, PersistedEphemeral));
+
+            Assert.Throws<ArgumentException>(
+                "keyStorageFlags",
+                () => new X509Certificate2(string.Empty, string.Empty, PersistedEphemeral));
+        }
+#endif
     }
 }

@@ -138,6 +138,8 @@ namespace System.Security.Cryptography.X509Certificates
             if (rawData == null)
                 throw new ArgumentNullException(nameof(rawData));
 
+            X509Certificate.ValidateKeyStorageFlags(keyStorageFlags);
+
             using (ILoaderPal storePal = StorePal.FromBlob(rawData, password, keyStorageFlags))
             {
                 storePal.MoveTo(this);
@@ -153,6 +155,8 @@ namespace System.Security.Cryptography.X509Certificates
         {
             if (fileName == null)
                 throw new ArgumentNullException(nameof(fileName));
+
+            X509Certificate.ValidateKeyStorageFlags(keyStorageFlags);
 
             using (ILoaderPal storePal = StorePal.FromFile(fileName, password, keyStorageFlags))
             {
