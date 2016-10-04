@@ -582,5 +582,9 @@ InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp)
 }
 
 #endif
+#endif
 
+#if defined(HOST_WIN32) && defined(_MSC_VER)
+// Quiet Visual Studio linker warning, LNK4221, in cases when this source file intentional ends up empty.
+void __mono_win32_atomic_lnk4221(void) {}
 #endif

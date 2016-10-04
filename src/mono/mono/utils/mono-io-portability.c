@@ -387,4 +387,11 @@ static inline gchar *mono_portability_find_file_internal (GString **report, cons
 	g_free (new_pathname);
 	return(NULL);
 }
+
+#else /* DISABLE_PORTABILITY */
+
+#ifdef _MSC_VER
+// Quiet Visual Studio linker warning, LNK4221, in cases when this source file intentional ends up empty.
+void __mono_win32_mono_io_portability_quiet_lnk4221(void) {}
 #endif
+#endif /* DISABLE_PORTABILITY */

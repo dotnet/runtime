@@ -241,9 +241,6 @@
 #include <direct.h>
 #define mkdir(x)	_mkdir(x)
 
-/* GCC specific functions aren't available */
-#define __builtin_return_address(x)	NULL
-
 #define __func__ __FUNCTION__
 
 #include <BaseTsd.h>
