@@ -1314,6 +1314,7 @@ void LinearScan::setBlockSequence()
 
     bool addedInternalBlocks = false;
     verifiedAllBBs           = false;
+    hasCriticalEdges         = false;
     BasicBlock* nextBlock;
     for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = nextBlock)
     {
@@ -1345,6 +1346,7 @@ void LinearScan::setBlockSequence()
                 if (predBlock->NumSucc(compiler) > 1)
                 {
                     blockInfo[block->bbNum].hasCriticalInEdge = true;
+                    hasCriticalEdges                          = true;
                     break;
                 }
                 else if (predBlock->bbJumpKind == BBJ_SWITCH)
@@ -1370,6 +1372,7 @@ void LinearScan::setBlockSequence()
             if (checkForCriticalOutEdge && succ->GetUniquePred(compiler) == nullptr)
             {
                 blockInfo[block->bbNum].hasCriticalOutEdge = true;
+                hasCriticalEdges                           = true;
                 // We can stop checking now.
                 checkForCriticalOutEdge = false;
             }
@@ -1947,6 +1950,8 @@ void LinearScan::identifyCandidates()
     // for vectors on Arm64, though the actual value may differ.
 
     VarSetOps::AssignNoCopy(compiler, fpCalleeSaveCandidateVars, VarSetOps::MakeEmpty(compiler));
+    VarSetOps::AssignNoCopy(compiler, resolutionCandidateVars, VarSetOps::MakeEmpty(compiler));
+    VarSetOps::AssignNoCopy(compiler, splitOrSpilledVars, VarSetOps::MakeEmpty(compiler));
     VARSET_TP    VARSET_INIT_NOCOPY(fpMaybeCandidateVars, VarSetOps::MakeEmpty(compiler));
     unsigned int floatVarCount        = 0;
     unsigned int thresholdFPRefCntWtd = 4 * BB_UNITY_WEIGHT;
@@ -4076,6 +4081,22 @@ BasicBlock* getNonEmptyBlock(BasicBlock* block)
     return block;
 }
 
+//------------------------------------------------------------------------
+// insertZeroInitRefPositions: Handle lclVars that are live-in to the first block
+//
+// Notes:
+//    For each lclVar that is live-in to the first block:
+//    - If it is a GC ref, or if compInitMem is set, a ZeroInit RefPosition will be created.
+//    - Otherwise, it will be marked as spilled, since it will not be assigned a register
+//      on entry and will be loaded from memory on the undefined path.
+//      Note that, when the compInitMem option is not set, we may encounter these on
+//      paths that are protected by the same condition as an earlier def. However, since
+//      we don't do the analysis to determine this - and couldn't rely on always identifying
+//      such cases even if we tried - we must conservatively treat the undefined path as
+//      being possible. This is a relatively rare case, so the introduced conservatism is
+//      not expected to warrant the analysis required to determine the best placement of
+//      an initialization.
+//
 void LinearScan::insertZeroInitRefPositions()
 {
     // insert defs for this, then a block boundary
@@ -4085,15 +4106,23 @@ void LinearScan::insertZeroInitRefPositions()
     {
         unsigned   varNum = compiler->lvaTrackedToVarNum[varIndex];
         LclVarDsc* varDsc = compiler->lvaTable + varNum;
-        if (!varDsc->lvIsParam && isCandidateVar(varDsc) &&
-            (compiler->info.compInitMem || varTypeIsGC(varDsc->TypeGet())))
+        if (!varDsc->lvIsParam && isCandidateVar(varDsc))
         {
-            GenTree* firstNode = getNonEmptyBlock(compiler->fgFirstBB)->firstNode();
-            JITDUMP("V%02u was live in\n", varNum);
-            Interval*    interval = getIntervalForLocalVar(varNum);
-            RefPosition* pos =
-                newRefPosition(interval, MinLocation, RefTypeZeroInit, firstNode, allRegs(interval->registerType));
-            varDsc->lvMustInit = true;
+            JITDUMP("V%02u was live in to first block:", varNum);
+            Interval* interval = getIntervalForLocalVar(varNum);
+            if (compiler->info.compInitMem || varTypeIsGC(varDsc->TypeGet()))
+            {
+                JITDUMP(" creating ZeroInit\n");
+                GenTree*     firstNode = getNonEmptyBlock(compiler->fgFirstBB)->firstNode();
+                RefPosition* pos =
+                    newRefPosition(interval, MinLocation, RefTypeZeroInit, firstNode, allRegs(interval->registerType));
+                varDsc->lvMustInit = true;
+            }
+            else
+            {
+                setIntervalAsSpilled(interval);
+                JITDUMP(" marking as spilled\n");
+            }
         }
     }
 }
@@ -4499,6 +4528,9 @@ void LinearScan::buildIntervals()
             insertZeroInitRefPositions();
         }
 
+        // Any lclVars live-in to a block are resolution candidates.
+        VarSetOps::UnionD(compiler, resolutionCandidateVars, block->bbLiveIn);
+
         // Determine if we need any DummyDefs.
         // We need DummyDefs for cases where "predBlock" isn't really a predecessor.
         // Note that it's possible to have uses of unitialized variables, in which case even the first
@@ -4510,8 +4542,8 @@ void LinearScan::buildIntervals()
         VARSET_TP VARSET_INIT(compiler, newLiveIn, block->bbLiveIn);
         if (predBlock)
         {
-            JITDUMP("\n\nSetting incoming variable registers of BB%02u to outVarToRegMap of BB%02u\n", block->bbNum,
-                    predBlock->bbNum);
+            JITDUMP("\n\nSetting BB%02u as the predecessor for determining incoming variable registers of BB%02u\n",
+                    block->bbNum, predBlock->bbNum);
             assert(predBlock->bbNum <= bbNumMaxBeforeResolution);
             blockInfo[block->bbNum].predBBNum = predBlock->bbNum;
             // Compute set difference: newLiveIn = block->bbLiveIn - predBlock->bbLiveOut
@@ -5947,6 +5979,70 @@ void LinearScan::assignPhysReg(RegRecord* regRec, Interval* interval)
 }
 
 //------------------------------------------------------------------------
+// setIntervalAsSplit: Set this Interval as being split
+//
+// Arguments:
+//    interval - The Interval which is being split
+//
+// Return Value:
+//    None.
+//
+// Notes:
+//    The given Interval will be marked as split, and it will be added to the
+//    set of splitOrSpilledVars.
+//
+// Assumptions:
+//    "interval" must be a lclVar interval, as tree temps are never split.
+//    This is asserted in the call to getVarIndex().
+//
+void LinearScan::setIntervalAsSplit(Interval* interval)
+{
+    if (interval->isLocalVar)
+    {
+        unsigned varIndex = interval->getVarIndex(compiler);
+        if (!interval->isSplit)
+        {
+            VarSetOps::AddElemD(compiler, splitOrSpilledVars, varIndex);
+        }
+        else
+        {
+            assert(VarSetOps::IsMember(compiler, splitOrSpilledVars, varIndex));
+        }
+    }
+    interval->isSplit = true;
+}
+
+//------------------------------------------------------------------------
+// setIntervalAsSpilled: Set this Interval as being spilled
+//
+// Arguments:
+//    interval - The Interval which is being spilled
+//
+// Return Value:
+//    None.
+//
+// Notes:
+//    The given Interval will be marked as spilled, and it will be added
+//    to the set of splitOrSpilledVars.
+//
+void LinearScan::setIntervalAsSpilled(Interval* interval)
+{
+    if (interval->isLocalVar)
+    {
+        unsigned varIndex = interval->getVarIndex(compiler);
+        if (!interval->isSpilled)
+        {
+            VarSetOps::AddElemD(compiler, splitOrSpilledVars, varIndex);
+        }
+        else
+        {
+            assert(VarSetOps::IsMember(compiler, splitOrSpilledVars, varIndex));
+        }
+    }
+    interval->isSpilled = true;
+}
+
+//------------------------------------------------------------------------
 // spill: Spill this Interval between "fromRefPosition" and "toRefPosition"
 //
 // Arguments:
@@ -5989,8 +6085,8 @@ void LinearScan::spillInterval(Interval* interval, RefPosition* fromRefPosition,
 
     INTRACK_STATS(updateLsraStat(LSRA_STAT_SPILL, fromRefPosition->bbNum));
 
-    interval->isActive  = false;
-    interval->isSpilled = true;
+    interval->isActive = false;
+    setIntervalAsSpilled(interval);
 
     // If fromRefPosition occurs before the beginning of this block, mark this as living in the stack
     // on entry to this block.
@@ -6173,7 +6269,7 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
                 setInVarRegForBB(curBBNum, assignedInterval->varNum, REG_STK);
                 if (spillRefPosition->nextRefPosition != nullptr)
                 {
-                    assignedInterval->isSpilled = true;
+                    setIntervalAsSpilled(assignedInterval);
                 }
             }
             else
@@ -6379,7 +6475,14 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock, bool alloc
         if (allocationPass)
         {
             targetReg = predVarToRegMap[varIndex];
-            INDEBUG(targetReg       = rotateBlockStartLocation(interval, targetReg, (~liveRegs | inactiveRegs)));
+#ifdef DEBUG
+            regNumber newTargetReg = rotateBlockStartLocation(interval, targetReg, (~liveRegs | inactiveRegs));
+            if (newTargetReg != targetReg)
+            {
+                targetReg = newTargetReg;
+                setIntervalAsSplit(interval);
+            }
+#endif // DEBUG
             inVarToRegMap[varIndex] = targetReg;
         }
         else // !allocationPass (i.e. resolution/write-back pass)
@@ -6937,6 +7040,7 @@ void LinearScan::allocateRegisters()
                     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_ENTRY_REG_ALLOCATED, currentInterval));
                     didDump  = true;
                     allocate = false;
+                    setIntervalAsSpilled(currentInterval);
                 }
                 // If it has no actual references, mark it as "lastUse"; since they're not actually part
                 // of any flow they won't have been marked during dataflow.  Otherwise, if we allocate a
@@ -7163,6 +7267,7 @@ void LinearScan::allocateRegisters()
                 }
                 currentRefPosition->moveReg = true;
                 assignedRegister            = REG_NA;
+                setIntervalAsSplit(currentInterval);
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_MOVE_REG, currentInterval, assignedRegister));
             }
             else if ((genRegMask(assignedRegister) & currentRefPosition->registerAssignment) != 0)
@@ -7317,6 +7422,7 @@ void LinearScan::allocateRegisters()
 
                         currentRefPosition->registerAssignment = RBM_NONE;
                         currentRefPosition->reload             = false;
+                        setIntervalAsSpilled(currentInterval);
 
                         INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_REG_ALLOCATED, currentInterval));
                     }
@@ -7326,6 +7432,7 @@ void LinearScan::allocateRegisters()
                     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_REG_ALLOCATED, currentInterval));
                     currentRefPosition->registerAssignment = RBM_NONE;
                     currentInterval->isActive              = false;
+                    setIntervalAsSpilled(currentInterval);
                 }
             }
 #ifdef DEBUG
@@ -7472,7 +7579,7 @@ void LinearScan::allocateRegisters()
 //   - interval->physReg is set to the assigned register
 //     (i.e. at the code location which is currently being handled by resolveRegisters())
 //     - interval->isActive is true iff the interval is live and occupying a register
-//     - interval->isSpilled is set to true if the interval is EVER spilled
+//     - interval->isSpilled should have already been set to true if the interval is EVER spilled
 //     - interval->isSplit is set to true if the interval does not occupy the same
 //       register throughout the method
 //   - RegRecord->assignedInterval points to the interval which currently occupies
@@ -7512,9 +7619,9 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreePtr treeNode, RefPosi
     if (currentRefPosition->registerAssignment == RBM_NONE)
     {
         assert(!currentRefPosition->RequiresRegister());
+        assert(interval->isSpilled);
 
-        interval->isSpilled = true;
-        varDsc->lvRegNum    = REG_STK;
+        varDsc->lvRegNum = REG_STK;
         if (interval->assignedReg != nullptr && interval->assignedReg->assignedInterval == interval)
         {
             interval->assignedReg->assignedInterval = nullptr;
@@ -7562,8 +7669,10 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreePtr treeNode, RefPosi
     // In the reload case we simply do not set GTF_REG_VAL, and it gets
     // referenced from the variable's home location.
     // This is also true for a pure def which is spilled.
-    if (reload && currentRefPosition->refType != RefTypeDef)
+    if (reload)
     {
+        assert(currentRefPosition->refType != RefTypeDef);
+        assert(interval->isSpilled);
         varDsc->lvRegNum = REG_STK;
         if (!spillAfter)
         {
@@ -7601,31 +7710,15 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreePtr treeNode, RefPosi
         {
             assert(currentRefPosition->refType == RefTypeExpUse);
         }
-
-        // If we have an undefined use set it as non-reg
-        if (!interval->isSpilled)
-        {
-            if (varDsc->lvIsParam && !varDsc->lvIsRegArg && currentRefPosition == interval->firstRefPosition)
-            {
-                // Parameters are the only thing that can be used before defined
-            }
-            else
-            {
-                // if we see a use before def of something else, the zero init flag better not be set.
-                noway_assert(!compiler->info.compInitMem);
-                // if it is not set, then the behavior is undefined but we don't want to crash or assert
-                interval->isSpilled = true;
-            }
-        }
     }
     else if (spillAfter && !RefTypeIsUse(currentRefPosition->refType))
     {
         // In the case of a pure def, don't bother spilling - just assign it to the
         // stack.  However, we need to remember that it was spilled.
 
-        interval->isSpilled = true;
-        varDsc->lvRegNum    = REG_STK;
-        interval->physReg   = REG_NA;
+        assert(interval->isSpilled);
+        varDsc->lvRegNum  = REG_STK;
+        interval->physReg = REG_NA;
         if (treeNode != nullptr)
         {
             treeNode->gtRegNum = REG_NA;
@@ -7657,6 +7750,7 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreePtr treeNode, RefPosi
             }
             else
             {
+                assert(interval->isSplit);
                 interval->physReg = assignedReg;
             }
 
@@ -7674,13 +7768,11 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreePtr treeNode, RefPosi
             {
                 if (varDsc->lvRegNum != REG_STK)
                 {
-                    // If the register assignments don't match, then this interval is spilt,
-                    // but not spilled (yet)
-                    // However, we don't have a single register assignment now
+                    // If the register assignments don't match, then this interval is split.
                     if (varDsc->lvRegNum != assignedReg)
                     {
-                        interval->isSplit = TRUE;
-                        varDsc->lvRegNum  = REG_STK;
+                        setIntervalAsSplit(interval);
+                        varDsc->lvRegNum = REG_STK;
                     }
                 }
                 else
@@ -7695,9 +7787,9 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreePtr treeNode, RefPosi
             {
                 treeNode->gtFlags |= GTF_SPILL;
             }
-            interval->isSpilled = true;
-            interval->physReg   = REG_NA;
-            varDsc->lvRegNum    = REG_STK;
+            assert(interval->isSpilled);
+            interval->physReg = REG_NA;
+            varDsc->lvRegNum  = REG_STK;
         }
 
         // This value is in a register, UNLESS we already saw this treeNode
@@ -8476,6 +8568,11 @@ void LinearScan::resolveRegisters()
         printf("RESOLVING BB BOUNDARIES\n");
         printf("-----------------------\n");
 
+        printf("Resolution Candidates: ");
+        dumpConvertedVarSet(compiler, resolutionCandidateVars);
+        printf("\n");
+        printf("Has %sCritical Edges\n\n", hasCriticalEdges ? "" : "No");
+
         printf("Prior to Resolution\n");
         foreach_block(compiler, block)
         {
@@ -8927,11 +9024,12 @@ void LinearScan::addResolution(
     insertMove(block, insertionPoint, interval->varNum, fromReg, toReg);
     if (fromReg == REG_STK || toReg == REG_STK)
     {
-        interval->isSpilled = true;
+        assert(interval->isSpilled);
     }
     else
     {
-        interval->isSplit = true;
+        // We should have already marked this as spilled or split.
+        assert((interval->isSpilled) || (interval->isSplit));
     }
 
     INTRACK_STATS(updateLsraStat(LSRA_STAT_RESOLUTION_MOV, block->bbNum));
@@ -8953,6 +9051,12 @@ void LinearScan::addResolution(
 
 void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
 {
+    VARSET_TP VARSET_INIT_NOCOPY(outResolutionSet,
+                                 VarSetOps::Intersection(compiler, block->bbLiveOut, resolutionCandidateVars));
+    if (VarSetOps::IsEmpty(compiler, outResolutionSet))
+    {
+        return;
+    }
     VARSET_TP VARSET_INIT_NOCOPY(sameResolutionSet, VarSetOps::MakeEmpty(compiler));
     VARSET_TP VARSET_INIT_NOCOPY(sameLivePathsSet, VarSetOps::MakeEmpty(compiler));
     VARSET_TP VARSET_INIT_NOCOPY(singleTargetSet, VarSetOps::MakeEmpty(compiler));
@@ -8967,6 +9071,8 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
 
     // First, determine the live regs at the end of this block so that we know what regs are
     // available to copy into.
+    // Note that for this purpose we use the full live-out set, because we must ensure that
+    // even the registers that remain the same across the edge are preserved correctly.
     regMaskTP liveOutRegs = RBM_NONE;
     VARSET_ITER_INIT(compiler, iter1, block->bbLiveOut, varIndex1);
     while (iter1.NextElem(compiler, &varIndex1))
@@ -9002,7 +9108,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
     regMaskTP   sameWriteRegs   = RBM_NONE;
     regMaskTP   diffReadRegs    = RBM_NONE;
 
-    // For each var, classify them as:
+    // For each var that may require resolution, classify them as:
     // - in the same register at the end of this block and at each target (no resolution needed)
     // - in different registers at different targets (resolve separately):
     //     diffResolutionSet
@@ -9011,7 +9117,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
     //   write to any registers that are read by those in the diffResolutionSet:
     //     sameResolutionSet
 
-    VARSET_ITER_INIT(compiler, iter, block->bbLiveOut, varIndex);
+    VARSET_ITER_INIT(compiler, iter, outResolutionSet, varIndex);
     while (iter.NextElem(compiler, &varIndex))
     {
         unsigned  varNum              = compiler->lvaTrackedToVarNum[varIndex];
@@ -9183,6 +9289,16 @@ void LinearScan::resolveEdges()
 {
     JITDUMP("RESOLVING EDGES\n");
 
+    // The resolutionCandidateVars set was initialized with all the lclVars that are live-in to
+    // any block. We now intersect that set with any lclVars that ever spilled or split.
+    // If there are no candidates for resoultion, simply return.
+
+    VarSetOps::IntersectionD(compiler, resolutionCandidateVars, splitOrSpilledVars);
+    if (VarSetOps::IsEmpty(compiler, resolutionCandidateVars))
+    {
+        return;
+    }
+
     BasicBlock *block, *prevBlock = nullptr;
 
     // Handle all the critical edges first.
@@ -9191,18 +9307,21 @@ void LinearScan::resolveEdges()
     // remaining mismatches.  We visit the out-edges, as that allows us to share the moves that are
     // common among allt he targets.
 
-    foreach_block(compiler, block)
+    if (hasCriticalEdges)
     {
-        if (block->bbNum > bbNumMaxBeforeResolution)
+        foreach_block(compiler, block)
         {
-            // This is a new block added during resolution - we don't need to visit these now.
-            continue;
+            if (block->bbNum > bbNumMaxBeforeResolution)
+            {
+                // This is a new block added during resolution - we don't need to visit these now.
+                continue;
+            }
+            if (blockInfo[block->bbNum].hasCriticalOutEdge)
+            {
+                handleOutgoingCriticalEdges(block);
+            }
+            prevBlock = block;
         }
-        if (blockInfo[block->bbNum].hasCriticalOutEdge)
-        {
-            handleOutgoingCriticalEdges(block);
-        }
-        prevBlock = block;
     }
 
     prevBlock = nullptr;
@@ -9222,7 +9341,9 @@ void LinearScan::resolveEdges()
         // we may need resolution at the beginning of this block.
         // This may be true even if it's the block we used for starting locations,
         // if a variable was spilled.
-        if (!VarSetOps::IsEmpty(compiler, block->bbLiveIn))
+        VARSET_TP VARSET_INIT_NOCOPY(inResolutionSet,
+                                     VarSetOps::Intersection(compiler, block->bbLiveIn, resolutionCandidateVars));
+        if (!VarSetOps::IsEmpty(compiler, inResolutionSet))
         {
             if (uniquePredBlock != nullptr)
             {
@@ -9235,7 +9356,7 @@ void LinearScan::resolveEdges()
                     uniquePredBlock = uniquePredBlock->GetUniquePred(compiler);
                     noway_assert(uniquePredBlock != nullptr);
                 }
-                resolveEdge(uniquePredBlock, block, ResolveSplit, block->bbLiveIn);
+                resolveEdge(uniquePredBlock, block, ResolveSplit, inResolutionSet);
             }
         }
 
@@ -9250,7 +9371,12 @@ void LinearScan::resolveEdges()
             BasicBlock* succBlock = block->GetSucc(0, compiler);
             if (succBlock->GetUniquePred(compiler) == nullptr)
             {
-                resolveEdge(block, succBlock, ResolveJoin, succBlock->bbLiveIn);
+                VARSET_TP VARSET_INIT_NOCOPY(outResolutionSet, VarSetOps::Intersection(compiler, succBlock->bbLiveIn,
+                                                                                       resolutionCandidateVars));
+                if (!VarSetOps::IsEmpty(compiler, outResolutionSet))
+                {
+                    resolveEdge(block, succBlock, ResolveJoin, outResolutionSet);
+                }
             }
         }
     }
@@ -9660,6 +9786,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
 
                         // First, spill "otherInterval" from targetReg to the stack.
                         Interval* otherInterval = sourceIntervals[source[otherTargetReg]];
+                        setIntervalAsSpilled(otherInterval);
                         addResolution(block, insertionPoint, otherInterval, REG_STK, targetReg);
                         JITDUMP(" (%s)\n", resolveTypeName[resolveType]);
                         location[source[otherTargetReg]] = REG_STK;
