@@ -4,6 +4,7 @@
     "System.Collections.NonGeneric": "4.3.0-beta-24601-02",
     "System.Collections.Specialized": "4.3.0-beta-24601-02",
     "System.ComponentModel.Primitives": "4.3.0-beta-24601-02",
+    "System.Drawing.Primitives": "4.3.0-beta-24601-02",
     "System.Globalization": "4.3.0-beta-24601-02",
     "System.Linq": "4.3.0-beta-24601-02",
     "System.Linq.Expressions": "4.3.0-beta-24601-02",
