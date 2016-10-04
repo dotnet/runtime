@@ -28,9 +28,11 @@
     <Compile Include="MemoryStream\MemoryStream.TryGetBufferTests.cs" />
     <Compile Include="MemoryStream\MemoryStreamTests.cs" />
     <Compile Include="StreamReader\StreamReader.CtorTests.cs" />
+    <Compile Include="StreamReader\StreamReader.StringCtorTests.cs" Condition="'$(TargetGroup)'==''" />
     <Compile Include="StreamReader\StreamReaderTests.cs" />
     <Compile Include="StreamWriter\StreamWriter.BaseStream.cs" />
     <Compile Include="StreamWriter\StreamWriter.CloseTests.cs" />
+    <Compile Include="StreamWriter\StreamWriter.StringCtorTests.cs" Condition="'$(TargetGroup)'==''" />
     <Compile Include="StreamWriter\StreamWriter.CtorTests.cs" />
     <Compile Include="StreamWriter\StreamWriter.FlushTests.cs" />
     <Compile Include="StreamWriter\StreamWriter.WriteTests.cs" />
