@@ -5957,7 +5957,7 @@ namespace System.Data.SqlClient
         {
             _physicalStateObj.SetTimeoutSeconds(rec.timeout);
 
-            Debug.Assert(recoverySessionData == null || (requestedFeatures | TdsEnums.FeatureExtension.SessionRecovery) != 0, "Recovery session data without session recovery feature request");
+            Debug.Assert(recoverySessionData == null || (requestedFeatures & TdsEnums.FeatureExtension.SessionRecovery) != 0, "Recovery session data without session recovery feature request");
             Debug.Assert(TdsEnums.MAXLEN_HOSTNAME >= rec.hostName.Length, "_workstationId.Length exceeds the max length for this value");
 
             Debug.Assert(rec.userName == null || (rec.userName != null && TdsEnums.MAXLEN_USERNAME >= rec.userName.Length), "_userID.Length exceeds the max length for this value");
@@ -6445,8 +6445,6 @@ namespace System.Data.SqlClient
 
                 WriteShort((short)request, stateObj); // write TransactionManager Request type
 
-                bool returnReader = false;
-
                 switch (request)
                 {
                     case TdsEnums.TransactionManagerRequestType.Begin:
@@ -6514,28 +6512,10 @@ namespace System.Data.SqlClient
                 stateObj._pendingData = true;
                 stateObj._messageStatus = 0;
 
-                SqlDataReader dtcReader = null;
                 stateObj.SniContext = SniContext.Snix_Read;
-                if (returnReader)
-                {
-                    dtcReader = new SqlDataReader(null, CommandBehavior.Default);
-                    Debug.Assert(this == stateObj.Parser, "different parser");
-#if DEBUG
-                    // Remove the current owner of stateObj - otherwise we will hit asserts
-                    stateObj.Owner = null;
-#endif
-                    dtcReader.Bind(stateObj);
+                Run(RunBehavior.UntilDone, null, null, null, stateObj);
 
-                    // force consumption of metadata
-                    _SqlMetaDataSet metaData = dtcReader.MetaData;
-                }
-                else
-                {
-                    Run(RunBehavior.UntilDone, null, null, null, stateObj);
-                }
-
-
-                return dtcReader;
+                return null;
             }
             catch (Exception e)
             {
