@@ -6,13 +6,13 @@
       <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="FunctionalTests\System.Net.Ping.Functional.Tests.csproj">
+      <TestTFMs>netcoreapp1.1;net463</TestTFMs>
+      <OSGroup>Windows_NT</OSGroup>
+    </Project>
+    <Project Include="FunctionalTests\System.Net.Ping.Functional.Tests.csproj">
       <TestTFMs>netcoreapp1.0;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>netstandard1.3</TargetGroup>
-    </Project>
-    <Project Include="FunctionalTests\System.Net.Ping.Functional.Tests.csproj">
-      <TestTFMs>netcoreapp1.1;net463</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
