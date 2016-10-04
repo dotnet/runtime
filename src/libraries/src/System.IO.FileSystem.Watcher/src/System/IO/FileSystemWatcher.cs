@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
@@ -14,7 +15,7 @@ namespace System.IO
     ///    raises events when a directory or file within a directory changes.
     /// </devdoc>
 
-    public partial class FileSystemWatcher : IDisposable
+    public partial class FileSystemWatcher : Component
     {
         /// <devdoc>
         ///     Private instance variables
@@ -348,20 +349,9 @@ namespace System.IO
             }
         }
 
-
-
-        /// <devdoc>
-        ///    Disposes of the <see cref='System.IO.FileSystemWatcher'/>.
-        /// </devdoc>
-        public void Dispose()
-        {
-            this.Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
         /// <devdoc>
         /// </devdoc>
-        protected virtual void Dispose(bool disposing)
+        protected override void Dispose(bool disposing)
         {
             try
             {

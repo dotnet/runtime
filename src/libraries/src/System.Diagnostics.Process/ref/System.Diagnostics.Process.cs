@@ -22,7 +22,7 @@ namespace System.Diagnostics
         public string Data { get { return default(string); } }
     }
     public delegate void DataReceivedEventHandler(object sender, System.Diagnostics.DataReceivedEventArgs e);
-    public partial class Process
+    public partial class Process : System.ComponentModel.Component
     {
         public Process() { }
         public int BasePriority { get { return default(int); } }
@@ -87,7 +87,7 @@ namespace System.Diagnostics
         public void WaitForExit() { }
         public bool WaitForExit(int milliseconds) { return default(bool); }
     }
-    public partial class ProcessModule
+    public partial class ProcessModule : System.ComponentModel.Component
     {
         internal ProcessModule() { }
         public System.IntPtr BaseAddress { get { return default(System.IntPtr); } }
@@ -136,7 +136,7 @@ namespace System.Diagnostics
         public bool UseShellExecute { get { return default(bool); } set { } }
         public string WorkingDirectory { get { return default(string); } set { } }
     }
-    public partial class ProcessThread
+    public partial class ProcessThread : System.ComponentModel.Component
     {
         internal ProcessThread() { }
         public int BasePriority { get { return default(int); } }
