@@ -107,6 +107,7 @@ if /i "%1" == "usenmakemakefiles"   (set __NMakeMakefiles=1&set __ConfigureOnly=
 if /i "%1" == "buildjit32"          (set __BuildJit32="-DBUILD_JIT32=1"&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "pgoinstrument"       (set __PgoInstrument=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "toolset_dir"         (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
+if /i "%1" == "altjitcrossgen"      (set __AltJitCrossgen=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 if [!processedArgs!]==[] (
   call set __UnprocessedBuildArgs=!__args!
@@ -377,8 +378,21 @@ if %__BuildNativeCoreLib% EQU 1 (
 
     set "__CrossGenCoreLibLog=%__LogsDir%\CrossgenMSCoreLib_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
     set "__CrossgenExe=%__CrossComponentBinDir%\crossgen.exe"
+
+    if "%__AltJitCrossgen%"=="1" (
+        set COMPlus_AltJitNgen=*
+        set COMPlus_AltJitName=protojit.dll
+    )
+
     "!__CrossgenExe!" /Platform_Assemblies_Paths "%__BinDir%" /out "%__BinDir%\mscorlib.ni.dll" "%__BinDir%\mscorlib.dll" > "!__CrossGenCoreLibLog!" 2>&1
-    if NOT !errorlevel! == 0 (
+    set err=!errorlevel!
+
+    if "%__AltJitCrossgen%"=="1" (
+        set COMPlus_AltJitNgen=
+        set COMPlus_AltJitName=
+    )
+
+    if NOT !err! == 0 (
         echo %__MsgPrefix%Error: CrossGen mscorlib facade build failed. Refer to the build log file for details:
         echo     !__CrossGenCoreLibLog!
         exit /b 1
