@@ -16,6 +16,7 @@
 #if FEATURE_EXCEPTION_NOTIFICATIONS
 namespace System.Runtime.ExceptionServices {
     using System;
+    using System.Runtime.ConstrainedExecution;
     
     // Definition of the argument-type passed to the FirstChanceException event handler
     public class FirstChanceExceptionEventArgs : EventArgs
@@ -29,6 +30,7 @@ namespace System.Runtime.ExceptionServices {
         // Returns the exception object pertaining to the first chance exception
         public Exception Exception
         {
+            [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
             get { return m_Exception; }
         }
 
