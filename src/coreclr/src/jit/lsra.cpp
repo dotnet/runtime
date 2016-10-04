@@ -1706,11 +1706,6 @@ void LinearScan::doLinearScan()
 
     compiler->codeGen->regSet.rsClearRegsModified();
 
-    // Figure out if we're going to use an RSP frame or an RBP frame. We need to do this
-    // before building the intervals and ref positions, because those objects will embed
-    // RBP in various register masks (like preferences) if RBP is allowed to be allocated.
-    setFrameType();
-
     initMaxSpill();
     buildIntervals();
     DBEXEC(VERBOSE, TupleStyleDump(LSRA_DUMP_REFPOS));
@@ -1942,6 +1937,37 @@ void LinearScan::identifyCandidates()
     unsigned int largeVectorVarCount           = 0;
     unsigned int thresholdLargeVectorRefCntWtd = 4 * BB_UNITY_WEIGHT;
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+#if DOUBLE_ALIGN
+    unsigned refCntStk       = 0;
+    unsigned refCntReg       = 0;
+    unsigned refCntWtdReg    = 0;
+    unsigned refCntStkParam  = 0; // sum of     ref counts for all stack based parameters
+    unsigned refCntWtdStkDbl = 0; // sum of wtd ref counts for stack based doubles
+    doDoubleAlign            = false;
+    bool checkDoubleAlign    = true;
+    if (compiler->codeGen->isFramePointerRequired() || compiler->opts.MinOpts())
+    {
+        checkDoubleAlign = false;
+    }
+    else
+    {
+        switch (compiler->getCanDoubleAlign())
+        {
+            case MUST_DOUBLE_ALIGN:
+                doDoubleAlign    = true;
+                checkDoubleAlign = false;
+                break;
+            case CAN_DOUBLE_ALIGN:
+                break;
+            case CANT_DOUBLE_ALIGN:
+                doDoubleAlign    = false;
+                checkDoubleAlign = false;
+                break;
+            default:
+                unreached();
+        }
+    }
+#endif // DOUBLE_ALIGN
 
     for (lclNum = 0, varDsc = compiler->lvaTable; lclNum < compiler->lvaCount; lclNum++, varDsc++)
     {
@@ -1951,6 +1977,32 @@ void LinearScan::identifyCandidates()
         Interval* newInt       = newInterval(intervalType);
 
         newInt->setLocalNumber(lclNum, this);
+
+#if DOUBLE_ALIGN
+        if (checkDoubleAlign)
+        {
+            if (varDsc->lvIsParam && !varDsc->lvIsRegArg)
+            {
+                refCntStkParam += varDsc->lvRefCnt;
+            }
+            else if (!isRegCandidate(varDsc) || varDsc->lvDoNotEnregister)
+            {
+                refCntStk += varDsc->lvRefCnt;
+                if ((varDsc->lvType == TYP_DOUBLE) ||
+                    ((varTypeIsStruct(varDsc) && varDsc->lvStructDoubleAlign &&
+                      (compiler->lvaGetPromotionType(varDsc) != Compiler::PROMOTION_TYPE_INDEPENDENT))))
+                {
+                    refCntWtdStkDbl += varDsc->lvRefCntWtd;
+                }
+            }
+            else
+            {
+                refCntReg += varDsc->lvRefCnt;
+                refCntWtdReg += varDsc->lvRefCntWtd;
+            }
+        }
+#endif // DOUBLE_ALIGN
+
         if (varDsc->lvIsStructField)
         {
             newInt->isStructField = true;
@@ -2134,6 +2186,24 @@ void LinearScan::identifyCandidates()
             }
         }
     }
+
+#if DOUBLE_ALIGN
+    if (checkDoubleAlign)
+    {
+        // TODO-CQ: Fine-tune this:
+        // In the legacy reg predictor, this runs after allocation, and then demotes any lclVars
+        // allocated to the frame pointer, which is probably the wrong order.
+        // However, because it runs after allocation, it can determine the impact of demoting
+        // the lclVars allocated to the frame pointer.
+        // => Here, estimate of the EBP refCnt and weighted refCnt is a wild guess.
+        //
+        unsigned refCntEBP    = refCntReg / 8;
+        unsigned refCntWtdEBP = refCntWtdReg / 8;
+
+        doDoubleAlign =
+            compiler->shouldDoubleAlign(refCntStk, refCntEBP, refCntWtdEBP, refCntStkParam, refCntWtdStkDbl);
+    }
+#endif // DOUBLE_ALIGN
 
     // The factors we consider to determine which set of fp vars to use as candidates for callee save
     // registers current include the number of fp vars, whether there are loops, and whether there are
@@ -4266,7 +4336,19 @@ void LinearScan::buildIntervals()
     }
 #endif // DEBUG
 
+#if DOUBLE_ALIGN
+    // We will determine whether we should double align the frame during
+    // identifyCandidates(), but we initially assume that we will not.
+    doDoubleAlign = false;
+#endif
+
     identifyCandidates();
+
+    // Figure out if we're going to use a frame pointer. We need to do this before building
+    // the ref positions, because those objects will embed the frame register in various register masks
+    // if the frame pointer is not reserved. If we decide to have a frame pointer, setFrameType() will
+    // remove the frame pointer from the masks.
+    setFrameType();
 
     DBEXEC(VERBOSE, TupleStyleDump(LSRA_DUMP_PRE));
 
@@ -4669,7 +4751,16 @@ void LinearScan::validateIntervals()
 void LinearScan::setFrameType()
 {
     FrameType frameType = FT_NOT_SET;
-    if (compiler->codeGen->isFramePointerRequired())
+#if DOUBLE_ALIGN
+    compiler->codeGen->setDoubleAlign(false);
+    if (doDoubleAlign)
+    {
+        frameType = FT_DOUBLE_ALIGN_FRAME;
+        compiler->codeGen->setDoubleAlign(true);
+    }
+    else
+#endif // DOUBLE_ALIGN
+        if (compiler->codeGen->isFramePointerRequired())
     {
         frameType = FT_EBP_FRAME;
     }
@@ -4698,22 +4789,6 @@ void LinearScan::setFrameType()
         }
     }
 
-#if DOUBLE_ALIGN
-    // The DOUBLE_ALIGN feature indicates whether the JIT will attempt to double-align the
-    // frame if needed.  Note that this feature isn't on for amd64, because the stack is
-    // always double-aligned by default.
-    compiler->codeGen->setDoubleAlign(false);
-
-    // TODO-CQ: Tune this (see regalloc.cpp, in which raCntWtdStkDblStackFP is used to
-    // determine whether to double-align). Note, though that there is at least one test
-    // (jit\opt\Perf\DoubleAlign\Locals.exe) that depends on double-alignment being set
-    // in certain situations.
-    if (!compiler->opts.MinOpts() && !compiler->codeGen->isFramePointerRequired() && compiler->compFloatingPointUsed)
-    {
-        frameType = FT_DOUBLE_ALIGN_FRAME;
-    }
-#endif // DOUBLE_ALIGN
-
     switch (frameType)
     {
         case FT_ESP_FRAME:
@@ -4728,7 +4803,6 @@ void LinearScan::setFrameType()
         case FT_DOUBLE_ALIGN_FRAME:
             noway_assert(!compiler->codeGen->isFramePointerRequired());
             compiler->codeGen->setFramePointerUsed(false);
-            compiler->codeGen->setDoubleAlign(true);
             break;
 #endif // DOUBLE_ALIGN
         default:
