@@ -140,6 +140,7 @@ BASE_TEST_MOBILE_STATIC_NOT_SUPPORTED= \
 	threadpool-exceptions7.cs # Needs AppDomains \
 	cross-domain.cs # Needs AppDomains \
 	generic-unloading.2.cs # Needs AppDomains \
+	namedmutex-destroy-race.cs # needs named Mutex \
 	thread6.cs # On MOBILE, ThreadAbortException doesn't have necessary field for this test
 
 # Disabled until ?mcs is fixed
@@ -468,7 +469,6 @@ BASE_TEST_CS_SRC_UNIVERSAL=		\
 	bug-29585.cs	\
 	priority.cs	\
 	abort-cctor.cs	\
-	namedmutex-destroy-race.cs	\
 	thread-native-exit.cs
 
 if INSTALL_MOBILE_STATIC
