@@ -649,11 +649,6 @@ mono_debug_symfile_get_seq_points (MonoDebugMethodInfo *minfo, char **source_fil
 			if (source_files)
 				(*source_files) [i] = (*source_file_list)->len - 1;
 		}
-		if ((*source_file_list)->len == 0 && stm.file) {
-			MonoDebugSourceInfo *info = get_source_info (symfile, stm.file);
-
-			g_ptr_array_add (*source_file_list, info);
-		}
 	}				
 
 	if (n_seq_points) {
