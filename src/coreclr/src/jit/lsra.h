@@ -1073,6 +1073,10 @@ private:
         return BlockSetOps::IsMember(compiler, bbVisitedSet, block->bbNum);
     }
 
+#if DOUBLE_ALIGN
+    bool doDoubleAlign;
+#endif
+
     // A map from bbNum to the block information used during register allocation.
     LsraBlockInfo* blockInfo;
     BasicBlock* findPredBlockForLiveIn(BasicBlock* block, BasicBlock* prevBlock DEBUGARG(bool* pPredBlockIsAllocated));

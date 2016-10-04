@@ -3505,6 +3505,7 @@ public:
 
     bool fgMorphBlockStmt(BasicBlock* block, GenTreePtr stmt DEBUGARG(const char* msg));
 
+    void fgCheckArgCnt();
     void fgSetOptions();
 
 #ifdef DEBUG
@@ -6625,8 +6626,14 @@ public:
     {
         return codeGen->doDoubleAlign();
     }
-    DWORD getCanDoubleAlign(); // Defined & used only by RegAlloc
-#endif                         // DOUBLE_ALIGN
+    DWORD getCanDoubleAlign();
+    bool shouldDoubleAlign(unsigned refCntStk,
+                           unsigned refCntReg,
+                           unsigned refCntWtdReg,
+                           unsigned refCntStkParam,
+                           unsigned refCntWtdStkDbl);
+#endif // DOUBLE_ALIGN
+
     __declspec(property(get = getFullPtrRegMap, put = setFullPtrRegMap)) bool genFullPtrRegMap;
     bool getFullPtrRegMap()
     {
