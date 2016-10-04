@@ -4972,13 +4972,13 @@ inline bool GenTree::IsValidCallArgument()
     }
     if (OperIsFieldList())
     {
-#if defined(LEGACY_BACKEND) || !FEATURE_MULTIREG_ARGS
+#if defined(LEGACY_BACKEND) || (!FEATURE_MULTIREG_ARGS && !FEATURE_PUT_STRUCT_ARG_STK)
         // Not allowed to have a GT_FIELD_LIST for an argument
-        // unless we have a RyuJIT backend and FEATURE_MULTIREG_ARGS
+        // unless we have a RyuJIT backend and FEATURE_MULTIREG_ARGS or FEATURE_PUT_STRUCT_ARG_STK
 
         return false;
 
-#else // we have RyuJIT backend and FEATURE_MULTIREG_ARGS
+#else // we have RyuJIT backend and FEATURE_MULTIREG_ARGS or FEATURE_PUT_STRUCT_ARG_STK
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
         // For UNIX ABI we currently only allow a GT_FIELD_LIST of GT_LCL_FLDs nodes
