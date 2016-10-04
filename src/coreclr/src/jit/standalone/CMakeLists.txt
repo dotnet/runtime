@@ -53,3 +53,6 @@ target_link_libraries(${JIT_BASE_NAME}
 
 # add the install targets
 install_clr(${JIT_BASE_NAME})
+
+# Enable profile guided optimization
+add_pgo(${JIT_BASE_NAME})
