@@ -39,7 +39,6 @@ Looking for something to work on? The list of [up-for-grabs issues](https://gith
 
 We've also started to share some of our direction via more higher-level documentation, specifically:
 
-* [Road to RTM](Documentation/project-docs/rtm.md)
 * [How we triage](Documentation/project-docs/triage.md)
 * [Porting to .NET Core](Documentation/project-docs/porting.md)
 
