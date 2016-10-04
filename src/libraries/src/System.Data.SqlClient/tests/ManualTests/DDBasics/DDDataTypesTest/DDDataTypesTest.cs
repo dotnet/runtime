@@ -257,6 +257,58 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
+        [CheckConnStrSetupFact]
+        public static void TestUdtSqlParameterThrowsPlatformNotSupportedException()
+        {
+            using (SqlConnection connection = new SqlConnection(DataTestUtility.TcpConnStr))
+            {
+                connection.Open();
+                SqlCommand command = connection.CreateCommand();
+
+                // This command is not executed on the server since we should throw well before we send the query
+                command.CommandText = "select @p as col0";
+
+                command.Parameters.Add(new SqlParameter
+                {
+                    ParameterName = "@p",
+                    SqlDbType = SqlDbType.Udt,
+                    Direction = ParameterDirection.Input,
+                });
+
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                {
+                    command.ExecuteReader();
+                });
+
+
+                command.Parameters.Clear();
+                command.Parameters.Add(new SqlParameter
+                {
+                    ParameterName = "@p",
+                    SqlDbType = SqlDbType.Udt,
+                    Direction = ParameterDirection.InputOutput,
+                });
+
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                {
+                    command.ExecuteReader();
+                });
+
+
+                command.Parameters.Clear();
+                command.Parameters.Add(new SqlParameter
+                {
+                    ParameterName = "@p",
+                    SqlDbType = SqlDbType.Udt,
+                    Direction = ParameterDirection.Output,
+                });
+
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                {
+                    command.ExecuteReader();
+                });
+            }
+        }
 
         [CheckConnStrSetupFact]
         public static void TestUdtSqlCommandExecuteScalarThrowsPlatformNotSupportedException()
