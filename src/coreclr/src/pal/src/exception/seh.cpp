@@ -88,6 +88,10 @@ PHARDWARE_EXCEPTION_SAFETY_CHECK_FUNCTION g_safeExceptionCheckFunction = NULL;
 
 PGET_GCMARKER_EXCEPTION_CODE g_getGcMarkerExceptionCode = NULL;
 
+// Return address of the SEHProcessException, which is used to enable walking over 
+// the signal handler trampoline on some Unixes where the libunwind cannot do that.
+void* g_SEHProcessExceptionReturnAddress = NULL;
+
 /* Internal function definitions **********************************************/
 
 /*++
@@ -245,6 +249,8 @@ Return value:
 BOOL
 SEHProcessException(PAL_SEHException* exception)
 {
+    g_SEHProcessExceptionReturnAddress = __builtin_return_address(0);
+
     CONTEXT* contextRecord = exception->GetContextRecord();
     EXCEPTION_RECORD* exceptionRecord = exception->GetExceptionRecord();
 

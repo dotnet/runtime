@@ -8245,7 +8245,9 @@ void CheckRegDisplaySP (REGDISPLAY *pRD)
 {
     if (pRD->SP && pRD->_pThread)
     {
+#ifndef NO_FIXED_STACK_LIMIT
         _ASSERTE(PTR_VOID(pRD->SP) >= pRD->_pThread->GetCachedStackLimit());
+#endif // NO_FIXED_STACK_LIMIT
         _ASSERTE(PTR_VOID(pRD->SP) <  pRD->_pThread->GetCachedStackBase());
     }
 }

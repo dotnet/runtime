@@ -61,6 +61,12 @@ if (CLR_CMAKE_PLATFORM_UNIX)
 
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
+if(CLR_CMAKE_PLATFORM_ALPINE_LINUX)
+  # Alpine Linux doesn't have fixed stack limit, this define disables some stack pointer
+  # sanity checks in debug / checked build that rely on a fixed stack limit
+  add_definitions(-DNO_FIXED_STACK_LIMIT)
+endif(CLR_CMAKE_PLATFORM_ALPINE_LINUX)
+
 add_definitions(-D_BLD_CLR)
 add_definitions(-DDEBUGGING_SUPPORTED)
 add_definitions(-DPROFILING_SUPPORTED)

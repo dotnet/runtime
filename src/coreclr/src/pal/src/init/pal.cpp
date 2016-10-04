@@ -992,6 +992,7 @@ Return value:
 --*/
 static BOOL INIT_IncreaseDescriptorLimit(void)
 {
+#ifndef DONT_SET_RLIMIT_NOFILE
     struct rlimit rlp;
     int result;
     
@@ -1008,7 +1009,7 @@ static BOOL INIT_IncreaseDescriptorLimit(void)
     {
         return FALSE;
     }
-
+#endif // !DONT_SET_RLIMIT_NOFILE
     return TRUE;
 }
 
