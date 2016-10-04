@@ -231,6 +231,8 @@ namespace System.IO.IsolatedStorage
             }
         }
 
+        // When constructing an IsolatedStorageFileStream we pass the partial path- it will call back for the full path
+
         public IsolatedStorageFileStream OpenFile(string path, FileMode mode)
         {
             EnsureStoreIsValid();
@@ -590,7 +592,7 @@ namespace System.IO.IsolatedStorage
             {
                 sb.Append(s_appFiles);
             }
-            else if(Helper.IsDomain(scope))
+            else if (Helper.IsDomain(scope))
             {
                 sb.Append(s_files);
             }
@@ -659,12 +661,16 @@ namespace System.IO.IsolatedStorage
 
         public override void Remove()
         {
-            // Deletes the current IsoFile's directory.
+            // Deletes the current IsoFile's directory and the identity folder if possible.
             // (e.g. @"C:\Users\jerem\AppData\Local\IsolatedStorage\10v31ho4.bo2\eeolfu22.f2w\Url.qgeirsoc3cznuklvq5xlalurh1m0unxl\AssemFiles\")
+
+            // This matches NetFX logic. We want to try and clean as well as possible without being more aggressive with the identity folders.
+            // (e.g. Url.qgeirsoc3cznuklvq5xlalurh1m0unxl, etc.) We don't want to inadvertently yank folders for a different scope under the same
+            // identity (at least no more so than NetFX).
 
             try
             {
-                Directory.Delete(RootDirectory);
+                Directory.Delete(RootDirectory, recursive: true);
             }
             catch
             {
@@ -673,13 +679,14 @@ namespace System.IO.IsolatedStorage
 
             Close();
 
-            // The desktop framework (NetFX) will try to check for unknown files and remove the parent directory if none are found.
-            // Rather than try and replicate this and as we don't create any of our own, we'll just try and delete if there are no
-            // files present to do a "best effort" cleanup.
             string parentDirectory = Path.GetDirectoryName(RootDirectory.TrimEnd(Path.DirectorySeparatorChar));
+
+            if (ContainsUnknownFiles(parentDirectory))
+                return;
+
             try
             {
-                Directory.Delete(parentDirectory);
+                Directory.Delete(parentDirectory, recursive: true);
             }
             catch
             {
@@ -691,9 +698,13 @@ namespace System.IO.IsolatedStorage
             if (Helper.IsDomain(Scope))
             {
                 parentDirectory = Path.GetDirectoryName(parentDirectory);
+
+                if (ContainsUnknownFiles(parentDirectory))
+                    return;
+
                 try
                 {
-                    Directory.Delete(parentDirectory);
+                    Directory.Delete(parentDirectory, recursive: true);
                 }
                 catch
                 {
@@ -736,5 +747,57 @@ namespace System.IO.IsolatedStorage
                 throw new ArgumentException(SR.IsolatedStorage_Scope_U_R_M);
             }
         }
+
+        private bool ContainsUnknownFiles(string directory)
+        {
+            string[] dirs, files;
+
+            try
+            {
+                files = Directory.GetFiles(directory);
+                dirs = Directory.GetDirectories(directory);
+            }
+            catch
+            {
+                throw new IsolatedStorageException(SR.IsolatedStorage_DeleteDirectories);
+            }
+
+            if (dirs.Length > 1 || (dirs.Length > 0 && !IsMatchingScopeDirectory(dirs[0])))
+            {
+                // Unknown folder present
+                return true;
+            }
+
+            if (files.Length == 0)
+                return false;
+
+            // Check if we have unknown files
+
+            // Note that we don't generate these files in CoreFX, but we want to match
+            // NetFX removal semantics as NetFX will generate these.
+
+            if (Helper.IsRoaming(Scope))
+                return ((files.Length > 1) || !IsIdFile(files[0]));
+
+            return (files.Length > 2 ||
+                (
+                    (!IsIdFile(files[0]) && !IsInfoFile(files[0]))) ||
+                    (files.Length == 2 && !IsIdFile(files[1]) && !IsInfoFile(files[1]))
+                );
+        }
+
+        private bool IsMatchingScopeDirectory(string directory)
+        {
+            string directoryName = Path.GetFileName(directory);
+
+            return
+                (Helper.IsApplication(Scope) && string.Equals(directoryName, s_appFiles, StringComparison.Ordinal))
+                || (Helper.IsAssembly(Scope) && string.Equals(directoryName, s_assemFiles, StringComparison.Ordinal))
+                || (Helper.IsDomain(Scope) && string.Equals(directoryName, s_files, StringComparison.Ordinal));
+        }
+
+        private static bool IsIdFile(string file) => string.Equals(Path.GetFileName(file), "identity.dat");
+
+        private static bool IsInfoFile(string file) => string.Equals(Path.GetFileName(file), "info.dat");
     }
 }

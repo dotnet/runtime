@@ -38,16 +38,32 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\IO\TempDirectory.cs">
+      <Link>Common\System\IO\TempDirectory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
+      <Link>Common\System\IO\TempFile.cs</Link>
+    </Compile>
     <Compile Include="..\src\System\IO\IsolatedStorage\Helper.cs">
       <Link>Internals\Helper.cs</Link>
     </Compile>
     <Compile Include="..\src\System\IO\IsolatedStorage\Helper.Win32.Unix.cs">
       <Link>Internals\Helper.Win32.Unix.cs</Link>
     </Compile>
+    <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="StoreTestsFixture.cs" />
+    <Compile Include="System\IO\IsolatedStorage\ContainsUnknownFilesTests.cs" />
+    <Compile Include="System\IO\IsolatedStorage\CreateDirectoryTests.cs" />
+    <Compile Include="System\IO\IsolatedStorage\DeleteDirectoryTests.cs" />
+    <Compile Include="System\IO\IsolatedStorage\DeleteFileTests.cs" />
+    <Compile Include="System\IO\IsolatedStorage\DirectoryExistsTests.cs" />
+    <Compile Include="System\IO\IsolatedStorage\FileExistsTests.cs" />
+    <Compile Include="System\IO\IsolatedStorage\GetFileNamesTests.cs" />
     <Compile Include="System\IO\IsolatedStorage\HelperTests.cs" />
     <Compile Include="System\IO\IsolatedStorage\GetStoreTests.cs" />
     <Compile Include="System\IO\IsolatedStorage\IsoStorageTest.cs" />
-    <Compile Include="System\IO\IsolatedStorage\IsoStorageTestHelper.cs" />
+    <Compile Include="System\IO\IsolatedStorage\TestHelper.cs" />
+    <Compile Include="System\IO\IsolatedStorage\RemoveTests.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

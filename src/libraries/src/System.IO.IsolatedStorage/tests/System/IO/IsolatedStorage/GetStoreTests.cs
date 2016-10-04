@@ -51,7 +51,7 @@ namespace System.IO.IsolatedStorage
         public void GetUserStoreForApplication()
         {
             var isf = IsolatedStorageFile.GetUserStoreForApplication();
-            string root = isf.GetRootDirectory();
+            string root = isf.GetUserRootDirectory();
             Assert.EndsWith(@"AppFiles" + Path.DirectorySeparatorChar, root);
             Assert.True(Directory.Exists(root), "store root folder should exist");
         }
@@ -60,7 +60,7 @@ namespace System.IO.IsolatedStorage
         public void GetUserStoreForAssembly()
         {
             var isf = IsolatedStorageFile.GetUserStoreForAssembly();
-            string root = isf.GetRootDirectory();
+            string root = isf.GetUserRootDirectory();
             Assert.EndsWith(@"AssemFiles" + Path.DirectorySeparatorChar, root);
             Assert.True(Directory.Exists(root), "store root folder should exist");
         }
@@ -69,7 +69,7 @@ namespace System.IO.IsolatedStorage
         public void GetUserStoreForDomain()
         {
             var isf = IsolatedStorageFile.GetUserStoreForDomain();
-            string root = isf.GetRootDirectory();
+            string root = isf.GetUserRootDirectory();
             Assert.EndsWith(@"Files" + Path.DirectorySeparatorChar, root);
             Assert.True(Directory.Exists(root), "store root folder should exist");
         }

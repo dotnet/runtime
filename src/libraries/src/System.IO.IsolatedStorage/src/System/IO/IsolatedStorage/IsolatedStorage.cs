@@ -143,9 +143,9 @@ namespace System.IO.IsolatedStorage
             VerifyScope(scope);
             Scope = scope;
 
-            object identity = null;
-            string hash = null;
-            Helper.GetDefaultIdentityAndHash(ref identity, ref hash, SeparatorInternal);
+            object identity;
+            string hash;
+            Helper.GetDefaultIdentityAndHash(out identity, out hash, SeparatorInternal);
 
             if (Helper.IsApplication(scope))
             {
