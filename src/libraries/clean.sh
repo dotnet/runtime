@@ -20,7 +20,8 @@ fi
 
 __working_tree_root="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-if [ "$*" == "-all" ]
+clean_arg=$*
+if [[ "${clean_arg,,}" == *"all"* ]]
 then
    echo "Removing all untracked files in the working tree"
    git clean -xdf $__working_tree_root
