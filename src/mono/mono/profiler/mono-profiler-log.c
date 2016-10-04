@@ -577,7 +577,7 @@ init_time (void)
 #define EXIT_LOG_EXPLICIT(SEND, REQUESTS) \
 		thread__->busy = FALSE; \
 		if ((SEND)) \
-			send_log_unsafe (FALSE, TRUE); \
+			send_log_unsafe (TRUE); \
 		if (thread__->attached) \
 			buffer_unlock (); \
 		if ((REQUESTS)) \
@@ -1275,14 +1275,11 @@ process_requests (void)
 		mono_gc_collect (mono_gc_max_generation ());
 }
 
-// Avoid calling this directly if possible. Use the functions below.
+// Only valid if init_thread () was called with add_to_lls = FALSE.
 static void
-send_log_unsafe (gboolean lock, gboolean if_needed)
+send_log_unsafe (gboolean if_needed)
 {
 	MonoProfilerThread *thread = PROF_TLS_GET ();
-
-	if (lock)
-		buffer_lock ();
 
 	if (!if_needed || (if_needed && thread->buffer->next)) {
 		if (!thread->attached)
@@ -1292,9 +1289,6 @@ send_log_unsafe (gboolean lock, gboolean if_needed)
 		send_buffer (thread);
 		init_buffer_state (thread);
 	}
-
-	if (lock)
-		buffer_unlock ();
 }
 
 // Assumes that the exclusive lock is held.
@@ -1325,7 +1319,7 @@ sync_point_mark (MonoProfilerSyncPointType type)
 
 	EXIT_LOG_EXPLICIT (FALSE, FALSE);
 
-	send_log_unsafe (FALSE, FALSE);
+	send_log_unsafe (FALSE);
 }
 
 // Assumes that the exclusive lock is held.
@@ -4150,7 +4144,7 @@ helper_thread (void *arg)
 
 	g_array_free (command_sockets, TRUE);
 
-	send_log_unsafe (FALSE, FALSE);
+	send_log_unsafe (FALSE);
 	deinit_thread (thread);
 
 	mono_thread_info_detach ();
@@ -4435,7 +4429,7 @@ dumper_thread (void *arg)
 	/* Drain any remaining entries on shutdown. */
 	while (handle_dumper_queue_entry (prof));
 
-	send_log_unsafe (FALSE, FALSE);
+	send_log_unsafe (FALSE);
 	deinit_thread (thread);
 
 	mono_thread_info_detach ();
