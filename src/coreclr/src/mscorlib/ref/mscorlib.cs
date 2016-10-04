@@ -6845,7 +6845,6 @@ namespace System.IO
         public override string ReadToEnd() { throw null; }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public override System.Threading.Tasks.Task<string> ReadToEndAsync() { throw null; }
-        public static System.IO.TextReader Synchronized(System.IO.TextReader reader) { throw null; }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class StreamWriter : System.IO.TextWriter
@@ -6960,6 +6959,7 @@ namespace System.IO
         [System.Diagnostics.DebuggerStepThroughAttribute]
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public virtual System.Threading.Tasks.Task<string> ReadToEndAsync() { throw null; }
+        public static System.IO.TextReader Synchronized(System.IO.TextReader reader) { throw null; }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public abstract partial class TextWriter : System.IDisposable
