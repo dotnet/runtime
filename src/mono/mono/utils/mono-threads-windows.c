@@ -149,12 +149,12 @@ mono_threads_platform_register (MonoThreadInfo *info)
 }
 
 int
-mono_threads_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_data, gsize stack_size, MonoNativeThreadId *out_tid)
+mono_threads_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_data, gsize* const stack_size, MonoNativeThreadId *out_tid)
 {
 	HANDLE result;
 	DWORD thread_id;
 
-	result = CreateThread (NULL, stack_size, (LPTHREAD_START_ROUTINE) thread_fn, thread_data, 0, &thread_id);
+	result = CreateThread (NULL, stack_size ? *stack_size : 0, (LPTHREAD_START_ROUTINE) thread_fn, thread_data, 0, &thread_id);
 	if (!result)
 		return -1;
 
@@ -164,6 +164,12 @@ mono_threads_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_
 
 	if (out_tid)
 		*out_tid = thread_id;
+
+	if (stack_size) {
+		// TOOD: Use VirtualQuery to get correct value 
+		// http://stackoverflow.com/questions/2480095/thread-stack-size-on-windows-visual-c
+		*stack_size = 2 * 1024 * 1024;
+	}
 
 	return 0;
 }

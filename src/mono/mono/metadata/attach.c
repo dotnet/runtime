@@ -480,7 +480,7 @@ transport_start_receive (void)
 	if (!listen_fd)
 		return;
 
-	receiver_thread_handle = mono_threads_create_thread (receiver_thread, NULL, 0, NULL);
+	receiver_thread_handle = mono_threads_create_thread (receiver_thread, NULL, NULL, NULL);
 	g_assert (receiver_thread_handle);
 }
 

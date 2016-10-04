@@ -1629,7 +1629,7 @@ stop_debugger_thread (void)
 static void
 start_debugger_thread (void)
 {
-	debugger_thread_handle = mono_threads_create_thread (debugger_thread, NULL, 0, NULL);
+	debugger_thread_handle = mono_threads_create_thread (debugger_thread, NULL, NULL, NULL);
 	g_assert (debugger_thread_handle);
 }
 

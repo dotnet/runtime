@@ -9814,7 +9814,7 @@ compile_methods (MonoAotCompile *acfg)
 			user_data [1] = acfg;
 			user_data [2] = frag;
 			
-			handle = mono_threads_create_thread (compile_thread_main, (gpointer) user_data, 0, NULL);
+			handle = mono_threads_create_thread (compile_thread_main, (gpointer) user_data, NULL, NULL);
 			g_ptr_array_add (threads, handle);
 		}
 		g_free (methods);

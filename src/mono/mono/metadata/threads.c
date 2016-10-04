@@ -910,6 +910,7 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoObject *sta
 	HANDLE thread_handle;
 	MonoNativeThreadId tid;
 	gboolean ret;
+	gsize stack_set_size;
 
 	if (start_delegate)
 		g_assert (!start_func && !start_func_arg);
@@ -951,9 +952,11 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoObject *sta
 	mono_coop_sem_init (&start_info->registered, 0);
 
 	if (stack_size == 0)
-		stack_size = default_stacksize_for_thread (internal);
+		stack_set_size = default_stacksize_for_thread (internal);
+	else
+		stack_set_size = 0;
 
-	thread_handle = mono_threads_create_thread (start_wrapper, start_info, stack_size, &tid);
+	thread_handle = mono_threads_create_thread (start_wrapper, start_info, &stack_set_size, &tid);
 
 	if (thread_handle == NULL) {
 		/* The thread couldn't be created, so set an exception */
@@ -966,6 +969,8 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoObject *sta
 		ret = FALSE;
 		goto done;
 	}
+
+	internal->stack_size = (int) stack_set_size;
 
 	THREAD_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Launching thread %p (%"G_GSIZE_FORMAT")", __func__, mono_native_thread_id_get (), internal, (gsize)internal->tid));
 

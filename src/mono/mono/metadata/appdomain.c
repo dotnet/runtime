@@ -2568,7 +2568,7 @@ mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 	 * First we create a separate thread for unloading, since
 	 * we might have to abort some threads, including the current one.
 	 */
-	thread_handle = mono_threads_create_thread (unload_thread_main, thread_data, 0, &tid);
+	thread_handle = mono_threads_create_thread (unload_thread_main, thread_data, NULL, &tid);
 	if (thread_handle == NULL)
 		return;
 
