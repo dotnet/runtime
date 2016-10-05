@@ -75,6 +75,6 @@ int
 mono_btls_x509_name_get_entry_oid_data (MonoBtlsX509Name *name, int index, const void **data);
 
 int
-mono_btls_x509_name_get_entry_value (MonoBtlsX509Name *name, int index, unsigned char **str);
+mono_btls_x509_name_get_entry_value (MonoBtlsX509Name *name, int index, int *tag, unsigned char **str);
 
 #endif /* __btls__btls_x509_name__ */

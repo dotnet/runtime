@@ -272,12 +272,13 @@ mono_btls_x509_name_get_entry_oid_data (MonoBtlsX509Name *name, int index, const
 }
 
 int
-mono_btls_x509_name_get_entry_value (MonoBtlsX509Name *name, int index, unsigned char **str)
+mono_btls_x509_name_get_entry_value (MonoBtlsX509Name *name, int index, int *tag, unsigned char **str)
 {
 	X509_NAME_ENTRY *entry;
 	ASN1_STRING *data;
 
 	*str = NULL;
+	*tag = 0;
 
 	if (index >= X509_NAME_entry_count (name->name))
 		return 0;
@@ -290,5 +291,6 @@ mono_btls_x509_name_get_entry_value (MonoBtlsX509Name *name, int index, unsigned
 	if (!data)
 		return 0;
 
+	*tag = data->type;
 	return ASN1_STRING_to_UTF8 (str, data);
 }
