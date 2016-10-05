@@ -166,6 +166,9 @@
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
       <Link>System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
+    <Compile Include="System\Runtime\CompilerServices\RuntimeHelpersTests.netstandard1.7.cs" />
+    <Compile Include="System\Attributes.netstandard1.7.cs" />
+    <Compile Include="System\HandleTests.netstandard1.7.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

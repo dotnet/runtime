@@ -61,7 +61,7 @@ namespace System.Reflection.Tests
         public void CustomAttributes()
         {
             List<CustomAttributeData> customAttributes = Module.CustomAttributes.ToList();
-            Assert.Equal(2, customAttributes.Count);
+            Assert.True(customAttributes.Count >= 2);
             CustomAttributeData fooAttribute = customAttributes.Single(a => a.AttributeType == typeof(FooAttribute));
             Assert.Equal(typeof(FooAttribute).GetConstructors().First(), fooAttribute.Constructor);
             Assert.Equal(0, fooAttribute.ConstructorArguments.Count);
