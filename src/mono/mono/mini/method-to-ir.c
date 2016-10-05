@@ -4572,7 +4572,7 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 	int vtable_reg = alloc_preg (cfg);
 	MonoInst *klass_inst = NULL;
 
-	if (src->opcode == OP_PCONST && src->inst_p0 == 0)
+	if (MONO_INS_IS_PCONST_NULL (src))
 		return src;
 
 	if (context_used) {
@@ -5056,7 +5056,7 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 
 	/* Set target field */
 	/* Optimize away setting of NULL target */
-	if (!(target->opcode == OP_PCONST && target->inst_p0 == 0)) {
+	if (!MONO_INS_IS_PCONST_NULL (target)) {
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, target), target->dreg);
 		if (cfg->gen_write_barriers) {
 			dreg = alloc_preg (cfg);
@@ -5698,7 +5698,7 @@ static MonoInst*
 emit_array_store (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, gboolean safety_checks)
 {
 	if (safety_checks && generic_class_is_reference_type (cfg, klass) &&
-		!(sp [2]->opcode == OP_PCONST && sp [2]->inst_p0 == NULL)) {
+		!(MONO_INS_IS_PCONST_NULL (sp [2]))) {
 		MonoClass *obj_array = mono_array_class_get_cached (mono_defaults.object_class, 1);
 		MonoMethod *helper = mono_marshal_get_virtual_stelemref (obj_array);
 		MonoInst *iargs [3];
@@ -9915,7 +9915,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					
 					addr = mini_emit_ldelema_ins (cfg, cmethod, sp, ip, TRUE);
 					EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, fsig->params [fsig->param_count - 1], addr->dreg, 0, val->dreg);
-					if (cfg->gen_write_barriers && val->type == STACK_OBJ && !(val->opcode == OP_PCONST && val->inst_c0 == 0))
+					if (cfg->gen_write_barriers && val->type == STACK_OBJ && !MONO_INS_IS_PCONST_NULL (val))
 						emit_write_barrier (cfg, addr, val);
 					if (cfg->gen_write_barriers && mini_is_gsharedvt_klass (cmethod->klass))
 						GSHAREDVT_FAILURE (*ip);
@@ -10459,7 +10459,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			MONO_ADD_INS (cfg->cbb, ins);
 
-			if (cfg->gen_write_barriers && *ip == CEE_STIND_REF && method->wrapper_type != MONO_WRAPPER_WRITE_BARRIER && !((sp [1]->opcode == OP_PCONST) && (sp [1]->inst_p0 == 0)))
+			if (cfg->gen_write_barriers && *ip == CEE_STIND_REF && method->wrapper_type != MONO_WRAPPER_WRITE_BARRIER && !MONO_INS_IS_PCONST_NULL (sp [1]))
 				emit_write_barrier (cfg, sp [0], sp [1]);
 
 			inline_costs += 1;
@@ -11034,7 +11034,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				res = handle_unbox_gsharedvt (cfg, klass, *sp);
 				inline_costs += 2;
 			} else if (generic_class_is_reference_type (cfg, klass)) {
-				if ((*sp)->opcode == OP_PCONST && (*sp)->inst_p0 == 0) {
+				if (MONO_INS_IS_PCONST_NULL (*sp)) {
 					EMIT_NEW_PCONST (cfg, res, NULL);
 					res->type = STACK_OBJ;
 				} else {
@@ -11393,7 +11393,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					if (sp [0]->opcode != OP_LDADDR)
 						store->flags |= MONO_INST_FAULT;
 
-					if (cfg->gen_write_barriers && mini_type_to_stind (cfg, field->type) == CEE_STIND_REF && !(sp [1]->opcode == OP_PCONST && sp [1]->inst_c0 == 0)) {
+					if (cfg->gen_write_barriers && mini_type_to_stind (cfg, field->type) == CEE_STIND_REF && !MONO_INS_IS_PCONST_NULL (sp [1])) {
 						if (mini_is_gsharedvt_klass (klass)) {
 							g_assert (wbarrier_ptr_ins);
 							emit_write_barrier (cfg, wbarrier_ptr_ins, sp [1]);
