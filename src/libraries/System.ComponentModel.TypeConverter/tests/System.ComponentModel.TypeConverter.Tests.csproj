@@ -78,9 +78,14 @@
     <Compile Include="Drawing\SizeConverterTests.cs" />
     <Compile Include="Drawing\SizeFConverterTests.cs" />
     <Compile Include="Drawing\StringTypeConverterTestBase.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'==''">
     <Compile Include="TimerTests.cs" />
+    <Compile Include="BindingListTests.cs" />
+    <Compile Include="ContainerTests.cs" />
+    <Compile Include="CultureInfoConverterTests.cs" />
+    <Compile Include="LicenseManagerTests.cs" />
+    <Compile Include="ReferenceConverterTests.cs" />
+    <Compile Include="ContextStackTests.cs" />
+    <Compile Include="InstanceDescriptorTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.ComponentModel.TypeConverter.pkgproj">
