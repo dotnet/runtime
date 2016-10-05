@@ -20,12 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\pkg\System.Net.WebSockets.pkgproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
-    </ProjectReference>
+    <ProjectReference Include="..\pkg\System.Net.WebSockets.pkgproj" />
   </ItemGroup>
 
   <ItemGroup>

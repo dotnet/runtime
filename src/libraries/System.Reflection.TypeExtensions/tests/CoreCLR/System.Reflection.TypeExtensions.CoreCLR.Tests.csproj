@@ -24,22 +24,7 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\ref\System.Reflection.TypeExtensions.csproj">
-      <Project>{da96367e-04d1-4057-997e-aed4a2773f0d}</Project>
-      <Name>System.Reflection.TypeExtensions</Name>
-      <!-- Don't deploy reference assembly -->
-      <Private>false</Private>
-      <UndefineProperties>OSGroup</UndefineProperties>
-    </ProjectReference>
-    <ProjectReference Include="..\..\src\System.Reflection.TypeExtensions.csproj">
-      <Project>{1e689c1b-690c-4799-bde9-6e7990585894}</Project>
-      <Name>System.Reflection.TypeExtensions</Name>
-      <!-- Don't reference implementation assembly, but do deploy it. -->
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
-    </ProjectReference>
+    <ProjectReference Include="..\..\pkg\System.Reflection.TypeExtensions.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="MemberInfoTests.CoreCLR.cs" />

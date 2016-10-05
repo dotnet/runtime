@@ -30,8 +30,8 @@
       <Project>{1e689c1b-690c-4799-bde9-6e7990585894}</Project>
       <Name>System.Runtime.Extensions.CoreCLR</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\System.Private.Uri\pkg\System.Private.Uri.pkgproj">
-    </ProjectReference>
+    <ProjectReference Include="..\..\..\System.Private.Uri\pkg\System.Private.Uri.pkgproj" />
+    <ProjectReference Include="..\..\..\System.Diagnostics.Debug\pkg\System.Diagnostics.Debug.pkgproj" />
     <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
       <Name>RemoteExecutorConsoleApp</Name>
