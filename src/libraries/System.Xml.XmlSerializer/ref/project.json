@@ -1,12 +1,12 @@
 {
   "dependencies": {
-    "System.Collections.NonGeneric": "4.3.0-beta-24601-02",
-    "System.Collections.Specialized": "4.3.0-beta-24601-02",
-    "System.IO": "4.3.0-beta-24601-02",
-    "System.Reflection": "4.3.0-beta-24601-02",
-    "System.Runtime": "4.3.0-beta-24601-02",
-    "System.Xml.ReaderWriter": "4.3.0-beta-24601-02",
-    "System.Xml.XmlDocument": "4.3.0-beta-24601-02"
+    "System.Collections.NonGeneric": "4.3.0-beta-24604-02",
+    "System.Collections.Specialized": "4.3.0-beta-24604-02",
+    "System.IO": "4.3.0-beta-24604-02",
+    "System.Reflection": "4.3.0-beta-24604-02",
+    "System.Runtime": "4.3.0-beta-24604-02",
+    "System.Xml.ReaderWriter": "4.3.0-beta-24604-02",
+    "System.Xml.XmlDocument": "4.3.0-beta-24604-02"
   },
   "frameworks": {
     "netstandard1.7": {}
