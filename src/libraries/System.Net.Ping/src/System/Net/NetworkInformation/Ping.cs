@@ -41,11 +41,6 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        ~Ping()
-        {
-            Dispose(false);
-        }
-
         private void CheckStart()
         {
             if (_disposeRequested)

@@ -71,11 +71,6 @@ namespace System.IO
         }
 #endif
 
-        ~FileSystemWatcher()
-        {
-            this.Dispose(false);
-        }
-
         /// <devdoc>
         ///    Initializes a new instance of the <see cref='System.IO.FileSystemWatcher'/> class.
         /// </devdoc>
