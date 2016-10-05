@@ -95,7 +95,7 @@ namespace System.ComponentModel.Design.Serialization
         ///       this to include the type of the editor base type.
         ///    </para>
         /// </summary>
-        public /*TODO NETSTANDARD2.0 override*/ object TypeId
+        public override object TypeId
         {
             get
             {

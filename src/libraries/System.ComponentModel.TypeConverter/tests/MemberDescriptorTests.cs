@@ -34,6 +34,7 @@ namespace System.ComponentModel.Tests
             Assert.Throws<ArgumentException>(() => new MockMemberDescriptor(""));
         }
 
+        [ActiveIssue(12372)]
         [Fact]
         public void MemberDescriptorFromNameAndAttributes()
         {

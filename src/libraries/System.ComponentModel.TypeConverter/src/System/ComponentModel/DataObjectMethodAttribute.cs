@@ -60,7 +60,7 @@ namespace System.ComponentModel
         }
 
         /// <internalonly/>
-        public /*TODO NETSTANDARD2.0 override*/ bool Match(object obj)
+        public override bool Match(object obj)
         {
             if (obj == this)
             {
