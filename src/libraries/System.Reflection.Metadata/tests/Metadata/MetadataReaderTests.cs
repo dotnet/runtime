@@ -2756,7 +2756,7 @@ namespace System.Reflection.Metadata.Tests
                     blobReader.ReadUInt16(); // minor version
                     blobReader.ReadUInt32(); // reserved
                     int versionStringSize = blobReader.ReadInt32();
-                    blobReader.SkipBytes(versionStringSize);
+                    blobReader.Offset += versionStringSize;
 
                     // read stream headers to collect offsets and sizes to adjust later
                     blobReader.ReadUInt16(); // reserved
