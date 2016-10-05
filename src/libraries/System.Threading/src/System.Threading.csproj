@@ -7,8 +7,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' != ''">None</ResourcesSourceOutputDirectory>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
-    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.3;netcore50</PackageTargetFramework>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
@@ -34,9 +33,10 @@
     <TargetingPackReference Include="System" />
     <TargetingPackReference Include="System.Core" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
-    <TargetingPackReference Include="System.Private.CoreLib.Threading" />
-    <TargetingPackReference Include="System.Private.Threading" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
+    <TargetingPackReference Include="System.Private.CoreLib" Condition="'$(TargetGroup)' != 'netcore50aot'" />
+    <TargetingPackReference Include="System.Private.CoreLib.Threading" Condition="'$(TargetGroup)' == 'netcore50aot'" />
+    <TargetingPackReference Include="System.Private.Threading" Condition="'$(TargetGroup)' == 'netcore50aot'" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

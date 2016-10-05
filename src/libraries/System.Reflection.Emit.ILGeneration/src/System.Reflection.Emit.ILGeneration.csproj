@@ -10,7 +10,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
-    <TargetingPackReference Include="mscorlib" />
+    <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' == 'net46'" />
+    <TargetingPackReference Include="System.Private.CoreLib" Condition="'$(TargetGroup)' != 'net46'" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

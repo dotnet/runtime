@@ -12,11 +12,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)'!='uap101aot'">
-    <TargetingPackReference Include="mscorlib" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='uap101aot'">
-    <TargetingPackReference Include="System.Private.CoreLib" />
+  <ItemGroup>
+    <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' == 'net463'" />
+    <TargetingPackReference Include="System.Private.CoreLib" Condition="'$(TargetGroup)' != 'net463'" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

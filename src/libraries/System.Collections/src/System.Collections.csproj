@@ -54,6 +54,9 @@
     <TargetingPackReference Include="System" />
     <TargetingPackReference Include="System.Core" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
+    <TargetingPackReference Include="System.Private.CoreLib" />
+  </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
