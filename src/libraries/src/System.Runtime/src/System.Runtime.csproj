@@ -50,8 +50,8 @@
       <OSGroup>Windows_NT</OSGroup>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'!='netcore50aot' And '$(TargetGroup)'!='uap101aot'">
-    <TargetingPackReference Include="mscorlib" />
+  <ItemGroup Condition="'$(TargetGroup)'!='netcore50aot' And '$(TargetGroup)'!='uap101aot' And '$(TargetGroup)'!='net462' AND '$(TargetGroup)'!='net463'">
+    <TargetingPackReference Include="System.Private.CoreLib" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcore50aot' Or '$(TargetGroup)'=='uap101aot'">
     <TargetingPackReference Include="System.Private.CoreLib" />

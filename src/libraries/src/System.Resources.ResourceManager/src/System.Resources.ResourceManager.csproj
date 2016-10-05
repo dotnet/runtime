@@ -16,8 +16,9 @@
   <PropertyGroup Condition="'$(TargetGroup)' == 'uap101aot'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-  <ItemGroup>
-    <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' != 'uap101aot'" />
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)'=='true'">
+    <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' == 'net46'" />
+    <TargetingPackReference Include="System.Private.CoreLib" Condition="'$(TargetGroup)' != 'net46'" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot'">
     <Compile Include="System\Resources\MissingManifestResourceException.cs" />

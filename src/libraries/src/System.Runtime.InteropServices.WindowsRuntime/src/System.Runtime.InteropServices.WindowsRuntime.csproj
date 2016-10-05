@@ -13,11 +13,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50aot_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' != 'netcore50aot'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
     <TargetingPackReference Include="mscorlib" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
-    <TargetingPackReference Include="System.Private.Interop" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
+    <TargetingPackReference Include="System.Private.CoreLib" Condition="'$(TargetGroup)' != 'netcore50aot'" />
+    <TargetingPackReference Include="System.Private.Interop" Condition="'$(TargetGroup)' == 'netcore50aot'" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

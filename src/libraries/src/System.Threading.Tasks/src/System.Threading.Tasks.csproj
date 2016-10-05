@@ -12,12 +12,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' == '' Or '$(TargetGroup)'=='netstandard1.3'">
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
     <Compile Include="System\Threading\Tasks\TaskExtensions.CoreCLR.cs" />
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj">
-	  <UndefineProperties>%(ProjectReference.UndefineProperties);TargetGroup</UndefineProperties>
+      <UndefineProperties>%(ProjectReference.UndefineProperties);TargetGroup</UndefineProperties>
       <OSGroup>$(InputOSGroup)</OSGroup>
     </ProjectReference>
+    <TargetingPackReference Include="System.Private.CoreLib" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="mscorlib" />
