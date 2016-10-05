@@ -80,7 +80,7 @@ namespace System.ComponentModel
         ///       provider type name.
         ///    </para>
         /// </summary>
-        public /*TODO NETSTANDARD2.0 override*/ object TypeId
+        public override object TypeId
         {
             get
             {

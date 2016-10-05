@@ -56,7 +56,7 @@ namespace System.ComponentModel
         }
 
         /// <internalonly/>
-        public /*TODO NETSTANDARD2.0 override*/ bool IsDefaultAttribute()
+        public override bool IsDefaultAttribute()
         {
             return (this.Equals(Default));
         }
