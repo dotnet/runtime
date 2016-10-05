@@ -101,7 +101,7 @@ namespace System.ComponentModel
         ///     The unique identifier for this attribute.  All ToolboxItemFilterAttributes with the same filter string
         ///     are considered the same, so they return the same TypeId.
         /// </summary>
-        public /*TODO NETSTANDARD2.0 override*/ object TypeId
+        public override object TypeId
         {
             get
             {
@@ -130,7 +130,7 @@ namespace System.ComponentModel
             return _filterString.GetHashCode();
         }
 
-        public /*TODO NETSTANDARD2.0 override*/ bool Match(object obj)
+        public override bool Match(object obj)
         {
             ToolboxItemFilterAttribute other = obj as ToolboxItemFilterAttribute;
             if (other == null)
