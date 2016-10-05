@@ -32,6 +32,12 @@ typedef struct {
 	void *padding [3];
 } MonoErrorInternal;
 
+/* Invariant: the error strings are allocated in the mempool of the given image */
+struct _MonoErrorBoxed {
+	MonoError error;
+	MonoImage *image;
+};
+
 #define error_init(error) do {	\
 	((MonoErrorInternal*)(error))->error_code = MONO_ERROR_NONE;	\
 	((MonoErrorInternal*)(error))->flags = 0;	\
@@ -67,6 +73,9 @@ mono_error_set_assembly_load_simple (MonoError *error, const char *assembly_name
 
 void
 mono_error_set_type_load_class (MonoError *error, MonoClass *klass, const char *msg_format, ...) MONO_ATTR_FORMAT_PRINTF(3,4);
+
+void
+mono_error_vset_type_load_class (MonoError *error, MonoClass *klass, const char *msg_format, va_list args);
 
 void
 mono_error_set_type_load_name (MonoError *error, const char *type_name, const char *assembly_name, const char *msg_format, ...) MONO_ATTR_FORMAT_PRINTF(4,5);
@@ -127,5 +136,12 @@ mono_error_raise_exception (MonoError *error);
 
 void
 mono_error_move (MonoError *dest, MonoError *src);
+
+MonoErrorBoxed*
+mono_error_box (const MonoError *error, MonoImage *image);
+
+gboolean
+mono_error_set_from_boxed (MonoError *error, const MonoErrorBoxed *from);
+
 
 #endif

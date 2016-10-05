@@ -9369,7 +9369,8 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 #endif
 
 	if (method->klass->valuetype && !(method->flags & MONO_METHOD_ATTR_STATIC)) {
-		mono_class_set_failure (method->klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
+		/* FIXME Is this really the best way to signal an error here?  Isn't this called much later after class setup? -AK */
+		mono_class_set_type_load_failure (method->klass, "");
 #ifndef DISABLE_JIT
 		/* This will throw the type load exception when the wrapper is compiled */
 		mono_mb_emit_byte (mb, CEE_LDNULL);

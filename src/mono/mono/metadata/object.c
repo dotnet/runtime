@@ -1890,7 +1890,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 		if (mono_class_has_failure (element_class)) {
 			/*Can happen if element_class only got bad after mono_class_setup_vtable*/
 			if (!mono_class_has_failure (klass))
-				mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
+				mono_class_set_type_load_failure (klass, "");
 			mono_domain_unlock (domain);
 			mono_loader_unlock ();
 			mono_error_set_for_class_failure (error, klass);
