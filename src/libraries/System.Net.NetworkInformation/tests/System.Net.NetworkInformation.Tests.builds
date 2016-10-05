@@ -9,8 +9,8 @@
       <OSGroup>OSX</OSGroup>
     </Project>
     <Project Include="FunctionalTests\System.Net.NetworkInformation.Functional.Tests.csproj">
-      <TestTFMs>netcore50;netcoreapp1.0;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>netcore50;netcoreapp1.0;net46</TestTFMs>
     </Project>
     <Project Include="UnitTests\System.Net.NetworkInformation.WinRT.Unit.Tests.csproj">
       <OSGroup>Linux</OSGroup>
@@ -19,8 +19,8 @@
       <OSGroup>OSX</OSGroup>
     </Project>
     <Project Include="UnitTests\System.Net.NetworkInformation.WinRT.Unit.Tests.csproj">
-      <TestTFMs>netcore50;netcoreapp1.0;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>netcore50;netcoreapp1.0;net46</TestTFMs>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

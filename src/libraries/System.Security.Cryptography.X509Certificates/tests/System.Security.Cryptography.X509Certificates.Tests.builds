@@ -6,10 +6,9 @@
       <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="System.Security.Cryptography.X509Certificates.Tests.csproj">
-      <TestTFMs>netcore50;netcoreapp1.0;net461</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>netcore50;netcoreapp1.0;net461</TestTFMs>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
-
