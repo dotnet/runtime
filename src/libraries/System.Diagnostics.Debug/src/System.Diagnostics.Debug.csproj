@@ -21,10 +21,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)' == ''">
     <Compile Include="Properties\InternalsVisibleTo.cs" />
     <Compile Include="System\Diagnostics\Debug.Public.cs" />
@@ -87,11 +85,11 @@
       <Link>Common\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
     <TargetingPackReference Include="System.Private.CoreLib" />
   </ItemGroup>
   <ItemGroup>

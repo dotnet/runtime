@@ -695,7 +695,8 @@
       "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.12.0": "4.3.0",
-        "4.0.13.0": "4.4.0"
+        "4.0.11.0": "4.4.0",
+        "4.1.0.0": "4.4.0"
       }
     },
     "runtime.unix.System.IO.FileSystem": {
@@ -777,7 +778,8 @@
       "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.12.0": "4.3.0",
-        "4.0.13.0": "4.4.0"
+        "4.0.11.0": "4.4.0",
+        "4.1.0.0": "4.4.0"
       }
     },
     "runtime.win.System.IO.FileSystem": {
@@ -1092,7 +1094,7 @@
         "4.0.10.0": "4.0.10",
         "4.0.11.0": "4.0.11",
         "4.0.12.0": "4.3.0",
-        "4.0.13.0": "4.4.0"
+        "4.1.0.0": "4.4.0"
       }
     },
     "System.Diagnostics.DiagnosticSource": {
