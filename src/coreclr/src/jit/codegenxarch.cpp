@@ -6066,10 +6066,9 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
             // op1 can be a contained memory op
             // or the special contained GT_AND that we created in Lowering::TreeNodeInfoInitCmp()
             //
-            if ((op1->OperGet() == GT_AND))
+            if ((op1->OperGet() == GT_AND) && op1->gtGetOp2()->isContainedIntOrIImmed() &&
+                ((tree->OperGet() == GT_EQ) || (tree->OperGet() == GT_NE)))
             {
-                noway_assert(op1->gtOp.gtOp2->isContainedIntOrIImmed());
-
                 ins = INS_test;        // we will generate "test andOp1, andOp2CnsVal"
                 op2 = op1->gtOp.gtOp2; // must assign op2 before we overwrite op1
                 op1 = op1->gtOp.gtOp1; // overwrite op1
