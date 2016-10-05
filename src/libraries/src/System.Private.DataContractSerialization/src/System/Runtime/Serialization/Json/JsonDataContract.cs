@@ -63,7 +63,7 @@ namespace System.Runtime.Serialization.Json
 #if NET_NATIVE
             // The c passed in could be a clone which is different from the original key,
             // We'll need to get the original key data contract from generated assembly.
-            DataContract keyDc = (c != null && c.UnderlyingType != null) ?
+            DataContract keyDc = (c?.UnderlyingType != null) ?
                 DataContract.GetDataContractFromGeneratedAssembly(c.UnderlyingType)
                 : null;
             return (keyDc != null && JsonReadWriteDelegates.GetJsonDelegates().TryGetValue(keyDc, out result)) ? result : null;
