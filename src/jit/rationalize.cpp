@@ -157,6 +157,9 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
     // Create the call node
     GenTreeCall* call = comp->gtNewCallNode(CT_USER_FUNC, callHnd, tree->gtType, args);
     call              = comp->fgMorphArgs(call);
+    // Determine if this call has changed any codegen requirements.
+    comp->fgCheckArgCnt();
+
 #ifdef FEATURE_READYTORUN_COMPILER
     call->gtCall.setEntryPoint(entryPoint);
 #endif
