@@ -23,6 +23,10 @@ indent_brace_style = Allman
 [*.{csproj,vcxproj,vcxproj.filters,proj,nativeproj,locproj}]
 indent_size = 2
 
+# Xml build files
+[*.builds]
+indent_size = 2
+
 # Xml files
 [*.{xml,stylecop,resx,ruleset}]
 indent_size = 2
