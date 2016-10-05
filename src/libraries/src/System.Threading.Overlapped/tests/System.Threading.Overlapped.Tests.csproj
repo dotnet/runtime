@@ -32,13 +32,7 @@
     <Compile Include="ThreadPoolBoundHandle_BindHandleTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <!-- Compile tests against the contract, but copy our local-built implementation for testing -->
-    <ProjectReference Include="..\pkg\System.Threading.Overlapped.pkgproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
-    </ProjectReference>
+    <ProjectReference Include="..\pkg\System.Threading.Overlapped.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

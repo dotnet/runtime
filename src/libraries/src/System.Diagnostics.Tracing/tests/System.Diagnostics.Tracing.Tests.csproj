@@ -44,12 +44,7 @@
     <Compile Include="CustomEventSources\UseInterfaceEventSource.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\pkg\System.Diagnostics.Tracing.pkgproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
-    </ProjectReference>
+    <ProjectReference Include="..\pkg\System.Diagnostics.Tracing.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />

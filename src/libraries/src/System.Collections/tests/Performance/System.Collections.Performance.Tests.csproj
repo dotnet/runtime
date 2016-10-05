@@ -11,14 +11,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' "/>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' "/>
   <ItemGroup>
-    <!-- Compile tests against the contract, but copy our local-built implementation for testing -->
-    <ProjectReference Include="..\..\pkg\System.Collections.pkgproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
-      <OSGroup>$(InputOSGroup)</OSGroup>
-    </ProjectReference>
+    <ProjectReference Include="..\..\pkg\System.Collections.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Perf.Dictionary.cs" />
