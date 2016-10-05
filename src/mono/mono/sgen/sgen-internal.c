@@ -65,12 +65,13 @@ block_size (size_t slot_size)
 	static int pagesize = -1;
 
 	int size;
+	size_t aligned_slot_size = SGEN_ALIGN_UP_TO (slot_size, SIZEOF_VOID_P);
 
 	if (pagesize == -1)
 		pagesize = mono_pagesize ();
 
 	for (size = pagesize; size < LOCK_FREE_ALLOC_SB_MAX_SIZE; size <<= 1) {
-		if (slot_size * 2 <= LOCK_FREE_ALLOC_SB_USABLE_SIZE (size))
+		if (aligned_slot_size * 2 <= LOCK_FREE_ALLOC_SB_USABLE_SIZE (size))
 			return size;
 	}
 	return LOCK_FREE_ALLOC_SB_MAX_SIZE;
@@ -292,6 +293,9 @@ sgen_init_internal_allocator (void)
 		 * so that we do not get different block sizes for sizes that should go to the same one
 		 */
 		g_assert (allocator_sizes [index_for_size (max_size)] == max_size);
+		g_assert (block_size (max_size) == size);
+		if (size < LOCK_FREE_ALLOC_SB_MAX_SIZE)
+			g_assert (block_size (max_size + 1) == size << 1);
 	}
 }
 
