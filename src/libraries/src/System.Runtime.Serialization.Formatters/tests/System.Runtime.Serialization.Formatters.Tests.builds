@@ -4,8 +4,8 @@
   <ItemGroup>
     <Project Include="System.Runtime.Serialization.Formatters.Tests.csproj" />
     <Project Include="System.Runtime.Serialization.Formatters.Tests.csproj">
-      <TestTFMs>net463</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>net463</TestTFMs>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
