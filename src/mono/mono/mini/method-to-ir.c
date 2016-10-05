@@ -11034,13 +11034,18 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				res = handle_unbox_gsharedvt (cfg, klass, *sp);
 				inline_costs += 2;
 			} else if (generic_class_is_reference_type (cfg, klass)) {
-				MONO_INST_NEW (cfg, res, OP_CASTCLASS);
-				res->dreg = alloc_preg (cfg);
-				res->sreg1 = (*sp)->dreg;
-				res->klass = klass;
-				res->type = STACK_OBJ;
-				MONO_ADD_INS (cfg->cbb, res);
-				cfg->flags |= MONO_CFG_HAS_TYPE_CHECK;
+				if ((*sp)->opcode == OP_PCONST && (*sp)->inst_p0 == 0) {
+					EMIT_NEW_PCONST (cfg, res, NULL);
+					res->type = STACK_OBJ;
+				} else {
+					MONO_INST_NEW (cfg, res, OP_CASTCLASS);
+					res->dreg = alloc_preg (cfg);
+					res->sreg1 = (*sp)->dreg;
+					res->klass = klass;
+					res->type = STACK_OBJ;
+					MONO_ADD_INS (cfg->cbb, res);
+					cfg->flags |= MONO_CFG_HAS_TYPE_CHECK;
+				}
 			} else if (mono_class_is_nullable (klass)) {
 				res = handle_unbox_nullable (cfg, *sp, klass, context_used);
 			} else {
@@ -11811,7 +11816,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, sp [0]->dreg, 0, sp [1]->dreg);
 			ins->flags |= ins_flag;
 			if (cfg->gen_write_barriers && cfg->method->wrapper_type != MONO_WRAPPER_WRITE_BARRIER &&
-					generic_class_is_reference_type (cfg, klass)) {
+				generic_class_is_reference_type (cfg, klass) && !MONO_INS_IS_PCONST_NULL (sp [1])) {
 				/* insert call to write barrier */
 				emit_write_barrier (cfg, sp [0], sp [1]);
 			}
