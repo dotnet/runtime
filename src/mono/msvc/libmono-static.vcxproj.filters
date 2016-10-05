@@ -231,6 +231,9 @@
     <ClInclude Include="..\mono\mini\mini-amd64-gsharedvt.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\mono\mini\mini-windows.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">

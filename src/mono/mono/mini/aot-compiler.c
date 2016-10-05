@@ -8895,13 +8895,13 @@ emit_extra_methods (MonoAotCompile *acfg)
 static void
 generate_aotid (guint8* aotid)
 {
-	gpointer *rand_handle;
+	gpointer rand_handle;
 	MonoError error;
 
 	mono_rand_open ();
 	rand_handle = mono_rand_init (NULL, 0);
 
-	mono_rand_try_get_bytes (rand_handle, aotid, 16, &error);
+	mono_rand_try_get_bytes (&rand_handle, aotid, 16, &error);
 	mono_error_assert_ok (&error);
 
 	mono_rand_close (rand_handle);
