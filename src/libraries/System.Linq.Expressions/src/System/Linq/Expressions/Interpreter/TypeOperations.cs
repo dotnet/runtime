@@ -598,7 +598,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     return node;
                 }
-                return node.Update(b, node.Parameters);
+                return Expression.Lambda<T>(b, node.Name, node.TailCall, node.Parameters);
             }
 
             protected internal override Expression VisitBlock(BlockExpression node)
@@ -646,23 +646,16 @@ namespace System.Linq.Expressions.Interpreter
                 var indexes = new int[count];
                 for (int i = 0; i < count; i++)
                 {
-                    LocalVariable var;
-                    if (_variables.TryGetValue(node.Variables[i], out var))
-                    {
-                        indexes[i] = -1 - boxes.Count;
-                        if (var.InClosure)
-                        {
-                            boxes.Add(_frame.Closure[var.Index]);
-                        }
-                        else
-                        {
-                            boxes.Add((IStrongBox)_frame.Data[var.Index]);
-                        }
-                    }
-                    else
+                    IStrongBox box = GetBox(node.Variables[i]);
+                    if (box == null)
                     {
                         indexes[i] = vars.Count;
                         vars.Add(node.Variables[i]);
+                    }
+                    else
+                    {
+                        indexes[i] = -1 - boxes.Count;
+                        boxes.Add(box);
                     }
                 }
 
@@ -672,7 +665,7 @@ namespace System.Linq.Expressions.Interpreter
                     return node;
                 }
 
-                var boxesConst = Expression.Constant(new RuntimeVariables(boxes.ToArray()), typeof(IRuntimeVariables));
+                var boxesConst = Expression.Constant(new RuntimeOps.RuntimeVariables(boxes.ToArray()), typeof(IRuntimeVariables));
                 // All of them were rewritten. Just return the array as a constant
                 if (vars.Count == 0)
                 {
@@ -690,95 +683,35 @@ namespace System.Linq.Expressions.Interpreter
 
             private static IRuntimeVariables MergeRuntimeVariables(IRuntimeVariables first, IRuntimeVariables second, int[] indexes)
             {
-                return new MergedRuntimeVariables(first, second, indexes);
+                return new RuntimeOps.MergedRuntimeVariables(first, second, indexes);
             }
 
             protected internal override Expression VisitParameter(ParameterExpression node)
             {
+                IStrongBox box = GetBox(node);
+                if (box == null)
+                {
+                    return node;
+                }
+                return Expression.Convert(Expression.Field(Expression.Constant(box), "Value"), node.Type);
+            }
+
+            private IStrongBox GetBox(ParameterExpression variable)
+            {
                 LocalVariable var;
-                if (_variables.TryGetValue(node, out var))
+                if (_variables.TryGetValue(variable, out var))
                 {
-                    return Expression.Convert(
-                        Expression.Field(
-                            var.LoadFromArray(
-                                Expression.Constant(_frame.Data),
-                                Expression.Constant(_frame.Closure),
-                                node.Type
-                            ),
-                            "Value"
-                        ),
-                        node.Type
-                    );
-                }
-                return node;
-            }
-
-            private sealed class RuntimeVariables : IRuntimeVariables
-            {
-                private readonly IStrongBox[] _boxes;
-
-                internal RuntimeVariables(IStrongBox[] boxes)
-                {
-                    _boxes = boxes;
-                }
-
-                int IRuntimeVariables.Count => _boxes.Length;
-
-                object IRuntimeVariables.this[int index]
-                {
-                    get
+                    if (var.InClosure)
                     {
-                        return _boxes[index].Value;
+                        return _frame.Closure[var.Index];
                     }
-                    set
+                    else
                     {
-                        _boxes[index].Value = value;
+                        return (IStrongBox)_frame.Data[var.Index];
                     }
                 }
-            }
 
-            /// <summary>
-            /// Provides a list of variables, supporting read/write of the values
-            /// Exposed via RuntimeVariablesExpression
-            /// </summary>
-            private sealed class MergedRuntimeVariables : IRuntimeVariables
-            {
-                private readonly IRuntimeVariables _first;
-                private readonly IRuntimeVariables _second;
-
-                // For reach item, the index into the first or second list
-                // Positive values mean the first array, negative means the second
-                private readonly int[] _indexes;
-
-                internal MergedRuntimeVariables(IRuntimeVariables first, IRuntimeVariables second, int[] indexes)
-                {
-                    _first = first;
-                    _second = second;
-                    _indexes = indexes;
-                }
-
-                public int Count => _indexes.Length;
-
-                public object this[int index]
-                {
-                    get
-                    {
-                        index = _indexes[index];
-                        return (index >= 0) ? _first[index] : _second[-1 - index];
-                    }
-                    set
-                    {
-                        index = _indexes[index];
-                        if (index >= 0)
-                        {
-                            _first[index] = value;
-                        }
-                        else
-                        {
-                            _second[-1 - index] = value;
-                        }
-                    }
-                }
+                return null;
             }
         }
     }
