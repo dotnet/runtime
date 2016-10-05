@@ -117,7 +117,7 @@ namespace System.ComponentModel
         ///       Gets whether this attribute is the default.
         ///    </para>
         /// </summary>
-        public /*TODO NETSTANDARD2.0 override*/ bool IsDefaultAttribute()
+        public override bool IsDefaultAttribute()
         {
             return (this.Equals(Default));
         }
