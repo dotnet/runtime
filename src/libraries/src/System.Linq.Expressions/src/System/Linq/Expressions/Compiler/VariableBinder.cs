@@ -129,10 +129,12 @@ namespace System.Linq.Expressions.Compiler
         {
             if (node.Variable == null)
             {
+                Visit(node.Filter);
                 Visit(node.Body);
                 return node;
             }
             _scopes.Push(_tree.Scopes[node] = new CompilerScope(node, false));
+            Visit(node.Filter);
             Visit(node.Body);
             _scopes.Pop();
             return node;
