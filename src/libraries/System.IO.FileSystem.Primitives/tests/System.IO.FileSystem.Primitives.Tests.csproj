@@ -7,7 +7,7 @@
     <ProjectGuid>{2EF7EFA5-F171-4CAB-8A29-32833949FD87}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.IO.FileSystem.Primitives.Tests</AssemblyName>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
