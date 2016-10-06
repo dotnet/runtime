@@ -2,16 +2,11 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <Project Include="System.Net.Mime.csproj">
-      <OSGroup>Unix</OSGroup>
-    </Project>
-    <Project Include="System.Net.Mime.csproj">
+    <Project Include="System.Net.Mail.Unit.Tests.csproj" />
+    <Project Include="System.Net.Mail.Unit.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
-    </Project>
-    <Project Include="System.Net.Mime.csproj">
-      <TargetGroup>net463</TargetGroup>
+      <TestTFMs>net463</TestTFMs>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
-
