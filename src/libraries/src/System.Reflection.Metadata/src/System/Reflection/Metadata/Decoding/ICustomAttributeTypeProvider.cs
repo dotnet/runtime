@@ -4,7 +4,7 @@
 
 namespace System.Reflection.Metadata
 {
-    public interface ICustomAttributeTypeProvider<TType> : IPrimitiveTypeProvider<TType>, ISZArrayTypeProvider<TType>, ITypeProvider<TType>
+    public interface ICustomAttributeTypeProvider<TType> : ISimpleTypeProvider<TType>, ISZArrayTypeProvider<TType>
     {
         /// <summary>
         /// Gets the TType representation for <see cref="Type"/>.

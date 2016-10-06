@@ -4,7 +4,7 @@
 
 namespace System.Reflection.Metadata
 {
-    public interface ISignatureTypeProvider<TType, TGenericContext> : IPrimitiveTypeProvider<TType>, ITypeProvider<TType>, IConstructedTypeProvider<TType>
+    public interface ISignatureTypeProvider<TType, TGenericContext> : ISimpleTypeProvider<TType>, IConstructedTypeProvider<TType>
     {
         /// <summary>
         /// Gets the a type symbol for the function pointer type of the given method signature.

@@ -4,8 +4,13 @@
 
 namespace System.Reflection.Metadata
 {
-    public interface ITypeProvider<TType>
+    public interface ISimpleTypeProvider<TType>
     {
+        /// <summary>
+        /// Gets the type symbol for a primitive type.
+        /// </summary>
+        TType GetPrimitiveType(PrimitiveTypeCode typeCode);
+
         /// <summary>
         /// Gets the type symbol for a type definition.
         /// </summary>
