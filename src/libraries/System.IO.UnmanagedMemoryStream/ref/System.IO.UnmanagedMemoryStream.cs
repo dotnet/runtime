@@ -37,6 +37,8 @@ namespace System.IO
         public uint ReadUInt32(long position) { return default(uint); }
         [System.CLSCompliantAttribute(false)]
         public ulong ReadUInt64(long position) { return default(ulong); }
+        public void Read<T>(long position, out T structure) where T : struct { throw null; }
+        public int ReadArray<T>(long position, T[] array, int offset, int count) where T : struct { throw null; }
         public void Write(long position, bool value) { }
         public void Write(long position, byte value) { }
         public void Write(long position, char value) { }
@@ -54,6 +56,8 @@ namespace System.IO
         public void Write(long position, uint value) { }
         [System.CLSCompliantAttribute(false)]
         public void Write(long position, ulong value) { }
+        public void Write<T>(long position, ref T structure) where T : struct { throw null; }
+        public void WriteArray<T>(long position, T[] array, int offset, int count) where T : struct { throw null; }
     }
     public partial class UnmanagedMemoryStream : System.IO.Stream
     {

@@ -4,8 +4,12 @@
   <ItemGroup>
     <Project Include="System.IO.UnmanagedMemoryStream.Tests.csproj" />
     <Project Include="System.IO.UnmanagedMemoryStream.Tests.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
+      <TestTFMs>netcoreapp1.0</TestTFMs>
+    </Project>
+    <Project Include="System.IO.UnmanagedMemoryStream.Tests.csproj">
+      <TestTFMs>netcore50;net463</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
-      <TestTFMs>netcore50;net46</TestTFMs>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
