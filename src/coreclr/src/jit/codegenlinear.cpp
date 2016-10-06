@@ -710,12 +710,12 @@ void CodeGen::genSpillVar(GenTreePtr tree)
     bool needsSpill = ((tree->gtFlags & GTF_VAR_DEF) == 0 && varDsc->lvIsInReg());
     if (needsSpill)
     {
-        var_types lclTyp = varDsc->TypeGet();
-        if (varDsc->lvNormalizeOnStore())
-        {
-            lclTyp = genActualType(lclTyp);
-        }
-        emitAttr size = emitTypeSize(lclTyp);
+        // In order for a lclVar to have been allocated to a register, it must not have been aliasable, and can
+        // therefore be store-normalized (rather than load-normalized). In fact, not performing store normalization
+        // can lead to problems on architectures where a lclVar may be allocated to a register that is not
+        // addressable at the granularity of the lclVar's defined type (e.g. x86).
+        var_types lclTyp = genActualType(varDsc->TypeGet());
+        emitAttr  size   = emitTypeSize(lclTyp);
 
         bool restoreRegVar = false;
         if (tree->gtOper == GT_REG_VAR)
