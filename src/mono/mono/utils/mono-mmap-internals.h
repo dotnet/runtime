@@ -11,7 +11,17 @@
 
 #include "mono-compiler.h"
 
-int mono_pages_not_faulted (void *addr, size_t length);
+void *
+malloc_shared_area (int pid);
+
+char*
+aligned_address (char *mem, size_t size, size_t alignment);
+
+void
+account_mem (MonoMemAccountType type, ssize_t size);
+
+int
+mono_pages_not_faulted (void *addr, size_t length);
 
 #endif /* __MONO_UTILS_MMAP_INTERNAL_H__ */
 

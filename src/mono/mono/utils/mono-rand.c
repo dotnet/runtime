@@ -13,7 +13,6 @@
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
-
 #include <glib.h>
 #include <config.h>
 
@@ -26,125 +25,7 @@
 #include "metadata/object.h"
 
 #ifdef HOST_WIN32
-
-#include <windows.h>
-#include <wincrypt.h>
-
-#ifndef PROV_INTEL_SEC
-#define PROV_INTEL_SEC		22
-#endif
-#ifndef CRYPT_VERIFY_CONTEXT
-#define CRYPT_VERIFY_CONTEXT	0xF0000000
-#endif
-
-/**
- * mono_rand_open:
- *
- * Returns: True if random source is global, false if mono_rand_init can be called repeatedly to get randomness instances.
- *
- * Initializes entire RNG system. Must be called once per process before calling mono_rand_init.
- */
-gboolean
-mono_rand_open (void)
-{
-	return FALSE;
-}
-
-/**
- * mono_rand_init:
- * @seed: A string containing seed data
- * @seed_size: Length of seed string
- *
- * Returns: On success, a non-NULL handle which can be used to fetch random data from mono_rand_try_get_bytes. On failure, NULL.
- *
- * Initializes an RNG client.
- */
-gpointer
-mono_rand_init (guchar *seed, gint seed_size)
-{
-	HCRYPTPROV provider = 0;
-
-	/* There is no need to create a container for just random data,
-	 * so we can use CRYPT_VERIFY_CONTEXT (one call) see: 
-	 * http://blogs.msdn.com/dangriff/archive/2003/11/19/51709.aspx */
-
-	/* We first try to use the Intel PIII RNG if drivers are present */
-	if (!CryptAcquireContext (&provider, NULL, NULL, PROV_INTEL_SEC, CRYPT_VERIFY_CONTEXT)) {
-		/* not a PIII or no drivers available, use default RSA CSP */
-		if (!CryptAcquireContext (&provider, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFY_CONTEXT)) {
-			/* exception will be thrown in managed code */
-			provider = 0;
-		}
-	}
-
-	/* seed the CSP with the supplied buffer (if present) */
-	if (provider != 0 && seed) {
-		/* the call we replace the seed with random - this isn't what is
-		 * expected from the class library user */
-		guchar *data = g_malloc (seed_size);
-		if (data) {
-			memcpy (data, seed, seed_size);
-			/* add seeding material to the RNG */
-			CryptGenRandom (provider, seed_size, data);
-			/* zeroize and free */
-			memset (data, 0, seed_size);
-			g_free (data);
-		}
-	}
-
-	return (gpointer) provider;
-}
-
-/**
- * mono_rand_try_get_bytes:
- * @handle: A pointer to an RNG handle. Handle is set to NULL on failure.
- * @buffer: A buffer into which to write random data.
- * @buffer_size: Number of bytes to write into buffer.
- * @error: Set on error.
- *
- * Returns: FALSE on failure and sets @error, TRUE on success.
- *
- * Extracts bytes from an RNG handle.
- */
-gboolean
-mono_rand_try_get_bytes (gpointer *handle, guchar *buffer, gint buffer_size, MonoError *error)
-{
-	HCRYPTPROV provider;
-
-	mono_error_init (error);
-
-	g_assert (handle);
-	provider = (HCRYPTPROV) *handle;
-
-	if (!CryptGenRandom (provider, buffer_size, buffer)) {
-		CryptReleaseContext (provider, 0);
-		/* we may have lost our context with CryptoAPI, but all hope isn't lost yet! */
-		provider = (HCRYPTPROV) mono_rand_init (NULL, 0);
-		if (!CryptGenRandom (provider, buffer_size, buffer)) {
-			/* exception will be thrown in managed code */
-			CryptReleaseContext (provider, 0);
-			*handle = 0;
-			mono_error_set_execution_engine (error, "Failed to gen random bytes (%d)", GetLastError ());
-			return FALSE;
-		}
-	}
-	return TRUE;
-}
-
-/**
- * mono_rand_close:
- * @handle: An RNG handle.
- * @buffer: A buffer into which to write random data.
- * @buffer_size: Number of bytes to write into buffer.
- *
- * Releases an RNG handle.
- */
-void
-mono_rand_close (gpointer handle)
-{
-	CryptReleaseContext ((HCRYPTPROV) handle, 0);
-}
-
+// Windows specific implementation in mono-rand-windows.c
 #elif defined (HAVE_SYS_UN_H) && !defined(__native_client__)
 
 #include <errno.h>

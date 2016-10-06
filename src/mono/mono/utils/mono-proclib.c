@@ -19,11 +19,6 @@
 #include <sched.h>
 #endif
 
-#ifdef HOST_WIN32
-#include <windows.h>
-#include <process.h>
-#endif
-
 #if defined(_POSIX_VERSION)
 #include <sys/errno.h>
 #include <sys/param.h>
@@ -187,7 +182,7 @@ get_pid_status_item_buf (int pid, const char *item, char *rbuf, int blen, MonoPr
 	char buf [256];
 	char *s;
 	FILE *f;
-	int len = strlen (item);
+	size_t len = strlen (item);
 
 	g_snprintf (buf, sizeof (buf), "/proc/%d/status", pid);
 	f = fopen (buf, "r");
@@ -286,7 +281,7 @@ mono_process_get_name (gpointer pid, char *buf, int len)
 	char fname [128];
 	FILE *file;
 	char *p;
-	int r;
+	size_t r;
 	sprintf (fname, "/proc/%d/cmdline", GPOINTER_TO_INT (pid));
 	buf [0] = 0;
 	file = fopen (fname, "r");
@@ -443,7 +438,8 @@ get_process_stat_item (int pid, int pos, int sum, MonoProcessError *error)
 	char buf [512];
 	char *s, *end;
 	FILE *f;
-	int len, i;
+	size_t len;
+	int i;
 	gint64 value;
 
 	g_snprintf (buf, sizeof (buf), "/proc/%d/stat", pid);
@@ -637,31 +633,27 @@ mono_process_get_data (gpointer pid, MonoProcessData data)
 	return mono_process_get_data_with_error (pid, data, &error);
 }
 
+#ifndef HOST_WIN32
 int
 mono_process_current_pid ()
 {
 #if defined(HAVE_UNISTD_H)
 	return (int) getpid ();
-#elif defined(HOST_WIN32)
-	return (int) GetCurrentProcessId ();
 #else
 #error getpid
 #endif
 }
+#endif /* !HOST_WIN32 */
 
 /**
  * mono_cpu_count:
  *
  * Return the number of processors on the system.
  */
+#ifndef HOST_WIN32
 int
 mono_cpu_count (void)
 {
-#ifdef HOST_WIN32
-	SYSTEM_INFO info;
-	GetSystemInfo (&info);
-	return info.dwNumberOfProcessors;
-#else
 #ifdef PLATFORM_ANDROID
 	/* Android tries really hard to save power by powering off CPUs on SMP phones which
 	 * means the normal way to query cpu count returns a wrong value with userspace API.
@@ -779,10 +771,10 @@ mono_cpu_count (void)
 			return count;
 	}
 #endif
-#endif /* HOST_WIN32 */
 	/* FIXME: warn */
 	return 1;
 }
+#endif /* !HOST_WIN32 */
 
 static void
 get_cpu_times (int cpu_id, gint64 *user, gint64 *systemt, gint64 *irq, gint64 *sirq, gint64 *idle)
@@ -889,14 +881,13 @@ mono_atexit (void (*func)(void))
  * battery and performance reasons, shut down cores and
  * lie about the number of active cores.
  */
+#ifndef HOST_WIN32
 gint32
 mono_cpu_usage (MonoCpuUsageState *prev)
 {
 	gint32 cpu_usage = 0;
 	gint64 cpu_total_time;
 	gint64 cpu_busy_time;
-
-#ifndef HOST_WIN32
 	struct rusage resource_usage;
 	gint64 current_time;
 	gint64 kernel_time;
@@ -919,28 +910,10 @@ mono_cpu_usage (MonoCpuUsageState *prev)
 		prev->user_time = user_time;
 		prev->current_time = current_time;
 	}
-#else
-	guint64 idle_time;
-	guint64 kernel_time;
-	guint64 user_time;
-
-	if (!GetSystemTimes ((FILETIME*) &idle_time, (FILETIME*) &kernel_time, (FILETIME*) &user_time)) {
-		g_error ("GetSystemTimes() failed, error code is %d\n", GetLastError ());
-		return -1;
-	}
-
-	cpu_total_time = (gint64)((user_time - (prev ? prev->user_time : 0)) + (kernel_time - (prev ? prev->kernel_time : 0)));
-	cpu_busy_time = (gint64)(cpu_total_time - (idle_time - (prev ? prev->idle_time : 0)));
-
-	if (prev) {
-		prev->idle_time = idle_time;
-		prev->kernel_time = kernel_time;
-		prev->user_time = user_time;
-	}
-#endif
 
 	if (cpu_total_time > 0 && cpu_busy_time > 0)
 		cpu_usage = (gint32)(cpu_busy_time * 100 / cpu_total_time);
 
 	return cpu_usage;
 }
+#endif /* !HOST_WIN32 */

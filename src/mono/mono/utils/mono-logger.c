@@ -291,7 +291,7 @@ mono_trace_set_mask_string (const char *value)
 			continue;
 		}
 		for (i = 0; valid_flags[i]; i++) {
-			int len = strlen (valid_flags[i]);
+			size_t len = strlen (valid_flags[i]);
 			if (strncmp (tok, valid_flags[i], len) == 0 && (tok[len] == 0 || tok[len] == ',')) {
 				flags |= valid_masks[i];
 				tok += len;
