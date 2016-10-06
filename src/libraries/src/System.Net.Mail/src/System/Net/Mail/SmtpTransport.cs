@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Net.Mime;
 using System.Security.Cryptography.X509Certificates;
@@ -24,7 +24,7 @@ namespace System.Net.Mail
         private SmtpClient _client;
         private ICredentialsByHost _credentials;
         private int _timeout = 100000; // seconds
-        private ArrayList _failedRecipientExceptions = new ArrayList();
+        private List<SmtpFailedRecipientException> _failedRecipientExceptions = new List<SmtpFailedRecipientException>();
         private bool _identityRequired;
 
         private bool _enableSsl = false;
@@ -40,7 +40,7 @@ namespace System.Net.Mail
 
             if (authenticationModules == null)
             {
-                throw new ArgumentNullException("authenticationModules");
+                throw new ArgumentNullException(nameof(authenticationModules));
             }
 
             _authenticationModules = authenticationModules;
@@ -203,12 +203,12 @@ namespace System.Net.Mail
         {
             if (sender == null)
             {
-                throw new ArgumentNullException("sender");
+                throw new ArgumentNullException(nameof(sender));
             }
 
             if (recipients == null)
             {
-                throw new ArgumentNullException("recipients");
+                throw new ArgumentNullException(nameof(recipients));
             }
 
             if (GlobalLog.IsEnabled && recipients.Count > 0)
@@ -255,12 +255,12 @@ namespace System.Net.Mail
         {
             if (sender == null)
             {
-                throw new ArgumentNullException("sender");
+                throw new ArgumentNullException(nameof(sender));
             }
 
             if (recipients == null)
             {
-                throw new ArgumentNullException("recipients");
+                throw new ArgumentNullException(nameof(recipients));
             }
 
             if (GlobalLog.IsEnabled && recipients.Count > 0)
@@ -275,7 +275,7 @@ namespace System.Net.Mail
             foreach (MailAddress address in recipients)
             {
                 string smtpAddress = address.GetSmtpAddress(allowUnicode);
-                string to = smtpAddress + (_connection.DSNEnabled ? deliveryNotify : String.Empty);
+                string to = smtpAddress + (_connection.DSNEnabled ? deliveryNotify : string.Empty);
                 if (!RecipientCommand.Send(_connection, to, out response))
                 {
                     _failedRecipientExceptions.Add(
@@ -287,7 +287,7 @@ namespace System.Net.Mail
             {
                 if (_failedRecipientExceptions.Count == 1)
                 {
-                    exception = (SmtpFailedRecipientException)_failedRecipientExceptions[0];
+                    exception = _failedRecipientExceptions[0];
                 }
                 else
                 {
@@ -314,7 +314,7 @@ namespace System.Net.Mail
         private static AsyncCallback s_sendMailFromCompleted = new AsyncCallback(SendMailFromCompleted);
         private static AsyncCallback s_sendToCollectionCompleted = new AsyncCallback(SendToCollectionCompleted);
         private static AsyncCallback s_sendDataCompleted = new AsyncCallback(SendDataCompleted);
-        private ArrayList _failedRecipientExceptions = new ArrayList();
+        private List<SmtpFailedRecipientException> _failedRecipientExceptions = new List<SmtpFailedRecipientException>();
         private Stream _stream;
         private MailAddressCollection _toCollection;
         private int _toIndex;

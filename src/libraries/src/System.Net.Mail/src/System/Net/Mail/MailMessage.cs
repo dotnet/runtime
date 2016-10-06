@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.IO;
 using System.Collections.Specialized;
+using System.IO;
 using System.Net.Mime;
 using System.Text;
 
@@ -42,16 +42,16 @@ namespace System.Net.Mail
         public MailMessage(string from, string to)
         {
             if (from == null)
-                throw new ArgumentNullException("from");
+                throw new ArgumentNullException(nameof(from));
 
             if (to == null)
-                throw new ArgumentNullException("to");
+                throw new ArgumentNullException(nameof(to));
 
             if (from == string.Empty)
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, "from"), "from");
+                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(from)), nameof(from));
 
             if (to == string.Empty)
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, "to"), "to");
+                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(to)), nameof(to));
 
             _message = new Message(from, to);
             if (WebEventSource.Log.IsEnabled()) WebEventSource.Log.Associate(this, _message);
@@ -68,10 +68,10 @@ namespace System.Net.Mail
         public MailMessage(MailAddress from, MailAddress to)
         {
             if (from == null)
-                throw new ArgumentNullException("from");
+                throw new ArgumentNullException(nameof(from));
 
             if (to == null)
-                throw new ArgumentNullException("to");
+                throw new ArgumentNullException(nameof(to));
 
             _message = new Message(from, to);
         }
@@ -87,7 +87,7 @@ namespace System.Net.Mail
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 _message.From = value;
             }
@@ -291,7 +291,7 @@ namespace System.Net.Mail
             {
                 if (_disposed)
                 {
-                    throw new ObjectDisposedException(this.GetType().FullName);
+                    throw new ObjectDisposedException(GetType().FullName);
                 }
 
                 if (_attachments == null)
@@ -307,7 +307,7 @@ namespace System.Net.Mail
             {
                 if (_disposed)
                 {
-                    throw new ObjectDisposedException(this.GetType().FullName);
+                    throw new ObjectDisposedException(GetType().FullName);
                 }
 
                 if (_views == null)

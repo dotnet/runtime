@@ -44,16 +44,16 @@ namespace System.Net.Mail
         internal Message(string from, string to) : this()
         {
             if (from == null)
-                throw new ArgumentNullException("from");
+                throw new ArgumentNullException(nameof(from));
 
             if (to == null)
-                throw new ArgumentNullException("to");
+                throw new ArgumentNullException(nameof(to));
 
             if (from == string.Empty)
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, "from"), "from");
+                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(from)), nameof(from));
 
             if (to == string.Empty)
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, "to"), "to");
+                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(to)), nameof(to));
 
             _from = new MailAddress(from);
             MailAddressCollection collection = new MailAddressCollection();
@@ -65,7 +65,7 @@ namespace System.Net.Mail
         internal Message(MailAddress from, MailAddress to) : this()
         {
             _from = from;
-            this.To.Add(to);
+            To.Add(to);
         }
 
         #endregion Constructors
@@ -94,7 +94,7 @@ namespace System.Net.Mail
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 _from = value;
             }
@@ -279,7 +279,7 @@ namespace System.Net.Mail
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
 
                 _content = value;
@@ -302,25 +302,25 @@ namespace System.Net.Mail
             EmptySendContext context = (EmptySendContext)result.AsyncState;
             try
             {
-                context.writer.EndGetContentStream(result).Close();
+                context._writer.EndGetContentStream(result).Close();
             }
             catch (Exception ex)
             {
                 e = ex;
             }
-            context.result.InvokeCallback(e);
+            context._result.InvokeCallback(e);
         }
 
         internal class EmptySendContext
         {
             internal EmptySendContext(BaseWriter writer, LazyAsyncResult result)
             {
-                this.writer = writer;
-                this.result = result;
+                _writer = writer;
+                _result = result;
             }
 
-            internal LazyAsyncResult result;
-            internal BaseWriter writer;
+            internal LazyAsyncResult _result;
+            internal BaseWriter _writer;
         }
 
         internal virtual IAsyncResult BeginSend(BaseWriter writer, bool sendEnvelope, bool allowUnicode,
@@ -349,7 +349,7 @@ namespace System.Net.Mail
         {
             if (asyncResult == null)
             {
-                throw new ArgumentNullException("asyncResult");
+                throw new ArgumentNullException(nameof(asyncResult));
             }
 
             if (Content != null)
@@ -367,7 +367,7 @@ namespace System.Net.Mail
 
                 if (castedAsyncResult.EndCalled)
                 {
-                    throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, "EndSend"));
+                    throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, nameof(EndSend)));
                 }
 
                 castedAsyncResult.InternalWaitForCompletion();
@@ -407,7 +407,7 @@ namespace System.Net.Mail
                 _headersEncoding = Encoding.GetEncoding(MimeBasePart.DefaultCharSet);
             }
 
-            EncodeHeaders(this.EnvelopeHeaders, allowUnicode);
+            EncodeHeaders(EnvelopeHeaders, allowUnicode);
 
             // Only add X-Sender header if it wasn't already set by the user
             string xSenderHeader = MailHeaderInfo.GetString(MailHeaderID.XSender);
@@ -607,8 +607,7 @@ namespace System.Net.Mail
         {
             for (int i = 0; i < Headers.Count; i++)
             {
-                if (string.Compare(Headers.GetKey(i), headerName,
-                    StringComparison.InvariantCultureIgnoreCase) == 0)
+                if (string.Equals(Headers.GetKey(i), headerName, StringComparison.InvariantCultureIgnoreCase))
                 {
                     return true;
                 }

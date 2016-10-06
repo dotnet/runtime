@@ -3,18 +3,18 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Authentication;
-using System.Security.Cryptography.X509Certificates;
-using System.IO;
-using System.Threading;
-using System.Globalization;
-using System.Security.Principal;
-using System.Security.Permissions;
 using System.Security.Authentication.ExtendedProtection;
-using System.Diagnostics;
+using System.Security.Cryptography.X509Certificates;
+using System.Security.Permissions;
+using System.Security.Principal;
+using System.Threading;
 
 namespace System.Net.Mail
 {
@@ -53,6 +53,8 @@ namespace System.Net.Mail
         private bool _dsnEnabled;
         private bool _enableSsl;
         private X509CertificateCollection _clientCertificates;
+
+        private static readonly char[] s_authExtensionSplitters = new char[] { ' ', '=' };
 
         internal SmtpConnection(SmtpTransport parent, SmtpClient client, ICredentialsByHost credentials, ISmtpAuthenticationModule[] authenticationModules)
         {
@@ -237,31 +239,29 @@ namespace System.Net.Mail
             _supportedAuth = SupportedAuth.None;
             foreach (string extension in extensions)
             {
-                if (String.Compare(extension, 0, authExtension, 0,
+                if (string.Compare(extension, 0, authExtension, 0,
                     sizeOfAuthExtension, StringComparison.OrdinalIgnoreCase) == 0)
                 {
                     // remove the AUTH text including the following character 
                     // to ensure that split only gets the modules supported
-                    string[] authTypes =
-                        extension.Remove(0, sizeOfAuthExtension).Split(new char[] { ' ', '=' },
-                        StringSplitOptions.RemoveEmptyEntries);
+                    string[] authTypes = extension.Remove(0, sizeOfAuthExtension).Split(s_authExtensionSplitters, StringSplitOptions.RemoveEmptyEntries);
                     foreach (string authType in authTypes)
                     {
-                        if (String.Compare(authType, authLogin, StringComparison.OrdinalIgnoreCase) == 0)
+                        if (string.Equals(authType, authLogin, StringComparison.OrdinalIgnoreCase))
                         {
                             _supportedAuth |= SupportedAuth.Login;
                         }
                     }
                 }
-                else if (String.Compare(extension, 0, "dsn ", 0, 3, StringComparison.OrdinalIgnoreCase) == 0)
+                else if (string.Compare(extension, 0, "dsn ", 0, 3, StringComparison.OrdinalIgnoreCase) == 0)
                 {
                     _dsnEnabled = true;
                 }
-                else if (String.Compare(extension, 0, "STARTTLS", 0, 8, StringComparison.OrdinalIgnoreCase) == 0)
+                else if (string.Compare(extension, 0, "STARTTLS", 0, 8, StringComparison.OrdinalIgnoreCase) == 0)
                 {
                     _serverSupportsStartTls = true;
                 }
-                else if (String.Compare(extension, 0, "SMTPUTF8", 0, 8, StringComparison.OrdinalIgnoreCase) == 0)
+                else if (string.Compare(extension, 0, "SMTPUTF8", 0, 8, StringComparison.OrdinalIgnoreCase) == 0)
                 {
                     _serverSupportsEai = true;
                 }

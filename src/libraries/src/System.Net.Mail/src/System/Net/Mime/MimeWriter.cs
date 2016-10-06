@@ -24,7 +24,7 @@ namespace System.Net.Mime
             : base(stream, false) // Unnecessary, the underlying MailWriter stream already encodes dots
         {
             if (boundary == null)
-                throw new ArgumentNullException("boundary");
+                throw new ArgumentNullException(nameof(boundary));
 
             _boundaryBytes = Encoding.ASCII.GetBytes(boundary);
         }
@@ -32,7 +32,7 @@ namespace System.Net.Mime
         internal override void WriteHeaders(NameValueCollection headers, bool allowUnicode)
         {
             if (headers == null)
-                throw new ArgumentNullException("headers");
+                throw new ArgumentNullException(nameof(headers));
 
             foreach (string key in headers)
                 WriteHeader(key, headers[key], allowUnicode);

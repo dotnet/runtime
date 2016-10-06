@@ -12,6 +12,8 @@ namespace System.Net.Mail
     {
         internal bool disposed = false;
         private MimePart _part = new MimePart();
+        private static readonly char[] s_fileShortNameIndicators = new char[] { '\\', ':' };
+        private static readonly char[] s_contentCIDInvalidChars = new char[] { '<', '>' };
 
         internal AttachmentBase()
         {
@@ -69,7 +71,7 @@ namespace System.Net.Mail
         internal static string ShortNameFromFile(string fileName)
         {
             string name;
-            int start = fileName.LastIndexOfAny(new char[] { '\\', ':' }, fileName.Length - 1, fileName.Length);
+            int start = fileName.LastIndexOfAny(s_fileShortNameIndicators, fileName.Length - 1, fileName.Length);
 
             if (start > 0)
             {
@@ -86,12 +88,12 @@ namespace System.Net.Mail
         {
             if (fileName == null)
             {
-                throw new ArgumentNullException("fileName");
+                throw new ArgumentNullException(nameof(fileName));
             }
 
             if (fileName == string.Empty)
             {
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, "fileName"), "fileName");
+                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(fileName)), nameof(fileName));
             }
 
             Stream stream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -102,23 +104,23 @@ namespace System.Net.Mail
         {
             if (fileName == null)
             {
-                throw new ArgumentNullException("fileName");
+                throw new ArgumentNullException(nameof(fileName));
             }
 
             if (fileName == string.Empty)
             {
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, "fileName"), "fileName");
+                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(fileName)), nameof(fileName));
             }
 
             Stream stream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
             _part.SetContent(stream, null, mediaType);
         }
 
-        internal void SetContentFromString(string contentString, ContentType contentType)
+        internal void SetContentFromString(string content, ContentType contentType)
         {
-            if (contentString == null)
+            if (content == null)
             {
-                throw new ArgumentNullException("content");
+                throw new ArgumentNullException(nameof(content));
             }
 
             if (_part.Stream != null)
@@ -134,7 +136,7 @@ namespace System.Net.Mail
             }
             else
             {
-                if (MimeBasePart.IsAscii(contentString, false))
+                if (MimeBasePart.IsAscii(content, false))
                 {
                     encoding = Text.Encoding.ASCII;
                 }
@@ -143,9 +145,8 @@ namespace System.Net.Mail
                     encoding = Text.Encoding.GetEncoding(MimeBasePart.DefaultCharSet);
                 }
             }
-            byte[] buffer = encoding.GetBytes(contentString);
+            byte[] buffer = encoding.GetBytes(content);
             _part.SetContent(new MemoryStream(buffer), contentType);
-
 
             if (MimeBasePart.ShouldUseBase64Encoding(encoding))
             {
@@ -157,11 +158,11 @@ namespace System.Net.Mail
             }
         }
 
-        internal void SetContentFromString(string contentString, Encoding encoding, string mediaType)
+        internal void SetContentFromString(string content, Encoding encoding, string mediaType)
         {
-            if (contentString == null)
+            if (content == null)
             {
-                throw new ArgumentNullException("content");
+                throw new ArgumentNullException(nameof(content));
             }
 
             if (_part.Stream != null)
@@ -180,16 +181,16 @@ namespace System.Net.Mail
             {
                 string value = MailBnfHelper.ReadToken(mediaType, ref offset, null);
                 if (value.Length == 0 || offset >= mediaType.Length || mediaType[offset++] != '/')
-                    throw new ArgumentException(SR.MediaTypeInvalid, "mediaType");
+                    throw new ArgumentException(SR.MediaTypeInvalid, nameof(mediaType));
                 value = MailBnfHelper.ReadToken(mediaType, ref offset, null);
                 if (value.Length == 0 || offset < mediaType.Length)
                 {
-                    throw new ArgumentException(SR.MediaTypeInvalid, "mediaType");
+                    throw new ArgumentException(SR.MediaTypeInvalid, nameof(mediaType));
                 }
             }
             catch (FormatException)
             {
-                throw new ArgumentException(SR.MediaTypeInvalid, "mediaType");
+                throw new ArgumentException(SR.MediaTypeInvalid, nameof(mediaType));
             }
 
 
@@ -197,18 +198,18 @@ namespace System.Net.Mail
 
             if (encoding == null)
             {
-                if (MimeBasePart.IsAscii(contentString, false))
+                if (MimeBasePart.IsAscii(content, false))
                 {
-                    encoding = Text.Encoding.ASCII;
+                    encoding = Encoding.ASCII;
                 }
                 else
                 {
-                    encoding = Text.Encoding.GetEncoding(MimeBasePart.DefaultCharSet);
+                    encoding = Encoding.GetEncoding(MimeBasePart.DefaultCharSet);
                 }
             }
 
             contentType.CharSet = encoding.BodyName;
-            byte[] buffer = encoding.GetBytes(contentString);
+            byte[] buffer = encoding.GetBytes(content);
             _part.SetContent(new MemoryStream(buffer), contentType);
 
             if (MimeBasePart.ShouldUseBase64Encoding(encoding))
@@ -233,7 +234,7 @@ namespace System.Net.Mail
             {
                 if (disposed)
                 {
-                    throw new ObjectDisposedException(this.GetType().FullName);
+                    throw new ObjectDisposedException(GetType().FullName);
                 }
 
                 return _part.Stream;
@@ -266,9 +267,9 @@ namespace System.Net.Mail
                 }
                 else
                 {
-                    if (value.IndexOfAny(new char[] { '<', '>' }) != -1)
+                    if (value.IndexOfAny(s_contentCIDInvalidChars) != -1)
                     {
-                        throw new ArgumentException(SR.MailHeaderInvalidCID, "value");
+                        throw new ArgumentException(SR.MailHeaderInvalidCID, nameof(value));
                     }
 
                     _part.ContentID = "<" + value + ">";

@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections;
 using System.IO;
 using System.Text;
-using System.Collections;
 
 namespace System.Net.Mail
 {

@@ -148,7 +148,7 @@ namespace System.Net.Mime
             {
                 throw new ArgumentNullException(nameof(stream));
             }
-            this._contentType = contentType;
+            _contentType = contentType;
             SetContent(stream);
         }
 
@@ -159,16 +159,16 @@ namespace System.Net.Mime
             //should just rethrow it.
 
             MimePartContext context = (MimePartContext)result.AsyncState;
-            if (context.completed)
+            if (context._completed)
             {
                 throw e;
             }
 
             try
             {
-                if (context.outputStream != null)
+                if (context._outputStream != null)
                 {
-                    context.outputStream.Close();
+                    context._outputStream.Close();
                 }
             }
             catch (Exception ex)
@@ -178,8 +178,8 @@ namespace System.Net.Mime
                     e = ex;
                 }
             }
-            context.completed = true;
-            context.result.InvokeCallback(e);
+            context._completed = true;
+            context._result.InvokeCallback(e);
         }
 
 
@@ -190,7 +190,7 @@ namespace System.Net.Mime
                 return;
             }
 
-            ((MimePartContext)result.AsyncState).completedSynchronously = false;
+            ((MimePartContext)result.AsyncState)._completedSynchronously = false;
 
             try
             {
@@ -205,10 +205,10 @@ namespace System.Net.Mime
         internal void ReadCallbackHandler(IAsyncResult result)
         {
             MimePartContext context = (MimePartContext)result.AsyncState;
-            context.bytesLeft = Stream.EndRead(result);
-            if (context.bytesLeft > 0)
+            context._bytesLeft = Stream.EndRead(result);
+            if (context._bytesLeft > 0)
             {
-                IAsyncResult writeResult = context.outputStream.BeginWrite(context.buffer, 0, context.bytesLeft, _writeCallback, context);
+                IAsyncResult writeResult = context._outputStream.BeginWrite(context._buffer, 0, context._bytesLeft, _writeCallback, context);
                 if (writeResult.CompletedSynchronously)
                 {
                     WriteCallbackHandler(writeResult);
@@ -227,7 +227,7 @@ namespace System.Net.Mime
                 return;
             }
 
-            ((MimePartContext)result.AsyncState).completedSynchronously = false;
+            ((MimePartContext)result.AsyncState)._completedSynchronously = false;
 
             try
             {
@@ -242,8 +242,8 @@ namespace System.Net.Mime
         internal void WriteCallbackHandler(IAsyncResult result)
         {
             MimePartContext context = (MimePartContext)result.AsyncState;
-            context.outputStream.EndWrite(result);
-            IAsyncResult readResult = Stream.BeginRead(context.buffer, 0, context.buffer.Length, _readCallback, context);
+            context._outputStream.EndWrite(result);
+            IAsyncResult readResult = Stream.BeginRead(context._buffer, 0, context._buffer.Length, _readCallback, context);
             if (readResult.CompletedSynchronously)
             {
                 ReadCallbackHandler(readResult);
@@ -273,12 +273,12 @@ namespace System.Net.Mime
         internal void ContentStreamCallbackHandler(IAsyncResult result)
         {
             MimePartContext context = (MimePartContext)result.AsyncState;
-            Stream outputStream = context.writer.EndGetContentStream(result);
-            context.outputStream = GetEncodedStream(outputStream);
+            Stream outputStream = context._writer.EndGetContentStream(result);
+            context._outputStream = GetEncodedStream(outputStream);
 
             _readCallback = new AsyncCallback(ReadCallback);
             _writeCallback = new AsyncCallback(WriteCallback);
-            IAsyncResult readResult = Stream.BeginRead(context.buffer, 0, context.buffer.Length, _readCallback, context);
+            IAsyncResult readResult = Stream.BeginRead(context._buffer, 0, context._buffer.Length, _readCallback, context);
             if (readResult.CompletedSynchronously)
             {
                 ReadCallbackHandler(readResult);
@@ -292,7 +292,7 @@ namespace System.Net.Mime
                 return;
             }
 
-            ((MimePartContext)result.AsyncState).completedSynchronously = false;
+            ((MimePartContext)result.AsyncState)._completedSynchronously = false;
 
             try
             {
@@ -308,18 +308,18 @@ namespace System.Net.Mime
         {
             internal MimePartContext(BaseWriter writer, LazyAsyncResult result)
             {
-                this.writer = writer;
-                this.result = result;
-                buffer = new byte[maxBufferSize];
+                _writer = writer;
+                _result = result;
+                _buffer = new byte[maxBufferSize];
             }
 
-            internal Stream outputStream;
-            internal LazyAsyncResult result;
-            internal int bytesLeft;
-            internal BaseWriter writer;
-            internal byte[] buffer;
-            internal bool completed;
-            internal bool completedSynchronously = true;
+            internal Stream _outputStream;
+            internal LazyAsyncResult _result;
+            internal int _bytesLeft;
+            internal BaseWriter _writer;
+            internal byte[] _buffer;
+            internal bool _completed;
+            internal bool _completedSynchronously = true;
         }
 
         internal override IAsyncResult BeginSend(BaseWriter writer, AsyncCallback callback, bool allowUnicode, object state)

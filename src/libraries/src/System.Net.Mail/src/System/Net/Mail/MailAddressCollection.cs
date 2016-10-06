@@ -6,8 +6,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Text;
 using System.Net.Mime;
+using System.Text;
 
 namespace System.Net.Mail
 {
@@ -21,11 +21,11 @@ namespace System.Net.Mail
         {
             if (addresses == null)
             {
-                throw new ArgumentNullException("addresses");
+                throw new ArgumentNullException(nameof(addresses));
             }
             if (addresses == string.Empty)
             {
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, "addresses"), "addresses");
+                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(addresses)), nameof(addresses));
             }
 
             ParseValue(addresses);
@@ -35,7 +35,7 @@ namespace System.Net.Mail
         {
             if (item == null)
             {
-                throw new ArgumentNullException("item");
+                throw new ArgumentNullException(nameof(item));
             }
 
             base.SetItem(index, item);
@@ -45,7 +45,7 @@ namespace System.Net.Mail
         {
             if (item == null)
             {
-                throw new ArgumentNullException("item");
+                throw new ArgumentNullException(nameof(item));
             }
 
             base.InsertItem(index, item);
@@ -57,7 +57,7 @@ namespace System.Net.Mail
 
             for (int i = 0; i < result.Count; i++)
             {
-                this.Add(result[i]);
+                Add(result[i]);
             }
         }
 
@@ -77,7 +77,7 @@ namespace System.Net.Mail
                 first = false;
             }
 
-            return builder.ToString(); ;
+            return builder.ToString();
         }
 
         internal string Encode(int charsConsumed, bool allowUnicode)

@@ -66,18 +66,18 @@ namespace System.Net.Mail
         {
             if (address == null)
             {
-                throw new ArgumentNullException("address");
+                throw new ArgumentNullException(nameof(address));
             }
-            if (address == String.Empty)
+            if (address == string.Empty)
             {
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, "address"), "address");
+                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(address)), nameof(address));
             }
 
             _displayNameEncoding = displayNameEncoding ?? Encoding.GetEncoding(MimeBasePart.DefaultCharSet);
             _displayName = displayName ?? string.Empty;
 
             // Check for bounding quotes
-            if (!String.IsNullOrEmpty(_displayName))
+            if (!string.IsNullOrEmpty(_displayName))
             {
                 _displayName = MailAddressParser.NormalizeOrThrow(_displayName);
 
@@ -95,7 +95,7 @@ namespace System.Net.Mail
             _userName = result._userName;
 
             // If we were not given a display name, use the one parsed from 'address'.
-            if (String.IsNullOrEmpty(_displayName))
+            if (string.IsNullOrEmpty(_displayName))
             {
                 _displayName = result._displayName;
             }
@@ -159,27 +159,26 @@ namespace System.Net.Mail
         {
             get
             {
-                return String.Format(CultureInfo.InvariantCulture, "{0}@{1}", _userName, _host);
+                return _userName + "@" + _host;
             }
         }
 
         private string GetAddress(bool allowUnicode)
         {
-            return String.Format(CultureInfo.InvariantCulture, "{0}@{1}",
-                GetUser(allowUnicode), GetHost(allowUnicode));
+            return GetUser(allowUnicode) + "@" + GetHost(allowUnicode);
         }
 
         private string SmtpAddress
         {
             get
             {
-                return String.Format(CultureInfo.InvariantCulture, "<{0}>", Address);
+                return "<" + Address + ">";
             }
         }
 
         internal string GetSmtpAddress(bool allowUnicode)
         {
-            return String.Format(CultureInfo.InvariantCulture, "<{0}>", GetAddress(allowUnicode));
+            return "<" + GetAddress(allowUnicode) + ">";
         }
 
         /// <summary>
@@ -187,16 +186,15 @@ namespace System.Net.Mail
         /// i.e. "some email address display name" <user@host>
         /// if displayname is not provided then this returns only user@host (no angle brackets)
         /// </summary>
-        /// <returns></returns>
         public override string ToString()
         {
-            if (String.IsNullOrEmpty(DisplayName))
+            if (string.IsNullOrEmpty(DisplayName))
             {
-                return this.Address;
+                return Address;
             }
             else
             {
-                return String.Format("\"{0}\" {1}", DisplayName, SmtpAddress);
+                return "\"" + DisplayName + "\" " + SmtpAddress;
             }
         }
 
@@ -214,7 +212,7 @@ namespace System.Net.Mail
             return ToString().GetHashCode();
         }
 
-        private static EncodedStreamFactory s_encoderFactory = new EncodedStreamFactory();
+        private static readonly EncodedStreamFactory s_encoderFactory = new EncodedStreamFactory();
 
         // Encodes the full email address, folding as needed
         internal string Encode(int charsConsumed, bool allowUnicode)
@@ -223,7 +221,7 @@ namespace System.Net.Mail
             IEncodableStream encoder;
             byte[] buffer;
 
-            Debug.Assert(this.Address != null, "address was null");
+            Debug.Assert(Address != null, "address was null");
 
             //do we need to take into account the Display name?  If so, encode it
             if (!string.IsNullOrEmpty(_displayName))
@@ -234,7 +232,7 @@ namespace System.Net.Mail
                 //be appended.
                 if (MimeBasePart.IsAscii(_displayName, false) || allowUnicode)
                 {
-                    encodedAddress = string.Format(CultureInfo.InvariantCulture, "\"{0}\"", _displayName);
+                    encodedAddress = "\"" + _displayName + "\"";
                 }
                 else
                 {
