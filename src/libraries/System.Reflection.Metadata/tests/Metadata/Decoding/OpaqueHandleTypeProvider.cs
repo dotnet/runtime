@@ -12,17 +12,22 @@ namespace System.Reflection.Metadata.Decoding.Tests
     {
         public override string GetTypeFromHandle(MetadataReader reader, DisassemblingGenericContext genericContext, EntityHandle handle)
         {
-            return MetadataTokens.GetToken(handle).ToString("X");
+            return FormatToken(handle);
         }
 
         public override string GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
         {
-            return GetTypeFromHandle(reader, genericContext: null, handle: handle);
+            return FormatToken(handle);
         }
 
         public override string GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
         {
-            return GetTypeFromHandle(reader, genericContext: null, handle: handle);
+            return FormatToken(handle);
+        }
+
+        private static string FormatToken(EntityHandle handle)
+        {
+            return MetadataTokens.GetToken(handle).ToString("X");
         }
     }
 }
