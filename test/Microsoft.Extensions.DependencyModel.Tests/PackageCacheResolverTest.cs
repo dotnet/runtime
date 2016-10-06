@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using FluentAssertions;
-using Microsoft.Extensions.EnvironmentAbstractions;
 using Microsoft.Extensions.DependencyModel.Resolution;
 using Xunit;
 using F = Microsoft.Extensions.DependencyModel.Tests.TestLibraryFactory;
@@ -117,6 +116,58 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 .And.Contain(library.Name);
         }
 
+        [Fact]
+        public void UsesHashPathProperty()
+        {
+            var hashFileName = "myFunkyHashPath.sha29";
+            var packagePath = GetPackagesPath(F.DefaultPackageName, F.DefaultVersion);
+            var fileSystem = FileSystemMockBuilder.Create()
+                .AddFile(
+                    Path.Combine(packagePath, hashFileName),
+                    F.DefaultHashValue
+                )
+                .AddFiles(packagePath, F.TwoAssemblies)
+                .Build();
+
+            var library = F.Create(assemblies: F.TwoAssemblies, hashPath: hashFileName);
+
+            var resolver = new PackageCacheCompilationAssemblyResolver(fileSystem, CachePath);
+            var assemblies = new List<string>();
+
+            var result = resolver.TryResolveAssemblyPaths(library, assemblies);
+
+            result.Should().BeTrue();
+            assemblies.Should().HaveCount(2);
+            assemblies.Should().Contain(Path.Combine(packagePath, F.DefaultAssemblyPath));
+            assemblies.Should().Contain(Path.Combine(packagePath, F.SecondAssemblyPath));
+        }
+
+        [Fact]
+        public void UsesPathProperty()
+        {
+            var testPathValue = "NotPackageId";
+            var packagePath = Path.Combine(CachePath, testPathValue);
+            var fileSystem = FileSystemMockBuilder.Create()
+                .AddFile(
+                    GetHashFilePath(packagePath),
+                    F.DefaultHashValue
+                )
+                .AddFiles(packagePath, F.TwoAssemblies)
+                .Build();
+
+            var library = F.Create(assemblies: F.TwoAssemblies, path: testPathValue);
+
+            var resolver = new PackageCacheCompilationAssemblyResolver(fileSystem, CachePath);
+            var assemblies = new List<string>();
+
+            var result = resolver.TryResolveAssemblyPaths(library, assemblies);
+
+            result.Should().BeTrue();
+            assemblies.Should().HaveCount(2);
+            assemblies.Should().Contain(Path.Combine(packagePath, F.DefaultAssemblyPath));
+            assemblies.Should().Contain(Path.Combine(packagePath, F.SecondAssemblyPath));
+        }
+
         private IEnvironment GetDefaultEnvironment()
         {
             return EnvironmentMockBuilder.Create()
@@ -133,7 +184,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         {
             return Path.Combine(
                 packagePath,
-                $"{F.DefaultPackageName.ToLowerInvariant()}.{F.DefaultVersion.ToLowerInvariant()}.nupkg.{F.DefaultHashAlgoritm}");
+                $"{F.DefaultPackageName}.{F.DefaultVersion}.nupkg.{F.DefaultHashAlgoritm}");
         }
     }
 }
