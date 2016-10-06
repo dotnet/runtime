@@ -1423,7 +1423,7 @@ bool NotifyGdb::BuildDebugInfo(MemBuf& buf, NewArrayHolder<ArgsDebugInfo> &argsD
         bufVar[i].m_var_type = localsDebug[i-argsDebugSize].m_type_offset;
         memcpy(buf.MemPtr + offset, &bufVar[i], sizeof(DebugInfoVar));
         offset += sizeof(DebugInfoVar);
-        int len = GetFrameLocation(localsDebug[i].m_native_offset, bufVarLoc);
+        int len = GetFrameLocation(localsDebug[i-argsDebugSize].m_native_offset, bufVarLoc);
         memcpy(buf.MemPtr + offset, bufVarLoc, len);
         offset += len;
     }
