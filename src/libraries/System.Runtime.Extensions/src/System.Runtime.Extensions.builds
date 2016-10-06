@@ -9,14 +9,6 @@
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="System.Runtime.Extensions.csproj">
-      <TargetGroup>netstandard1.5</TargetGroup>
-      <OSGroup>Unix</OSGroup>
-    </Project>
-    <Project Include="System.Runtime.Extensions.csproj">
-      <TargetGroup>netstandard1.5</TargetGroup>
-      <OSGroup>Windows_NT</OSGroup>
-    </Project>
-    <Project Include="System.Runtime.Extensions.csproj">
       <TargetGroup>net462</TargetGroup>
     </Project>
     <Project Include="System.Runtime.Extensions.csproj">
