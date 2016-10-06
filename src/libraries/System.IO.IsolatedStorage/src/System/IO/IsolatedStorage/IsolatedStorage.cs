@@ -159,7 +159,7 @@ namespace System.IO.IsolatedStorage
                     hash = $"{hash}{SeparatorExternal}{hash}";
                 }
 
-                _applicationIdentity = identity;
+                _assemblyIdentity = identity;
             }
 
             IdentityHash = hash;
