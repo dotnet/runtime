@@ -20,6 +20,15 @@ namespace Internal.Cryptography.Pal
             return new OpenSslX509CertificateReader(Interop.Crypto.X509UpRef(handle));
         }
 
+        public static ICertificatePal FromOtherCert(X509Certificate cert)
+        {
+            Debug.Assert(cert.Pal != null);
+
+            // Ensure private key is copied
+            OpenSslX509CertificateReader certPal = (OpenSslX509CertificateReader)cert.Pal;
+            return certPal.DuplicateHandles();
+        }
+
         public static ICertificatePal FromBlob(byte[] rawData, string password, X509KeyStorageFlags keyStorageFlags)
         {
             ICertificatePal cert;

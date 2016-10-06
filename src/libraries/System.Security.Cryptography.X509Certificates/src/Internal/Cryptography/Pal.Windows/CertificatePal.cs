@@ -39,6 +39,23 @@ namespace Internal.Cryptography.Pal
             return new CertificatePal(safeCertContextHandle, deleteKeyContainer);
         }
 
+        /// <summary>
+        /// Returns the SafeCertContextHandle. Use this instead of FromHandle property when
+        /// creating another X509Certificate object based on this one to ensure the underlying
+        /// cert context is not released at the wrong time.
+        /// </summary>
+        /// <param name="cert"></param>
+        /// <returns></returns>
+        public static ICertificatePal FromOtherCert(X509Certificate cert)
+        {
+            CertificatePal newCert = (CertificatePal)FromHandle(cert.Handle);
+            newCert._certContextCloned = true;
+
+            ((CertificatePal)cert.Pal)._certContextCloned = true;
+
+            return newCert;
+        }
+
         public IntPtr Handle
         {
             get { return _certContext.DangerousGetHandle(); }
@@ -471,7 +488,10 @@ namespace Internal.Cryptography.Pal
             _certContext = null;
             if (certContext != null && !certContext.IsInvalid)
             {
-                certContext.Dispose();
+                if (!_certContextCloned)
+                {
+                    certContext.Dispose();
+                }
             }
         }
 
@@ -541,5 +561,6 @@ namespace Internal.Cryptography.Pal
         }
 
         private SafeCertContextHandle _certContext;
+        private bool _certContextCloned;
     }
 }

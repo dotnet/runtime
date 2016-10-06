@@ -5,15 +5,17 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-
 namespace Microsoft.Win32.SafeHandles
 {
     public sealed partial class SafeX509ChainHandle : System.Runtime.InteropServices.SafeHandle
     {
         internal SafeX509ChainHandle() : base(default(System.IntPtr), default(bool)) { }
+        public override bool IsInvalid { get { return default(bool); } }
+        protected override void Dispose(bool disposing) { }
         protected override bool ReleaseHandle() { return default(bool); }
     }
 }
+
 namespace System.Security.Cryptography.X509Certificates
 {
     public static partial class ECDsaCertificateExtensions
@@ -99,12 +101,12 @@ namespace System.Security.Cryptography.X509Certificates
         public X509Certificate(byte[] data) { }
         public X509Certificate(byte[] rawData, string password) { }
         public X509Certificate(byte[] rawData, string password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
-        [System.Security.SecurityCriticalAttribute]
         public X509Certificate(System.IntPtr handle) { }
+        public X509Certificate(System.Security.Cryptography.X509Certificates.X509Certificate cert) { }
         public X509Certificate(string fileName) { }
         public X509Certificate(string fileName, string password) { }
         public X509Certificate(string fileName, string password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
-        public System.IntPtr Handle {[System.Security.SecurityCriticalAttribute]get { return default(System.IntPtr); } }
+        public System.IntPtr Handle { get { return default(System.IntPtr); } }
         public string Issuer { get { return default(string); } }
         public string Subject { get { return default(string); } }
         public void Dispose() { }
@@ -114,13 +116,24 @@ namespace System.Security.Cryptography.X509Certificates
         public virtual byte[] Export(System.Security.Cryptography.X509Certificates.X509ContentType contentType) { return default(byte[]); }
         public virtual byte[] Export(System.Security.Cryptography.X509Certificates.X509ContentType contentType, string password) { return default(byte[]); }
         public virtual byte[] GetCertHash() { return default(byte[]); }
+        public virtual string GetCertHashString() { return default(string); }
+        public virtual string GetEffectiveDateString() { return default(string); }
+        public virtual string GetExpirationDateString() { return default(string); }
         public virtual string GetFormat() { return default(string); }
         public override int GetHashCode() { return default(int); }
+        [System.ObsoleteAttribute("This method has been deprecated.  Please use the Issuer property instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
+        public virtual string GetIssuerName() { return default(string); }
         public virtual string GetKeyAlgorithm() { return default(string); }
         public virtual byte[] GetKeyAlgorithmParameters() { return default(byte[]); }
         public virtual string GetKeyAlgorithmParametersString() { return default(string); }
+        [System.ObsoleteAttribute("This method has been deprecated.  Please use the Subject property instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
+        public virtual string GetName() { return default(string); }
         public virtual byte[] GetPublicKey() { return default(byte[]); }
+        public virtual string GetPublicKeyString() { return default(string); }
+        public virtual byte[] GetRawCertData() { return default(byte[]); }
+        public virtual string GetRawCertDataString() { return default(string); }
         public virtual byte[] GetSerialNumber() { return default(byte[]); }
+        public virtual string GetSerialNumberString() { return default(string); }
         public override string ToString() { return default(string); }
         public virtual string ToString(bool fVerbose) { return default(string); }
     }
@@ -131,6 +144,7 @@ namespace System.Security.Cryptography.X509Certificates
         public X509Certificate2(byte[] rawData, string password) { }
         public X509Certificate2(byte[] rawData, string password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
         public X509Certificate2(System.IntPtr handle) { }
+        public X509Certificate2(System.Security.Cryptography.X509Certificates.X509Certificate cert) { }
         public X509Certificate2(string fileName) { }
         public X509Certificate2(string fileName, string password) { }
         public X509Certificate2(string fileName, string password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
@@ -188,15 +202,22 @@ namespace System.Security.Cryptography.X509Certificates
         bool System.Collections.IEnumerator.MoveNext() { return default(bool); }
         void System.Collections.IEnumerator.Reset() { }
     }
-    public partial class X509CertificateCollection
+    public partial class X509CertificateCollection : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
     {
         public X509CertificateCollection() { }
         public X509CertificateCollection(System.Security.Cryptography.X509Certificates.X509Certificate[] value) { }
         public X509CertificateCollection(System.Security.Cryptography.X509Certificates.X509CertificateCollection value) { }
+        public int Count { get { return default(int); } }
         public System.Security.Cryptography.X509Certificates.X509Certificate this[int index] { get { return default(System.Security.Cryptography.X509Certificates.X509Certificate); } set { } }
+        bool System.Collections.ICollection.IsSynchronized { get { return default(bool); } }
+        object System.Collections.ICollection.SyncRoot { get { return default(object); } }
+        bool System.Collections.IList.IsFixedSize { get { return default(bool); } }
+        bool System.Collections.IList.IsReadOnly { get { return default(bool); } }
+        object System.Collections.IList.this[int index] { get { return default(object); } set { } }
         public int Add(System.Security.Cryptography.X509Certificates.X509Certificate value) { return default(int); }
         public void AddRange(System.Security.Cryptography.X509Certificates.X509Certificate[] value) { }
         public void AddRange(System.Security.Cryptography.X509Certificates.X509CertificateCollection value) { }
+        public void Clear() { }
         public bool Contains(System.Security.Cryptography.X509Certificates.X509Certificate value) { return default(bool); }
         public void CopyTo(System.Security.Cryptography.X509Certificates.X509Certificate[] array, int index) { }
         public System.Security.Cryptography.X509Certificates.X509CertificateCollection.X509CertificateEnumerator GetEnumerator() { return default(System.Security.Cryptography.X509Certificates.X509CertificateCollection.X509CertificateEnumerator); }
@@ -204,6 +225,14 @@ namespace System.Security.Cryptography.X509Certificates
         public int IndexOf(System.Security.Cryptography.X509Certificates.X509Certificate value) { return default(int); }
         public void Insert(int index, System.Security.Cryptography.X509Certificates.X509Certificate value) { }
         public void Remove(System.Security.Cryptography.X509Certificates.X509Certificate value) { }
+        public void RemoveAt(int index) { }
+        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { return default(System.Collections.IEnumerator); }
+        int System.Collections.IList.Add(object value) { return default(int); }
+        bool System.Collections.IList.Contains(object value) { return default(bool); }
+        int System.Collections.IList.IndexOf(object value) { return default(int); }
+        void System.Collections.IList.Insert(int index, object value) { }
+        void System.Collections.IList.Remove(object value) { }
         public partial class X509CertificateEnumerator : System.Collections.IEnumerator
         {
             public X509CertificateEnumerator(System.Security.Cryptography.X509Certificates.X509CertificateCollection mappings) { }
@@ -369,6 +398,13 @@ namespace System.Security.Cryptography.X509Certificates
         FindByTimeExpired = 8,
         FindByTimeNotYetValid = 7,
         FindByTimeValid = 6,
+    }
+    public enum X509IncludeOption
+    {
+        EndCertOnly = 2,
+        ExcludeRoot = 1,
+        None = 0,
+        WholeChain = 3,
     }
     [System.FlagsAttribute]
     public enum X509KeyStorageFlags

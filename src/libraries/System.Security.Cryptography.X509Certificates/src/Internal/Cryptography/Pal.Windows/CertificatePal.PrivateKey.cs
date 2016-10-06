@@ -117,6 +117,7 @@ namespace Internal.Cryptography.Pal
                         out keySpec,
                         out freeKey))
                 {
+                    int dwErrorCode = Marshal.GetLastWin32Error();
                     return null;
                 }
 
