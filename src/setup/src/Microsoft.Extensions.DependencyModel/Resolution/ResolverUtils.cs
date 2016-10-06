@@ -11,10 +11,13 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
     {
         internal static bool TryResolvePackagePath(IFileSystem fileSystem, CompilationLibrary library, string basePath, out string packagePath)
         {
-            packagePath = Path.Combine(
-                basePath,
-                library.Name.ToLowerInvariant(),
-                library.Version.ToLowerInvariant());
+            var path = library.Path;
+            if (string.IsNullOrEmpty(path))
+            {
+                path = Path.Combine(library.Name, library.Version);
+            }
+
+            packagePath = Path.Combine(basePath, path);
 
             if (fileSystem.Directory.Exists(packagePath))
             {
