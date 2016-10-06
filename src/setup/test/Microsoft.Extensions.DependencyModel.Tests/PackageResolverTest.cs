@@ -96,7 +96,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 
         internal static string GetPackagesPath(string basePath, string id, string version)
         {
-            return Path.Combine(basePath, id.ToLowerInvariant(), version.ToLowerInvariant());
+            return Path.Combine(basePath, id, version);
         }
     }
 }
