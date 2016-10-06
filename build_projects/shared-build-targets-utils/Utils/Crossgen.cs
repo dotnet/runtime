@@ -75,8 +75,8 @@ namespace Microsoft.DotNet.Cli.Build
 
             return Path.Combine(
                 Dirs.NuGetPackages,
-                packageId.ToLower(),
-                _jitVersion.ToLower());
+                packageId,
+                _jitVersion);
         }
 
         private string GetCoreLibsDirForVersion()
@@ -113,8 +113,8 @@ namespace Microsoft.DotNet.Cli.Build
 
             return Path.Combine(
                 Dirs.NuGetPackages,
-                packageId.ToLower(),
-                _coreClrVersion.ToLower());
+                packageId,
+                _coreClrVersion);
         }
 
         private string GetCoreCLRRid()
