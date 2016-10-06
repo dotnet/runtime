@@ -126,9 +126,8 @@
     <Compile Include="System\Reflection\Metadata\Signatures\ArrayShape.cs" />
     <Compile Include="System\Reflection\Metadata\Decoding\ISZArrayTypeProvider.cs" />
     <Compile Include="System\Reflection\Metadata\Decoding\ISignatureTypeProvider.cs" />
-    <Compile Include="System\Reflection\Metadata\Decoding\ITypeProvider.cs" />
+    <Compile Include="System\Reflection\Metadata\Decoding\ISimpleTypeProvider.cs" />
     <Compile Include="System\Reflection\Metadata\Signatures\SignatureTypeKind.cs" />
-    <Compile Include="System\Reflection\Metadata\Decoding\IPrimitiveTypeProvider.cs" />
     <Compile Include="System\Reflection\Metadata\Decoding\IConstructedTypeProvider.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\SignatureDecoder.cs" />
     <Compile Include="System\Reflection\Metadata\Signatures\MethodSignature.cs" />
