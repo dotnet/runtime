@@ -2,16 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-
-//------------------------------------------------------------------------------
-
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
-using System.Data.Common;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
@@ -19,28 +12,38 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.Common
 {
-    public class DbConnectionStringBuilder : System.Collections.IDictionary
+    public class DbConnectionStringBuilder : IDictionary, ICustomTypeDescriptor
     {
         // keyword->value currently listed in the connection string
         private Dictionary<string, object> _currentValues;
 
         // cached connectionstring to avoid constant rebuilding
         // and to return a user's connectionstring as is until editing occurs
-        private string _connectionString = "";
+        private string _connectionString = string.Empty;
 
+        private PropertyDescriptorCollection _propertyDescriptors;
+        private bool _browsableConnectionString = true;
+        private readonly bool _useOdbcRules;
+
+        private static int s_objectTypeCount; // Bid counter
+        internal readonly int _objectID = System.Threading.Interlocked.Increment(ref s_objectTypeCount);
 
         public DbConnectionStringBuilder()
         {
         }
 
+        public DbConnectionStringBuilder(bool useOdbcRules)
+        {
+            _useOdbcRules = useOdbcRules;
+        }
 
         private ICollection Collection
         {
-            get { return (ICollection)CurrentValues; }
+            get { return CurrentValues; }
         }
         private IDictionary Dictionary
         {
-            get { return (IDictionary)CurrentValues; }
+            get { return CurrentValues; }
         }
         private Dictionary<string, object> CurrentValues
         {
@@ -56,18 +59,20 @@ namespace System.Data.Common
             }
         }
 
-        object System.Collections.IDictionary.this[object keyword]
+        object IDictionary.this[object keyword]
         {
             // delegate to this[string keyword]
             get { return this[ObjectToString(keyword)]; }
             set { this[ObjectToString(keyword)] = value; }
         }
 
+        [Browsable(false)]
         public virtual object this[string keyword]
         {
             get
             {
-                ADP.CheckArgumentNull(keyword, "keyword");
+                DataCommonEventSource.Log.Trace("<comm.DbConnectionStringBuilder.get_Item|API> {0}, keyword='{1}'", ObjectID, keyword);
+                ADP.CheckArgumentNull(keyword, nameof(keyword));
                 object value;
                 if (CurrentValues.TryGetValue(keyword, out value))
                 {
@@ -77,22 +82,53 @@ namespace System.Data.Common
             }
             set
             {
-                ADP.CheckArgumentNull(keyword, "keyword");
+                ADP.CheckArgumentNull(keyword, nameof(keyword));
+                bool flag = false;
                 if (null != value)
                 {
                     string keyvalue = DbConnectionStringBuilderUtil.ConvertToString(value);
                     DbConnectionOptions.ValidateKeyValuePair(keyword, keyvalue);
+
+                    flag = CurrentValues.ContainsKey(keyword);
+
                     // store keyword/value pair
                     CurrentValues[keyword] = keyvalue;
                 }
+                else
+                {
+                    flag = Remove(keyword);
+                }
                 _connectionString = null;
+                if (flag)
+                {
+                    _propertyDescriptors = null;
+                }
             }
         }
 
+        [Browsable(false)]
+        [DesignOnly(true)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public bool BrowsableConnectionString
+        {
+            get
+            {
+                return _browsableConnectionString;
+            }
+            set
+            {
+                _browsableConnectionString = value;
+                _propertyDescriptors = null;
+            }
+        }
+
+        [RefreshPropertiesAttribute(RefreshProperties.All)]
         public string ConnectionString
         {
             get
             {
+                DataCommonEventSource.Log.Trace("<comm.DbConnectionStringBuilder.get_ConnectionString|API> {0}", ObjectID);
                 string connectionString = _connectionString;
                 if (null == connectionString)
                 {
@@ -102,8 +138,8 @@ namespace System.Data.Common
                         object value;
                         if (ShouldSerialize(keyword) && TryGetValue(keyword, out value))
                         {
-                            string keyvalue = (null != value) ? Convert.ToString(value, CultureInfo.InvariantCulture) : (string)null;
-                            AppendKeyValuePair(builder, keyword, keyvalue);
+                            string keyvalue = ConvertValueToString(value);
+                            AppendKeyValuePair(builder, keyword, keyvalue, _useOdbcRules);
                         }
                     }
                     connectionString = builder.ToString();
@@ -113,12 +149,13 @@ namespace System.Data.Common
             }
             set
             {
-                DbConnectionOptions constr = new DbConnectionOptions(value, null);
+                DataCommonEventSource.Log.Trace("<comm.DbConnectionStringBuilder.set_ConnectionString|API> {0}", ObjectID);
+                DbConnectionOptions constr = new DbConnectionOptions(value, null, _useOdbcRules);
                 string originalValue = ConnectionString;
                 Clear();
                 try
                 {
-                    for (NameValuePair pair = constr.KeyChain; null != pair; pair = pair.Next)
+                    for (NameValuePair pair = constr._keyChain; null != pair; pair = pair.Next)
                     {
                         if (null != pair.Value)
                         {
@@ -140,45 +177,59 @@ namespace System.Data.Common
             }
         }
 
+        [Browsable(false)]
         public virtual int Count
         {
             get { return CurrentValues.Count; }
         }
 
+        [Browsable(false)]
         public bool IsReadOnly
         {
             get { return false; }
         }
 
+        [Browsable(false)]
         public virtual bool IsFixedSize
         {
             get { return false; }
         }
-        bool System.Collections.ICollection.IsSynchronized
+        bool ICollection.IsSynchronized
         {
             get { return Collection.IsSynchronized; }
         }
 
+        [Browsable(false)]
         public virtual ICollection Keys
         {
             get
             {
+                DataCommonEventSource.Log.Trace("<comm.DbConnectionStringBuilder.Keys|API> {0}", ObjectID);
                 return Dictionary.Keys;
             }
         }
 
+        internal int ObjectID
+        {
+            get
+            {
+                return _objectID;
+            }
+        }
 
-        object System.Collections.ICollection.SyncRoot
+        object ICollection.SyncRoot
         {
             get { return Collection.SyncRoot; }
         }
 
+        [Browsable(false)]
         public virtual ICollection Values
         {
             get
             {
-                System.Collections.Generic.ICollection<string> keys = (System.Collections.Generic.ICollection<string>)Keys;
-                System.Collections.Generic.IEnumerator<string> keylist = keys.GetEnumerator();
+                DataCommonEventSource.Log.Trace("<comm.DbConnectionStringBuilder.Values|API> {0}", ObjectID);
+                ICollection<string> keys = (ICollection<string>)Keys;
+                IEnumerator<string> keylist = keys.GetEnumerator();
                 object[] values = new object[keys.Count];
                 for (int i = 0; i < values.Length; ++i)
                 {
@@ -190,7 +241,12 @@ namespace System.Data.Common
             }
         }
 
-        void System.Collections.IDictionary.Add(object keyword, object value)
+        internal virtual string ConvertValueToString(object value)
+        {
+            return (value == null) ? null : Convert.ToString(value, CultureInfo.InvariantCulture);
+        }
+
+        void IDictionary.Add(object keyword, object value)
         {
             Add(ObjectToString(keyword), value);
         }
@@ -204,35 +260,47 @@ namespace System.Data.Common
             DbConnectionOptions.AppendKeyValuePairBuilder(builder, keyword, value, false);
         }
 
+        public static void AppendKeyValuePair(StringBuilder builder, string keyword, string value, bool useOdbcRules)
+        {
+            DbConnectionOptions.AppendKeyValuePairBuilder(builder, keyword, value, useOdbcRules);
+        }
 
         public virtual void Clear()
         {
-            _connectionString = "";
+            DataCommonEventSource.Log.Trace("<comm.DbConnectionStringBuilder.Clear|API>");
+            _connectionString = string.Empty;
+            _propertyDescriptors = null;
             CurrentValues.Clear();
         }
 
+        protected internal void ClearPropertyDescriptors()
+        {
+            _propertyDescriptors = null;
+        }
 
         // does the keyword exist as a strongly typed keyword or as a stored value
-        bool System.Collections.IDictionary.Contains(object keyword)
+        bool IDictionary.Contains(object keyword)
         {
             return ContainsKey(ObjectToString(keyword));
         }
         public virtual bool ContainsKey(string keyword)
         {
-            ADP.CheckArgumentNull(keyword, "keyword");
+            ADP.CheckArgumentNull(keyword, nameof(keyword));
             return CurrentValues.ContainsKey(keyword);
         }
 
         void ICollection.CopyTo(Array array, int index)
         {
+            DataCommonEventSource.Log.Trace("<comm.DbConnectionStringBuilder.ICollection.CopyTo|API> {0}", ObjectID);
             Collection.CopyTo(array, index);
         }
 
         public virtual bool EquivalentTo(DbConnectionStringBuilder connectionStringBuilder)
         {
-            ADP.CheckArgumentNull(connectionStringBuilder, "connectionStringBuilder");
+            ADP.CheckArgumentNull(connectionStringBuilder, nameof(connectionStringBuilder));
 
 
+            DataCommonEventSource.Log.Trace("<comm.DbConnectionStringBuilder.EquivalentTo|API> {0}, connectionStringBuilder={1}", ObjectID, connectionStringBuilder.ObjectID);
             if ((GetType() != connectionStringBuilder.GetType()) || (CurrentValues.Count != connectionStringBuilder.CurrentValues.Count))
             {
                 return false;
@@ -248,15 +316,16 @@ namespace System.Data.Common
             return true;
         }
 
-        IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        IEnumerator IEnumerable.GetEnumerator()
         {
+            DataCommonEventSource.Log.Trace("<comm.DbConnectionStringBuilder.IEnumerable.GetEnumerator|API> {0}", ObjectID);
             return Collection.GetEnumerator();
         }
-        IDictionaryEnumerator System.Collections.IDictionary.GetEnumerator()
+        IDictionaryEnumerator IDictionary.GetEnumerator()
         {
+            DataCommonEventSource.Log.Trace("<comm.DbConnectionStringBuilder.IDictionary.GetEnumerator|API> {0}", ObjectID);
             return Dictionary.GetEnumerator();
         }
-
 
         private string ObjectToString(object keyword)
         {
@@ -266,20 +335,23 @@ namespace System.Data.Common
             }
             catch (InvalidCastException)
             {
+                // BUGBUG: the message is not localized.
                 throw new ArgumentException("not a string", nameof(keyword));
             }
         }
 
-        void System.Collections.IDictionary.Remove(object keyword)
+        void IDictionary.Remove(object keyword)
         {
             Remove(ObjectToString(keyword));
         }
         public virtual bool Remove(string keyword)
         {
-            ADP.CheckArgumentNull(keyword, "keyword");
+            DataCommonEventSource.Log.Trace("<comm.DbConnectionStringBuilder.Remove|API> {0}, keyword='{1}'", ObjectID, keyword);
+            ADP.CheckArgumentNull(keyword, nameof(keyword));
             if (CurrentValues.Remove(keyword))
             {
                 _connectionString = null;
+                _propertyDescriptors = null;
                 return true;
             }
             return false;
@@ -288,7 +360,7 @@ namespace System.Data.Common
         // does the keyword exist as a stored value or something that should always be persisted
         public virtual bool ShouldSerialize(string keyword)
         {
-            ADP.CheckArgumentNull(keyword, "keyword");
+            ADP.CheckArgumentNull(keyword, nameof(keyword));
             return CurrentValues.ContainsKey(keyword);
         }
 
@@ -299,8 +371,234 @@ namespace System.Data.Common
 
         public virtual bool TryGetValue(string keyword, out object value)
         {
-            ADP.CheckArgumentNull(keyword, "keyword");
+            ADP.CheckArgumentNull(keyword, nameof(keyword));
             return CurrentValues.TryGetValue(keyword, out value);
+        }
+
+        internal Attribute[] GetAttributesFromCollection(AttributeCollection collection)
+        {
+            Attribute[] attributes = new Attribute[collection.Count];
+            collection.CopyTo(attributes, 0);
+            return attributes;
+        }
+
+        private PropertyDescriptorCollection GetProperties()
+        {
+            PropertyDescriptorCollection propertyDescriptors = _propertyDescriptors;
+            if (null == propertyDescriptors)
+            {
+                long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbConnectionStringBuilder.GetProperties|INFO> {0}", ObjectID);
+                try
+                {
+                    Hashtable descriptors = new Hashtable(StringComparer.OrdinalIgnoreCase);
+
+                    GetProperties(descriptors);
+
+                    PropertyDescriptor[] properties = new PropertyDescriptor[descriptors.Count];
+                    descriptors.Values.CopyTo(properties, 0);
+                    propertyDescriptors = new PropertyDescriptorCollection(properties);
+                    _propertyDescriptors = propertyDescriptors;
+                }
+                finally
+                {
+                    DataCommonEventSource.Log.ExitScope(logScopeId);
+                }
+            }
+            return propertyDescriptors;
+        }
+
+        protected virtual void GetProperties(Hashtable propertyDescriptors)
+        {
+            long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbConnectionStringBuilder.GetProperties|API> {0}", ObjectID);
+            try
+            {
+                // show all strongly typed properties (not already added)
+                // except ConnectionString iff BrowsableConnectionString
+                Attribute[] attributes;
+                foreach (PropertyDescriptor reflected in TypeDescriptor.GetProperties(this, true))
+                {
+                    if (ADP.ConnectionString != reflected.Name)
+                    {
+                        string displayName = reflected.DisplayName;
+                        if (!propertyDescriptors.ContainsKey(displayName))
+                        {
+                            attributes = GetAttributesFromCollection(reflected.Attributes);
+                            PropertyDescriptor descriptor = new DbConnectionStringBuilderDescriptor(reflected.Name,
+                                    reflected.ComponentType, reflected.PropertyType, reflected.IsReadOnly, attributes);
+                            propertyDescriptors[displayName] = descriptor;
+                        }
+                        // else added by derived class first
+                    }
+                    else if (BrowsableConnectionString)
+                    {
+                        propertyDescriptors[ADP.ConnectionString] = reflected;
+                    }
+                    else
+                    {
+                        propertyDescriptors.Remove(ADP.ConnectionString);
+                    }
+                }
+
+                // all keywords in Keys list that do not have strongly typed property, ODBC case
+                if (!IsFixedSize)
+                {
+                    attributes = null;
+                    foreach (string keyword in Keys)
+                    {
+                        if (!propertyDescriptors.ContainsKey(keyword))
+                        {
+                            object value = this[keyword];
+
+                            Type vtype;
+                            if (null != value)
+                            {
+                                vtype = value.GetType();
+                                if (typeof(string) == vtype)
+                                {
+                                    int tmp1;
+                                    if (int.TryParse((string)value, out tmp1))
+                                    {
+                                        vtype = typeof(int);
+                                    }
+                                    else
+                                    {
+                                        bool tmp2;
+                                        if (bool.TryParse((string)value, out tmp2))
+                                        {
+                                            vtype = typeof(bool);
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                vtype = typeof(string);
+                            }
+
+                            Attribute[] useAttributes = attributes;
+                            if (StringComparer.OrdinalIgnoreCase.Equals(DbConnectionStringKeywords.Password, keyword) ||
+                                StringComparer.OrdinalIgnoreCase.Equals(DbConnectionStringSynonyms.Pwd, keyword))
+                            {
+                                useAttributes = new Attribute[] {
+                                    BrowsableAttribute.Yes,
+                                    PasswordPropertyTextAttribute.Yes,
+                                    RefreshPropertiesAttribute.All,
+                                };
+                            }
+                            else if (null == attributes)
+                            {
+                                attributes = new Attribute[] {
+                                    BrowsableAttribute.Yes,
+                                    RefreshPropertiesAttribute.All,
+                                };
+                                useAttributes = attributes;
+                            }
+
+                            PropertyDescriptor descriptor = new DbConnectionStringBuilderDescriptor(keyword,
+                                                                    GetType(), vtype, false, useAttributes);
+                            propertyDescriptors[keyword] = descriptor;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                DataCommonEventSource.Log.ExitScope(logScopeId);
+            }
+        }
+
+        private PropertyDescriptorCollection GetProperties(Attribute[] attributes)
+        {
+            PropertyDescriptorCollection propertyDescriptors = GetProperties();
+            if ((null == attributes) || (0 == attributes.Length))
+            {
+                // Basic case has no filtering
+                return propertyDescriptors;
+            }
+
+            // Create an array that is guaranteed to hold all attributes
+            PropertyDescriptor[] propertiesArray = new PropertyDescriptor[propertyDescriptors.Count];
+
+            // Create an index to reference into this array
+            int index = 0;
+
+            // Iterate over each property
+            foreach (PropertyDescriptor property in propertyDescriptors)
+            {
+                // Identify if this property's attributes match the specification
+                bool match = true;
+                foreach (Attribute attribute in attributes)
+                {
+                    Attribute attr = property.Attributes[attribute.GetType()];
+                    if ((attr == null && !attribute.IsDefaultAttribute()) || !attr.Match(attribute))
+                    {
+                        match = false;
+                        break;
+                    }
+                }
+
+                // If this property matches, add it to the array
+                if (match)
+                {
+                    propertiesArray[index] = property;
+                    index++;
+                }
+            }
+
+            // Create a new array that only contains the filtered properties
+            PropertyDescriptor[] filteredPropertiesArray = new PropertyDescriptor[index];
+            Array.Copy(propertiesArray, filteredPropertiesArray, index);
+
+            return new PropertyDescriptorCollection(filteredPropertiesArray);
+        }
+
+        string ICustomTypeDescriptor.GetClassName()
+        {
+            return TypeDescriptor.GetClassName(this, true);
+        }
+        string ICustomTypeDescriptor.GetComponentName()
+        {
+            return TypeDescriptor.GetComponentName(this, true);
+        }
+        AttributeCollection ICustomTypeDescriptor.GetAttributes()
+        {
+            return TypeDescriptor.GetAttributes(this, true);
+        }
+        object ICustomTypeDescriptor.GetEditor(Type editorBaseType)
+        {
+            return TypeDescriptor.GetEditor(this, editorBaseType, true);
+        }
+        TypeConverter ICustomTypeDescriptor.GetConverter()
+        {
+            return TypeDescriptor.GetConverter(this, true);
+        }
+        PropertyDescriptor ICustomTypeDescriptor.GetDefaultProperty()
+        {
+            return TypeDescriptor.GetDefaultProperty(this, true);
+        }
+        PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties()
+        {
+            return GetProperties();
+        }
+        PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes)
+        {
+            return GetProperties(attributes);
+        }
+        EventDescriptor ICustomTypeDescriptor.GetDefaultEvent()
+        {
+            return TypeDescriptor.GetDefaultEvent(this, true);
+        }
+        EventDescriptorCollection ICustomTypeDescriptor.GetEvents()
+        {
+            return TypeDescriptor.GetEvents(this, true);
+        }
+        EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[] attributes)
+        {
+            return TypeDescriptor.GetEvents(this, attributes, true);
+        }
+        object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor pd)
+        {
+            return this;
         }
     }
 }

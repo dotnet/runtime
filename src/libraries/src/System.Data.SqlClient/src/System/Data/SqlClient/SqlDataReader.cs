@@ -497,7 +497,7 @@ namespace System.Data.SqlClient
             base.Dispose(disposing);
         }
 
-        internal void Close()
+        public override void Close()
         {
             SqlStatistics statistics = null;
             try
@@ -1093,7 +1093,7 @@ namespace System.Data.SqlClient
                 // Wrap the sequential stream in an XmlReader
                 _currentStream = new SqlSequentialStream(this, i);
                 _lastColumnWithDataChunkRead = i;
-                return SqlXml.CreateSqlXmlReader(_currentStream, closeInput: true);
+                return SqlTypeWorkarounds.SqlXmlCreateSqlXmlReader(_currentStream, closeInput: true);
             }
             else
             {
@@ -1103,7 +1103,7 @@ namespace System.Data.SqlClient
                 if (_data[i].IsNull)
                 {
                     // A 'null' stream
-                    return SqlXml.CreateSqlXmlReader(new MemoryStream(Array.Empty<byte>(), writable: false), closeInput: true);
+                    return SqlTypeWorkarounds.SqlXmlCreateSqlXmlReader(new MemoryStream(Array.Empty<byte>(), writable: false), closeInput: true);
                 }
                 else
                 {

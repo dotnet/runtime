@@ -8,6 +8,7 @@ using Xunit;
 
 namespace System.Data.SqlClient.Tests
 {
+    [OuterLoop("Takes minutes on some networks")]
     public class ExceptionTest
     {
         // test connection string

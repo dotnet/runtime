@@ -14,10 +14,10 @@
     <DefineConstants>$(DefineConstants);MANAGED_SNI</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\System.Data.SqlClient.csproj">
-      <Name>System.Data.SqlClient</Name>
-      <OSGroup>$(InputOSGroup)</OSGroup>
-    </ProjectReference>
+    <ProjectReference Include="..\..\pkg\System.Data.SqlClient.pkgproj" />
+    
+    <!-- TODO: Remove Common reference once packages are updated -->
+    <ProjectReference Include="..\..\..\System.Data.Common\pkg\System.Data.Common.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DataCommon\CheckConnStrSetupFactAttribute.cs" />
@@ -67,7 +67,6 @@
     <Compile Include="SQL\RandomStressTest\SqlRandomTypeInfoCollection.cs" />
     <Compile Include="SQL\RandomStressTest\SqlRandomTypesForSqlServer.cs" />
     <Compile Include="SQL\RandomStressTest\RandomStressTest.cs" />
-    <Compile Include="SQL\SqlTypeTest\SqlTypeTest.cs" />
     <Compile Include="SQL\SplitPacketTest\SplitPacketTest.cs" />
     <Compile Include="SQL\TransactionTest\TransactionTest.cs" />
     <Compile Include="SQL\WeakRefTest\WeakRefTest.cs" />

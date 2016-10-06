@@ -3,6 +3,7 @@ using Xunit;
 
 namespace System.Data.SqlClient.Tests
 {
+    [OuterLoop("Takes minutes on some networks")]
     public static class TcpDefaultForAzureTest
     {
         private const string NP = "Named Pipes Provider";

@@ -4456,7 +4456,7 @@ namespace System.Data.SqlClient
                         }
                     }
 
-                    value.SqlBinary = new SqlBinary(b, true);   // doesn't copy the byte array
+                    value.SqlBinary = SqlTypeWorkarounds.SqlBinaryCtor(b, true);
 
                     break;
 
@@ -4734,7 +4734,7 @@ namespace System.Data.SqlClient
                         {
                             return false;
                         }
-                        value.SqlGuid = new SqlGuid(b, true);   // doesn't copy the byte array
+                        value.SqlGuid = SqlTypeWorkarounds.SqlGuidCtor(b, true);
                         break;
                     }
 
@@ -4751,7 +4751,7 @@ namespace System.Data.SqlClient
                         {
                             return false;
                         }
-                        value.SqlBinary = new SqlBinary(b, true);   // doesn't copy the byte array
+                        value.SqlBinary = SqlTypeWorkarounds.SqlBinaryCtor(b, true);
 
                         break;
                     }
@@ -5489,10 +5489,12 @@ namespace System.Data.SqlClient
             else
                 stateObj.WriteByte(0);
 
-            WriteUnsignedInt(d.m_data1, stateObj);
-            WriteUnsignedInt(d.m_data2, stateObj);
-            WriteUnsignedInt(d.m_data3, stateObj);
-            WriteUnsignedInt(d.m_data4, stateObj);
+            uint data1, data2, data3, data4;
+            SqlTypeWorkarounds.SqlDecimalExtractData(d, out data1, out data2, out data3, out data4);
+            WriteUnsignedInt(data1, stateObj);
+            WriteUnsignedInt(data2, stateObj);
+            WriteUnsignedInt(data3, stateObj);
+            WriteUnsignedInt(data4, stateObj);
         }
 
         private void WriteDecimal(decimal value, TdsParserStateObject stateObj)

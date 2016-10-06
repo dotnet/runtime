@@ -2,25 +2,36 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
+using System.ComponentModel;
 using System.Data.ProviderBase;
 using System.Diagnostics;
 
 namespace System.Data.Common
 {
-    internal sealed class DataRecordInternal : DbDataRecord
+    internal sealed class DataRecordInternal : DbDataRecord, ICustomTypeDescriptor
     {
         private SchemaInfo[] _schemaInfo;
         private object[] _values;
-        private BasicFieldNameLookup _fieldNameLookup;
+        private PropertyDescriptorCollection _propertyDescriptors;
+        private FieldNameLookup _fieldNameLookup;
 
         // copy all runtime data information
-        internal DataRecordInternal(SchemaInfo[] schemaInfo, object[] values, BasicFieldNameLookup fieldNameLookup)
+        internal DataRecordInternal(SchemaInfo[] schemaInfo, object[] values, PropertyDescriptorCollection descriptors, FieldNameLookup fieldNameLookup)
         {
             Debug.Assert(null != schemaInfo, "invalid attempt to instantiate DataRecordInternal with null schema information");
             Debug.Assert(null != values, "invalid attempt to instantiate DataRecordInternal with null value[]");
             _schemaInfo = schemaInfo;
             _values = values;
+            _propertyDescriptors = descriptors;
+            _fieldNameLookup = fieldNameLookup;
+        }
+
+        // copy all runtime data information
+        internal DataRecordInternal(object[] values, PropertyDescriptorCollection descriptors, FieldNameLookup fieldNameLookup)
+        {
+            Debug.Assert(null != values, "invalid attempt to instantiate DataRecordInternal with null value[]");
+            _values = values;
+            _propertyDescriptors = descriptors;
             _fieldNameLookup = fieldNameLookup;
         }
 
@@ -117,7 +128,7 @@ namespace System.Data.Common
             // since arrays can't handle 64 bit values and this interface doesn't
             // allow chunked access to data, a dataIndex outside the rang of Int32
             // is invalid
-            if (dataIndex > Int32.MaxValue)
+            if (dataIndex > int.MaxValue)
             {
                 throw ADP.InvalidSourceBufferIndex(cbytes, dataIndex, nameof(dataIndex));
             }
@@ -140,59 +151,66 @@ namespace System.Data.Common
                 }
 
                 // until arrays are 64 bit, we have to do these casts
-                Buffer.BlockCopy(data, ndataIndex, buffer, bufferIndex, (int)cbytes);
+                Array.Copy(data, ndataIndex, buffer, bufferIndex, cbytes);
             }
-            catch (Exception e)
+            catch (Exception e) when (ADP.IsCatchableExceptionType(e))
             {
-                if (ADP.IsCatchableExceptionType(e))
+                cbytes = data.Length;
+
+                if (length < 0)
                 {
-                    cbytes = data.Length;
-
-                    if (length < 0)
-                        throw ADP.InvalidDataLength(length);
-
-                    // if bad buffer index, throw
-                    if (bufferIndex < 0 || bufferIndex >= buffer.Length)
-                        throw ADP.InvalidDestinationBufferIndex(length, bufferIndex, nameof(bufferIndex));
-
-                    // if bad data index, throw
-                    if (dataIndex < 0 || dataIndex >= cbytes)
-                        throw ADP.InvalidSourceBufferIndex(length, dataIndex, nameof(dataIndex));
-
-                    // if there is not enough room in the buffer for data
-                    if (cbytes + bufferIndex > buffer.Length)
-                        throw ADP.InvalidBufferSizeOrIndex(cbytes, bufferIndex);
+                    throw ADP.InvalidDataLength(length);
                 }
 
-                throw;
+                // if bad buffer index, throw
+                if (bufferIndex < 0 || bufferIndex >= buffer.Length)
+                {
+                    throw ADP.InvalidDestinationBufferIndex(length, bufferIndex, nameof(bufferIndex));
+                }
+
+                // if bad data index, throw
+                if (dataIndex < 0 || dataIndex >= cbytes)
+                {
+                    throw ADP.InvalidSourceBufferIndex(length, dataIndex, nameof(dataIndex));
+                }
+
+                // if there is not enough room in the buffer for data
+                if (cbytes + bufferIndex > buffer.Length)
+                {
+                    throw ADP.InvalidBufferSizeOrIndex(cbytes, bufferIndex);
+                }
             }
 
             return cbytes;
         }
 
-        public override char GetChar(int i)
-        {
-            return ((string)_values[i])[0];
-        }
+        public override char GetChar(int i) => ((string)_values[i])[0];
 
         public override long GetChars(int i, long dataIndex, char[] buffer, int bufferIndex, int length)
         {
-            var s = (string)_values[i];
-            int cchars = s.Length;
+            // if the object doesn't contain a char[] then the user will get an exception
+            string s = (string)_values[i];
+
+            char[] data = s.ToCharArray();
+
+            int cchars = data.Length;
 
             // since arrays can't handle 64 bit values and this interface doesn't
             // allow chunked access to data, a dataIndex outside the rang of Int32
             // is invalid
-            if (dataIndex > Int32.MaxValue)
+            if (dataIndex > int.MaxValue)
             {
                 throw ADP.InvalidSourceBufferIndex(cchars, dataIndex, nameof(dataIndex));
             }
 
             int ndataIndex = (int)dataIndex;
 
+
             // if no buffer is passed in, return the number of characters we have
             if (null == buffer)
+            {
                 return cchars;
+            }
 
             try
             {
@@ -200,36 +218,43 @@ namespace System.Data.Common
                 {
                     // help the user out in the case where there's less data than requested
                     if ((ndataIndex + length) > cchars)
+                    {
                         cchars = cchars - ndataIndex;
+                    }
                     else
+                    {
                         cchars = length;
+                    }
                 }
 
-                s.CopyTo(ndataIndex, buffer, bufferIndex, cchars);
+                Array.Copy(data, ndataIndex, buffer, bufferIndex, cchars);
             }
-            catch (Exception e)
+            catch (Exception e) when (ADP.IsCatchableExceptionType(e))
             {
-                if (ADP.IsCatchableExceptionType(e))
+                cchars = data.Length;
+
+                if (length < 0)
                 {
-                    cchars = s.Length;
-
-                    if (length < 0)
-                        throw ADP.InvalidDataLength(length);
-
-                    // if bad buffer index, throw
-                    if (bufferIndex < 0 || bufferIndex >= buffer.Length)
-                        throw ADP.InvalidDestinationBufferIndex(buffer.Length, bufferIndex, nameof(bufferIndex));
-
-                    // if bad data index, throw
-                    if (ndataIndex < 0 || ndataIndex >= cchars)
-                        throw ADP.InvalidSourceBufferIndex(cchars, dataIndex, nameof(dataIndex));
-
-                    // if there is not enough room in the buffer for data
-                    if (cchars + bufferIndex > buffer.Length)
-                        throw ADP.InvalidBufferSizeOrIndex(cchars, bufferIndex);
+                    throw ADP.InvalidDataLength(length);
                 }
 
-                throw;
+                // if bad buffer index, throw
+                if (bufferIndex < 0 || bufferIndex >= buffer.Length)
+                {
+                    throw ADP.InvalidDestinationBufferIndex(buffer.Length, bufferIndex, nameof(bufferIndex));
+                }
+
+                // if bad data index, throw
+                if (ndataIndex < 0 || ndataIndex >= cchars)
+                {
+                    throw ADP.InvalidSourceBufferIndex(cchars, dataIndex, nameof(dataIndex));
+                }
+
+                // if there is not enough room in the buffer for data
+                if (cchars + bufferIndex > buffer.Length)
+                {
+                    throw ADP.InvalidBufferSizeOrIndex(cchars, bufferIndex);
+                }
             }
 
             return cchars;
@@ -241,19 +266,19 @@ namespace System.Data.Common
         }
 
 
-        public override Int16 GetInt16(int i)
+        public override short GetInt16(int i)
         {
-            return ((Int16)_values[i]);
+            return ((short)_values[i]);
         }
 
-        public override Int32 GetInt32(int i)
+        public override int GetInt32(int i)
         {
-            return ((Int32)_values[i]);
+            return ((int)_values[i]);
         }
 
-        public override Int64 GetInt64(int i)
+        public override long GetInt64(int i)
         {
-            return ((Int64)_values[i]);
+            return ((long)_values[i]);
         }
 
         public override float GetFloat(int i)
@@ -271,9 +296,9 @@ namespace System.Data.Common
             return ((string)_values[i]);
         }
 
-        public override Decimal GetDecimal(int i)
+        public override decimal GetDecimal(int i)
         {
-            return ((Decimal)_values[i]);
+            return ((decimal)_values[i]);
         }
 
         public override DateTime GetDateTime(int i)
@@ -284,12 +309,77 @@ namespace System.Data.Common
         public override bool IsDBNull(int i)
         {
             object o = _values[i];
-            return (null == o || o is DBNull);
+            return (null == o || Convert.IsDBNull(o));
         }
 
         //
         // ICustomTypeDescriptor
         //
+
+        AttributeCollection ICustomTypeDescriptor.GetAttributes()
+        {
+            return new AttributeCollection(null);
+        }
+
+        string ICustomTypeDescriptor.GetClassName()
+        {
+            return null;
+        }
+
+        string ICustomTypeDescriptor.GetComponentName()
+        {
+            return null;
+        }
+
+        TypeConverter ICustomTypeDescriptor.GetConverter()
+        {
+            return null;
+        }
+
+        EventDescriptor ICustomTypeDescriptor.GetDefaultEvent()
+        {
+            return null;
+        }
+
+
+        PropertyDescriptor ICustomTypeDescriptor.GetDefaultProperty()
+        {
+            return null;
+        }
+
+        object ICustomTypeDescriptor.GetEditor(Type editorBaseType)
+        {
+            return null;
+        }
+
+        EventDescriptorCollection ICustomTypeDescriptor.GetEvents()
+        {
+            return new EventDescriptorCollection(null);
+        }
+
+        EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[] attributes)
+        {
+            return new EventDescriptorCollection(null);
+        }
+
+        PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties()
+        {
+            return ((ICustomTypeDescriptor)this).GetProperties(null);
+        }
+
+        PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes)
+        {
+            if (_propertyDescriptors == null)
+            {
+                _propertyDescriptors = new PropertyDescriptorCollection(null);
+            }
+            return _propertyDescriptors;
+        }
+
+        object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor pd)
+        {
+            return this;
+        }
     }
 
     // this doesn't change per record, only alloc once
