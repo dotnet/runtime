@@ -125,6 +125,36 @@ namespace System.IO
             Init(stream, encoding, bufferSize, leaveOpen);
         }
 
+        public StreamWriter(string path)
+            : this(path, false, UTF8NoBOM, DefaultBufferSize)
+        {
+        }
+
+        public StreamWriter(string path, bool append)
+            : this(path, append, UTF8NoBOM, DefaultBufferSize)
+        {
+        }
+
+        public StreamWriter(string path, bool append, Encoding encoding)
+            : this(path, append, encoding, DefaultBufferSize)
+        {
+        }
+
+        public StreamWriter(string path, bool append, Encoding encoding, int bufferSize)
+        { 
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+            if (encoding == null)
+                throw new ArgumentNullException(nameof(encoding));
+            if (path.Length == 0)
+                throw new ArgumentException(SR.Argument_EmptyPath);
+            if (bufferSize <= 0)
+                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
+
+            Stream stream = FileStreamHelpers.CreateFileStream(path, write: true, append: append);
+            Init(stream, encoding, bufferSize, shouldLeaveOpen: false);
+        }
+
         private void Init(Stream streamArg, Encoding encodingArg, int bufferSize, bool shouldLeaveOpen)
         {
             _stream = streamArg;
