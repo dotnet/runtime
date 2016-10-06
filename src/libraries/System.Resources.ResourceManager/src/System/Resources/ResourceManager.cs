@@ -130,7 +130,7 @@ namespace System.Resources
 
             if (languageName == null && _neutralResourcesCultureName == null)
             {
-                candidate = _resourceMap.GetValue(resourceName);
+                candidate = _resourceMap.GetValue(resourceName,ResourceContext.GetForViewIndependentUse());
             }
             else
             {
