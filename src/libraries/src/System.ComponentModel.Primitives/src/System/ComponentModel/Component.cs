@@ -16,7 +16,7 @@ namespace System.ComponentModel
         ComVisible(true),
         DesignerCategory("Component")
     ]
-    public class Component : /*TODO NETSTANDARD2.0 MarshalByRefObject, */ IComponent
+    public class Component : MarshalByRefObject, IComponent
     {
         /// <summary>
         ///    <para>Static hask key for the Disposed event. This field is read-only.</para>
