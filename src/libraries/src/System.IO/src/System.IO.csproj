@@ -9,6 +9,7 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
     <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.7;uap10.1</PackageTargetFramework>
+    <NoWarn Condition="'$(TargetGroup)' != 'net462' and '$(TargetGroup)' != 'net463'">CS0436</NoWarn>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -27,6 +28,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
     <StringResourcesPath>Resources/Strings.netcore50aot.resx</StringResourcesPath>
+    <DefineConstants>$(DefineConstants);uap101aot</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetGroup)' == '' Or '$(TargetGroup)'=='netstandard1.6'">
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj">
@@ -38,6 +40,9 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net462' and '$(TargetGroup)' != 'net463'">
     <Compile Include="System\CodeDom\Compiler\IndentedTextWriter.cs" />
+    <Compile Include="System\IO\StreamReader.cs" />
+    <Compile Include="System\IO\StreamWriter.cs" />
+    <Compile Include="System\IO\FileStreamHelpers.cs" />
     <Compile Include="System\IO\BufferedStream.cs" />
     <Compile Include="System\IO\InvalidDataException.cs" />
     <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
@@ -49,8 +54,6 @@
     <Compile Include="System\IO\BinaryWriter.cs" />
     <Compile Include="System\IO\EndOfStreamException.cs" />
     <Compile Include="System\IO\MemoryStream.cs" />
-    <Compile Include="System\IO\StreamReader.cs" />
-    <Compile Include="System\IO\StreamWriter.cs" />
     <Compile Include="System\IO\StringReader.cs" />
     <Compile Include="System\IO\StringWriter.cs" />
     <Compile Include="System\IO\TextReader.cs" />
