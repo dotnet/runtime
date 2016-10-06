@@ -2,18 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections;
-using System.IO;
-using System.Net;
-using System.Security.Permissions;
+using System.Collections.Generic;
 using System.Security.Authentication.ExtendedProtection;
+using System.Security.Permissions;
 
 namespace System.Net.Mail
 {
     internal class SmtpLoginAuthenticationModule : ISmtpAuthenticationModule
     {
-        private Hashtable _sessions = new Hashtable();
+        private Dictionary<object, NetworkCredential> _sessions = new Dictionary<object, NetworkCredential>();
 
         internal SmtpLoginAuthenticationModule()
         {
@@ -26,13 +23,13 @@ namespace System.Net.Mail
         [SecurityPermission(SecurityAction.Assert, Flags = SecurityPermissionFlag.UnmanagedCode)]
         public Authorization Authenticate(string challenge, NetworkCredential credential, object sessionCookie, string spn, ChannelBinding channelBindingToken)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.Web, this, "Authenticate", null);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.Web, this, nameof(Authenticate), null);
             try
             {
                 lock (_sessions)
                 {
-                    NetworkCredential cachedCredential = _sessions[sessionCookie] as NetworkCredential;
-                    if (cachedCredential == null)
+                    NetworkCredential cachedCredential;
+                    if (_sessions.TryGetValue(sessionCookie, out cachedCredential))
                     {
                         if (credential == null || credential is SystemNetworkCredential)
                         {

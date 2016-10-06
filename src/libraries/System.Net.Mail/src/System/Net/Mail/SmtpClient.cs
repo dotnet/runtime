@@ -2,17 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.IO;
 using System.ComponentModel;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Globalization;
+using System.IO;
+using System.Net.NetworkInformation;
 using System.Security;
 using System.Security.Authentication;
-using System.Globalization;
-using System.Security.Permissions;
-using System.Net.NetworkInformation;
 using System.Security.Cryptography.X509Certificates;
+using System.Security.Permissions;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.Mail
 {
@@ -52,20 +52,20 @@ namespace System.Net.Mail
         private ContextAwareResult _operationCompletedResult = null;
         private AsyncOperation _asyncOp = null;
         private static AsyncCallback s_contextSafeCompleteCallback = new AsyncCallback(ContextSafeCompleteCallback);
-        private static int s_defaultPort = 25;
+        private const int DefaultPort = 25;
         internal string clientDomain = null;
         private bool _disposed = false;
         // (async only) For when only some recipients fail.  We still send the e-mail to the others.
         private SmtpFailedRecipientException _failedRecipientException;
         // ports above this limit are invalid
-        private const int maxPortValue = 65535;
+        private const int MaxPortValue = 65535;
         public event SendCompletedEventHandler SendCompleted;
 
         public SmtpClient()
         {
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Enter(NetEventSource.ComponentType.Web, "SmtpClient", ".ctor", "");
+                NetEventSource.Enter(NetEventSource.ComponentType.Web, nameof(SmtpClient), ".ctor", "");
             }
 
             try
@@ -76,7 +76,7 @@ namespace System.Net.Mail
             {
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    NetEventSource.Exit(NetEventSource.ComponentType.Web, "SmtpClient", ".ctor", this);
+                    NetEventSource.Exit(NetEventSource.ComponentType.Web, nameof(SmtpClient), ".ctor", this);
                 }
             }
         }
@@ -85,7 +85,7 @@ namespace System.Net.Mail
         {
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Enter(NetEventSource.ComponentType.Web, "SmtpClient", ".ctor", "host=" + host);
+                NetEventSource.Enter(NetEventSource.ComponentType.Web, nameof(SmtpClient), ".ctor", "host=" + host);
             }
             try
             {
@@ -96,7 +96,7 @@ namespace System.Net.Mail
             {
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    NetEventSource.Exit(NetEventSource.ComponentType.Web, "SmtpClient", ".ctor", this);
+                    NetEventSource.Exit(NetEventSource.ComponentType.Web, nameof(SmtpClient), ".ctor", this);
                 }
             }
         }
@@ -105,7 +105,7 @@ namespace System.Net.Mail
         {
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Enter(NetEventSource.ComponentType.Web, "SmtpClient", ".ctor", "host=" + host + ", port=" + port);
+                NetEventSource.Enter(NetEventSource.ComponentType.Web, nameof(SmtpClient), ".ctor", "host=" + host + ", port=" + port);
             }
 
             try
@@ -123,14 +123,14 @@ namespace System.Net.Mail
             {
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    NetEventSource.Exit(NetEventSource.ComponentType.Web, "SmtpClient", ".ctor", this);
+                    NetEventSource.Exit(NetEventSource.ComponentType.Web, nameof(SmtpClient), ".ctor", this);
                 }
             }
         }
 
         private void Initialize()
         {
-            if (_port == s_defaultPort || _port == 0)
+            if (_port == DefaultPort || _port == 0)
             {
                 new SmtpPermission(SmtpAccess.Connect).Demand();
             }
@@ -150,7 +150,7 @@ namespace System.Net.Mail
 
             if (_port == 0)
             {
-                _port = s_defaultPort;
+                _port = DefaultPort;
             }
 
             if (_targetName == null)
@@ -208,12 +208,12 @@ namespace System.Net.Mail
 
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
 
                 if (value == string.Empty)
                 {
-                    throw new ArgumentException(SR.net_emptystringset, "value");
+                    throw new ArgumentException(SR.net_emptystringset, nameof(value));
                 }
 
                 value = value.Trim();
@@ -243,7 +243,7 @@ namespace System.Net.Mail
                     throw new ArgumentOutOfRangeException("value");
                 }
 
-                if (value != s_defaultPort)
+                if (value != DefaultPort)
                 {
                     new SmtpPermission(SmtpAccess.ConnectToUnrestrictedPort).Demand();
                 }
@@ -436,7 +436,7 @@ namespace System.Net.Mail
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException(this.GetType().FullName);
+                throw new ObjectDisposedException(GetType().FullName);
             }
             //validation happends in MailMessage constructor
             MailMessage mailMessage = new MailMessage(from, recipients, subject, body);
@@ -452,7 +452,7 @@ namespace System.Net.Mail
 
             if (_disposed)
             {
-                throw new ObjectDisposedException(this.GetType().FullName);
+                throw new ObjectDisposedException(GetType().FullName);
             }
             try
             {
@@ -471,7 +471,7 @@ namespace System.Net.Mail
 
                 if (message == null)
                 {
-                    throw new ArgumentNullException("message");
+                    throw new ArgumentNullException(nameof(message));
                 }
 
                 if (DeliveryMethod == SmtpDeliveryMethod.Network)
@@ -517,7 +517,7 @@ namespace System.Net.Mail
                 {
                     InCall = true;
                     _timedOut = false;
-                    _timer = new Timer(new TimerCallback(this.TimeOutCallback), null, Timeout, Timeout);
+                    _timer = new Timer(new TimerCallback(TimeOutCallback), null, Timeout, Timeout);
                     bool allowUnicode = false;
                     string pickupDirectory = PickupDirectoryLocation;
 
@@ -601,7 +601,7 @@ namespace System.Net.Mail
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException(this.GetType().FullName);
+                throw new ObjectDisposedException(GetType().FullName);
             }
             SendAsync(new MailMessage(from, recipients, subject, body), userToken);
         }
@@ -611,7 +611,7 @@ namespace System.Net.Mail
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException(this.GetType().FullName);
+                throw new ObjectDisposedException(GetType().FullName);
             }
 
             if (NetEventSource.Log.IsEnabled())
@@ -633,7 +633,7 @@ namespace System.Net.Mail
 
                 if (message == null)
                 {
-                    throw new ArgumentNullException("message");
+                    throw new ArgumentNullException(nameof(message));
                 }
 
                 if (DeliveryMethod == SmtpDeliveryMethod.Network)
@@ -689,8 +689,7 @@ namespace System.Net.Mail
                     switch (DeliveryMethod)
                     {
                         case SmtpDeliveryMethod.PickupDirectoryFromIis:
-                            //pickupDirectory = IisPickupDirectory.GetPickupDirectory();
-                            goto case SmtpDeliveryMethod.SpecifiedPickupDirectory;
+                            throw new NotSupportedException(SR.SmtpGetIisPickupDirectoryNotSupported);
 
                         case SmtpDeliveryMethod.SpecifiedPickupDirectory:
                             {
@@ -772,7 +771,7 @@ namespace System.Net.Mail
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException(this.GetType().FullName);
+                throw new ObjectDisposedException(GetType().FullName);
             }
             if (NetEventSource.Log.IsEnabled())
             {
@@ -825,13 +824,16 @@ namespace System.Net.Mail
             // Register a handler that will transfer completion results to the TCS Task
             SendCompletedEventHandler handler = null;
             handler = (sender, e) => HandleCompletion(tcs, e, handler);
-            this.SendCompleted += handler;
+            SendCompleted += handler;
 
             // Start the async operation.
-            try { this.SendAsync(message, tcs); }
+            try
+            {
+                SendAsync(message, tcs);
+            }
             catch
             {
-                this.SendCompleted -= handler;
+                SendCompleted -= handler;
                 throw;
             }
 
@@ -843,7 +845,7 @@ namespace System.Net.Mail
         {
             if (e.UserState == tcs)
             {
-                try { this.SendCompleted -= handler; }
+                try { SendCompleted -= handler; }
                 finally
                 {
                     if (e.Error != null) tcs.TrySetException(e.Error);
@@ -875,7 +877,7 @@ namespace System.Net.Mail
             {
                 throw new InvalidOperationException(SR.UnspecifiedHost);
             }
-            if (_port <= 0 || _port > maxPortValue)
+            if (_port <= 0 || _port > MaxPortValue)
             {
                 throw new InvalidOperationException(SR.InvalidPort);
             }

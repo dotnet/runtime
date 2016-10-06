@@ -230,7 +230,7 @@ namespace System.Net
                     _parent._storedOffset += _read;
                     if (_read == count || !_parent._readMore)
                     {
-                        this.InvokeCallback();
+                        InvokeCallback();
                         return;
                     }
                     count -= _read;

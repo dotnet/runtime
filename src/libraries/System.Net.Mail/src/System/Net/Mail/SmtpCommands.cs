@@ -5,16 +5,16 @@
 using System;
 using System.Collections;
 using System.Globalization;
-using System.Text;
 using System.IO;
 using System.Net.Mime;
+using System.Text;
 
 namespace System.Net.Mail
 {
     internal static class CheckCommand
     {
-        private static AsyncCallback s_onReadLine = new AsyncCallback(OnReadLine);
-        private static AsyncCallback s_onWrite = new AsyncCallback(OnWrite);
+        private static readonly AsyncCallback s_onReadLine = new AsyncCallback(OnReadLine);
+        private static readonly AsyncCallback s_onWrite = new AsyncCallback(OnWrite);
 
         internal static IAsyncResult BeginSend(SmtpConnection conn, AsyncCallback callback, object state)
         {
@@ -105,8 +105,8 @@ namespace System.Net.Mail
 
     internal static class ReadLinesCommand
     {
-        private static AsyncCallback s_onReadLines = new AsyncCallback(OnReadLines);
-        private static AsyncCallback s_onWrite = new AsyncCallback(OnWrite);
+        private static readonly AsyncCallback s_onReadLines = new AsyncCallback(OnReadLines);
+        private static readonly AsyncCallback s_onWrite = new AsyncCallback(OnWrite);
 
         internal static IAsyncResult BeginSend(SmtpConnection conn, AsyncCallback callback, object state)
         {

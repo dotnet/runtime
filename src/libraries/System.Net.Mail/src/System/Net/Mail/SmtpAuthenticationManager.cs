@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
+using System.Collections.Generic;
 
 namespace System.Net.Mail
 {
     internal static class SmtpAuthenticationManager
     {
-        private static ArrayList s_modules = new ArrayList();
+        private static List<ISmtpAuthenticationModule> s_modules = new List<ISmtpAuthenticationModule>();
 
         static SmtpAuthenticationManager()
         {
@@ -18,7 +18,7 @@ namespace System.Net.Mail
         internal static void Register(ISmtpAuthenticationModule module)
         {
             if (module == null)
-                throw new ArgumentNullException("module");
+                throw new ArgumentNullException(nameof(module));
 
             lock (s_modules)
             {

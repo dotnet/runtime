@@ -44,15 +44,15 @@ namespace System.Net.Mail
                 perm = new SmtpPermission(PermissionState.None);
                 if (_access != null)
                 {
-                    if (0 == string.Compare(_access, "Connect", StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(_access, "Connect", StringComparison.OrdinalIgnoreCase))
                     {
                         perm.AddPermission(SmtpAccess.Connect);
                     }
-                    else if (0 == string.Compare(_access, "ConnectToUnrestrictedPort", StringComparison.OrdinalIgnoreCase))
+                    else if (string.Equals(_access, "ConnectToUnrestrictedPort", StringComparison.OrdinalIgnoreCase))
                     {
                         perm.AddPermission(SmtpAccess.ConnectToUnrestrictedPort);
                     }
-                    else if (0 == string.Compare(_access, "None", StringComparison.OrdinalIgnoreCase))
+                    else if (string.Equals(_access, "None", StringComparison.OrdinalIgnoreCase))
                     {
                         perm.AddPermission(SmtpAccess.None);
                     }
@@ -135,12 +135,12 @@ namespace System.Net.Mail
         {
             if (target == null)
             {
-                return this.Copy();
+                return Copy();
             }
             SmtpPermission other = target as SmtpPermission;
             if (other == null)
             {
-                throw new ArgumentException(SR.Format(SR.net_perm_target), "target");
+                throw new ArgumentException(SR.Format(SR.net_perm_target), nameof(target));
             }
 
             if (_unrestricted || other.IsUnrestricted())
@@ -161,7 +161,7 @@ namespace System.Net.Mail
             SmtpPermission other = target as SmtpPermission;
             if (other == null)
             {
-                throw new ArgumentException(SR.Format(SR.net_perm_target), "target");
+                throw new ArgumentException(SR.Format(SR.net_perm_target), nameof(target));
             }
 
             if (IsUnrestricted() && other.IsUnrestricted())
@@ -183,7 +183,7 @@ namespace System.Net.Mail
             SmtpPermission other = target as SmtpPermission;
             if (other == null)
             {
-                throw new ArgumentException(SR.Format(SR.net_perm_target), "target");
+                throw new ArgumentException(SR.Format(SR.net_perm_target), nameof(target));
             }
 
             if (_unrestricted && !other.IsUnrestricted())
@@ -198,22 +198,22 @@ namespace System.Net.Mail
         {
             if (securityElement == null)
             {
-                throw new ArgumentNullException("securityElement");
+                throw new ArgumentNullException(nameof(securityElement));
             }
             if (!securityElement.Tag.Equals("IPermission"))
             {
-                throw new ArgumentException(SR.net_not_ipermission, "securityElement");
+                throw new ArgumentException(SR.net_not_ipermission, nameof(securityElement));
             }
 
             string className = securityElement.Attribute("class");
 
             if (className == null)
             {
-                throw new ArgumentException(SR.net_no_classname, "securityElement");
+                throw new ArgumentException(SR.net_no_classname, nameof(securityElement));
             }
-            if (className.IndexOf(this.GetType().FullName) < 0)
+            if (className.IndexOf(GetType().FullName) < 0)
             {
-                throw new ArgumentException(SR.net_no_typename, "securityElement");
+                throw new ArgumentException(SR.net_no_typename, nameof(securityElement));
             }
 
             String str = securityElement.Attribute("Unrestricted");
@@ -253,7 +253,7 @@ namespace System.Net.Mail
         {
             SecurityElement securityElement = new SecurityElement("IPermission");
 
-            securityElement.AddAttribute("class", this.GetType().FullName + ", " + this.GetType().Module.Assembly.FullName.Replace('\"', '\''));
+            securityElement.AddAttribute("class", GetType().FullName + ", " + GetType().Module.Assembly.FullName.Replace('\"', '\''));
             securityElement.AddAttribute("version", "1");
 
             if (_unrestricted)

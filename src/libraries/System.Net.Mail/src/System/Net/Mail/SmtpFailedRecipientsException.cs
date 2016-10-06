@@ -2,8 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 using System.Security.Permissions;
@@ -43,28 +42,23 @@ namespace System.Net.Mail
         {
             if (innerExceptions == null)
             {
-                throw new ArgumentNullException("innerExceptions");
+                throw new ArgumentNullException(nameof(innerExceptions));
             }
 
             _innerExceptions = innerExceptions == null ? new SmtpFailedRecipientException[0] : innerExceptions;
         }
 
-        internal SmtpFailedRecipientsException(ArrayList innerExceptions, bool allFailed) :
+        internal SmtpFailedRecipientsException(List<SmtpFailedRecipientException> innerExceptions, bool allFailed) :
             base(allFailed ? SR.Format(SR.SmtpAllRecipientsFailed) : SR.Format(SR.SmtpRecipientFailed),
-            innerExceptions != null && innerExceptions.Count > 0 ? ((SmtpFailedRecipientException)innerExceptions[0]).FailedRecipient : null,
-            innerExceptions != null && innerExceptions.Count > 0 ? (SmtpFailedRecipientException)innerExceptions[0] : null)
+            innerExceptions != null && innerExceptions.Count > 0 ? innerExceptions[0].FailedRecipient : null,
+            innerExceptions != null && innerExceptions.Count > 0 ? innerExceptions[0] : null)
         {
             if (innerExceptions == null)
             {
-                throw new ArgumentNullException("innerExceptions");
+                throw new ArgumentNullException(nameof(innerExceptions));
             }
 
-            _innerExceptions = new SmtpFailedRecipientException[innerExceptions.Count];
-            int i = 0;
-            foreach (SmtpFailedRecipientException e in innerExceptions)
-            {
-                _innerExceptions[i++] = e;
-            }
+            _innerExceptions = innerExceptions.ToArray();
         }
 
         public SmtpFailedRecipientException[] InnerExceptions

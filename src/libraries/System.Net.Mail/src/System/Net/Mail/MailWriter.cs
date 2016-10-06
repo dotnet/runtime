@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.IO;
 using System.Collections.Specialized;
+using System.IO;
 using System.Net.Mime;
 
 namespace System.Net.Mail
@@ -25,7 +25,7 @@ namespace System.Net.Mail
         internal override void WriteHeaders(NameValueCollection headers, bool allowUnicode)
         {
             if (headers == null)
-                throw new ArgumentNullException("headers");
+                throw new ArgumentNullException(nameof(headers));
 
             foreach (string key in headers)
             {

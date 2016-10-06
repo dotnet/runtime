@@ -34,9 +34,9 @@ namespace System.Net.Mail
         // Parse a comma separated list of MailAddress's
         //
         // Throws a FormatException if any MailAddress is invalid.
-        internal static IList<MailAddress> ParseMultipleAddresses(string data)
+        internal static List<MailAddress> ParseMultipleAddresses(string data)
         {
-            IList<MailAddress> results = new List<MailAddress>();
+            List<MailAddress> results = new List<MailAddress>();
             int index = data.Length - 1;
             while (index >= 0)
             {
@@ -64,7 +64,7 @@ namespace System.Net.Mail
         // Throws a FormatException if any part of the MailAddress is invalid.
         private static MailAddress ParseAddress(string data, bool expectMultipleAddresses, ref int index)
         {
-            Debug.Assert(!String.IsNullOrEmpty(data));
+            Debug.Assert(!string.IsNullOrEmpty(data));
             Debug.Assert(index >= 0 && index < data.Length, "Index out of range: " + index + ", " + data.Length);
 
             // Parsed components to be assembled as a MailAddress later
@@ -122,7 +122,7 @@ namespace System.Net.Mail
             }
             else
             {
-                displayName = String.Empty;
+                displayName = string.Empty;
             }
 
             return new MailAddress(displayName, localPart, domain);
@@ -302,7 +302,7 @@ namespace System.Net.Mail
 
                 // Do not include the Comma (if any), and because there were no bounding quotes, 
                 // trim extra whitespace.
-                displayName = data.Substring(index + 1, startingIndex - index).Trim();
+                displayName = data.SubstringTrim(index + 1, startingIndex - index);
             }
             return NormalizeOrThrow(displayName);
         }

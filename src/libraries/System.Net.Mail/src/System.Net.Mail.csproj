@@ -122,6 +122,9 @@
     <Compile Include="$(CommonPath)\System\Net\Logging\WebEventSource.cs">
       <Link>Common\System\Net\Logging\WebEventSource.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\StringExtensions.cs">
+      <Link>Common\System\StringExtensions.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true' And '$(TargetGroup)' != 'net463'">
     <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Unix.cs">
