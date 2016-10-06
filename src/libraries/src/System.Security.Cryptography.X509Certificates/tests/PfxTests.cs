@@ -95,7 +95,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 {
                     byte[] hash = new byte[20];
                     byte[] sig = rsa.SignHash(hash, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
-                    Assert.Equal(s_expectedSig, sig);
+                    Assert.Equal(TestData.PfxSha1Empty_ExpectedSig, sig);
                 }
             }
         }
@@ -199,10 +199,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal(algorithmId, cng.Key.Algorithm.Algorithm);
             }
         }
-
-        private static readonly byte[] s_expectedSig =
-            ("44b15120b8c7de19b4968d761600ffb8c54e5d0c1bcaba0880a20ab48912c8fdfa81b28134eabf58f3211a0d1eefdaae115e7872d5a67045c3b62a5da4393940e5a496"
-          + "413a6d55ea6309d0013e90657c83c6e40aa8fafeee66acbb6661c1419011e1fde6f4fcc328bd7e537e4aa2dbe216d8f1f3aa7e5ec60eb9cfdca7a41d74").HexToByteArray();
 
         private static X509Certificate2 Rewrap(this X509Certificate2 c)
         {

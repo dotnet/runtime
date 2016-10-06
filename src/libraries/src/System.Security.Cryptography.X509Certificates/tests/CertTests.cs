@@ -67,6 +67,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 Assert.Equal(notAfter, cert2.NotAfter);
                 Assert.Equal(notBefore, cert2.NotBefore);
+#if netstandard17
+                Assert.Equal(notAfter.ToString(), cert2.GetExpirationDateString());
+                Assert.Equal(notBefore.ToString(), cert2.GetEffectiveDateString());
+#endif
 
                 Assert.Equal("00D01E4090000046520000000100000004", cert2.SerialNumber);
                 Assert.Equal("1.2.840.113549.1.1.5", cert2.SignatureAlgorithm.Value);

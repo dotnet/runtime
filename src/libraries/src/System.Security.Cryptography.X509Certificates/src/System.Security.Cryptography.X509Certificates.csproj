@@ -10,14 +10,9 @@
     <ProjectGuid>{6F8576C2-6CD0-4DF3-8394-00B002D82E40}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Security.Cryptography.X509Certificates</AssemblyName>
-    <AssemblyVersion Condition="'$(TargetGroup)'=='net46'">4.0.0.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46' OR '$(TargetGroup)'=='net461'">true</IsPartialFacadeAssembly>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)'==''">.NETStandard,Version=v1.6</NuGetTargetMoniker>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(TargetGroup)' == 'netcore50' and '$(ProjectJson)' == '' ">
-    <ProjectJson>netcore50/project.json</ProjectJson>
-    <ProjectLockJson>netcore50/project.lock.json</ProjectLockJson>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net463'">true</IsPartialFacadeAssembly>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)'==''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' AND '$(IsPartialFacadeAssembly)' != 'true' AND '$(ProjectJson)' == '' ">
     <ProjectJson>win/project.json</ProjectJson>
@@ -31,11 +26,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(TargetGroup)' == 'netcore50'">
-    <DefineConstants>$(DefineConstants);NETNATIVE</DefineConstants>
-  </PropertyGroup>
   <ItemGroup Condition=" '$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="Internal\Cryptography\ICertificatePal.cs" />
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleCache.cs">
@@ -81,6 +71,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\X509ExtensionCollection.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509ExtensionEnumerator.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509FindType.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509IncludeOption.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509KeyStorageFlags.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509KeyUsageExtension.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509KeyUsageFlags.cs" />
@@ -93,7 +84,6 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\X509VerificationFlags.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' AND '$(IsPartialFacadeAssembly)' != 'true'">
-    <Compile Include="System\Security\Cryptography\DSACryptoServiceProviderStub.cs" />
     <Compile Include="Internal\Cryptography\Pal.Windows\CertificatePal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Windows\CertificatePal.CspParametersStub.cs" />
     <Compile Include="Internal\Cryptography\Pal.Windows\CertificatePal.Import.cs" />
