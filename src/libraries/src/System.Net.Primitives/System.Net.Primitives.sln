@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.23107.0
+VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{6E4D87E9-CECA-43AD-9163-D4E858FB146C}"
 EndProject
@@ -38,9 +38,9 @@ Global
 		Unix_Debug|Any CPU = Unix_Debug|Any CPU
 		Unix_Release|Any CPU = Unix_Release|Any CPU
 		Windows_Debug|Any CPU = Windows_Debug|Any CPU
-		Windows_netcore50_Debug|Any CPU = Windows_netcore50_Debug|Any CPU
-		Windows_netcore50_Release|Any CPU = Windows_netcore50_Release|Any CPU
 		Windows_Release|Any CPU = Windows_Release|Any CPU
+		Windows_uap101_Debug|Any CPU = Windows_uap101_Debug|Any CPU
+		Windows_uap101_Release|Any CPU = Windows_uap101_Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{048A8C3E-BD42-46A5-9A6E-07624A1D3AE8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -57,12 +57,12 @@ Global
 		{048A8C3E-BD42-46A5-9A6E-07624A1D3AE8}.Unix_Release|Any CPU.Build.0 = Debug|Any CPU
 		{048A8C3E-BD42-46A5-9A6E-07624A1D3AE8}.Windows_Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{048A8C3E-BD42-46A5-9A6E-07624A1D3AE8}.Windows_Debug|Any CPU.Build.0 = Debug|Any CPU
-		{048A8C3E-BD42-46A5-9A6E-07624A1D3AE8}.Windows_netcore50_Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{048A8C3E-BD42-46A5-9A6E-07624A1D3AE8}.Windows_netcore50_Debug|Any CPU.Build.0 = Debug|Any CPU
-		{048A8C3E-BD42-46A5-9A6E-07624A1D3AE8}.Windows_netcore50_Release|Any CPU.ActiveCfg = Debug|Any CPU
-		{048A8C3E-BD42-46A5-9A6E-07624A1D3AE8}.Windows_netcore50_Release|Any CPU.Build.0 = Debug|Any CPU
 		{048A8C3E-BD42-46A5-9A6E-07624A1D3AE8}.Windows_Release|Any CPU.ActiveCfg = Debug|Any CPU
 		{048A8C3E-BD42-46A5-9A6E-07624A1D3AE8}.Windows_Release|Any CPU.Build.0 = Debug|Any CPU
+		{048A8C3E-BD42-46A5-9A6E-07624A1D3AE8}.Windows_uap101_Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{048A8C3E-BD42-46A5-9A6E-07624A1D3AE8}.Windows_uap101_Debug|Any CPU.Build.0 = Debug|Any CPU
+		{048A8C3E-BD42-46A5-9A6E-07624A1D3AE8}.Windows_uap101_Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{048A8C3E-BD42-46A5-9A6E-07624A1D3AE8}.Windows_uap101_Release|Any CPU.Build.0 = Debug|Any CPU
 		{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}.Debug|Any CPU.ActiveCfg = Windows_Debug|Any CPU
 		{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}.Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
 		{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}.net46_Debug|Any CPU.ActiveCfg = Windows_Release|Any CPU
@@ -77,12 +77,12 @@ Global
 		{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}.Unix_Release|Any CPU.Build.0 = Unix_Release|Any CPU
 		{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}.Windows_Debug|Any CPU.ActiveCfg = Windows_Debug|Any CPU
 		{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}.Windows_Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
-		{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}.Windows_netcore50_Debug|Any CPU.ActiveCfg = Windows_netcore50_Debug|Any CPU
-		{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}.Windows_netcore50_Debug|Any CPU.Build.0 = Windows_netcore50_Debug|Any CPU
-		{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}.Windows_netcore50_Release|Any CPU.ActiveCfg = Windows_netcore50_Release|Any CPU
-		{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}.Windows_netcore50_Release|Any CPU.Build.0 = Windows_netcore50_Release|Any CPU
 		{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}.Windows_Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
 		{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}.Windows_Release|Any CPU.Build.0 = Windows_Release|Any CPU
+		{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}.Windows_uap101_Debug|Any CPU.ActiveCfg = Windows_uap101_Release|Any CPU
+		{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}.Windows_uap101_Debug|Any CPU.Build.0 = Windows_uap101_Release|Any CPU
+		{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}.Windows_uap101_Release|Any CPU.ActiveCfg = Windows_uap101_Release|Any CPU
+		{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}.Windows_uap101_Release|Any CPU.Build.0 = Windows_uap101_Release|Any CPU
 		{4FE5ECEE-ACC5-4558-A946-573426599B73}.Debug|Any CPU.ActiveCfg = Windows_Debug|Any CPU
 		{4FE5ECEE-ACC5-4558-A946-573426599B73}.Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
 		{4FE5ECEE-ACC5-4558-A946-573426599B73}.net46_Debug|Any CPU.ActiveCfg = Windows_Release|Any CPU
@@ -97,12 +97,12 @@ Global
 		{4FE5ECEE-ACC5-4558-A946-573426599B73}.Unix_Release|Any CPU.Build.0 = Unix_Release|Any CPU
 		{4FE5ECEE-ACC5-4558-A946-573426599B73}.Windows_Debug|Any CPU.ActiveCfg = Windows_Debug|Any CPU
 		{4FE5ECEE-ACC5-4558-A946-573426599B73}.Windows_Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
-		{4FE5ECEE-ACC5-4558-A946-573426599B73}.Windows_netcore50_Debug|Any CPU.ActiveCfg = Windows_Release|Any CPU
-		{4FE5ECEE-ACC5-4558-A946-573426599B73}.Windows_netcore50_Debug|Any CPU.Build.0 = Windows_Release|Any CPU
-		{4FE5ECEE-ACC5-4558-A946-573426599B73}.Windows_netcore50_Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
-		{4FE5ECEE-ACC5-4558-A946-573426599B73}.Windows_netcore50_Release|Any CPU.Build.0 = Windows_Release|Any CPU
 		{4FE5ECEE-ACC5-4558-A946-573426599B73}.Windows_Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
 		{4FE5ECEE-ACC5-4558-A946-573426599B73}.Windows_Release|Any CPU.Build.0 = Windows_Release|Any CPU
+		{4FE5ECEE-ACC5-4558-A946-573426599B73}.Windows_uap101_Debug|Any CPU.ActiveCfg = Windows_Release|Any CPU
+		{4FE5ECEE-ACC5-4558-A946-573426599B73}.Windows_uap101_Debug|Any CPU.Build.0 = Windows_Release|Any CPU
+		{4FE5ECEE-ACC5-4558-A946-573426599B73}.Windows_uap101_Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
+		{4FE5ECEE-ACC5-4558-A946-573426599B73}.Windows_uap101_Release|Any CPU.Build.0 = Windows_Release|Any CPU
 		{7860A11A-1841-4416-8A30-28EEEB42C6BB}.Debug|Any CPU.ActiveCfg = Windows_Debug|Any CPU
 		{7860A11A-1841-4416-8A30-28EEEB42C6BB}.Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
 		{7860A11A-1841-4416-8A30-28EEEB42C6BB}.net46_Debug|Any CPU.ActiveCfg = Windows_Release|Any CPU
@@ -117,12 +117,12 @@ Global
 		{7860A11A-1841-4416-8A30-28EEEB42C6BB}.Unix_Release|Any CPU.Build.0 = Unix_Release|Any CPU
 		{7860A11A-1841-4416-8A30-28EEEB42C6BB}.Windows_Debug|Any CPU.ActiveCfg = Windows_Debug|Any CPU
 		{7860A11A-1841-4416-8A30-28EEEB42C6BB}.Windows_Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
-		{7860A11A-1841-4416-8A30-28EEEB42C6BB}.Windows_netcore50_Debug|Any CPU.ActiveCfg = Windows_Release|Any CPU
-		{7860A11A-1841-4416-8A30-28EEEB42C6BB}.Windows_netcore50_Debug|Any CPU.Build.0 = Windows_Release|Any CPU
-		{7860A11A-1841-4416-8A30-28EEEB42C6BB}.Windows_netcore50_Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
-		{7860A11A-1841-4416-8A30-28EEEB42C6BB}.Windows_netcore50_Release|Any CPU.Build.0 = Windows_Release|Any CPU
 		{7860A11A-1841-4416-8A30-28EEEB42C6BB}.Windows_Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
 		{7860A11A-1841-4416-8A30-28EEEB42C6BB}.Windows_Release|Any CPU.Build.0 = Windows_Release|Any CPU
+		{7860A11A-1841-4416-8A30-28EEEB42C6BB}.Windows_uap101_Debug|Any CPU.ActiveCfg = Windows_Release|Any CPU
+		{7860A11A-1841-4416-8A30-28EEEB42C6BB}.Windows_uap101_Debug|Any CPU.Build.0 = Windows_Release|Any CPU
+		{7860A11A-1841-4416-8A30-28EEEB42C6BB}.Windows_uap101_Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
+		{7860A11A-1841-4416-8A30-28EEEB42C6BB}.Windows_uap101_Release|Any CPU.Build.0 = Windows_Release|Any CPU
 		{86256B36-4C78-4A71-A80A-CCA35C4AE758}.Debug|Any CPU.ActiveCfg = Windows_Debug|Any CPU
 		{86256B36-4C78-4A71-A80A-CCA35C4AE758}.Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
 		{86256B36-4C78-4A71-A80A-CCA35C4AE758}.net46_Debug|Any CPU.ActiveCfg = Windows_Release|Any CPU
@@ -137,12 +137,12 @@ Global
 		{86256B36-4C78-4A71-A80A-CCA35C4AE758}.Unix_Release|Any CPU.Build.0 = Unix_Release|Any CPU
 		{86256B36-4C78-4A71-A80A-CCA35C4AE758}.Windows_Debug|Any CPU.ActiveCfg = Windows_Debug|Any CPU
 		{86256B36-4C78-4A71-A80A-CCA35C4AE758}.Windows_Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
-		{86256B36-4C78-4A71-A80A-CCA35C4AE758}.Windows_netcore50_Debug|Any CPU.ActiveCfg = Windows_Release|Any CPU
-		{86256B36-4C78-4A71-A80A-CCA35C4AE758}.Windows_netcore50_Debug|Any CPU.Build.0 = Windows_Release|Any CPU
-		{86256B36-4C78-4A71-A80A-CCA35C4AE758}.Windows_netcore50_Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
-		{86256B36-4C78-4A71-A80A-CCA35C4AE758}.Windows_netcore50_Release|Any CPU.Build.0 = Windows_Release|Any CPU
 		{86256B36-4C78-4A71-A80A-CCA35C4AE758}.Windows_Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
 		{86256B36-4C78-4A71-A80A-CCA35C4AE758}.Windows_Release|Any CPU.Build.0 = Windows_Release|Any CPU
+		{86256B36-4C78-4A71-A80A-CCA35C4AE758}.Windows_uap101_Debug|Any CPU.ActiveCfg = Windows_Release|Any CPU
+		{86256B36-4C78-4A71-A80A-CCA35C4AE758}.Windows_uap101_Debug|Any CPU.Build.0 = Windows_Release|Any CPU
+		{86256B36-4C78-4A71-A80A-CCA35C4AE758}.Windows_uap101_Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
+		{86256B36-4C78-4A71-A80A-CCA35C4AE758}.Windows_uap101_Release|Any CPU.Build.0 = Windows_Release|Any CPU
 		{FCFF9C63-CE7A-476E-8241-7B7236FFDBFB}.Debug|Any CPU.ActiveCfg = Windows_Debug|Any CPU
 		{FCFF9C63-CE7A-476E-8241-7B7236FFDBFB}.Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
 		{FCFF9C63-CE7A-476E-8241-7B7236FFDBFB}.net46_Debug|Any CPU.ActiveCfg = Windows_Release|Any CPU
@@ -157,12 +157,12 @@ Global
 		{FCFF9C63-CE7A-476E-8241-7B7236FFDBFB}.Unix_Release|Any CPU.Build.0 = Unix_Release|Any CPU
 		{FCFF9C63-CE7A-476E-8241-7B7236FFDBFB}.Windows_Debug|Any CPU.ActiveCfg = Windows_Debug|Any CPU
 		{FCFF9C63-CE7A-476E-8241-7B7236FFDBFB}.Windows_Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
-		{FCFF9C63-CE7A-476E-8241-7B7236FFDBFB}.Windows_netcore50_Debug|Any CPU.ActiveCfg = Windows_Release|Any CPU
-		{FCFF9C63-CE7A-476E-8241-7B7236FFDBFB}.Windows_netcore50_Debug|Any CPU.Build.0 = Windows_Release|Any CPU
-		{FCFF9C63-CE7A-476E-8241-7B7236FFDBFB}.Windows_netcore50_Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
-		{FCFF9C63-CE7A-476E-8241-7B7236FFDBFB}.Windows_netcore50_Release|Any CPU.Build.0 = Windows_Release|Any CPU
 		{FCFF9C63-CE7A-476E-8241-7B7236FFDBFB}.Windows_Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
 		{FCFF9C63-CE7A-476E-8241-7B7236FFDBFB}.Windows_Release|Any CPU.Build.0 = Windows_Release|Any CPU
+		{FCFF9C63-CE7A-476E-8241-7B7236FFDBFB}.Windows_uap101_Debug|Any CPU.ActiveCfg = Windows_Release|Any CPU
+		{FCFF9C63-CE7A-476E-8241-7B7236FFDBFB}.Windows_uap101_Debug|Any CPU.Build.0 = Windows_Release|Any CPU
+		{FCFF9C63-CE7A-476E-8241-7B7236FFDBFB}.Windows_uap101_Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
+		{FCFF9C63-CE7A-476E-8241-7B7236FFDBFB}.Windows_uap101_Release|Any CPU.Build.0 = Windows_Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
