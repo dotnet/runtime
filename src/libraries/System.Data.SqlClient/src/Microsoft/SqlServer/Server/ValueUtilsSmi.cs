@@ -3100,7 +3100,7 @@ namespace Microsoft.SqlServer.Server
 
             Int64 temp = getters.GetInt64(sink, ordinal);
             sink.ProcessMessagesAndThrow();
-            return new SqlMoney(temp, 1 /* ignored */ );
+            return SqlTypeWorkarounds.SqlMoneyCtor(temp, 1 /* ignored */ );
         }
 
         private static SqlXml GetSqlXml_Unchecked(SmiEventSink_Default sink, ITypedGettersV3 getters, int ordinal)
@@ -3561,7 +3561,7 @@ namespace Microsoft.SqlServer.Server
                     sink.ProcessMessagesAndThrow();
                 }
 
-                setters.SetInt64(sink, ordinal, value.ToSqlInternalRepresentation());
+                setters.SetInt64(sink, ordinal, SqlTypeWorkarounds.SqlMoneyToSqlInternalRepresentation(value));
             }
             sink.ProcessMessagesAndThrow();
         }

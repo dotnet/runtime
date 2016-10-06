@@ -178,7 +178,7 @@ namespace System.Data.SqlClient
             }
             set
             {
-                Debug.Assert((value & SqlString.x_iValidSqlCompareOptionMask) == value, "invalid set_SqlCompareOptions value");
+                Debug.Assert((value & SqlTypeWorkarounds.SqlStringValidSqlCompareOptionMask) == value, "invalid set_SqlCompareOptions value");
                 uint tmp = 0;
                 if (0 != (value & SqlCompareOptions.IgnoreCase))
                     tmp |= IgnoreCase;
