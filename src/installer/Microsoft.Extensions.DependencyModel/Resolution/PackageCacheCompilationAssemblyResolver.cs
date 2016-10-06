@@ -51,8 +51,12 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
                 string packagePath;
                 if (ResolverUtils.TryResolvePackagePath(_fileSystem, library, _packageCacheDirectory, out packagePath))
                 {
-                    var hashAlgorithm = library.Hash.Substring(0, hashSplitterPos);
-                    var cacheHashFileName = $"{library.Name.ToLowerInvariant()}.{library.Version.ToLowerInvariant()}.nupkg.{hashAlgorithm}";
+                    string cacheHashFileName = library.HashPath;
+                    if (string.IsNullOrEmpty(cacheHashFileName))
+                    {
+                        var hashAlgorithm = library.Hash.Substring(0, hashSplitterPos);
+                        cacheHashFileName = $"{library.Name}.{library.Version}.nupkg.{hashAlgorithm}";
+                    }
                     var cacheHashPath = Path.Combine(packagePath, cacheHashFileName);
 
                     if (_fileSystem.File.Exists(cacheHashPath) &&

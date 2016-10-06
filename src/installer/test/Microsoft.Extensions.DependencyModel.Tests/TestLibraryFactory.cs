@@ -12,8 +12,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         public static readonly string DefaultVersion = "1.2.3.7";
         public static readonly Dependency[] DefaultDependencies = { };
         public static readonly bool DefaultServiceable = true;
-        public static readonly string DefaultPath = "MyPackagePath";
-        public static readonly string DefaultHashPath = "MyPackageHashPath";
+        public static readonly string DefaultPath = null;
+        public static readonly string DefaultHashPath = null;
 
         public static readonly string DefaultAssembly = "My.Package.dll";
         public static readonly string SecondAssembly = "My.PackageEx.dll";
