@@ -12,6 +12,7 @@
     <AssemblyName>System.Security.Cryptography.Encoding.Tests</AssemblyName>
     <RootNamespace>System.Security.Cryptography.Encoding.Tests</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants Condition="'$(TargetGroup)'==''">$(DefineConstants);netstandard17</DefineConstants>
     <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>

@@ -2,11 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Diagnostics;
-using System.Security.Cryptography;
-
 using Internal.Cryptography;
+using System.ComponentModel;
 
 namespace System.Security.Cryptography
 {
@@ -27,6 +24,12 @@ namespace System.Security.Cryptography
             this.HashName = HashAlgorithmNames.SHA1;
             _hMacCommon = new HMACCommon(HashAlgorithmNames.SHA1, key, BlockSize);
             base.Key = _hMacCommon.ActualKey; 
+        }
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public HMACSHA1(byte[] key, bool useManagedSha1) : this(key)
+        {
+            // useManagedSha1 is ignored
         }
 
         public override int HashSize

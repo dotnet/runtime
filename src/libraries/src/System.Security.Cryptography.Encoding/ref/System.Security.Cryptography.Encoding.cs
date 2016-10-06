@@ -25,9 +25,9 @@ namespace System.Security.Cryptography
         public AsnEncodedDataCollection() { }
         public AsnEncodedDataCollection(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
         public int Count { get { return default(int); } }
+        public bool IsSynchronized { get { return default(bool); } }
         public System.Security.Cryptography.AsnEncodedData this[int index] { get { return default(System.Security.Cryptography.AsnEncodedData); } }
-        bool System.Collections.ICollection.IsSynchronized { get { return default(bool); } }
-        object System.Collections.ICollection.SyncRoot { get { return default(object); } }
+        public object SyncRoot { get { return default(object); } }
         public int Add(System.Security.Cryptography.AsnEncodedData asnEncodedData) { return default(int); }
         public void CopyTo(System.Security.Cryptography.AsnEncodedData[] array, int index) { }
         public System.Security.Cryptography.AsnEncodedDataEnumerator GetEnumerator() { return default(System.Security.Cryptography.AsnEncodedDataEnumerator); }
@@ -65,6 +65,7 @@ namespace System.Security.Cryptography
     }
     public sealed partial class Oid
     {
+        public Oid() { }
         public Oid(System.Security.Cryptography.Oid oid) { }
         public Oid(string oid) { }
         public Oid(string value, string friendlyName) { }
@@ -77,10 +78,10 @@ namespace System.Security.Cryptography
     {
         public OidCollection() { }
         public int Count { get { return default(int); } }
+        public bool IsSynchronized { get { return default(bool); } }
         public System.Security.Cryptography.Oid this[int index] { get { return default(System.Security.Cryptography.Oid); } }
         public System.Security.Cryptography.Oid this[string oid] { get { return default(System.Security.Cryptography.Oid); } }
-        bool System.Collections.ICollection.IsSynchronized { get { return default(bool); } }
-        object System.Collections.ICollection.SyncRoot { get { return default(object); } }
+        public object SyncRoot { get { return default(object); } }
         public int Add(System.Security.Cryptography.Oid oid) { return default(int); }
         public void CopyTo(System.Security.Cryptography.Oid[] array, int index) { }
         public System.Security.Cryptography.OidEnumerator GetEnumerator() { return default(System.Security.Cryptography.OidEnumerator); }
