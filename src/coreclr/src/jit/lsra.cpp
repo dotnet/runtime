@@ -8497,23 +8497,10 @@ void LinearScan::resolveRegisters()
                     varDsc->lvArgInitReg = initialReg;
                     JITDUMP("  Set V%02u argument initial register to %s\n", lclNum, getRegName(initialReg));
                 }
-                if (!varDsc->lvIsRegArg)
-                {
-                    // stack arg
-                    if (compiler->lvaIsFieldOfDependentlyPromotedStruct(varDsc))
-                    {
-                        if (sourceReg != initialReg)
-                        {
-                            // The code generator won't initialize struct
-                            // fields, so we have to do that if it's not already
-                            // where it belongs.
-                            assert(interval->isStructField);
-                            JITDUMP("  Move struct field param V%02u from %s to %s\n", lclNum, getRegName(sourceReg),
-                                    getRegName(initialReg));
-                            insertMove(insertionBlock, insertionPoint, lclNum, sourceReg, initialReg);
-                        }
-                    }
-                }
+
+                // Stack args that are part of dependently-promoted structs should never be register candidates (see
+                // LinearScan::isRegCandidate).
+                assert(varDsc->lvIsRegArg || !compiler->lvaIsFieldOfDependentlyPromotedStruct(varDsc));
             }
 
             // If lvRegNum is REG_STK, that means that either no register
@@ -8647,6 +8634,8 @@ void LinearScan::insertMove(
     BasicBlock* block, GenTreePtr insertionPoint, unsigned lclNum, regNumber fromReg, regNumber toReg)
 {
     LclVarDsc* varDsc = compiler->lvaTable + lclNum;
+    // the lclVar must be a register candidate
+    assert(isRegCandidate(varDsc));
     // One or both MUST be a register
     assert(fromReg != REG_STK || toReg != REG_STK);
     // They must not be the same register.
@@ -8655,20 +8644,22 @@ void LinearScan::insertMove(
     // This var can't be marked lvRegister now
     varDsc->lvRegNum = REG_STK;
 
-    var_types lclTyp = varDsc->TypeGet();
-    if (varDsc->lvNormalizeOnStore())
-    {
-        lclTyp = genActualType(lclTyp);
-    }
-    GenTreePtr src              = compiler->gtNewLclvNode(lclNum, lclTyp);
+    GenTreePtr src              = compiler->gtNewLclvNode(lclNum, varDsc->TypeGet());
     src->gtLsraInfo.isLsraAdded = true;
-    GenTreePtr top;
 
-    // If we are moving from STK to reg, mark the lclVar nodes with GTF_SPILLED
-    // Otherwise, if we are moving from reg to stack, mark it as GTF_SPILL
-    // Finally, for a reg-to-reg move, generate a GT_COPY
+    // There are three cases we need to handle:
+    // - We are loading a lclVar from the stack.
+    // - We are storing a lclVar to the stack.
+    // - We are copying a lclVar between registers.
+    //
+    // In the first and second cases, the lclVar node will be marked with GTF_SPILLED and GTF_SPILL, respectively.
+    // It is up to the code generator to ensure that any necessary normalization is done when loading or storing the
+    // lclVar's value.
+    //
+    // In the third case, we generate GT_COPY(GT_LCL_VAR) and type each node with the normalized type of the lclVar.
+    // This is safe because a lclVar is always normalized once it is in a register.
 
-    top = src;
+    GenTree* dst = src;
     if (fromReg == REG_STK)
     {
         src->gtFlags |= GTF_SPILLED;
@@ -8682,21 +8673,22 @@ void LinearScan::insertMove(
     }
     else
     {
-        top = new (compiler, GT_COPY) GenTreeCopyOrReload(GT_COPY, varDsc->TypeGet(), src);
+        var_types movType = genActualType(varDsc->TypeGet());
+        src->gtType       = movType;
+
+        dst = new (compiler, GT_COPY) GenTreeCopyOrReload(GT_COPY, movType, src);
         // This is the new home of the lclVar - indicate that by clearing the GTF_VAR_DEATH flag.
         // Note that if src is itself a lastUse, this will have no effect.
-        top->gtFlags &= ~(GTF_VAR_DEATH);
+        dst->gtFlags &= ~(GTF_VAR_DEATH);
         src->gtRegNum = fromReg;
         src->SetInReg();
-        top->gtRegNum                 = toReg;
-        src->gtNext                   = top;
-        top->gtPrev                   = src;
+        dst->gtRegNum                 = toReg;
         src->gtLsraInfo.isLocalDefUse = false;
-        top->gtLsraInfo.isLsraAdded   = true;
+        dst->gtLsraInfo.isLsraAdded   = true;
     }
-    top->gtLsraInfo.isLocalDefUse = true;
+    dst->gtLsraInfo.isLocalDefUse = true;
 
-    LIR::Range  treeRange  = LIR::SeqTree(compiler, top);
+    LIR::Range  treeRange  = LIR::SeqTree(compiler, dst);
     LIR::Range& blockRange = LIR::AsRange(block);
 
     if (insertionPoint != nullptr)
