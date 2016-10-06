@@ -8578,7 +8578,7 @@ void LinearScan::insertMove(
     // - We are storing a lclVar to the stack.
     // - We are copying a lclVar between registers.
     //
-    // In the first and second cases, the lclVar node will be marked with GTF_SPILLED and GTF_SPILL, respetively.
+    // In the first and second cases, the lclVar node will be marked with GTF_SPILLED and GTF_SPILL, respectively.
     // It is up to the code generator to ensure that any necessary normalization is done when loading or storing the
     // lclVar's value.
     //
@@ -8599,7 +8599,6 @@ void LinearScan::insertMove(
     }
     else
     {
-        // If wer 
         var_types movType = genActualType(varDsc->TypeGet());
         src->gtType       = movType;
 
