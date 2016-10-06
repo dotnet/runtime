@@ -9,7 +9,7 @@ namespace System.IO.IsolatedStorage
     public class DeleteFileTests : IsoStorageTest
     {
         [Fact]
-        public void DeleteFile_ThrowsArugmentNull()
+        public void DeleteFile_ThrowsArgumentNull()
         {
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())
             {
@@ -64,9 +64,7 @@ namespace System.IO.IsolatedStorage
 
             using (var isf = GetPresetScope(scope))
             {
-                using (var stream = isf.OpenFile("DeleteFile_DeletesFile", FileMode.Create))
-                {
-                }
+                isf.CreateTestFile("DeleteFile_DeletesFile");
 
                 Assert.True(isf.FileExists("DeleteFile_DeletesFile"));
                 isf.DeleteFile("DeleteFile_DeletesFile");

@@ -32,9 +32,11 @@
     "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0040"
   },
   "frameworks": {
-    "netstandard1.7": {}
+    "netstandard1.7": {},
+    "net463": {}
   },
   "supports": {
-    "coreFx.Test.netcoreapp1.1": {}
+    "coreFx.Test.netcoreapp1.1": {},
+    "coreFx.Test.net463": {}
   }
 }

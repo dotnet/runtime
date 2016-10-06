@@ -628,6 +628,7 @@ namespace System.IO.IsolatedStorage
 
         internal void EnsureStoreIsValid()
         {
+            // This validation is something we only did in Silverlight previously.
             if (Disposed)
                 throw new ObjectDisposedException(null, SR.IsolatedStorage_StoreNotOpen);
 
