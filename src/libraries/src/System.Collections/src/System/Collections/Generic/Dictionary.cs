@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
@@ -427,14 +428,14 @@ namespace System.Collections.Generic
 
                 if (array == null)
                 {
-                    throw new SerializationException(ExceptionResource.Serialization_MissingKeys);
+                    throw new SerializationException(SR.Serialization_MissingKeys);
                 }
 
                 for (int i = 0; i < array.Length; i++)
                 {
                     if (array[i].Key == null)
                     {
-                        throw new SerializationException(ExceptionResource.Serialization_NullKey);
+                        throw new SerializationException(SR.Serialization_NullKey);
                     }
                     Insert(array[i].Key, array[i].Value, true);
                 }

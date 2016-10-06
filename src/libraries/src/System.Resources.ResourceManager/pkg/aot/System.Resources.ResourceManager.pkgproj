@@ -5,5 +5,10 @@
     <PackageTargetRuntime>aot</PackageTargetRuntime>
     <PreventImplementationReference>true</PreventImplementationReference>
   </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\System.Resources.ResourceManager.csproj">
+      <TargetGroup>uap101aot</TargetGroup>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

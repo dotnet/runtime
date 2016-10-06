@@ -228,4 +228,7 @@
   <data name="Serialization_MissingValues" xml:space="preserve">
     <value>The values for this dictionary are missing.</value>
   </data>
+  <data name="Serialization_NullKey" xml:space="preserve"> 
+    <value>One of the serialized keys is null.</value>
+  </data> 
 </root>
