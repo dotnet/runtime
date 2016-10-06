@@ -88,112 +88,93 @@ namespace System.ComponentModel.Design
                 }
 
                 Uri licenseFile = null;
+                // the AppDomain.CurrentDomain.SetupInformation.LicenseFile always returns null.
+                // This means we have to find the license file using the fallback logic below.
+                if (resourceAssembly == null)
+                {
+                    resourceAssembly = Assembly.GetEntryAssembly();
+                }
 
                 if (resourceAssembly == null)
                 {
                     Debug.WriteLineIf(s_runtimeLicenseContextSwitch.TraceVerbose, "resourceAssembly is null");
-                    //TODO NETSTANDARD2.0 - //(string)AppDomain.CurrentDomain.SetupInformation.LicenseFile;
-                    string rawFile = System.Stub.AppDomain_CurrentDomain_SetupInformation_LicenseFile();
-                    Debug.WriteLineIf(s_runtimeLicenseContextSwitch.TraceVerbose, "rawfile: " + rawFile);
-                    string codeBase;
+                    // If Assembly.EntryAssembly returns null, then we will 
+                    // try everything!
+                    // 
 
-                    codeBase = AppDomain.CurrentDomain.BaseDirectory;
-
-                    if (rawFile != null && codeBase != null)
+                    //TODO: NETSTANDARD2.0 -  AppDomain.CurrentDomain.GetAssemblies()
+                    foreach (Assembly asm in System.Stub.AppDomain_CurrentDomain_GetAssemblies())
                     {
-                        licenseFile = new Uri(new Uri(codeBase), rawFile);
-                    }
-                }
+                        // Though, I could not repro this, we seem to be hitting an AssemblyBuilder
+                        // when walking through all the assemblies in the current app domain. This throws an 
+                        // exception on Assembly.CodeBase and we bail out. Catching exceptions here is not a 
+                        // bad thing.
+                        if (asm.IsDynamic)
+                            continue;
 
-                if (licenseFile == null)
-                {
-                    if (resourceAssembly == null)
-                    {
-                        resourceAssembly = Assembly.GetEntryAssembly();
-                    }
-
-                    if (resourceAssembly == null)
-                    {
-                        Debug.WriteLineIf(s_runtimeLicenseContextSwitch.TraceVerbose, "resourceAssembly is null");
-                        // If Assembly.EntryAssembly returns null, then we will 
-                        // try everything!
-                        // 
-
-                        //TODO: NETSTANDARD2.0 -  AppDomain.CurrentDomain.GetAssemblies()
-                        foreach (Assembly asm in System.Stub.AppDomain_CurrentDomain_GetAssemblies())
-                        {
-                            // Though, I could not repro this, we seem to be hitting an AssemblyBuilder
-                            // when walking through all the assemblies in the current app domain. This throws an 
-                            // exception on Assembly.CodeBase and we bail out. Catching exceptions here is not a 
-                            // bad thing.
-                            if (asm.IsDynamic)
-                                continue;
-
-                            // file://fullpath/foo.exe
-                            //
-                            string fileName;
-
-                            // TODO NESTANDARD2.0: asm.EscapedCodeBase
-                            fileName = GetLocalPath(System.Stub.Assembly_EscapedCodeBase());
-                            fileName = new FileInfo(fileName).Name;
-
-                            Stream s = asm.GetManifestResourceStream(fileName + ".licenses");
-                            if (s == null)
-                            {
-                                //Since the casing may be different depending on how the assembly was loaded, 
-                                //we'll do a case insensitive lookup for this manifest resource stream...
-                                s = CaseInsensitiveManifestResourceStreamLookup(asm, fileName + ".licenses");
-                            }
-
-                            if (s != null)
-                            {
-                                DesigntimeLicenseContextSerializer.Deserialize(s, fileName.ToUpper(CultureInfo.InvariantCulture), this);
-                                break;
-                            }
-                        }
-                    }
-                    else if (!resourceAssembly.IsDynamic)
-                    { // EscapedCodeBase won't be supported by emitted assemblies anyway
-                        Debug.WriteLineIf(s_runtimeLicenseContextSwitch.TraceVerbose, "resourceAssembly is not null");
+                        // file://fullpath/foo.exe
+                        //
                         string fileName;
 
-                        //TODO NETSTANDARD2.0: resourceAssembly.EscapedCodeBase
+                        // TODO NESTANDARD2.0: asm.EscapedCodeBase
                         fileName = GetLocalPath(System.Stub.Assembly_EscapedCodeBase());
+                        fileName = new FileInfo(fileName).Name;
 
-                        fileName = Path.GetFileName(fileName); // we don't want to use FileInfo here... it requests FileIOPermission that we
-                        // might now have... see VSWhidbey 527758
-                        string licResourceName = fileName + ".licenses";
-                        // first try the filename
-                        Stream s = resourceAssembly.GetManifestResourceStream(licResourceName);
+                        Stream s = asm.GetManifestResourceStream(fileName + ".licenses");
                         if (s == null)
                         {
-                            string resolvedName = null;
-                            CompareInfo comparer = CultureInfo.InvariantCulture.CompareInfo;
-                            string shortAssemblyName = resourceAssembly.GetName().Name;
-                            //  if the assembly has been renamed, we try our best to find a good match in the available resources
-                            // by looking at the assembly name (which doesn't change even after a file rename) + ".exe.licenses" or + ".dll.licenses"
-                            foreach (String existingName in resourceAssembly.GetManifestResourceNames())
-                            {
-                                if (comparer.Compare(existingName, licResourceName, CompareOptions.IgnoreCase) == 0 ||
-                                 comparer.Compare(existingName, shortAssemblyName + ".exe.licenses", CompareOptions.IgnoreCase) == 0 ||
-                                 comparer.Compare(existingName, shortAssemblyName + ".dll.licenses", CompareOptions.IgnoreCase) == 0)
-                                {
-                                    resolvedName = existingName;
-                                    break;
-                                }
-                            }
-                            if (resolvedName != null)
-                            {
-                                s = resourceAssembly.GetManifestResourceStream(resolvedName);
-                            }
+                            //Since the casing may be different depending on how the assembly was loaded, 
+                            //we'll do a case insensitive lookup for this manifest resource stream...
+                            s = CaseInsensitiveManifestResourceStreamLookup(asm, fileName + ".licenses");
                         }
+
                         if (s != null)
                         {
                             DesigntimeLicenseContextSerializer.Deserialize(s, fileName.ToUpper(CultureInfo.InvariantCulture), this);
+                            break;
                         }
                     }
                 }
+                else if (!resourceAssembly.IsDynamic)
+                { // EscapedCodeBase won't be supported by emitted assemblies anyway
+                    Debug.WriteLineIf(s_runtimeLicenseContextSwitch.TraceVerbose, "resourceAssembly is not null");
+                    string fileName;
 
+                    //TODO NETSTANDARD2.0: resourceAssembly.EscapedCodeBase
+                    fileName = GetLocalPath(System.Stub.Assembly_EscapedCodeBase());
+
+                    fileName = Path.GetFileName(fileName); // we don't want to use FileInfo here... it requests FileIOPermission that we
+                    // might now have... see VSWhidbey 527758
+                    string licResourceName = fileName + ".licenses";
+                    // first try the filename
+                    Stream s = resourceAssembly.GetManifestResourceStream(licResourceName);
+                    if (s == null)
+                    {
+                        string resolvedName = null;
+                        CompareInfo comparer = CultureInfo.InvariantCulture.CompareInfo;
+                        string shortAssemblyName = resourceAssembly.GetName().Name;
+                        //  if the assembly has been renamed, we try our best to find a good match in the available resources
+                        // by looking at the assembly name (which doesn't change even after a file rename) + ".exe.licenses" or + ".dll.licenses"
+                        foreach (String existingName in resourceAssembly.GetManifestResourceNames())
+                        {
+                            if (comparer.Compare(existingName, licResourceName, CompareOptions.IgnoreCase) == 0 ||
+                             comparer.Compare(existingName, shortAssemblyName + ".exe.licenses", CompareOptions.IgnoreCase) == 0 ||
+                             comparer.Compare(existingName, shortAssemblyName + ".dll.licenses", CompareOptions.IgnoreCase) == 0)
+                            {
+                                resolvedName = existingName;
+                                break;
+                            }
+                        }
+                        if (resolvedName != null)
+                        {
+                            s = resourceAssembly.GetManifestResourceStream(resolvedName);
+                        }
+                    }
+                    if (s != null)
+                    {
+                        DesigntimeLicenseContextSerializer.Deserialize(s, fileName.ToUpper(CultureInfo.InvariantCulture), this);
+                    }
+                }
 
                 if (licenseFile != null)
                 {
