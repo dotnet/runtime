@@ -285,7 +285,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             TType genericType = DecodeType(ref blobReader);
             ImmutableArray<TType> types = DecodeTypeSequence(ref blobReader);
-            return _provider.GetGenericInstance(genericType, types);
+            return _provider.GetGenericInstantiation(genericType, types);
         }
 
         private TType DecodeModifiedType(ref BlobReader blobReader, bool isRequired)

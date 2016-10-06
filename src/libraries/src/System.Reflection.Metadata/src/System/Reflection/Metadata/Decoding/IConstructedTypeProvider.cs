@@ -11,7 +11,7 @@ namespace System.Reflection.Metadata
         /// <summary>
         /// Gets the type symbol for a generic instantiation of the given generic type with the given type arguments.
         /// </summary>
-        TType GetGenericInstance(TType genericType, ImmutableArray<TType> typeArguments);
+        TType GetGenericInstantiation(TType genericType, ImmutableArray<TType> typeArguments);
 
         /// <summary>
         /// Gets the type symbol for a generalized array of the given element type and shape. 

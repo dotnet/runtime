@@ -171,7 +171,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
             return elementType + " pinned";
         }
 
-        public virtual string GetGenericInstance(string genericType, ImmutableArray<string> typeArguments)
+        public virtual string GetGenericInstantiation(string genericType, ImmutableArray<string> typeArguments)
         {
             return genericType + "<" + String.Join(",", typeArguments) + ">";
         }

@@ -236,7 +236,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
             public void ByReference(ref int i) { }
             public T GenericTypeParameter;
             public U GenericMethodParameter<U>() { throw null; }
-            public List<int> GenericInstance;
+            public List<int> GenericInstantiation;
             public struct Nested { }
             public Nested Property { get { throw null; } }
             public event EventHandler<EventArgs> Event { add { } remove { } }
@@ -327,7 +327,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
                 { "SZArray", "int32[]" },
                 { "Array", "int32[0...,0...]" },
                 { "GenericTypeParameter", "!T" },
-                { "GenericInstance", "[System.Collections]System.Collections.Generic.List`1<int32>" },
+                { "GenericInstantiation", "[System.Collections]System.Collections.Generic.List`1<int32>" },
             };
         }
 
