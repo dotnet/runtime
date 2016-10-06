@@ -135,6 +135,7 @@
   <ItemGroup Condition="'$(TargetGroup)'==''">
     <Compile Include="AsymmetricSignatureFormatterTests.cs" />
     <Compile Include="DSASignatureFormatterTests.cs" />
+    <Compile Include="ECDiffieHellmanPublicKeyTests.cs" />
     <Compile Include="RSAKeyExchangeFormatterTests.cs" />
     <Compile Include="RSASignatureFormatterTests.cs" />
     <Compile Include="DefaultDSAProvider.cs" />

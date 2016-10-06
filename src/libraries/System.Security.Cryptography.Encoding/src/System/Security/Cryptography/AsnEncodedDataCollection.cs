@@ -96,7 +96,7 @@ namespace System.Security.Cryptography
              _list.CopyTo(array, index);
         }
 
-        bool ICollection.IsSynchronized
+        public bool IsSynchronized
         {
             get
             {
@@ -104,7 +104,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        object ICollection.SyncRoot
+        public object SyncRoot
         {
             get
             {

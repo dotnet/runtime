@@ -81,9 +81,9 @@ namespace System.Security.Cryptography
             _list.CopyTo(array, index);
         }
 
-        bool ICollection.IsSynchronized => false;
+        public bool IsSynchronized => false;
 
-        object ICollection.SyncRoot => this;
+        public object SyncRoot => this;
 
         private readonly List<Oid> _list;
     }

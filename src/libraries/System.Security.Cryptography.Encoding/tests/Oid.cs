@@ -15,6 +15,12 @@ namespace System.Security.Cryptography.Encoding.Tests
             Oid oid = new Oid("");
             Assert.Equal("", oid.Value);
             Assert.Null(oid.FriendlyName);
+
+#if netstandard17
+            oid = new Oid();
+            Assert.Null(oid.Value);
+            Assert.Null(oid.FriendlyName);
+#endif            
         }
 
         [Theory]

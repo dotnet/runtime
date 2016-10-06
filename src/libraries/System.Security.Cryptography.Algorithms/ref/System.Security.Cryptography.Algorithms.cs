@@ -151,6 +151,14 @@ namespace System.Security.Cryptography
             public static System.Security.Cryptography.ECCurve nistP521 { get { return default(System.Security.Cryptography.ECCurve); } }
         }
     }
+    public abstract partial class ECDiffieHellmanPublicKey : System.IDisposable
+    {
+        protected ECDiffieHellmanPublicKey(byte[] keyBlob) { }
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
+        public virtual byte[] ToByteArray() { return default(byte[]); }
+        public virtual string ToXmlString() { return default(string); }
+    }
     public abstract partial class ECDsa : System.Security.Cryptography.AsymmetricAlgorithm
     {
         protected ECDsa() { }
@@ -201,6 +209,8 @@ namespace System.Security.Cryptography
     {
         public HMACSHA1() { }
         public HMACSHA1(byte[] key) { }
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+        public HMACSHA1(byte[] key, bool useManagedSha1) { }
         public override int HashSize { get { return default(int); } }
         public override byte[] Key { get { return default(byte[]); } set { } }
         protected override void Dispose(bool disposing) { }

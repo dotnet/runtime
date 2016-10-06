@@ -64,6 +64,18 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
             Assert.Equal(digestBytes, computedDigest);
         }
 
+        protected void VerifyHmac_KeyAlreadySet(
+            HMAC hmac,
+            int testCaseId,
+            string digest)
+        {
+            byte[] digestBytes = ByteUtils.HexToByteArray(digest);
+            byte[] computedDigest;
+
+            computedDigest = hmac.ComputeHash(_testData[testCaseId]);
+            Assert.Equal(digestBytes, computedDigest);
+        }
+
         protected void VerifyHmacRfc2104_2()
         {
             // Ensure that keys shorter than the threshold don't get altered.
