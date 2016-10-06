@@ -158,12 +158,12 @@ namespace System.Reflection.Metadata.Decoding.Tests
 
         public virtual string GetGenericMethodParameter(DisassemblingGenericContext genericContext, int index)
         {
-            return "!!" + (genericContext == null ? index.ToString() : genericContext.MethodParameters[index]);
+            return "!!" + genericContext.MethodParameters[index];
         }
 
         public virtual string GetGenericTypeParameter(DisassemblingGenericContext genericContext, int index)
         {
-            return "!" + (genericContext == null ? index.ToString() : genericContext.TypeParameters[index]);
+            return "!" + genericContext.TypeParameters[index];
         }
 
         public virtual string GetPinnedType(string elementType)
