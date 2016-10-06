@@ -10,19 +10,24 @@ namespace System.Reflection.Metadata.Decoding.Tests
     // Used for test signature blobs that we didn't get from an actual metadata reader.
     internal class OpaqueTokenTypeProvider : DisassemblingTypeProvider
     {
-        public override string GetTypeFromHandle(MetadataReader reader, EntityHandle handle)
+        public override string GetTypeFromHandle(MetadataReader reader, DisassemblingGenericContext genericContext, EntityHandle handle)
         {
-            return MetadataTokens.GetToken(handle).ToString("X");
+            return FormatToken(handle);
         }
 
         public override string GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
         {
-            return GetTypeFromHandle(reader, handle);
+            return FormatToken(handle);
         }
 
         public override string GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
         {
-            return GetTypeFromHandle(reader, handle);
+            return FormatToken(handle);
+        }
+
+        private static string FormatToken(EntityHandle handle)
+        {
+            return MetadataTokens.GetToken(handle).ToString("X");
         }
     }
 }
