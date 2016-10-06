@@ -29,9 +29,9 @@ namespace System.Net.Mail
                 lock (_sessions)
                 {
                     NetworkCredential cachedCredential;
-                    if (_sessions.TryGetValue(sessionCookie, out cachedCredential))
+                    if (!_sessions.TryGetValue(sessionCookie, out cachedCredential))
                     {
-                        if (credential == null || credential is SystemNetworkCredential)
+                        if (credential == null || ReferenceEquals(credential, CredentialCache.DefaultNetworkCredentials))
                         {
                             return null;
                         }

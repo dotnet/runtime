@@ -70,7 +70,6 @@
     <Compile Include="System\Net\Mail\SmtpReplyReaderFactory.cs" />
     <Compile Include="System\Net\Mail\SmtpStatusCode.cs" />
     <Compile Include="System\Net\Mail\SmtpTransport.cs" />
-    <Compile Include="System\Net\SystemNetworkCredential.cs" />
     <Compile Include="System\Net\Mail\SmtpLoginAuthenticationModule.cs" />
     <Compile Include="System\Net\DelegatedStream.cs" />
     <Compile Include="System\Net\Mail\TlsStream.cs" />

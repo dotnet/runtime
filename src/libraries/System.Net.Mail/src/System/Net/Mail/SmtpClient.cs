@@ -259,7 +259,7 @@ namespace System.Net.Mail
         {
             get
             {
-                return (_transport.Credentials is SystemNetworkCredential) ? true : false;
+                return ReferenceEquals(_transport.Credentials, CredentialCache.DefaultNetworkCredentials) ? true : false;
             }
             set
             {
@@ -683,7 +683,7 @@ namespace System.Net.Mail
                     CredentialCache cache;
                     // Skip token capturing if no credentials are used or they don't include a default one.
                     // Also do capture the token if ICredential is not of CredentialCache type so we don't know what the exact credential response will be.
-                    _transport.IdentityRequired = Credentials != null && (Credentials is SystemNetworkCredential || (cache = Credentials as CredentialCache) == null);
+                    _transport.IdentityRequired = Credentials != null && (ReferenceEquals(Credentials, CredentialCache.DefaultNetworkCredentials) || (cache = Credentials as CredentialCache) == null);
 
                     _asyncOp = AsyncOperationManager.CreateOperation(userToken);
                     switch (DeliveryMethod)
@@ -870,7 +870,7 @@ namespace System.Net.Mail
                 _inCall = value;
             }
         }
-        
+
         private void CheckHostAndPort()
         {
             if (_host == null || _host.Length == 0)

@@ -396,7 +396,7 @@ namespace System.Net.Mail
         private Authorization SetContextAndTryAuthenticate(ISmtpAuthenticationModule module, NetworkCredential credential, ContextAwareResult context)
         {
             // We may need to restore user thread token here
-            if (credential is SystemNetworkCredential)
+            if (ReferenceEquals(credential, CredentialCache.DefaultNetworkCredentials))
             {
                 // CONSIDER: Change to a real runtime check that throws InvalidOperationException to help catch customer race conditions.
 #if DEBUG
