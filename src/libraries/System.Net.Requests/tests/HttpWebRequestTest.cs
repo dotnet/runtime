@@ -23,6 +23,7 @@ namespace System.Net.Tests
         private WebHeaderCollection _savedResponseHeaders = null;
         private Exception _savedRequestStreamException = null;
         private Exception _savedResponseException = null;
+
         private int _requestStreamCallbackCallCount = 0;
         private int _responseCallbackCallCount = 0;
         private readonly ITestOutputHelper _output;
@@ -360,7 +361,7 @@ namespace System.Net.Tests
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
             request.UseDefaultCredentials = true;
-            WebResponse response = await request.GetResponseAsync();
+            await request.GetResponseAsync();
         }
 
         [OuterLoop] // fails on networks with DNS servers that provide a dummy page for invalid addresses
@@ -456,7 +457,7 @@ namespace System.Net.Tests
         public async Task SimpleScenario_UseGETVerb_Success(Uri remoteServer)
         {
             HttpWebRequest request = HttpWebRequest.CreateHttp(remoteServer);
-            HttpWebResponse response = (HttpWebResponse) await request.GetResponseAsync();
+            HttpWebResponse response = (HttpWebResponse)await request.GetResponseAsync();
             Stream responseStream = response.GetResponseStream();
             String responseBody;
             using (var sr = new StreamReader(responseStream))
@@ -478,7 +479,7 @@ namespace System.Net.Tests
                 requestStream.Write(_requestBodyBytes, 0, _requestBodyBytes.Length);
             }
 
-            HttpWebResponse response = (HttpWebResponse) await request.GetResponseAsync();
+            HttpWebResponse response = (HttpWebResponse)await request.GetResponseAsync();
 
             Stream responseStream = response.GetResponseStream();
             String responseBody;
@@ -495,8 +496,8 @@ namespace System.Net.Tests
         {
             HttpWebRequest request = HttpWebRequest.CreateHttp(remoteServer);
             request.ContentType = "application/json";
-            
-            HttpWebResponse response = (HttpWebResponse) await request.GetResponseAsync();
+
+            HttpWebResponse response = (HttpWebResponse)await request.GetResponseAsync();
             Stream responseStream = response.GetResponseStream();
             String responseBody;
             using (var sr = new StreamReader(responseStream))
