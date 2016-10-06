@@ -198,25 +198,27 @@ static mono_mutex_t mempool_tracing_lock;
 static void
 mono_backtrace (int size)
 {
-        void *array[BACKTRACE_DEPTH];
-        char **names;
-        int i, symbols;
-        static gboolean inited;
+	void *array[BACKTRACE_DEPTH];
+	char **names;
+	int i, symbols;
+	static gboolean inited;
 
-        if (!inited) {
-            mono_os_mutex_init_recursive (&mempool_tracing_lock);
-            inited = TRUE;
-        }
+	if (!inited) {
+		mono_os_mutex_init_recursive (&mempool_tracing_lock);
+		inited = TRUE;
+	}
 
-        mono_os_mutex_lock (&mempool_tracing_lock);
-        g_print ("Allocating %d bytes\n", size);
-        symbols = backtrace (array, BACKTRACE_DEPTH);
-        names = backtrace_symbols (array, symbols);
-        for (i = 1; i < symbols; ++i) {
-                g_print ("\t%s\n", names [i]);
-        }
-        g_free (names);
-        mono_os_mutex_unlock (&mempool_tracing_lock);
+	mono_os_mutex_lock (&mempool_tracing_lock);
+	g_print ("Allocating %d bytes\n", size);
+	MONO_ENTER_GC_SAFE;
+	symbols = backtrace (array, BACKTRACE_DEPTH);
+	names = backtrace_symbols (array, symbols);
+	MONO_EXIT_GC_SAFE;
+	for (i = 1; i < symbols; ++i) {
+		g_print ("\t%s\n", names [i]);
+	}
+	g_free (names);
+	mono_os_mutex_unlock (&mempool_tracing_lock);
 }
 
 #endif

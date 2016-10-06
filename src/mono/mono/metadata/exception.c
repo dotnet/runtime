@@ -976,8 +976,12 @@ mono_exception_get_native_backtrace (MonoException *exc)
 	domain = mono_domain_get ();
 	len = mono_array_length (arr);
 	text = g_string_new_len (NULL, len * 20);
-	messages = backtrace_symbols (mono_array_addr (arr, gpointer, 0), len);
-
+	uint32_t gchandle = mono_gchandle_new (&arr->obj, TRUE); /* pinned */
+	void* addr = mono_array_addr (arr, gpointer, 0);
+	MONO_ENTER_GC_SAFE;
+	messages = backtrace_symbols (addr, len);
+	MONO_EXIT_GC_SAFE;
+	mono_gchandle_free (gchandle);
 
 	for (i = 0; i < len; ++i) {
 		gpointer ip = mono_array_get (arr, gpointer, i);

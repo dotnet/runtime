@@ -1290,7 +1290,10 @@ build_native_trace (MonoError *error)
 #if defined (HAVE_BACKTRACE_SYMBOLS) && defined (TARGET_ARM)
 	MonoArray *res;
 	void *native_trace [MAX_UNMANAGED_BACKTRACE];
-	int size = backtrace (native_trace, MAX_UNMANAGED_BACKTRACE);
+	int size = -1;
+	MONO_ENTER_GC_SAFE;
+	size = backtrace (native_trace, MAX_UNMANAGED_BACKTRACE);
+	MONO_EXIT_GC_SAFE;
 	int i;
 
 	if (!size)
