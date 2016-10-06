@@ -8,6 +8,8 @@
   },
   "frameworks": {
     ".NETCoreApp,Version=v1.0": {},
+    ".NETCoreApp,Version=v1.1": {},
+    ".NETStandard,Version=v1.5": {},
     "netstandard1.3": {}
   }
 }

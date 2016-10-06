@@ -327,4 +327,16 @@
   <data name="PersistedFiles_NoHomeDirectory" xml:space="preserve">
     <value>The home directory of the current user could not be determined.</value>
   </data>
+  <data name="Argument_BadResourceScopeTypeBits" xml:space="preserve">
+    <value>Unknown value for the ResourceScope: {0}  Too many resource type bits may be set.</value>
+  </data>
+  <data name="Argument_BadResourceScopeVisibilityBits" xml:space="preserve">
+    <value>Unknown value for the ResourceScope: {0}  Too many resource visibility bits may be set.</value>
+  </data>
+  <data name="ArgumentNull_TypeRequiredByResourceScope" xml:space="preserve">
+    <value>The type parameter cannot be null when scoping the resource's visibility to Private or Assembly.</value>
+  </data>
+  <data name="Argument_ResourceScopeWrongDirection" xml:space="preserve">
+    <value>Resource type in the ResourceScope enum is going from a more restrictive resource type to a more general one.  From: "{0}"  To: "{1}"</value>
+  </data>
 </root>

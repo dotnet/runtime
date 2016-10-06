@@ -45,6 +45,12 @@
     <Compile Include="System\IO\Path.cs" />
     <Compile Include="System\Net\WebUtility.cs" />
     <Compile Include="System\Runtime\Versioning\FrameworkName.cs" />
+    <Compile Include="System\Runtime\Versioning\ComponentGuaranteesAttribute.cs" />
+    <Compile Include="System\Runtime\Versioning\ResourceConsumptionAttribute.cs" />
+    <Compile Include="System\Runtime\Versioning\ComponentGuaranteesOptions.cs" />
+    <Compile Include="System\Runtime\Versioning\ResourceExposureAttribute.cs" />
+    <Compile Include="System\Runtime\Versioning\ResourceScope.cs" />
+    <Compile Include="System\Runtime\Versioning\VersioningHelper.cs" />
     <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelDictionary.cs">
       <Link>Common\System\Collections\Generic\LowLevelDictionary.cs</Link>
     </Compile>
@@ -73,6 +79,7 @@
   <!-- WINDOWS: Shared CoreCLR and .NET Native -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'net462' And '$(TargetGroup)' != 'net463'">
     <Compile Include="System\Environment.Windows.cs" />
+    <Compile Include="System\Runtime\Versioning\VersioningHelper.Windows.cs" />
     <Compile Include="System\Diagnostics\Stopwatch.Windows.cs" />
     <Compile Include="System\IO\Path.Windows.cs" />
     <Compile Include="System\IO\PathHelper.Windows.cs" />
@@ -87,6 +94,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.Errors.cs">
       <Link>Common\Interop\Windows\mincore\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetCurrentProcessId.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.GetCurrentProcessId.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
       <Link>Common\Interop\Windows\mincore\Interop.FormatMessage.cs</Link>
@@ -263,6 +273,7 @@
   <!-- UNIX -->
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="System\Environment.Unix.cs" />
+    <Compile Include="System\Runtime\Versioning\VersioningHelper.Unix.cs" />
     <Compile Include="System\Diagnostics\Stopwatch.Unix.cs" />
     <Compile Include="System\IO\Path.Unix.cs" />
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.Libraries.cs">
@@ -279,6 +290,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.IOErrors.cs">
       <Link>Common\Interop\Unix\Interop.IOErrors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetPid.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.GetPid.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Access.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Access.cs</Link>
