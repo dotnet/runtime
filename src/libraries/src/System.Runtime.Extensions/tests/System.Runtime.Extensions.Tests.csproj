@@ -39,6 +39,7 @@
     <Compile Include="System\EnvironmentTests.cs" />
     <Compile Include="System\Math.netstandard1.7.cs" />
     <Compile Include="System\StringComparer.netstandard1.7.cs" />
+    <Compile Include="System\Runtime\Versioning\VersioningHelperTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp1.1'">
     <Compile Include="System\IO\Path.GetRelativePath.cs" />
