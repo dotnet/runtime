@@ -1,13 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <Configuration Condition="'$(Configuration)'=='' AND ('$(TargetGroup)' == '' Or '$(TargetGroup)' == 'netstandard1.5')">Windows_Debug</Configuration>
+    <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{845D2B72-D8A4-42E5-9BE9-17639EC4FC1A}</ProjectGuid>
     <AssemblyName>System.Runtime.Extensions</AssemblyName>
-    <AssemblyVersion Condition="'$(TargetGroup)'=='netstandard1.5' Or '$(TargetGroup)'=='net462' Or '$(TargetGroup)'=='netcore50' Or '$(TargetGroup)'=='netcore50aot' Or '$(TargetGroup)'=='netstandard15aot'">4.1.1.0</AssemblyVersion>
+    <AssemblyVersion Condition="'$(TargetGroup)'=='net462'">4.1.1.0</AssemblyVersion>
     <ContractProject Condition="'$(AssemblyVersion)'=='4.1.1.0'">../ref/4.1.0/System.Runtime.Extensions.depproj</ContractProject>
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -22,10 +22,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_netstandard1.5_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_netstandard1.5_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netstandard1.5_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netstandard1.5_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net462_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net462_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
@@ -36,11 +32,8 @@
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
     <ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
   </PropertyGroup>
-  <!-- Shared CoreCLR and .NET Native -->
-  <ItemGroup Condition="'$(TargetGroup)' == ''">
-    <Compile Include="System\AppDomain.cs" />
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net462' And '$(TargetGroup)' != 'net463'">
+    <Compile Include="System\AppDomain.cs" />
     <Compile Include="System\BitConverter.cs" />
     <Compile Include="System\Diagnostics\Stopwatch.cs" />
     <Compile Include="System\Environment.cs" />
@@ -359,7 +352,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLastError.cs" Condition="'$(TargetsWindows)'=='true'" />
     <Compile Include="$(CommonPath)\System\SR.Core.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == '' Or '$(TargetGroup)' == 'netstandard1.5'">
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
     <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj">
       <UndefineProperties>%(ProjectReference.UndefineProperties);TargetGroup</UndefineProperties>
     </ProjectReference>
@@ -375,14 +368,10 @@
     <TargetingPackReference Include="System.Private.CoreLib" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot'">
-    <TargetingPackReference Include="System.Private.CoreLib.InteropServices" />
     <TargetingPackReference Include="System.Private.Interop" />
-    <!-- can remove once we remove the Environment reflection workaround -->
-    <TargetingPackReference Include="System.Private.Reflection" />
-    <TargetingPackReference Include="System.Private.Threading" />
-    <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" Condition="'$(TargetGroup)' == 'netcore50aot'" />
-    <ProjectReference Include="..\..\System.Runtime\src\redist\System.Runtime.depproj">
-      <TargetGroup>netcore50aot</TargetGroup>
+    <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" />
+    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.depproj">
+      <TargetGroup>uap101aot</TargetGroup>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
