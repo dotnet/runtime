@@ -5,6 +5,7 @@ setlocal EnableDelayedExpansion
 set __BuildArch=x64
 set __BuildType=Debug
 set __BuildOS=Windows_NT
+set __MSBuildBuildArch=x64
 
 :: Default to highest Visual Studio version available
 set __VSVersion=vs2015
