@@ -42,7 +42,7 @@ namespace System.ComponentModel
         protected virtual string GetLocalizedString(string value) { return default(string); }
     }
     [System.ComponentModel.DesignerCategoryAttribute("Component")]
-    public partial class Component : /*TODO NETSTANDARD2.0 System.MarshalByRefObject,*/ System.ComponentModel.IComponent, System.IDisposable
+    public partial class Component : System.MarshalByRefObject, System.ComponentModel.IComponent, System.IDisposable
     {
         public Component() { }
         protected virtual bool CanRaiseEvents { get { throw null; } }
