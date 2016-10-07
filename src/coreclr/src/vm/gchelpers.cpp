@@ -60,6 +60,41 @@ inline gc_alloc_context* GetThreadAllocContext()
     return & GetThread()->m_alloc_context;
 }
 
+// Checks to see if the given allocation size exceeds the
+// largest object size allowed - if it does, it throws
+// an OutOfMemoryException with a message indicating that
+// the OOM was not from memory pressure but from an object
+// being too large.
+inline void CheckObjectSize(size_t alloc_size)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+    } CONTRACTL_END;
+
+    size_t max_object_size;
+#ifdef BIT64
+    if (g_pConfig->GetGCAllowVeryLargeObjects())
+    {
+        max_object_size = (INT64_MAX - 7 - min_obj_size);
+    }
+    else
+#endif // BIT64
+    {
+        max_object_size = (INT32_MAX - 7 - min_obj_size);
+    }
+
+    if (alloc_size >= max_object_size)
+    {
+        if (g_pConfig->IsGCBreakOnOOMEnabled())
+        {
+            DebugBreak();
+        }
+
+        ThrowOutOfMemoryDimensionsExceeded();
+    }
+}
+
 
 // There are only three ways to get into allocate an object.
 //     * Call optimized helpers that were generated on the fly. This is how JIT compiled code does most
@@ -98,6 +133,7 @@ inline Object* Alloc(size_t size, BOOL bFinalize, BOOL bContainsPointers )
                    (bFinalize ? GC_ALLOC_FINALIZE : 0));
 
     Object *retVal = NULL;
+    CheckObjectSize(size);
 
     // We don't want to throw an SO during the GC, so make sure we have plenty
     // of stack before calling in.
@@ -106,6 +142,12 @@ inline Object* Alloc(size_t size, BOOL bFinalize, BOOL bContainsPointers )
         retVal = GCHeapUtilities::GetGCHeap()->Alloc(GetThreadAllocContext(), size, flags);
     else
         retVal = GCHeapUtilities::GetGCHeap()->Alloc(size, flags);
+
+    if (!retVal)
+    {
+        ThrowOutOfMemory();
+    }
+
     END_INTERIOR_STACK_PROBE;
     return retVal;
 }
@@ -126,6 +168,7 @@ inline Object* AllocAlign8(size_t size, BOOL bFinalize, BOOL bContainsPointers, 
                    (bAlignBias ? GC_ALLOC_ALIGN8_BIAS : 0));
 
     Object *retVal = NULL;
+    CheckObjectSize(size);
 
     // We don't want to throw an SO during the GC, so make sure we have plenty
     // of stack before calling in.
@@ -134,6 +177,11 @@ inline Object* AllocAlign8(size_t size, BOOL bFinalize, BOOL bContainsPointers, 
         retVal = GCHeapUtilities::GetGCHeap()->AllocAlign8(GetThreadAllocContext(), size, flags);
     else
         retVal = GCHeapUtilities::GetGCHeap()->AllocAlign8(size, flags);
+
+    if (!retVal)
+    {
+        ThrowOutOfMemory();
+    }
 
     END_INTERIOR_STACK_PROBE;
     return retVal;
@@ -169,11 +217,18 @@ inline Object* AllocLHeap(size_t size, BOOL bFinalize, BOOL bContainsPointers )
                    (bFinalize ? GC_ALLOC_FINALIZE : 0));
 
     Object *retVal = NULL;
+    CheckObjectSize(size);
 
     // We don't want to throw an SO during the GC, so make sure we have plenty
     // of stack before calling in.
     INTERIOR_STACK_PROBE_FOR(GetThread(), static_cast<unsigned>(DEFAULT_ENTRY_PROBE_AMOUNT * 1.5));
     retVal = GCHeapUtilities::GetGCHeap()->AllocLHeap(size, flags);
+
+    if (!retVal)
+    {
+        ThrowOutOfMemory();
+    }
+
     END_INTERIOR_STACK_PROBE;
     return retVal;
 }

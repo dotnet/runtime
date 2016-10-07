@@ -30484,28 +30484,18 @@ CObjectHeader* gc_heap::allocate_large_object (size_t jsize, int64_t& alloc_byte
 #endif //BACKGROUND_GC
 #endif // MARK_ARRAY
 
-    size_t maxObjectSize = (INT32_MAX - 7 - Align(min_obj_size));
+    // these next few lines are not strictly necessary anymore - they are here
+    // to sanity check that we didn't get asked to create an object
+    // that's too large.
+    #if BIT64
+    size_t maxObjectSize = (INT64_MAX - 7 - Align(min_obj_size)); 
+    #else
+    size_t maxObjectSize = (INT32_MAX - 7 - Align(min_obj_size)); 
+    #endif
 
-#ifdef BIT64
-    if (g_pConfig->GetGCAllowVeryLargeObjects())
-    {
-        maxObjectSize = (INT64_MAX - 7 - Align(min_obj_size));
-    }
-#endif
-
-    if (jsize >= maxObjectSize)
-    {
-        if (g_pConfig->IsGCBreakOnOOMEnabled())
-        {
-            GCToOSInterface::DebugBreak();
-        }
-
-#ifndef FEATURE_REDHAWK
-        ThrowOutOfMemoryDimensionsExceeded();
-#else
-        return 0;
-#endif
-    }
+    // The VM should have thrown instead of passing us an allocation
+    // request that's too large.
+    assert(jsize < maxObjectSize);
 
     size_t size = AlignQword (jsize);
     int align_const = get_alignment_constant (FALSE);
@@ -34129,7 +34119,6 @@ BOOL GCHeap::StressHeap(gc_alloc_context * context)
 #define REGISTER_FOR_FINALIZATION(_object, _size) true
 #endif // FEATURE_PREMORTEM_FINALIZATION
 
-#ifdef FEATURE_REDHAWK
 #define CHECK_ALLOC_AND_POSSIBLY_REGISTER_FOR_FINALIZATION(_object, _size, _register) do {  \
     if ((_object) == NULL || ((_register) && !REGISTER_FOR_FINALIZATION(_object, _size)))   \
     {                                                                                       \
@@ -34137,19 +34126,6 @@ BOOL GCHeap::StressHeap(gc_alloc_context * context)
         return NULL;                                                                        \
     }                                                                                       \
 } while (false)
-#else // FEATURE_REDHAWK
-#define CHECK_ALLOC_AND_POSSIBLY_REGISTER_FOR_FINALIZATION(_object, _size, _register) do {  \
-    if ((_object) == NULL)                                                                  \
-    {                                                                                       \
-        STRESS_LOG_OOM_STACK(_size);                                                        \
-        ThrowOutOfMemory();                                                                 \
-    }                                                                                       \
-    if (_register)                                                                          \
-    {                                                                                       \
-        REGISTER_FOR_FINALIZATION(_object, _size);                                          \
-    }                                                                                       \
-} while (false)
-#endif // FEATURE_REDHAWK
 
 //
 // Small Object Allocator
@@ -34159,22 +34135,9 @@ Object *
 GCHeap::Alloc( size_t size, uint32_t flags REQD_ALIGN_DCL)
 {
     CONTRACTL {
-#ifdef FEATURE_REDHAWK
-        // Under Redhawk NULL is returned on failure.
         NOTHROW;
-#else
-        THROWS;
-#endif
         GC_TRIGGERS;
     } CONTRACTL_END;
-
-#if defined(_DEBUG) && !defined(FEATURE_REDHAWK)
-    if (g_pConfig->ShouldInjectFault(INJECTFAULT_GCHEAP))
-    {
-        char *a = new char;
-        delete a;
-    }
-#endif //_DEBUG && !FEATURE_REDHAWK
 
     TRIGGERSGC();
 
@@ -34255,12 +34218,7 @@ GCHeap::AllocAlign8( size_t size, uint32_t flags)
 {
 #ifdef FEATURE_64BIT_ALIGNMENT
     CONTRACTL {
-#ifdef FEATURE_REDHAWK
-        // Under Redhawk NULL is returned on failure.
         NOTHROW;
-#else
-        THROWS;
-#endif
         GC_TRIGGERS;
     } CONTRACTL_END;
 
@@ -34294,12 +34252,7 @@ GCHeap::AllocAlign8(gc_alloc_context* ctx, size_t size, uint32_t flags )
 {
 #ifdef FEATURE_64BIT_ALIGNMENT
     CONTRACTL {
-#ifdef FEATURE_REDHAWK
-        // Under Redhawk NULL is returned on failure.
         NOTHROW;
-#else
-        THROWS;
-#endif
         GC_TRIGGERS;
     } CONTRACTL_END;
 
@@ -34333,24 +34286,11 @@ GCHeap::AllocAlign8Common(void* _hp, alloc_context* acontext, size_t size, uint3
 {
 #ifdef FEATURE_64BIT_ALIGNMENT
     CONTRACTL {
-#ifdef FEATURE_REDHAWK
-        // Under Redhawk NULL is returned on failure.
         NOTHROW;
-#else
-        THROWS;
-#endif
         GC_TRIGGERS;
     } CONTRACTL_END;
 
     gc_heap* hp = (gc_heap*)_hp;
-
-#if defined(_DEBUG) && !defined(FEATURE_REDHAWK)
-    if (g_pConfig->ShouldInjectFault(INJECTFAULT_GCHEAP))
-    {
-        char *a = new char;
-        delete a;
-    }
-#endif //_DEBUG && !FEATURE_REDHAWK
 
     TRIGGERSGC();
 
@@ -34465,22 +34405,9 @@ Object *
 GCHeap::AllocLHeap( size_t size, uint32_t flags REQD_ALIGN_DCL)
 {
     CONTRACTL {
-#ifdef FEATURE_REDHAWK
-        // Under Redhawk NULL is returned on failure.
         NOTHROW;
-#else
-        THROWS;
-#endif
         GC_TRIGGERS;
     } CONTRACTL_END;
-
-#if defined(_DEBUG) && !defined(FEATURE_REDHAWK)
-    if (g_pConfig->ShouldInjectFault(INJECTFAULT_GCHEAP))
-    {
-        char *a = new char;
-        delete a;
-    }
-#endif //_DEBUG && !FEATURE_REDHAWK
 
     TRIGGERSGC();
 
@@ -34536,22 +34463,9 @@ Object*
 GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_DCL)
 {
     CONTRACTL {
-#ifdef FEATURE_REDHAWK
-        // Under Redhawk NULL is returned on failure.
         NOTHROW;
-#else
-        THROWS;
-#endif
         GC_TRIGGERS;
     } CONTRACTL_END;
-
-#if defined(_DEBUG) && !defined(FEATURE_REDHAWK)
-    if (g_pConfig->ShouldInjectFault(INJECTFAULT_GCHEAP))
-    {
-        char *a = new char;
-        delete a;
-    }
-#endif //_DEBUG && !FEATURE_REDHAWK
 
     TRIGGERSGC();
 
@@ -36038,12 +35952,7 @@ bool
 CFinalize::RegisterForFinalization (int gen, Object* obj, size_t size)
 {
     CONTRACTL {
-#ifdef FEATURE_REDHAWK
-        // Under Redhawk false is returned on failure.
         NOTHROW;
-#else
-        THROWS;
-#endif
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
@@ -36081,11 +35990,7 @@ CFinalize::RegisterForFinalization (int gen, Object* obj, size_t size)
             {
                 GCToOSInterface::DebugBreak();
             }
-#ifdef FEATURE_REDHAWK
             return false;
-#else
-            ThrowOutOfMemory();
-#endif
         }
     }
     Object*** end_si = &SegQueueLimit (dest);
