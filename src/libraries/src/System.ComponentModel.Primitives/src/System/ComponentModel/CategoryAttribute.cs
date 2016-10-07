@@ -317,5 +317,10 @@ namespace System.ComponentModel
         {
             return SR.GetResourceString("PropertyCategory" + value, null);
         }
+
+        public override bool IsDefaultAttribute()
+        {
+            return Category.Equals(CategoryAttribute.Default.Category);
+        }
     }
 }

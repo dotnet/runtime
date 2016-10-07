@@ -90,7 +90,7 @@ namespace System.ComponentModel
         /// </summary>
         public override bool IsDefaultAttribute()
         {
-            return (this.Visible == Default.Visible);
+            return (Visible == Default.Visible);
         }
     }
 }

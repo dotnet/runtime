@@ -86,5 +86,18 @@ namespace System.ComponentModel
         {
             return Category.GetHashCode();
         }
+
+        public override bool IsDefaultAttribute()
+        {
+            return Category.Equals(DesignerCategoryAttribute.Default.Category);
+        }
+
+        public override object TypeId
+        {
+            get
+            {
+                return base.GetType().FullName + Category;
+            }
+        }
     }
 }

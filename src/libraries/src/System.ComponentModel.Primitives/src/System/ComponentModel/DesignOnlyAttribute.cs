@@ -70,5 +70,10 @@ namespace System.ComponentModel
         {
             return IsDesignOnly.GetHashCode();
         }
+
+        public override bool IsDefaultAttribute()
+        {
+            return IsDesignOnly == DesignOnlyAttribute.Default.IsDesignOnly;
+        }        
     }
 }

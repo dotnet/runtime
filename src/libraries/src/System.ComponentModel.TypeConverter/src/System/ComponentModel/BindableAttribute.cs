@@ -145,7 +145,7 @@ namespace System.ComponentModel
         /// <internalonly/>
         public override bool IsDefaultAttribute()
         {
-            return (this.Equals(Default) || _isDefault);
+            return (Equals(Default) || _isDefault);
         }
     }
 }

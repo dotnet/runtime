@@ -43,7 +43,7 @@ namespace System.ComponentModel
 
                 if (e != null)
                 {
-                    return e.handler;
+                    return e.Handler;
                 }
                 else
                 {
@@ -55,7 +55,7 @@ namespace System.ComponentModel
                 ListEntry e = Find(key);
                 if (e != null)
                 {
-                    e.handler = value;
+                    e.Handler = value;
                 }
                 else
                 {
@@ -72,7 +72,7 @@ namespace System.ComponentModel
             ListEntry e = Find(key);
             if (e != null)
             {
-                e.handler = Delegate.Combine(e.handler, value);
+                e.Handler = Delegate.Combine(e.Handler, value);
             }
             else
             {
@@ -86,8 +86,8 @@ namespace System.ComponentModel
             ListEntry currentListEntry = listToAddFrom._head;
             while (currentListEntry != null)
             {
-                AddHandler(currentListEntry.key, currentListEntry.handler);
-                currentListEntry = currentListEntry.next;
+                AddHandler(currentListEntry.Key, currentListEntry.Handler);
+                currentListEntry = currentListEntry.Next;
             }
         }
 
@@ -104,11 +104,11 @@ namespace System.ComponentModel
             ListEntry found = _head;
             while (found != null)
             {
-                if (found.key == key)
+                if (found.Key == key)
                 {
                     break;
                 }
-                found = found.next;
+                found = found.Next;
             }
             return found;
         }
@@ -121,7 +121,7 @@ namespace System.ComponentModel
             ListEntry e = Find(key);
             if (e != null)
             {
-                e.handler = Delegate.Remove(e.handler, value);
+                e.Handler = Delegate.Remove(e.Handler, value);
             }
             // else... no error for removal of non-existant delegate
             //
@@ -129,15 +129,15 @@ namespace System.ComponentModel
 
         private sealed class ListEntry
         {
-            internal ListEntry next;
-            internal object key;
-            internal Delegate handler;
+            internal ListEntry Next;
+            internal object Key;
+            internal Delegate Handler;
 
             public ListEntry(object key, Delegate handler, ListEntry next)
             {
-                this.next = next;
-                this.key = key;
-                this.handler = handler;
+                Next = next;
+                Key = key;
+                Handler = handler;
             }
         }
     }

@@ -71,5 +71,10 @@ namespace System.ComponentModel
         {
             return base.GetHashCode();
         }
+
+        public override bool IsDefaultAttribute()
+        {
+            return Equals(ParenthesizePropertyNameAttribute.Default);
+        }
     }
 }

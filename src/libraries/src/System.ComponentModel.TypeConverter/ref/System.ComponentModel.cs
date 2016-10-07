@@ -74,7 +74,7 @@ namespace System.ComponentModel
         public System.ComponentModel.BindingDirection Direction { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        //TODO NETSTANDARD2.0 - expose IsDefaultAttribute on Attribute public override bool IsDefaultAttribute() { throw null; }
+        public override bool IsDefaultAttribute() { throw null; }
     }
     public enum BindableSupport
     {
@@ -210,7 +210,7 @@ namespace System.ComponentModel
         public bool IsDataObject { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        //TODO NETSTANDARD2.0 - expose IsDefaultAttribute on Attribute public override bool IsDefaultAttribute() { throw null; }
+        public override bool IsDefaultAttribute() { throw null; }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(128))]
     public sealed partial class DataObjectFieldAttribute : System.Attribute
@@ -235,7 +235,7 @@ namespace System.ComponentModel
         public System.ComponentModel.DataObjectMethodType MethodType { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        //TODO NETSTANDARD2.0 - expose Match on Attribute public override bool Match(object obj) { throw null; }
+        public override bool Match(object obj) { throw null; }
     }
     public enum DataObjectMethodType
     {
@@ -265,7 +265,7 @@ namespace System.ComponentModel
         public DesignerAttribute(System.Type designerType, System.Type designerBaseType) { }
         public string DesignerBaseTypeName { get { throw null; } }
         public string DesignerTypeName { get { throw null; } }
-        //TODO - expose TypeID on Attribute public override object TypeId { get { throw null; } }
+        public override object TypeId { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
     }
@@ -280,7 +280,7 @@ namespace System.ComponentModel
         public bool Visible { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        //TODO NETSTANDARD2.0 - expose IsDefaultAttribute on Attribute public override bool IsDefaultAttribute() { throw null; }
+        public override bool IsDefaultAttribute() { throw null; }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(32767), AllowMultiple = true, Inherited = true)]
     public sealed partial class EditorAttribute : System.Attribute
@@ -291,7 +291,7 @@ namespace System.ComponentModel
         public EditorAttribute(System.Type type, System.Type baseType) { }
         public string EditorBaseTypeName { get { throw null; } }
         public string EditorTypeName { get { throw null; } }
-        //TODO - expose TypeID on Attribute public override object TypeId { get { throw null; } }
+        public override object TypeId { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
     }
@@ -380,7 +380,7 @@ namespace System.ComponentModel
         public System.ComponentModel.InheritanceLevel InheritanceLevel { get { throw null; } }
         public override bool Equals(object value) { throw null; }
         public override int GetHashCode() { throw null; }
-        //TODO NETSTANDARD2.0 - expose IsDefaultAttribute on Attribute public override bool IsDefaultAttribute() { throw null; }
+        public override bool IsDefaultAttribute() { throw null; }
         public override string ToString() { throw null; }
     }
     public enum InheritanceLevel
@@ -473,7 +473,7 @@ namespace System.ComponentModel
         public LicenseProviderAttribute(string typeName) { }
         public LicenseProviderAttribute(System.Type type) { }
         public System.Type LicenseProvider { get { throw null; } }
-        //TODO - expose TypeID on Attribute public override object TypeId { get { throw null; } }
+        public override object TypeId { get { throw null; } }
         public override bool Equals(object value) { throw null; }
         public override int GetHashCode() { throw null; }
     }
@@ -500,7 +500,7 @@ namespace System.ComponentModel
         public bool ListBindable { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        //TODO NEtstandARd2.0 - eXpose isdefaultAttribute on Attribute public override bool IsDefaultAttribute() { throw null; } on Attribute public override bool IsDefaultAttribute() { throw null; }
+        public override bool IsDefaultAttribute() { throw null; }
     }
     public partial class ListChangedEventArgs : System.EventArgs
     {
@@ -691,7 +691,7 @@ namespace System.ComponentModel
         public bool Password { get { throw null; } }
         public override bool Equals(object o) { throw null; }
         public override int GetHashCode() { throw null; }
-        //TODO NETSTANDARD2.0 - expose IsDefaultAttribute on Attribute public override bool IsDefaultAttribute() { throw null; }
+        public override bool IsDefaultAttribute() { throw null; }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(32767))]
     public partial class PropertyTabAttribute : System.Attribute
@@ -728,7 +728,7 @@ namespace System.ComponentModel
         public bool RecommendedAsConfigurable { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        //TODO NETSTANDARD2.0 - expose IsDefaultAttribute on Attribute public override bool IsDefaultAttribute() { throw null; }
+        public override bool IsDefaultAttribute() { throw null; }
     }
     public partial class ReferenceConverter : System.ComponentModel.TypeConverter
     {
@@ -751,7 +751,7 @@ namespace System.ComponentModel
         public bool RunInstaller { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        //TODO NETSTANDARD2.0 - expose IsDefaultAttribute on Attribute public override bool IsDefaultAttribute() { throw null; }
+        public override bool IsDefaultAttribute() { throw null; }
     }
     public static partial class SyntaxCheck
     {
@@ -771,7 +771,7 @@ namespace System.ComponentModel
         public string ToolboxItemTypeName { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        //TODO NETSTANDARD2.0 - expose IsDefaultAttribute on Attribute public override bool IsDefaultAttribute() { throw null; }
+        public override bool IsDefaultAttribute() { throw null; }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(4), AllowMultiple = true, Inherited = true)]
     public sealed partial class ToolboxItemFilterAttribute : System.Attribute
@@ -780,10 +780,10 @@ namespace System.ComponentModel
         public ToolboxItemFilterAttribute(string filterString, System.ComponentModel.ToolboxItemFilterType filterType) { }
         public string FilterString { get { throw null; } }
         public System.ComponentModel.ToolboxItemFilterType FilterType { get { throw null; } }
-        //TODO NETSTANDARD2.0- expose TypeID on Attribute public override object TypeId { get { throw null; } }
+        public override object TypeId { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        //TODO NETSTANDARD2.0 - expose Match on Attribute public override bool Match(object obj) { throw null; }
+        public override bool Match(object obj) { throw null; }
         public override string ToString() { throw null; }
     }
     public enum ToolboxItemFilterType
@@ -998,7 +998,7 @@ namespace System.ComponentModel.Design
         public string HelpKeyword { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        //TODO NETSTANDARD2.0 - expose IsDefaultAttribute on Attribute public override bool IsDefaultAttribute() { throw null; }
+        public override bool IsDefaultAttribute() { throw null; }
     }
     public enum HelpKeywordType
     {
@@ -1388,7 +1388,7 @@ namespace System.ComponentModel.Design.Serialization
         public DesignerSerializerAttribute(System.Type serializerType, System.Type baseSerializerType) { }
         public string SerializerBaseTypeName { get { throw null; } }
         public string SerializerTypeName { get { throw null; } }
-        //TODO - expose TypeID on Attribute public override object TypeId { get { throw null; } }
+        public override object TypeId { get { throw null; } }
     }
     public partial interface IDesignerLoaderHost : System.ComponentModel.Design.IDesignerHost, System.ComponentModel.Design.IServiceContainer, System.IServiceProvider
     {
@@ -1485,7 +1485,7 @@ namespace System.ComponentModel.Design.Serialization
         public bool Reloadable { get { throw null; } }
         public string SerializerBaseTypeName { get { throw null; } }
         public string SerializerTypeName { get { throw null; } }
-        //TODO - expose TypeID on Attribute public override object TypeId { get { throw null; } }
+        public override object TypeId { get { throw null; } }
     }
     public abstract partial class SerializationStore : System.IDisposable
     {
