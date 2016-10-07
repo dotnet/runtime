@@ -290,6 +290,8 @@ static SGEN_TV_DECLARE (time_major_conc_collection_end);
 
 int gc_debug_level = 0;
 FILE* gc_debug_file;
+static char* gc_params_options;
+static char* gc_debug_options;
 
 /*
 void
@@ -988,6 +990,24 @@ FILE *
 mono_gc_get_logfile (void)
 {
 	return gc_debug_file;
+}
+
+void
+mono_gc_params_set (const char* options)
+{
+	if (gc_params_options)
+		g_free (gc_params_options);
+
+	gc_params_options = g_strdup (options);
+}
+
+void
+mono_gc_debug_set (const char* options)
+{
+	if (gc_debug_options)
+		g_free (gc_debug_options);
+
+	gc_debug_options = g_strdup (options);
 }
 
 static void
@@ -2735,6 +2755,8 @@ sgen_gc_init (void)
 	char **opts, **ptr;
 	char *major_collector_opt = NULL;
 	char *minor_collector_opt = NULL;
+	char *params_opts = NULL;
+	char *debug_opts = NULL;
 	size_t max_heap = 0;
 	size_t soft_limit = 0;
 	int result;
@@ -2772,8 +2794,12 @@ sgen_gc_init (void)
 
 	mono_coop_mutex_init (&sgen_interruption_mutex);
 
-	if ((env = g_getenv (MONO_GC_PARAMS_NAME))) {
-		opts = g_strsplit (env, ",", -1);
+	if ((env = g_getenv (MONO_GC_PARAMS_NAME)) || gc_params_options) {
+		params_opts = g_strdup_printf ("%s,%s", gc_params_options ? gc_params_options : "", env ? env : "");
+	}
+
+	if (params_opts) {
+		opts = g_strsplit (params_opts, ",", -1);
 		for (ptr = opts; *ptr; ++ptr) {
 			char *opt = *ptr;
 			if (g_str_has_prefix (opt, "major=")) {
@@ -2975,15 +3001,22 @@ sgen_gc_init (void)
 	if (minor_collector_opt)
 		g_free (minor_collector_opt);
 
+	if (params_opts)
+		g_free (params_opts);
+
 	alloc_nursery ();
 
 	sgen_pinning_init ();
 	sgen_cement_init (cement_enabled);
 
-	if ((env = g_getenv (MONO_GC_DEBUG_NAME))) {
+	if ((env = g_getenv (MONO_GC_DEBUG_NAME)) || gc_debug_options) {
+		debug_opts = g_strdup_printf ("%s,%s", gc_debug_options ? gc_debug_options  : "", env ? env : "");
+	}
+
+	if (debug_opts) {
 		gboolean usage_printed = FALSE;
 
-		opts = g_strsplit (env, ",", -1);
+		opts = g_strsplit (debug_opts, ",", -1);
 		for (ptr = opts; ptr && *ptr; ptr ++) {
 			char *opt = *ptr;
 			if (!strcmp (opt, ""))
@@ -3113,6 +3146,9 @@ sgen_gc_init (void)
 		}
 		g_strfreev (opts);
 	}
+
+	if (debug_opts)
+		g_free (debug_opts);
 
 	if (check_mark_bits_after_major_collection)
 		nursery_clear_policy = CLEAR_AT_GC;

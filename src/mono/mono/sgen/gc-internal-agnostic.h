@@ -110,4 +110,9 @@ void mono_gc_memmove_aligned (void *dest, const void *src, size_t size);
 
 FILE *mono_gc_get_logfile (void);
 
+/* equivalent to options set via MONO_GC_PARAMS */
+void mono_gc_params_set (const char* options);
+/* equivalent to options set via MONO_GC_DEBUG */
+void mono_gc_debug_set (const char* options);
+
 #endif
