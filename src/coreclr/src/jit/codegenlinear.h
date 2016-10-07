@@ -237,8 +237,8 @@ bool genIsRegCandidateLocal(GenTreePtr tree)
 bool m_pushStkArg;
 #else  // !_TARGET_X86_
 unsigned m_stkArgVarNum;
-#endif // !_TARGET_X86_
 unsigned m_stkArgOffset;
+#endif // !_TARGET_X86_
 #endif // !FEATURE_PUT_STRUCT_ARG_STK
 
 #ifdef DEBUG
