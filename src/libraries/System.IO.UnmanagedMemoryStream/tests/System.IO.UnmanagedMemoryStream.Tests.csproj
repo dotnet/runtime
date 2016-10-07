@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -15,12 +15,13 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NugetTargetMoniker Condition=" '$(TargetGroup)' == '' ">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup>
-  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
+  <ItemGroup Condition="'$(TargetGroup)' == ''" >
+    <Compile Include="Uma.TestStructs.cs" />
+    <Compile Include="Uma.ReadWriteStruct.cs" />
+    <Compile Include="Uma.ReadWriteStructArray.cs"/>
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="ArrayHelpers.cs" />
     <Compile Include="UmaTests.cs" />
