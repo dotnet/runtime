@@ -126,7 +126,7 @@ namespace System.ComponentModel.Design
         /// </summary>
         public override bool IsDefaultAttribute()
         {
-            return this.Equals(Default);
+            return Equals(Default);
         }
     }
 }
