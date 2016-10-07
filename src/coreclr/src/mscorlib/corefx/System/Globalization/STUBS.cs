@@ -1,35 +1,12 @@
 namespace System.Globalization
 {
-    public partial class CompareInfo : System.Runtime.Serialization.IDeserializationCallback
-    {
-        public int LCID { get { throw new NotImplementedException(); } }
-        public static System.Globalization.CompareInfo GetCompareInfo(int culture) { throw new NotImplementedException(); }
-        public static System.Globalization.CompareInfo GetCompareInfo(int culture, System.Reflection.Assembly assembly) { throw new NotImplementedException(); }
-        public static System.Globalization.CompareInfo GetCompareInfo(string name, System.Reflection.Assembly assembly) { throw new NotImplementedException(); }
-        public virtual System.Globalization.SortKey GetSortKey(string source) { throw new NotImplementedException(); }
-        public virtual System.Globalization.SortKey GetSortKey(string source, System.Globalization.CompareOptions options) { throw new NotImplementedException(); }
-        public virtual int IndexOf(string source, char value, int startIndex) { throw new NotImplementedException(); }
-        public virtual int IndexOf(string source, string value, int startIndex) { throw new NotImplementedException(); }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public static bool IsSortable(char ch) { throw new NotImplementedException(); }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        [System.Security.SecuritySafeCriticalAttribute]
-        public static bool IsSortable(string text) { throw new NotImplementedException(); }
-        public virtual int LastIndexOf(string source, char value, int startIndex) { throw new NotImplementedException(); }
-        public virtual int LastIndexOf(string source, string value, int startIndex) { throw new NotImplementedException(); }
-    }
-
     public partial class CultureInfo : System.ICloneable, System.IFormatProvider
     {
-        public CultureInfo(int culture) { throw new NotImplementedException(); }
-        public CultureInfo(int culture, bool useUserOverride) { throw new NotImplementedException(); }
         public static System.Globalization.CultureInfo InstalledUICulture { get { throw new NotImplementedException(); } }
-        public virtual int LCID { get { throw new NotImplementedException(); } }
         public virtual string ThreeLetterISOLanguageName { get { throw new NotImplementedException(); } }
         public virtual string ThreeLetterWindowsLanguageName { get { throw new NotImplementedException(); } }
         public void ClearCachedData() { throw new NotImplementedException(); }
         public static System.Globalization.CultureInfo CreateSpecificCulture(string name) { throw new NotImplementedException(); }
-        public static System.Globalization.CultureInfo GetCultureInfo(int culture) { throw new NotImplementedException(); }
         public static System.Globalization.CultureInfo GetCultureInfo(string name, string altName) { throw new NotImplementedException(); }
         public static System.Globalization.CultureInfo GetCultureInfoByIetfLanguageTag(string name) { throw new NotImplementedException(); }
         public static System.Globalization.CultureInfo[] GetCultures(System.Globalization.CultureTypes types) { throw new NotImplementedException(); }
@@ -109,29 +86,6 @@ namespace System.Globalization
         public virtual int GeoId { get { throw new NotImplementedException(); } }
         public virtual string ThreeLetterISORegionName { get { throw new NotImplementedException(); } }
         public virtual string ThreeLetterWindowsRegionName { get { throw new NotImplementedException(); } }
-    }
-
-    public partial class SortKey
-    {
-        internal SortKey() { throw new NotImplementedException(); }
-        public virtual byte[] KeyData { get { throw new NotImplementedException(); } }
-        public virtual string OriginalString { get { throw new NotImplementedException(); } }
-        public static int Compare(System.Globalization.SortKey sortkey1, System.Globalization.SortKey sortkey2) { throw new NotImplementedException(); }
-        public override bool Equals(object value) { throw new NotImplementedException(); }
-        public override int GetHashCode() { throw new NotImplementedException(); }
-        public override string ToString() { throw new NotImplementedException(); }
-    }
-
-    public sealed partial class SortVersion : System.IEquatable<System.Globalization.SortVersion>
-    {
-        public SortVersion(int fullVersion, System.Guid sortId) { throw new NotImplementedException(); }
-        public int FullVersion { get { throw new NotImplementedException(); } }
-        public System.Guid SortId { get { throw new NotImplementedException(); } }
-        public bool Equals(System.Globalization.SortVersion other) { throw new NotImplementedException(); }
-        public override bool Equals(object obj) { throw new NotImplementedException(); }
-        public override int GetHashCode() { throw new NotImplementedException(); }
-        public static bool operator ==(System.Globalization.SortVersion left, System.Globalization.SortVersion right) { throw new NotImplementedException(); }
-        public static bool operator !=(System.Globalization.SortVersion left, System.Globalization.SortVersion right) { throw new NotImplementedException(); }
     }
 
     public partial class TextInfo : System.ICloneable, System.Runtime.Serialization.IDeserializationCallback 

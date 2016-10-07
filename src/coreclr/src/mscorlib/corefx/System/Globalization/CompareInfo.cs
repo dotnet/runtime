@@ -13,6 +13,7 @@
 ////////////////////////////////////////////////////////////////////////////
 
 using System;
+using System.Reflection;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
@@ -58,6 +59,11 @@ namespace System.Globalization
             ~(CompareOptions.IgnoreCase | CompareOptions.IgnoreSymbols | CompareOptions.IgnoreNonSpace |
               CompareOptions.IgnoreWidth | CompareOptions.IgnoreKanaType);
 
+            // Mask used to check if we have the right flags.
+        private const CompareOptions ValidSortkeyCtorMaskOffFlags = 
+            ~(CompareOptions.IgnoreCase | CompareOptions.IgnoreSymbols | CompareOptions.IgnoreNonSpace |
+              CompareOptions.IgnoreWidth | CompareOptions.IgnoreKanaType | CompareOptions.StringSort);
+
         //
         // CompareInfos have an interesting identity.  They are attached to the locale that created them,
         // ie: en-US would have an en-US sort.  For haw-US (custom), then we serialize it as haw-US.
@@ -68,6 +74,83 @@ namespace System.Globalization
         private String _name;  // The name used to construct this CompareInfo
         [NonSerialized] 
         private String _sortName; // The name that defines our behavior
+
+        /*=================================GetCompareInfo==========================
+        **Action: Get the CompareInfo constructed from the data table in the specified assembly for the specified culture.
+        **       Warning: The assembly versioning mechanism is dead!
+        **Returns: The CompareInfo for the specified culture.
+        **Arguments:
+        **   culture    the ID of the culture
+        **   assembly   the assembly which contains the sorting table.
+        **Exceptions:
+        **  ArugmentNullException when the assembly is null
+        **  ArgumentException if culture is invalid.
+        ============================================================================*/
+        // Assembly constructor should be deprecated, we don't act on the assembly information any more
+        public static CompareInfo GetCompareInfo(int culture, Assembly assembly)
+        {
+            // Parameter checking.
+            if (assembly == null)
+            {
+                throw new ArgumentNullException("assembly");
+            }
+            if (assembly != typeof(Object).Module.Assembly) 
+            {
+                throw new ArgumentException(SR.Argument_OnlyMscorlib);
+            }
+            Contract.EndContractBlock();
+
+            return GetCompareInfo(culture);
+        }
+
+        /*=================================GetCompareInfo==========================
+        **Action: Get the CompareInfo constructed from the data table in the specified assembly for the specified culture.
+        **       The purpose of this method is to provide version for CompareInfo tables.
+        **Returns: The CompareInfo for the specified culture.
+        **Arguments:
+        **   name      the name of the culture
+        **   assembly  the assembly which contains the sorting table.
+        **Exceptions:
+        **  ArugmentNullException when the assembly is null
+        **  ArgumentException if name is invalid.
+        ============================================================================*/
+        // Assembly constructor should be deprecated, we don't act on the assembly information any more
+        public static CompareInfo GetCompareInfo(String name, Assembly assembly)
+        {
+            if (name == null || assembly == null)
+            {
+                throw new ArgumentNullException(name == null ? "name" : "assembly");
+            }
+            Contract.EndContractBlock();
+
+            if (assembly != typeof(Object).Module.Assembly)
+            {
+                throw new ArgumentException(SR.Argument_OnlyMscorlib);
+            }
+
+            return GetCompareInfo(name);
+        }
+
+        /*=================================GetCompareInfo==========================
+        **Action: Get the CompareInfo for the specified culture.
+        ** This method is provided for ease of integration with NLS-based software.
+        **Returns: The CompareInfo for the specified culture.
+        **Arguments:
+        **   culture    the ID of the culture.
+        **Exceptions:
+        **  ArgumentException if culture is invalid.
+        ============================================================================*/
+        // People really shouldn't be calling LCID versions, no custom support
+        public static CompareInfo GetCompareInfo(int culture)
+        {
+            if (CultureData.IsCustomCultureId(culture))
+            {
+                // Customized culture cannot be created by the LCID.
+                throw new ArgumentException(SR.Argument_CustomCultureCannotBePassedByNumber, "culture");
+            }
+
+            return CultureInfo.GetCultureInfo(culture).CompareInfo;
+        }
 
         /*=================================GetCompareInfo==========================
         **Action: Get the CompareInfo for the specified culture.
@@ -88,6 +171,35 @@ namespace System.Globalization
 
             return CultureInfo.GetCultureInfo(name).CompareInfo;
         }
+
+        [System.Runtime.InteropServices.ComVisible(false)]
+        public unsafe static bool IsSortable(char ch)
+        {
+            char *pChar = &ch;
+            return IsSortable(pChar, 1);
+        }
+
+        [System.Runtime.InteropServices.ComVisible(false)]
+        public unsafe static bool IsSortable(string text)
+        {
+            if (text == null) 
+            {
+                // A null param is invalid here.
+                throw new ArgumentNullException("text");
+            }
+
+            if (0 == text.Length)
+            {
+                // A zero length string is not invalid, but it is also not sortable.
+                return (false);
+            }
+            
+            fixed (char *pChar = text)
+            {
+                return IsSortable(pChar, text.Length);
+            }
+        }
+
 
         [OnDeserializing]
         private void OnDeserializing(StreamingContext ctx)
@@ -517,6 +629,23 @@ namespace System.Globalization
             return IndexOf(source, value, 0, source.Length, options);
         }
 
+        public unsafe virtual int IndexOf(String source, char value, int startIndex)
+        {
+            if (source == null)
+                throw new ArgumentNullException("source");
+            Contract.EndContractBlock();
+
+            return IndexOf(source, value, startIndex, source.Length - startIndex, CompareOptions.None);
+        }
+
+        public unsafe virtual int IndexOf(String source, String value, int startIndex)
+        {
+            if (source == null)
+                throw new ArgumentNullException("source");
+            Contract.EndContractBlock();
+
+            return IndexOf(source, value, startIndex, source.Length - startIndex, CompareOptions.None);
+        }
 
         public unsafe virtual int IndexOf(String source, char value, int startIndex, CompareOptions options)
         {
@@ -682,6 +811,16 @@ namespace System.Globalization
                 source.Length, options);
         }
 
+        public unsafe virtual int LastIndexOf(String source, char value, int startIndex)
+        {
+            return LastIndexOf(source, value, startIndex, startIndex + 1, CompareOptions.None);
+        }
+
+
+        public unsafe virtual int LastIndexOf(String source, String value, int startIndex)
+        {
+            return LastIndexOf(source, value, startIndex, startIndex + 1, CompareOptions.None);
+        }
 
         public unsafe virtual int LastIndexOf(String source, char value, int startIndex, CompareOptions options)
         {
@@ -798,7 +937,23 @@ namespace System.Globalization
             return LastIndexOfCore(source, value, startIndex, count, options);
         }
 
+        ////////////////////////////////////////////////////////////////////////
+        //
+        //  GetSortKey
+        //
+        //  Gets the SortKey for the given string with the given options.
+        //
+        ////////////////////////////////////////////////////////////////////////
+        public unsafe virtual SortKey GetSortKey(String source, CompareOptions options)
+        {
+            return CreateSortKey(source, options);
+        }
 
+
+        public unsafe virtual SortKey GetSortKey(String source)
+        {
+            return CreateSortKey(source, CompareOptions.None);
+        }
 
         ////////////////////////////////////////////////////////////////////////
         //
@@ -920,6 +1075,14 @@ namespace System.Globalization
         public override String ToString()
         {
             return ("CompareInfo - " + this.Name);
+        }
+
+        public int LCID
+        {
+            get
+            {
+                return CultureInfo.GetCultureInfo(Name).LCID;
+            }
         }
     }
 }

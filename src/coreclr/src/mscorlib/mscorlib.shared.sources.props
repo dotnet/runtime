@@ -664,6 +664,8 @@
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\NumberFormatInfo.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\PersianCalendar.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\RegionInfo.cs" />
+    <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\SortKey.cs" />
+    <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\SortVersion.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\StringInfo.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\TaiwanCalendar.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\TaiwanLunisolarCalendar.cs" />
