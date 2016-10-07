@@ -6410,8 +6410,7 @@ mono_ptr_class_get (MonoType *type)
 	result->image = el_class->image;
 	result->inited = TRUE;
 	result->flags = TYPE_ATTRIBUTE_CLASS | (el_class->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK);
-	/* Can pointers get boxed? */
-	result->instance_size = sizeof (gpointer);
+	result->instance_size = sizeof (MonoObject) + sizeof (gpointer);
 	result->cast_class = result->element_class = el_class;
 	result->blittable = TRUE;
 
@@ -6469,8 +6468,7 @@ mono_fnptr_class_get (MonoMethodSignature *sig)
 	result->image = mono_defaults.corlib; /* need to fix... */
 	result->inited = TRUE;
 	result->flags = TYPE_ATTRIBUTE_CLASS; /* | (el_class->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK); */
-	/* Can pointers get boxed? */
-	result->instance_size = sizeof (gpointer);
+	result->instance_size = sizeof (MonoObject) + sizeof (gpointer);
 	result->cast_class = result->element_class = result;
 	result->blittable = TRUE;
 

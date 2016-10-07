@@ -11333,6 +11333,9 @@ mono_marshal_load_type_info (MonoClass* klass)
 		j++;
 	}
 
+	if (klass->byval_arg.type == MONO_TYPE_PTR)
+		info->native_size = sizeof (gpointer);
+
 	if (layout != TYPE_ATTRIBUTE_AUTO_LAYOUT) {
 		info->native_size = MAX (native_size, info->native_size);
 		/*

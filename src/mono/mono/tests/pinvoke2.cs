@@ -1922,5 +1922,22 @@ public unsafe class Tests {
 
 		return mono_test_marshal_fixed_array (s);
 	}
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_pointer_array")]
+	public static extern int mono_test_marshal_pointer_array (int*[] arr);
+
+	public static unsafe int test_0_pointer_array () {
+		var arr = new int [10];
+		for (int i = 0; i < arr.Length; i++)
+			arr [i] = -1;
+		var arr2 = new int*[10];
+		for (int i = 0; i < arr2.Length; i++) {
+			GCHandle handle = GCHandle.Alloc(arr[i], GCHandleType.Pinned);
+			fixed (int *ptr = &arr[i]) {
+				arr2[i] = ptr;
+			}
+		}
+		return mono_test_marshal_pointer_array (arr2);
+	}
 }
 

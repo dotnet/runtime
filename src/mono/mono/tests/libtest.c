@@ -7229,3 +7229,15 @@ mono_test_marshal_fixed_array (FixedArrayStruct s)
 {
 	return s.array [0] + s.array [1] + s.array [2];
 }
+
+LIBTEST_API int STDCALL
+mono_test_marshal_pointer_array (int *arr[])
+{
+	int i;
+
+	for (i = 0; i < 10; ++i) {
+		if (*arr [i] != -1)
+			return 1;
+	}
+	return 0;
+}
