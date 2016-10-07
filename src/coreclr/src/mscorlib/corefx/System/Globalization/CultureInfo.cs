@@ -42,9 +42,12 @@ namespace System.Globalization
 
 #if INSIDE_CLR
     using StringCultureInfoDictionary = Dictionary<string, CultureInfo>;
+    using StringLcidDictionary = Dictionary<int, CultureInfo>;
+    
     using Lock = Object;
 #else
     using StringCultureInfoDictionary = LowLevelDictionary<string, CultureInfo>;
+    using StringLcidDictionary = LowLevelDictionary<int, CultureInfo>;
 #endif
 
     [Serializable]
@@ -139,10 +142,19 @@ namespace System.Globalization
 
         private static readonly Lock m_lock = new Lock();
         private static volatile StringCultureInfoDictionary s_NameCachedCultures;
+        private static volatile StringLcidDictionary s_LcidCachedCultures;       
 
         //The parent culture.
         [NonSerialized]
         private CultureInfo m_parent;
+
+        // LOCALE constants of interest to us internally and privately for LCID functions
+        // (ie: avoid using these and use names if possible)
+        private  const int LOCALE_NEUTRAL        = 0x0000;
+        private  const int LOCALE_USER_DEFAULT   = 0x0400;
+        private  const int LOCALE_SYSTEM_DEFAULT = 0x0800;
+        internal const int LOCALE_CUSTOM_UNSPECIFIED = 0x1000;
+        internal const int LOCALE_CUSTOM_DEFAULT = 0x0c00;
 
         static AsyncLocal<CultureInfo> s_asyncLocalCurrentCulture; 
         static AsyncLocal<CultureInfo> s_asyncLocalCurrentUICulture;
@@ -200,6 +212,44 @@ namespace System.Globalization
             InitializeFromName(name, useUserOverride);
         }
 
+        public CultureInfo(int culture) : this(culture, true) 
+        {
+        }
+
+        public CultureInfo(int culture, bool useUserOverride)
+        {
+            // We don't check for other invalid LCIDS here...
+            if (culture < 0)
+            {
+                throw new ArgumentOutOfRangeException("culture", SR.ArgumentOutOfRange_NeedPosNum);
+            }
+            Contract.EndContractBlock();
+
+            InitializeFromCultureId(culture, useUserOverride);
+        }
+
+        private void InitializeFromCultureId(int culture, bool useUserOverride)
+        {
+            switch (culture)
+            {
+                case LOCALE_CUSTOM_DEFAULT:
+                case LOCALE_SYSTEM_DEFAULT:
+                case LOCALE_NEUTRAL:
+                case LOCALE_USER_DEFAULT:
+                case LOCALE_CUSTOM_UNSPECIFIED:
+                    // Can't support unknown custom cultures and we do not support neutral or
+                    // non-custom user locales.
+                    throw new CultureNotFoundException("culture", culture, SR.Argument_CultureNotSupported);
+
+                default:
+                    // Now see if this LCID is supported in the system default CultureData table.
+                    m_cultureData = CultureData.GetCultureData(culture, useUserOverride);
+                    break;
+            }
+            m_isInherited = (this.GetType() != typeof(System.Globalization.CultureInfo));
+            m_name = m_cultureData.CultureName;
+        }
+
         private void InitializeFromName(string name, bool useUserOverride)
         {
             // Get our data providing record
@@ -212,6 +262,31 @@ namespace System.Globalization
 
             this.m_name = this.m_cultureData.CultureName;
             this.m_isInherited = (this.GetType() != typeof(System.Globalization.CultureInfo));
+        }
+
+        // Constructor called by SQL Server's special munged culture - creates a culture with
+        // a TextInfo and CompareInfo that come from a supplied alternate source. This object
+        // is ALWAYS read-only.
+        // Note that we really cannot use an LCID version of this override as the cached
+        // name we create for it has to include both names, and the logic for this is in
+        // the GetCultureInfo override *only*.
+        internal CultureInfo(String cultureName, String textAndCompareCultureName)
+        {
+            if (cultureName == null)
+            {
+                throw new ArgumentNullException("cultureName",SR.ArgumentNull_String);
+            }
+            Contract.EndContractBlock();
+
+            m_cultureData = CultureData.GetCultureData(cultureName, false);
+            if (m_cultureData == null)
+                throw new CultureNotFoundException("cultureName", cultureName, SR.Argument_CultureNotSupported);
+            
+            m_name = m_cultureData.CultureName;
+
+            CultureInfo altCulture = GetCultureInfo(textAndCompareCultureName);
+            compareInfo = altCulture.CompareInfo;
+            textInfo = altCulture.TextInfo;
         }
 
         // We do this to try to return the system UI language and the default user languages
@@ -510,6 +585,14 @@ namespace System.Globalization
                     }
                 }
                 return m_parent;
+            }
+        }
+
+        public virtual int LCID
+        {
+            get
+            {
+                return (this.m_cultureData.ILANGUAGE);
             }
         }
 
@@ -1054,26 +1137,25 @@ namespace System.Globalization
             get { return Name == CultureInfo.InvariantCulture.Name; }
         }
 
-        // Helper function both both overloads of GetCachedReadOnlyCulture.
-        internal static CultureInfo GetCultureInfoHelper(string name)
+        // Helper function both both overloads of GetCachedReadOnlyCulture.  If lcid is 0, we use the name.
+        // If lcid is -1, use the altName and create one of those special SQL cultures.
+        internal static CultureInfo GetCultureInfoHelper(int lcid, string name, string altName)
         {
-            // There is a race condition in this code with the side effect that the second thread's value
-            // clobbers the first in the dictionary. This is an acceptable race since the CultureInfo objects
-            // are content equal (but not reference equal). Since we make no guarantees there, this race is
-            // acceptable.
-
             // retval is our return value.
             CultureInfo retval;
-
-            if (name == null)
-            {
-                return null;
-            }
 
             // Temporary hashtable for the names.
             StringCultureInfoDictionary tempNameHT = s_NameCachedCultures;
 
-            name = CultureData.AnsiToLower(name);
+            if (name != null)
+            {
+                name = CultureData.AnsiToLower(name);
+            }
+            
+            if (altName != null)
+            {
+                altName = CultureData.AnsiToLower(altName);
+            }
 
             // We expect the same result for both hashtables, but will test individually for added safety.
             if (tempNameHT == null)
@@ -1082,20 +1164,66 @@ namespace System.Globalization
             }
             else
             {
-                bool ret;
-                lock (m_lock)
+                // If we are called by name, check if the object exists in the hashtable.  If so, return it.
+                if (lcid == -1 || lcid == 0)
                 {
-                    ret = tempNameHT.TryGetValue(name, out retval);
-                }
+                    bool ret;
+                    lock (m_lock)
+                    {
+                        ret = tempNameHT.TryGetValue(lcid == 0 ? name : name + '\xfffd' + altName, out retval);
+                    }
 
-                if (ret && retval != null)
-                {
-                    return retval;
+                    if (ret && retval != null)
+                    {
+                        return retval;
+                    }
                 }
             }
+
+            // Next, the Lcid table.
+            StringLcidDictionary tempLcidHT = s_LcidCachedCultures;
+
+            if (tempLcidHT == null)
+            {
+                // Case insensitive is not an issue here, save the constructor call.
+                tempLcidHT = new StringLcidDictionary();
+            }
+            else
+            {
+                // If we were called by Lcid, check if the object exists in the table.  If so, return it.
+                if (lcid > 0)
+                {
+                    bool ret;
+                    lock (m_lock)
+                    {
+                        ret = tempLcidHT.TryGetValue(lcid, out retval);
+                    }
+                    if (ret && retval != null)
+                    {
+                        return retval;
+                    }
+                }
+            }
+
+            // We now have two temporary hashtables and the desired object was not found.
+            // We'll construct it.  We catch any exceptions from the constructor call and return null.
             try
             {
-                retval = new CultureInfo(name, false);
+                switch (lcid)
+                {
+                    case -1:
+                        // call the private constructor
+                        retval = new CultureInfo(name, altName);
+                        break;
+
+                    case 0:
+                        retval = new CultureInfo(name, false);
+                        break;
+
+                    default:
+                        retval = new CultureInfo(lcid, false);
+                        break;
+                }
             }
             catch (ArgumentException)
             {
@@ -1105,19 +1233,68 @@ namespace System.Globalization
             // Set it to read-only
             retval.m_isReadOnly = true;
 
-            // Remember our name (as constructed).  Do NOT use alternate sort name versions because
-            // we have internal state representing the sort.  (So someone would get the wrong cached version)
-            string newName = CultureData.AnsiToLower(retval.m_name);
-
-            // We add this new culture info object to both tables.
-            lock (m_lock)
+            if (lcid == -1)
             {
-                tempNameHT[newName] = retval;
+                lock (m_lock)
+                {
+                    // This new culture will be added only to the name hash table.
+                    tempNameHT[name + '\xfffd' + altName] = retval;
+                }
+                // when lcid == -1 then TextInfo object is already get created and we need to set it as read only.
+                retval.TextInfo.SetReadOnlyState(true);
+            }
+            else if (lcid == 0)
+            {
+                // Remember our name (as constructed).  Do NOT use alternate sort name versions because
+                // we have internal state representing the sort.  (So someone would get the wrong cached version)
+                string newName = CultureData.AnsiToLower(retval.m_name);
+                
+                // We add this new culture info object to both tables.
+                lock (m_lock)
+                {
+                    tempNameHT[newName] = retval;
+                }
+            } 
+            else
+            {
+                lock (m_lock)
+                {
+                    tempLcidHT[lcid] = retval;
+                }
+            }
+
+            // Copy the two hashtables to the corresponding member variables.  This will potentially overwrite
+            // new tables simultaneously created by a new thread, but maximizes thread safety.
+            if (-1 != lcid)
+            {
+                // Only when we modify the lcid hash table, is there a need to overwrite.
+                s_LcidCachedCultures = tempLcidHT;
             }
 
             s_NameCachedCultures = tempNameHT;
 
             // Finally, return our new CultureInfo object.
+            return retval;
+        }
+
+        // Gets a cached copy of the specified culture from an internal hashtable (or creates it
+        // if not found).  (LCID version)... use named version
+        public static CultureInfo GetCultureInfo(int culture)
+        {
+            // Must check for -1 now since the helper function uses the value to signal
+            // the altCulture code path for SQL Server.
+            // Also check for zero as this would fail trying to add as a key to the hash.
+            if (culture <= 0) 
+            {
+                throw new ArgumentOutOfRangeException("culture", SR.ArgumentOutOfRange_NeedPosNum);
+            }
+            Contract.Ensures(Contract.Result<CultureInfo>() != null);
+            Contract.EndContractBlock();
+            CultureInfo retval = GetCultureInfoHelper(culture, null, null);
+            if (null == retval)
+            {
+                throw new CultureNotFoundException("culture", culture, SR.Argument_CultureNotSupported);
+            }
             return retval;
         }
 
@@ -1131,7 +1308,7 @@ namespace System.Globalization
                 throw new ArgumentNullException("name");
             }
 
-            CultureInfo retval = GetCultureInfoHelper(name);
+            CultureInfo retval = GetCultureInfoHelper(0, name, null);
             if (retval == null)
             {
                 throw new CultureNotFoundException(

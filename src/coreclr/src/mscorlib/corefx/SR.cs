@@ -143,6 +143,11 @@ namespace System.Globalization
         {
             get { return Environment.GetResourceString("Argument_CultureNotSupported"); }
         }
+
+        public static string Argument_CustomCultureCannotBePassedByNumber
+        {
+            get { return Environment.GetResourceString("Argument_CustomCultureCannotBePassedByNumber"); }
+        }
        
         public static string Argument_EmptyDecString
         {
@@ -202,6 +207,11 @@ namespace System.Globalization
         public static string Argument_NoRegionInvariantCulture
         {
             get { return Environment.GetResourceString("Argument_NoRegionInvariantCulture"); }
+        }
+
+        public static string Argument_OnlyMscorlib
+        {
+            get { return Environment.GetResourceString("Argument_OnlyMscorlib"); }
         }
 
         public static string Argument_ResultCalendarRange
