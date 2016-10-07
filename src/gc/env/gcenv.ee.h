@@ -7,36 +7,11 @@
 #ifndef __GCENV_EE_H__
 #define __GCENV_EE_H__
 
-struct ScanContext;
-class CrawlFrame;
-struct gc_alloc_context;
-
-typedef void promote_func(PTR_PTR_Object, ScanContext*, uint32_t);
-
-typedef void enum_alloc_context_func(gc_alloc_context*, void*);
-
-typedef struct
-{
-    promote_func*  f;
-    ScanContext*   sc;
-    CrawlFrame *   cf;
-} GCCONTEXT;
-
-// GC background thread function prototype
-typedef uint32_t (__stdcall *GCBackgroundThreadFunction)(void* param);
+#include "gcinterface.h"
 
 class GCToEEInterface
 {
 public:
-    //
-    // Suspend/Resume callbacks
-    //
-    typedef enum
-    {
-        SUSPEND_FOR_GC = 1,
-        SUSPEND_FOR_GC_PREP = 6
-    } SUSPEND_REASON;
-
     static void SuspendEE(SUSPEND_REASON reason);
     static void RestartEE(bool bFinishedGC); //resume threads.
 
