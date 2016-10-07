@@ -27,7 +27,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(2)]
-        public async Task Connect_DnsEndPoint_Success(int mode)
+        public async Task ConnectAsync_DnsEndPoint_Success(int mode)
         {
             using (TcpClient client = new TcpClient())
             {
@@ -56,6 +56,50 @@ namespace System.Net.Sockets.Tests
                 {
                     byte[] getRequest = Encoding.ASCII.GetBytes("GET / HTTP/1.1\r\n\r\n");
                     await s.WriteAsync(getRequest, 0, getRequest.Length);
+                    Assert.NotEqual(-1, s.ReadByte()); // just verify we successfully get any data back
+                }
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        public void Connect_DnsEndPoint_Success(int mode)
+        {
+            using (TcpClient client = new TcpClient())
+            {
+                Assert.False(client.Connected);
+
+                string host = System.Net.Test.Common.Configuration.Sockets.SocketServer.IdnHost;
+                int port = System.Net.Test.Common.Configuration.Sockets.SocketServer.Port;
+
+                if (mode == 0)
+                {
+                    client.Connect(host, port);
+                }
+                else
+                {
+                    IPAddress[] addresses = Dns.GetHostAddresses(host);
+                    if (mode == 1)
+                    {
+                        client.Connect(addresses[0], port);
+                    }
+                    else
+                    {
+                        client.Connect(addresses, port);
+                    }
+                }
+
+                Assert.True(client.Connected);
+                Assert.NotNull(client.Client);
+                Assert.Same(client.Client, client.Client);
+
+                using (NetworkStream s = client.GetStream())
+                {
+                    byte[] getRequest = Encoding.ASCII.GetBytes("GET / HTTP/1.1\r\n\r\n");
+                    s.Write(getRequest, 0, getRequest.Length);
                     Assert.NotEqual(-1, s.ReadByte()); // just verify we successfully get any data back
                 }
             }
