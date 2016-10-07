@@ -84,6 +84,10 @@ struct segment_info
 
 #define LARGE_OBJECT_SIZE ((size_t)(85000))
 
+// The minimum size of an object is three pointers wide: one for the syncblock,
+// one for the object header, and one for the first field in the object.
+#define min_obj_size ((sizeof(uint8_t*) + sizeof(uintptr_t) + sizeof(size_t)))
+
 class Object;
 class IGCHeap;
 
@@ -387,7 +391,16 @@ public:
     /*
     ===========================================================================
     Allocation routines. These all call into the GC's allocator and may trigger a garbage
-    collection.
+    collection. All allocation routines return NULL when the allocation request
+    couldn't be serviced due to being out of memory.
+
+    These allocation routines should not be called with allocation requests
+    larger than:
+       32-bit  -> 0x7FFFFFE0
+       64-bit  -> 0x7FFFFFFFFFFFFFE0
+
+    It is up to the caller of the API to raise appropriate errors if the amount
+    of requested memory is too large.
     ===========================================================================
     */
 
