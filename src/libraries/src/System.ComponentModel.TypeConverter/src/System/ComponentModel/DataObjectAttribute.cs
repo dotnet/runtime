@@ -58,7 +58,7 @@ namespace System.ComponentModel
         /// <internalonly/>
         public override bool IsDefaultAttribute()
         {
-            return (this.Equals(Default));
+            return (Equals(Default));
         }
     }
 }

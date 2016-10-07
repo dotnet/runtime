@@ -75,7 +75,7 @@ namespace System.ComponentModel
                 _raiseItemChangedEvents = true;
 
                 // Loop thru the items already in the collection and hook their change notification.
-                foreach (T item in this.Items)
+                foreach (T item in Items)
                 {
                     HookPropertyChanged(item);
                 }
@@ -232,7 +232,7 @@ namespace System.ComponentModel
 
             if (_raiseItemChangedEvents)
             {
-                foreach (T item in this.Items)
+                foreach (T item in Items)
                 {
                     UnhookPropertyChanged(item);
                 }
@@ -645,7 +645,7 @@ namespace System.ComponentModel
 
         private void Child_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (this.RaiseListChangedEvents)
+            if (RaiseListChangedEvents)
             {
                 if (sender == null || e == null || string.IsNullOrEmpty(e.PropertyName))
                 {
@@ -676,7 +676,7 @@ namespace System.ComponentModel
 
                     if (pos < 0 || pos >= Count || !this[pos].Equals(item))
                     {
-                        pos = this.IndexOf(item);
+                        pos = IndexOf(item);
                         _lastChangeIndex = pos;
                     }
 

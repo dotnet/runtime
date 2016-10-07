@@ -146,9 +146,9 @@ namespace System.ComponentModel
                             }
                         }
 
-                        if (addAttr && !attrDictionary.Contains(attrArray[idx].GetTypeId()))
+                        if (addAttr && !attrDictionary.Contains(attrArray[idx].TypeId))
                         {
-                            attrDictionary[attrArray[idx].GetTypeId()] = attrArray[idx];
+                            attrDictionary[attrArray[idx].TypeId] = attrArray[idx];
                         }
                     }
 
