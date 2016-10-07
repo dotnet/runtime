@@ -31,6 +31,8 @@ public:
     void ClrGCBit() { m_uSyncBlockValue &= ~BIT_SBLK_GC_RESERVE; }
 };
 
+static_assert(sizeof(ObjHeader) == sizeof(uintptr_t), "this assumption is made by the VM!");
+
 #define MTFlag_ContainsPointers 1
 #define MTFlag_HasFinalizer 2
 #define MTFlag_IsArray 4
