@@ -6,24 +6,8 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public class Uma_ReadWriteStructArray
+    public class Uma_ReadWriteStructArray : Uma_TestStructs
     {
-        private const int UmaTestStruct_DisalignedSize = 2 * sizeof(int) + 2 * sizeof(bool) + sizeof(char);
-        private const int UmaTestStruct_AlignedSize = 16; // potentially architecture dependent.
-        private struct UmaTestStruct
-        {
-            public int int1;
-            public bool bool1;
-            public int int2;
-            public char char1;
-            public bool bool2;
-        }
-
-        private struct UmaTestStruct_ContainsReferenceType
-        {
-            public object referenceType;
-        }
-
         [Fact]
         public static void UmaReadWriteStructArray_InvalidParameters()
         {
@@ -95,15 +79,15 @@ namespace System.IO.Tests
             using (TestSafeBuffer buffer = new TestSafeBuffer(capacity))
             using (UnmanagedMemoryAccessor uma = new UnmanagedMemoryAccessor(buffer, 0, capacity, FileAccess.ReadWrite))
             {
-                Assert.Throws<ArgumentException>(() => uma.WriteArray<UmaTestStruct>(capacity - UmaTestStruct_DisalignedSize + 1, structArr, 0, 1));
+                Assert.Throws<ArgumentException>(() => uma.WriteArray<UmaTestStruct>(capacity - UmaTestStruct_UnalignedSize + 1, structArr, 0, 1));
                 Assert.Throws<ArgumentException>(() => uma.WriteArray<UmaTestStruct>(capacity - UmaTestStruct_AlignedSize + 1, structArr, 0, 1));
-                Assert.Equal(0, uma.ReadArray<UmaTestStruct>(capacity - UmaTestStruct_DisalignedSize + 1, structArr, 0, 1));
+                Assert.Equal(0, uma.ReadArray<UmaTestStruct>(capacity - UmaTestStruct_UnalignedSize + 1, structArr, 0, 1));
                 Assert.Equal(0, uma.ReadArray<UmaTestStruct>(capacity - UmaTestStruct_AlignedSize + 1, structArr, 0, 1));
             }
         }
 
         [Fact]
-        public static void UmaReadStructArrayWithReferenceType_ThrowsArgumentException()
+        public static void UmaReadWriteStructArrayWithReferenceType_ThrowsArgumentException()
         {
             const int capacity = 100;
             UmaTestStruct_ContainsReferenceType[] structArr = new UmaTestStruct_ContainsReferenceType[1] { new UmaTestStruct_ContainsReferenceType() { referenceType = new object() } };
@@ -112,6 +96,34 @@ namespace System.IO.Tests
             {
                 Assert.Throws<ArgumentException>("type", () => uma.WriteArray<UmaTestStruct_ContainsReferenceType>(0, structArr, 0, 1));
                 Assert.Throws<ArgumentException>("type", () => uma.ReadArray<UmaTestStruct_ContainsReferenceType>(0, structArr, 0, 1));
+            }
+        }
+
+        [Fact]
+        public static void UmaReadWriteStructArrayGenericIntStruct_Valid()
+        {
+            const int capacity = 100;
+            UmaTestStruct_Generic<int>[] inStructArr = new UmaTestStruct_Generic<int>[1] { new UmaTestStruct_Generic<int>() { ofT = 190 } };
+            UmaTestStruct_Generic<int>[] outStructArr = new UmaTestStruct_Generic<int>[1];
+            using (var buffer = new TestSafeBuffer(capacity))
+            using (var uma = new UnmanagedMemoryAccessor(buffer, 0, capacity, FileAccess.ReadWrite))
+            {
+                uma.WriteArray<UmaTestStruct_Generic<int>>(0, inStructArr, 0, 1);
+                Assert.Equal(1, uma.ReadArray<UmaTestStruct_Generic<int>>(0, outStructArr, 0, 1));
+                Assert.Equal(inStructArr[0].ofT, outStructArr[0].ofT);
+            }
+        }
+
+        [Fact]
+        public static void UmaReadWriteGenericStringStructArray_ThrowsArgumentException()
+        {
+            const int capacity = 100;
+            UmaTestStruct_Generic<string>[] structArr = new UmaTestStruct_Generic<string>[1] { new UmaTestStruct_Generic<string>() { ofT = "Cats!" } };
+            using (var buffer = new TestSafeBuffer(capacity))
+            using (var uma = new UnmanagedMemoryAccessor(buffer, 0, capacity, FileAccess.ReadWrite))
+            {
+                Assert.Throws<ArgumentException>("type", () => uma.WriteArray<UmaTestStruct_Generic<string>>(0, structArr, 0, 1));
+                Assert.Throws<ArgumentException>("type", () => uma.ReadArray<UmaTestStruct_Generic<string>>(0, structArr, 0, 1));
             }
         }
 

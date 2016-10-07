@@ -17,9 +17,12 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
+  <ItemGroup Condition="'$(TargetGroup)' == ''" >
+    <Compile Include="Uma.TestStructs.cs" />
+    <Compile Include="Uma.ReadWriteStruct.cs" />
+    <Compile Include="Uma.ReadWriteStructArray.cs"/>
+  </ItemGroup>
   <ItemGroup>
-    <Compile Include="Uma.ReadWriteStruct.cs" Condition="'$(TargetGroup)' == ''" />
-    <Compile Include="Uma.ReadWriteStructArray.cs" Condition="'$(TargetGroup)' == ''" />
     <Compile Include="ArrayHelpers.cs" />
     <Compile Include="UmaTests.cs" />
     <Compile Include="UmsCtorTests.cs" />

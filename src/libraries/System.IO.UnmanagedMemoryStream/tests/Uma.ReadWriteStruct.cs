@@ -6,24 +6,8 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public class Uma_ReadWriteStruct
+    public class Uma_ReadWriteStruct : Uma_TestStructs
     {
-        private const int UmaTestStruct_DisalignedSize = 2 * sizeof(int) + 2 * sizeof(bool) + sizeof(char);
-        private const int UmaTestStruct_AlignedSize = 16; // potentially architecture dependent.
-        private struct UmaTestStruct
-        {
-            public int int1;
-            public bool bool1;
-            public int int2;
-            public char char1;
-            public bool bool2;
-        }
-
-        private struct UmaTestStruct_ContainsReferenceType
-        {
-            public object referenceType;
-        }
-
         [Fact]
         public static void UmaReadWriteStruct_NegativePosition()
         {
@@ -96,15 +80,15 @@ namespace System.IO.Tests
             using (TestSafeBuffer buffer = new TestSafeBuffer(capacity))
             using (UnmanagedMemoryAccessor uma = new UnmanagedMemoryAccessor(buffer, 0, capacity, FileAccess.ReadWrite))
             {
-                Assert.Throws<ArgumentException>(() => uma.Write<UmaTestStruct>(capacity - UmaTestStruct_DisalignedSize + 1, ref inStruct));
+                Assert.Throws<ArgumentException>(() => uma.Write<UmaTestStruct>(capacity - UmaTestStruct_UnalignedSize + 1, ref inStruct));
                 Assert.Throws<ArgumentException>(() => uma.Write<UmaTestStruct>(capacity - UmaTestStruct_AlignedSize + 1, ref inStruct));
-                Assert.Throws<ArgumentException>(() => uma.Read<UmaTestStruct>(capacity - UmaTestStruct_DisalignedSize + 1, out inStruct));
+                Assert.Throws<ArgumentException>(() => uma.Read<UmaTestStruct>(capacity - UmaTestStruct_UnalignedSize + 1, out inStruct));
                 Assert.Throws<ArgumentException>(() => uma.Read<UmaTestStruct>(capacity - UmaTestStruct_AlignedSize + 1, out inStruct));
             }
         }
 
         [Fact]
-        public static void UmaReadStructWithReferenceType_ThrowsArgumentException()
+        public static void UmaReadWriteStructWithReferenceType_ThrowsArgumentException()
         {
             const int capacity = 100;
             UmaTestStruct_ContainsReferenceType inStruct = new UmaTestStruct_ContainsReferenceType { referenceType = new object() };
@@ -113,6 +97,34 @@ namespace System.IO.Tests
             {
                 Assert.Throws<ArgumentException>("type", () => uma.Write<UmaTestStruct_ContainsReferenceType>(0, ref inStruct));
                 Assert.Throws<ArgumentException>("type", () => uma.Read<UmaTestStruct_ContainsReferenceType>(0, out inStruct));
+            }
+        }
+
+        [Fact]
+        public static void UmaReadWriteGenericIntStruct_Valid()
+        {
+            const int capacity = 100;
+            UmaTestStruct_Generic<int> inStruct = new UmaTestStruct_Generic<int> () { ofT = 158 };
+            UmaTestStruct_Generic<int> outStruct;
+            using (var buffer = new TestSafeBuffer(capacity))
+            using (var uma = new UnmanagedMemoryAccessor(buffer, 0, capacity, FileAccess.ReadWrite))
+            {
+                uma.Write<UmaTestStruct_Generic<int>>(0, ref inStruct);
+                uma.Read<UmaTestStruct_Generic<int>>(0, out outStruct);
+                Assert.Equal(inStruct.ofT, outStruct.ofT);
+            }
+        }
+
+        [Fact]
+        public static void UmaReadWriteGenericStringStruct_ThrowsArgumentException()
+        {
+            const int capacity = 100;
+            UmaTestStruct_Generic<string> inStruct = new UmaTestStruct_Generic<string>() { ofT = "Cats!" };
+            using (var buffer = new TestSafeBuffer(capacity))
+            using (var uma = new UnmanagedMemoryAccessor(buffer, 0, capacity, FileAccess.ReadWrite))
+            {
+                Assert.Throws<ArgumentException>("type", () => uma.Write<UmaTestStruct_Generic<string>>(0, ref inStruct));
+                Assert.Throws<ArgumentException>("type", () => uma.Read<UmaTestStruct_Generic<string>>(0, out inStruct));
             }
         }
 
