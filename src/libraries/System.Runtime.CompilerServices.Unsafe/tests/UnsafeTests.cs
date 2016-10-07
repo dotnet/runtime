@@ -179,6 +179,83 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        [Theory]
+        [MemberData(nameof(InitBlockData))]
+        public static unsafe void InitBlockUIntPtrStack(int numBytes, byte value)
+        {
+            byte* stackPtr = stackalloc byte[numBytes];
+            Unsafe.InitBlock(stackPtr, value, (UIntPtr)numBytes);
+            for (int i = 0; i < numBytes; i++)
+            {
+                Assert.Equal(stackPtr[i], value);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(InitBlockData))]
+        public static unsafe void InitBlockUIntPtrUnmanaged(int numBytes, byte value)
+        {
+            IntPtr allocatedMemory = Marshal.AllocCoTaskMem(numBytes);
+            byte* bytePtr = (byte*)allocatedMemory.ToPointer();
+            Unsafe.InitBlock(bytePtr, value, (UIntPtr)numBytes);
+            for (int i = 0; i < numBytes; i++)
+            {
+                Assert.Equal(bytePtr[i], value);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(InitBlockData))]
+        public static unsafe void InitBlockUnalignedStack(int numBytes, byte value)
+        {
+            byte* stackPtr = stackalloc byte[numBytes + 1];
+            stackPtr += 1; // +1 = make unaligned
+            Unsafe.InitBlockUnaligned(stackPtr, value, (uint)numBytes);
+            for (int i = 0; i < numBytes; i++)
+            {
+                Assert.Equal(stackPtr[i], value);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(InitBlockData))]
+        public static unsafe void InitBlockUnalignedUnmanaged(int numBytes, byte value)
+        {
+            IntPtr allocatedMemory = Marshal.AllocCoTaskMem(numBytes + 1);
+            byte* bytePtr = (byte*)allocatedMemory.ToPointer() + 1; // +1 = make unaligned
+            Unsafe.InitBlockUnaligned(bytePtr, value, (uint)numBytes);
+            for (int i = 0; i < numBytes; i++)
+            {
+                Assert.Equal(bytePtr[i], value);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(InitBlockData))]
+        public static unsafe void InitBlockUnalignedUIntPtrStack(int numBytes, byte value)
+        {
+            byte* stackPtr = stackalloc byte[numBytes + 1];
+            stackPtr += 1; // +1 = make unaligned
+            Unsafe.InitBlockUnaligned(stackPtr, value, (UIntPtr)numBytes);
+            for (int i = 0; i < numBytes; i++)
+            {
+                Assert.Equal(stackPtr[i], value);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(InitBlockData))]
+        public static unsafe void InitBlockUnalignedUIntPtrUnmanaged(int numBytes, byte value)
+        {
+            IntPtr allocatedMemory = Marshal.AllocCoTaskMem(numBytes + 1);
+            byte* bytePtr = (byte*)allocatedMemory.ToPointer() + 1; // +1 = make unaligned
+            Unsafe.InitBlockUnaligned(bytePtr, value, (UIntPtr)numBytes);
+            for (int i = 0; i < numBytes; i++)
+            {
+                Assert.Equal(bytePtr[i], value);
+            }
+        }
+
         public static IEnumerable<object[]> InitBlockData()
         {
             yield return new object[] { 0, 1 };
@@ -203,6 +280,80 @@ namespace System.Runtime.CompilerServices
             }
 
             Unsafe.CopyBlock(destination, source, (uint)numBytes);
+
+            for (int i = 0; i < numBytes; i++)
+            {
+                byte value = (byte)(i % 255);
+                Assert.Equal(value, destination[i]);
+                Assert.Equal(source[i], destination[i]);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CopyBlockData))]
+        public static unsafe void CopyBlockUIntPtr(int numBytes)
+        {
+            byte* source = stackalloc byte[numBytes];
+            byte* destination = stackalloc byte[numBytes];
+
+            for (int i = 0; i < numBytes; i++)
+            {
+                byte value = (byte)(i % 255);
+                source[i] = value;
+            }
+
+            Unsafe.CopyBlock(destination, source, (UIntPtr)numBytes);
+
+            for (int i = 0; i < numBytes; i++)
+            {
+                byte value = (byte)(i % 255);
+                Assert.Equal(value, destination[i]);
+                Assert.Equal(source[i], destination[i]);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CopyBlockData))]
+        public static unsafe void CopyBlockUnaligned(int numBytes)
+        {
+            byte* source = stackalloc byte[numBytes + 1];
+            byte* destination = stackalloc byte[numBytes + 1];
+            source += 1;      // +1 = make unaligned
+            destination += 1; // +1 = make unaligned
+
+            for (int i = 0; i < numBytes; i++)
+            {
+                byte value = (byte)(i % 255);
+                source[i] = value;
+            }
+
+            Unsafe.CopyBlockUnaligned(destination, source, (uint)numBytes);
+
+            for (int i = 0; i < numBytes; i++)
+            {
+                byte value = (byte)(i % 255);
+                Assert.Equal(value, destination[i]);
+                Assert.Equal(source[i], destination[i]);
+            }
+        }
+
+
+        [Theory]
+        [MemberData(nameof(CopyBlockData))]
+        public static unsafe void CopyBlockUnalignedUIntPtr(int numBytes)
+        {
+            byte* source = stackalloc byte[numBytes + 1];
+            byte* destination = stackalloc byte[numBytes + 1];
+            source += 1;      // +1 = make unaligned
+            destination += 1; // +1 = make unaligned
+
+            for (int i = 0; i < numBytes; i++)
+            {
+                byte value = (byte)(i % 255);
+                source[i] = value;
+            }
+
+            Unsafe.CopyBlockUnaligned(destination, source, (UIntPtr)numBytes);
 
             for (int i = 0; i < numBytes; i++)
             {
