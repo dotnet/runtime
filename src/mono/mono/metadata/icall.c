@@ -7257,7 +7257,6 @@ get_bundled_app_config (void)
 	return mono_string_new (mono_domain_get (), app_config);
 }
 
-/* this is an icall */
 static MonoStringHandle
 get_bundled_machine_config (MonoError *error)
 {
@@ -7270,6 +7269,19 @@ get_bundled_machine_config (MonoError *error)
 
 	return mono_string_new_handle (mono_domain_get (), machine_config, error);
 }
+
+static MonoStringHandle
+ves_icall_System_Configuration_DefaultConfig_get_bundled_machine_config (MonoError *error)
+{
+	return get_bundled_machine_config (error);
+}
+
+static MonoStringHandle
+ves_icall_System_Configuration_InternalConfigurationHost_get_bundled_machine_config (MonoError *error)
+{
+	return get_bundled_machine_config (error);
+}
+
 
 ICALL_EXPORT MonoString *
 ves_icall_System_Web_Util_ICalls_get_machine_install_dir (void)
