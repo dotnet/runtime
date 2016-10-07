@@ -7,9 +7,9 @@
     "System.Threading.Thread": "4.3.0-beta-24604-02"
   },
   "frameworks": {
-    ".NETCoreApp,Version=v1.0": {},
-    ".NETCoreApp,Version=v1.1": {},
-    ".NETStandard,Version=v1.5": {},
+    "netcoreapp1.0": {},
+    "netcoreapp1.1": {},
+    "netstandard1.5": {},
     "netstandard1.3": {}
   }
 }
