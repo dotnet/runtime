@@ -5,15 +5,16 @@
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <UseECMAKey>true</UseECMAKey>
+    <UseECMAKey Condition="'$(UseECMAKey)' == ''">true</UseECMAKey>
     <AssemblyName>System.Runtime.WindowsRuntime</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ClsCompliant>true</ClsCompliant>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'uap101aot'">true</IsPartialFacadeAssembly>
     <!-- CS1698 - Disable warning about reference to 4.0.0.0 System.Runtime.WindowsRuntime having same simple name as target assembly -->
     <NoWarn>$(NoWarn)1698</NoWarn>
     <ProjectGuid>{844A2A0B-4169-49C3-B367-AFDC4894E487}</ProjectGuid>
     <PackageTargetRuntime>win8</PackageTargetRuntime>
-    <PackageTargetRuntime Condition="'$(TargetGroup)' == 'netcore50aot'">win8-aot</PackageTargetRuntime>
+    <PackageTargetRuntime Condition="'$(TargetGroup)' == 'uap101aot'">win8-aot</PackageTargetRuntime>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)'==''">
@@ -21,14 +22,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50aot_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50aot_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)'=='netcore50aot'">
-    <TargetingPackReference Include="System.Private.Interop.Extensions" />
-    <TargetingPackReference Include="System.Private.Threading.AsyncCausalitySupport" />
-    <TargetingPackReference Include="Windows" />
-    <ProjectReference Include="$(SourceDir)\mscorlib.WinRT-Facade\mscorlib.WinRT-Facade.csproj" />
-  </ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101aot_Debug|AnyCPU'" />  
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101aot_Release|AnyCPU'" />  
   <ItemGroup Condition="'$(TargetGroup)'==''">
     <TargetingPackReference Include="System.Private.CoreLib" />
     <ProjectReference Include="$(SourceDir)\mscorlib.WinRT-Facade\mscorlib.WinRT-Facade.csproj" />
@@ -43,6 +38,37 @@
     <ProjectReference Include="..\..\System.ObjectModel\src\System.ObjectModel.csproj">
       <UndefineProperties>OSGroup</UndefineProperties>
     </ProjectReference>
+   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot'">
+    <!-- We need to add this for now because these three types exist in System.Private.Interop.dll and Windows.winmd. -->
+    <SeedTypePreference Include="Windows.Foundation.Point">
+      <Assembly>System.Private.Interop</Assembly>
+    </SeedTypePreference>
+    <SeedTypePreference Include="Windows.Foundation.Rect">
+      <Assembly>System.Private.Interop</Assembly>
+    </SeedTypePreference>
+    <SeedTypePreference Include="Windows.Foundation.Size">
+      <Assembly>System.Private.Interop</Assembly>
+    </SeedTypePreference>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot'">
+    <TargetingPackReference Include="System.Private.Interop" />
+    <TargetingPackReference Include="System.Private.Corelib" />
+    <TargetingPackReference Include="System.Private.Threading" /> 
+    <TargetingPackReference Include="Windows" />
+    <ProjectReference Include="$(SourceDir)\mscorlib.WinRT-Facade\mscorlib.WinRT-Facade.csproj" />
+    <TargetingPackReference Include="System.Private.CoreLib.WinRTInterop" />
+    <ProjectReference Include="..\..\System.IO\src\System.IO.csproj">
+      <TargetGroup>uap101aot</TargetGroup>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj">
+      <TargetGroup>uap101aot</TargetGroup>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Resources.ResourceManager\ref\System.Resources.ResourceManager.csproj">
+      <TargetGroup>uap101aot</TargetGroup>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'==''">
     <Compile Include="System\IO\StreamOperationAsyncResult.CoreCLR.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\MarshalingHelpers.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\RestrictedErrorInfoHelper.cs" />
@@ -52,9 +78,11 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetRestrictedErrorInfo.cs">
       <Link>Common\Interop\Windows\mincore\Interop.GetRestrictedErrorInfo.cs</Link>
     </Compile>
+    <Compile Include="System\Windows\Point.cs" />
+    <Compile Include="System\Windows\Rect.cs" />
+    <Compile Include="System\Windows\Size.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcore50aot'">
-    <Compile Include="System\IO\BufferedStream.cs" />
+  <ItemGroup Condition="'$(TargetGroup)'=='uap101aot'">
     <Compile Include="System\IO\StreamOperationAsyncResult.CoreRT.cs" />
     <Compile Include="System\IO\UnmanagedMemoryStreamInternal.cs" />
     <Compile Include="System\Threading\Tasks\AsyncInfoToTaskBridge.CoreRT.cs" />
@@ -71,6 +99,7 @@
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="System\InternalHelpers.cs" />
+    <Compile Include="System\IO\BufferedStreamWrapper.cs" />
     <Compile Include="System\IO\NetFxToWinRtStreamAdapter.cs" />
     <Compile Include="System\IO\StreamOperationAsyncResult.cs" />
     <Compile Include="System\IO\StreamOperationsImplementation.cs" />
@@ -94,9 +123,6 @@
     <Compile Include="System\Threading\Tasks\TaskToAsyncOperationAdapter.cs" />
     <Compile Include="System\Threading\Tasks\TaskToAsyncOperationWithProgressAdapter.cs" />
     <Compile Include="System\VoidTypeParameter.cs" />
-    <Compile Include="System\Windows\Point.cs" />
-    <Compile Include="System\Windows\Rect.cs" />
-    <Compile Include="System\Windows\Size.cs" />
     <Compile Include="System\Windows\TokenizerHelper.cs" />
     <Compile Include="System\Windows\UI\Color.cs" />
   </ItemGroup>
