@@ -13,6 +13,7 @@
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
     <AssemblyVersion Condition="'$(TargetGroup)' == 'netcore50'">4.1.1.0</AssemblyVersion>
     <DefineConstants Condition="'$(TargetGroup)' == 'netcore50'">$(DefineConstants);netcore50</DefineConstants>
+    <ContractProject Condition="'$(AssemblyVersion)'=='4.1.1.0'">../ref/4.1.0/System.Net.Sockets.depproj</ContractProject>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' AND '$(TargetGroup)' == ''">
     <ProjectJson>win/project.json</ProjectJson>
@@ -61,9 +62,11 @@
     <Compile Include="System\Net\Sockets\SocketOptionName.cs" />
     <Compile Include="System\Net\Sockets\SocketShutdown.cs" />
     <Compile Include="System\Net\Sockets\TCPClient.cs" />
+    <Compile Condition="'$(TargetGroup)' != 'netcore50'" Include="System\Net\Sockets\TCPClient.netstandard17.cs" />
     <Compile Include="System\Net\Sockets\TCPListener.cs" />
     <Compile Include="System\Net\Sockets\TransportType.cs" />
     <Compile Include="System\Net\Sockets\UDPClient.cs" />
+    <Compile Condition="'$(TargetGroup)' != 'netcore50'" Include="System\Net\Sockets\UDPClient.netstandard17.cs" />
     <Compile Include="System\Net\Sockets\UdpReceiveResult.cs" />
     <Compile Include="System\Net\Sockets\AcceptOverlappedAsyncResult.cs" />
     <Compile Include="System\Net\Sockets\BaseOverlappedAsyncResult.cs" />
@@ -172,6 +175,7 @@
     <Compile Include="System\Net\Sockets\SocketAsyncEventArgs.Windows.cs" />
     <Compile Include="System\Net\Sockets\SocketPal.Windows.cs" />
     <Compile Include="System\Net\Sockets\TCPClient.Windows.cs" />
+    <Compile Condition="'$(TargetGroup)' != 'netcore50'" Include="System\Net\Sockets\TCPClient.Windows.netstandard17.cs" />
     <Compile Include="$(CommonPath)\System\Net\SafeCloseSocket.Windows.cs">
       <Link>Common\System\Net\SafeCloseSocket.Windows.cs</Link>
     </Compile>
@@ -313,6 +317,7 @@
     <Compile Include="System\Net\Sockets\SocketAsyncEventArgs.Unix.cs" />
     <Compile Include="System\Net\Sockets\SocketPal.Unix.cs" />
     <Compile Include="System\Net\Sockets\TCPClient.Unix.cs" />
+    <Compile Condition="'$(TargetGroup)' != 'netcore50'" Include="System\Net\Sockets\TCPClient.Unix.netstandard17.cs" />
     <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Unix.cs">
       <Link>Common\System\Net\ContextAwareResult.Unix.cs</Link>
     </Compile>

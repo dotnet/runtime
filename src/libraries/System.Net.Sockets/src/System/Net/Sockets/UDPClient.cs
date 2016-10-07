@@ -10,7 +10,7 @@ namespace System.Net.Sockets
     // The System.Net.Sockets.UdpClient class provides access to UDP services at a higher abstraction
     // level than the System.Net.Sockets.Socket class. System.Net.Sockets.UdpClient is used to
     // connect to a remote host and to receive connections from a remote client.
-    public class UdpClient : IDisposable
+    public partial class UdpClient : IDisposable
     {
         private const int MaxUDPSize = 0x10000;
 
@@ -268,7 +268,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal IAsyncResult BeginSend(byte[] datagram, int bytes, IPEndPoint endPoint, AsyncCallback requestCallback, object state)
+        public IAsyncResult BeginSend(byte[] datagram, int bytes, IPEndPoint endPoint, AsyncCallback requestCallback, object state)
         {
             // Validate input parameters.
             if (_cleanedUp)
@@ -301,7 +301,7 @@ namespace System.Net.Sockets
             return _clientSocket.BeginSendTo(datagram, 0, bytes, SocketFlags.None, endPoint, requestCallback, state);
         }
 
-        internal IAsyncResult BeginSend(byte[] datagram, int bytes, string hostname, int port, AsyncCallback requestCallback, object state)
+        public IAsyncResult BeginSend(byte[] datagram, int bytes, string hostname, int port, AsyncCallback requestCallback, object state)
         {
             if (_active && ((hostname != null) || (port != 0)))
             {
@@ -331,12 +331,12 @@ namespace System.Net.Sockets
             return BeginSend(datagram, bytes, ipEndPoint, requestCallback, state);
         }
 
-        internal IAsyncResult BeginSend(byte[] datagram, int bytes, AsyncCallback requestCallback, object state)
+        public IAsyncResult BeginSend(byte[] datagram, int bytes, AsyncCallback requestCallback, object state)
         {
             return BeginSend(datagram, bytes, null, requestCallback, state);
         }
 
-        internal int EndSend(IAsyncResult asyncResult)
+        public int EndSend(IAsyncResult asyncResult)
         {
             if (_cleanedUp)
             {
@@ -353,7 +353,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal IAsyncResult BeginReceive(AsyncCallback requestCallback, object state)
+        public IAsyncResult BeginReceive(AsyncCallback requestCallback, object state)
         {
             // Validate input parameters.
             if (_cleanedUp)
@@ -377,7 +377,7 @@ namespace System.Net.Sockets
             return _clientSocket.BeginReceiveFrom(_buffer, 0, MaxUDPSize, SocketFlags.None, ref tempRemoteEP, requestCallback, state);
         }
 
-        internal byte[] EndReceive(IAsyncResult asyncResult, ref IPEndPoint remoteEP)
+        public byte[] EndReceive(IAsyncResult asyncResult, ref IPEndPoint remoteEP)
         {
             if (_cleanedUp)
             {

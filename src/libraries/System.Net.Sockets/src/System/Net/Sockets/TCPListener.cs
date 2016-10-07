@@ -64,6 +64,19 @@ namespace System.Net.Sockets
             }
         }
 
+        // Initiailizes a new instance of the TcpListener class that listens on the specified port.
+        [Obsolete("This method has been deprecated. Please use TcpListener(IPAddress localaddr, int port) instead. http://go.microsoft.com/fwlink/?linkid=14202")]
+        public TcpListener(int port)
+        {
+            if (!TcpValidationHelpers.ValidatePortNumber(port))
+            {
+                throw new ArgumentOutOfRangeException(nameof(port));
+            }
+
+            _serverSocketEP = new IPEndPoint(IPAddress.Any, port);
+            _serverSocket = new Socket(_serverSocketEP.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+        }
+        
         // Used by the class to provide the underlying network socket.
         public Socket Server
         {
@@ -212,7 +225,51 @@ namespace System.Net.Sockets
             return _serverSocket.Poll(0, SelectMode.SelectRead);
         }
 
-        internal IAsyncResult BeginAcceptSocket(AsyncCallback callback, object state)
+        // Accept the first pending connection
+        public Socket AcceptSocket()
+        {
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, nameof(AcceptSocket), null);
+            }
+
+            if (!_active)
+            {
+                throw new InvalidOperationException(SR.net_stopped);
+            }
+
+            Socket socket = _serverSocket.Accept();
+
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, nameof(AcceptSocket), socket);
+            }
+            return socket;
+        }
+
+        public TcpClient AcceptTcpClient()
+        {
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, nameof(AcceptTcpClient), null);
+            }
+
+            if (!_active)
+            {
+                throw new InvalidOperationException(SR.net_stopped);
+            }
+
+            Socket acceptedSocket = _serverSocket.Accept();
+            TcpClient returnValue = new TcpClient(acceptedSocket);
+
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, nameof(AcceptTcpClient), returnValue);
+            }
+            return returnValue;
+        }
+
+        public IAsyncResult BeginAcceptSocket(AsyncCallback callback, object state)
         {
             if (NetEventSource.Log.IsEnabled())
             {
@@ -233,7 +290,7 @@ namespace System.Net.Sockets
             return result;
         }
 
-        internal Socket EndAcceptSocket(IAsyncResult asyncResult)
+        public Socket EndAcceptSocket(IAsyncResult asyncResult)
         {
             if (NetEventSource.Log.IsEnabled())
             {
@@ -263,7 +320,7 @@ namespace System.Net.Sockets
             return socket;
         }
 
-        internal IAsyncResult BeginAcceptTcpClient(AsyncCallback callback, object state)
+        public IAsyncResult BeginAcceptTcpClient(AsyncCallback callback, object state)
         {
             if (NetEventSource.Log.IsEnabled())
             {
@@ -284,7 +341,7 @@ namespace System.Net.Sockets
             return result;
         }
 
-        internal TcpClient EndAcceptTcpClient(IAsyncResult asyncResult)
+        public TcpClient EndAcceptTcpClient(IAsyncResult asyncResult)
         {
             if (NetEventSource.Log.IsEnabled())
             {

@@ -60,38 +60,6 @@ namespace System.Net.Sockets
             }
         }
 
-        private IAsyncResult BeginConnect(string host, int port, AsyncCallback requestCallback, object state)
-        {
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, "BeginConnect", host);
-            }
-
-            IAsyncResult result = Client.BeginConnect(host, port, requestCallback, state);
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, "BeginConnect", null);
-            }
-
-            return result;
-        }
-
-        private IAsyncResult BeginConnect(IPAddress[] addresses, int port, AsyncCallback requestCallback, object state)
-        {
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, "BeginConnect", addresses);
-            }
-
-            IAsyncResult result = Client.BeginConnect(addresses, port, requestCallback, state);
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, "BeginConnect", null);
-            }
-
-            return result;
-        }
-
         private Task ConnectAsyncCore(string host, int port)
         {
             return Task.Factory.FromAsync(

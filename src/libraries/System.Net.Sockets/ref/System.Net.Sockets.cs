@@ -102,13 +102,13 @@ namespace System.Net.Sockets
         protected Socket Socket { get { return default(Socket); } }
         protected bool Writeable { get { return default(bool); } set { } }
         public override int WriteTimeout { get { return default(int); } set { } }
-        public IAsyncResult BeginRead(byte[] buffer, int offset, int size, AsyncCallback callback, Object state) { return default(IAsyncResult); }
-        public IAsyncResult BeginWrite(byte[] buffer, int offset, int size, AsyncCallback callback, Object state) { return default(IAsyncResult); }
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int size, AsyncCallback callback, Object state) { return default(IAsyncResult); }
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int size, AsyncCallback callback, Object state) { return default(IAsyncResult); }
         public void Close(int timeout) { }
         protected override void Dispose(bool disposing) { }
         ~NetworkStream() { }
-        public int EndRead(IAsyncResult asyncResult) { return default(int); }
-        public void EndWrite(IAsyncResult asyncResult) { }
+        public override int EndRead(IAsyncResult asyncResult) { return default(int); }
+        public override void EndWrite(IAsyncResult asyncResult) { }
         public override void Flush() { }
         public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
         public override int Read(byte[] buffer, int offset, int size) { buffer = default(byte[]); return default(int); }
@@ -517,6 +517,8 @@ namespace System.Net.Sockets
     {
         public TcpClient() { }
         public TcpClient(System.Net.Sockets.AddressFamily family) { }
+        public TcpClient(System.Net.IPEndPoint localEP) { }
+        public TcpClient(string hostname, int port) { }
         protected bool Active { get { return default(bool); } set { } }
         public int Available { get { return default(int); } }
         public System.Net.Sockets.Socket Client { get { return default(System.Net.Sockets.Socket); } set { } }
@@ -528,24 +530,41 @@ namespace System.Net.Sockets
         public int ReceiveTimeout { get { return default(int); } set { } }
         public int SendBufferSize { get { return default(int); } set { } }
         public int SendTimeout { get { return default(int); } set { } }
+        public IAsyncResult BeginConnect(IPAddress address, int port, AsyncCallback requestCallback, object state) { return default(IAsyncResult); }
+        public IAsyncResult BeginConnect(IPAddress[] addresses, int port, AsyncCallback requestCallback, object state) { return default(IAsyncResult); }
+        public IAsyncResult BeginConnect(string host, int port, AsyncCallback requestCallback, object state) { return default(IAsyncResult); }
+        public void Close() { }
+        public void Connect(System.Net.IPAddress address, int port) { }
+        public void Connect(System.Net.IPAddress[] ipAddresses, int port) { }
+        public void Connect(System.Net.IPEndPoint remoteEP) { }
+        public void Connect(string hostname, int port) { }
         public System.Threading.Tasks.Task ConnectAsync(System.Net.IPAddress address, int port) { return default(System.Threading.Tasks.Task); }
         public System.Threading.Tasks.Task ConnectAsync(System.Net.IPAddress[] addresses, int port) { return default(System.Threading.Tasks.Task); }
         public System.Threading.Tasks.Task ConnectAsync(string host, int port) { return default(System.Threading.Tasks.Task); }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         ~TcpClient() { }
+        public void EndConnect(IAsyncResult asyncResult) { }
         public System.Net.Sockets.NetworkStream GetStream() { return default(System.Net.Sockets.NetworkStream); }
     }
     public partial class TcpListener
     {
+        [System.ObsoleteAttribute("Use TcpListener (IPAddress address, int port) instead")]
+        public TcpListener(int port) { }
         public TcpListener(System.Net.IPAddress localaddr, int port) { }
         public TcpListener(System.Net.IPEndPoint localEP) { }
         protected bool Active { get { return default(bool); } }
         public bool ExclusiveAddressUse { get { return default(bool); } set { } }
         public System.Net.EndPoint LocalEndpoint { get { return default(System.Net.EndPoint); } }
         public System.Net.Sockets.Socket Server { get { return default(System.Net.Sockets.Socket); } }
+        public System.Net.Sockets.Socket AcceptSocket() { return default(System.Net.Sockets.Socket); }
         public System.Threading.Tasks.Task<System.Net.Sockets.Socket> AcceptSocketAsync() { return default(System.Threading.Tasks.Task<System.Net.Sockets.Socket>); }
+        public System.Net.Sockets.TcpClient AcceptTcpClient() { return default(System.Net.Sockets.TcpClient); }
         public System.Threading.Tasks.Task<System.Net.Sockets.TcpClient> AcceptTcpClientAsync() { return default(System.Threading.Tasks.Task<System.Net.Sockets.TcpClient>); }
+        public System.IAsyncResult BeginAcceptSocket(System.AsyncCallback callback, object state) { return default(System.IAsyncResult); }
+        public System.IAsyncResult BeginAcceptTcpClient(System.AsyncCallback callback, object state) { return default(System.IAsyncResult); }
+        public System.Net.Sockets.Socket EndAcceptSocket(System.IAsyncResult asyncResult) { return default(System.Net.Sockets.Socket); }
+        public System.Net.Sockets.TcpClient EndAcceptTcpClient(System.IAsyncResult asyncResult) { return default(System.Net.Sockets.TcpClient); }
         public bool Pending() { return default(bool); }
         public void Start() { }
         public void Start(int backlog) { }
@@ -568,6 +587,7 @@ namespace System.Net.Sockets
         public UdpClient(int port, System.Net.Sockets.AddressFamily family) { }
         public UdpClient(System.Net.IPEndPoint localEP) { }
         public UdpClient(System.Net.Sockets.AddressFamily family) { }
+        public UdpClient(string hostname, int port) { }
         protected bool Active { get { return default(bool); } set { } }
         public int Available { get { return default(int); } }
         public System.Net.Sockets.Socket Client { get { return default(System.Net.Sockets.Socket); } set { } }
@@ -576,15 +596,30 @@ namespace System.Net.Sockets
         public bool ExclusiveAddressUse { get { return default(bool); } set { } }
         public bool MulticastLoopback { get { return default(bool); } set { } }
         public short Ttl { get { return default(short); } set { } }
+        public IAsyncResult BeginReceive(AsyncCallback requestCallback, object state) { return default(IAsyncResult); }
+        public IAsyncResult BeginSend(byte[] datagram, int bytes, AsyncCallback requestCallback, object state) { return default(IAsyncResult); }
+        public IAsyncResult BeginSend(byte[] datagram, int bytes, IPEndPoint endPoint, AsyncCallback requestCallback, object state) { return default(IAsyncResult); }
+        public IAsyncResult BeginSend(byte[] datagram, int bytes, string hostname, int port, AsyncCallback requestCallback, object state) { return default(IAsyncResult); }
+        public void Close() { }
+        public void Connect(IPAddress addr, int port) { }
+        public void Connect(IPEndPoint endPoint) { }
+        public void Connect(string hostname, int port) { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public void DropMulticastGroup(System.Net.IPAddress multicastAddr) { }
         public void DropMulticastGroup(System.Net.IPAddress multicastAddr, int ifindex) { }
+        public byte[] EndReceive(IAsyncResult asyncResult, ref IPEndPoint remoteEP) { remoteEP = default(IPEndPoint); return default(byte[]); }
+        public int EndSend(IAsyncResult asyncResult) { return default(int); }
         public void JoinMulticastGroup(int ifindex, System.Net.IPAddress multicastAddr) { }
         public void JoinMulticastGroup(System.Net.IPAddress multicastAddr) { }
         public void JoinMulticastGroup(System.Net.IPAddress multicastAddr, int timeToLive) { }
         public void JoinMulticastGroup(System.Net.IPAddress multicastAddr, System.Net.IPAddress localAddress) { }
+        public byte[] Receive(ref IPEndPoint remoteEP) { return default(byte[]); }
         public System.Threading.Tasks.Task<System.Net.Sockets.UdpReceiveResult> ReceiveAsync() { return default(System.Threading.Tasks.Task<System.Net.Sockets.UdpReceiveResult>); }
+        public int Send(byte[] dgram, int bytes) { return default(int); }
+        public int Send(byte[] dgram, int bytes, System.Net.IPEndPoint endPoint) { return default(int); }
+        public int Send(byte[] dgram, int bytes, string hostname, int port) { return default(int); }
+        public System.Threading.Tasks.Task<int> SendAsync(byte[] datagram, int bytes) { return default(System.Threading.Tasks.Task<int>); }
         public System.Threading.Tasks.Task<int> SendAsync(byte[] datagram, int bytes, System.Net.IPEndPoint endPoint) { return default(System.Threading.Tasks.Task<int>); }
         public System.Threading.Tasks.Task<int> SendAsync(byte[] datagram, int bytes, string hostname, int port) { return default(System.Threading.Tasks.Task<int>); }
     }

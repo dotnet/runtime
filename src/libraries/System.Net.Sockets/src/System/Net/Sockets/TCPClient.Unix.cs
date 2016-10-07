@@ -194,6 +194,12 @@ namespace System.Net.Sockets
 
         private Task ConnectAsyncCore(string host, int port)
         {
+            StartConnectCore(host, port);
+            return ConnectAsyncCorePrivate(host, port, (s, a, p) => s.ConnectAsync(a, p));
+        }
+
+        private void StartConnectCore(string host, int port)
+        {
             // Validate the args, similar to how Socket.Connect(string, int) would.
             if (host == null)
             {
@@ -210,19 +216,17 @@ namespace System.Net.Sockets
                 throw new PlatformNotSupportedException(SR.net_sockets_connect_multiaddress_notsupported);
             }
 
-            // Do the real work.
             EnterClientLock();
-            return ConnectAsyncCorePrivate(host, port);
         }
 
-        private async Task ConnectAsyncCorePrivate(string host, int port)
+        private async Task ConnectAsyncCorePrivate(string host, int port, Func<Socket, IPAddress, int, Task> connect)
         {
             try
             {
                 // Since Socket.Connect(host, port) won't work, get the addresses manually,
                 // and then delegate to Connect(IPAddress[], int).
                 IPAddress[] addresses = await Dns.GetHostAddressesAsync(host).ConfigureAwait(false);
-                await ConnectAsyncCorePrivate(addresses, port).ConfigureAwait(false);
+                await ConnectCorePrivate(addresses, port, connect).ConfigureAwait(false);
             }
             finally
             {
@@ -231,6 +235,12 @@ namespace System.Net.Sockets
         }
 
         private Task ConnectAsyncCore(IPAddress[] addresses, int port)
+        {
+            StartConnectCore(addresses, port);
+            return ConnectCorePrivate(addresses, port, (s, a, p) => s.ConnectAsync(a, p));
+        }
+
+        private void StartConnectCore(IPAddress[] addresses, int port)
         {
             // Validate the args, similar to how Socket.Connect(IPAddress[], int) would.
             if (addresses == null)
@@ -253,12 +263,10 @@ namespace System.Net.Sockets
                 throw new PlatformNotSupportedException(SR.net_sockets_connect_multiaddress_notsupported);
             }
 
-            // Do the real work.
             EnterClientLock();
-            return ConnectAsyncCorePrivate(addresses, port);
         }
 
-        private async Task ConnectAsyncCorePrivate(IPAddress[] addresses, int port)
+        private async Task ConnectCorePrivate(IPAddress[] addresses, int port, Func<Socket, IPAddress, int, Task> connect)
         {
             try
             {
@@ -290,7 +298,7 @@ namespace System.Net.Sockets
                         // when Dispose is called or has happened, and Dispose of the socket
                         using (_disposing.Token.Register(o => ((Socket)o).Dispose(), s))
                         {
-                            await s.ConnectAsync(address, port).ConfigureAwait(false);
+                            await connect(s, address, port).ConfigureAwait(false);
                         }
                         _clientSocket = s;
                         _active = true;

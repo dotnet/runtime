@@ -90,9 +90,6 @@
     <Compile Include="$(CommonTestPath)\System\ShouldNotBeInvokedException.cs">
       <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Sockets\SocketAPMExtensions.cs">
-      <Link>Common\System\Net\Sockets\SocketAPMExtensions.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
       <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>

@@ -12,7 +12,7 @@ namespace System.Net.Sockets
     // is used to create a Client connection to a remote host.
     public partial class TcpClient : IDisposable
     {
-        private readonly AddressFamily _family;
+        private AddressFamily _family;
         private Socket _clientSocket;
         private NetworkStream _dataStream;
         private bool _cleanedUp = false;
@@ -28,7 +28,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, "TcpClient", family);
+                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, nameof(TcpClient), family);
             }
 
             // Validate parameter
@@ -42,7 +42,7 @@ namespace System.Net.Sockets
 
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, "TcpClient", null);
+                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, nameof(TcpClient), null);
             }
         }
 
@@ -51,7 +51,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, "TcpClient", acceptedSocket);
+                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, nameof(TcpClient), acceptedSocket);
             }
 
             _clientSocket = acceptedSocket;
@@ -59,7 +59,7 @@ namespace System.Net.Sockets
 
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, "TcpClient", null);
+                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, nameof(TcpClient), null);
             }
         }
 
@@ -108,27 +108,59 @@ namespace System.Net.Sockets
             return ConnectAsyncCore(addresses, port);
         }
 
-        private IAsyncResult BeginConnect(IPAddress address, int port, AsyncCallback requestCallback, object state)
+        public IAsyncResult BeginConnect(IPAddress address, int port, AsyncCallback requestCallback, object state)
         {
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, "BeginConnect", address);
+                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, nameof(BeginConnect), address);
             }
 
             IAsyncResult result = Client.BeginConnect(address, port, requestCallback, state);
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, "BeginConnect", null);
+                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, nameof(BeginConnect), null);
             }
 
             return result;
         }
 
-        private void EndConnect(IAsyncResult asyncResult)
+        public IAsyncResult BeginConnect(string host, int port, AsyncCallback requestCallback, object state)
         {
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, "EndConnect", asyncResult);
+                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, nameof(BeginConnect), host);
+            }
+
+            IAsyncResult result = Client.BeginConnect(host, port, requestCallback, state);
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, nameof(BeginConnect), null);
+            }
+
+            return result;
+        }
+
+        public IAsyncResult BeginConnect(IPAddress[] addresses, int port, AsyncCallback requestCallback, object state)
+        {
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, nameof(BeginConnect), addresses);
+            }
+
+            IAsyncResult result = Client.BeginConnect(addresses, port, requestCallback, state);
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, nameof(BeginConnect), null);
+            }
+
+            return result;
+        }
+
+        public void EndConnect(IAsyncResult asyncResult)
+        {
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, nameof(EndConnect), asyncResult);
             }
 
             Socket s = Client;
@@ -142,7 +174,7 @@ namespace System.Net.Sockets
             _active = true;
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, "EndConnect", null);
+                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, nameof(EndConnect), null);
             }
         }
 
@@ -151,7 +183,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, "GetStream", "");
+                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, nameof(GetStream), "");
             }
 
             if (_cleanedUp)
@@ -170,7 +202,7 @@ namespace System.Net.Sockets
 
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, "GetStream", _dataStream);
+                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, nameof(GetStream), _dataStream);
             }
 
             return _dataStream;
@@ -181,14 +213,14 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, "Dispose", "");
+                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, nameof(Dispose), "");
             }
 
             if (_cleanedUp)
             {
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, "Dispose", "");
+                    NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, nameof(Dispose), "");
                 }
 
                 return;
@@ -230,7 +262,7 @@ namespace System.Net.Sockets
             _cleanedUp = true;
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, "Dispose", "");
+                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, nameof(Dispose), "");
             }
         }
 

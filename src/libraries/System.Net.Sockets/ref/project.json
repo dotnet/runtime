@@ -1,12 +1,13 @@
 {
   "dependencies": {
-    "System.IO": "4.1.0",
-    "System.IO.FileSystem.Primitives": "4.0.1",
-    "System.Net.Primitives": "4.0.11",
-    "System.Runtime": "4.1.0",
-    "System.Threading.Tasks": "4.0.11"
+    "System.IO": "4.3.0-beta-24604-02",
+    "System.IO.FileSystem.Primitives": "4.3.0-beta-24604-02",
+    "System.Net.Primitives": "4.3.0-beta-24604-02",
+    "System.Runtime": "4.3.0-beta-24604-02",
+    "System.Threading.Tasks": "4.3.0-beta-24604-02"
   },
   "frameworks": {
-    "netstandard1.7": { }
+    "netstandard1.7": {}
   }
 }
+
