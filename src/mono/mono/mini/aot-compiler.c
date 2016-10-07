@@ -3844,13 +3844,14 @@ add_wrappers (MonoAotCompile *acfg)
 		csig->params [1] = &mono_defaults.exception_class->byval_arg;
 		add_method (acfg, get_runtime_invoke_sig (csig));
 
-		/* Assembly runtime-invoke (string, bool) [DoAssemblyResolve] */
-		csig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
+		/* Assembly runtime-invoke (string, Assembly, bool) [DoAssemblyResolve] */
+		csig = mono_metadata_signature_alloc (mono_defaults.corlib, 3);
 		csig->hasthis = 1;
 		csig->ret = &(mono_class_load_from_name (
 											mono_defaults.corlib, "System.Reflection", "Assembly"))->byval_arg;
 		csig->params [0] = &mono_defaults.string_class->byval_arg;
-		csig->params [1] = &mono_defaults.boolean_class->byval_arg;
+		csig->params [1] = &(mono_class_load_from_name (mono_defaults.corlib, "System.Reflection", "Assembly"))->byval_arg;
+		csig->params [2] = &mono_defaults.boolean_class->byval_arg;
 		add_method (acfg, get_runtime_invoke_sig (csig));
 
 		/* runtime-invoke used by finalizers */
