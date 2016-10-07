@@ -48,6 +48,8 @@ usage()
     echo "                                      specified by --corefx-tests"
     echo "    --test-dir-file <path>            Run tests only in the directories specified by the file at <path>. Paths are"
     echo "                                      listed one line, relative to the directory specified by --corefx-tests"
+    echo "    --testTFM <project>               Set TestTFM to run"
+    echo "                                      default: netcoreapp1.1"
     echo
     echo "Runtime Code Coverage options:"
     echo "    --coreclr-coverage                Optional argument to get coreclr code coverage reports"
@@ -102,6 +104,9 @@ esac
 # Misc defaults
 TestSelection=".*"
 TestsFailed=0
+
+# TestTFM default
+TestTFM="netcoreapp1.1"
 
 ensure_binaries_are_present()
 {
@@ -214,7 +219,7 @@ run_test()
     exit 0
   fi
 
-  dirName="$1/netcoreapp1.0"
+  dirName="$1/$TestTFM"
   copy_test_overlay $dirName
 
   pushd $dirName > /dev/null
@@ -345,6 +350,9 @@ do
         ;;
         --test-dir-file)
         TestDirFile=$2
+        ;;
+        --testTFM)
+        TestTFM=$2
         ;;
         --outerloop)
         OuterLoop=""
