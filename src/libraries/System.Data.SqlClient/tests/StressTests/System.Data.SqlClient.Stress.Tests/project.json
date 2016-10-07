@@ -36,6 +36,9 @@
     "System.Net.NameResolution": "4.4.0-beta-24607-03",
     "System.Diagnostics.StackTrace": "4.4.0-beta-24607-03",
     "System.Xml.XPath": "4.4.0-beta-24607-03",
+    "runtime.win10-arm64.runtime.native.System.Data.SqlClient.sni": "4.3.0-beta-24523-00",
+    "runtime.win7-x64.runtime.native.System.Data.SqlClient.sni": "4.3.0-beta-24523-00",
+    "runtime.win7-x86.runtime.native.System.Data.SqlClient.sni": "4.3.0-beta-24523-00",
     "test-runtime": {
       "target": "project",
       "exclude": "compile"
