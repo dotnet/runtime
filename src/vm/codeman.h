@@ -1193,9 +1193,15 @@ public:
 public:
     ICorJitCompiler *   m_jit;
     HINSTANCE           m_JITCompiler;
-#ifdef _TARGET_AMD64_
+#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
     HINSTANCE           m_JITCompilerOther; // Stores the handle of the legacy JIT, if one is loaded.
 #endif
+
+    // TRUE if the legacy/compat JIT was loaded successfully and will be used.
+    // This is available in all builds so if COMPlus_RequireLegacyJit=1 is set in a test,
+    // the test will fail in any build where the legacy JIT is not loaded, even if legacy
+    // fallback is not available in that build. This prevents unexpected silent successes.
+    BOOL                m_fLegacyJitUsed;
 
 #ifdef ALLOW_SXS_JIT
     //put these at the end so that we don't mess up the offsets in the DAC.

@@ -12415,6 +12415,13 @@ PCODE UnsafeJitFunction(MethodDesc* ftn, COR_ILMETHOD_DECODER* ILHeader,
         EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to load JIT compiler"));
 #endif // ALLOW_SXS_JIT
     }
+
+    // If no compatjit wasn't used, but the user (normally a test case) requires that one is used, then fail.
+    // This is analogous to ZapRequire.
+    if (!jitMgr->m_fLegacyJitUsed && (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_RequireLegacyJit) == 1))
+    {
+        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to use legacy JIT compiler with RequireLegacyJit set"));
+    }
 #endif // CROSSGEN_COMPILE
 
 #ifdef _DEBUG
