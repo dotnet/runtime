@@ -909,23 +909,11 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
     // Exclude RBM_NON_BYTE_REGS from dst candidates of tree node and src candidates of operands
     // if the tree node is a byte type.
     //
-    // Example1: GT_STOREIND(byte, addr, op2) - storeind of byte sized value from op2 into mem 'addr'
-    // Storeind itself will not produce any value and hence dstCount=0. But op2 could be TYP_INT
-    // value. In this case we need to exclude esi/edi from the src candidates of op2.
-    //
-    // Example2: GT_CAST(int <- bool <- int) - here type of GT_CAST node is int and castToType is bool.
-    //
-    // Example3: GT_EQ(int, op1 of type ubyte, op2 of type ubyte) - in this case codegen uses
-    // ubyte as the result of comparison and if the result needs to be materialized into a reg
-    // simply zero extend it to TYP_INT size.  Here is an example of generated code:
-    //         cmp dl, byte ptr[addr mode]
-    //         movzx edx, dl
-    //
     // Though this looks conservative in theory, in practice we could not think of a case where
     // the below logic leads to conservative register specification.  In future when or if we find
     // one such case, this logic needs to be fine tuned for that case(s).
-    if (varTypeIsByte(tree) || ((tree->OperGet() == GT_CAST) && varTypeIsByte(tree->CastToType())) ||
-        (tree->OperIsCompare() && varTypeIsByte(tree->gtGetOp1()) && varTypeIsByte(tree->gtGetOp2())))
+
+    if (ExcludeNonByteableRegisters(tree))
     {
         regMaskTP regMask;
         if (info->dstCount > 0)
@@ -4450,6 +4438,71 @@ GenTree* Lowering::PreferredRegOptionalOperand(GenTree* tree)
 
     return preferredOp;
 }
+
+#ifdef _TARGET_X86_
+//------------------------------------------------------------------------
+// ExcludeNonByteableRegisters: Determines if we need to exclude non-byteable registers for
+// various reasons
+//
+// Arguments:
+//    tree      - The node of interest
+//
+// Return Value:
+//    If we need to exclude non-byteable registers
+//
+bool Lowering::ExcludeNonByteableRegisters(GenTree* tree)
+{
+    // Example1: GT_STOREIND(byte, addr, op2) - storeind of byte sized value from op2 into mem 'addr'
+    // Storeind itself will not produce any value and hence dstCount=0. But op2 could be TYP_INT
+    // value. In this case we need to exclude esi/edi from the src candidates of op2.
+    if (varTypeIsByte(tree))
+    {
+        return true;
+    }
+    // Example2: GT_CAST(int <- bool <- int) - here type of GT_CAST node is int and castToType is bool.
+    else if ((tree->OperGet() == GT_CAST) && varTypeIsByte(tree->CastToType()))
+    {
+        return true;
+    }
+    else if (tree->OperIsCompare())
+    {
+        GenTree* op1 = tree->gtGetOp1();
+        GenTree* op2 = tree->gtGetOp2();
+
+        // Example3: GT_EQ(int, op1 of type ubyte, op2 of type ubyte) - in this case codegen uses
+        // ubyte as the result of comparison and if the result needs to be materialized into a reg
+        // simply zero extend it to TYP_INT size.  Here is an example of generated code:
+        //         cmp dl, byte ptr[addr mode]
+        //         movzx edx, dl
+        if (varTypeIsByte(op1) && varTypeIsByte(op2))
+        {
+            return true;
+        }
+        // Example4: GT_EQ(int, op1 of type ubyte, op2 is GT_CNS_INT) - in this case codegen uses
+        // ubyte as the result of the comparison and if the result needs to be materialized into a reg
+        // simply zero extend it to TYP_INT size.
+        else if (varTypeIsByte(op1) && op2->IsCnsIntOrI())
+        {
+            return true;
+        }
+        // Example4: GT_EQ(int, op1 is GT_CNS_INT, op2 of type ubyte) - in this case codegen uses
+        // ubyte as the result of the comparison and if the result needs to be materialized into a reg
+        // simply zero extend it to TYP_INT size.
+        else if (op1->IsCnsIntOrI() && varTypeIsByte(op2))
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    else
+    {
+        return false;
+    }
+}
+#endif
 
 #endif // _TARGET_XARCH_
 
