@@ -557,5 +557,15 @@ namespace System.Globalization
 
             return null;
         }
+        
+        private static int LocaleNameToLCID(string cultureName)
+        {
+            throw new NotImplementedException();
+        }
+        
+        private static string LCIDToLocaleName(int culture)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

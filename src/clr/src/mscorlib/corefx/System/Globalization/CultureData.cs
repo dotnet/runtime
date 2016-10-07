@@ -16,11 +16,13 @@ namespace System.Globalization
 
 #if INSIDE_CLR
     using StringStringDictionary = Dictionary<string, string>;
-    using StringCultureDataDictionary = Dictionary<String, CultureData>;
+    using StringCultureDataDictionary = Dictionary<string, CultureData>;
+    using LcidToCultureNameDictionary = Dictionary<int, string>;
     using Lock = Object;
 #else
     using StringStringDictionary = LowLevelDictionary<string, string>;
     using StringCultureDataDictionary = LowLevelDictionary<string, CultureData>;
+    using LcidToCultureNameDictionary = LowLevelDictionary<int, string>;
 #endif
 
     //
@@ -57,8 +59,6 @@ namespace System.Globalization
     internal partial class CultureData
     {
         private const int undef = -1;
-        private const int LOCALE_CUSTOM_UNSPECIFIED = 0x1000;
-        private const int LOCALE_CUSTOM_DEFAULT = 0x0c00;
 
         // Override flag
         private String _sRealName; // Name you passed in (ie: en-US, en, or de-DE_phoneb)
@@ -603,6 +603,33 @@ namespace System.Globalization
             _sParent = fallbackCultureName;
 
             return true;
+        }
+
+        // We'd rather people use the named version since this doesn't allow custom locales
+        internal static CultureData GetCultureData(int culture, bool bUseUserOverride)
+        {
+            string localeName = null;
+            CultureData retVal = null;
+
+            if (culture == 0x007f)
+                return Invariant;
+
+            // Convert the lcid to a name, then use that
+            // Note that this'll return neutral names (unlike Vista native API)
+            localeName = LCIDToLocaleName(culture);
+
+            if (!String.IsNullOrEmpty(localeName))
+            {
+                // Valid name, use it
+                retVal = GetCultureData(localeName, bUseUserOverride);
+            }
+
+            // If not successful, throw
+            if (retVal == null)
+                throw new CultureNotFoundException("culture", culture, SR.Argument_CultureNotSupported);
+
+            // Return the one we found
+            return retVal;
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -1694,6 +1721,11 @@ namespace System.Globalization
         {
             get
             {
+                if (_iLanguage == 0)
+                {
+                    Contract.Assert(_sRealName != null, "[CultureData.ILANGUAGE] Expected this.sRealName to be populated by COMNlsInfo::nativeInitCultureData already");
+                    _iLanguage = LocaleNameToLCID(_sRealName);
+                }
                 return _iLanguage;
             }
         }
@@ -1944,9 +1976,9 @@ namespace System.Globalization
             return -1;
         }
 
-        private static bool IsCustomCultureId(int cultureId)
+        internal static bool IsCustomCultureId(int cultureId)
         {
-            return (cultureId == LOCALE_CUSTOM_DEFAULT || cultureId == LOCALE_CUSTOM_UNSPECIFIED);
+            return (cultureId == CultureInfo.LOCALE_CUSTOM_DEFAULT || cultureId == CultureInfo.LOCALE_CUSTOM_UNSPECIFIED);
         }
 
         internal void GetNFIValues(NumberFormatInfo nfi)
@@ -2043,9 +2075,26 @@ namespace System.Globalization
         // This is ONLY used for caching names and shouldn't be used for anything else
         internal static string AnsiToLower(string testString)
         {
+            int index = 0; 
+            
+            while (index<testString.Length && (testString[index]<'A' || testString[index]>'Z' ))
+            {
+                index++;
+            }
+            if (index >= testString.Length)
+            {
+                return testString; // we didn't really change the string
+            }
+            
             StringBuilder sb = new StringBuilder(testString.Length);
+            for (int i=0; i<index; i++)
+            {
+                sb.Append(testString[i]);
+            }
 
-            for (int ich = 0; ich < testString.Length; ich++)
+            sb.Append((char) (testString[index] -'A' + 'a'));
+
+            for (int ich = index+1; ich < testString.Length; ich++)
             {
                 char ch = testString[ich];
                 sb.Append(ch <= 'Z' && ch >= 'A' ? (char)(ch - 'A' + 'a') : ch);
