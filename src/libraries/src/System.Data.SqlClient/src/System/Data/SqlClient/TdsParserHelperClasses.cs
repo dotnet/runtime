@@ -485,8 +485,8 @@ namespace System.Data.SqlClient
         internal string xmlSchemaCollectionOwningSchema;
         internal string xmlSchemaCollectionName;
         internal MetaType metaType; // cached metaType
-     
-           
+
+
         internal SqlMetaDataPriv()
         {
         }
