@@ -1334,7 +1334,7 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
 
 	mono_error_init (error);
 
-	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+	if (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_INTERFACE) {
 		MonoObject *this_obj;
 
 		/* Have to use the receiver's type instead of klass, the receiver is a ref type */
@@ -1352,7 +1352,7 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
 		mono_class_setup_vtable (klass);
 		g_assert (klass->vtable);
 		vt_slot = mono_method_get_vtable_slot (cmethod);
-		if (cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+		if (mono_class_get_flags (cmethod->klass) & TYPE_ATTRIBUTE_INTERFACE) {
 			iface_offset = mono_class_interface_offset (klass, cmethod->klass);
 			g_assert (iface_offset != -1);
 			vt_slot += iface_offset;

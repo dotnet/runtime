@@ -1538,7 +1538,7 @@ mono_class_setup_fields (MonoClass *klass)
 	MonoError error;
 	MonoImage *m = klass->image;
 	int top;
-	guint32 layout = klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK;
+	guint32 layout = mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK;
 	int i;
 	guint32 real_size = 0;
 	guint32 packing_size = 0;
@@ -1766,7 +1766,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 {
 	int i;
 	const int top = klass->field.count;
-	guint32 layout = klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK;
+	guint32 layout = mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK;
 	guint32 pass, passes, real_size;
 	gboolean gc_aware_layout = FALSE;
 	gboolean has_static_fields = FALSE;
@@ -4643,7 +4643,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	// it can happen (for injected generic array interfaces) that the same slot is
 	// processed multiple times (those interfaces have overlapping slots), and it
 	// will not always be the first pass the one that fills the slot.
-	if (! (klass->flags & TYPE_ATTRIBUTE_ABSTRACT)) {
+	if (! (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_ABSTRACT)) {
 		for (i = 0; i < klass->interface_offsets_count; i++) {
 			int ic_offset;
 			int im_index;
@@ -4787,7 +4787,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	virt_methods = NULL;
 
 	/* Ensure that all vtable slots are filled with concrete instance methods */
-	if (!(klass->flags & TYPE_ATTRIBUTE_ABSTRACT)) {
+	if (!(mono_class_get_flags (klass) & TYPE_ATTRIBUTE_ABSTRACT)) {
 		for (i = 0; i < cur_slot; ++i) {
 			if (vtable [i] == NULL || (vtable [i]->flags & (METHOD_ATTRIBUTE_ABSTRACT | METHOD_ATTRIBUTE_STATIC))) {
 				char *type_name = mono_type_get_full_name (klass);
@@ -5778,7 +5778,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 
 	klass->image = image;
 	klass->type_token = type_token;
-	klass->flags = cols [MONO_TYPEDEF_FLAGS];
+	mono_class_set_flags (klass, cols [MONO_TYPEDEF_FLAGS]);
 
 	mono_internal_hash_table_insert (&image->class_cache, GUINT_TO_POINTER (type_token), klass);
 
@@ -5851,11 +5851,11 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 		}
 	}
 
-	if ((klass->flags & TYPE_ATTRIBUTE_STRING_FORMAT_MASK) == TYPE_ATTRIBUTE_UNICODE_CLASS)
+	if ((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_STRING_FORMAT_MASK) == TYPE_ATTRIBUTE_UNICODE_CLASS)
 		klass->unicode = 1;
 
 #ifdef HOST_WIN32
-	if ((klass->flags & TYPE_ATTRIBUTE_STRING_FORMAT_MASK) == TYPE_ATTRIBUTE_AUTO_CLASS)
+	if ((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_STRING_FORMAT_MASK) == TYPE_ATTRIBUTE_AUTO_CLASS)
 		klass->unicode = 1;
 #endif
 
@@ -6031,7 +6031,6 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 	mono_profiler_class_event (klass, MONO_PROFILE_START_LOAD);
 	
 	klass->image = gklass->image;
-	klass->flags = gklass->flags;
 	klass->type_token = gklass->type_token;
 	klass->field.count = gklass->field.count;
 
@@ -6201,7 +6200,6 @@ make_generic_param_class (MonoGenericParam *param, MonoGenericParamInfo *pinfo)
 	klass->inited = TRUE;
 	CHECKED_METADATA_WRITE_PTR_LOCAL ( klass->cast_class ,    klass );
 	CHECKED_METADATA_WRITE_PTR_LOCAL ( klass->element_class , klass );
-	klass->flags = TYPE_ATTRIBUTE_PUBLIC;
 
 	klass->byval_arg.type = is_mvar ? MONO_TYPE_MVAR : MONO_TYPE_VAR;
 	klass->this_arg.type = klass->byval_arg.type;
@@ -6442,7 +6440,6 @@ mono_ptr_class_get (MonoType *type)
 
 	result->image = el_class->image;
 	result->inited = TRUE;
-	result->flags = TYPE_ATTRIBUTE_CLASS | (el_class->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK);
 	result->instance_size = sizeof (MonoObject) + sizeof (gpointer);
 	result->cast_class = result->element_class = el_class;
 	result->blittable = TRUE;
@@ -6501,7 +6498,6 @@ mono_fnptr_class_get (MonoMethodSignature *sig)
 
 	result->image = mono_defaults.corlib; /* need to fix... */
 	result->inited = TRUE;
-	result->flags = TYPE_ATTRIBUTE_CLASS; /* | (el_class->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK); */
 	result->instance_size = sizeof (MonoObject) + sizeof (gpointer);
 	result->cast_class = result->element_class = result;
 	result->blittable = TRUE;
@@ -6732,8 +6728,6 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	classes_size += sizeof (MonoClassArray);
 
 	klass->type_token = 0;
-	/* all arrays are marked serializable and sealed, bug #42779 */
-	klass->flags = TYPE_ATTRIBUTE_CLASS | TYPE_ATTRIBUTE_SERIALIZABLE | TYPE_ATTRIBUTE_SEALED | TYPE_ATTRIBUTE_PUBLIC;
 	klass->parent = parent;
 	klass->instance_size = mono_class_instance_size (klass->parent);
 
@@ -8993,22 +8987,6 @@ mono_class_get_rank (MonoClass *klass)
 }
 
 /**
- * mono_class_get_flags:
- * @klass: the MonoClass to act on
- *
- * The type flags from the TypeDef table from the metadata.
- * see the TYPE_ATTRIBUTE_* definitions on tabledefs.h for the
- * different values.
- *
- * Returns: The flags from the TypeDef table.
- */
-guint32
-mono_class_get_flags (MonoClass *klass)
-{
-	return klass->flags;
-}
-
-/**
  * mono_class_get_name
  * @klass: the MonoClass to act on
  *
@@ -10231,7 +10209,7 @@ can_access_type (MonoClass *access_klass, MonoClass *member_klass)
 	if (member_klass->element_class && !member_klass->enumtype)
 		member_klass = member_klass->element_class;
 
-	access_level = member_klass->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK;
+	access_level = mono_class_get_flags (member_klass) & TYPE_ATTRIBUTE_VISIBILITY_MASK;
 
 	if (member_klass->byval_arg.type == MONO_TYPE_VAR || member_klass->byval_arg.type == MONO_TYPE_MVAR)
 		return TRUE;
@@ -10545,7 +10523,7 @@ gboolean mono_class_is_valid_enum (MonoClass *klass) {
 		return FALSE;
 	}
 
-	if ((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) != TYPE_ATTRIBUTE_AUTO_LAYOUT)
+	if ((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) != TYPE_ATTRIBUTE_AUTO_LAYOUT)
 		return FALSE;
 
 	while ((field = mono_class_get_fields (klass, &iter))) {

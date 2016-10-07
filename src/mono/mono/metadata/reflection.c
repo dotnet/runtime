@@ -2345,7 +2345,7 @@ mono_declsec_flags_from_method (MonoMethod *method)
 guint32
 mono_declsec_flags_from_class (MonoClass *klass)
 {
-	if (klass->flags & TYPE_ATTRIBUTE_HAS_SECURITY) {
+	if (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_HAS_SECURITY) {
 		if (!klass->ext || !klass->ext->declsec_flags) {
 			guint32 idx;
 

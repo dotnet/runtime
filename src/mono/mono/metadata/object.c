@@ -2290,7 +2290,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 			pvt->vtable [i] = NULL;
 	}
 
-	if (klass->flags & TYPE_ATTRIBUTE_ABSTRACT) {
+	if (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_ABSTRACT) {
 		/* create trampolines for abstract methods */
 		for (k = klass; k; k = k->parent) {
 			MonoMethod* m;
@@ -2448,7 +2448,7 @@ create_remote_class_key (MonoRemoteClass *remote_class, MonoClass *extra_class)
 	int i, j;
 	
 	if (remote_class == NULL) {
-		if (extra_class->flags & TYPE_ATTRIBUTE_INTERFACE) {
+		if (mono_class_get_flags (extra_class) & TYPE_ATTRIBUTE_INTERFACE) {
 			key = (void **)g_malloc (sizeof(gpointer) * 3);
 			key [0] = GINT_TO_POINTER (2);
 			key [1] = mono_defaults.marshalbyrefobject_class;
@@ -2459,7 +2459,7 @@ create_remote_class_key (MonoRemoteClass *remote_class, MonoClass *extra_class)
 			key [1] = extra_class;
 		}
 	} else {
-		if (extra_class != NULL && (extra_class->flags & TYPE_ATTRIBUTE_INTERFACE)) {
+		if (extra_class != NULL && (mono_class_get_flags (extra_class) & TYPE_ATTRIBUTE_INTERFACE)) {
 			key = (void **)g_malloc (sizeof(gpointer) * (remote_class->interface_count + 3));
 			key [0] = GINT_TO_POINTER (remote_class->interface_count + 2);
 			key [1] = remote_class->proxy_class;
@@ -2548,7 +2548,7 @@ mono_remote_class (MonoDomain *domain, MonoString *class_name, MonoClass *proxy_
 	g_free (key);
 	key = mp_key;
 
-	if (proxy_class->flags & TYPE_ATTRIBUTE_INTERFACE) {
+	if (mono_class_get_flags (proxy_class) & TYPE_ATTRIBUTE_INTERFACE) {
 		rc = (MonoRemoteClass *)mono_domain_alloc (domain, MONO_SIZEOF_REMOTE_CLASS + sizeof(MonoClass*));
 		rc->interface_count = 1;
 		rc->interfaces [0] = proxy_class;
@@ -2595,7 +2595,7 @@ clone_remote_class (MonoDomain *domain, MonoRemoteClass* remote_class, MonoClass
 	g_free (key);
 	key = mp_key;
 
-	if (extra_class->flags & TYPE_ATTRIBUTE_INTERFACE) {
+	if (mono_class_get_flags (extra_class) & TYPE_ATTRIBUTE_INTERFACE) {
 		int i,j;
 		rc = (MonoRemoteClass *)mono_domain_alloc (domain, MONO_SIZEOF_REMOTE_CLASS + sizeof(MonoClass*) * (remote_class->interface_count + 1));
 		rc->proxy_class = remote_class->proxy_class;
@@ -2696,7 +2696,7 @@ mono_upgrade_remote_class (MonoDomain *domain, MonoObject *proxy_object, MonoCla
 	tproxy = (MonoTransparentProxy*) proxy_object;
 	remote_class = tproxy->remote_class;
 	
-	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+	if (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_INTERFACE) {
 		int i;
 		redo_vtable = TRUE;
 		for (i = 0; i < remote_class->interface_count && redo_vtable; i++)
@@ -2767,7 +2767,7 @@ mono_object_get_virtual_method (MonoObject *obj, MonoMethod *method)
 
 	/* check method->slot is a valid index: perform isinstance? */
 	if (method->slot != -1) {
-		if (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+		if (mono_class_get_flags (method->klass) & TYPE_ATTRIBUTE_INTERFACE) {
 			if (!is_proxy) {
 				gboolean variance_used = FALSE;
 				int iface_offset = mono_class_interface_offset_with_variance (klass, method->klass, &variance_used);
@@ -6487,7 +6487,7 @@ mono_object_isinst_checked (MonoObject *obj, MonoClass *klass, MonoError *error)
 	if (!klass->inited)
 		mono_class_init (klass);
 
-	if (mono_class_is_marshalbyref (klass) || (klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
+	if (mono_class_is_marshalbyref (klass) || (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_INTERFACE)) {
 		result = mono_object_isinst_mbyref_checked (obj, klass, error);
 		return result;
 	}
@@ -6523,7 +6523,7 @@ mono_object_isinst_mbyref_checked (MonoObject *obj, MonoClass *klass, MonoError 
 
 	vt = obj->vtable;
 	
-	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+	if (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_INTERFACE) {
 		if (MONO_VTABLE_IMPLEMENTS_INTERFACE (vt, klass->interface_id)) {
 			return obj;
 		}

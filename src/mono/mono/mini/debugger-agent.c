@@ -6683,7 +6683,7 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 
 	if (!m->klass->valuetype && !(m->flags & METHOD_ATTRIBUTE_STATIC) && !this_arg) {
 		if (!strcmp (m->name, ".ctor")) {
-			if (m->klass->flags & TYPE_ATTRIBUTE_ABSTRACT)
+			if (mono_class_get_flags (m->klass) & TYPE_ATTRIBUTE_ABSTRACT)
 				return ERR_INVALID_ARGUMENT;
 			else {
 				MonoError error;
@@ -8036,7 +8036,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 			buffer_add_id (buf, 0);
 		buffer_add_int (buf, klass->type_token);
 		buffer_add_byte (buf, klass->rank);
-		buffer_add_int (buf, klass->flags);
+		buffer_add_int (buf, mono_class_get_flags (klass));
 		b = 0;
 		type = &klass->byval_arg;
 		// FIXME: Can't decide whenever a class represents a byref type

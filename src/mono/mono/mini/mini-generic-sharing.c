@@ -1646,7 +1646,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 
 		mono_class_setup_vtable (info->klass);
 		// FIXME: Check type load
-		if (iface_class->flags & TYPE_ATTRIBUTE_INTERFACE) {
+		if (mono_class_get_flags (iface_class) & TYPE_ATTRIBUTE_INTERFACE) {
 			ioffset = mono_class_interface_offset (info->klass, iface_class);
 			g_assert (ioffset != -1);
 		} else {
@@ -1672,7 +1672,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 
 		mono_class_setup_vtable (info->klass);
 		// FIXME: Check type load
-		if (iface_class->flags & TYPE_ATTRIBUTE_INTERFACE) {
+		if (mono_class_get_flags (iface_class) & TYPE_ATTRIBUTE_INTERFACE) {
 			ioffset = mono_class_interface_offset (info->klass, iface_class);
 			g_assert (ioffset != -1);
 		} else {
@@ -1786,7 +1786,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 				/* See mono_emit_method_call_full () */
 				/* The gsharedvt trampoline will recognize this constant */
 				vcall_offset = MONO_GSHAREDVT_DEL_INVOKE_VT_OFFSET;
-			} else if (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+			} else if (mono_class_get_flags (method->klass) & TYPE_ATTRIBUTE_INTERFACE) {
 				guint32 imt_slot = mono_method_get_imt_slot (method);
 				vcall_offset = ((gint32)imt_slot - MONO_IMT_SIZE) * SIZEOF_VOID_P;
 			} else {

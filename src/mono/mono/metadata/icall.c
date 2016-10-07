@@ -1659,7 +1659,7 @@ ICALL_EXPORT guint32
 ves_icall_RuntimeTypeHandle_GetAttributes (MonoReflectionType *type)
 {
 	MonoClass *klass = mono_class_from_mono_type (type->type);
-	return klass->flags;
+	return mono_class_get_flags (klass);
 }
 
 ICALL_EXPORT MonoReflectionMarshalAsAttribute*
@@ -3175,7 +3175,7 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this_arg, Mo
 		return NULL;
 	}
 
-	if ((m->klass->flags & TYPE_ATTRIBUTE_ABSTRACT) && !strcmp (m->name, ".ctor") && !this_arg) {
+	if ((mono_class_get_flags (m->klass) & TYPE_ATTRIBUTE_ABSTRACT) && !strcmp (m->name, ".ctor") && !this_arg) {
 		mono_gc_wbarrier_generic_store (exc, (MonoObject*) mono_exception_from_name_msg (mono_defaults.corlib, "System.Reflection", "TargetException", "Cannot invoke constructor of an abstract class."));
 		return NULL;
 	}
@@ -4296,7 +4296,7 @@ ves_icall_RuntimeType_GetNestedTypes_native (MonoReflectionType *type, char *str
 	iter = NULL;
 	while ((nested = mono_class_get_nested_types (klass, &iter))) {
 		match = 0;
-		if ((nested->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK) == TYPE_ATTRIBUTE_NESTED_PUBLIC) {
+		if ((mono_class_get_flags (nested) & TYPE_ATTRIBUTE_VISIBILITY_MASK) == TYPE_ATTRIBUTE_NESTED_PUBLIC) {
 			if (bflags & BFLAGS_Public)
 				match++;
 		} else {
@@ -6974,7 +6974,7 @@ ves_icall_Remoting_RemotingServices_GetVirtualMethod (
 	mono_class_setup_vtable (klass);
 	vtable = klass->vtable;
 
-	if (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+	if (mono_class_get_flags (method->klass) & TYPE_ATTRIBUTE_INTERFACE) {
 		gboolean variance_used = FALSE;
 		/*MS fails with variant interfaces but it's the right thing to do anyway.*/
 		int offs = mono_class_interface_offset_with_variance (klass, method->klass, &variance_used);
@@ -7037,7 +7037,7 @@ ves_icall_System_Runtime_Activation_ActivationServices_AllocateUninitializedClas
 	if (mono_error_set_pending_exception (&error))
 		return NULL;
 
-	if (MONO_CLASS_IS_INTERFACE (klass) || (klass->flags & TYPE_ATTRIBUTE_ABSTRACT)) {
+	if (MONO_CLASS_IS_INTERFACE (klass) || (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_ABSTRACT)) {
 		mono_set_pending_exception (mono_get_exception_argument ("type", "Type cannot be instantiated"));
 		return NULL;
 	}

@@ -365,7 +365,6 @@ struct _MonoClass {
 	/*
 	 * From the TypeDef table
 	 */
-	guint32    flags;
 	struct {
 #if MONO_SMALL_CONFIG
 		guint16 first, count;
@@ -409,10 +408,11 @@ struct _MonoClass {
 
 typedef struct {
 	MonoClass class;
+	guint32	flags;
 } MonoClassDef;
 
 typedef struct {
-	MonoClass class;
+	MonoClassDef class;
 } MonoClassGtd;
 
 typedef struct {
@@ -1467,6 +1467,8 @@ mono_class_get_generic_class (MonoClass *klass);
 MonoGenericClass*
 mono_class_try_get_generic_class (MonoClass *klass);
 
+void
+mono_class_set_flags (MonoClass *klass, guint32 flags);
 
 /*Now that everything has been defined, let's include the inline functions */
 #include <mono/metadata/class-inlines.h>

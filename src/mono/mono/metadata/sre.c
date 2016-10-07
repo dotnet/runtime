@@ -2311,7 +2311,7 @@ reflection_setup_internal_class (MonoReflectionTypeBuilder *tb, MonoError *error
 	if (!is_ok (error))
 		goto failure;
 	klass->type_token = MONO_TOKEN_TYPE_DEF | tb->table_idx;
-	klass->flags = tb->attrs;
+	mono_class_set_flags (klass, tb->attrs);
 	
 	mono_profiler_class_event (klass, MONO_PROFILE_START_LOAD);
 
@@ -3062,7 +3062,7 @@ ensure_runtime_vtable (MonoClass *klass, MonoError *error)
 		}
 	}
 
-	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+	if (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_INTERFACE) {
 		int slot_num = 0;
 		for (i = 0; i < klass->method.count; ++i) {
 			MonoMethod *im = klass->methods [i];
@@ -3429,7 +3429,7 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	 * Fields to set in klass:
 	 * the various flags: delegate/unicode/contextbound etc.
 	 */
-	klass->flags = tb->attrs;
+	mono_class_set_flags (klass, tb->attrs);
 	klass->has_cctor = 1;
 
 	mono_class_setup_parent (klass, klass->parent);

@@ -3616,7 +3616,7 @@ can_marshal_struct (MonoClass *klass)
 	MonoMarshalType *info;
 	int i;
 
-	if ((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_AUTO_LAYOUT)
+	if ((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_AUTO_LAYOUT)
 		return FALSE;
 
 	info = mono_marshal_load_type_info (klass);
@@ -5013,7 +5013,7 @@ is_direct_callable (MonoAotCompile *acfg, MonoMethod *method, MonoJumpInfo *patc
 		if (callee_cfg) {
 			gboolean direct_callable = TRUE;
 
-			if (direct_callable && !(!callee_cfg->has_got_slots && (callee_cfg->method->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT)))
+			if (direct_callable && !(!callee_cfg->has_got_slots && (mono_class_get_flags (callee_cfg->method->klass) & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT)))
 				direct_callable = FALSE;
 			if ((callee_cfg->method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) && (!method || method->wrapper_type != MONO_WRAPPER_SYNCHRONIZED))
 				// FIXME: Maybe call the wrapper directly ?

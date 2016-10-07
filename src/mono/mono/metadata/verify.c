@@ -2674,7 +2674,7 @@ verify_ldftn_delegate (VerifyContext *ctx, MonoClass *delegate, ILStackDesc *val
 	 * the object is a this arg (comes from a ldarg.0), and there is no starg.0.
 	 * This rules doesn't apply if the object on stack is a boxed valuetype.
 	 */
-	if ((method->flags & METHOD_ATTRIBUTE_VIRTUAL) && !(method->flags & METHOD_ATTRIBUTE_FINAL) && !(method->klass->flags & TYPE_ATTRIBUTE_SEALED) && !stack_slot_is_boxed_value (value)) {
+	if ((method->flags & METHOD_ATTRIBUTE_VIRTUAL) && !(method->flags & METHOD_ATTRIBUTE_FINAL) && !(mono_class_get_flags (method->klass) & TYPE_ATTRIBUTE_SEALED) && !stack_slot_is_boxed_value (value)) {
 		/*A stdarg 0 must not happen, we fail here only in fail fast mode to avoid double error reports*/
 		if (IS_FAIL_FAST_MODE (ctx) && ctx->has_this_store)
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid ldftn with virtual function in method with stdarg 0 at  0x%04x", ctx->ip_offset));
@@ -3166,7 +3166,7 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual_)
 		if (method->flags & METHOD_ATTRIBUTE_ABSTRACT) 
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use call with an abstract method at 0x%04x", ctx->ip_offset));
 		
-		if ((method->flags & METHOD_ATTRIBUTE_VIRTUAL) && !(method->flags & METHOD_ATTRIBUTE_FINAL) && !(method->klass->flags & TYPE_ATTRIBUTE_SEALED)) {
+		if ((method->flags & METHOD_ATTRIBUTE_VIRTUAL) && !(method->flags & METHOD_ATTRIBUTE_FINAL) && !(mono_class_get_flags (method->klass) & TYPE_ATTRIBUTE_SEALED)) {
 			virt_check_this = TRUE;
 			ctx->code [ctx->ip_offset].flags |= IL_CODE_CALL_NONFINAL_VIRTUAL;
 		}
@@ -3811,7 +3811,7 @@ do_newobj (VerifyContext *ctx, int token)
 		return;
 	}
 
-	if (method->klass->flags & (TYPE_ATTRIBUTE_ABSTRACT | TYPE_ATTRIBUTE_INTERFACE))
+	if (mono_class_get_flags (method->klass) & (TYPE_ATTRIBUTE_ABSTRACT | TYPE_ATTRIBUTE_INTERFACE))
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Trying to instantiate an abstract or interface type at 0x%04x", ctx->ip_offset));
 
 	if (!IS_SKIP_VISIBILITY (ctx) && !mono_method_can_access_method_full (ctx->method, method, NULL)) {
@@ -4643,7 +4643,7 @@ merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, gboolean sta
 			}
 
 			/* if old class is an interface that new class implements */
-			if (old_class->flags & TYPE_ATTRIBUTE_INTERFACE) {
+			if (mono_class_get_flags (old_class) & TYPE_ATTRIBUTE_INTERFACE) {
 				if (verifier_class_is_assignable_from (old_class, new_class)) {
 					match_class = old_class;
 					goto match_found;	
@@ -4656,7 +4656,7 @@ merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, gboolean sta
 				}
 			}
 
-			if (new_class->flags & TYPE_ATTRIBUTE_INTERFACE) {
+			if (mono_class_get_flags (new_class) & TYPE_ATTRIBUTE_INTERFACE) {
 				if (verifier_class_is_assignable_from (new_class, old_class)) {
 					match_class = new_class;
 					goto match_found;	
@@ -6102,7 +6102,7 @@ verify_class_for_overlapping_reference_fields (MonoClass *klass)
 	MonoClassField *field;
 	gboolean is_fulltrust = mono_verifier_is_class_full_trust (klass);
 	/*We can't skip types with !has_references since this is calculated after we have run.*/
-	if (!((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT))
+	if (!((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT))
 		return TRUE;
 
 
@@ -6180,7 +6180,7 @@ verify_interfaces (MonoClass *klass)
 	int i;
 	for (i = 0; i < klass->interface_count; ++i) {
 		MonoClass *iface = klass->interfaces [i];
-		if (!(iface->flags & TYPE_ATTRIBUTE_INTERFACE))
+		if (!(mono_class_get_flags (iface) & TYPE_ATTRIBUTE_INTERFACE))
 			return FALSE;
 	}
 	return TRUE;
@@ -6327,7 +6327,7 @@ mono_verifier_verify_class (MonoClass *klass)
 				return FALSE;
 		}
 	}
-	if (klass->generic_container && (klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT)
+	if (klass->generic_container && (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT)
 		return FALSE;
 	if (klass->generic_container && !verify_generic_parameters (klass))
 		return FALSE;

@@ -1506,7 +1506,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_ReleaseInternal (gpointer pUnk)
 
 static gboolean cominterop_can_support_dispatch (MonoClass* klass)
 {
-	if (!(klass->flags & TYPE_ATTRIBUTE_PUBLIC) )
+	if (!(mono_class_get_flags (klass) & TYPE_ATTRIBUTE_PUBLIC) )
 		return FALSE;
 
 	if (!cominterop_com_visible (klass))
