@@ -32,7 +32,10 @@
     "System.Runtime.Serialization.Primitives": "4.1.1",
     "System.Xml.ReaderWriter": "4.4.0-beta-24607-03",
     "System.Xml.XPath": "4.4.0-beta-24607-03",
-    "System.Xml.XmlDocument": "4.4.0-beta-24607-03"
+    "System.Xml.XmlDocument": "4.4.0-beta-24607-03",
+    "runtime.win10-arm64.runtime.native.System.Data.SqlClient.sni": "4.3.0-beta-24523-00",
+    "runtime.win7-x64.runtime.native.System.Data.SqlClient.sni": "4.3.0-beta-24523-00",
+    "runtime.win7-x86.runtime.native.System.Data.SqlClient.sni": "4.3.0-beta-24523-00"
   },
   "frameworks": {
     "netstandard1.3": {}
