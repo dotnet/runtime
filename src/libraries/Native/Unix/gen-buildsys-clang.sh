@@ -60,8 +60,11 @@ if [[ -n "$CROSSCOMPILE" ]]; then
         echo "ROOTFS_DIR not set for crosscompile"
         exit 1
     fi
-    cmake_extra_defines="$cmake_extra_defines -C $project_root/cross/$build_arch/tryrun.cmake"
-    cmake_extra_defines="$cmake_extra_defines -DCMAKE_TOOLCHAIN_FILE=$project_root/cross/$build_arch/toolchain.cmake"
+    if [[ -z "$CONFIG_DIR" ]]; then
+      CONFIG_DIR="$project_root/cross/$build_arch"
+    fi
+    cmake_extra_defines="$cmake_extra_defines -C $CONFIG_DIR/tryrun.cmake"
+    cmake_extra_defines="$cmake_extra_defines -DCMAKE_TOOLCHAIN_FILE=$CONFIG_DIR/toolchain.cmake"
 fi
 if [ "$build_arch" == "arm-softfp" ]; then
     cmake_extra_defines="$cmake_extra_defines -DARM_SOFTFP=1"
