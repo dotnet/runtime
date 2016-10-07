@@ -3691,11 +3691,11 @@ namespace System.Data.SqlClient
                 if (col.length == TdsEnums.SQL_USHORTVARMAXLEN)
                 {
                     Debug.Assert(tdsType == TdsEnums.SQLXMLTYPE ||
-                                    tdsType == TdsEnums.SQLBIGVARCHAR ||
-                                    tdsType == TdsEnums.SQLBIGVARBINARY ||
-                                    tdsType == TdsEnums.SQLNVARCHAR ||
-                                    tdsType == TdsEnums.SQLUDT,
-                                    "Invalid streaming datatype");
+                                 tdsType == TdsEnums.SQLBIGVARCHAR ||
+                                 tdsType == TdsEnums.SQLBIGVARBINARY ||
+                                 tdsType == TdsEnums.SQLNVARCHAR ||
+                                 tdsType == TdsEnums.SQLUDT,
+                                 "Invalid streaming datatype");
                     col.metaType = MetaType.GetMaxMetaTypeFromMetaType(col.metaType);
                     Debug.Assert(col.metaType.IsLong, "Max datatype not IsLong");
                     col.length = Int32.MaxValue;
