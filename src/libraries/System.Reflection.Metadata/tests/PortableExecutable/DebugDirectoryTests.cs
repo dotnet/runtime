@@ -6,6 +6,7 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Reflection.Internal;
+using System.Reflection.Metadata;
 using System.Reflection.Metadata.Tests;
 using Xunit;
 
@@ -153,10 +154,12 @@ namespace System.Reflection.PortableExecutable.Tests
             Assert.Equal(DebugDirectoryEntryType.Reproducible, entries[1].Type);
             Assert.Equal(DebugDirectoryEntryType.EmbeddedPortablePdb, entries[2].Type);
 
-            var provider = reader.ReadEmbeddedPortablePdbDebugDirectoryData(entries[2]);
-            var pdbReader = provider.GetMetadataReader();
-            var document = pdbReader.GetDocument(pdbReader.Documents.First());
-            Assert.Equal(@"C:\Documents.cs", pdbReader.GetString(document.Name));
+            using (MetadataReaderProvider provider = reader.ReadEmbeddedPortablePdbDebugDirectoryData(entries[2]))
+            {
+                var pdbReader = provider.GetMetadataReader();
+                var document = pdbReader.GetDocument(pdbReader.Documents.First());
+                Assert.Equal(@"C:\Documents.cs", pdbReader.GetString(document.Name));
+            }
         }
 
         [Fact]
