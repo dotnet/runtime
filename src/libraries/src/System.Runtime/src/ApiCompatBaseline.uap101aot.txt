@@ -456,3 +456,28 @@ TypesMustExist : Type 'System.Runtime.CompilerServices.FixedAddressValueTypeAttr
 TypesMustExist : Type 'System.Runtime.MemoryFailPoint' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.ConstrainedExecution.ReliabilityContractAttribute' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs' does not exist in the implementation but it does exist in the contract.
+CannotSealType : Type 'System.Delegate' is sealed in the implementation but not sealed in the contract.
+MembersMustExist : Member 'System.Delegate..ctor(System.Object, System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Delegate..ctor(System.Type, System.String)' does not exist in the implementation but it does exist in the contract.
+CannotMakeMemberNonVirtual : Member 'System.Delegate.Clone()' is non-virtual in the implementation but is virtual in the contract.
+MembersMustExist : Member 'System.Delegate.CombineImpl(System.Delegate)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Delegate.CreateDelegate(System.Type, System.Object, System.Reflection.MethodInfo)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Delegate.CreateDelegate(System.Type, System.Object, System.Reflection.MethodInfo, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Delegate.CreateDelegate(System.Type, System.Object, System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Delegate.CreateDelegate(System.Type, System.Object, System.String, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Delegate.CreateDelegate(System.Type, System.Object, System.String, System.Boolean, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Delegate.CreateDelegate(System.Type, System.Reflection.MethodInfo)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Delegate.CreateDelegate(System.Type, System.Reflection.MethodInfo, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Delegate.CreateDelegate(System.Type, System.Type, System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Delegate.CreateDelegate(System.Type, System.Type, System.String, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Delegate.CreateDelegate(System.Type, System.Type, System.String, System.Boolean, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Delegate.DynamicInvokeImpl(System.Object[])' does not exist in the implementation but it does exist in the contract.
+CannotMakeMemberNonVirtual : Member 'System.Delegate.Equals(System.Object)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'System.Delegate.GetHashCode()' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'System.Delegate.GetInvocationList()' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'System.Delegate.GetMethodImpl()' is non-virtual in the implementation but is virtual in the contract.
+MembersMustExist : Member 'System.Delegate.RemoveImpl(System.Delegate)' does not exist in the implementation but it does exist in the contract.
+CannotSealType : Type 'System.MulticastDelegate' is sealed in the implementation but not sealed in the contract.
+MembersMustExist : Member 'System.MulticastDelegate..ctor(System.Object, System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.MulticastDelegate..ctor(System.Type, System.String)' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.MulticastNotSupportedException' does not exist in the implementation but it does exist in the contract.
