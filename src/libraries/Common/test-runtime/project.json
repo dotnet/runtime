@@ -1,10 +1,10 @@
 {
   "dependencies": {
-    "NETStandard.Library": "1.6.2-beta-24607-03",
-    "Microsoft.NETCore.TestHost": "1.2.0-beta-24607-02",
-    "Microsoft.NETCore.Runtime.CoreCLR": "1.2.0-beta-24607-02",
-    "System.Diagnostics.Contracts": "4.4.0-beta-24607-03",
-    "System.Linq.Parallel": "4.4.0-beta-24607-03",
+    "NETStandard.Library": "1.6.1-beta-24604-02",
+    "Microsoft.NETCore.TestHost": "1.2.0-beta-24605-01",
+    "Microsoft.NETCore.Runtime.CoreCLR": "1.2.0-beta-24605-01",
+    "System.Diagnostics.Contracts": "4.3.0-beta-24604-02",
+    "System.Linq.Parallel": "4.3.0-beta-24604-02",
     "coveralls.io": "1.4",
     "OpenCover": "4.6.519",
     "ReportGenerator": "2.4.3",
@@ -60,7 +60,7 @@
         "System.Text.Encoding.CodePages": "4.0.1",
         "System.Xml.XmlSerializer": "4.0.11",
         "Microsoft.NETCore.UniversalWindowsPlatform": "5.2.1-beta-000547-00",
-        "System.Console": "4.4.0-beta-24607-03",
+        "System.Console": "4.3.0-beta-24604-02",
         "microsoft.xunit.runner.uwp": "1.0.3-prerelease-00826-05",
         "Microsoft.DotNet.TestILC": {
           "version": "1.4.24208-prerelease",
