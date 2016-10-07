@@ -1,0 +1,360 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="net_log_listener_create_valid_identity_failed" xml:space="preserve">
+    <value>Failed to create a valid Identity for an incoming request.</value>
+  </data>
+  <data name="net_log_listener_delegate_exception" xml:space="preserve">
+    <value>Sending 500 response, AuthenticationSchemeSelectorDelegate threw an exception: {0}.</value>
+  </data>
+  <data name="net_log_listener_unsupported_authentication_scheme" xml:space="preserve">
+    <value>Received a request with an unsupported authentication scheme, Authorization:{0} SupportedSchemes:{1}.</value>
+  </data>
+  <data name="net_log_listener_unmatched_authentication_scheme" xml:space="preserve">
+    <value>Received a request with an unmatched or no authentication scheme. AuthenticationSchemes:{0}, Authorization:{1}.</value>
+  </data>
+  <data name="net_io_invalidasyncresult" xml:space="preserve">
+    <value>The IAsyncResult object was not returned from the corresponding asynchronous method on this class.</value>
+  </data>
+  <data name="net_io_invalidendcall" xml:space="preserve">
+    <value>{0} can only be called once for each asynchronous operation.</value>
+  </data>
+  <data name="net_listener_cannot_set_custom_cbt" xml:space="preserve">
+    <value>Custom channel bindings are not supported.</value>
+  </data>
+  <data name="net_listener_detach_error" xml:space="preserve">
+    <value>Can't detach Url group from request queue. Status code: {0}.</value>
+  </data>
+  <data name="net_listener_scheme" xml:space="preserve">
+    <value>Only Uri prefixes starting with 'http://' or 'https://' are supported.</value>
+  </data>
+  <data name="net_listener_host" xml:space="preserve">
+    <value>Only Uri prefixes with a valid hostname are supported.</value>
+  </data>
+  <data name="net_listener_mustcall" xml:space="preserve">
+    <value>Please call the {0} method before calling this method.</value>
+  </data>
+  <data name="net_listener_slash" xml:space="preserve">
+    <value>Only Uri prefixes ending in '/' are allowed.</value>
+  </data>
+  <data name="net_listener_already" xml:space="preserve">
+    <value>Failed to listen on prefix '{0}' because it conflicts with an existing registration on the machine.</value>
+  </data>
+  <data name="net_log_listener_no_cbt_disabled" xml:space="preserve">
+    <value>No channel binding check because extended protection is disabled.</value>
+  </data>
+  <data name="net_log_listener_no_cbt_http" xml:space="preserve">
+    <value>No channel binding check for requests without a secure channel.</value>
+  </data>
+  <data name="net_log_listener_no_cbt_platform" xml:space="preserve">
+    <value>No channel binding check because the underlying platform does not support extended protection.</value>
+  </data>
+  <data name="net_log_listener_no_cbt_trustedproxy" xml:space="preserve">
+    <value>No channel binding check for the trusted proxy scenario.</value>
+  </data>
+  <data name="net_log_listener_cbt" xml:space="preserve">
+    <value>Channel binding check enabled.</value>
+  </data>
+  <data name="net_log_listener_no_spn_kerberos" xml:space="preserve">
+    <value>No explicit service name check because Kerberos authentication already validates the service name.</value>
+  </data>
+  <data name="net_log_listener_no_spn_disabled" xml:space="preserve">
+    <value>No service name check because extended protection is disabled.</value>
+  </data>
+  <data name="net_log_listener_no_spn_cbt" xml:space="preserve">
+    <value>No service name check because the channel binding was already checked.</value>
+  </data>
+  <data name="net_log_listener_no_spn_platform" xml:space="preserve">
+    <value>No service name check because the underlying platform does not support extended protection.</value>
+  </data>
+  <data name="net_log_listener_no_spn_whensupported" xml:space="preserve">
+    <value>No service name check because the client did not provide a service name and the server was configured for PolicyEnforcement.WhenSupported.</value>
+  </data>
+  <data name="net_log_listener_no_spn_loopback" xml:space="preserve">
+    <value>No service name check because the authentication was from a client on the local machine.</value>
+  </data>
+  <data name="net_log_listener_spn" xml:space="preserve">
+    <value>Client provided service name '{0}'.</value>
+  </data>
+  <data name="net_log_listener_spn_passed" xml:space="preserve">
+    <value>Service name check succeeded.</value>
+  </data>
+  <data name="net_log_listener_spn_failed" xml:space="preserve">
+    <value>Service name check failed.</value>
+  </data>
+  <data name="net_log_listener_spn_failed_always" xml:space="preserve">
+    <value>Service name check failed because the client did not provide a service name and the server was configured for PolicyEnforcement.Always.</value>
+  </data>
+  <data name="net_log_listener_spn_failed_empty" xml:space="preserve">
+    <value>No acceptable service names were configured!</value>
+  </data>
+  <data name="net_log_listener_spn_failed_dump" xml:space="preserve">
+    <value>Dumping acceptable service names:</value>
+  </data>
+  <data name="net_log_listener_spn_add" xml:space="preserve">
+    <value>Adding default service name '{0}' from prefix '{1}'.</value>
+  </data>
+  <data name="net_log_listener_spn_not_add" xml:space="preserve">
+    <value>No default service name added for prefix '{0}'.</value>
+  </data>
+  <data name="net_log_listener_spn_remove" xml:space="preserve">
+    <value>Removing default service name '{0}' from prefix '{1}'.</value>
+  </data>
+  <data name="net_log_listener_spn_not_remove" xml:space="preserve">
+    <value>No default service name removed for prefix '{0}'.</value>
+  </data>
+  <data name="net_listener_no_spns" xml:space="preserve">
+    <value>No service names could be determined from the registered prefixes. Either add prefixes from which default service names can be derived or specify an ExtendedProtectionPolicy object which contains an explicit list of service names.</value>
+  </data>
+  <data name="net_ssp_dont_support_cbt" xml:space="preserve">
+    <value>The Security Service Providers don't support extended protection. Please install the latest Security Service Providers update.</value>
+  </data>
+  <data name="net_PropertyNotImplementedException" xml:space="preserve">
+    <value>This property is not implemented by this class.</value>
+  </data>
+  <data name="net_array_too_small" xml:space="preserve">
+    <value>The target array is too small.</value>
+  </data>
+  <data name="net_listener_mustcompletecall" xml:space="preserve">
+    <value>The in-progress method {0} must be completed first.</value>
+  </data>
+  <data name="net_listener_invalid_cbt_type" xml:space="preserve">
+    <value>Querying the {0} Channel Binding is not supported.</value>
+  </data>
+  <data name="net_listener_callinprogress" xml:space="preserve">
+    <value>Cannot re-call {0} while a previous call is still in progress.</value>
+  </data>
+  <data name="net_log_listener_cant_create_uri" xml:space="preserve">
+    <value>Can't create Uri from string '{0}://{1}{2}{3}'.</value>
+  </data>
+  <data name="net_log_listener_cant_convert_raw_path" xml:space="preserve">
+    <value>Can't convert Uri path '{0}' using encoding '{1}'.</value>
+  </data>
+  <data name="net_log_listener_cant_convert_percent_value" xml:space="preserve">
+    <value>Can't convert percent encoded value '{0}'.</value>
+  </data>
+  <data name="net_log_listener_cant_convert_to_utf8" xml:space="preserve">
+    <value>Can't convert string '{0}' into UTF-8 bytes: {1}</value>
+  </data>
+  <data name="net_log_listener_cant_convert_bytes" xml:space="preserve">
+    <value>Can't convert bytes '{0}' into UTF-16 characters: {1}</value>
+  </data>
+  <data name="net_invalidstatus" xml:space="preserve">
+    <value>The status code must be exactly three digits.</value>
+  </data>
+  <data name="net_WebHeaderInvalidControlChars" xml:space="preserve">
+    <value>Specified value has invalid Control characters.</value>
+  </data>
+  <data name="net_rspsubmitted" xml:space="preserve">
+    <value>This operation cannot be performed after the response has been submitted.</value>
+  </data>
+  <data name="net_nochunkuploadonhttp10" xml:space="preserve">
+    <value>Chunked encoding upload is not supported on the HTTP/1.0 protocol.</value>
+  </data>
+  <data name="net_cookie_exists" xml:space="preserve">
+    <value>Cookie already exists.</value>
+  </data>
+  <data name="net_clsmall" xml:space="preserve">
+    <value>The Content-Length value must be greater than or equal to zero.</value>
+  </data>
+  <data name="net_wrongversion" xml:space="preserve">
+    <value>Only HTTP/1.0 and HTTP/1.1 version requests are currently supported.</value>
+  </data>
+  <data name="net_noseek" xml:space="preserve">
+    <value>This stream does not support seek operations.</value>
+  </data>
+  <data name="net_writeonlystream" xml:space="preserve">
+    <value>The stream does not support reading.</value>
+  </data>
+  <data name="net_entitytoobig" xml:space="preserve">
+    <value>Bytes to be written to the stream exceed the Content-Length bytes size specified.</value>
+  </data>
+  <data name="net_io_notenoughbyteswritten" xml:space="preserve">
+    <value>Cannot close stream until all bytes are written.</value>
+  </data>
+  <data name="net_listener_close_urlgroup_error" xml:space="preserve">
+    <value>Can't close Url group. Status code: {0}.</value>
+  </data>
+  <data name="net_WebSockets_NativeSendResponseHeaders" xml:space="preserve">
+    <value>An error occurred when sending the WebSocket HTTP upgrade response during the {0} operation. The HRESULT returned is '{1}'</value>
+  </data>
+  <data name="net_WebSockets_ClientAcceptingNoProtocols" xml:space="preserve">
+    <value>The WebSocket client did not request any protocols, but server attempted to accept '{0}' protocol(s). </value>
+  </data>
+  <data name="net_WebSockets_AcceptUnsupportedProtocol" xml:space="preserve">
+    <value>The WebSocket client request requested '{0}' protocol(s), but server is only accepting '{1}' protocol(s).</value>
+  </data>
+  <data name="net_WebSockets_AcceptNotAWebSocket" xml:space="preserve">
+    <value>The {0} operation was called on an incoming request that did not specify a '{1}: {2}' header or the {2} header not contain '{3}'. {2} specified by the client was '{4}'.</value>
+  </data>
+  <data name="net_WebSockets_AcceptHeaderNotFound" xml:space="preserve">
+    <value>The {0} operation was called on an incoming WebSocket request without required '{1}' header. </value>
+  </data>
+  <data name="net_WebSockets_AcceptUnsupportedWebSocketVersion" xml:space="preserve">
+    <value>The {0} operation was called on an incoming request with WebSocket version '{1}', expected '{2}'. </value>
+  </data>
+  <data name="net_WebSockets_InvalidEmptySubProtocol" xml:space="preserve">
+    <value>Empty string is not a valid subprotocol value. Please use \"null\" to specify no value.</value>
+  </data>
+  <data name="net_WebSockets_InvalidCharInProtocolString" xml:space="preserve">
+    <value>The WebSocket protocol '{0}' is invalid because it contains the invalid character '{1}'.</value>
+  </data>
+  <data name="net_WebSockets_ReasonNotNull" xml:space="preserve">
+    <value>The close status description '{0}' is invalid. When using close status code '{1}' the description must be null.</value>
+  </data>
+  <data name="net_WebSockets_InvalidCloseStatusCode" xml:space="preserve">
+    <value>The close status code '{0}' is reserved for system use only and cannot be specified when calling this method.</value>
+  </data>
+  <data name="net_WebSockets_InvalidCloseStatusDescription" xml:space="preserve">
+    <value>The close status description '{0}' is too long. The UTF8-representation of the status description must not be longer than {1} bytes.</value>
+  </data>
+  <data name="net_WebSockets_ArgumentOutOfRange_TooSmall" xml:space="preserve">
+    <value>The argument must be a value greater than {0}.</value>
+  </data>
+  <data name="net_WebSockets_ArgumentOutOfRange_TooBig" xml:space="preserve">
+    <value>The value of the '{0}' parameter ({1}) must be less than or equal to {2}.</value>
+  </data>
+  <data name="net_WebSockets_UnsupportedPlatform" xml:space="preserve">
+    <value>The WebSocket protocol is not supported on this platform.</value>
+  </data>
+  <data name="net_readonlystream" xml:space="preserve">
+    <value>The stream does not support writing.</value>
+  </data>
+  <data name="net_WebSockets_InvalidState_ClosedOrAborted" xml:space="preserve">
+    <value>The '{0}' instance cannot be used for communication because it has been transitioned into the '{1}' state.</value>
+  </data>
+  <data name="net_WebSockets_ReceiveAsyncDisallowedAfterCloseAsync" xml:space="preserve">
+    <value>The WebSocket is in an invalid state for this operation. The '{0}' method has already been called before on this instance. Use '{1}' instead to keep being able to receive data but close the output channel.</value>
+  </data>
+  <data name="net_Websockets_AlreadyOneOutstandingOperation" xml:space="preserve">
+    <value>There is already one outstanding '{0}' call for this WebSocket instance. ReceiveAsync and SendAsync can be called simultaneously, but at most one outstanding operation for each of them is allowed at the same time.</value>
+  </data>
+  <data name="net_WebSockets_InvalidMessageType" xml:space="preserve">
+    <value>The received message type '{2}' is invalid after calling {0}. {0} should only be used if no more data is expected from the remote endpoint. Use '{1}' instead to keep being able to receive data but close the output channel.</value>
+  </data>
+  <data name="net_WebSockets_InvalidBufferType" xml:space="preserve">
+    <value>The buffer type '{0}' is invalid. Valid buffer types are: '{1}', '{2}', '{3}', '{4}', '{5}'.</value>
+  </data>
+  <data name="net_WebSockets_ArgumentOutOfRange_InternalBuffer" xml:space="preserve">
+    <value>The byte array must have a length of at least '{0}' bytes.  </value>
+  </data>
+  <data name="net_WebSockets_Argument_InvalidMessageType" xml:space="preserve">
+    <value>The message type '{0}' is not allowed for the '{1}' operation. Valid message types are: '{2}, {3}'. To close the WebSocket, use the '{4}' operation instead. </value>
+  </data>
+</root>
