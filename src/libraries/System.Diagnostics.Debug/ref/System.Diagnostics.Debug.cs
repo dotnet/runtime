@@ -109,4 +109,22 @@ namespace System.Diagnostics
         public System.Type Target { get { throw null; } set { } }
         public string TargetTypeName { get { throw null; } set { } }
     }
+    public sealed class DebuggerStepperBoundaryAttribute : System.Attribute 
+    {
+        public DebuggerStepperBoundaryAttribute() { throw null; }
+    }
+    public sealed class DebuggerVisualizerAttribute : System.Attribute 
+    {
+        public DebuggerVisualizerAttribute(string visualizerTypeName) { throw null; }
+        public DebuggerVisualizerAttribute(string visualizerTypeName, string visualizerObjectSourceTypeName) { throw null; }
+        public DebuggerVisualizerAttribute(string visualizerTypeName, Type visualizerObjectSource) { throw null; }
+        public DebuggerVisualizerAttribute(Type visualizer) { throw null; }
+        public DebuggerVisualizerAttribute(Type visualizer, string visualizerObjectSourceTypeName) { throw null; }
+        public DebuggerVisualizerAttribute(Type visualizer, Type visualizerObjectSource) { throw null; }
+        public string Description { get { throw null; } set { } }
+        public System.Type Target { get { throw null; } set { } }
+        public string TargetTypeName { get { throw null; } set { } }
+        public string VisualizerObjectSourceTypeName { get { throw null; } }
+        public string VisualizerTypeName { get { throw null; } }
+    }
 }

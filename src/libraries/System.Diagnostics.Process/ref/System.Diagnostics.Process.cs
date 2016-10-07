@@ -96,9 +96,10 @@ namespace System.Diagnostics
         public string FileName { get { throw null; } }
         public int ModuleMemorySize { get { throw null; } }
         public string ModuleName { get { throw null; } }
+        public FileVersionInfo FileVersionInfo { get { throw null; } }
         public override string ToString() { throw null; }
     }
-    public partial class ProcessModuleCollection
+    public partial class ProcessModuleCollection : System.Collections.ReadOnlyCollectionBase
     {
         protected ProcessModuleCollection() { }
         public ProcessModuleCollection(System.Diagnostics.ProcessModule[] processModules) { }
@@ -156,7 +157,7 @@ namespace System.Diagnostics
         public System.Diagnostics.ThreadWaitReason WaitReason { get { throw null; } }
         public void ResetIdealProcessor() { }
     }
-    public partial class ProcessThreadCollection
+    public partial class ProcessThreadCollection : System.Collections.ReadOnlyCollectionBase
     {
         protected ProcessThreadCollection() { }
         public ProcessThreadCollection(System.Diagnostics.ProcessThread[] processThreads) { }
@@ -205,5 +206,19 @@ namespace System.Diagnostics
         Unknown = 13,
         UserRequest = 6,
         VirtualMemory = 11,
+    }
+
+    public enum ProcessWindowStyle 
+    {
+        Hidden = 1,
+        Maximized = 3,
+        Minimized = 2,
+        Normal = 0,
+    }
+
+    public class MonitoringDescriptionAttribute : System.ComponentModel.DescriptionAttribute 
+    {
+        public MonitoringDescriptionAttribute(string description) { throw null; }
+        public override string Description { get { throw null; } }
     }
 }

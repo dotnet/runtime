@@ -26,6 +26,8 @@
   <ItemGroup Condition="'$(TargetGroup)' == ''">
     <Compile Include="Properties\InternalsVisibleTo.cs" />
     <Compile Include="System\Diagnostics\Debug.Public.cs" />
+    <Compile Include="System\Diagnostics\DebuggerStepperBoundaryAttribute.cs" />
+    <Compile Include="System\Diagnostics\DebuggerVisualizerAttribute.cs" />
     <Compile Include="$(CommonPath)\System\Diagnostics\Debug.cs">
       <Link>System\Diagnostics\Debug.cs</Link>
     </Compile>
