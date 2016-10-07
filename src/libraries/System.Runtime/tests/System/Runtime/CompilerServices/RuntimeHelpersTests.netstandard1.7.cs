@@ -3,38 +3,30 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-
 namespace System.Runtime.CompilerServices.Tests
 {
-    public struct Age {
-    public int years;
-    public int months;
-    }
-
-    public class FreeClass
+    public struct Age
     {
-    public static Age FreeAge;
-
-    public static unsafe IntPtr AddressOfFreeAge()
-    { 
-        fixed (Age* pointer = &FreeAge) 
-        { return (IntPtr) pointer; } 
-    }
+        public int years;
+        public int months;
     }
 
     public class FixedClass
     {
-    [FixedAddressValueType]
-    public static Age FixedAge;
+        [FixedAddressValueType]
+        public static Age FixedAge;
 
-    public static unsafe IntPtr AddressOfFixedAge()
-    { 
-        fixed (Age* pointer = &FixedAge) 
-        { return (IntPtr) pointer; } 
-    }   
+        public static unsafe IntPtr AddressOfFixedAge()
+        {
+            fixed (Age* pointer = &FixedAge)
+            {
+                return (IntPtr)pointer;
+            }
+        }
     }
 
     public static partial class RuntimeHelpersTests
@@ -43,20 +35,16 @@ namespace System.Runtime.CompilerServices.Tests
         public static void FixedAddressValueTypeTest()
         {
             // Get addresses of static Age fields.
-            IntPtr freePtr1 = FreeClass.AddressOfFreeAge();
-
             IntPtr fixedPtr1 = FixedClass.AddressOfFixedAge();
 
             // Garbage collection.
             GC.Collect(3, GCCollectionMode.Forced, true, true);
             GC.WaitForPendingFinalizers();
-            
+
             // Get addresses of static Age fields after garbage collection.
-            IntPtr freePtr2 = FreeClass.AddressOfFreeAge();
             IntPtr fixedPtr2 = FixedClass.AddressOfFixedAge();
 
-            Assert.True(freePtr1 != freePtr2 && fixedPtr1 == fixedPtr2);
-      
+            Assert.Equal(fixedPtr1, fixedPtr2);
         }
     }
 }
