@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Net.Security;
 using System.Security.Authentication.ExtendedProtection;
+using System.Text;
 using System.Threading;
 
 namespace System.Net

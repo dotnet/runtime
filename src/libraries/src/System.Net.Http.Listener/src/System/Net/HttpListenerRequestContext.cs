@@ -1,0 +1,33 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Security.Authentication.ExtendedProtection;
+
+namespace System.Net
+{
+    internal class HttpListenerRequestContext : TransportContext
+    {
+        internal HttpListenerRequestContext(HttpListenerRequest request)
+        {
+            Debug.Assert(request != null, "HttpListenerRequestContext..ctor(): Not expecting a null request!");
+            this.request = request;
+        }
+
+        public override ChannelBinding GetChannelBinding(ChannelBindingKind kind)
+        {
+            if (kind != ChannelBindingKind.Endpoint)
+            {
+                throw new NotSupportedException(SR.Format(
+                    SR.net_listener_invalid_cbt_type, kind.ToString()));
+            }
+            return request.GetChannelBinding();
+        }
+
+        private HttpListenerRequest request;
+    }
+
+}
+
