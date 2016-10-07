@@ -138,12 +138,12 @@ namespace System.ComponentModel.Tests
 
         private void RunProtectedMethods()
         {
-            Assert.Throws<NotSupportedException>(() => this.GetConvertFromException(null));
-            Assert.Throws<NotSupportedException>(() => this.GetConvertFromException("1"));
-            Assert.Throws<NotSupportedException>(() => this.GetConvertFromException(new BaseClass()));
-            Assert.Throws<NotSupportedException>(() => this.GetConvertToException(null, typeof(int)));
-            Assert.Throws<NotSupportedException>(() => this.GetConvertToException("1", typeof(int)));
-            Assert.Throws<NotSupportedException>(() => this.GetConvertToException(new BaseClass(), typeof(BaseClass)));
+            Assert.Throws<NotSupportedException>(() => GetConvertFromException(null));
+            Assert.Throws<NotSupportedException>(() => GetConvertFromException("1"));
+            Assert.Throws<NotSupportedException>(() => GetConvertFromException(new BaseClass()));
+            Assert.Throws<NotSupportedException>(() => GetConvertToException(null, typeof(int)));
+            Assert.Throws<NotSupportedException>(() => GetConvertToException("1", typeof(int)));
+            Assert.Throws<NotSupportedException>(() => GetConvertToException(new BaseClass(), typeof(BaseClass)));
         }
 
         private static void VerifyConversionToString(object o)

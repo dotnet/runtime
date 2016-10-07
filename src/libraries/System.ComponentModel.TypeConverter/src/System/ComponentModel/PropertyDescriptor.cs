@@ -195,9 +195,9 @@ namespace System.ComponentModel
                 // of an instanceof call.
                 PropertyDescriptor pd = obj as PropertyDescriptor;
 
-                if (pd != null && pd.NameHashCode == this.NameHashCode
-                    && pd.PropertyType == this.PropertyType
-                    && pd.Name.Equals(this.Name))
+                if (pd != null && pd.NameHashCode == NameHashCode
+                    && pd.PropertyType == PropertyType
+                    && pd.Name.Equals(Name))
                 {
                     return true;
                 }
@@ -374,7 +374,7 @@ namespace System.ComponentModel
         /// </summary>
         public override int GetHashCode()
         {
-            return this.NameHashCode ^ PropertyType.GetHashCode();
+            return NameHashCode ^ PropertyType.GetHashCode();
         }
 
         /// <summary>

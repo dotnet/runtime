@@ -54,7 +54,6 @@
     <Compile Include="System\ComponentModel\CollectionChangeAction.cs" />
     <Compile Include="System\ComponentModel\CollectionChangeEventArgs.cs" />
     <Compile Include="System\ComponentModel\CollectionChangeEventHandler.cs" />
-    <Compile Include="System\ComponentModel\ComponentModelExtensions.cs" />
     <Compile Include="System\ComponentModel\CustomTypeDescriptor.cs" />
     <Compile Include="System\ComponentModel\DefaultEventAttribute.cs" />
     <Compile Include="System\ComponentModel\DefaultPropertyAttribute.cs" />

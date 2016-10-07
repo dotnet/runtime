@@ -87,7 +87,7 @@ namespace System.ComponentModel
         /// </summary>
         public override bool IsDefaultAttribute()
         {
-            return this.Equals(Default);
+            return Equals(Default);
         }
     }
 }

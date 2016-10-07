@@ -1256,7 +1256,7 @@ namespace System.ComponentModel
         ///     other words, it indicates whether the state of the property is distinct
         ///     from when the component is first instantiated. If there is a default
         ///     value specified in this ReflectPropertyDescriptor, it will be compared against the
-        ///     property's current value to determine this.  If there is't, the
+        ///     property's current value to determine this. If there is't, the
         ///     ShouldSerializeXXX method is looked for and invoked if found.  If both
         ///     these routes fail, true will be returned.
         ///
