@@ -7367,7 +7367,6 @@ void CodeGen::genPutArgStk(GenTreePtr treeNode)
             m_pushStkArg = false;
             genStackLevel += treeNode->AsPutArgStk()->getArgSize();
         }
-        m_stkArgOffset = 0;
         genPutStructArgStk(treeNode->AsPutArgStk());
         return;
     }
@@ -7624,100 +7623,78 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
         // Consume these registers.
         // They may now contain gc pointers (depending on their type; gcMarkRegPtrVal will "do the right thing").
         genConsumePutStructArgStk(putArgStk, REG_RDI, REG_RSI, REG_NA);
-        GenTreePtr dstAddr = putArgStk;
-        GenTreePtr src     = putArgStk->gtOp.gtOp1;
-        assert(src->OperGet() == GT_OBJ);
-        GenTreePtr srcAddr = src->gtGetOp1();
 
-        unsigned slots = putArgStk->gtNumSlots;
+        const bool     srcIsLocal  = putArgStk->gtOp1->AsObj()->gtOp1->OperIsLocalAddr();
+        const emitAttr srcAddrAttr = srcIsLocal ? EA_PTRSIZE : EA_BYREF;
 
-        // We are always on the stack we don't need to use the write barrier.
-        BYTE*    gcPtrs     = putArgStk->gtGcPtrs;
-        unsigned gcPtrCount = putArgStk->gtNumberReferenceSlots;
+#if DEBUG
+        unsigned numGCSlotsCopied = 0;
+#endif // DEBUG
 
-        unsigned i           = 0;
-        unsigned copiedSlots = 0;
-        while (i < slots)
+        BYTE*          gcPtrs   = putArgStk->gtGcPtrs;
+        const unsigned numSlots = putArgStk->gtNumSlots;
+        for (unsigned i = 0; i < numSlots;)
         {
-            switch (gcPtrs[i])
+            if (gcPtrs[i] == TYPE_GC_NONE)
             {
-                case TYPE_GC_NONE:
-                    // Let's see if we can use rep movsp (alias for movsd or movsq for 32 and 64 bits respectively)
-                    // instead of a sequence of movsp instructions to save cycles and code size.
-                    {
-                        unsigned nonGcSlotCount = 0;
-
-                        do
-                        {
-                            nonGcSlotCount++;
-                            i++;
-                        } while (i < slots && gcPtrs[i] == TYPE_GC_NONE);
-
-                        // If we have a very small contiguous non-gc region, it's better just to
-                        // emit a sequence of movsp instructions
-                        if (nonGcSlotCount < CPOBJ_NONGC_SLOTS_LIMIT)
-                        {
-                            copiedSlots += nonGcSlotCount;
-                            while (nonGcSlotCount > 0)
-                            {
-                                instGen(INS_movsp);
-                                nonGcSlotCount--;
-                            }
-                        }
-                        else
-                        {
-                            getEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, REG_RCX, nonGcSlotCount);
-                            copiedSlots += nonGcSlotCount;
-                            instGen(INS_r_movsp);
-                        }
-                    }
-                    break;
-
-                case TYPE_GC_REF:   // Is an object ref
-                case TYPE_GC_BYREF: // Is an interior pointer - promote it but don't scan it
+                // Let's see if we can use rep movsp (alias for movsd or movsq for 32 and 64 bits respectively)
+                // instead of a sequence of movsp instructions to save cycles and code size.
+                unsigned adjacentNonGCSlotCount = 0;
+                do
                 {
-                    // We have a GC (byref or ref) pointer
-                    // TODO-Amd64-Unix: Here a better solution (for code size and CQ) would be to use movsp instruction,
-                    // but the logic for emitting a GC info record is not available (it is internal for the emitter
-                    // only.) See emitGCVarLiveUpd function. If we could call it separately, we could do
-                    // instGen(INS_movsp); and emission of gc info.
+                    adjacentNonGCSlotCount++;
+                    i++;
+                } while ((i < numSlots) && (gcPtrs[i] == TYPE_GC_NONE));
 
-                    var_types memType;
-                    if (gcPtrs[i] == TYPE_GC_REF)
+                // If we have a very small contiguous non-ref region, it's better just to
+                // emit a sequence of movsp instructions
+                if (adjacentNonGCSlotCount < CPOBJ_NONGC_SLOTS_LIMIT)
+                {
+                    for (; adjacentNonGCSlotCount > 0; adjacentNonGCSlotCount--)
                     {
-                        memType = TYP_REF;
+                        instGen(INS_movsp);
                     }
-                    else
-                    {
-                        assert(gcPtrs[i] == TYPE_GC_BYREF);
-                        memType = TYP_BYREF;
-                    }
+                }
+                else
+                {
+                    getEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, REG_RCX, adjacentNonGCSlotCount);
+                    instGen(INS_r_movsp);
+                }
+            }
+            else
+            {
+                assert((gcPtrs[i] == TYPE_GC_REF) || (gcPtrs[i] == TYPE_GC_BYREF));
 
-                    getEmitter()->emitIns_R_AR(ins_Load(memType), emitTypeSize(memType), REG_RCX, REG_RSI, 0);
-                    genStoreRegToStackArg(memType, REG_RCX, copiedSlots * TARGET_POINTER_SIZE);
+                // We have a GC (byref or ref) pointer
+                // TODO-Amd64-Unix: Here a better solution (for code size and CQ) would be to use movsp instruction,
+                // but the logic for emitting a GC info record is not available (it is internal for the emitter
+                // only.) See emitGCVarLiveUpd function. If we could call it separately, we could do
+                // instGen(INS_movsp); and emission of gc info.
 
+                var_types memType = (gcPtrs[i] == TYPE_GC_REF) ? TYP_REF : TYP_BYREF;
+                getEmitter()->emitIns_R_AR(ins_Load(memType), emitTypeSize(memType), REG_RCX, REG_RSI, 0);
+                genStoreRegToStackArg(memType, REG_RCX, i * TARGET_POINTER_SIZE);
+
+#ifdef DEBUG
+                numGCSlotsCopied++;
+#endif // DEBUG
+
+                i++;
+                if (i < numSlots)
+                {
                     // Source for the copy operation.
                     // If a LocalAddr, use EA_PTRSIZE - copy from stack.
                     // If not a LocalAddr, use EA_BYREF - the source location is not on the stack.
-                    getEmitter()->emitIns_R_I(INS_add, ((src->OperIsLocalAddr()) ? EA_PTRSIZE : EA_BYREF), REG_RSI,
-                                              TARGET_POINTER_SIZE);
+                    getEmitter()->emitIns_R_I(INS_add, srcAddrAttr, REG_RSI, TARGET_POINTER_SIZE);
 
                     // Always copying to the stack - outgoing arg area
                     // (or the outgoing arg area of the caller for a tail call) - use EA_PTRSIZE.
                     getEmitter()->emitIns_R_I(INS_add, EA_PTRSIZE, REG_RDI, TARGET_POINTER_SIZE);
-                    copiedSlots++;
-                    gcPtrCount--;
-                    i++;
                 }
-                break;
-
-                default:
-                    unreached();
-                    break;
             }
         }
 
-        assert(gcPtrCount == 0);
+        assert(numGCSlotsCopied == putArgStk->gtNumberReferenceSlots);
     }
 }
 #endif // defined(FEATURE_PUT_STRUCT_ARG_STK)
