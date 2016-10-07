@@ -5,6 +5,37 @@
 #ifndef _GC_INTERFACE_H_
 #define _GC_INTERFACE_H_
 
+struct ScanContext;
+struct gc_alloc_context;
+class CrawlFrame;
+
+// Callback passed to GcScanRoots.
+typedef void promote_func(PTR_PTR_Object, ScanContext*, uint32_t);
+
+// Callback passed to GcEnumAllocContexts.
+typedef void enum_alloc_context_func(gc_alloc_context*, void*);
+
+// Callback passed to CreateBackgroundThread.
+typedef uint32_t (__stdcall *GCBackgroundThreadFunction)(void* param);
+
+// Struct often used as a parameter to callbacks.
+typedef struct
+{
+    promote_func*  f;
+    ScanContext*   sc;
+    CrawlFrame *   cf;
+} GCCONTEXT;
+
+// SUSPEND_REASON is the reason why the GC wishes to suspend the EE,
+// used as an argument to IGCToCLR::SuspendEE.
+typedef enum
+{
+    SUSPEND_FOR_GC = 1,
+    SUSPEND_FOR_GC_PREP = 6
+} SUSPEND_REASON;
+
+#include "gcinterface.ee.h"
+
 // The allocation context must be known to the VM for use in the allocation
 // fast path and known to the GC for performing the allocation. Every Thread
 // has its own allocation context that it hands to the GC when allocating.
@@ -55,7 +86,6 @@ struct segment_info
 
 class Object;
 class IGCHeap;
-class IGCToCLR;
 
 // Initializes the garbage collector. Should only be called
 // once, during EE startup.
