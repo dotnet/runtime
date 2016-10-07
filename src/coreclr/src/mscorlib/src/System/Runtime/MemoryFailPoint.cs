@@ -324,6 +324,9 @@ namespace System.Runtime
         [System.Security.SecurityCritical]  // auto-generated
         private static unsafe bool CheckForFreeAddressSpace(ulong size, bool shouldThrow)
         {
+#if FEATURE_PAL // Remove this when GlobalMemoryStatusEx is able to provide legitimate estimates
+            return true;
+#endif
             // Start walking the address space at 0.  VirtualAlloc may wrap
             // around the address space.  We don't need to find the exact
             // pages that VirtualAlloc would return - we just need to
