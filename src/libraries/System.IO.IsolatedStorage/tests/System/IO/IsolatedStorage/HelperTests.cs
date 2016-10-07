@@ -93,8 +93,7 @@ namespace System.IO.IsolatedStorage.Tests
         [Theory
             InlineData(IsolatedStorageScope.Assembly)
             InlineData(IsolatedStorageScope.Assembly | IsolatedStorageScope.Roaming)
-            // Need to implement ACLing to test this one
-            // InlineData(IsolatedStorageScope.Machine)
+            InlineData(IsolatedStorageScope.Machine)
             ]
         public void GetDataDirectory(IsolatedStorageScope scope)
         {
@@ -117,8 +116,7 @@ namespace System.IO.IsolatedStorage.Tests
 
         [Theory
             InlineData(IsolatedStorageScope.User)
-            // Need to implement ACLing
-            // InlineData(IsolatedStorageScope.Machine)
+            InlineData(IsolatedStorageScope.Machine)
             ]
         public void GetRandomDirectory(IsolatedStorageScope scope)
         {
