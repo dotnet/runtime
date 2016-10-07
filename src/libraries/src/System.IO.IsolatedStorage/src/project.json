@@ -8,6 +8,7 @@
         "System.Diagnostics.Tools": "4.4.0-beta-24613-01",
         "System.IO": "4.4.0-beta-24613-01",
         "System.IO.FileSystem": "4.4.0-beta-24613-01",
+        "System.IO.FileSystem.AccessControl": "4.4.0-beta-24613-01",
         "System.IO.FileSystem.Primitives": "4.4.0-beta-24613-01",
         "System.ObjectModel": "4.4.0-beta-24613-01",
         "System.Linq": "4.4.0-beta-24613-01",
@@ -15,6 +16,8 @@
         "System.Resources.ResourceManager": "4.4.0-beta-24613-01",
         "System.Runtime": "4.4.0-beta-24613-01",
         "System.Runtime.Extensions": "4.4.0-beta-24613-01",
+        "System.Runtime.InteropServices": "4.4.0-beta-24613-01",
+        "System.Runtime.InteropServices.RuntimeInformation": "4.4.0-beta-24613-01",
         "System.Security.Cryptography.Algorithms": "4.4.0-beta-24613-01",
         "System.Threading": "4.4.0-beta-24613-01",
         "System.Threading.Tasks": "4.4.0-beta-24613-01"
