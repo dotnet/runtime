@@ -40,6 +40,9 @@
         <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\muldimjagary\muldimjagary\*">
             <Issue>3392</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\DoublinkList\dlstack\*">
+            <Issue>6553</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\importer\Desktop\bleref_il_d\bleref_il_d.cmd">
             <Issue>2414</Issue>
         </ExcludeList>
@@ -183,7 +186,7 @@
         </ExcludeList>
     </ItemGroup>
 
-    <!-- The following are baseline x86 failures -->
+    <!-- The following are x86 failures -->
 
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(BuildArch)' == 'x86'">
         <ExcludeList Include="$(XunitTestBinBase)\GC\LargeMemory\Allocation\largeexceptiontest\largeexceptiontest.cmd">
@@ -236,14 +239,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\JitBlue\DevDiv_255294\DevDiv_255294\DevDiv_255294.cmd">
             <Issue>The test is too large for x86 and causes OutOfMemory exception.</Issue>
-        </ExcludeList>
-    </ItemGroup>
-
-    <!-- The following x86 failures only occur with RyuJIT/x86 -->
-
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(BuildArch)' == 'x86'">
-        <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\DoublinkList\dlstack\*">
-            <Issue>6553</Issue>
         </ExcludeList>
     </ItemGroup>
 
