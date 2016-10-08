@@ -15,28 +15,31 @@ namespace Internal.Runtime.Augments
         public static void FailFast(string message, System.Exception error) { }
         public static string[] GetCommandLineArgs() { throw null; }
     }
-    public partial interface IRuntimeThread
+    public partial class RuntimeThread : System.Runtime.ConstrainedExecution.CriticalFinalizerObject
     {
-        System.Threading.ExecutionContext ExecutionContext { get; }
-        System.Threading.ApartmentState GetApartmentState();
-        void Interrupt();
-        bool IsAlive { get; }
-        bool IsBackground { get; set; }
-        bool IsThreadPoolThread { get; }
-        int ManagedThreadId { get; }
-        string Name { get; set; }
-        System.Threading.ThreadPriority Priority { get; set; }
-        System.Threading.ThreadState ThreadState { get; }
-        bool TrySetApartmentState(System.Threading.ApartmentState state);
-    }
-    public static partial class RuntimeThreadAugments
-    {
-        public static Internal.Runtime.Augments.IRuntimeThread Create(System.Threading.ThreadStart start) { throw null; }
-        public static Internal.Runtime.Augments.IRuntimeThread Create(System.Threading.ThreadStart start, int maxStackSize) { throw null; }
-        public static Internal.Runtime.Augments.IRuntimeThread Create(System.Threading.ParameterizedThreadStart start) { throw null; }
-        public static Internal.Runtime.Augments.IRuntimeThread Create(System.Threading.ParameterizedThreadStart start, int maxStackSize) { throw null; }
-        public static Internal.Runtime.Augments.IRuntimeThread CurrentThread { get { throw null; } }
-        public static void SpinWait(int iterations) { throw null; }
+        public static Internal.Runtime.Augments.RuntimeThread CurrentThread { get { throw null; } }
+        public bool IsAlive { get { throw null; } }
+        public bool IsBackground { get { throw null; } set { } }
+        public bool IsThreadPoolThread { get { throw null; } }
+        public int ManagedThreadId { get { throw null; } }
+        public string Name { get { throw null; } set { } }
+        public System.Threading.ThreadPriority Priority { get { throw null; } set { } }
+        public System.Threading.ThreadState ThreadState { get { throw null; } }
+        ~RuntimeThread() { }
+        public static Internal.Runtime.Augments.RuntimeThread Create(System.Threading.ThreadStart start) { throw null; }
+        public static Internal.Runtime.Augments.RuntimeThread Create(System.Threading.ThreadStart start, int maxStackSize) { throw null; }
+        public static Internal.Runtime.Augments.RuntimeThread Create(System.Threading.ParameterizedThreadStart start) { throw null; }
+        public static Internal.Runtime.Augments.RuntimeThread Create(System.Threading.ParameterizedThreadStart start, int maxStackSize) { throw null; }
+        public System.Threading.ApartmentState GetApartmentState() { throw null; }
+        [System.Security.SecurityCriticalAttribute]
+        public void Interrupt() { }
+        public void Join() { }
+        public bool Join(int millisecondsTimeout) { throw null; }
+        public static void Sleep(int millisecondsTimeout) { }
+        public static void SpinWait(int iterations) { }
+        public void Start() { }
+        public void Start(object parameter) { }
+        public bool TrySetApartmentState(System.Threading.ApartmentState state) { throw null; }
     }
 }
 namespace Microsoft.Win32.SafeHandles
@@ -2506,8 +2509,7 @@ namespace System
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public sealed partial class LocalDataStoreSlot
     {
-        internal LocalDataStoreSlot(object mgr, int slot, long cookie) { }
-        internal object Manager { get { throw null; } }
+        internal LocalDataStoreSlot() { }
         ~LocalDataStoreSlot() { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
@@ -13275,38 +13277,22 @@ namespace System.Threading
     }
     [System.Runtime.InteropServices.ClassInterfaceAttribute((System.Runtime.InteropServices.ClassInterfaceType)(0))]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public sealed partial class Thread : System.Runtime.ConstrainedExecution.CriticalFinalizerObject
+    public sealed partial class Thread : Internal.Runtime.Augments.RuntimeThread
     {
         [System.Security.SecuritySafeCriticalAttribute]
         public Thread(System.Threading.ParameterizedThreadStart start) { }
         [System.Security.SecuritySafeCriticalAttribute]
         public Thread(System.Threading.ThreadStart start) { }
         public System.Globalization.CultureInfo CurrentCulture { get { throw null; } [System.Security.SecuritySafeCriticalAttribute]set { } }
-        public static System.Threading.Thread CurrentThread { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
+        public static new System.Threading.Thread CurrentThread { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
         public System.Globalization.CultureInfo CurrentUICulture { get { throw null; } [System.Security.SecuritySafeCriticalAttribute]set { } }
-        public bool IsAlive { [System.Security.SecuritySafeCriticalAttribute][System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]get { throw null; } }
-        public bool IsBackground { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } [System.Security.SecuritySafeCriticalAttribute]set { } }
-        public int ManagedThreadId { [System.Security.SecuritySafeCriticalAttribute][System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]get { throw null; } }
-        public string Name { get { throw null; } [System.Security.SecuritySafeCriticalAttribute]set { } }
-        public System.Threading.ThreadState ThreadState { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
         ~Thread() { }
         [System.Security.SecuritySafeCriticalAttribute]
         public static System.AppDomain GetDomain() { throw null; }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public override int GetHashCode() { throw null; }
-        [System.Security.SecuritySafeCriticalAttribute]
-        public void Join() { }
-        [System.Security.SecuritySafeCriticalAttribute]
-        public bool Join(int millisecondsTimeout) { throw null; }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
         public static void MemoryBarrier() { }
-        [System.Security.SecuritySafeCriticalAttribute]
-        public static void Sleep(int millisecondsTimeout) { }
-        public static void Sleep(System.TimeSpan timeout) { }
-        [System.Security.SecuritySafeCriticalAttribute]
-        public static void SpinWait(int iterations) { }
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]public void Start() { }
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]public void Start(object parameter) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public sealed partial class ThreadAbortException : System.SystemException
