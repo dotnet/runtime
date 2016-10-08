@@ -170,7 +170,7 @@ int genMove2IfNeeded(unsigned size, regNumber tmpReg, GenTree* srcAddr, unsigned
 int genMove1IfNeeded(unsigned size, regNumber tmpReg, GenTree* srcAddr, unsigned offset);
 void genStructPutArgRepMovs(GenTreePutArgStk* putArgStkNode);
 void genStructPutArgUnroll(GenTreePutArgStk* putArgStkNode);
-void genStoreRegToStackArg(var_types type, regNumber reg, unsigned offset);
+void genStoreRegToStackArg(var_types type, regNumber reg, int offset);
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 
 void genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst, GenTree* base, unsigned offset);
