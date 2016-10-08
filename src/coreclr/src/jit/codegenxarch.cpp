@@ -7357,7 +7357,7 @@ void CodeGen::genPutArgStk(GenTreePtr treeNode)
     {
         // If this is less than 16 bytes, and has no gc refs, then we will push the args.
         // Otherwise, we will decrement sp and do regular stores.
-        if ((treeNode->AsPutArgStk()->getArgSize() < 16) && (treeNode->AsPutArgStk()->gtNumberReferenceSlots == 0))
+        if ((treeNode->AsPutArgStk()->getArgSize() < 16) || (treeNode->AsPutArgStk()->gtNumberReferenceSlots != 0))
         {
             m_pushStkArg = true;
         }
@@ -7397,30 +7397,106 @@ void CodeGen::genPutArgStk(GenTreePtr treeNode)
     }
     else if (data->OperGet() == GT_FIELD_LIST)
     {
-        GenTreeFieldList* fieldList = data->AsFieldList();
-        // TODO-X86-CQ: If there are no gaps or padding in the layout, we can use a series of pushes.
-        // For now, always make space for the struct, and store each field at its offset.
+        GenTreePutArgStk* const putArgStk = treeNode->AsPutArgStk();
 
-        unsigned structSize = treeNode->AsPutArgStk()->getArgSize();
-        m_pushStkArg        = false;
-        inst_RV_IV(INS_sub, REG_SPBASE, structSize, EA_PTRSIZE);
-        genStackLevel += structSize;
-        for (; fieldList != nullptr; fieldList = fieldList->Rest())
+        GenTreeFieldList* const fieldList = data->AsFieldList();
+        assert(fieldList != nullptr);
+
+        m_pushStkArg      = false;
+        const int argSize = putArgStk->getArgSize();
+        assert((argSize % TARGET_POINTER_SIZE) == 0);
+
+        // Set the current field offset to the size of the struct arg (which must be a multiple of the target pointer
+        // size).
+        int currentOffset = argSize;
+
+        // If there are no GC references in this field list and the argument is either larger than 16 bytes or the
+        // argument contains padding, we will pre-adjust the stack pointer and use stores instead of pushes.
+        const bool preAdjustStack =
+            (putArgStk->gtNumberReferenceSlots == 0) &&
+            ((argSize > 16) || (putArgStk->gtPutArgStkKind != GenTreePutArgStk::PutArgStkKindRepInstr));
+        if (preAdjustStack)
         {
-            GenTree* fieldNode = fieldList->Current();
+            inst_RV_IV(INS_sub, REG_SPBASE, argSize, EA_PTRSIZE);
+            currentOffset = 0;
+            genStackLevel += argSize;
+        }
+
+        unsigned prevFieldOffset = argSize;
+        for (GenTreeFieldList* current = fieldList; current != nullptr; current = current->Rest())
+        {
+            GenTree* const fieldNode   = current->Current();
+            const unsigned fieldOffset = current->gtFieldOffset;
+            var_types      fieldType   = current->gtFieldType;
+
+            // Long-typed nodes should have been handled by the decomposition pass, and lowering should have sorted the
+            // field list in descending order by offset.
+            assert(!varTypeIsLong(fieldType));
+            assert(fieldOffset <= prevFieldOffset);
+
             // TODO-X86-CQ: If this is not a register candidate, or is not in a register,
             // make it contained.
             genConsumeReg(fieldNode);
+
+            // If the field is slot-like, we can store the entire register no matter the type.
+            const bool fieldIsSlot =
+                varTypeIsIntegralOrI(fieldType) && ((fieldOffset % 4) == 0) && ((prevFieldOffset - fieldOffset) >= 4);
+            if (fieldIsSlot)
+            {
+                fieldType = genActualType(fieldType);
+                assert(genTypeSize(fieldType) == 4);
+            }
+
+            // We can use a push instruction for any slot-like field.
+            //
+            // NOTE: if the field is of GC type, we must use a push instruction, since the emmitter is not otherwise
+            // able to detect stores into the outgoing argument area of the stack on x86.
+            const bool usePush = !preAdjustStack && fieldIsSlot;
+            assert(usePush || !varTypeIsGC(fieldType));
+
+            // Adjust the stack if necessary. If we are going to generate a `push` instruction, this moves the stack
+            // pointer to (fieldOffset + sizeof(fieldType)) to account for the `push`.
+            const int fieldSize     = genTypeSize(fieldType);
+            const int desiredOffset = current->gtFieldOffset + (usePush ? fieldSize : 0);
+            if (currentOffset > desiredOffset)
+            {
+                assert(!preAdjustStack);
+
+                // The GC encoder requires that the stack remain 4-byte aligned at all times. Round the adjustment up
+                // to the next multiple of 4. If we are going to generate a `push` instruction, the adjustment must
+                // not require rounding.
+                const int adjustment = roundUp(currentOffset - desiredOffset, 4);
+                assert(!usePush || (adjustment == (currentOffset - desiredOffset)));
+                inst_RV_IV(INS_sub, REG_SPBASE, adjustment, EA_PTRSIZE);
+                currentOffset -= adjustment;
+                genStackLevel += adjustment;
+            }
+
             // Note that the argReg may not be the lcl->gtRegNum, if it has been copied
             // or reloaded to a different register.
-            regNumber argReg    = fieldNode->gtRegNum;
-            unsigned  offset    = fieldList->gtFieldOffset;
-            var_types fieldType = fieldList->gtFieldType;
-            if (varTypeIsLong(fieldType))
+            const regNumber argReg = fieldNode->gtRegNum;
+            if (usePush)
             {
-                NYI_X86("Long field of promoted struct arg");
+                // Adjust the stack if necessary and push the field.
+                // Push the field.
+                inst_RV(INS_push, argReg, fieldType, emitTypeSize(fieldType));
+                currentOffset -= fieldSize;
+                genStackLevel += fieldSize;
             }
-            genStoreRegToStackArg(fieldType, argReg, offset);
+            else
+            {
+                assert(!m_pushStkArg);
+                genStoreRegToStackArg(fieldType, argReg, desiredOffset - currentOffset);
+            }
+
+            prevFieldOffset = fieldOffset;
+        }
+
+        // Adjust the stack if necessary.
+        if (currentOffset != 0)
+        {
+            inst_RV_IV(INS_sub, REG_SPBASE, currentOffset, EA_PTRSIZE);
+            genStackLevel += currentOffset;
         }
     }
     else if (data->isContained())
@@ -7510,7 +7586,7 @@ void CodeGen::genPutArgStk(GenTreePtr treeNode)
 //          type is EA_8BYTE. The movdqa/u are 16 byte instructions, so it works, but
 //          this probably needs to be changed.
 //
-void CodeGen::genStoreRegToStackArg(var_types type, regNumber srcReg, unsigned offset)
+void CodeGen::genStoreRegToStackArg(var_types type, regNumber srcReg, int offset)
 {
     assert(srcReg != REG_NA);
     instruction ins;
@@ -7619,16 +7695,74 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
     else
     {
         // No need to disable GC the way COPYOBJ does. Here the refs are copied in atomic operations always.
+        CLANG_FORMAT_COMMENT_ANCHOR;
+
+#ifdef _TARGET_X86_
+        assert(m_pushStkArg);
+
+        GenTree*       srcAddr  = putArgStk->gtGetOp1()->gtGetOp1();
+        BYTE*          gcPtrs   = putArgStk->gtGcPtrs;
+        const unsigned numSlots = putArgStk->gtNumSlots;
+
+        regNumber  srcRegNum    = srcAddr->gtRegNum;
+        const bool srcAddrInReg = srcRegNum != REG_NA;
+
+        unsigned srcLclNum    = 0;
+        unsigned srcLclOffset = 0;
+        if (srcAddrInReg)
+        {
+            genConsumeReg(srcAddr);
+        }
+        else
+        {
+            assert(srcAddr->OperIsLocalAddr());
+
+            srcLclNum = srcAddr->AsLclVarCommon()->gtLclNum;
+            if (srcAddr->OperGet() == GT_LCL_FLD_ADDR)
+            {
+                srcLclOffset = srcAddr->AsLclFld()->gtLclOffs;
+            }
+        }
+
+        for (int i = numSlots - 1; i >= 0; --i)
+        {
+            emitAttr slotAttr;
+            if (gcPtrs[i] == TYPE_GC_NONE)
+            {
+                slotAttr = EA_4BYTE;
+            }
+            else if (gcPtrs[i] == TYPE_GC_REF)
+            {
+                slotAttr = EA_GCREF;
+            }
+            else
+            {
+                assert(gcPtrs[i] == TYPE_GC_BYREF);
+                slotAttr = EA_BYREF;
+            }
+
+            const unsigned offset = i * 4;
+            if (srcAddrInReg)
+            {
+                getEmitter()->emitIns_AR_R(INS_push, slotAttr, REG_NA, srcRegNum, offset);
+            }
+            else
+            {
+                getEmitter()->emitIns_S(INS_push, slotAttr, srcLclNum, srcLclOffset + offset);
+            }
+            genStackLevel += 4;
+        }
+#else // !defined(_TARGET_X86_)
 
         // Consume these registers.
         // They may now contain gc pointers (depending on their type; gcMarkRegPtrVal will "do the right thing").
         genConsumePutStructArgStk(putArgStk, REG_RDI, REG_RSI, REG_NA);
 
-        const bool     srcIsLocal  = putArgStk->gtOp1->AsObj()->gtOp1->OperIsLocalAddr();
-        const emitAttr srcAddrAttr = srcIsLocal ? EA_PTRSIZE : EA_BYREF;
+        const bool     srcIsLocal       = putArgStk->gtOp1->AsObj()->gtOp1->OperIsLocalAddr();
+        const emitAttr srcAddrAttr      = srcIsLocal ? EA_PTRSIZE : EA_BYREF;
 
 #if DEBUG
-        unsigned numGCSlotsCopied = 0;
+        unsigned       numGCSlotsCopied = 0;
 #endif // DEBUG
 
         BYTE*          gcPtrs   = putArgStk->gtGcPtrs;
@@ -7695,6 +7829,7 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
         }
 
         assert(numGCSlotsCopied == putArgStk->gtNumberReferenceSlots);
+#endif // _TARGET_X86_
     }
 }
 #endif // defined(FEATURE_PUT_STRUCT_ARG_STK)
