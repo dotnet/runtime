@@ -1,4 +1,4 @@
-@if "%_echo%" neq "on" echo off
+@if not defined _echo @echo off
 setlocal EnableDelayedExpansion
 
 if /I [%1] == [-?] goto Usage

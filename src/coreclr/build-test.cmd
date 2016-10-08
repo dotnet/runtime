@@ -1,4 +1,4 @@
-@if not defined __echo @echo off
+@if not defined _echo @echo off
 setlocal EnableDelayedExpansion
 
 :: Set the default arguments for build
@@ -129,7 +129,7 @@ if defined __ToolsetDir (
 :: Set the environment for the native build
 echo %__MsgPrefix%Using environment: "%__VSToolsRoot%\..\..\VC\vcvarsall.bat" %__VCBuildArch%
 call                                 "%__VSToolsRoot%\..\..\VC\vcvarsall.bat" %__VCBuildArch%
-@if defined __echo @echo on
+@if defined _echo @echo on
 
 if not defined VSINSTALLDIR (
     echo %__MsgPrefix%Error: VSINSTALLDIR variable not defined.
@@ -141,7 +141,7 @@ if not exist "%VSINSTALLDIR%DIA SDK" goto NoDIA
 
 pushd "%__NativeTestIntermediatesDir%"
 call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" ""%__ProjectFilesDir%"" %__VSVersion% %__BuildArch%
-@if defined __echo @echo on
+@if defined _echo @echo on
 popd
 
 if not exist "%__NativeTestIntermediatesDir%\install.vcxproj" (

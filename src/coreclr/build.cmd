@@ -1,4 +1,4 @@
-@if not defined __echo @echo off
+@if not defined _echo @echo off
 setlocal EnableDelayedExpansion EnableExtensions
 
 set __ThisScriptFull="%~f0"
@@ -224,7 +224,7 @@ if %__BuildNative% EQU 1 (
     if /i "%__BuildArch%" == "arm" (set __VCBuildArch=x86_arm)
     echo %__MsgPrefix%Using environment: "%__VSToolsRoot%\..\..\VC\vcvarsall.bat" !__VCBuildArch!
     call                                 "%__VSToolsRoot%\..\..\VC\vcvarsall.bat" !__VCBuildArch!
-	@if defined __echo @echo on
+	@if defined _echo @echo on
 
     if not defined VSINSTALLDIR (
         echo %__MsgPrefix%Error: VSINSTALLDIR variable not defined.
@@ -239,7 +239,7 @@ if %__BuildNative% EQU 1 (
     pushd "%__IntermediatesDir%"
     set __ExtraCmakeArgs="-DCLR_CMAKE_TARGET_OS=%__BuildOs%" "-DCLR_CMAKE_PACKAGES_DIR=%__PackagesDir%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%"
     call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectDir%" %__VSVersion% %__BuildArch% %__BuildJit32% !__ExtraCmakeArgs!
-	@if defined __echo @echo on
+	@if defined _echo @echo on
     popd
 :SkipConfigure
     if defined __ConfigureOnly goto SkipNativeBuild
@@ -283,7 +283,7 @@ if /i "%__DoCrossArchBuild%"=="1" (
     set __VCBuildArch=x86_amd64
     if /i "%__CrossArch%" == "x86" ( set __VCBuildArch=x86 )
     @call "%__VSToolsRoot%\..\..\VC\vcvarsall.bat" !__VCBuildArch!
-    @if defined __echo @echo on
+    @if defined _echo @echo on
 
     if not exist "%__CrossCompIntermediatesDir%" md "%__CrossCompIntermediatesDir%"
     if defined __SkipConfigure goto SkipConfigureCrossBuild
@@ -293,7 +293,7 @@ if /i "%__DoCrossArchBuild%"=="1" (
     set "__CMakeBinDir=!__CMakeBinDir:\=/!"
     set __ExtraCmakeArgs="-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_TARGET_OS=%__BuildOs%" "-DCLR_CMAKE_PACKAGES_DIR=%__PackagesDir%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%"
     call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectDir%" %__VSVersion% %__CrossArch% !__ExtraCmakeArgs!
-    @if defined __echo @echo on
+    @if defined _echo @echo on
     popd
 :SkipConfigureCrossBuild
     if not exist "%__CrossCompIntermediatesDir%\install.vcxproj" (
