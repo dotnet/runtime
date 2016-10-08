@@ -5891,6 +5891,8 @@ namespace System.Runtime.InteropServices
     public enum CharSet
     {
         Ansi = 2,
+        Auto = 4,
+        None = 1,
         Unicode = 3,
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(5597), Inherited = false)]
@@ -5922,6 +5924,7 @@ namespace System.Runtime.InteropServices
         public System.Runtime.InteropServices.CharSet CharSet;
         public int Pack;
         public int Size;
+        public StructLayoutAttribute(short layoutKind) { }
         public StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind layoutKind) { }
         public System.Runtime.InteropServices.LayoutKind Value { get { throw null; } }
     }

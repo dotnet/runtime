@@ -960,6 +960,15 @@ namespace System.Runtime.InteropServices
         public VariantWrapper(object obj) { }
         public object WrappedObject { get { throw null; } }
     }
+    public static partial class RuntimeEnvironment
+    {
+        public static string SystemConfigurationFile { get { return default(string); } }
+        public static bool FromGlobalAccessCache(System.Reflection.Assembly a) { return default(bool); }
+        public static string GetRuntimeDirectory() { return default(string); }
+        public static System.IntPtr GetRuntimeInterfaceAsIntPtr(System.Guid clsid, System.Guid riid) { return default(System.IntPtr); }
+        public static object GetRuntimeInterfaceAsObject(System.Guid clsid, System.Guid riid) { return default(object); }
+        public static string GetSystemVersion() { return default(string); }
+    }
 }
 namespace System.Runtime.InteropServices.ComTypes
 {
