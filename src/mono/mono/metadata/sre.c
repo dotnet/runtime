@@ -2702,6 +2702,9 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 			container->type_params [i].param.owner = container;
 
 			gp->type.type->data.generic_param = (MonoGenericParam*)&container->type_params [i];
+
+			MonoClass *gklass = mono_class_from_mono_type (gp_type);
+			gklass->wastypebuilder = TRUE;
 		}
 
 		/*
@@ -3490,6 +3493,16 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilder *tb)
 		goto failure;
 
 	klass->wastypebuilder = TRUE;
+
+	if (tb->generic_params) {
+		for (i = 0; i < mono_array_length (tb->generic_params); i++) {
+			MonoReflectionGenericParam *gparam = (MonoReflectionGenericParam *)mono_array_get (tb->generic_params, gpointer, i);
+			MonoType *param_type = mono_reflection_type_get_handle ((MonoReflectionType*)gparam, &error);
+			MonoClass *gklass = mono_class_from_mono_type (param_type);
+
+			gklass->wastypebuilder = TRUE;
+		}
+	}
 
 	/* 
 	 * If we are a generic TypeBuilder, there might be instantiations in the type cache

@@ -323,36 +323,6 @@ mono_module_file_get_object_checked (MonoDomain *domain, MonoImage *image, int t
 	return res;
 }
 
-static gboolean
-verify_safe_for_managed_space (MonoType *type)
-{
-	switch (type->type) {
-#ifdef DEBUG_HARDER
-	case MONO_TYPE_ARRAY:
-		return verify_safe_for_managed_space (&type->data.array->eklass->byval_arg);
-	case MONO_TYPE_PTR:
-		return verify_safe_for_managed_space (type->data.type);
-	case MONO_TYPE_SZARRAY:
-		return verify_safe_for_managed_space (&type->data.klass->byval_arg);
-	case MONO_TYPE_GENERICINST: {
-		MonoGenericInst *inst = type->data.generic_class->inst;
-		int i;
-		if (!inst->is_open)
-			break;
-		for (i = 0; i < inst->type_argc; ++i)
-			if (!verify_safe_for_managed_space (inst->type_argv [i]))
-				return FALSE;
-		return TRUE;
-	}
-#endif
-	case MONO_TYPE_VAR:
-	case MONO_TYPE_MVAR:
-		return TRUE;
-	default:
-		return TRUE;
-	}
-}
-
 static MonoType*
 mono_type_normalize (MonoType *type)
 {
@@ -481,40 +451,10 @@ mono_type_get_object_checked (MonoDomain *domain, MonoType *type, MonoError *err
 	if ((type->type == MONO_TYPE_GENERICINST) && type->data.generic_class->is_dynamic && !type->data.generic_class->container_class->wastypebuilder)
 		g_assert (0);
 
-	if (!verify_safe_for_managed_space (type)) {
+	if (mono_class_get_ref_info (klass) && !klass->wastypebuilder && !type->byref) {
 		mono_domain_unlock (domain);
 		mono_loader_unlock ();
-		mono_error_set_generic_error (error, "System", "InvalidOperationException", "This type cannot be propagated to managed space");
-		return NULL;
-	}
-
-	if (mono_class_get_ref_info (klass) && !klass->wastypebuilder) {
-		gboolean is_type_done = TRUE;
-		/* Generic parameters have reflection_info set but they are not finished together with their enclosing type.
-		 * We must ensure that once a type is finished we don't return a GenericTypeParameterBuilder.
-		 * We can't simply close the types as this will interfere with other parts of the generics machinery.
-		*/
-		if (klass->byval_arg.type == MONO_TYPE_MVAR || klass->byval_arg.type == MONO_TYPE_VAR) {
-			MonoGenericParam *gparam = klass->byval_arg.data.generic_param;
-
-			if (gparam->owner && gparam->owner->is_method && !gparam->owner->is_anonymous) {
-				MonoMethod *method = gparam->owner->owner.method;
-				if (method && mono_class_get_generic_type_definition (method->klass)->wastypebuilder)
-					is_type_done = FALSE;
-			} else if (gparam->owner && !gparam->owner->is_method) {
-				MonoClass *klass = gparam->owner->owner.klass;
-				if (klass && mono_class_get_generic_type_definition (klass)->wastypebuilder)
-					is_type_done = FALSE;
-			}
-		} 
-
-		/* g_assert_not_reached (); */
-		/* should this be considered an error condition? */
-		if (is_type_done && !type->byref) {
-			mono_domain_unlock (domain);
-			mono_loader_unlock ();
-			return (MonoReflectionType *)mono_class_get_ref_info (klass);
-		}
+		return (MonoReflectionType *)mono_class_get_ref_info (klass);
 	}
 	/* This is stored in vtables/JITted code so it has to be pinned */
 	res = (MonoReflectionType *)mono_object_new_pinned (domain, mono_defaults.runtimetype_class, error);
