@@ -4471,9 +4471,6 @@ runtime_initialized (MonoProfiler *profiler)
 {
 	InterlockedWrite (&runtime_inited, 1);
 
-	start_writer_thread (profiler);
-	start_dumper_thread (profiler);
-
 	register_counter ("Sample events allocated", &sample_allocations_ctr);
 	register_counter ("Log buffers allocated", &buffer_allocations_ctr);
 
@@ -4530,7 +4527,14 @@ runtime_initialized (MonoProfiler *profiler)
 
 	counters_init (profiler);
 
+	/*
+	 * We must start the helper thread before the writer thread. This is
+	 * because the helper thread sets up the command port which is written to
+	 * the log header by the writer thread.
+	 */
 	start_helper_thread (profiler);
+	start_writer_thread (profiler);
+	start_dumper_thread (profiler);
 }
 
 static MonoProfiler*
