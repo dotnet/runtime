@@ -3560,8 +3560,6 @@
       <Member MemberType="Property" Name="Value" />
     </Type>
     <Type Name="System.LocalDataStoreSlot">
-      <Member Status="ImplRoot" Name="#ctor(System.Object,System.Int32,System.Int64)" />
-      <Member Status="ImplRoot" Name="get_Manager" />
       <Member Status="ImplRoot" Name="Finalize" />
     </Type>
     <Type Name="System.MarshalByRefObject">
@@ -7974,37 +7972,15 @@
       <Member Name="get_CurrentThread" />
       <Member Name="get_CurrentUICulture" />
       <Member Name="GetDomain" />
-      <Member Name="get_IsBackground" />
-      <Member Name="get_ManagedThreadId" />
-      <Member Name="get_Name" />
-      <Member Name="get_IsAlive" />
-      <Member Name="get_ThreadState" />
-      <Member Name="Join" />
-      <Member Name="Join(System.Int32)" />
-      <Member Name="set_IsBackground(System.Boolean)" />
-      <Member Name="set_Name(System.String)" />
-      <Member Name="Sleep(System.Int32)" />
-      <Member Name="Sleep(System.TimeSpan)" />
-      <Member Name="SpinWait(System.Int32)" />
-      <Member Name="Start" />
-      <Member Name="Start(System.Object)" />
       <Member MemberType="Property" Name="CurrentCulture" />
-      <Member MemberType="Property" Name="CurrentThread" />
       <Member MemberType="Property" Name="CurrentUICulture" />
-      <Member MemberType="Property" Name="IsBackground" />
-      <Member MemberType="Property" Name="ManagedThreadId" />
-      <Member MemberType="Property" Name="Name" />
-      <Member MemberType="Property" Name="IsAlive" />
-      <Member MemberType="Property" Name="ThreadState" />
       <Member Status="ImplRoot" Name="InternalGetCurrentThread" />
       <Member Status="ImplRoot" MemberType="Field" Name="DONT_USE_InternalThread" />
       <Member Status="ImplRoot" MemberType="Field" Name="m_Priority" />
       <Member Status="ImplRoot" MemberType="Field" Name="m_ThreadStartArg" />
     </Type>
-    <Type Name="Internal.Runtime.Augments.IRuntimeThread">
-      <Member Name="GetApartmentState" />
-      <Member MemberType="Property" Name="ExecutionContext" />
-      <Member Name="Interrupt" />
+    <Type Name="Internal.Runtime.Augments.RuntimeThread">
+      <Member MemberType="Property" Name="CurrentThread" />
       <Member MemberType="Property" Name="IsAlive" />
       <Member MemberType="Property" Name="IsBackground" />
       <Member MemberType="Property" Name="IsThreadPoolThread" />
@@ -8012,15 +7988,19 @@
       <Member MemberType="Property" Name="Name" />
       <Member MemberType="Property" Name="Priority" />
       <Member MemberType="Property" Name="ThreadState" />
-      <Member Name="TrySetApartmentState(System.Threading.ApartmentState)" />
-    </Type>
-    <Type Name="Internal.Runtime.Augments.RuntimeThreadAugments">
       <Member Name="Create(System.Threading.ThreadStart)" />
       <Member Name="Create(System.Threading.ThreadStart,System.Int32)" />
       <Member Name="Create(System.Threading.ParameterizedThreadStart)" />
       <Member Name="Create(System.Threading.ParameterizedThreadStart,System.Int32)" />
-      <Member MemberType="Property" Name="CurrentThread" />
+      <Member Name="GetApartmentState" />
+      <Member Name="Interrupt" />
+      <Member Name="Join" />
+      <Member Name="Join(System.Int32)" />
+      <Member Name="Sleep(System.Int32)" />
       <Member Name="SpinWait(System.Int32)" />
+      <Member Name="Start" />
+      <Member Name="Start(System.Object)" />
+      <Member Name="TrySetApartmentState(System.Threading.ApartmentState)" />
     </Type>
     <Type Name="System.Threading.ThreadAbortException">
       <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
