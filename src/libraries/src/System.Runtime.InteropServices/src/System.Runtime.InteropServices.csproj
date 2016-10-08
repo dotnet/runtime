@@ -20,6 +20,7 @@
     <Compile Include="System\Runtime\InteropServices\HandleCollector.CoreCLR.cs" />
     <Compile Include="System\Runtime\InteropServices\DefaultParameterValueAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\HandleCollector.cs" />
+    <Compile Include="System\Runtime\InteropServices\RuntimeEnvironment.cs" />
     <Compile Include="System\Runtime\InteropServices\ComTypes\advf.cs" />
     <Compile Include="System\Runtime\InteropServices\ComTypes\datadir.cs" />
     <Compile Include="System\Runtime\InteropServices\ComTypes\dvaspect.cs" />
