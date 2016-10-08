@@ -1257,8 +1257,8 @@ FCFuncStart(gThreadFuncs)
 #ifndef FEATURE_CORECLR
     FCFuncElement("SuspendInternal", ThreadNative::Suspend)
     FCFuncElement("ResumeInternal", ThreadNative::Resume)
-    FCFuncElement("InterruptInternal", ThreadNative::Interrupt)
 #endif
+    FCFuncElement("InterruptInternal", ThreadNative::Interrupt)
     FCFuncElement("get_IsAlive", ThreadNative::IsAlive)
     FCFuncElement("GetThreadStateNative", ThreadNative::GetThreadState)
 #ifndef FEATURE_CORECLR

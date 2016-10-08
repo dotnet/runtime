@@ -123,8 +123,8 @@ namespace System.Threading {
     // deliberately not [serializable]
     [ClassInterface(ClassInterfaceType.None)]
     [ComDefaultInterface(typeof(_Thread))]
-[System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class Thread : CriticalFinalizerObject, _Thread, IRuntimeThread
+    [System.Runtime.InteropServices.ComVisible(true)]
+    public sealed class Thread : RuntimeThread, _Thread
     {
         /*=========================================================================
         ** Data accessed from managed code that needs to be defined in
@@ -271,14 +271,6 @@ namespace System.Threading {
             return m_ManagedThreadId;
         }
 
-        extern public int ManagedThreadId
-        {
-            [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-            [MethodImplAttribute(MethodImplOptions.InternalCall)]
-            [System.Security.SecuritySafeCritical]  // auto-generated
-            get;
-        }
-
         // Returns handle for interop with EE. The handle is guaranteed to be non-null.
         internal unsafe ThreadHandle GetNativeHandle()
         {
@@ -303,7 +295,7 @@ namespace System.Threading {
         =========================================================================*/
         [HostProtection(Synchronization=true,ExternalThreading=true)]
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
-        public void Start()
+        public new void Start()
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             Start(ref stackMark);
@@ -311,7 +303,7 @@ namespace System.Threading {
 
         [HostProtection(Synchronization=true,ExternalThreading=true)]
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
-        public void Start(object parameter)
+        public new void Start(object parameter)
         {
             //In the case of a null delegate (second call to start on same thread)
             //    StartInternal method will take care of the error reporting
@@ -358,21 +350,10 @@ namespace System.Threading {
 
 
 #if FEATURE_CORECLR
-        public ExecutionContext ExecutionContext
+        internal ExecutionContext ExecutionContext
         {
-            get
-            {
-                if (this == CurrentThread && m_ExecutionContext == null)
-                {
-                    m_ExecutionContext = ExecutionContext.Default;
-                }
-                return m_ExecutionContext;
-            }
-            internal set
-            {
-                Contract.Assert(this == CurrentThread);
-                m_ExecutionContext = value;
-            }
+            get { return m_ExecutionContext; } 
+            set { m_ExecutionContext = value; }
         }
 
         internal SynchronizationContext SynchronizationContext
@@ -552,22 +533,7 @@ namespace System.Threading {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern void AbortInternal();
 
-#if FEATURE_CORECLR
-        /*=========================================================================
-        ** Interrupts a thread that is inside a Wait(), Sleep() or Join().  If that
-        ** thread is not currently blocked in that manner, it will be interrupted
-        ** when it next begins to block.
-        =========================================================================*/
-        [System.Security.SecuritySafeCritical]  // auto-generated
-#pragma warning disable 618 // obsolete types: SecurityPermissionAttribute, SecurityAction
-        [SecurityPermission(SecurityAction.Demand, ControlThread = true)]
-#pragma warning restore 618 // obsolete types: SecurityPermissionAttribute, SecurityAction
-        public void Interrupt()
-        {
-            // TODO: implement
-            throw new NotImplementedException();
-        }
-#else // !FEATURE_CORECLR
+#if !FEATURE_CORECLR
         /*=========================================================================
         ** Resets a thread abort.
         ** Should be called by trusted code only
@@ -621,60 +587,7 @@ namespace System.Threading {
         [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern void ResumeInternal();
-
-        /*=========================================================================
-        ** Interrupts a thread that is inside a Wait(), Sleep() or Join().  If that
-        ** thread is not currently blocked in that manner, it will be interrupted
-        ** when it next begins to block.
-        =========================================================================*/
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        [SecurityPermission(SecurityAction.Demand, ControlThread=true)]
-        public void Interrupt() { InterruptInternal(); }
-
-        // Internal helper (since we can't place security demands on
-        // ecalls/fcalls).
-        [System.Security.SecurityCritical]  // auto-generated
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern void InterruptInternal();
-#endif // FEATURE_CORECLR
-
-        /*=========================================================================
-        ** Returns the priority of the thread.
-        **
-        ** Exceptions: ThreadStateException if the thread is dead.
-        =========================================================================*/
-
-        public ThreadPriority Priority {
-            [System.Security.SecuritySafeCritical]  // auto-generated
-            get { return (ThreadPriority)GetPriorityNative(); }
-            [System.Security.SecuritySafeCritical]  // auto-generated
-            [HostProtection(SelfAffectingThreading=true)]
-            set { SetPriorityNative((int)value); }
-        }
-        [System.Security.SecurityCritical]  // auto-generated
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern int GetPriorityNative();
-        [System.Security.SecurityCritical]  // auto-generated
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern void SetPriorityNative(int priority);
-
-        /*=========================================================================
-        ** Returns true if the thread has been started and is not dead.
-        =========================================================================*/
-        public extern bool IsAlive {
-            [System.Security.SecuritySafeCritical]  // auto-generated
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            get;
-        }
-
-        /*=========================================================================
-        ** Returns true if the thread is a threadpool thread.
-        =========================================================================*/
-        public extern bool IsThreadPoolThread {
-            [System.Security.SecuritySafeCritical]  // auto-generated
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            get;
-        }
+#endif // !FEATURE_CORECLR
 
         /*=========================================================================
         ** Waits for the thread to die or for timeout milliseconds to elapse.
@@ -685,24 +598,6 @@ namespace System.Threading {
         **             ThreadInterruptedException if the thread is interrupted while waiting.
         **             ThreadStateException if the thread has not been started yet.
         =========================================================================*/
-        [System.Security.SecurityCritical]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern bool JoinInternal(int millisecondsTimeout);
-
-        [System.Security.SecuritySafeCritical]
-        [HostProtection(Synchronization=true, ExternalThreading=true)]
-        public void Join()
-        {
-            JoinInternal(Timeout.Infinite);
-        }
-
-        [System.Security.SecuritySafeCritical]
-        [HostProtection(Synchronization=true, ExternalThreading=true)]
-        public bool Join(int millisecondsTimeout)
-        {
-            return JoinInternal(millisecondsTimeout);
-        }
-
         [HostProtection(Synchronization=true, ExternalThreading=true)]
         public bool Join(TimeSpan timeout)
         {
@@ -726,7 +621,7 @@ namespace System.Threading {
         private static extern void SleepInternal(int millisecondsTimeout);
 
         [System.Security.SecuritySafeCritical]  // auto-generated
-        public static void Sleep(int millisecondsTimeout)
+        public static new void Sleep(int millisecondsTimeout)
         {
             SleepInternal(millisecondsTimeout);
             // Ensure we don't return to app code when the pause is underway
@@ -756,7 +651,7 @@ namespace System.Threading {
         [System.Security.SecuritySafeCritical]  // auto-generated
         [HostProtection(Synchronization=true,ExternalThreading=true)]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        public static void SpinWait(int iterations)
+        public static new void SpinWait(int iterations)
         {
             SpinWaitInternal(iterations);
         }
@@ -771,12 +666,12 @@ namespace System.Threading {
         [System.Security.SecuritySafeCritical]  // auto-generated
         [HostProtection(Synchronization = true, ExternalThreading = true)]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        public static bool Yield()
+        public static new bool Yield()
         {
             return YieldInternal();
         }
         
-        public static Thread CurrentThread {
+        public static new Thread CurrentThread {
             [System.Security.SecuritySafeCritical]  // auto-generated
             [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
             get {
@@ -858,40 +753,6 @@ namespace System.Threading {
         public extern void DisableComObjectEagerCleanup();
 #endif //FEATURE_COMINTEROP
 
-        /*=========================================================================
-        ** Return whether or not this thread is a background thread.  Background
-        ** threads do not affect when the Execution Engine shuts down.
-        **
-        ** Exceptions: ThreadStateException if the thread is dead.
-        =========================================================================*/
-        public bool IsBackground {
-            [System.Security.SecuritySafeCritical]  // auto-generated
-            get { return IsBackgroundNative(); }
-            [System.Security.SecuritySafeCritical]  // auto-generated
-            [HostProtection(SelfAffectingThreading=true)]
-            set { SetBackgroundNative(value); }
-        }
-        [System.Security.SecurityCritical]  // auto-generated
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern bool IsBackgroundNative();
-        [System.Security.SecurityCritical]  // auto-generated
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern void SetBackgroundNative(bool isBackground);
-
-
-        /*=========================================================================
-        ** Return the thread state as a consistent set of bits.  This is more
-        ** general then IsAlive or IsBackground.
-        =========================================================================*/
-        public ThreadState ThreadState {
-            [System.Security.SecuritySafeCritical]  // auto-generated
-            get { return (ThreadState)GetThreadStateNative(); }
-        }
-
-        [System.Security.SecurityCritical]  // auto-generated
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern int GetThreadStateNative();
-
 #if FEATURE_COMINTEROP_APARTMENT_SUPPORT
         /*=========================================================================
         ** An unstarted thread can be marked to indicate that it will host a
@@ -918,29 +779,6 @@ namespace System.Threading {
         }
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public ApartmentState GetApartmentState()
-        {
-#if FEATURE_COMINTEROP_APARTMENT_SUPPORT
-            return (ApartmentState)GetApartmentStateNative();
-#else // !FEATURE_COMINTEROP_APARTMENT_SUPPORT
-            Contract.Assert(false); // the Thread class in CoreFX should have handled this case
-            return ApartmentState.MTA;
-#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-        }
-
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        [HostProtection(Synchronization=true, SelfAffectingThreading=true)]
-        public bool TrySetApartmentState(ApartmentState state)
-        {
-#if FEATURE_COMINTEROP_APARTMENT_SUPPORT
-            return SetApartmentStateHelper(state, false);
-#else // !FEATURE_COMINTEROP_APARTMENT_SUPPORT
-            Contract.Assert(false); // the Thread class in CoreFX should have handled this case
-            return false;
-#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-        }
-
 #if FEATURE_COMINTEROP_APARTMENT_SUPPORT
         [System.Security.SecuritySafeCritical]  // auto-generated
         [HostProtection(Synchronization=true, SelfAffectingThreading=true)]
@@ -951,30 +789,6 @@ namespace System.Threading {
                 throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ApartmentStateSwitchFailed"));
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
-        private bool SetApartmentStateHelper(ApartmentState state, bool fireMDAOnMismatch)
-        {
-            ApartmentState retState = (ApartmentState)SetApartmentStateNative((int)state, fireMDAOnMismatch);
-
-            // Special case where we pass in Unknown and get back MTA.
-            //  Once we CoUninitialize the thread, the OS will still
-            //  report the thread as implicitly in the MTA if any
-            //  other thread in the process is CoInitialized.
-            if ((state == System.Threading.ApartmentState.Unknown) && (retState == System.Threading.ApartmentState.MTA))
-                return true;
-            
-            if (retState != state)
-                return false;
-
-            return true;            
-        }
-
-        [System.Security.SecurityCritical]  // auto-generated
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern int GetApartmentStateNative();
-        [System.Security.SecurityCritical]  // auto-generated
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern int SetApartmentStateNative(int state, bool fireMDAOnMismatch);
         [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern void StartupSetApartmentStateInternal();
@@ -1431,10 +1245,9 @@ namespace System.Threading {
 
         // Retrieves the name of the thread.
         //
-        public  String Name {
+        public new String Name {
             get {
                 return m_Name;
-
             }
             [System.Security.SecuritySafeCritical]  // auto-generated
             [HostProtection(ExternalThreading=true)]
