@@ -33,7 +33,9 @@ namespace System.Linq
                 TSource[] array = source as TSource[];
                 if (array != null)
                 {
-                    return new SelectArrayIterator<TSource, TResult>(array, selector);
+                    return array.Length == 0 ?
+                        EmptyPartition<TResult>.Instance :
+                        new SelectArrayIterator<TSource, TResult>(array, selector);
                 }
 
                 List<TSource> list = source as List<TSource>;
@@ -88,7 +90,7 @@ namespace System.Linq
             return x => selector2(selector1(x));
         }
 
-        internal sealed class SelectEnumerableIterator<TSource, TResult> : Iterator<TResult>
+        internal sealed class SelectEnumerableIterator<TSource, TResult> : Iterator<TResult>, IIListProvider<TResult>
         {
             private readonly IEnumerable<TSource> _source;
             private readonly Func<TSource, TResult> _selector;
@@ -144,18 +146,24 @@ namespace System.Linq
             {
                 return new SelectEnumerableIterator<TSource, TResult2>(_source, CombineSelectors(_selector, selector));
             }
+
+            public TResult[] ToArray() => EnumerableHelpers.ToArray(this);
+
+            public List<TResult> ToList() => new List<TResult>(this);
+
+            public int GetCount(bool onlyIfCheap) => onlyIfCheap ? -1 : _source.Count();
         }
 
         internal sealed class SelectArrayIterator<TSource, TResult> : Iterator<TResult>, IPartition<TResult>
         {
             private readonly TSource[] _source;
             private readonly Func<TSource, TResult> _selector;
-            private int _index;
 
             public SelectArrayIterator(TSource[] source, Func<TSource, TResult> selector)
             {
                 Debug.Assert(source != null);
                 Debug.Assert(selector != null);
+                Debug.Assert(source.Length > 0); // Caller should check this beforehand and return a cached result
                 _source = source;
                 _selector = selector;
             }
@@ -167,14 +175,15 @@ namespace System.Linq
 
             public override bool MoveNext()
             {
-                if (_state == 1 && _index < _source.Length)
+                if (_state == 0 | _state == _source.Length + 1)
                 {
-                    _current = _selector(_source[_index++]);
-                    return true;
+                    Dispose();
+                    return false;
                 }
 
-                Dispose();
-                return false;
+                int index = _state++ - 1;
+                _current = _selector(_source[index]);
+                return true;
             }
 
             public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector)
@@ -184,10 +193,9 @@ namespace System.Linq
 
             public TResult[] ToArray()
             {
-                if (_source.Length == 0)
-                {
-                    return Array.Empty<TResult>();
-                }
+                // See assert in constructor.
+                // Since _source should never be empty, we don't check for 0/return Array.Empty.
+                Debug.Assert(_source.Length > 0);
 
                 var results = new TResult[_source.Length];
                 for (int i = 0; i < results.Length; i++)
@@ -245,27 +253,18 @@ namespace System.Linq
 
             public TResult TryGetFirst(out bool found)
             {
-                if (_source.Length != 0)
-                {
-                    found = true;
-                    return _selector(_source[0]);
-                }
+                Debug.Assert(_source.Length > 0); // See assert in constructor
 
-                found = false;
-                return default(TResult);
+                found = true;
+                return _selector(_source[0]);
             }
 
             public TResult TryGetLast(out bool found)
             {
-                int len = _source.Length;
-                if (len != 0)
-                {
-                    found = true;
-                    return _selector(_source[len - 1]);
-                }
+                Debug.Assert(_source.Length > 0); // See assert in constructor
 
-                found = false;
-                return default(TResult);
+                found = true;
+                return _selector(_source[_source.Length - 1]);
             }
         }
 
