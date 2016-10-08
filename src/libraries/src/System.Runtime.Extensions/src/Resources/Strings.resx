@@ -339,4 +339,31 @@
   <data name="Argument_ResourceScopeWrongDirection" xml:space="preserve">
     <value>Resource type in the ResourceScope enum is going from a more restrictive resource type to a more general one.  From: "{0}"  To: "{1}"</value>
   </data>
+  <data name="AppDomain_Name" xml:space="preserve">
+    <value>Name:</value>
+  </data>
+  <data name="AppDomain_NoContextPolicies" xml:space="preserve">
+    <value>There are no context policies.</value>
+  </data>
+  <data name="Arg_MustBeTrue" xml:space="preserve">
+    <value>Argument must be true.</value>
+  </data>
+  <data name="Arg_CannotUnloadAppDomainException" xml:space="preserve">
+    <value>Attempt to unload the AppDomain failed.</value>
+  </data>
+  <data name="Arg_AppDomainUnloadedException" xml:space="preserve">
+    <value>Attempted to access an unloaded AppDomain.</value>
+  </data>
+  <data name="ZeroLengthString" xml:space="preserve">
+    <value>String cannot have zero length.</value>
+  </data>
+  <data name="EntryPointNotFound" xml:space="preserve">
+    <value>Entry point not found in assembly</value>
+  </data>
+  <data name="NotSupported" xml:space="preserve">
+    <value>Not supported on this platform.</value>
+  </data>
+  <data name="AppDomain_ResMonNotAvail" xml:space="preserve">
+    <value>This API is not available when AppDomain Resource Monitoring is not turned on.</value>
+  </data>
 </root>
