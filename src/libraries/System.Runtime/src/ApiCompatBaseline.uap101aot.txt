@@ -441,3 +441,18 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.Task' does not im
 MembersMustExist : Member 'System.Threading.Tasks.Task.Dispose()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.Tasks.Task.Dispose(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.Task<TResult>' does not implement interface 'System.IDisposable' in the implementation but it does in the contract.
+MembersMustExist : Member 'System.Attribute.IsDefaultAttribute()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Attribute.Match(System.Object)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Attribute.TypeId.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.RuntimeFieldHandle.Value.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.RuntimeMethodHandle.GetFunctionPointer()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.RuntimeMethodHandle.Value.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.RuntimeTypeHandle.GetModuleHandle()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.RuntimeTypeHandle.Value.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.GC.Collect(System.Int32, System.GCCollectionMode, System.Boolean, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Diagnostics.DebuggableAttribute..ctor(System.Boolean, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.InsufficientMemoryException' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.CompilerServices.FixedAddressValueTypeAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.MemoryFailPoint' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.ConstrainedExecution.ReliabilityContractAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs' does not exist in the implementation but it does exist in the contract.

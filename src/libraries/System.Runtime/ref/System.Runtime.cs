@@ -59,7 +59,6 @@ namespace System
     {
         public static string BaseDirectory { get { return default(string); } }
         public static void SetSwitch(string switchName, bool isEnabled) { }
-        public static event System.UnhandledExceptionEventHandler UnhandledException { add { } remove { } }
         public static bool TryGetSwitch(string switchName, out bool isEnabled) { isEnabled = default(bool); return default(bool); }
         public static string TargetFrameworkName { get { return default(string); } }
         public static object GetData(string name) { return default(object); }
@@ -5766,6 +5765,11 @@ namespace System.Runtime.ExceptionServices
     public sealed partial class HandleProcessCorruptedStateExceptionsAttribute : System.Attribute
     {
         public HandleProcessCorruptedStateExceptionsAttribute() { }
+    }
+    public sealed partial class FirstChanceExceptionEventArgs : EventArgs
+    {
+        public FirstChanceExceptionEventArgs(Exception exception) { }
+        public Exception Exception { get { throw null; } }
     }
 }
 namespace System.Runtime.InteropServices

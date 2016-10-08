@@ -169,6 +169,8 @@
     <Compile Include="System\Runtime\CompilerServices\RuntimeHelpersTests.netstandard1.7.cs" />
     <Compile Include="System\Attributes.netstandard1.7.cs" />
     <Compile Include="System\HandleTests.netstandard1.7.cs" />
+    <Compile Include="System\AppContext\AppContext.Switch.cs" />
+    <Compile Include="System\AppContext\AppContext.Switch.Validation.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
