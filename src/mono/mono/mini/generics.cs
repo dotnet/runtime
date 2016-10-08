@@ -1272,7 +1272,6 @@ class Tests
 		c.throw_catch_t ();
 		return 0;
 	}
-
 }
 
 #if !__MOBILE__

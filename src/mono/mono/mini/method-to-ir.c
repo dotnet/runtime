@@ -8479,7 +8479,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 	/* we use a separate basic block for the initialization code */
 	NEW_BBLOCK (cfg, init_localsbb);
-	cfg->bb_init = init_localsbb;
+	if (cfg->method == method)
+		cfg->bb_init = init_localsbb;
 	init_localsbb->real_offset = cfg->real_offset;
 	start_bblock->next_bb = init_localsbb;
 	init_localsbb->next_bb = cfg->cbb;
@@ -13685,7 +13686,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	if (cfg->method == method) {
 		MonoBasicBlock *bb;
 		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-			bb->region = mono_find_block_region (cfg, bb->real_offset);
+			if (bb == cfg->bb_init)
+				bb->region = -1;
+			else
+				bb->region = mono_find_block_region (cfg, bb->real_offset);
 			if (cfg->spvars)
 				mono_create_spvar_for_region (cfg, bb->region);
 			if (cfg->verbose_level > 2)

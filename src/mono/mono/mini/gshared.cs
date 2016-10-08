@@ -1907,6 +1907,15 @@ public class Tests
 		bool success = zz == 0xAAAAAAAAAAAAAAAA;
 		return success ? 20 : 1;
 	}
+
+	void gsharedvt_try_at_offset_0<T> (ref T disposable)
+		where T : class, IDisposable {
+			try {
+				disposable.Dispose ();
+			} finally {
+				disposable = null;
+			}
+		}
 }
 
 // #13191

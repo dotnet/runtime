@@ -1740,6 +1740,8 @@ get_handler_clause (MonoCompile *cfg, MonoBasicBlock *bb)
 static MonoExceptionClause *
 get_most_deep_clause (MonoCompile *cfg, EmitContext *ctx, MonoBasicBlock *bb)
 {
+	if (bb == cfg->bb_init)
+		return NULL;
 	// Since they're sorted by nesting we just need
 	// the first one that the bb is a member of
 	for (int i = 0; i < cfg->header->num_clauses; i++) {
