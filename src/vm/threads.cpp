@@ -2232,7 +2232,7 @@ Thread::Thread()
     
     m_fGCSpecial = FALSE;
 
-#if !defined(FEATURE_CORECLR)
+#if !defined(FEATURE_PAL)
     m_wCPUGroup = 0;
     m_pAffinityMask = 0;
 #endif
