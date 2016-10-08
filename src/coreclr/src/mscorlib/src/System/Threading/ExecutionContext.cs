@@ -65,7 +65,7 @@ namespace System.Threading
 
     public sealed class ExecutionContext : IDisposable
     {
-        internal static readonly ExecutionContext Default = new ExecutionContext();
+        private static readonly ExecutionContext Default = new ExecutionContext();
 
         private readonly Dictionary<IAsyncLocal, object> m_localValues;
         private readonly IAsyncLocal[] m_localChangeNotifications;
