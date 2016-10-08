@@ -1,4 +1,4 @@
-@if not defined __echo @echo off
+@if not defined _echo @echo off
 setlocal EnableDelayedExpansion
 
 echo Running clean.cmd
