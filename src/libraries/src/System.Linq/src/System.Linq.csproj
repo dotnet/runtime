@@ -64,6 +64,7 @@
     <Compile Include="System\Linq\Take.cs" />
     <Compile Include="System\Linq\ToCollection.cs" />
     <Compile Include="System\Linq\Union.cs" />
+    <Compile Include="System\Linq\Utilities.cs" />
     <Compile Include="System\Linq\Where.cs" />
     <Compile Include="System\Linq\Zip.cs" />
   </ItemGroup>

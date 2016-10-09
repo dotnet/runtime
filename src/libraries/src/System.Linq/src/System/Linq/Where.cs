@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using static System.Linq.Utilities;
 
 namespace System.Linq
 {
@@ -72,11 +73,6 @@ namespace System.Linq
                     yield return element;
                 }
             }
-        }
-
-        private static Func<TSource, bool> CombinePredicates<TSource>(Func<TSource, bool> predicate1, Func<TSource, bool> predicate2)
-        {
-            return x => predicate1(x) && predicate2(x);
         }
 
         internal sealed class WhereEnumerableIterator<TSource> : Iterator<TSource>

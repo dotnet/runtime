@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using static System.Linq.Utilities;
 
 namespace System.Linq
 {
@@ -83,11 +84,6 @@ namespace System.Linq
 
                 yield return selector(element, index);
             }
-        }
-
-        private static Func<TSource, TResult> CombineSelectors<TSource, TMiddle, TResult>(Func<TSource, TMiddle> selector1, Func<TMiddle, TResult> selector2)
-        {
-            return x => selector2(selector1(x));
         }
 
         internal sealed class SelectEnumerableIterator<TSource, TResult> : Iterator<TResult>, IIListProvider<TResult>
