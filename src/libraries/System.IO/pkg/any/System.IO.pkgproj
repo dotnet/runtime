@@ -7,9 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.IO.csproj" />
-    <ProjectReference Include="..\..\src\System.IO.csproj">
-      <TargetGroup>netstandard1.6</TargetGroup>
-    </ProjectReference>
     <!-- AOT implementation comes from AOT package -->
     <File Include="$(PlaceholderFile)">
       <TargetPath>runtimes/aot/lib/netcore50</TargetPath>

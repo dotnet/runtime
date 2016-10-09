@@ -1011,12 +1011,8 @@ namespace System.IO
 
             return task;
         }
-// TODO #12381: Move TextReader to CoreFX so this can be overridden for netstandard builds
-#if uap101aot
+
         internal override async Task<int> ReadAsyncInternal(char[] buffer, int index, int count)
-#else
-        internal async Task<int> ReadAsyncInternal(char[] buffer, int index, int count)
-#endif
         {
             if (CharPos_Prop == CharLen_Prop && (await ReadBufferAsync().ConfigureAwait(false)) == 0)
             {

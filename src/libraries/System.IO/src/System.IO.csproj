@@ -4,7 +4,7 @@
   <PropertyGroup>
     <AssemblyName>System.IO</AssemblyName>
     <ProjectGuid>{07390899-C8F6-4e83-A3A9-6867B8CB46A0}</ProjectGuid>
-    <AssemblyVersion Condition="'$(TargetGroup)' == 'net462' Or '$(TargetGroup)' == 'netstandard1.6'">4.1.0.0</AssemblyVersion>
+    <AssemblyVersion Condition="'$(TargetGroup)' == 'net462'">4.1.0.0</AssemblyVersion>
     <ContractProject Condition="'$(AssemblyVersion)' == '4.1.0.0'">..\ref\4.1\System.IO.depproj</ContractProject>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
@@ -30,7 +30,7 @@
     <StringResourcesPath>Resources/Strings.netcore50aot.resx</StringResourcesPath>
     <DefineConstants>$(DefineConstants);uap101aot</DefineConstants>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == '' Or '$(TargetGroup)'=='netstandard1.6'">
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj">
       <Project>{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}</Project>
       <Name>System.Diagnostics.Debug</Name>
@@ -42,6 +42,10 @@
     <Compile Include="System\CodeDom\Compiler\IndentedTextWriter.cs" />
     <Compile Include="System\IO\StreamReader.cs" />
     <Compile Include="System\IO\StreamWriter.cs" />
+    <Compile Include="System\IO\StringReader.cs" />
+    <Compile Include="System\IO\StringWriter.cs" />
+    <Compile Include="System\IO\TextReader.cs" />
+    <Compile Include="System\IO\TextWriter.cs" />
     <Compile Include="System\IO\FileStreamHelpers.cs" />
     <Compile Include="System\IO\BufferedStream.cs" />
     <Compile Include="System\IO\InvalidDataException.cs" />
@@ -54,10 +58,6 @@
     <Compile Include="System\IO\BinaryWriter.cs" />
     <Compile Include="System\IO\EndOfStreamException.cs" />
     <Compile Include="System\IO\MemoryStream.cs" />
-    <Compile Include="System\IO\StringReader.cs" />
-    <Compile Include="System\IO\StringWriter.cs" />
-    <Compile Include="System\IO\TextReader.cs" />
-    <Compile Include="System\IO\TextWriter.cs" />
   </ItemGroup>
 
   <!-- Common -->
