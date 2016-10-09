@@ -106,7 +106,7 @@ namespace System.CodeDom.Tests
             // Validate all identifiers are valid
             CodeGenerator.ValidateIdentifiers(c);
 
-            // Generate code 
+            // Generate code
             CodeDomProvider provider = GetProvider();
             string code = GenerateCode(c, provider);
 
@@ -160,7 +160,7 @@ namespace System.CodeDom.Tests
             }
             else
             {
-                Assert.False(true, $"Unknown type: {c.GetType()}");
+                throw new ArgumentException($"Tests not set up for unexpected type: {c.GetType()}");
             }
 
             return sb.ToString();
