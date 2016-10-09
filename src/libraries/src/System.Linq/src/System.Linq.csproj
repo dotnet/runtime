@@ -28,7 +28,7 @@
     <Compile Include="System\Linq\Average.cs" />
     <Compile Include="System\Linq\Buffer.cs" />
     <Compile Include="System\Linq\Cast.cs" />
-    <Compile Include="System\Linq\Concatenate.cs" />
+    <Compile Include="System\Linq\Concat.cs" />
     <Compile Include="System\Linq\Contains.cs" />
     <Compile Include="System\Linq\Count.cs" />
     <Compile Include="System\Linq\DebugView.cs" />

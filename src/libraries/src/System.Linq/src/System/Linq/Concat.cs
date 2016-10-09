@@ -21,7 +21,7 @@ namespace System.Linq
                 throw Error.ArgumentNull(nameof(second));
             }
 
-            Debug.Assert(!(first is ICollection<TSource> && first is ConcatIterator<TSource>), "Didn't expect enumerable to be both a collection and a concat iterator");
+            Debug.Assert(!(first is ICollection<TSource> && first is ConcatIterator<TSource>), "Didn't expect enumerable to be both a collection and a concat iterator.");
 
             var firstCollection = first as ICollection<TSource>;
             if (firstCollection != null)
@@ -194,10 +194,11 @@ namespace System.Linq
             internal void CopyTo(TSource[] array, int arrayIndex)
             {
                 Debug.Assert(array != null);
+                Debug.Assert(arrayIndex >= 0);
                 Debug.Assert(array.Length - arrayIndex >= Count);
 
-                _first.CopyTo(array, 0);
-                _second.CopyTo(array, _first.Count);
+                _first.CopyTo(array, arrayIndex);
+                _second.CopyTo(array, checked(arrayIndex + _first.Count));
             }
 
             internal override IEnumerable<TSource> GetEnumerable(int index)
