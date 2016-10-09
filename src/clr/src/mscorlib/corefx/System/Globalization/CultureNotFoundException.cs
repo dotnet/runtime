@@ -13,6 +13,7 @@ namespace System.Globalization
     public partial class CultureNotFoundException : ArgumentException, ISerializable
     {
         private string _invalidCultureName; // unrecognized culture name
+        private int? _invalidCultureId;     // unrecognized culture Lcid
 
         public CultureNotFoundException()
             : base(DefaultMessage)
@@ -46,8 +47,22 @@ namespace System.Globalization
             _invalidCultureName = invalidCultureName;
         }
 
-        protected CultureNotFoundException(SerializationInfo info, StreamingContext context) : base(info, context)
+        public CultureNotFoundException(string message, int invalidCultureId, Exception innerException)
+            : base(message, innerException)
         {
+            _invalidCultureId = invalidCultureId;
+        }
+
+        public CultureNotFoundException(string paramName, int invalidCultureId, string message)
+            : base(message, paramName)
+        {
+            _invalidCultureId = invalidCultureId;
+        }
+
+        protected CultureNotFoundException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
+            _invalidCultureId = (int?)info.GetValue("InvalidCultureId", typeof(int?));
             _invalidCultureName = (string)info.GetValue("InvalidCultureName", typeof(string));
         }
 
@@ -60,7 +75,13 @@ namespace System.Globalization
             }
 
             base.GetObjectData(info, context);
+            info.AddValue("InvalidCultureId", _invalidCultureId, typeof(int?));
             info.AddValue("InvalidCultureName", _invalidCultureName, typeof(string));
+        }
+
+        public virtual Nullable<int> InvalidCultureId
+        {
+            get { return _invalidCultureId; }
         }
 
         public virtual string InvalidCultureName
@@ -80,7 +101,9 @@ namespace System.Globalization
         {
             get
             {
-                return InvalidCultureName;
+                return InvalidCultureId != null ?
+                    String.Format(CultureInfo.InvariantCulture, "{0} (0x{0:x4})", (int)InvalidCultureId) :
+                    InvalidCultureName;
             }
         }
 
@@ -89,12 +112,14 @@ namespace System.Globalization
             get
             {
                 String s = base.Message;
-                if (
-                    _invalidCultureName != null)
+                if (_invalidCultureId != null || _invalidCultureName != null)
                 {
                     String valueMessage = SR.Format(SR.Argument_CultureInvalidIdentifier, FormatedInvalidCultureId);
                     if (s == null)
+                    {
                         return valueMessage;
+                    }
+
                     return s + Environment.NewLine + valueMessage;
                 }
                 return s;
