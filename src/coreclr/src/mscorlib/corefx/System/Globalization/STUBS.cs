@@ -12,13 +12,6 @@ namespace System.Globalization
         public static System.Globalization.CultureInfo[] GetCultures(System.Globalization.CultureTypes types) { throw new NotImplementedException(); }
     }
 
-    public partial class CultureNotFoundException : System.ArgumentException, System.Runtime.Serialization.ISerializable
-    {
-        public CultureNotFoundException(string message, int invalidCultureId, System.Exception innerException) { throw new NotImplementedException(); }
-        public CultureNotFoundException(string paramName, int invalidCultureId, string message) { throw new NotImplementedException(); }
-        public virtual System.Nullable<int> InvalidCultureId { get { throw new NotImplementedException(); } }
-    }
-
     public enum CultureTypes
     {
         AllCultures = 7,
