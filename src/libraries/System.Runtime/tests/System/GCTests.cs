@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public static class GCTests
+    public static partial class GCTests
     {
         private static bool s_is32Bits = IntPtr.Size == 4; // Skip IntPtr tests on 32-bit platforms
 
