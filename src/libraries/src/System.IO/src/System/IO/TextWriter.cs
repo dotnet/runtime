@@ -571,7 +571,6 @@ namespace System.IO
                 }
             }
 
-            [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
             public override void Write(char[] buffer, int index, int count)
             {
             }

@@ -424,36 +424,91 @@ namespace System.IO
 
         public override void Write(string value)
         {
-            if (value != null)
+            if (value == null)
             {
-                CheckAsyncTaskInProgress();
+                return;
+            }
 
-                int count = value.Length;
-                int index = 0;
-                while (count > 0)
+            CheckAsyncTaskInProgress();
+
+            int count = value.Length;
+            int index = 0;
+            while (count > 0)
+            {
+                if (_charPos == _charLen)
                 {
-                    if (_charPos == _charLen)
-                    {
-                        Flush(false, false);
-                    }
-
-                    int n = _charLen - _charPos;
-                    if (n > count)
-                    {
-                        n = count;
-                    }
-
-                    Debug.Assert(n > 0, "StreamWriter::Write(String) isn't making progress!  This is most likely a race condition in user code.");
-                    value.CopyTo(index, _charBuffer, _charPos, n);
-                    _charPos += n;
-                    index += n;
-                    count -= n;
+                    Flush(false, false);
                 }
 
-                if (_autoFlush)
+                int n = _charLen - _charPos;
+                if (n > count)
                 {
-                    Flush(true, false);
+                    n = count;
                 }
+
+                Debug.Assert(n > 0, "StreamWriter::Write(String) isn't making progress!  This is most likely a race condition in user code.");
+                value.CopyTo(index, _charBuffer, _charPos, n);
+                _charPos += n;
+                index += n;
+                count -= n;
+            }
+
+            if (_autoFlush)
+            {
+                Flush(true, false);
+            }
+        }
+
+        //
+        // Optimize the most commonly used WriteLine overload. This optimization is important for System.Console in particular
+        // because of it will make one WriteLine equal to one call to the OS instead of two in the common case.
+        //
+        public override void WriteLine(string value)
+        {
+            if (value == null)
+            {
+                value = String.Empty;
+            }
+
+            CheckAsyncTaskInProgress();
+
+            int count = value.Length;
+            int index = 0;
+            while (count > 0)
+            {
+                if (_charPos == _charLen)
+                {
+                    Flush(false, false);
+                }
+
+                int n = _charLen - _charPos;
+                if (n > count)
+                {
+                    n = count;
+                }
+
+                Debug.Assert(n > 0, "StreamWriter::WriteLine(String) isn't making progress!  This is most likely a race condition in user code.");
+                value.CopyTo(index, _charBuffer, _charPos, n);
+                _charPos += n;
+                index += n;
+                count -= n;
+            }
+
+            char[] coreNewLine = CoreNewLine;
+            for (int i = 0; i < coreNewLine.Length; i++)   // Expect 2 iterations, no point calling BlockCopy
+            {
+                if (_charPos == _charLen)
+                {
+                    Flush(false, false);
+                }
+
+                _charBuffer[_charPos] = coreNewLine[i];
+                _charPos++;
+            }
+
+            if (_autoFlush)
+            {
+                Flush(true, false);
             }
         }
 
