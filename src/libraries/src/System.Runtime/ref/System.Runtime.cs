@@ -1152,6 +1152,9 @@ namespace System
         public static void ReRegisterForFinalize(object obj) { }
         public static void SuppressFinalize(object obj) { }
         public static void WaitForPendingFinalizers() { }
+#if netcoreapp11
+        public static long GetAllocatedBytesForCurrentThread() { return default(long); }
+#endif
     }
     public enum GCCollectionMode
     {
