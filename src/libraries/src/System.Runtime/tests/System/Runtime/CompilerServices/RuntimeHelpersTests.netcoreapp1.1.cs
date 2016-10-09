@@ -36,5 +36,35 @@ namespace System.Runtime.CompilerServices.Tests
                 FillStack(depth + 1);
             } 
         }
+
+        [Fact]
+        public static void GetUninitializedObject_InvalidArguments_ThrowsException()
+        {
+            Assert.Throws<ArgumentNullException>("type", () => RuntimeHelpers.GetUninitializedObject(null));
+
+            Assert.Throws<ArgumentException>(() => RuntimeHelpers.GetUninitializedObject(typeof(string))); // special type
+            Assert.Throws<MemberAccessException>(() => RuntimeHelpers.GetUninitializedObject(typeof(System.IO.Stream))); // abstract type
+            Assert.Throws<MemberAccessException>(() => RuntimeHelpers.GetUninitializedObject(typeof(System.Collections.IEnumerable))); // interface
+            Assert.Throws<MemberAccessException>(() => RuntimeHelpers.GetUninitializedObject(typeof(System.Collections.Generic.List<>))); // generic definition
+        }
+
+        [Fact]
+        public static void GetUninitializedObject_DoesNotRunConstructor()
+        {
+            Assert.Equal(42, new ObjectWithDefaultCtor().Value);
+            Assert.Equal(0, ((ObjectWithDefaultCtor)RuntimeHelpers.GetUninitializedObject(typeof(ObjectWithDefaultCtor))).Value);
+        }
+
+        [Fact]
+        public static void GetUninitializedObject_Nullable()
+        {
+            // Nullable returns the underlying type instead
+            Assert.Equal(typeof(int), RuntimeHelpers.GetUninitializedObject(typeof(Nullable<int>)).GetType());
+        }
+
+        private class ObjectWithDefaultCtor
+        {
+            public int Value = 42;
+        }
     }
 }

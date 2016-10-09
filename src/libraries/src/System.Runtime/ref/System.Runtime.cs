@@ -5668,6 +5668,7 @@ namespace System.Runtime.CompilerServices
         public static void ProbeForSufficientStack() { }
 #if netcoreapp11
         public static bool TryEnsureSufficientExecutionStack() { return default(bool); }
+        public static object GetUninitializedObject(Type type) { return default(object); }
 #endif
    }
    [System.AttributeUsageAttribute((System.AttributeTargets)(64), Inherited = false, AllowMultiple = false)]
