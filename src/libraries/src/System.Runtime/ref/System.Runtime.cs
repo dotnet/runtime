@@ -1937,6 +1937,12 @@ namespace System
         public string Remove(int startIndex, int count) { return default(string); }
         public string Replace(char oldChar, char newChar) { return default(string); }
         public string Replace(string oldValue, string newValue) { return default(string); }
+#if netcoreapp11
+        public string[] Split(char separator, System.StringSplitOptions options = System.StringSplitOptions.None) { return default(string[]); }
+        public string[] Split(char separator, int count, System.StringSplitOptions options = System.StringSplitOptions.None) { return default(string[]); }
+        public string[] Split(string separator, System.StringSplitOptions options = System.StringSplitOptions.None) { return default(string[]); }
+        public string[] Split(string separator, int count, System.StringSplitOptions options = System.StringSplitOptions.None) { return default(string[]); }
+#endif
         public string[] Split(params char[] separator) { return default(string[]); }
         public string[] Split(char[] separator, int count) { return default(string[]); }
         public string[] Split(char[] separator, int count, System.StringSplitOptions options) { return default(string[]); }
