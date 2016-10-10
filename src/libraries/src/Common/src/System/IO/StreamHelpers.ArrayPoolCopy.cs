@@ -10,44 +10,8 @@ using System.Threading.Tasks;
 namespace System.IO
 {
     /// <summary>Provides methods to help in the implementation of Stream-derived types.</summary>
-    internal static class StreamHelpers
+    internal static partial class StreamHelpers
     {
-        /// <summary>Validate the arguments to CopyToAsync, as would Stream.CopyToAsync.</summary>
-        public static void ValidateCopyToAsyncArgs(Stream source, Stream destination, int bufferSize)
-        {
-            if (destination == null)
-            {
-                throw new ArgumentNullException(nameof(destination));
-            }
-
-            if (bufferSize <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), bufferSize, SR.ArgumentOutOfRange_NeedPosNum);
-            }
-
-            bool sourceCanRead = source.CanRead;
-            if (!sourceCanRead && !source.CanWrite)
-            {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
-            }
-
-            bool destinationCanWrite = destination.CanWrite;
-            if (!destination.CanRead && !destinationCanWrite)
-            {
-                throw new ObjectDisposedException(nameof(destination), SR.ObjectDisposed_StreamClosed);
-            }
-
-            if (!sourceCanRead)
-            {
-                throw new NotSupportedException(SR.NotSupported_UnreadableStream);
-            }
-
-            if (!destinationCanWrite)
-            {
-                throw new NotSupportedException(SR.NotSupported_UnwritableStream);
-            }
-        }
-
         /// <summary>
         /// Provides an implementation usable as an override of Stream.CopyToAsync but that uses the shared
         /// ArrayPool for the intermediate buffer rather than allocating a new buffer each time.
