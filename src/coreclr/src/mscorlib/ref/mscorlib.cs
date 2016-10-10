@@ -7381,6 +7381,7 @@ namespace System.Reflection
         public System.Reflection.AssemblyNameFlags Flags { get { throw null; } set { } }
         public string FullName { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
         public System.Configuration.Assemblies.AssemblyHashAlgorithm HashAlgorithm { get { throw null; } set { } }
+        public System.Reflection.StrongNameKeyPair KeyPair { get { throw null; } set { } }
         public System.Configuration.Assemblies.AssemblyVersionCompatibility VersionCompatibility { get { throw null; } set { } }
         public string Name { get { throw null; } set { } }
         public System.Reflection.ProcessorArchitecture ProcessorArchitecture { get { throw null; } set { } }
@@ -8418,6 +8419,16 @@ namespace System.Reflection
         public virtual System.Reflection.PropertyInfo GetDeclaredProperty(string name) { throw null; }
         public virtual bool IsAssignableFrom(System.Reflection.TypeInfo typeInfo) { throw null; }
         System.Reflection.TypeInfo System.Reflection.IReflectableType.GetTypeInfo() { throw null; }
+    }
+    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
+    public partial class StrongNameKeyPair : System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable 
+    {
+        public StrongNameKeyPair(byte[] keyPairArray) { }
+        protected StrongNameKeyPair(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+    public StrongNameKeyPair(string keyPairContainer) { }
+    public byte[] PublicKey { [System.Security.SecuritySafeCriticalAttribute]get { return default(byte[]); } }
+        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
 }
 namespace System.Reflection.Emit
@@ -10961,12 +10972,6 @@ namespace System.Runtime.InteropServices
     public sealed partial class PreserveSigAttribute : System.Attribute
     {
         public PreserveSigAttribute() { }
-    }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public static partial class RuntimeEnvironment
-    {
-        [System.Security.SecuritySafeCriticalAttribute]
-        public static string GetRuntimeDirectory() { throw null; }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class SafeArrayRankMismatchException : System.SystemException
