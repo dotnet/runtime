@@ -929,21 +929,39 @@ namespace System
         public static bool TryParse(string s, out decimal result) { result = default(decimal); return default(bool); }
         public static bool TryParse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out decimal result) { result = default(decimal); return default(bool); }
     }
-    public abstract partial class Delegate: System.Runtime.Serialization.ISerializable
+    public abstract partial class Delegate: System.ICloneable, System.Runtime.Serialization.ISerializable
     {
+        protected Delegate(object target, string method) { }
+        protected Delegate(System.Type target, string method) { }
+        public System.Reflection.MethodInfo Method { get { throw null; } }
         internal Delegate() { }
         public object Target { get { return default(object); } }
+        public virtual object Clone() { throw null; }
         public static System.Delegate Combine(System.Delegate a, System.Delegate b) { return default(System.Delegate); }
         public static System.Delegate Combine(params System.Delegate[] delegates) { return default(System.Delegate); }
+        protected virtual System.Delegate CombineImpl(System.Delegate d) { throw null; }
+        public static System.Delegate CreateDelegate(System.Type type, object firstArgument, System.Reflection.MethodInfo method) { throw null; }
+        public static System.Delegate CreateDelegate(System.Type type, object firstArgument, System.Reflection.MethodInfo method, bool throwOnBindFailure) { throw null; }
+        public static System.Delegate CreateDelegate(System.Type type, object target, string method) { throw null; }
+        public static System.Delegate CreateDelegate(System.Type type, object target, string method, bool ignoreCase) { throw null; }
+        public static System.Delegate CreateDelegate(System.Type type, object target, string method, bool ignoreCase, bool throwOnBindFailure) { throw null; }
+        public static System.Delegate CreateDelegate(System.Type type, System.Reflection.MethodInfo method) { throw null; }
+        public static System.Delegate CreateDelegate(System.Type type, System.Reflection.MethodInfo method, bool throwOnBindFailure) { throw null; }
+        public static System.Delegate CreateDelegate(System.Type type, System.Type target, string method) { throw null; }
+        public static System.Delegate CreateDelegate(System.Type type, System.Type target, string method, bool ignoreCase) { throw null; }
+        public static System.Delegate CreateDelegate(System.Type type, System.Type target, string method, bool ignoreCase, bool throwOnBindFailure) { throw null; }
         public object DynamicInvoke(params object[] args) { return default(object); }
+        protected virtual object DynamicInvokeImpl(object[] args) { throw null; }
         public override bool Equals(object obj) { return default(bool); }
         public override int GetHashCode() { return default(int); }
         public virtual System.Delegate[] GetInvocationList() { return default(System.Delegate[]); }
+        protected virtual System.Reflection.MethodInfo GetMethodImpl() { throw null; }
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static bool operator ==(System.Delegate d1, System.Delegate d2) { return default(bool); }
         public static bool operator !=(System.Delegate d1, System.Delegate d2) { return default(bool); }
         public static System.Delegate Remove(System.Delegate source, System.Delegate value) { return default(System.Delegate); }
         public static System.Delegate RemoveAll(System.Delegate source, System.Delegate value) { return default(System.Delegate); }
+        protected virtual System.Delegate RemoveImpl(System.Delegate d) { throw null; }
     }
     public partial class DivideByZeroException : System.ArithmeticException
     {
@@ -1560,12 +1578,23 @@ namespace System
     public abstract partial class MulticastDelegate : System.Delegate
     {
         internal MulticastDelegate() { }
+        protected MulticastDelegate(object target, string method) : base(default(object), default(string)) { }
+        protected MulticastDelegate(System.Type target, string method) : base(default(object), default(string)) { }
+        protected sealed override System.Delegate CombineImpl(System.Delegate follow) { throw null; }
         public sealed override bool Equals(object obj) { return default(bool); }
         public sealed override int GetHashCode() { return default(int); }
         public sealed override System.Delegate[] GetInvocationList() { return default(System.Delegate[]); }
+        protected override System.Reflection.MethodInfo GetMethodImpl() { throw null; }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static bool operator ==(System.MulticastDelegate d1, System.MulticastDelegate d2) { return default(bool); }
         public static bool operator !=(System.MulticastDelegate d1, System.MulticastDelegate d2) { return default(bool); }
+        protected sealed override System.Delegate RemoveImpl(System.Delegate value) { throw null; }
+    }
+    public sealed partial class MulticastNotSupportedException : System.SystemException
+    {
+        public MulticastNotSupportedException() { }
+        public MulticastNotSupportedException(string message) { }
+        public MulticastNotSupportedException(string message, System.Exception inner) { }
     }
     [AttributeUsage(AttributeTargets.Field, Inherited = false)]
     public sealed class NonSerializedAttribute : Attribute
