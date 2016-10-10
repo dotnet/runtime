@@ -92,9 +92,6 @@ CONFIG_INTEGER(JitNoMemoryBarriers, W("JitNoMemoryBarriers"), 0) // If 1, don't 
 CONFIG_INTEGER(JitNoRegLoc, W("JitNoRegLoc"), 0)
 CONFIG_INTEGER(JitNoStructPromotion, W("JitNoStructPromotion"), 0) // Disables struct promotion in Jit32
 CONFIG_INTEGER(JitNoUnroll, W("JitNoUnroll"), 0)
-#ifdef FEATURE_ENABLE_NO_RANGE_CHECKS
-CONFIG_INTEGER(JitNoRangeChks, W("JitNoRngChks"), 0) // If 1, don't generate range checks
-#endif
 CONFIG_INTEGER(JitOrder, W("JitOrder"), 0)
 CONFIG_INTEGER(JitPInvokeCheckEnabled, W("JITPInvokeCheckEnabled"), 0)
 CONFIG_INTEGER(JitPInvokeEnabled, W("JITPInvokeEnabled"), 1)
@@ -187,6 +184,10 @@ CONFIG_STRING(NgenDumpFgFile, W("NgenDumpFgFile"))               // Ngen Xml Flo
 CONFIG_STRING(NgenDumpIRFormat, W("NgenDumpIRFormat"))           // Same as JitDumpIRFormat, but for ngen
 CONFIG_STRING(NgenDumpIRPhase, W("NgenDumpIRPhase"))             // Same as JitDumpIRPhase, but for ngen
 #endif                                                           // defined(DEBUG)
+
+#ifdef FEATURE_ENABLE_NO_RANGE_CHECKS
+CONFIG_INTEGER(JitNoRangeChks, W("JitNoRngChks"), 0) // If 1, don't generate range checks
+#endif
 
 // AltJitAssertOnNYI should be 0 on targets where JIT is under developement or bring up stage, so as to facilitate
 // fallback to main JIT on hitting a NYI.
