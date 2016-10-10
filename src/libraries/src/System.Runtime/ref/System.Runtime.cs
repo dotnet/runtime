@@ -4318,6 +4318,7 @@ namespace System.IO
         public FileLoadException(string message, string fileName, System.Exception inner) { }
         protected FileLoadException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
         public string FileName { get { return default(string); } }
+        public string FusionLog { get { return default(string); } }
         public override string Message { get { return default(string); } }
         public override string ToString() { return default(string); }
     }
@@ -4330,6 +4331,7 @@ namespace System.IO
         public FileNotFoundException(string message, string fileName, System.Exception innerException) { }
         protected FileNotFoundException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
         public string FileName { get { return default(string); } }
+        public string FusionLog { get { return default(string); } }
         public override string Message { get { return default(string); } }
         public override string ToString() { return default(string); }
     }
@@ -4374,6 +4376,8 @@ namespace System.IO
         public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize) { return default(System.Threading.Tasks.Task); }
         public virtual System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
         public virtual void Close() { }
+        [System.ObsoleteAttribute("CreateWaitHandle will be removed eventually.  Please use \"new ManualResetEvent(false)\" instead.")]
+        protected virtual System.Threading.WaitHandle CreateWaitHandle() { return default(System.Threading.WaitHandle); }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public virtual int EndRead(System.IAsyncResult asyncResult) { return 0; }
@@ -4381,12 +4385,15 @@ namespace System.IO
         public abstract void Flush();
         public System.Threading.Tasks.Task FlushAsync() { return default(System.Threading.Tasks.Task); }
         public virtual System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
+        [System.ObsoleteAttribute("Do not call or override this method.")]
+        protected virtual void ObjectInvariant() { }
         public abstract int Read(byte[] buffer, int offset, int count);
         public System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count) { return default(System.Threading.Tasks.Task<int>); }
         public virtual System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task<int>); }
         public virtual int ReadByte() { return default(int); }
         public abstract long Seek(long offset, System.IO.SeekOrigin origin);
         public abstract void SetLength(long value);
+        public static System.IO.Stream Synchronized(System.IO.Stream stream) { return default(System.IO.Stream); ; }
         public abstract void Write(byte[] buffer, int offset, int count);
         public System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count) { return default(System.Threading.Tasks.Task); }
         public virtual System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
