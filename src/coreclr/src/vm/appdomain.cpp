@@ -8241,7 +8241,7 @@ public:
         }
         else
         {
-            IfFailRet(FString::Utf8_Unicode(szName, bIsAscii, wzBuffer, cchBuffer));
+            IfFailRet(FString::Utf8_Unicode(szName, bIsAscii, wzBuffer, cchName));
             if (pcchBuffer != nullptr)
             {
                 *pcchBuffer = cchName;
