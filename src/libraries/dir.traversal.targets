@@ -199,7 +199,7 @@
           Returns="@(FilesToPackage)">
     <MSBuild Targets="GetFilesToPackage"
              Projects="@(Project)"
-             BuildInParallel="$(BuildInParallel)"
+             BuildInParallel="true"
              Properties="$(ProjectProperties)"
              ContinueOnError="ErrorAndContinue" >
       <Output TaskParameter="TargetOutputs"
