@@ -2175,12 +2175,6 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *ins)
 	int tmp5 = -1;
 
 	switch (ins->opcode) {
-#if 0
-	case OP_LCOMPARE:
-	case OP_LCOMPARE_IMM:
-		mono_print_ins (ins);
-		g_assert_not_reached ();
-#endif
 	case OP_LADD:
 		tmp1 = mono_alloc_ireg (cfg);
 		MONO_EMIT_NEW_BIALU (cfg, OP_IADD, ins->dreg+1, ins->sreg1+1, ins->sreg2+1);
@@ -2217,17 +2211,6 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *ins)
 		NULLIFY_INS(ins);
 		break;
 
-	case OP_LMUL:
-	case OP_LDIV:
-	case OP_LDIV_UN:
-	case OP_LREM:
-	case OP_LREM_UN:
-	case OP_LSHL:
-	case OP_LSHR:
-	case OP_LSHR_UN:
-		mono_print_ins (ins);
-		g_assert_not_reached ();
-
 	case OP_LNEG:
 		tmp1 = mono_alloc_ireg (cfg);
 		MONO_EMIT_NEW_BIALU (cfg, OP_ISUB, ins->dreg+1, mips_zero, ins->sreg1+1);
@@ -2236,27 +2219,6 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *ins)
 		MONO_EMIT_NEW_BIALU (cfg, OP_ISUB, ins->dreg+2, ins->dreg+2, tmp1);
 		NULLIFY_INS(ins);
 		break;
-
-#if 0
-	case OP_LNOT:
-#endif
-#if 0
-	case OP_LCONV_TO_I1:
-	case OP_LCONV_TO_I2:
-	case OP_LCONV_TO_I4:
-	case OP_LCONV_TO_I8:
-	case OP_LCONV_TO_R4:
-	case OP_LCONV_TO_R8:
-	case OP_LCONV_TO_U4:
-	case OP_LCONV_TO_U8:
-	case OP_LCONV_TO_U2:
-	case OP_LCONV_TO_U1:
-	case OP_LCONV_TO_I:
-	case OP_LCONV_TO_OVF_I:
-	case OP_LCONV_TO_OVF_U:
-#endif
-		mono_print_ins (ins);
-		g_assert_not_reached ();
 
 	case OP_LADD_OVF:
 		tmp1 = mono_alloc_ireg (cfg);
@@ -2310,11 +2272,6 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *ins)
 		NULLIFY_INS(ins);
 		break;
 
-	case OP_LMUL_OVF:
-	case OP_LMUL_OVF_UN:
-		mono_print_ins (ins);
-		g_assert_not_reached ();
-
 	case OP_LSUB_OVF:
 		tmp1 = mono_alloc_ireg (cfg);
 		tmp2 = mono_alloc_ireg (cfg);
@@ -2361,60 +2318,6 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *ins)
 		MONO_EMIT_NEW_COMPARE_EXC (cfg, NE_UN, tmp2, mips_zero, "OverflowException");
 		NULLIFY_INS(ins);
 		break;
-#if 0
-	case OP_LCONV_TO_OVF_I1_UN:
-	case OP_LCONV_TO_OVF_I2_UN:
-	case OP_LCONV_TO_OVF_I4_UN:
-	case OP_LCONV_TO_OVF_I8_UN:
-	case OP_LCONV_TO_OVF_U1_UN:
-	case OP_LCONV_TO_OVF_U2_UN:
-	case OP_LCONV_TO_OVF_U4_UN:
-	case OP_LCONV_TO_OVF_U8_UN:
-	case OP_LCONV_TO_OVF_I_UN:
-	case OP_LCONV_TO_OVF_U_UN:
-	case OP_LCONV_TO_OVF_I1:
-	case OP_LCONV_TO_OVF_U1:
-	case OP_LCONV_TO_OVF_I2:
-	case OP_LCONV_TO_OVF_U2:
-	case OP_LCONV_TO_OVF_I4:
-	case OP_LCONV_TO_OVF_U4:
-	case OP_LCONV_TO_OVF_I8:
-	case OP_LCONV_TO_OVF_U8:
-#endif
-	case OP_LCEQ:
-	case OP_LCGT:
-	case OP_LCGT_UN:
-	case OP_LCLT:
-	case OP_LCLT_UN:
-#if 0
-	case OP_LCONV_TO_R_UN:
-	case OP_LCONV_TO_U:
-#endif
-	case OP_LMUL_IMM:
-	case OP_LSHL_IMM:
-	case OP_LSHR_IMM:
-	case OP_LSHR_UN_IMM:
-	case OP_LDIV_IMM:
-	case OP_LDIV_UN_IMM:
-	case OP_LREM_IMM:
-	case OP_LREM_UN_IMM:
-	case OP_LBEQ:
-	case OP_LBGE:
-	case OP_LBGT:
-	case OP_LBLE:
-	case OP_LBLT:
-	case OP_LBNE_UN:
-	case OP_LBGE_UN:
-	case OP_LBGT_UN:
-	case OP_LBLE_UN:
-	case OP_LBLT_UN:
-		mono_print_ins (ins);
-		g_assert_not_reached ();
-#if 0
-	case OP_LCONV_TO_R8_2:
-	case OP_LCONV_TO_R4_2:
-	case OP_LCONV_TO_R_UN_2:
-#endif
 	case OP_LCONV_TO_OVF_I4_2:
 		tmp1 = mono_alloc_ireg (cfg);
 
@@ -2424,14 +2327,6 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *ins)
 		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, ins->dreg, ins->sreg1);
 		NULLIFY_INS(ins);
 		break;
-
-	case OP_LMIN_UN:
-	case OP_LMAX_UN:
-	case OP_LMIN:
-	case OP_LMAX:
-		mono_print_ins (ins);
-		g_assert_not_reached ();
-
 	default:
 		break;
 	}
