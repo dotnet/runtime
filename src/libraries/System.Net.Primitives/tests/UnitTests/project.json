@@ -28,6 +28,7 @@
     "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00830-02"
   },
   "frameworks": {
+    "netstandard1.7": {},
     "netstandard1.3": {}
   },
   "supports": {

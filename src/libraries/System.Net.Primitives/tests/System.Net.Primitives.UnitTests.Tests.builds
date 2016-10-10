@@ -7,6 +7,11 @@
     </Project>
     <Project Include="FunctionalTests\System.Net.Primitives.Functional.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>netcoreapp1.1;net463</TestTFMs>
+    </Project>
+    <Project Include="FunctionalTests\System.Net.Primitives.Functional.Tests.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
+      <OSGroup>Windows_NT</OSGroup>
       <TestTFMs>netcore50;netcoreapp1.0;net46</TestTFMs>
     </Project>
     <Project Include="PalTests\System.Net.Primitives.Pal.Tests.csproj">
@@ -14,19 +19,34 @@
     </Project>
     <Project Include="PalTests\System.Net.Primitives.Pal.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>netcoreapp1.1;net463</TestTFMs>
+    </Project>
+    <Project Include="PalTests\System.Net.Primitives.Pal.Tests.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
+      <OSGroup>Windows_NT</OSGroup>
       <TestTFMs>netcore50;netcoreapp1.0;net46</TestTFMs>
     </Project>
     <Project Include="PerformanceTests\System.Net.Primitives.Performance.Tests.csproj">
+      <OSGroup>Unix</OSGroup>
+    </Project>
+    <Project Include="PerformanceTests\System.Net.Primitives.Performance.Tests.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>netcoreapp1.1;net463</TestTFMs>
+    </Project>
+    <Project Include="PerformanceTests\System.Net.Primitives.Performance.Tests.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
       <OSGroup>Windows_NT</OSGroup>
       <TestTFMs>netcoreapp1.0;net46</TestTFMs>
     </Project>
-    <Project Include="PerformanceTests\System.Net.Primitives.Performance.Tests.csproj">
-      <OSGroup>Unix</OSGroup>
-    </Project>
     <Project Include="UnitTests\System.Net.Primitives.UnitTests.Tests.csproj">
       <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="UnitTests\System.Net.Primitives.UnitTests.Tests.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>netcoreapp1.1;net463</TestTFMs>
+    </Project>
+    <Project Include="UnitTests\System.Net.Primitives.UnitTests.Tests.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
       <OSGroup>Windows_NT</OSGroup>
       <TestTFMs>netcore50;netcoreapp1.0;net46</TestTFMs>
     </Project>
