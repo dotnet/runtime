@@ -72,7 +72,9 @@
     <Compile Include="System\Net\Mail\SmtpTransport.cs" />
     <Compile Include="System\Net\Mail\SmtpLoginAuthenticationModule.cs" />
     <Compile Include="System\Net\DelegatedStream.cs" />
-    <Compile Include="System\Net\Mail\TlsStream.cs" />
+    <Compile Include="$(CommonPath)\System\Net\TlsStream.cs">
+      <Link>Common\System\Net\TlsStream.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
       <Link>Common\System\Net\InternalException.cs</Link>
     </Compile>
