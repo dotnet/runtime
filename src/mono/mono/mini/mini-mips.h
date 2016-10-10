@@ -233,6 +233,15 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_EMULATE_FREM 1
 #endif
 
+/*
+ * mips backend misses some instructions that enable emitting of optimal
+ * code on other targets and, additionally, the register allocator gets
+ * confused by this optimization, failing to allocate all hw regs.
+ */
+#if SIZEOF_REGISTER == 4
+#define MONO_ARCH_NO_DIV_WITH_MUL
+#endif
+
 #if SIZEOF_REGISTER == 8
 #define MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS
 #endif

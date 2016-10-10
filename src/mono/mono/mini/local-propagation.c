@@ -171,6 +171,8 @@ mono_strength_reduction_division (MonoCompile *cfg, MonoInst *ins)
 				ins->inst_imm = power2;
 				break;
 			}
+			if (cfg->backend->disable_div_with_mul)
+				break;
 			allocated_vregs = TRUE;
 			/*
 			 * Replacement of unsigned division with multiplication,
@@ -243,6 +245,8 @@ mono_strength_reduction_division (MonoCompile *cfg, MonoInst *ins)
 				break;
 			}
 
+			if (cfg->backend->disable_div_with_mul)
+				break;
 			/*
 			 * Replacement of signed division with multiplication,
 			 * shifts and additions Hacker's Delight, chapter 10-6.
