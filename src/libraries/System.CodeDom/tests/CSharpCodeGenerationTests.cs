@@ -45,6 +45,42 @@ namespace System.CodeDom.Tests
         }
 
         [Fact]
+        public void CodeMemberField_OpenGenericType_Works()
+        {
+            var cd = new CodeTypeDeclaration("SomeClass") { IsClass = true };
+            cd.Members.Add(new CodeMemberField(typeof(List<>), "_field"));
+
+            AssertEqual(cd,
+                @"public class SomeClass {
+                    private System.Collections.Generic.List<> _field;
+                }");
+        }
+
+        [Fact]
+        public void CodeMemberField_PointerType_Works()
+        {
+            var cd = new CodeTypeDeclaration("SomeClass") { IsClass = true };
+            cd.Members.Add(new CodeMemberField(typeof(int*), "_field"));
+
+            AssertEqual(cd,
+                @"public class SomeClass {
+                    private System.Int32* _field;
+                }");
+        }
+
+        [Fact]
+        public void CodeMemberField_ByRefType_Works()
+        {
+            var cd = new CodeTypeDeclaration("SomeClass") { IsClass = true };
+            cd.Members.Add(new CodeMemberField(typeof(int).MakeByRefType(), "_field"));
+
+            AssertEqual(cd,
+                @"public class SomeClass {
+                    private System.Int32& _field;
+                }");
+        }
+
+        [Fact]
         public void ClassWithStaticFields()
         {
             var cd = new CodeTypeDeclaration("SomeClass") { IsClass = true };
