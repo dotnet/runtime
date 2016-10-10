@@ -21,6 +21,9 @@
 
 namespace FString
 {
+    // Note: All "length" parameters do not count the space for the null terminator.
+    // Caller of Unicode_Utf8 and Utf8_Unicode must pass in a buffer of size at least length + 1.
+
     // Scan for ASCII only string, calculate result UTF8 string length
     HRESULT Unicode_Utf8_Length(__in_z LPCWSTR pString, __out bool * pAllAscii, __out DWORD * pLength);
 
