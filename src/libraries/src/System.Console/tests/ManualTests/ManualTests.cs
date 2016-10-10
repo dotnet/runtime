@@ -11,14 +11,37 @@ namespace System
     {
         public static bool ManualTestsEnabled => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MANUAL_TESTS"));
 
-        [ConditionalFact(nameof(ManualTestsEnabled))]
-        public static void ReadLine()
+        [ConditionalTheory(nameof(ManualTestsEnabled))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void ReadLine(bool consoleIn)
         {
-            const string ExpectedLine = "This is a test of ReadLine.";
-            Console.WriteLine($"Please type the sentence (without the quotes): \"{ExpectedLine}\"");
-            string result = Console.ReadLine();
-            Assert.Equal(ExpectedLine, result);
+            string expectedLine = $"This is a test of Console.{(consoleIn ? "In." : "")}ReadLine.";
+            Console.WriteLine($"Please type the sentence (without the quotes): \"{expectedLine}\"");
+            string result = consoleIn ? Console.In.ReadLine() : Console.ReadLine();
+            Assert.Equal(expectedLine, result);
             AssertUserExpectedResults("the characters you typed properly echoed as you typed");
+        }
+
+        [ConditionalFact(nameof(ManualTestsEnabled))]
+        public static void InPeek()
+        {
+            Console.WriteLine("Please type \"peek\" (without the quotes). You shouldn't see it as you type:");
+            foreach (char c in new[] { 'p', 'e', 'e', 'k' })
+            {
+                Assert.Equal(c, Console.In.Peek());
+                Assert.Equal(c, Console.In.Peek());
+                Assert.Equal(c, Console.In.Read());
+            }
+            Console.In.ReadLine(); // enter
+            AssertUserExpectedResults("the characters you typed properly echoed as you typed");
+        }
+
+        [ConditionalFact(nameof(ManualTestsEnabled))]
+        public static void Beep()
+        {
+            Console.Beep();
+            AssertUserExpectedResults("hear a beep");
         }
 
         [ConditionalFact(nameof(ManualTestsEnabled))]
@@ -30,6 +53,13 @@ namespace System
                 Assert.Equal(k, Console.ReadKey(intercept: true).Key);
             }
             AssertUserExpectedResults("\"console\" correctly not echoed as you typed it");
+        }
+
+        [ConditionalFact(nameof(ManualTestsEnabled))]
+        public static void ConsoleOutWriteLine()
+        {
+            Console.Out.WriteLine("abcdefghijklmnopqrstuvwxyz");
+            AssertUserExpectedResults("the alphabet above");
         }
 
         [ConditionalFact(nameof(ManualTestsEnabled))]
