@@ -271,6 +271,14 @@ namespace System.Threading {
             return m_ManagedThreadId;
         }
 
+        extern public new int ManagedThreadId
+        {
+            [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
+            [MethodImplAttribute(MethodImplOptions.InternalCall)]
+            [System.Security.SecuritySafeCritical]  // auto-generated
+            get;
+        }
+
         // Returns handle for interop with EE. The handle is guaranteed to be non-null.
         internal unsafe ThreadHandle GetNativeHandle()
         {

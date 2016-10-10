@@ -71,14 +71,7 @@ namespace Internal.Runtime.Augments
             get;
         }
 
-        public extern int ManagedThreadId
-        {
-            [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-            [MethodImplAttribute(MethodImplOptions.InternalCall)]
-            [SecuritySafeCritical]  // auto-generated
-            get;
-        }
-
+        public int ManagedThreadId => AsThread().ManagedThreadId;
         public string Name { get { return AsThread().Name; } set { AsThread().Name = value; } }
 
         /*=========================================================================
