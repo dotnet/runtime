@@ -153,14 +153,25 @@ namespace System.Net.Mail
 
         internal void InitializeConnection(string host, int port)
         {
-            _tcpClient.ConnectAsync(host, port).GetAwaiter().GetResult();
+            _tcpClient.Connect(host, port);
+            _networkStream = _tcpClient.GetStream();
+        }
+
+        internal IAsyncResult BeginInitializeConnection(string host, int port, AsyncCallback callback, object state)
+        {
+            return _tcpClient.BeginConnect(host, port, callback, state);
+        }
+
+        internal void EndInitializeConnection(IAsyncResult result)
+        {
+            _tcpClient.EndConnect(result);
             _networkStream = _tcpClient.GetStream();
         }
 
         internal IAsyncResult BeginGetConnection(ContextAwareResult outerResult, AsyncCallback callback, object state, string host, int port)
         {
             ConnectAndHandshakeAsyncResult result = new ConnectAndHandshakeAsyncResult(this, host, port, outerResult, callback, state);
-            result.GetConnection(false);
+            result.GetConnection();
             return result;
         }
 
@@ -559,31 +570,61 @@ namespace System.Net.Mail
                 }
             }
 
-            internal void GetConnection(bool synchronous)
+            internal void GetConnection()
             {
                 if (GlobalLog.IsEnabled)
                 {
-                    GlobalLog.Enter("ConnectAndHandshakeAsyncResult#" + LoggingHash.HashString(this) + "::Connect: sync=" + (synchronous ? "true" : "false"));
+                    GlobalLog.Enter("ConnectAndHandshakeAsyncResult#" + LoggingHash.HashString(this) + "::Connect:");
                 }
                 if (_connection._isConnected)
                 {
                     throw new InvalidOperationException(SR.SmtpAlreadyConnected);
                 }
 
-                _connection.InitializeConnection(_host, _port);
+                InitializeConnection();
+            }
 
-                if (GlobalLog.IsEnabled)
+            private void InitializeConnection()
+            {
+                IAsyncResult result = _connection.BeginInitializeConnection(_host, _port, InitializeConnectionCallback, this);
+                if (result.CompletedSynchronously)
                 {
-                    GlobalLog.Print("ConnectAndHandshakeAsyncResult#" + LoggingHash.HashString(this) + "::Connect returned" + LoggingHash.HashString(this));
-                }
+                    _connection.EndInitializeConnection(result);
+                    if (GlobalLog.IsEnabled)
+                    {
+                        GlobalLog.Print("ConnectAndHandshakeAsyncResult#" + LoggingHash.HashString(this) + "::Connect returned" + LoggingHash.HashString(this));
+                    }
 
-                try
-                {
-                    Handshake();
+                    try
+                    {
+                        Handshake();
+                    }
+                    catch (Exception e)
+                    {
+                        InvokeCallback(e);
+                    }
                 }
-                catch (Exception e)
+            }
+
+            private static void InitializeConnectionCallback(IAsyncResult result)
+            {
+                if (!result.CompletedSynchronously)
                 {
-                    InvokeCallback(e);
+                    ConnectAndHandshakeAsyncResult thisPtr = (ConnectAndHandshakeAsyncResult)result.AsyncState;
+                    thisPtr._connection.EndInitializeConnection(result);
+                    if (GlobalLog.IsEnabled)
+                    {
+                        GlobalLog.Print("ConnectAndHandshakeAsyncResult#" + LoggingHash.HashString(thisPtr) + "::Connect returned" + LoggingHash.HashString(thisPtr));
+                    }
+
+                    try
+                    {
+                        thisPtr.Handshake();
+                    }
+                    catch (Exception e)
+                    {
+                        thisPtr.InvokeCallback(e);
+                    }
                 }
             }
 
