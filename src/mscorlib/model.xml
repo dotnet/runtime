@@ -4126,6 +4126,7 @@
       <Member Name="get_Name" />
       <Member Name="get_ProcessorArchitecture" />
       <Member Name="get_Version" />
+      <Member Name="get_KeyPair" />
       <Member Name="GetAssemblyName(System.String)" />
       <Member Name="GetPublicKey" />
       <Member Name="GetPublicKeyToken" />
@@ -4137,6 +4138,7 @@
       <Member Name="set_Name(System.String)" />
       <Member Name="set_ProcessorArchitecture(System.Reflection.ProcessorArchitecture)" />
       <Member Name="set_Version(System.Version)" />
+      <Member Name="set_KeyPair(System.Reflection.StrongNameKeyPair)" />
       <Member Name="Clone" />
       <Member Name="SetPublicKey(System.Byte[])" />
       <Member Name="SetPublicKeyToken(System.Byte[])" />
@@ -4156,6 +4158,7 @@
       <Member MemberType="Property" Name="ProcessorArchitecture" />
       <Member MemberType="Property" Name="Version" />
       <Member MemberType="Property" Name="VersionCompatibility" />
+      <Member MemberType="Property" Name="KeyPair" />
     </Type>
     <Type Name="System.Reflection.AssemblyNameFlags">
       <Member MemberType="Field" Name="EnableJITcompileOptimizer" />
@@ -6862,9 +6865,6 @@
     </Type>
     <Type Name="System.Runtime.InteropServices.PreserveSigAttribute">
       <Member Name="#ctor" />
-    </Type>
-    <Type Name="System.Runtime.InteropServices.RuntimeEnvironment">
-       <Member Name="GetRuntimeDirectory" /> <!-- For use in the Framework, but not public in Win8P reference assemblies. -->
     </Type>
     <Type Name="System.Runtime.InteropServices.SafeHandle">
       <Member MemberType="Field" Name="handle" />
@@ -9994,6 +9994,16 @@
       <Member Status="ApiRoot" Name="BeginInvoke(System.Type,System.Object,System.AsyncCallback,System.Object)" />
       <Member Status="ApiRoot" Name="EndInvoke(System.IAsyncResult)" />
       <Member Status="ApiRoot" Name="Invoke(System.Type,System.Object)" />
+    </Type>
+    <Type Name="System.Reflection.StrongNameKeyPair">
+      <Member Name="#ctor(System.Byte[])" />
+      <!--      <Member Name="#ctor(System.IO.FileStream)" /> -->
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
+      <Member Name="#ctor(System.String)" />
+      <Member Name="get_PublicKey" />
+      <Member MemberType="Property" Name="PublicKey" />
+      <Member Status="ImplRoot" Name="System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(System.Object)" />
+      <Member Status="ImplRoot" Name="System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
     <Type Status="ImplRoot" Name="System.ReflectionOnlyType" />
     <Type Status="ImplRoot" Name="System.ResId" />
