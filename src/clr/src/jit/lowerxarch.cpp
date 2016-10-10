@@ -650,7 +650,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
         case GT_PUTARG_STK:
-            TreeNodeInfoInitPutArgStk(tree);
+            TreeNodeInfoInitPutArgStk(tree->AsPutArgStk());
             break;
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 
@@ -1986,17 +1986,16 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
 // Return Value:
 //    None.
 //
-void Lowering::TreeNodeInfoInitPutArgStk(GenTree* tree)
+void Lowering::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* putArgStk)
 {
-    TreeNodeInfo* info = &(tree->gtLsraInfo);
+    TreeNodeInfo* info = &(putArgStk->gtLsraInfo);
     LinearScan*   l    = m_lsra;
 
 #ifdef _TARGET_X86_
-    if (tree->gtOp.gtOp1->gtOper == GT_FIELD_LIST)
+    if (putArgStk->gtOp1->gtOper == GT_FIELD_LIST)
     {
-        GenTreePutArgStk* putArgStk       = tree->AsPutArgStk();
         putArgStk->gtNumberReferenceSlots = 0;
-        putArgStk->gtPutArgStkKind        = GenTreePutArgStk::PutArgStkKindInvalid;
+        putArgStk->gtPutArgStkKind        = GenTreePutArgStk::Kind::Invalid;
 
         GenTreeFieldList* fieldList = putArgStk->gtOp1->AsFieldList();
 
@@ -2077,6 +2076,9 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTree* tree)
             const unsigned  fieldOffset = current->gtFieldOffset;
             assert(fieldType != TYP_LONG);
 
+            // TODO-X86-CQ: we could probably improve codegen here by marking all of the operands to field nodes that
+            // we are going to `push` on the stack as reg-optional.
+
             const bool fieldIsSlot =
                 varTypeIsIntegralOrI(fieldType) && ((fieldOffset % 4) == 0) && ((prevOffset - fieldOffset) >= 4);
             if (!fieldIsSlot)
@@ -2102,22 +2104,20 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTree* tree)
         // If all fields of this list are slots, set the copy kind.
         if (allFieldsAreSlots)
         {
-            putArgStk->gtPutArgStkKind = GenTreePutArgStk::PutArgStkKindRepInstr;
+            putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::AllSlots;
         }
         return;
     }
 #endif // _TARGET_X86_
 
-    if (tree->TypeGet() != TYP_STRUCT)
+    if (putArgStk->TypeGet() != TYP_STRUCT)
     {
-        TreeNodeInfoInitSimple(tree);
+        TreeNodeInfoInitSimple(putArgStk);
         return;
     }
 
-    GenTreePutArgStk* putArgStkTree = tree->AsPutArgStk();
-
-    GenTreePtr dst     = tree;
-    GenTreePtr src     = tree->gtOp.gtOp1;
+    GenTreePtr dst     = putArgStk;
+    GenTreePtr src     = putArgStk->gtOp1;
     GenTreePtr srcAddr = nullptr;
 
     bool haveLocalAddr = false;
@@ -2129,7 +2129,7 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTree* tree)
     }
     else
     {
-        assert(varTypeIsSIMD(tree));
+        assert(varTypeIsSIMD(putArgStk));
     }
 
     info->srcCount = src->gtLsraInfo.dstCount;
@@ -2144,7 +2144,7 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTree* tree)
     // This threshold will decide from using the helper or let the JIT decide to inline
     // a code sequence of its choice.
     ssize_t helperThreshold = max(CPBLK_MOVS_LIMIT, CPBLK_UNROLL_LIMIT);
-    ssize_t size            = putArgStkTree->gtNumSlots * TARGET_POINTER_SIZE;
+    ssize_t size            = putArgStk->gtNumSlots * TARGET_POINTER_SIZE;
 
     // TODO-X86-CQ: The helper call either is not supported on x86 or required more work
     // (I don't know which).
@@ -2152,7 +2152,7 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTree* tree)
     // If we have a buffer between XMM_REGSIZE_BYTES and CPBLK_UNROLL_LIMIT bytes, we'll use SSE2.
     // Structs and buffer with sizes <= CPBLK_UNROLL_LIMIT bytes are occurring in more than 95% of
     // our framework assemblies, so this is the main code generation scheme we'll use.
-    if (size <= CPBLK_UNROLL_LIMIT && putArgStkTree->gtNumberReferenceSlots == 0)
+    if (size <= CPBLK_UNROLL_LIMIT && putArgStk->gtNumberReferenceSlots == 0)
     {
         // If we have a remainder smaller than XMM_REGSIZE_BYTES, we need an integer temp reg.
         //
@@ -2188,12 +2188,13 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTree* tree)
 
         // If src or dst are on stack, we don't have to generate the address into a register
         // because it's just some constant+SP
-        putArgStkTree->gtPutArgStkKind = GenTreePutArgStk::PutArgStkKindUnroll;
+        putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Unroll;
     }
 #ifdef _TARGET_X86_
-    else if (putArgStkTree->gtNumberReferenceSlots != 0)
+    else if (putArgStk->gtNumberReferenceSlots != 0)
     {
-        putArgStkTree->gtPutArgStkKind = GenTreePutArgStk::PutArgStkKindRepInstr;
+        // On x86, we must use `push` to store GC references to the stack in order for the emitter to properly update
+        // the function's GC info. These `putargstk` nodes will generate a sequence of `push` instructions.
     }
 #endif // _TARGET_X86_
     else
@@ -2201,11 +2202,11 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTree* tree)
         info->internalIntCount += 3;
         info->setInternalCandidates(l, (RBM_RDI | RBM_RCX | RBM_RSI));
 
-        putArgStkTree->gtPutArgStkKind = GenTreePutArgStk::PutArgStkKindRepInstr;
+        putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::RepInstr;
     }
 
     // Always mark the OBJ and ADDR as contained trees by the putarg_stk. The codegen will deal with this tree.
-    MakeSrcContained(putArgStkTree, src);
+    MakeSrcContained(putArgStk, src);
 
     if (haveLocalAddr)
     {
@@ -2215,7 +2216,7 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTree* tree)
         // To avoid an assertion in MakeSrcContained, increment the parent's source count beforehand and decrement it
         // afterwards.
         info->srcCount++;
-        MakeSrcContained(putArgStkTree, srcAddr);
+        MakeSrcContained(putArgStk, srcAddr);
         info->srcCount--;
     }
 }

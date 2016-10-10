@@ -1907,7 +1907,7 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             break;
 
         case GT_PUTARG_STK:
-            genPutArgStk(treeNode);
+            genPutArgStk(treeNode->AsPutArgStk());
             break;
 
         case GT_PUTARG_REG:
@@ -7339,7 +7339,39 @@ unsigned CodeGen::getBaseVarForPutArgStk(GenTreePtr treeNode)
     return baseVarNum;
 }
 
-//--------------------------------------------------------------------- //
+#ifdef _TARGET_X86_
+//---------------------------------------------------------------------
+// adjustStackForPutArgStk:
+//    adjust the stack pointer for a putArgStk node if necessary.
+//
+// Arguments:
+//    putArgStk - the putArgStk node.
+//    isSrcInMemory - true if the source of the putArgStk node is in
+//                    memory; false otherwise.
+//
+// Returns: true if the stack pointer was adjusted; false otherwise.
+//
+bool CodeGen::genAdjustStackForPutArgStk(GenTreePutArgStk* putArgStk, bool isSrcInMemory)
+{
+    assert(isSrcInMemory || (putArgStk->gtOp1->OperGet() == GT_FIELD_LIST));
+
+    // If this argument contains any GC pointers or is less than 16 bytes in size and is either in memory or composed
+    // entirely of slot-like fields (i.e. integral-types, 4-byte-aligned fields that take up 4 bytes including any
+    // padding), we will use a sequence of `push` instructions to store the argument to the stack.
+    const unsigned argSize = putArgStk->getArgSize();
+    if ((putArgStk->gtNumberReferenceSlots != 0) ||
+        ((argSize < 16) && (isSrcInMemory || (putArgStk->gtPutArgStkKind == GenTreePutArgStk::Kind::AllSlots))))
+    {
+        return false;
+    }
+
+    inst_RV_IV(INS_sub, REG_SPBASE, argSize, EA_PTRSIZE);
+    genStackLevel += argSize;
+    return true;
+}
+#endif // _TARGET_X86_
+
+//---------------------------------------------------------------------
 // genPutArgStk - generate code for passing an arg on the stack.
 //
 // Arguments
@@ -7349,32 +7381,21 @@ unsigned CodeGen::getBaseVarForPutArgStk(GenTreePtr treeNode)
 // Return value:
 //    None
 //
-void CodeGen::genPutArgStk(GenTreePtr treeNode)
+void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
 {
-    var_types targetType = treeNode->TypeGet();
+    var_types targetType = putArgStk->TypeGet();
 #ifdef _TARGET_X86_
     if (varTypeIsStruct(targetType))
     {
-        // If this is less than 16 bytes, and has no gc refs, then we will push the args.
-        // Otherwise, we will decrement sp and do regular stores.
-        if ((treeNode->AsPutArgStk()->getArgSize() < 16) || (treeNode->AsPutArgStk()->gtNumberReferenceSlots != 0))
-        {
-            m_pushStkArg = true;
-        }
-        else
-        {
-            inst_RV_IV(INS_sub, REG_SPBASE, treeNode->AsPutArgStk()->getArgSize(), EA_PTRSIZE);
-            m_pushStkArg = false;
-            genStackLevel += treeNode->AsPutArgStk()->getArgSize();
-        }
-        genPutStructArgStk(treeNode->AsPutArgStk());
+        m_pushStkArg = !genAdjustStackForPutArgStk(putArgStk, true);
+        genPutStructArgStk(putArgStk);
         return;
     }
 
     // The following logic is applicable for x86 arch.
-    assert(!varTypeIsFloating(targetType) || (targetType == treeNode->gtGetOp1()->TypeGet()));
+    assert(!varTypeIsFloating(targetType) || (targetType == putArgStk->gtOp1->TypeGet()));
 
-    GenTreePtr data = treeNode->gtOp.gtOp1;
+    GenTreePtr data = putArgStk->gtOp1;
 
     // On a 32-bit target, all of the long arguments have been decomposed into
     // a separate putarg_stk for each of the upper and lower halves.
@@ -7397,8 +7418,6 @@ void CodeGen::genPutArgStk(GenTreePtr treeNode)
     }
     else if (data->OperGet() == GT_FIELD_LIST)
     {
-        GenTreePutArgStk* const putArgStk = treeNode->AsPutArgStk();
-
         GenTreeFieldList* const fieldList = data->AsFieldList();
         assert(fieldList != nullptr);
 
@@ -7406,22 +7425,11 @@ void CodeGen::genPutArgStk(GenTreePtr treeNode)
         const int argSize = putArgStk->getArgSize();
         assert((argSize % TARGET_POINTER_SIZE) == 0);
 
-        // Set the current field offset to the size of the struct arg (which must be a multiple of the target pointer
-        // size).
-        int currentOffset = argSize;
+        const bool preAdjustedStack = genAdjustStackForPutArgStk(putArgStk, false);
 
-        // If there are no GC references in this field list and the argument is either larger than 16 bytes or the
-        // argument contains padding, we will pre-adjust the stack pointer and use stores instead of pushes.
-        const bool preAdjustStack =
-            (putArgStk->gtNumberReferenceSlots == 0) &&
-            ((argSize > 16) || (putArgStk->gtPutArgStkKind != GenTreePutArgStk::PutArgStkKindRepInstr));
-        if (preAdjustStack)
-        {
-            inst_RV_IV(INS_sub, REG_SPBASE, argSize, EA_PTRSIZE);
-            currentOffset = 0;
-            genStackLevel += argSize;
-        }
-
+        // If the stack was not pre-adjusted, set the current field offset to the size of the struct arg (which must be
+        // a multiple of the target pointer size). Otherwise, set the offset to 0.
+        int      currentOffset   = preAdjustedStack ? 0 : argSize;
         unsigned prevFieldOffset = argSize;
         for (GenTreeFieldList* current = fieldList; current != nullptr; current = current->Rest())
         {
@@ -7449,9 +7457,9 @@ void CodeGen::genPutArgStk(GenTreePtr treeNode)
 
             // We can use a push instruction for any slot-like field.
             //
-            // NOTE: if the field is of GC type, we must use a push instruction, since the emmitter is not otherwise
+            // NOTE: if the field is of GC type, we must use a push instruction, since the emitter is not otherwise
             // able to detect stores into the outgoing argument area of the stack on x86.
-            const bool usePush = !preAdjustStack && fieldIsSlot;
+            const bool usePush = !preAdjustedStack && fieldIsSlot;
             assert(usePush || !varTypeIsGC(fieldType));
 
             // Adjust the stack if necessary. If we are going to generate a `push` instruction, this moves the stack
@@ -7460,7 +7468,7 @@ void CodeGen::genPutArgStk(GenTreePtr treeNode)
             const int desiredOffset = current->gtFieldOffset + (usePush ? fieldSize : 0);
             if (currentOffset > desiredOffset)
             {
-                assert(!preAdjustStack);
+                assert(!preAdjustedStack);
 
                 // The GC encoder requires that the stack remain 4-byte aligned at all times. Round the adjustment up
                 // to the next multiple of 4. If we are going to generate a `push` instruction, the adjustment must
@@ -7519,35 +7527,35 @@ void CodeGen::genPutArgStk(GenTreePtr treeNode)
     }
 #else // !_TARGET_X86_
     {
-        unsigned baseVarNum = getBaseVarForPutArgStk(treeNode);
+        unsigned baseVarNum = getBaseVarForPutArgStk(putArgStk);
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
 
         if (varTypeIsStruct(targetType))
         {
             m_stkArgVarNum = baseVarNum;
-            m_stkArgOffset = treeNode->AsPutArgStk()->getArgOffset();
-            genPutStructArgStk(treeNode->AsPutArgStk());
+            m_stkArgOffset = putArgStk->getArgOffset();
+            genPutStructArgStk(putArgStk);
             m_stkArgVarNum = BAD_VAR_NUM;
             return;
         }
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
         noway_assert(targetType != TYP_STRUCT);
-        assert(!varTypeIsFloating(targetType) || (targetType == treeNode->gtGetOp1()->TypeGet()));
+        assert(!varTypeIsFloating(targetType) || (targetType == putArgStk->gtOp1->TypeGet()));
 
         // Get argument offset on stack.
         // Here we cross check that argument offset hasn't changed from lowering to codegen since
         // we are storing arg slot number in GT_PUTARG_STK node in lowering phase.
-        int              argOffset      = treeNode->AsPutArgStk()->getArgOffset();
+        int              argOffset      = putArgStk->getArgOffset();
 
 #ifdef DEBUG
-        fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(treeNode->AsPutArgStk()->gtCall, treeNode);
+        fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(putArgStk->gtCall, putArgStk);
         assert(curArgTabEntry);
         assert(argOffset == (int)curArgTabEntry->slotNum * TARGET_POINTER_SIZE);
 #endif
 
-        GenTreePtr data = treeNode->gtGetOp1();
+        GenTreePtr data = putArgStk->gtOp1;
 
         if (data->isContained())
         {
@@ -7655,15 +7663,13 @@ void CodeGen::genStoreRegToStackArg(var_types type, regNumber srcReg, int offset
 //                it generates the gcinfo as well.
 //
 // Arguments
-//    treeNode      - the GT_PUTARG_STK node
+//    putArgStk - the GT_PUTARG_STK node
 //
 // Notes:
 //    In the case of fixed out args, the caller must have set m_stkArgVarNum to the variable number
 //    corresponding to the argument area (where we will put the argument on the stack).
 //    For tail calls this is the baseVarNum = 0.
 //    For non tail calls this is the outgoingArgSpace.
-
-//
 void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
 {
     var_types targetType = putArgStk->TypeGet();
@@ -7682,10 +7688,10 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
     {
         switch (putArgStk->gtPutArgStkKind)
         {
-            case GenTreePutArgStk::PutArgStkKindRepInstr:
+            case GenTreePutArgStk::Kind::RepInstr:
                 genStructPutArgRepMovs(putArgStk);
                 break;
-            case GenTreePutArgStk::PutArgStkKindUnroll:
+            case GenTreePutArgStk::Kind::Unroll:
                 genStructPutArgUnroll(putArgStk);
                 break;
             default:
@@ -7698,6 +7704,12 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
         CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef _TARGET_X86_
+        // On x86, any struct that has contains GC references must be stored to the stack using `push` instructions so
+        // that the emitter properly detects the need to update the method's GC information.
+        //
+        // Strictly speaking, it is only necessary to use `push` to store the GC references themselves, so for structs
+        // with large numbers of consecutive non-GC-ref-typed fields, we may be able to improve the code size in the
+        // future.
         assert(m_pushStkArg);
 
         GenTree*       srcAddr  = putArgStk->gtGetOp1()->gtGetOp1();
