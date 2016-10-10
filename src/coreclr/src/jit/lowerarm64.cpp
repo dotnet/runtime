@@ -990,7 +990,7 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
             // late arg that is not passed in a register
             assert(argNode->gtOper == GT_PUTARG_STK);
 
-            TreeNodeInfoInitPutArgStk(argNode, curArgTabEntry);
+            TreeNodeInfoInitPutArgStk(argNode->AsPutArgStk(), curArgTabEntry);
             continue;
         }
 
@@ -1116,7 +1116,7 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
 
                 assert(curArgTabEntry->regNum == REG_STK);
 
-                TreeNodeInfoInitPutArgStk(arg, curArgTabEntry);
+                TreeNodeInfoInitPutArgStk(arg->AsPutArgStk(), curArgTabEntry);
             }
             else
             {
@@ -1155,7 +1155,7 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
 // Notes:
 //    Set the child node(s) to be contained when we have a multireg arg
 //
-void Lowering::TreeNodeInfoInitPutArgStk(GenTree* argNode, fgArgTabEntryPtr info)
+void Lowering::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode, fgArgTabEntryPtr info)
 {
     assert(argNode->gtOper == GT_PUTARG_STK);
 
