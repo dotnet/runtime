@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.CodeDom.Compiler;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Reflection;
@@ -189,6 +190,17 @@ namespace System.CodeDom.Tests
                 sb.Length--;
             }
             return sb.ToString();
+        }
+    }
+
+    public static class Common
+    {
+        public static IEnumerable<T> ToIEnumerable<T>(this IEnumerator<T> enumerator)
+        {
+            while (enumerator.MoveNext())
+            {
+                yield return enumerator.Current;
+            }
         }
     }
 }
