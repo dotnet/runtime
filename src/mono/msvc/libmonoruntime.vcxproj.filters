@@ -253,6 +253,9 @@
     <ClCompile Include="..\mono\metadata\sgen-os-coop.c">
       <Filter>Source Files\sgen</Filter>
     </ClCompile>
+    <ClCompile Include="..\mono\metadata\socket-io-windows.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\mono\metadata\appdomain.h">
@@ -499,6 +502,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\mono\metadata\sre-internals.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mono\metadata\socket-io-windows-internals.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

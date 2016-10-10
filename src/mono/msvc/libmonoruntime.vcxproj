@@ -26,6 +26,7 @@
     <ClCompile Include="..\mono\metadata\class.c" />
     <ClCompile Include="..\mono\metadata\cominterop.c" />
     <ClCompile Include="..\mono\metadata\console-win32.c" />
+    <ClCompile Include="..\mono\metadata\socket-io-windows.c" />
     <ClCompile Include="..\mono\metadata\w32mutex-win32.c" />
     <ClCompile Include="..\mono\metadata\w32semaphore-win32.c" />
     <ClCompile Include="..\mono\metadata\w32event-win32.c" />
@@ -144,6 +145,7 @@
     <ClInclude Include="..\mono\metadata\seq-points-data.h" />
     <ClInclude Include="..\mono\metadata\sgen-bridge-internals.h" />
     <ClInclude Include="..\mono\metadata\sgen-client-mono.h" />
+    <ClInclude Include="..\mono\metadata\socket-io-windows-internals.h" />
     <ClInclude Include="..\mono\metadata\threadpool-ms-io.h" />
     <ClInclude Include="..\mono\metadata\threadpool-ms.h" />
     <ClInclude Include="..\mono\sgen\gc-internal-agnostic.h" />
