@@ -412,10 +412,10 @@ is_managed_binary (const char *filename)
 	off_t new_offset;
 	unsigned char buffer[8];
 	off_t file_size, optional_header_offset;
-	off_t pe_header_offset;
+	off_t pe_header_offset, clr_header_offset;
 	gboolean managed = FALSE;
 	int num_read;
-	guint32 first_word, second_word;
+	guint32 first_word, second_word, magic_number;
 	
 	/* If we are unable to open the file, then we definitely
 	 * can't say that it is managed. The child mono process
@@ -480,13 +480,34 @@ is_managed_binary (const char *filename)
 	if ((num_read != 2) || ((buffer[0] | (buffer[1] << 8)) < 216))
 		goto leave;
 
+	optional_header_offset = pe_header_offset + 24;
+
+	/* Read the PE magic number */
+	new_offset = lseek (file, optional_header_offset, SEEK_SET);
+	
+	if (new_offset != optional_header_offset)
+		goto leave;
+
+	num_read = read (file, buffer, 2);
+
+	if (num_read != 2)
+		goto leave;
+
+	magic_number = (buffer[0] | (buffer[1] << 8));
+	
+	if (magic_number == 0x10B)  // PE32
+		clr_header_offset = 208;
+	else if (magic_number == 0x20B)  // PE32+
+		clr_header_offset = 224;
+	else
+		goto leave;
+
 	/* Read the CLR header address and size fields. These will be
 	 * zero if the binary is not managed.
 	 */
-	optional_header_offset = pe_header_offset + 24;
-	new_offset = lseek (file, optional_header_offset + 208, SEEK_SET);
+	new_offset = lseek (file, optional_header_offset + clr_header_offset, SEEK_SET);
 
-	if (new_offset != optional_header_offset + 208)
+	if (new_offset != optional_header_offset + clr_header_offset)
 		goto leave;
 
 	num_read = read (file, buffer, 8);
