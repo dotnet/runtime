@@ -8,7 +8,7 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
-namespace System.Net.Mail
+namespace System.Net
 {
     internal class TlsStream : NetworkStream
     {
