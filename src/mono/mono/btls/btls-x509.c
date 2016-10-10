@@ -139,7 +139,7 @@ int
 mono_btls_x509_get_serial_number (X509 *x509, char *buffer, int size, int mono_style)
 {
 	ASN1_INTEGER *serial;
-	char *pos;
+	unsigned char *temp, *p;
 	int len, idx;
 
 	serial = X509_get_serialNumber (x509);
@@ -151,19 +151,24 @@ mono_btls_x509_get_serial_number (X509 *x509, char *buffer, int size, int mono_s
 		return serial->length;
 	}
 
-	pos = buffer;
-	len = 0;
+	temp = OPENSSL_malloc (serial->length + 1);
+	if (!temp)
+		return 0;
 
-	for (idx = serial->length - 1; idx >= 0; idx--) {
-		*pos++ = serial->data [idx];
-		len++;
+	p = temp;
+	len = i2c_ASN1_INTEGER (serial, &p);
+
+	if (!len) {
+		OPENSSL_free (temp);
+		return 0;
 	}
 
-	if (serial->data [0] >= 0x80) {
-		*pos++ = 0;
-		len++;
+	for (idx = 0; idx < len; idx++) {
+		buffer [idx] = *(--p);
 	}
+	buffer [len] = 0;
 
+	OPENSSL_free (temp);
 	return len;
 }
 
