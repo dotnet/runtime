@@ -462,6 +462,16 @@ mono_gc_get_logfile (void)
 }
 
 void
+mono_gc_params_set (const char* options)
+{
+}
+
+void
+mono_gc_debug_set (const char* options)
+{
+}
+
+void
 mono_gc_conservatively_scan_area (void *start, void *end)
 {
 	g_assert_not_reached ();

@@ -1434,6 +1434,10 @@ mono_jit_parse_options (int argc, char * argv[])
 			
 			if (!mono_debugger_insert_breakpoint (argv [++i], FALSE))
 				fprintf (stderr, "Error: invalid method name '%s'\n", argv [i]);
+		} else if (strncmp (argv[i], "--gc-params=", 12) == 0) {
+			mono_gc_params_set (argv[i] + 12);
+		} else if (strncmp (argv[i], "--gc-debug=", 11) == 0) {
+			mono_gc_debug_set (argv[i] + 11);
 		} else if (strcmp (argv [i], "--llvm") == 0) {
 #ifndef MONO_ARCH_LLVM_SUPPORTED
 			fprintf (stderr, "Mono Warning: --llvm not supported on this platform.\n");
@@ -1679,6 +1683,10 @@ mono_main (int argc, char* argv[])
 			switch_gc (argv, "sgen");
 		} else if (strcmp (argv [i], "--gc=boehm") == 0) {
 			switch_gc (argv, "boehm");
+		} else if (strncmp (argv[i], "--gc-params=", 12) == 0) {
+			mono_gc_params_set (argv[i] + 12);
+		} else if (strncmp (argv[i], "--gc-debug=", 11) == 0) {
+			mono_gc_debug_set (argv[i] + 11);
 		}
 #ifdef TARGET_OSX
 		else if (strcmp (argv [i], "--arch=32") == 0) {
