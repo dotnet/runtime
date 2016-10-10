@@ -4477,7 +4477,7 @@ struct GenTreePutArgStk : public GenTreeUnOp
         , gtSlotNum(slotNum)
         , putInIncomingArgArea(_putInIncomingArgArea)
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
-        , gtPutArgStkKind(PutArgStkKindInvalid)
+        , gtPutArgStkKind(Kind::Invalid)
         , gtNumSlots(numSlots)
         , gtNumberReferenceSlots(0)
         , gtGcPtrs(nullptr)
@@ -4498,7 +4498,7 @@ struct GenTreePutArgStk : public GenTreeUnOp
         , gtSlotNum(slotNum)
         , putInIncomingArgArea(_putInIncomingArgArea)
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
-        , gtPutArgStkKind(PutArgStkKindInvalid)
+        , gtPutArgStkKind(Kind::Invalid)
         , gtNumSlots(numSlots)
         , gtNumberReferenceSlots(0)
         , gtGcPtrs(nullptr)
@@ -4518,7 +4518,7 @@ struct GenTreePutArgStk : public GenTreeUnOp
         : GenTreeUnOp(oper, type DEBUGARG(largeNode))
         , gtSlotNum(slotNum)
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
-        , gtPutArgStkKind(PutArgStkKindInvalid)
+        , gtPutArgStkKind(Kind::Invalid)
         , gtNumSlots(numSlots)
         , gtNumberReferenceSlots(0)
         , gtGcPtrs(nullptr)
@@ -4537,7 +4537,7 @@ struct GenTreePutArgStk : public GenTreeUnOp
         : GenTreeUnOp(oper, type, op1 DEBUGARG(largeNode))
         , gtSlotNum(slotNum)
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
-        , gtPutArgStkKind(PutArgStkKindInvalid)
+        , gtPutArgStkKind(Kind::Invalid)
         , gtNumSlots(numSlots)
         , gtNumberReferenceSlots(0)
         , gtGcPtrs(nullptr)
@@ -4595,9 +4595,11 @@ struct GenTreePutArgStk : public GenTreeUnOp
     // TODO-Throughput: The following information should be obtained from the child
     // block node.
 
-    enum PutArgStkKind : __int8{PutArgStkKindInvalid, PutArgStkKindRepInstr, PutArgStkKindUnroll};
+    enum class Kind : __int8{
+        Invalid, RepInstr, Unroll, AllSlots,
+    };
 
-    PutArgStkKind gtPutArgStkKind;
+    Kind gtPutArgStkKind;
 
     unsigned gtNumSlots;             // Number of slots for the argument to be passed on stack
     unsigned gtNumberReferenceSlots; // Number of reference slots.
