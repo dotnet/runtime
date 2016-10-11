@@ -3175,7 +3175,7 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this_arg, Mo
 		return NULL;
 	}
 
-	if ((mono_class_get_flags (m->klass) & TYPE_ATTRIBUTE_ABSTRACT) && !strcmp (m->name, ".ctor") && !this_arg) {
+	if (mono_class_is_abstract (m->klass) && !strcmp (m->name, ".ctor") && !this_arg) {
 		mono_gc_wbarrier_generic_store (exc, (MonoObject*) mono_exception_from_name_msg (mono_defaults.corlib, "System.Reflection", "TargetException", "Cannot invoke constructor of an abstract class."));
 		return NULL;
 	}
@@ -7037,7 +7037,7 @@ ves_icall_System_Runtime_Activation_ActivationServices_AllocateUninitializedClas
 	if (mono_error_set_pending_exception (&error))
 		return NULL;
 
-	if (MONO_CLASS_IS_INTERFACE (klass) || (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_ABSTRACT)) {
+	if (MONO_CLASS_IS_INTERFACE (klass) || mono_class_is_abstract (klass)) {
 		mono_set_pending_exception (mono_get_exception_argument ("type", "Type cannot be instantiated"));
 		return NULL;
 	}

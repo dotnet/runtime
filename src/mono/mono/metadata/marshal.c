@@ -5482,7 +5482,7 @@ emit_marshal_safehandle (EmitMarshalContext *m, int argnum, MonoType *t,
 		MonoMethod *ctor = NULL;
 		int intptr_handle_slot;
 		
-		if (mono_class_get_flags (t->data.klass) & TYPE_ATTRIBUTE_ABSTRACT){
+		if (mono_class_is_abstract (t->data.klass)) {
 			mono_mb_emit_byte (mb, CEE_POP);
 			mono_mb_emit_exception_marshal_directive (mb, g_strdup ("Returned SafeHandles should not be abstract"));
 			break;

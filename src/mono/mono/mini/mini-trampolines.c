@@ -1197,7 +1197,7 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *arg, guint8* tr
 		if (delegate->target && 
 			method->flags & METHOD_ATTRIBUTE_VIRTUAL && 
 			method->flags & METHOD_ATTRIBUTE_ABSTRACT &&
-			mono_class_get_flags (method->klass) & TYPE_ATTRIBUTE_ABSTRACT) {
+			mono_class_is_abstract (method->klass)) {
 			method = mono_object_get_virtual_method (delegate->target, method);
 			enable_caching = FALSE;
 		}

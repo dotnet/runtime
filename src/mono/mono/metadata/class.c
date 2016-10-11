@@ -4630,7 +4630,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	// it can happen (for injected generic array interfaces) that the same slot is
 	// processed multiple times (those interfaces have overlapping slots), and it
 	// will not always be the first pass the one that fills the slot.
-	if (! (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_ABSTRACT)) {
+	if (!mono_class_is_abstract (klass)) {
 		for (i = 0; i < klass->interface_offsets_count; i++) {
 			int ic_offset;
 			int im_index;
@@ -4774,7 +4774,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	virt_methods = NULL;
 
 	/* Ensure that all vtable slots are filled with concrete instance methods */
-	if (!(mono_class_get_flags (klass) & TYPE_ATTRIBUTE_ABSTRACT)) {
+	if (!mono_class_is_abstract (klass)) {
 		for (i = 0; i < cur_slot; ++i) {
 			if (vtable [i] == NULL || (vtable [i]->flags & (METHOD_ATTRIBUTE_ABSTRACT | METHOD_ATTRIBUTE_STATIC))) {
 				char *type_name = mono_type_get_full_name (klass);

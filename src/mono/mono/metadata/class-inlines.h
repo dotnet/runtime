@@ -6,6 +6,7 @@
 #define __MONO_METADATA_CLASS_INLINES_H__
 
 #include <mono/metadata/class-internals.h>
+#include <mono/metadata/tabledefs.h>
 
 static inline gboolean
 mono_class_is_def (MonoClass *class)
@@ -43,5 +44,10 @@ mono_class_is_pointer (MonoClass *class)
 	return class->class_kind == MONO_CLASS_POINTER;
 }
 
+static inline gboolean
+mono_class_is_abstract (MonoClass *class)
+{
+	return mono_class_get_flags (class) & TYPE_ATTRIBUTE_ABSTRACT;
+}
 
 #endif

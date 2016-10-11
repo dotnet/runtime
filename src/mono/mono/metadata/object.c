@@ -2290,7 +2290,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 			pvt->vtable [i] = NULL;
 	}
 
-	if (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_ABSTRACT) {
+	if (mono_class_is_abstract (klass)) {
 		/* create trampolines for abstract methods */
 		for (k = klass; k; k = k->parent) {
 			MonoMethod* m;
