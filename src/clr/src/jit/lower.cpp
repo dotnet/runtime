@@ -928,13 +928,12 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
 
 #if FEATURE_FASTTAILCALL
         putArg = new (comp, GT_PUTARG_STK)
-            GenTreePutArgStk(GT_PUTARG_STK, type, arg, info->slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(info->numSlots)
-                                                           PUT_STRUCT_ARG_STK_ONLY_ARG(info->isStruct),
+            GenTreePutArgStk(GT_PUTARG_STK, type, arg, info->slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(info->numSlots),
                              call->IsFastTailCall() DEBUGARG(call));
 #else
         putArg = new (comp, GT_PUTARG_STK)
-            GenTreePutArgStk(GT_PUTARG_STK, type, arg, info->slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(info->numSlots)
-                                                           PUT_STRUCT_ARG_STK_ONLY_ARG(info->isStruct) DEBUGARG(call));
+            GenTreePutArgStk(GT_PUTARG_STK, type, arg,
+                             info->slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(info->numSlots) DEBUGARG(call));
 #endif
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
