@@ -202,10 +202,10 @@ private:
 #endif // FEATURE_SIMD
     void TreeNodeInfoInitCast(GenTree* tree);
 #ifdef _TARGET_ARM64_
-    void TreeNodeInfoInitPutArgStk(GenTree* argNode, fgArgTabEntryPtr info);
+    void TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode, fgArgTabEntryPtr info);
 #endif // _TARGET_ARM64_
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
-    void TreeNodeInfoInitPutArgStk(GenTree* tree);
+    void TreeNodeInfoInitPutArgStk(GenTreePutArgStk* tree);
 #endif // FEATURE_PUT_STRUCT_ARG_STK
     void TreeNodeInfoInitLclHeap(GenTree* tree);
 
