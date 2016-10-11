@@ -1,26 +1,25 @@
-Adding new public APIs to mscorlib
-==================================
+Adding new public APIs to System.Private.CoreLib
+================================================
 
-Many of the CoreFX libraries type-forward their public APIs to the implementations in mscorlib.
-- The CoreFX build uses published contracts for mscorlib, and the CoreFX test build uses published contracts for some of the CoreFX libraries.
-- Some of the CoreFX libraries are not built in the CoreFX repository. For example, System.Runtime.Loader.dll is purely a facade and type-forwards everything to mscorlib. These libraries are built and published through a separate process.
-- Hence, when adding a new public API to mscorlib, changes must be staged to ensure that new prerequisites are published before they are used.
+Many of the CoreFX libraries type-forward their public APIs to the implementations in System.Private.CoreLib.
+- The CoreFX build uses System.Private.CoreLib via Microsoft.TargetingPack.Private.CoreCLR Nuget package.
+- Some of the CoreFX libraries are not built in the CoreFX repository. For example, System.Runtime.Loader.dll is purely a facade and type-forwards everything to System.Private.CoreLib. These libraries are built and published through a separate process.
+- Hence, when adding a new public API to System.Private.CoreLib, changes must be staged to ensure that new prerequisites are published before they are used.
 
 **Staging the changes**
 
-Make the changes to CoreCLR, including mscorlib
+Make the changes to CoreCLR, including System.Private.CoreLib
 - Update `coreclr/src/mscorlib/model.xml` with the new APIs. APIs that are not listed in this file will be stripped out prior to publishing.
-- Note that at the moment, merging changes with new public APIs will cause an internal build failure. Please work with your PR reviewer to have these build breaks be fixed soon after merging, otherwise it will block the publishing process.
 - Merge the changes
-- Wait for a new mscorlib contract to be published. Check the latest published version [here](http://myget.org/gallery/dotnet-core).
+- Wait for a new System.Private.CoreLib to be published. Check the latest published version [here](https://dotnet.myget.org/feed/dotnet-core/package/nuget/Microsoft.TargetingPack.Private.CoreCLR).
 
-Make the changes to CoreFX consuming the new APIs in mscorlib
+Make the changes to CoreFX consuming the new APIs in System.Private.CoreLib
 - If the changes are to libraries that are built out of the CoreFX repository:
-  - You will likely see a build failure until a new mscorlib contract is published
+  - You will likely see a build failure until a new System.Private.CoreLib contract is published
 - If the changes are to libraries that are **not** built out of the CoreFX repository:
   - For example, pure facades such as System.Runtime.Loader.dll
   - There will likely not be a build failure
-  - But you will still need to wait for the new mscorlib contract to be published before merging the change, otherwise, facade generation will fail
+  - But you will still need to wait for the new System.Private.CoreLib contract to be published before merging the change, otherwise, facade generation will fail
 - Merge the changes
 - Wait for new contracts to be published for libraries with new APIs. Check the latest published versions [here](http://myget.org/gallery/dotnet-core).
 
