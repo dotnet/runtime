@@ -137,6 +137,7 @@ namespace Internal.Runtime.Augments
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
         }
 
+#if FEATURE_COMINTEROP_APARTMENT_SUPPORT
         [SecurityCritical]  // auto-generated
         protected bool SetApartmentStateHelper(ApartmentState state, bool fireMDAOnMismatch)
         {
@@ -162,6 +163,7 @@ namespace Internal.Runtime.Augments
         [SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         protected extern int SetApartmentStateNative(int state, bool fireMDAOnMismatch);
+#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
         /*=========================================================================
         ** Interrupts a thread that is inside a Wait(), Sleep() or Join().  If that
