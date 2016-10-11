@@ -8,7 +8,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.ObjectModel.Tests</AssemblyName>
     <RootNamespace>System.ObjectModel.Tests</RootNamespace>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TargetGroup)'==''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
   </PropertyGroup>
@@ -39,6 +39,7 @@
     <Compile Include="KeyedCollection\ConcreteTestClasses.cs" />
     <Compile Include="KeyedCollection\Utils.cs" />
     <Compile Include="ObservableCollection\ObservableCollection_ConstructorAndPropertyTests.cs" />
+    <Compile Include="ObservableCollection\ObservableCollection_ConstructorAndPropertyTests.netstandard1.7.cs" Condition="'$(TargetGroup)'==''" />
     <Compile Include="ObservableCollection\ObservableCollection_MethodsTest.cs" />
     <Compile Include="ReadOnlyDictionary\ReadOnlyDictionaryTests.cs" />
     <Compile Include="ReadOnlyObservableCollection\ReadOnlyObservableCollection_EventsTests.cs" />

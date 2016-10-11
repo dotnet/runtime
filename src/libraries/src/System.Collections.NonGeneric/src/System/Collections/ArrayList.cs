@@ -34,7 +34,7 @@ namespace System.Collections
     [DebuggerTypeProxy(typeof(System.Collections.ArrayList.ArrayListDebugView))]
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
-    public class ArrayList : IList
+    public class ArrayList : IList, ICloneable
     {
         private Object[] _items;
         [ContractPublicPropertyName("Count")]

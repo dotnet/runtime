@@ -44,12 +44,24 @@ namespace System.Collections.ObjectModel
         /// same order they are read by the enumerator of the collection.
         /// </remarks>
         /// <exception cref="ArgumentNullException"> collection is a null reference </exception>
-        public ObservableCollection(IEnumerable<T> collection) : base(CreateCopy(collection)) { }
+        public ObservableCollection(IEnumerable<T> collection) : base(CreateCopy(collection, nameof(collection))) { }
 
-        private static List<T> CreateCopy(IEnumerable<T> collection)
+        /// <summary>
+        /// Initializes a new instance of the ObservableCollection class
+        /// that contains elements copied from the specified list
+        /// </summary>
+        /// <param name="list">The list whose elements are copied to the new list.</param>
+        /// <remarks>
+        /// The elements are copied onto the ObservableCollection in the
+        /// same order they are read by the enumerator of the list.
+        /// </remarks>
+        /// <exception cref="ArgumentNullException"> list is a null reference </exception>
+        public ObservableCollection(List<T> list) : base(CreateCopy(list, nameof(list))) { }
+
+        private static List<T> CreateCopy(IEnumerable<T> collection, string paramName)
         {
             if (collection == null)
-                throw new ArgumentNullException(nameof(collection));
+                throw new ArgumentNullException(paramName);
 
             return new List<T>(collection);
         }

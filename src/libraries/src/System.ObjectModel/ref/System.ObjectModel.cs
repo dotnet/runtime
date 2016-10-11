@@ -28,6 +28,7 @@ namespace System.Collections.ObjectModel
     public partial class ObservableCollection<T> : System.Collections.ObjectModel.Collection<T>, System.Collections.Specialized.INotifyCollectionChanged, System.ComponentModel.INotifyPropertyChanged
     {
         public ObservableCollection() { }
+        public ObservableCollection(System.Collections.Generic.List<T> list) { }
         public ObservableCollection(System.Collections.Generic.IEnumerable<T> collection) { }
         public virtual event System.Collections.Specialized.NotifyCollectionChangedEventHandler CollectionChanged { add { } remove { } }
         protected virtual event System.ComponentModel.PropertyChangedEventHandler PropertyChanged { add { } remove { } }

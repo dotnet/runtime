@@ -12,7 +12,7 @@ namespace System.Collections.ObjectModel.Tests
     /// <summary>
     /// Tests the public properties and constructor in ObservableCollection<T>.
     /// </summary>
-    public class ConstructorAndPropertyTests
+    public partial class ConstructorAndPropertyTests
     {
         /// <summary>
         /// Tests that the parameterless constructor works.
@@ -69,7 +69,7 @@ namespace System.Collections.ObjectModel.Tests
         [Fact]
         public static void IEnumerableConstructorTest_Negative()
         {
-            Assert.Throws<ArgumentNullException>("collection", () => new ObservableCollection<string>(null));
+            Assert.Throws<ArgumentNullException>("collection", () => new ObservableCollection<string>((IEnumerable<string>)null));
         }
 
         /// <summary>
