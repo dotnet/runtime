@@ -212,7 +212,7 @@ namespace System.Xml.Schema
             _validationEventSender = this;
             _currentState = ValidatorState.None;
             _textValue = new StringBuilder(100);
-            _xmlResolver = System.Xml.XmlConfiguration.XmlReaderSection.CreateDefaultResolver();
+            _xmlResolver = null;
             _contextQName = new XmlQualifiedName(); //Re-use qname
             Reset();
 
@@ -2373,7 +2373,7 @@ namespace System.Xml.Schema
                             else
                             {
                                 // for element, Reader.Value = "";
-                                if (LocalAppContextSwitches.IgnoreEmptyKeySequences)
+                                if (XmlAppContextSwitches.IgnoreEmptyKeySequences)
                                 {
                                     if (typedValue != null && stringValue.Length != 0)
                                     {

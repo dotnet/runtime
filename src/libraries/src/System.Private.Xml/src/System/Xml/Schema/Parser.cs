@@ -44,7 +44,7 @@ namespace System.Xml.Schema
             _nameTable = nameTable;
             _schemaNames = schemaNames;
             _eventHandler = eventHandler;
-            _xmlResolver = System.Xml.XmlConfiguration.XmlReaderSection.CreateDefaultResolver();
+            _xmlResolver = null;
             _processMarkup = true;
             _dummyDocument = new XmlDocument();
         }

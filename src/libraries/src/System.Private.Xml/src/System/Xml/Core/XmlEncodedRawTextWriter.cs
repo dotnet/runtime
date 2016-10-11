@@ -1516,7 +1516,7 @@ namespace System.Xml
                 {
                     int lowChar = pSrc[1];
                     if (lowChar >= XmlCharType.SurLowStart &&
-                        (LocalAppContextSwitches.DontThrowOnInvalidSurrogatePairs || lowChar <= XmlCharType.SurLowEnd))
+                        (XmlAppContextSwitches.DontThrowOnInvalidSurrogatePairs || lowChar <= XmlCharType.SurLowEnd))
                     {
                         pDst[0] = (char)ch;
                         pDst[1] = (char)lowChar;

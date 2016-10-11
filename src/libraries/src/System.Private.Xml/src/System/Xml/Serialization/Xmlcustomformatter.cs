@@ -91,7 +91,7 @@ namespace System.Xml.Serialization
 
         internal static string FromTime(DateTime value)
         {
-            if (!LocalAppContextSwitches.IgnoreKindInUtcTimeSerialization && value.Kind == DateTimeKind.Utc)
+            if (!XmlAppContextSwitches.IgnoreKindInUtcTimeSerialization && value.Kind == DateTimeKind.Utc)
             {
                 return XmlConvert.ToString(DateTime.MinValue + value.TimeOfDay, "HH:mm:ss.fffffffZ");
             }
@@ -389,7 +389,7 @@ namespace System.Xml.Serialization
 
         internal static DateTime ToTime(string value)
         {
-            if (!LocalAppContextSwitches.IgnoreKindInUtcTimeSerialization)
+            if (!XmlAppContextSwitches.IgnoreKindInUtcTimeSerialization)
             {
                 return DateTime.ParseExact(value, s_allTimeFormats, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite | DateTimeStyles.NoCurrentDateDefault | DateTimeStyles.RoundtripKind);
             }
