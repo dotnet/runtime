@@ -185,7 +185,7 @@ call :PrecompileFX
 :SkipPrecompileFX
 
 if  defined __GenerateLayoutOnly (
-    exit /b 1
+    exit /b 0
 )
 
 if not exist %CORE_ROOT%\coreclr.dll (
