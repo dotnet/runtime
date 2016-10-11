@@ -1259,9 +1259,9 @@ FCFuncStart(gRuntimeThreadFuncs)
     FCFuncElement("GetPriorityNative", ThreadNative::GetPriority)
     FCFuncElement("SetPriorityNative", ThreadNative::SetPriority)
     FCFuncElement("GetThreadStateNative", ThreadNative::GetThreadState)
-#if !defined(FEATURE_COMINTEROP_APARTMENT_SUPPORT) && !defined(FEATURE_CORECLR)
-    FCFuncElement("SetApartmentStateNative", ThreadNative::SetApartmentState)
+#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     FCFuncElement("GetApartmentStateNative", ThreadNative::GetApartmentState)
+    FCFuncElement("SetApartmentStateNative", ThreadNative::SetApartmentState)
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
     FCFuncElement("InterruptInternal", ThreadNative::Interrupt)
     FCFuncElement("JoinInternal", ThreadNative::Join)
