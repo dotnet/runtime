@@ -761,7 +761,7 @@ class_key_extract (gpointer value)
 static gpointer*
 class_next_value (gpointer value)
 {
-	MonoClass *klass = (MonoClass *)value;
+	MonoClassDef *klass = (MonoClassDef *)value;
 
 	return (gpointer*)&klass->next_class_cache;
 }
