@@ -1111,12 +1111,14 @@ LinearScan::LinearScan(Compiler* theCompiler)
 #endif
 
     dumpTerse = (JitConfig.JitDumpTerseLsra() != 0);
-
 #endif // DEBUG
+
     availableIntRegs = (RBM_ALLINT & ~compiler->codeGen->regSet.rsMaskResvd);
+
 #if ETW_EBP_FRAMED
     availableIntRegs &= ~RBM_FPBASE;
 #endif // ETW_EBP_FRAMED
+
     availableFloatRegs  = RBM_ALLFLOAT;
     availableDoubleRegs = RBM_ALLDOUBLE;
 
@@ -1327,6 +1329,13 @@ void LinearScan::setBlockSequence()
         blockInfo[block->bbNum].hasCriticalInEdge  = false;
         blockInfo[block->bbNum].hasCriticalOutEdge = false;
         blockInfo[block->bbNum].weight             = block->bbWeight;
+
+#if TRACK_LSRA_STATS
+        blockInfo[block->bbNum].spillCount         = 0;
+        blockInfo[block->bbNum].copyRegCount       = 0;
+        blockInfo[block->bbNum].resolutionMovCount = 0;
+        blockInfo[block->bbNum].splitEdgeCount     = 0;
+#endif // TRACK_LSRA_STATS
 
         if (block->GetUniquePred(compiler) == nullptr)
         {
@@ -1719,6 +1728,17 @@ void LinearScan::doLinearScan()
     compiler->EndPhase(PHASE_LINEAR_SCAN_ALLOC);
     resolveRegisters();
     compiler->EndPhase(PHASE_LINEAR_SCAN_RESOLVE);
+
+#if TRACK_LSRA_STATS
+    if ((JitConfig.DisplayLsraStats() != 0)
+#ifdef DEBUG
+        || VERBOSE
+#endif
+        )
+    {
+        dumpLsraStats(jitstdout);
+    }
+#endif // TRACK_LSRA_STATS
 
     DBEXEC(VERBOSE, TupleStyleDump(LSRA_DUMP_POST));
 
@@ -5957,6 +5977,8 @@ void LinearScan::spillInterval(Interval* interval, RefPosition* fromRefPosition,
     }
 #endif // DEBUG
 
+    INTRACK_STATS(updateLsraStat(LSRA_STAT_SPILL, fromRefPosition->bbNum));
+
     interval->isActive  = false;
     interval->isSpilled = true;
 
@@ -7704,6 +7726,7 @@ void LinearScan::writeRegisters(RefPosition* currentRefPosition, GenTree* tree)
 //   than the one it was spilled from (GT_RELOAD).
 //
 // Arguments:
+//    block             - basic block in which GT_COPY/GT_RELOAD is inserted.
 //    tree              - This is the node to copy or reload.
 //                        Insert copy or reload node between this node and its parent.
 //    multiRegIdx       - register position of tree node for which copy or reload is needed.
@@ -7772,6 +7795,10 @@ void LinearScan::insertCopyOrReload(BasicBlock* block, GenTreePtr tree, unsigned
     else
     {
         oper = GT_COPY;
+
+#if TRACK_LSRA_STATS
+        updateLsraStat(LSRA_STAT_COPY_REG, block->bbNum);
+#endif
     }
 
     // If the parent is a reload/copy node, then tree must be a multi-reg call node
@@ -8895,6 +8922,8 @@ void LinearScan::addResolution(
     {
         interval->isSplit = true;
     }
+
+    INTRACK_STATS(updateLsraStat(LSRA_STAT_RESOLUTION_MOV, block->bbNum));
 }
 
 //------------------------------------------------------------------------
@@ -9368,6 +9397,9 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             // in resolveEdges(), after all the edge resolution has been done (by calling this
             // method for each edge).
             block = compiler->fgSplitEdge(fromBlock, toBlock);
+
+            // Split edges are counted against fromBlock.
+            INTRACK_STATS(updateLsraStat(LSRA_STAT_SPLIT_EDGE, fromBlock->bbNum));
             break;
         default:
             unreached();
@@ -9605,6 +9637,8 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                                    sourceIntervals[sourceReg]->varNum, fromReg);
                         location[sourceReg]              = REG_NA;
                         location[source[otherTargetReg]] = (regNumberSmall)fromReg;
+
+                        INTRACK_STATS(updateLsraStat(LSRA_STAT_RESOLUTION_MOV, block->bbNum));
                     }
                     else
                     {
@@ -9735,6 +9769,126 @@ void TreeNodeInfo::addInternalCandidates(LinearScan* lsra, regMaskTP mask)
     assert(FitsIn<unsigned char>(i));
     internalCandsIndex = (unsigned char)i;
 }
+
+#if TRACK_LSRA_STATS
+// ----------------------------------------------------------
+// updateLsraStat: Increment LSRA stat counter.
+//
+// Arguments:
+//    stat      -   LSRA stat enum
+//    bbNum     -   Basic block to which LSRA stat needs to be
+//                  associated with.
+//
+void LinearScan::updateLsraStat(LsraStat stat, unsigned bbNum)
+{
+    if (bbNum > bbNumMaxBeforeResolution)
+    {
+        // This is a newly created basic block as part of resolution.
+        // These blocks contain resolution moves that are already accounted.
+        return;
+    }
+
+    switch (stat)
+    {
+        case LSRA_STAT_SPILL:
+            ++(blockInfo[bbNum].spillCount);
+            break;
+
+        case LSRA_STAT_COPY_REG:
+            ++(blockInfo[bbNum].copyRegCount);
+            break;
+
+        case LSRA_STAT_RESOLUTION_MOV:
+            ++(blockInfo[bbNum].resolutionMovCount);
+            break;
+
+        case LSRA_STAT_SPLIT_EDGE:
+            ++(blockInfo[bbNum].splitEdgeCount);
+            break;
+
+        default:
+            break;
+    }
+}
+
+// -----------------------------------------------------------
+// dumpLsraStats - dumps Lsra stats to given file.
+//
+// Arguments:
+//    file    -  file to which stats are to be written.
+//
+void LinearScan::dumpLsraStats(FILE* file)
+{
+    unsigned sumSpillCount         = 0;
+    unsigned sumCopyRegCount       = 0;
+    unsigned sumResolutionMovCount = 0;
+    unsigned sumSplitEdgeCount     = 0;
+    UINT64   wtdSpillCount         = 0;
+    UINT64   wtdCopyRegCount       = 0;
+    UINT64   wtdResolutionMovCount = 0;
+
+    fprintf(file, "----------\n");
+    fprintf(file, "LSRA Stats");
+#ifdef DEBUG
+    if (!VERBOSE)
+    {
+        fprintf(file, " : %s\n", compiler->info.compFullName);
+    }
+    else
+    {
+        // In verbose mode no need to print full name
+        // while printing lsra stats.
+        fprintf(file, "\n");
+    }
+#else
+    fprintf(file, " : %s\n", compiler->eeGetMethodFullName(compiler->info.compCompHnd));
+#endif
+
+    fprintf(file, "----------\n");
+
+    for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
+    {
+        if (block->bbNum > bbNumMaxBeforeResolution)
+        {
+            continue;
+        }
+
+        unsigned spillCount         = blockInfo[block->bbNum].spillCount;
+        unsigned copyRegCount       = blockInfo[block->bbNum].copyRegCount;
+        unsigned resolutionMovCount = blockInfo[block->bbNum].resolutionMovCount;
+        unsigned splitEdgeCount     = blockInfo[block->bbNum].splitEdgeCount;
+
+        if (spillCount != 0 || copyRegCount != 0 || resolutionMovCount != 0)
+        {
+            fprintf(file, "BB%02u [%8d]: ", block->bbNum, block->bbWeight);
+            fprintf(file, "SpillCount = %d, ResolutionMovs = %d, SplitEdges = %d, CopyReg = %d\n", spillCount,
+                    resolutionMovCount, splitEdgeCount, copyRegCount);
+        }
+
+        sumSpillCount += spillCount;
+        sumCopyRegCount += copyRegCount;
+        sumResolutionMovCount += resolutionMovCount;
+        sumSplitEdgeCount += splitEdgeCount;
+
+        wtdSpillCount += (UINT64)spillCount * block->bbWeight;
+        wtdCopyRegCount += (UINT64)copyRegCount * block->bbWeight;
+        wtdResolutionMovCount += (UINT64)resolutionMovCount * block->bbWeight;
+    }
+
+    fprintf(file, "Total Spill Count: %d    Weighted: %I64u\n", sumSpillCount, wtdSpillCount);
+    fprintf(file, "Total CopyReg Count: %d   Weighted: %I64u\n", sumCopyRegCount, wtdCopyRegCount);
+    fprintf(file, "Total ResolutionMov Count: %d    Weighted: %I64u\n", sumResolutionMovCount, wtdResolutionMovCount);
+    fprintf(file, "Total number of split edges: %d\n", sumSplitEdgeCount);
+
+    // compute total number of spill temps created
+    unsigned numSpillTemps = 0;
+    for (int i = 0; i < TYP_COUNT; i++)
+    {
+        numSpillTemps += maxSpill[i];
+    }
+    fprintf(file, "Total Number of spill temps created: %d\n\n", numSpillTemps);
+}
+#endif // TRACK_LSRA_STATS
 
 #ifdef DEBUG
 void dumpRegMask(regMaskTP regs)
