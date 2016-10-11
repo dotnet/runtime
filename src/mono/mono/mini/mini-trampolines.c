@@ -594,7 +594,7 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTable *
 		if (mono_class_is_ginst (m->klass))
 			context.class_inst = mono_class_get_generic_class (m->klass)->context.class_inst;
 		else
-			g_assert (!m->klass->generic_container);
+			g_assert (!mono_class_is_gtd (m->klass));
 
 		generic_virtual = mono_arch_find_imt_method (regs, code);
 		g_assert (generic_virtual);
@@ -664,8 +664,8 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTable *
 
 			if (mono_class_is_ginst (klass))
 				context.class_inst = mono_class_get_generic_class (klass)->context.class_inst;
-			else if (klass->generic_container)
-				context.class_inst = klass->generic_container->context.class_inst;
+			else if (mono_class_is_gtd (klass))
+				context.class_inst = mono_class_get_generic_container (klass)->context.class_inst;
 			context.method_inst = method_inst;
 
 			actual_method = mono_class_inflate_generic_method_checked (declaring, &context, error);
@@ -938,7 +938,7 @@ mono_generic_virtual_remoting_trampoline (mgreg_t *regs, guint8 *code, MonoMetho
 	if (mono_class_is_ginst (m->klass))
 		context.class_inst = mono_class_get_generic_class (m->klass)->context.class_inst;
 	else
-		g_assert (!m->klass->generic_container);
+		g_assert (!mono_class_is_gtd (m->klass));
 
 	imt_method = mono_arch_find_imt_method (regs, code);
 	if (imt_method->is_inflated)

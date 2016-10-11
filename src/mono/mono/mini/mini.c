@@ -2422,7 +2422,7 @@ mono_codegen (MonoCompile *cfg)
 		gboolean is_generic = FALSE;
 
 		if (cfg->method->is_inflated || mono_method_get_generic_container (cfg->method) ||
-				cfg->method->klass->generic_container || mono_class_is_ginst (cfg->method->klass)) {
+				mono_class_is_gtd (cfg->method->klass) || mono_class_is_ginst (cfg->method->klass)) {
 			is_generic = TRUE;
 		}
 
@@ -3335,7 +3335,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		cfg->seq_points = g_ptr_array_new ();
 	mono_error_init (&cfg->error);
 
-	if (cfg->compile_aot && !try_generic_shared && (method->is_generic || method->klass->generic_container || method_is_gshared)) {
+	if (cfg->compile_aot && !try_generic_shared && (method->is_generic || mono_class_is_gtd (method->klass) || method_is_gshared)) {
 		cfg->exception_type = MONO_EXCEPTION_GENERIC_SHARING_FAILED;
 		return cfg;
 	}

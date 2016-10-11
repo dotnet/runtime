@@ -1847,7 +1847,7 @@ get_memberref_container (MonoImage *m, guint32 mrp_token, MonoGenericContainer *
 	case 4: /* TypeSpec */
 		klass = mono_class_get_full (m, MONO_TOKEN_TYPE_SPEC | idx, (MonoGenericContext *) container);
 		g_assert (klass);
-		return mono_class_is_ginst (klass) ? mono_class_get_generic_class (klass)->container_class->generic_container : NULL;
+		return mono_class_is_ginst (klass) ? mono_class_get_generic_container (mono_class_get_generic_class (klass)->container_class) : NULL;
 	}
 	g_assert_not_reached ();
 	return NULL;
@@ -3108,7 +3108,7 @@ get_method_override (MonoImage *m, guint32 token, MonoGenericContainer *containe
 			MonoMethod *mh = NULL;
 			mh = mono_get_method_checked (m, decl, NULL, (MonoGenericContext *) container, &error);
 
-			if (mh && (mh->klass && (mono_class_is_ginst (mh->klass) || mh->klass->generic_container))) {
+			if (mh && (mh->klass && (mono_class_is_ginst (mh->klass) || mono_class_is_gtd (mh->klass)))) {
 				char *meth_str;
 				char *ret;
 				

@@ -390,8 +390,6 @@ struct _MonoClass {
 	MonoType this_arg;
 	MonoType byval_arg;
 
-	MonoGenericContainer *generic_container;
-
 	MonoGCDescriptor gc_descr;
 
 	MonoClassRuntimeInfo *runtime_info;
@@ -413,6 +411,7 @@ typedef struct {
 
 typedef struct {
 	MonoClassDef class;
+	MonoGenericContainer *generic_container;
 } MonoClassGtd;
 
 typedef struct {
@@ -1469,6 +1468,12 @@ mono_class_try_get_generic_class (MonoClass *klass);
 
 void
 mono_class_set_flags (MonoClass *klass, guint32 flags);
+
+MonoGenericContainer*
+mono_class_try_get_generic_container (MonoClass *klass);
+
+void
+mono_class_set_generic_container (MonoClass *klass, MonoGenericContainer *container);
 
 /*Now that everything has been defined, let's include the inline functions */
 #include <mono/metadata/class-inlines.h>

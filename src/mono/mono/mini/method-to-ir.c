@@ -2550,7 +2550,7 @@ check_method_sharing (MonoCompile *cfg, MonoMethod *cmethod, gboolean *out_pass_
 	gboolean pass_mrgctx = FALSE;
 
 	if (((cmethod->flags & METHOD_ATTRIBUTE_STATIC) || cmethod->klass->valuetype) &&
-		(mono_class_is_ginst (cmethod->klass) || cmethod->klass->generic_container)) {
+		(mono_class_is_ginst (cmethod->klass) || mono_class_is_gtd (cmethod->klass))) {
 		gboolean sharable = FALSE;
 
 		if (mono_method_is_generic_sharable_full (cmethod, TRUE, TRUE, TRUE))
@@ -4433,10 +4433,10 @@ mini_class_has_reference_variant_generic_argument (MonoCompile *cfg, MonoClass *
 	MonoGenericInst *ginst;
 
 	if (mono_class_is_ginst (klass)) {
-		container = mono_class_get_generic_class (klass)->container_class->generic_container;
+		container = mono_class_get_generic_container (mono_class_get_generic_class (klass)->container_class);
 		ginst = mono_class_get_generic_class (klass)->context.class_inst;
-	} else if (klass->generic_container && context_used) {
-		container = klass->generic_container;
+	} else if (mono_class_is_gtd (klass) && context_used) {
+		container = mono_class_get_generic_container (klass);
 		ginst = container->context.class_inst;
 	} else {
 		return FALSE;
@@ -9381,7 +9381,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			n = fsig->param_count + fsig->hasthis;
 
-			if (!cfg->gshared && cmethod->klass->generic_container)
+			if (!cfg->gshared && mono_class_is_gtd (cmethod->klass))
 				UNVERIFIED;
 
 			if (!cfg->gshared)

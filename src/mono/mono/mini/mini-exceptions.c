@@ -613,7 +613,7 @@ get_generic_context_from_stack_frame (MonoJitInfo *ji, gpointer generic_info)
 		klass = vtable->klass;
 	}
 
-	//g_assert (!method->klass->generic_container);
+	//g_assert (!mono_class_is_gtd (method->klass));
 	if (mono_class_is_ginst (method->klass))
 		method_container_class = mono_class_get_generic_class (method->klass)->container_class;
 	else
@@ -625,7 +625,7 @@ get_generic_context_from_stack_frame (MonoJitInfo *ji, gpointer generic_info)
 		g_assert (klass);
 	}
 
-	if (mono_class_is_ginst (klass) || klass->generic_container)
+	if (mono_class_is_ginst (klass) || mono_class_is_gtd (klass))
 		context.class_inst = mini_class_get_context (klass)->class_inst;
 
 	if (mono_class_is_ginst (klass))

@@ -536,7 +536,7 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 				g_string_append_c (str, '>');
 			else
 				g_string_append_c (str, ']');
-		} else if (klass->generic_container &&
+		} else if (mono_class_is_gtd (klass) &&
 			   (format != MONO_TYPE_NAME_FORMAT_FULL_NAME) &&
 			   (format != MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED)) {
 			int i;
@@ -545,10 +545,10 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 				g_string_append_c (str, '<');
 			else
 				g_string_append_c (str, '[');
-			for (i = 0; i < klass->generic_container->type_argc; i++) {
+			for (i = 0; i < mono_class_get_generic_container (klass)->type_argc; i++) {
 				if (i)
 					g_string_append_c (str, ',');
-				g_string_append (str, mono_generic_container_get_param_info (klass->generic_container, i)->name);
+				g_string_append (str, mono_generic_container_get_param_info (mono_class_get_generic_container (klass), i)->name);
 			}
 			if (format == MONO_TYPE_NAME_FORMAT_IL)	
 				g_string_append_c (str, '>');
@@ -667,7 +667,7 @@ mono_class_is_open_constructed_type (MonoType *t)
 		return t->data.generic_class->context.class_inst->is_open;
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE:
-		return t->data.klass->generic_container != NULL;
+		return mono_class_is_gtd (t->data.klass);
 	default:
 		return FALSE;
 	}
@@ -790,7 +790,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE: {
 		MonoClass *klass = type->data.klass;
-		MonoGenericContainer *container = klass->generic_container;
+		MonoGenericContainer *container = mono_class_try_get_generic_container (klass);
 		MonoGenericInst *inst;
 		MonoGenericClass *gclass = NULL;
 		MonoType *nt;
@@ -829,19 +829,6 @@ mono_class_get_context (MonoClass *klass)
 {
 	MonoGenericClass *gklass = mono_class_try_get_generic_class (klass);
 	return gklass ? mono_generic_class_get_context (gklass) : NULL;
-}
-
-/*
- * mono_class_get_generic_container:
- *
- *   Return the generic container of KLASS which should be a generic type definition.
- */
-MonoGenericContainer*
-mono_class_get_generic_container (MonoClass *klass)
-{
-	g_assert (mono_class_is_gtd (klass));
-
-	return klass->generic_container;
 }
 
 /*
@@ -1072,7 +1059,7 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 	 * 
 	 */
 	if (!((method->is_generic && context->method_inst) || 
-		(method->klass->generic_container && context->class_inst)))
+		(mono_class_is_gtd (method->klass) && context->class_inst)))
 		return method;
 
 	iresult = g_new0 (MonoMethodInflated, 1);
@@ -1084,11 +1071,11 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 
 	if (!context->class_inst) {
 		g_assert (!mono_class_is_ginst (iresult->declaring->klass));
-		if (iresult->declaring->klass->generic_container)
-			iresult->context.class_inst = iresult->declaring->klass->generic_container->context.class_inst;
+		if (mono_class_is_gtd (iresult->declaring->klass))
+			iresult->context.class_inst = mono_class_get_generic_container (iresult->declaring->klass)->context.class_inst;
 	}
 	/* This can happen with some callers like mono_object_get_virtual_method () */
-	if (!iresult->declaring->klass->generic_container && !mono_class_is_ginst (iresult->declaring->klass))
+	if (!mono_class_is_gtd (iresult->declaring->klass) && !mono_class_is_ginst (iresult->declaring->klass))
 		iresult->context.class_inst = NULL;
 
 	MonoImageSet *set = mono_metadata_get_image_set_for_method (iresult);
@@ -1152,7 +1139,7 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 			klass_hint = NULL;
 	}
 
-	if (method->klass->generic_container)
+	if (mono_class_is_gtd (method->klass))
 		result->klass = klass_hint;
 
 	if (!result->klass) {
@@ -1227,8 +1214,8 @@ mono_method_get_context_general (MonoMethod *method, gboolean uninflated)
 		return NULL;
 	if (method->is_generic)
 		return &(mono_method_get_generic_container (method)->context);
-	if (method->klass->generic_container)
-		return &method->klass->generic_container->context;
+	if (mono_class_is_gtd (method->klass))
+		return &mono_class_get_generic_container (method->klass)->context;
 	return NULL;
 }
 
@@ -1299,12 +1286,11 @@ mono_class_find_enum_basetype (MonoClass *klass, MonoError *error)
 
 	mono_error_init (error);
 
-	if (klass->generic_container)
-		container = klass->generic_container;
-	else if (mono_class_is_ginst (klass)) {
+	container = mono_class_try_get_generic_container (klass);
+	if (mono_class_is_ginst (klass)) {
 		MonoClass *gklass = mono_class_get_generic_class (klass)->container_class;
 
-		container = gklass->generic_container;
+		container = mono_class_get_generic_container (gklass);
 		g_assert (container);
 	}
 
@@ -3896,7 +3882,7 @@ mono_class_setup_vtable_full (MonoClass *klass, GList *in_setup)
 		context = mono_class_get_context (klass);
 		type_token = mono_class_get_generic_class (klass)->container_class->type_token;
 	} else {
-		context = (MonoGenericContext *) klass->generic_container;
+		context = (MonoGenericContext *) mono_class_try_get_generic_container (klass); //FIXME is this a case of a try?
 		type_token = klass->type_token;
 	}
 
@@ -5785,15 +5771,14 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	/*
 	 * Check whether we're a generic type definition.
 	 */
-	klass->generic_container = mono_metadata_load_generic_params (image, klass->type_token, NULL);
-	if (klass->generic_container) {
-		klass->generic_container->owner.klass = klass;
-		klass->generic_container->is_anonymous = FALSE; // Owner class is now known, container is no longer anonymous
-		context = &klass->generic_container->context;
-	}
-
-	if (klass->generic_container)
+	if (mono_class_is_gtd (klass)) {
+		MonoGenericContainer *generic_container = mono_metadata_load_generic_params (image, klass->type_token, NULL);
+		generic_container->owner.klass = klass;
+		generic_container->is_anonymous = FALSE; // Owner class is now known, container is no longer anonymous
+		context = &generic_container->context;
+		mono_class_set_generic_container (klass, generic_container);
 		enable_gclass_recording ();
+	}
 
 	if (cols [MONO_TYPEDEF_EXTENDS]) {
 		MonoClass *tmp;
@@ -5821,7 +5806,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 				mono_class_set_failure_and_error (klass, error, "Cycle found while resolving parent");
 				goto parent_failure;
 			}
-			if (klass->generic_container && mono_class_is_ginst (tmp) && mono_class_get_generic_class (tmp)->container_class == klass) {
+			if (mono_class_is_gtd (klass) && mono_class_is_ginst (tmp) && mono_class_get_generic_class (tmp)->container_class == klass) {
 				mono_class_set_failure_and_error (klass, error, "Parent extends generic instance of this type");
 				goto parent_failure;
 			}
@@ -5833,7 +5818,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	/* uses ->valuetype, which is initialized by mono_class_setup_parent above */
 	mono_class_setup_mono_type (klass);
 
-	if (klass->generic_container)
+	if (mono_class_is_gtd (klass))
 		disable_gclass_recording (fix_gclass_incomplete_instantiation, klass);
 
 	/* 
@@ -5928,7 +5913,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	 * We must do this after the class has been constructed to make certain recursive scenarios
 	 * work.
 	 */
-	if (klass->generic_container && !mono_metadata_load_generic_param_constraints_checked (image, type_token, klass->generic_container, error)) {
+	if (mono_class_is_gtd (klass) && !mono_metadata_load_generic_param_constraints_checked (image, type_token, mono_class_get_generic_container (klass), error)) {
 		mono_class_set_type_load_failure (klass, "Could not load generic parameter constrains due to %s", mono_error_get_message (error));
 		mono_loader_unlock ();
 		mono_profiler_class_loaded (klass, MONO_PROFILE_FAILED);
@@ -6806,7 +6791,8 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	klass->this_arg = klass->byval_arg;
 	klass->this_arg.byref = 1;
 
-	klass->generic_container = eclass->generic_container;
+	//WTF was this? it's wrong
+	// klass->generic_container = eclass->generic_container;
 
 	if (rank == 1 && !bounded) {
 		MonoClass *prev_class;
@@ -8111,7 +8097,7 @@ mono_class_has_variant_generic_params (MonoClass *klass)
 	if (!mono_class_is_ginst (klass))
 		return FALSE;
 
-	container = mono_class_get_generic_class (klass)->container_class->generic_container;
+	container = mono_class_get_generic_container (mono_class_get_generic_class (klass)->container_class);
 
 	for (i = 0; i < container->type_argc; ++i)
 		if (mono_generic_container_get_param_info (container, i)->flags & (MONO_GEN_PARAM_VARIANT|MONO_GEN_PARAM_COVARIANT))
@@ -8155,7 +8141,7 @@ mono_class_is_variant_compatible (MonoClass *klass, MonoClass *oklass, gboolean 
 	int j;
 	MonoType **klass_argv, **oklass_argv;
 	MonoClass *klass_gtd = mono_class_get_generic_type_definition (klass);
-	MonoGenericContainer *container = klass_gtd->generic_container;
+	MonoGenericContainer *container = mono_class_get_generic_container (klass_gtd);
 
 	if (klass == oklass)
 		return TRUE;
@@ -8420,7 +8406,7 @@ mono_class_is_variant_compatible_slow (MonoClass *klass, MonoClass *oklass)
 	int j;
 	MonoType **klass_argv, **oklass_argv;
 	MonoClass *klass_gtd = mono_class_get_generic_type_definition (klass);
-	MonoGenericContainer *container = klass_gtd->generic_container;
+	MonoGenericContainer *container = mono_class_get_generic_container (klass_gtd);
 
 	/*Viable candidates are instances of the same generic interface*/
 	if (mono_class_get_generic_type_definition (oklass) != klass_gtd || oklass == klass_gtd)
@@ -10267,11 +10253,11 @@ can_access_member (MonoClass *access_klass, MonoClass *member_klass, MonoClass* 
 
 	MonoGenericClass *access_gklass = mono_class_try_get_generic_class (access_klass);
 	if (((access_gklass && access_gklass->container_class) ||
-					access_klass->generic_container) && 
+					mono_class_is_gtd (access_klass)) && 
 			(member_generic_def = get_generic_definition_class (member_klass))) {
 		MonoClass *access_container;
 
-		if (access_klass->generic_container)
+		if (mono_class_is_gtd (access_klass))
 			access_container = access_klass;
 		else
 			access_container = access_gklass->container_class;
@@ -10548,7 +10534,7 @@ gboolean mono_class_is_valid_enum (MonoClass *klass) {
 gboolean
 mono_generic_class_is_generic_type_definition (MonoGenericClass *gklass)
 {
-	return gklass->context.class_inst == gklass->container_class->generic_container->context.class_inst;
+	return gklass->context.class_inst == mono_class_get_generic_container (gklass->container_class)->context.class_inst;
 }
 
 /*
@@ -10691,10 +10677,10 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 		/*FIXME, in theory we do not lazy load SRE fields*/
 		g_assert (!image_is_dynamic (image));
 
-		if (klass->generic_container) {
-			container = klass->generic_container;
+		if (mono_class_is_gtd (klass)) {
+			container = mono_class_get_generic_container (klass);
 		} else if (gtd) {
-			container = gtd->generic_container;
+			container = mono_class_get_generic_container (gtd);
 			g_assert (container);
 		}
 

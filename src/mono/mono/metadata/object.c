@@ -7843,7 +7843,7 @@ mono_delegate_ctor (MonoObject *this_obj, MonoObject *target, gpointer addr, Mon
 		ji = mono_jit_info_table_find (mono_get_root_domain (), (char *)mono_get_addr_from_ftnptr (addr));
 	if (ji) {
 		method = mono_jit_info_get_method (ji);
-		g_assert (!method->klass->generic_container);
+		g_assert (!mono_class_is_gtd (method->klass));
 	}
 
 	return mono_delegate_ctor_with_method (this_obj, target, addr, method, error);

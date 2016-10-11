@@ -4210,7 +4210,7 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 		}
 		if (method->flags & METHOD_ATTRIBUTE_ABSTRACT)
 			continue;
-		if (method->is_generic || method->klass->generic_container)
+		if (method->is_generic || mono_class_is_gtd (method->klass))
 			continue;
 
 		count++;

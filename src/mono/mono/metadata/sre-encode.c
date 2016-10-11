@@ -195,8 +195,8 @@ encode_type (MonoDynamicImage *assembly, MonoType *type, SigBuffer *buf)
 	case MONO_TYPE_CLASS: {
 		MonoClass *k = mono_class_from_mono_type (type);
 
-		if (k->generic_container) {
-			MonoGenericClass *gclass = mono_metadata_lookup_generic_class (k, k->generic_container->context.class_inst, TRUE);
+		if (mono_class_is_gtd (k)) {
+			MonoGenericClass *gclass = mono_metadata_lookup_generic_class (k, mono_class_get_generic_container (k)->context.class_inst, TRUE);
 			encode_generic_class (assembly, gclass, buf);
 		} else {
 			/*
@@ -616,12 +616,12 @@ mono_dynimage_encode_field_signature (MonoDynamicImage *assembly, MonoReflection
 		goto fail;
 	/* encode custom attributes before the type */
 
-	if (klass->generic_container)
+	if (mono_class_is_gtd (klass))
 		typespec = create_typespec (assembly, type);
 
 	if (typespec) {
 		MonoGenericClass *gclass;
-		gclass = mono_metadata_lookup_generic_class (klass, klass->generic_container->context.class_inst, TRUE);
+		gclass = mono_metadata_lookup_generic_class (klass, mono_class_get_generic_container (klass)->context.class_inst, TRUE);
 		encode_generic_class (assembly, gclass, &buf);
 	} else {
 		encode_type (assembly, type, &buf);
@@ -712,7 +712,7 @@ create_typespec (MonoDynamicImage *assembly, MonoType *type)
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE: {
 		MonoClass *k = mono_class_from_mono_type (type);
-		if (!k || !k->generic_container) {
+		if (!k || !mono_class_is_gtd (k)) {
 			sigbuffer_free (&buf);
 			return 0;
 		}

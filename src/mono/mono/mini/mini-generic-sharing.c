@@ -76,7 +76,7 @@ type_check_context_used (MonoType *type, gboolean recursive)
 		if (recursive) {
 			MonoGenericClass *gclass = type->data.generic_class;
 
-			g_assert (gclass->container_class->generic_container);
+			g_assert (mono_class_is_gtd (gclass->container_class));
 			return mono_generic_context_check_used (&gclass->context);
 		} else {
 			return 0;
@@ -139,8 +139,8 @@ mono_class_check_context_used (MonoClass *klass)
 
 	if (mono_class_is_ginst (klass))
 		context_used |= mono_generic_context_check_used (&mono_class_get_generic_class (klass)->context);
-	else if (klass->generic_container)
-		context_used |= mono_generic_context_check_used (&klass->generic_container->context);
+	else if (mono_class_is_gtd (klass))
+		context_used |= mono_generic_context_check_used (&mono_class_get_generic_container (klass)->context);
 
 	return context_used;
 }
@@ -2483,7 +2483,7 @@ mono_method_lookup_rgctx (MonoVTable *class_vtable, MonoGenericInst *method_inst
 	MonoMethodRuntimeGenericContext *mrgctx;
 	MonoMethodRuntimeGenericContext key;
 
-	g_assert (!class_vtable->klass->generic_container);
+	g_assert (!mono_class_is_gtd (class_vtable->klass));
 	g_assert (!method_inst->is_open);
 
 	mono_domain_lock (domain);
@@ -2634,7 +2634,7 @@ mono_method_is_generic_impl (MonoMethod *method)
 	   if not compiled with sharing. */
 	if (method->wrapper_type != MONO_WRAPPER_NONE)
 		return FALSE;
-	if (method->klass->generic_container)
+	if (mono_class_is_gtd (method->klass))
 		return TRUE;
 	return FALSE;
 }
@@ -2791,13 +2791,13 @@ mono_method_is_generic_sharable_full (MonoMethod *method, gboolean allow_type_va
 			return FALSE;
 
 		g_assert (mono_class_get_generic_class (method->klass)->container_class &&
-				mono_class_get_generic_class (method->klass)->container_class->generic_container);
+				mono_class_is_gtd (mono_class_get_generic_class (method->klass)->container_class));
 
-		if (has_constraints (mono_class_get_generic_class (method->klass)->container_class->generic_container))
+		if (has_constraints (mono_class_get_generic_container (mono_class_get_generic_class (method->klass)->container_class)))
 			return FALSE;
 	}
 
-	if (method->klass->generic_container && !allow_type_vars)
+	if (mono_class_is_gtd (method->klass) && !allow_type_vars)
 		return FALSE;
 
 	/* This does potentially expensive cattr checks, so do it at the end */
@@ -2838,7 +2838,7 @@ mono_method_needs_static_rgctx_invoke (MonoMethod *method, gboolean allow_type_v
 
 	return ((method->flags & METHOD_ATTRIBUTE_STATIC) ||
 			method->klass->valuetype) &&
-		(mono_class_is_ginst (method->klass) || method->klass->generic_container);
+		(mono_class_is_ginst (method->klass) || mono_class_is_gtd (method->klass));
 }
 
 static MonoGenericInst*
@@ -2868,8 +2868,8 @@ mono_method_construct_object_context (MonoMethod *method)
 	MonoGenericContext object_context;
 
 	g_assert (!mono_class_is_ginst (method->klass));
-	if (method->klass->generic_container) {
-		int type_argc = method->klass->generic_container->type_argc;
+	if (mono_class_is_gtd (method->klass)) {
+		int type_argc = mono_class_get_generic_container (method->klass)->type_argc;
 
 		object_context.class_inst = get_object_generic_inst (type_argc);
 	} else {
@@ -3006,7 +3006,7 @@ mini_class_get_container_class (MonoClass *klass)
 	if (mono_class_is_ginst (klass))
 		return mono_class_get_generic_class (klass)->container_class;
 
-	g_assert (klass->generic_container);
+	g_assert (mono_class_is_gtd (klass));
 	return klass;
 }
 
@@ -3022,8 +3022,8 @@ mini_class_get_context (MonoClass *klass)
 	if (mono_class_is_ginst (klass))
 		return &mono_class_get_generic_class (klass)->context;
 
-	g_assert (klass->generic_container);
-	return &klass->generic_container->context;
+	g_assert (mono_class_is_gtd (klass));
+	return &mono_class_get_generic_container (klass)->context;
 }
 
 /*
@@ -3351,9 +3351,9 @@ get_shared_type (MonoType *t, MonoType *type)
 
 		memset (&context, 0, sizeof (context));
 		if (gclass->context.class_inst)
-			context.class_inst = get_shared_inst (gclass->context.class_inst, gclass->container_class->generic_container->context.class_inst, NULL, FALSE, FALSE, TRUE);
+			context.class_inst = get_shared_inst (gclass->context.class_inst, mono_class_get_generic_container (gclass->container_class)->context.class_inst, NULL, FALSE, FALSE, TRUE);
 		if (gclass->context.method_inst)
-			context.method_inst = get_shared_inst (gclass->context.method_inst, gclass->container_class->generic_container->context.method_inst, NULL, FALSE, FALSE, TRUE);
+			context.method_inst = get_shared_inst (gclass->context.method_inst, mono_class_get_generic_container (gclass->container_class)->context.method_inst, NULL, FALSE, FALSE, TRUE);
 
 		k = mono_class_inflate_generic_class_checked (gclass->container_class, &context, &error);
 		mono_error_assert_ok (&error); /* FIXME don't swallow the error */
@@ -3456,7 +3456,7 @@ mini_get_shared_method_full (MonoMethod *method, gboolean all_vt, gboolean is_gs
 		}
 	}
 
-	if (method->is_generic || (method->klass->generic_container && !method->is_inflated)) {
+	if (method->is_generic || (mono_class_is_gtd (method->klass) && !method->is_inflated)) {
 		declaring_method = method;
 	} else {
 		declaring_method = mono_method_get_declaring_generic_method (method);
@@ -3466,14 +3466,14 @@ mini_get_shared_method_full (MonoMethod *method, gboolean all_vt, gboolean is_gs
 	if (declaring_method->is_generic)
 		shared_context = mono_method_get_generic_container (declaring_method)->context;
 	else
-		shared_context = declaring_method->klass->generic_container->context;
+		shared_context = mono_class_get_generic_container (declaring_method->klass)->context;
 
 	if (!is_gsharedvt)
 		partial = mono_method_is_generic_sharable_full (method, FALSE, TRUE, FALSE);
 
 	gsharedvt = is_gsharedvt || (!partial && mini_is_gsharedvt_sharable_method (method));
 
-	class_container = declaring_method->klass->generic_container;
+	class_container = mono_class_try_get_generic_container (declaring_method->klass); //FIXME is this a case for a try_get?
 	method_container = mono_method_get_generic_container (declaring_method);
 
 	/*

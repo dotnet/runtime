@@ -944,7 +944,7 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor (Mo
 	klass = mono_class_from_mono_type (handle);
 	MONO_CHECK_ARG (handle, klass,);
 
-	if (klass->generic_container)
+	if (mono_class_is_gtd (klass))
 		return;
 
 	vtable = mono_class_vtable_full (mono_domain_get (), klass, &error);
@@ -1672,7 +1672,7 @@ ves_icall_System_Reflection_FieldInfo_get_marshal_info (MonoReflectionField *fie
 	int i;
 
 	MonoGenericClass *gklass = mono_class_try_get_generic_class (klass);
-	if (klass->generic_container ||
+	if (mono_class_is_gtd (klass) ||
 	    (gklass && gklass->context.class_inst->is_open))
 		return NULL;
 
@@ -2719,8 +2719,8 @@ ves_icall_RuntimeType_GetGenericArguments (MonoReflectionType *type, MonoBoolean
 
 	klass = mono_class_from_mono_type (type->type);
 
-	if (klass->generic_container) {
-		MonoGenericContainer *container = klass->generic_container;
+	if (mono_class_is_gtd (klass)) {
+		MonoGenericContainer *container = mono_class_get_generic_container (klass);
 		res = create_type_array (domain, runtimeTypeArray, container->type_argc, &error);
 		if (mono_error_set_pending_exception (&error))
 			return NULL;
@@ -2763,7 +2763,7 @@ ves_icall_RuntimeTypeHandle_IsGenericTypeDefinition (MonoReflectionType *type)
 		return FALSE;
 
 	klass = mono_class_from_mono_type (type->type);
-	return klass->generic_container != NULL;
+	return mono_class_is_gtd (klass);
 }
 
 ICALL_EXPORT MonoReflectionType*
@@ -2778,7 +2778,7 @@ ves_icall_RuntimeTypeHandle_GetGenericTypeDefinition_impl (MonoReflectionType *t
 
 	klass = mono_class_from_mono_type (type->type);
 
-	if (klass->generic_container) {
+	if (mono_class_is_gtd (klass)) {
 		return type; /* check this one */
 	}
 	if (mono_class_is_ginst (klass)) {
@@ -2854,7 +2854,7 @@ ves_icall_RuntimeTypeHandle_HasInstantiation (MonoReflectionType *type)
 		return FALSE;
 
 	klass = mono_class_from_mono_type (type->type);
-	return mono_class_is_ginst (klass) || klass->generic_container != NULL;
+	return mono_class_is_ginst (klass) || mono_class_is_gtd (klass);
 }
 
 ICALL_EXPORT gint32
@@ -5086,8 +5086,8 @@ mono_method_get_equivalent_method (MonoMethod *method, MonoClass *klass)
 		ctx.class_inst = inflated->context.class_inst;
 		if (mono_class_is_ginst (klass))
 			ctx.class_inst = mono_class_get_generic_class (klass)->context.class_inst;
-		else if (klass->generic_container)
-			ctx.class_inst = klass->generic_container->context.class_inst;
+		else if (mono_class_is_gtd (klass))
+			ctx.class_inst = mono_class_get_generic_container (klass)->context.class_inst;
 		result = mono_class_inflate_generic_method_full_checked (inflated->declaring, klass, &ctx, &error);
 		g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 		return result;

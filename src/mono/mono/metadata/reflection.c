@@ -343,7 +343,7 @@ mono_type_normalize (MonoType *type)
 		return type;
 
 	gtd = gclass->container_class;
-	gcontainer = gtd->generic_container;
+	gcontainer = mono_class_get_generic_container (gtd);
 	argv = g_newa (MonoType*, ginst->type_argc);
 
 	for (i = 0; i < ginst->type_argc; ++i) {
@@ -2147,7 +2147,7 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc
 	}
 
 	klass = mono_class_from_mono_type (t);
-	if (!klass->generic_container) {
+	if (!mono_class_is_gtd (klass)) {
 		mono_loader_unlock ();
 		mono_error_set_type_load_class (error, klass, "Cannot bind generic parameters of a non-generic type");
 		return NULL;
@@ -2169,7 +2169,7 @@ mono_class_bind_generic_parameters (MonoClass *klass, int type_argc, MonoType **
 	MonoGenericClass *gclass;
 	MonoGenericInst *inst;
 
-	g_assert (klass->generic_container);
+	g_assert (mono_class_is_gtd (klass));
 
 	inst = mono_metadata_get_generic_inst (type_argc, types);
 	gclass = mono_metadata_lookup_generic_class (klass, inst, is_dynamic);

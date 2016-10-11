@@ -473,7 +473,7 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError
 		gclass = decode_klass_ref (module, p, &p, error);
 		if (!gclass)
 			return NULL;
-		g_assert (gclass->generic_container);
+		g_assert (mono_class_is_gtd (gclass));
 
 		memset (&ctx, 0, sizeof (ctx));
 		ctx.class_inst = decode_generic_inst (module, p, &p, error);
@@ -528,7 +528,7 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError
 					if (!class_def)
 						return NULL;
 
-					container = class_def->generic_container;
+					container = mono_class_try_get_generic_container (class_def); //FIXME is this a case for a try_get?
 				}
 			} else {
 				// We didn't decode is_method, so we have to infer it from type enum.
@@ -684,7 +684,7 @@ decode_type (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError *err
 		gclass = decode_klass_ref (module, p, &p, error);
 		if (!gclass)
 			goto fail;
-		g_assert (gclass->generic_container);
+		g_assert (mono_class_is_gtd (gclass));
 
 		memset (&ctx, 0, sizeof (ctx));
 		ctx.class_inst = decode_generic_inst (module, p, &p, error);
@@ -4212,7 +4212,7 @@ init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, M
 	gboolean inited_ok = TRUE;
 	if (init_class)
 		inited_ok = mono_runtime_class_init_full (mono_class_vtable (domain, init_class), error);
-	else if (from_plt && klass_to_run_ctor && !klass_to_run_ctor->generic_container)
+	else if (from_plt && klass_to_run_ctor && !mono_class_is_gtd (klass_to_run_ctor))
 		inited_ok = mono_runtime_class_init_full (mono_class_vtable (domain, klass_to_run_ctor), error);
 	if (!inited_ok)
 		return FALSE;
@@ -4281,8 +4281,8 @@ mono_aot_init_gshared_method_mrgctx (gpointer aot_module, guint32 method_index, 
 
 	if (mono_class_is_ginst (klass))
 		context.class_inst = mono_class_get_generic_class (klass)->context.class_inst;
-	else if (klass->generic_container)
-		context.class_inst = klass->generic_container->context.class_inst;
+	else if (mono_class_is_gtd (klass))
+		context.class_inst = mono_class_get_generic_container (klass)->context.class_inst;
 	context.method_inst = rgctx->method_inst;
 
 	init_llvmonly_method (amodule, method_index, NULL, rgctx->class_vtable->klass, &context);

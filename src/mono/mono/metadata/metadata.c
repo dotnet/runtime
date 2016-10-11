@@ -2937,7 +2937,7 @@ mono_metadata_get_generic_inst (int type_argc, MonoType **type_argv)
 static gboolean
 mono_metadata_is_type_builder_generic_type_definition (MonoClass *container_class, MonoGenericInst *inst, gboolean is_dynamic)
 {
-	MonoGenericContainer *container = container_class->generic_container; 
+	MonoGenericContainer *container = mono_class_get_generic_container (container_class); 
 
 	if (!is_dynamic || container_class->wastypebuilder || container->type_argc != inst->type_argc)
 		return FALSE;
@@ -2994,7 +2994,7 @@ mono_metadata_lookup_generic_class (MonoClass *container_class, MonoGenericInst 
 	gclass->context.class_inst = inst;
 	gclass->context.method_inst = NULL;
 	gclass->owner = set;
-	if (inst == container_class->generic_container->context.class_inst && !is_tb_open)
+	if (inst == mono_class_get_generic_container (container_class)->context.class_inst && !is_tb_open)
 		gclass->cached_class = container_class;
 
 	g_hash_table_insert (set->gclass_cache, gclass, gclass);
@@ -3089,7 +3089,7 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 		return FALSE;
 
 	gklass = mono_class_from_mono_type (gtype);
-	if (!gklass->generic_container) {
+	if (!mono_class_is_gtd (gklass)) {
 		mono_error_set_bad_image (error, m, "Generic instance with non-generic definition");
 		return FALSE;
 	}
@@ -4804,7 +4804,7 @@ static gboolean
 _mono_metadata_generic_class_container_equal (const MonoGenericClass *g1, MonoClass *c2, gboolean signature_only)
 {
 	MonoGenericInst *i1 = g1->context.class_inst;
-	MonoGenericInst *i2 = c2->generic_container->context.class_inst;
+	MonoGenericInst *i2 = mono_class_get_generic_container (c2)->context.class_inst;
 
 	if (!mono_metadata_class_equal (g1->container_class, c2, signature_only))
 		return FALSE;
@@ -4961,9 +4961,9 @@ mono_metadata_class_equal (MonoClass *c1, MonoClass *c2, gboolean signature_only
 		return TRUE;
 	if (mono_class_is_ginst (c1) && mono_class_is_ginst (c2))
 		return _mono_metadata_generic_class_equal (mono_class_get_generic_class (c1), mono_class_get_generic_class (c2), signature_only);
-	if (mono_class_is_ginst (c1) && c2->generic_container)
+	if (mono_class_is_ginst (c1) && mono_class_is_gtd (c2))
 		return _mono_metadata_generic_class_container_equal (mono_class_get_generic_class (c1), c2, signature_only);
-	if (c1->generic_container && mono_class_is_ginst (c2))
+	if (mono_class_is_gtd (c1) && mono_class_is_ginst (c2))
 		return _mono_metadata_generic_class_container_equal (mono_class_get_generic_class (c2), c1, signature_only);
 	if ((c1->byval_arg.type == MONO_TYPE_VAR) && (c2->byval_arg.type == MONO_TYPE_VAR))
 		return mono_metadata_generic_param_equal_internal (

@@ -96,7 +96,7 @@ type_get_qualified_name (MonoType *type, MonoAssembly *ass)
 		return mono_type_get_name_full (type, MONO_TYPE_NAME_FORMAT_REFLECTION);
 	ta = klass->image->assembly;
 	if (assembly_is_dynamic (ta) || (ta == ass)) {
-		if (mono_class_is_ginst (klass) || klass->generic_container)
+		if (mono_class_is_ginst (klass) || mono_class_is_gtd (klass))
 			/* For generic type definitions, we want T, while REFLECTION returns T<K> */
 			return mono_type_get_name_full (type, MONO_TYPE_NAME_FORMAT_FULL_NAME);
 		else
@@ -1138,7 +1138,7 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj,
 		return_val_if_nok (error, 0);
 		MonoClass *mc = mono_class_from_mono_type (type);
 		token = mono_metadata_token_from_dor (
-			mono_dynimage_encode_typedef_or_ref_full (assembly, type, mc->generic_container == NULL || create_open_instance));
+			mono_dynimage_encode_typedef_or_ref_full (assembly, type, !mono_class_is_gtd (mc) || create_open_instance));
 	} else if (strcmp (klass->name, "MonoCMethod") == 0 ||
 			   strcmp (klass->name, "MonoMethod") == 0) {
 		MonoReflectionMethod *m = (MonoReflectionMethod *)obj;
@@ -1583,8 +1583,8 @@ mono_reflection_type_get_handle (MonoReflectionType* ref, MonoError *error)
 			MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType*)(gparam->tbuilder), error);
 			mono_error_assert_ok (error);
 			MonoClass *owner = mono_class_from_mono_type (type);
-			g_assert (owner->generic_container);
-			param->param.owner = owner->generic_container;
+			g_assert (mono_class_is_gtd (owner));
+			param->param.owner = mono_class_get_generic_container (owner);
 		}
 
 		pklass = mono_class_from_generic_parameter_internal ((MonoGenericParam *) param);
@@ -2298,6 +2298,11 @@ reflection_setup_internal_class (MonoReflectionTypeBuilder *tb, MonoError *error
 		return TRUE;
 	}
 
+	/*
+	 * The size calculation here warrants some explaining. 
+	 * reflection_setup_internal_class is called too early, well before we know whether the type will be a GTD or DEF,
+	 * meaning we need to alloc enough space to morth a def into a gtd.
+	 */
 	klass = (MonoClass *)mono_image_alloc0 (&tb->module->dynamic_image->image, MAX (sizeof (MonoClassDef), sizeof (MonoClassGtd)));
 	klass->class_kind = MONO_CLASS_DEF;
 
@@ -2411,29 +2416,31 @@ reflection_create_generic_class (MonoReflectionTypeBuilder *tb, MonoError *error
 	if (count == 0)
 		return TRUE;
 
-	klass->generic_container = (MonoGenericContainer *)mono_image_alloc0 (klass->image, sizeof (MonoGenericContainer));
+	MonoGenericContainer *generic_container = (MonoGenericContainer *)mono_image_alloc0 (klass->image, sizeof (MonoGenericContainer));
 
-	klass->generic_container->owner.klass = klass;
-	klass->generic_container->type_argc = count;
-	klass->generic_container->type_params = (MonoGenericParamFull *)mono_image_alloc0 (klass->image, sizeof (MonoGenericParamFull) * count);
+	generic_container->owner.klass = klass;
+	generic_container->type_argc = count;
+	generic_container->type_params = (MonoGenericParamFull *)mono_image_alloc0 (klass->image, sizeof (MonoGenericParamFull) * count);
 
 	klass->class_kind = MONO_CLASS_GTD;
+	mono_class_set_generic_container (klass, generic_container);
+
 
 	for (i = 0; i < count; i++) {
 		MonoReflectionGenericParam *gparam = (MonoReflectionGenericParam *)mono_array_get (tb->generic_params, gpointer, i);
 		MonoType *param_type = mono_reflection_type_get_handle ((MonoReflectionType*)gparam, error);
 		return_val_if_nok (error, FALSE);
 		MonoGenericParamFull *param = (MonoGenericParamFull *) param_type->data.generic_param;
-		klass->generic_container->type_params [i] = *param;
+		generic_container->type_params [i] = *param;
 		/*Make sure we are a diferent type instance */
-		klass->generic_container->type_params [i].param.owner = klass->generic_container;
-		klass->generic_container->type_params [i].info.pklass = NULL;
-		klass->generic_container->type_params [i].info.flags = gparam->attrs;
+		generic_container->type_params [i].param.owner = generic_container;
+		generic_container->type_params [i].info.pklass = NULL;
+		generic_container->type_params [i].info.flags = gparam->attrs;
 
-		g_assert (klass->generic_container->type_params [i].param.owner);
+		g_assert (generic_container->type_params [i].param.owner);
 	}
 
-	klass->generic_container->context.class_inst = mono_get_shared_generic_inst (klass->generic_container);
+	generic_container->context.class_inst = mono_get_shared_generic_inst (generic_container);
 	return TRUE;
 }
 
@@ -2725,9 +2732,9 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 			}
 		}
 
-		if (klass->generic_container) {
-			container->parent = klass->generic_container;
-			container->context.class_inst = klass->generic_container->context.class_inst;
+		if (mono_class_is_gtd (klass)) {
+			container->parent = mono_class_get_generic_container (klass);
+			container->context.class_inst = mono_class_get_generic_container (klass)->context.class_inst;
 		}
 		container->context.method_inst = mono_get_shared_generic_inst (container);
 	}
@@ -3491,7 +3498,7 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	 *
 	 * Together with this we must ensure the contents of all instances to match the created type.
 	 */
-	if (domain->type_hash && klass->generic_container) {
+	if (domain->type_hash && mono_class_is_gtd (klass)) {
 		struct remove_instantiations_user_data data;
 		data.klass = klass;
 		data.error = &error;

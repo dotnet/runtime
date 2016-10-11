@@ -1743,7 +1743,7 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 			} else if (!strcmp (iltoken->member->vtable->klass->name, "MonoMethod") ||
 					   !strcmp (iltoken->member->vtable->klass->name, "MonoCMethod")) {
 				MonoMethod *m = ((MonoReflectionMethod*)iltoken->member)->method;
-				g_assert (mono_class_is_ginst (m->klass) || m->klass->generic_container);
+				g_assert (mono_class_is_ginst (m->klass) || mono_class_is_gtd (m->klass));
 				continue;
 			} else if (!strcmp (iltoken->member->vtable->klass->name, "FieldBuilder")) {
 				g_assert_not_reached ();
