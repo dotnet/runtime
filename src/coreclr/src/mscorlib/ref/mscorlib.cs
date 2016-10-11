@@ -13286,6 +13286,8 @@ namespace System.Threading
         public System.Globalization.CultureInfo CurrentCulture { get { throw null; } [System.Security.SecuritySafeCriticalAttribute]set { } }
         public static new System.Threading.Thread CurrentThread { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
         public System.Globalization.CultureInfo CurrentUICulture { get { throw null; } [System.Security.SecuritySafeCriticalAttribute]set { } }
+        public new int ManagedThreadId { [System.Security.SecuritySafeCriticalAttribute][System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]get { throw null; } }
+        public new string Name { get { throw null; } [System.Security.SecuritySafeCriticalAttribute]set { } }
         ~Thread() { }
         [System.Security.SecuritySafeCriticalAttribute]
         public static System.AppDomain GetDomain() { throw null; }
@@ -13293,6 +13295,15 @@ namespace System.Threading
         public override int GetHashCode() { throw null; }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
         public static void MemoryBarrier() { }
+        [System.Security.SecuritySafeCriticalAttribute]
+        public static new void Sleep(int millisecondsTimeout) { }
+        public static new void Sleep(System.TimeSpan timeout) { }
+        [System.Security.SecuritySafeCriticalAttribute]
+        public static new void SpinWait(int iterations) { }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        public new void Start() { }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        public new void Start(object parameter) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public sealed partial class ThreadAbortException : System.SystemException
