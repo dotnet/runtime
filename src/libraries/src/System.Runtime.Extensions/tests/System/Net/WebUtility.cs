@@ -41,6 +41,11 @@ namespace System.Net.Tests
             yield return new object[] { "&#4294967296;", "&#4294967296;" };
             yield return new object[] { "&#x100000000;", "&#x100000000;" };
 
+            // High BMP non-chars
+            yield return new object[] { "\uFFFD", "\uFFFD" };
+            yield return new object[] { "\uFFFE", "\uFFFE" };
+            yield return new object[] { "\uFFFF", "\uFFFF" };
+
             // Basic
             yield return new object[] { "Hello, world!", "Hello, world!" };
             yield return new object[] { "Hello, world! \"<>\u2665\u00E7", "Hello, world! \"<>\u2665\u00E7" };
@@ -56,16 +61,6 @@ namespace System.Net.Tests
         public static void HtmlDecode(string value, string expected)
         {
             Assert.Equal(expected, WebUtility.HtmlDecode(value));
-        }
-
-        [Fact]
-        public static void HtmlDecode_InvalidUnicode()
-        {
-            // TODO: add into HtmlDecode_TestData when #7166 is fixed
-            // High BMP non-chars
-            HtmlDecode("\uFFFD", "\uFFFD");
-            HtmlDecode("\uFFFE", "\uFFFE");
-            HtmlDecode("\uFFFF", "\uFFFF");
         }
 
         public static IEnumerable<object[]> HtmlEncode_TestData()
@@ -87,6 +82,24 @@ namespace System.Net.Tests
             yield return new object[] { "\uD800\uDC00", "&#65536;" };
             yield return new object[] { "a\uD800\uDC00b", "a&#65536;b" };
 
+            // High BMP non-chars
+            yield return new object[] { "\uFFFD", "\uFFFD" };
+            yield return new object[] { "\uFFFE", "\uFFFE" };
+            yield return new object[] { "\uFFFF", "\uFFFF" };
+
+            // Lone high surrogate
+            yield return new object[] { "\uD800", "\uFFFD" };
+            yield return new object[] { "\uD800a", "\uFFFDa" };
+
+            // Lone low surrogate
+            yield return new object[] { "\uDC00", "\uFFFD" };
+            yield return new object[] { "\uDC00a", "\uFFFDa" };
+
+            // Invalid surrogate pair
+            yield return new object[] { "\uD800\uD800", "\uFFFD\uFFFD" }; // High, high
+            yield return new object[] { "\uDC00\uD800", "\uFFFD\uFFFD" }; // Low, high
+            yield return new object[] { "\uDC00\uDC00", "\uFFFD\uFFFD" }; // Low, low
+
             // Basic
             yield return new object[] { "Hello, world!", "Hello, world!" };
             yield return new object[] { "    ", "    " };
@@ -101,29 +114,6 @@ namespace System.Net.Tests
         public static void HtmlEncode(string value, string expected)
         {
             Assert.Equal(expected, WebUtility.HtmlEncode(value));
-        }
-
-        [Fact]
-        public static void HtmlEncode_InvalidUnicode()
-        {
-            // TODO: add into HtmlEncode_TestData when #7166 is fixed
-            // High BMP non-chars
-            HtmlEncode("\uFFFD", "\uFFFD");
-            HtmlEncode("\uFFFE", "\uFFFE");
-            HtmlEncode("\uFFFF", "\uFFFF");
-            
-            // Lone high surrogate
-            HtmlEncode("\uD800", "\uFFFD");
-            HtmlEncode("\uD800a", "\uFFFDa");
-
-            // Lone low surrogate
-            HtmlEncode("\uDC00", "\uFFFD");
-            HtmlEncode("\uDC00a", "\uFFFDa");
-
-            // Invalid surrogate pairs
-            HtmlEncode("\uD800\uD800", "\uFFFD\uFFFD"); // High, high
-            HtmlEncode("\uDC00\uD800", "\uFFFD\uFFFD"); // Low, high
-            HtmlEncode("\uDC00\uDC00", "\uFFFD\uFFFD"); // Low, low
         }
 
         // Shared test data for UrlEncode + Decode and their ToBytes counterparts
@@ -181,13 +171,7 @@ namespace System.Net.Tests
             yield return Tuple.Create("    ", "++++");
             yield return Tuple.Create("++++", "%2B%2B%2B%2B");
 
-            // TODO: Uncomment this block out when dotnet/corefx#7166 is fixed.
-
-            /*
-            
-            // Tests for stray surrogate chars (all should be encoded as U+FFFD)
-            // Relevant GitHub issue: dotnet/corefx#7036
-            
+            // Tests for stray surrogate chars (all should be encoded as U+FFFD)            
             yield return Tuple.Create("\uD800", "%EF%BF%BD"); // High surrogate
             yield return Tuple.Create("\uDC00", "%EF%BF%BD"); // Low surrogate
 
@@ -197,8 +181,6 @@ namespace System.Net.Tests
 
             yield return Tuple.Create("!\uDB00@", "!%EF%BF%BD%40"); // Non-surrogate + high + non-surrogate
             yield return Tuple.Create("#\uDD00$", "%23%EF%BF%BD%24"); // Non-surrogate + low + non-surrogate
-            
-            */
         }
 
         public static IEnumerable<object[]> UrlEncodeDecode_Roundtrip_SharedTestData()
@@ -210,8 +192,7 @@ namespace System.Net.Tests
 
             yield return new object[] { CharRange('\uE000', '\uF8FF') }; // BMP private use chars
             yield return new object[] { CharRange('\uFDD0', '\uFDEF') }; // Low BMP non-chars
-            // TODO: Uncomment when dotnet/corefx#7166 is fixed.
-            // yield return new object[] { "\uFFFE\uFFFF" }; // High BMP non-chars
+            yield return new object[] { "\uFFFE\uFFFF" }; // High BMP non-chars
 
             yield return new object[] { CharRange('\0', '\u001F') }; // C0 controls
             yield return new object[] { CharRange('\u0080', '\u009F') }; // C1 controls

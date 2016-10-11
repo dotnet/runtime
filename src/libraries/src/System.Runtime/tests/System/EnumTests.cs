@@ -1453,7 +1453,7 @@ namespace System.Tests
         [Fact]
         public static void ToString_InvalidUnicodeChars()
         {
-            // TODO: move into ToString_Format_TestData when #7166 is fixed
+            // TODO: move into ToString_Format_TestData when dotnet/buildtools#1091 is fixed
             ToString_Format((Enum)Enum.ToObject(s_charEnumType, char.MaxValue), "D", char.MaxValue.ToString());
             ToString_Format((Enum)Enum.ToObject(s_charEnumType, char.MaxValue), "X", "FFFF");
             ToString_Format((Enum)Enum.ToObject(s_charEnumType, char.MaxValue), "F", char.MaxValue.ToString());

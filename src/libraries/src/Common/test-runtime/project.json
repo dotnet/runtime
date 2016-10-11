@@ -13,7 +13,7 @@
     "Microsoft.DotNet.xunit.performance.runner.cli": "1.0.0-alpha-build0040",
     "Microsoft.DotNet.xunit.performance.runner.Windows": "1.0.0-alpha-build0040",
     "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00830-02",
-    "xunit.console.netcore": "1.0.3-prerelease-00607-01"
+    "xunit.console.netcore": "1.0.3-prerelease-00903-02"
   },
   "frameworks": {
     "netstandard1.3": {},
@@ -60,8 +60,7 @@
         "System.Text.Encoding.CodePages": "4.0.1",
         "System.Xml.XmlSerializer": "4.0.11",
         "Microsoft.NETCore.UniversalWindowsPlatform": "5.2.1-beta-000547-00",
-        "System.Console": "4.4.0-beta-24608-01",
-        "microsoft.xunit.runner.uwp": "1.0.3-prerelease-00826-05",
+        "microsoft.xunit.runner.uwp": "1.0.3-prerelease-00903-02",
         "Microsoft.DotNet.TestILC": {
           "version": "1.4.24208-prerelease",
           "include": "contentFiles"
