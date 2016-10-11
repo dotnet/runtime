@@ -797,13 +797,11 @@ namespace System.Threading
 
                 // Signal to any synchronous waiters
                 int waitCount = m_waitCount;
-                if (currentCount == 1 || waitCount == 1)
+
+                int waitersToNotify = Math.Min(releaseCount, waitCount);
+                for (int i = 0; i < waitersToNotify; i++)
                 {
                     Monitor.Pulse(m_lockObj);
-                }
-                else if (waitCount > 1)
-                {
-                    Monitor.PulseAll(m_lockObj);
                 }
 
                 // Now signal to any asynchronous waiters, if there are any.  While we've already
