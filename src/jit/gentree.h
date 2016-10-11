@@ -4477,9 +4477,8 @@ struct GenTreePutArgStk : public GenTreeUnOp
         , gtSlotNum(slotNum)
         , putInIncomingArgArea(_putInIncomingArgArea)
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
-        , gtPutArgStkKind(PutArgStkKindInvalid)
+        , gtPutArgStkKind(Kind::Invalid)
         , gtNumSlots(numSlots)
-        , gtIsStruct(isStruct)
         , gtNumberReferenceSlots(0)
         , gtGcPtrs(nullptr)
 #endif // FEATURE_PUT_STRUCT_ARG_STK
@@ -4492,17 +4491,15 @@ struct GenTreePutArgStk : public GenTreeUnOp
     GenTreePutArgStk(genTreeOps oper,
                      var_types  type,
                      GenTreePtr op1,
-                     unsigned slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(unsigned numSlots)
-                         PUT_STRUCT_ARG_STK_ONLY_ARG(bool isStruct),
+                     unsigned slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(unsigned numSlots),
                      bool _putInIncomingArgArea = false DEBUGARG(GenTreePtr callNode = nullptr)
                          DEBUGARG(bool largeNode = false))
         : GenTreeUnOp(oper, type, op1 DEBUGARG(largeNode))
         , gtSlotNum(slotNum)
         , putInIncomingArgArea(_putInIncomingArgArea)
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
-        , gtPutArgStkKind(PutArgStkKindInvalid)
+        , gtPutArgStkKind(Kind::Invalid)
         , gtNumSlots(numSlots)
-        , gtIsStruct(isStruct)
         , gtNumberReferenceSlots(0)
         , gtGcPtrs(nullptr)
 #endif // FEATURE_PUT_STRUCT_ARG_STK
@@ -4517,14 +4514,12 @@ struct GenTreePutArgStk : public GenTreeUnOp
     GenTreePutArgStk(genTreeOps oper,
                      var_types  type,
                      unsigned slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(unsigned numSlots)
-                         PUT_STRUCT_ARG_STK_ONLY_ARG(bool isStruct) DEBUGARG(GenTreePtr callNode = NULL)
-                             DEBUGARG(bool largeNode = false))
+                         DEBUGARG(GenTreePtr callNode = NULL) DEBUGARG(bool largeNode = false))
         : GenTreeUnOp(oper, type DEBUGARG(largeNode))
         , gtSlotNum(slotNum)
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
-        , gtPutArgStkKind(PutArgStkKindInvalid)
+        , gtPutArgStkKind(Kind::Invalid)
         , gtNumSlots(numSlots)
-        , gtIsStruct(isStruct)
         , gtNumberReferenceSlots(0)
         , gtGcPtrs(nullptr)
 #endif // FEATURE_PUT_STRUCT_ARG_STK
@@ -4538,14 +4533,12 @@ struct GenTreePutArgStk : public GenTreeUnOp
                      var_types  type,
                      GenTreePtr op1,
                      unsigned slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(unsigned numSlots)
-                         PUT_STRUCT_ARG_STK_ONLY_ARG(bool isStruct) DEBUGARG(GenTreePtr callNode = NULL)
-                             DEBUGARG(bool largeNode = false))
+                         DEBUGARG(GenTreePtr callNode = NULL) DEBUGARG(bool largeNode = false))
         : GenTreeUnOp(oper, type, op1 DEBUGARG(largeNode))
         , gtSlotNum(slotNum)
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
-        , gtPutArgStkKind(PutArgStkKindInvalid)
+        , gtPutArgStkKind(Kind::Invalid)
         , gtNumSlots(numSlots)
-        , gtIsStruct(isStruct)
         , gtNumberReferenceSlots(0)
         , gtGcPtrs(nullptr)
 #endif // FEATURE_PUT_STRUCT_ARG_STK
@@ -4602,14 +4595,13 @@ struct GenTreePutArgStk : public GenTreeUnOp
     // TODO-Throughput: The following information should be obtained from the child
     // block node.
 
-    enum PutArgStkKind : __int8{
-        PutArgStkKindInvalid, PutArgStkKindRepInstr, PutArgStkKindUnroll,
+    enum class Kind : __int8{
+        Invalid, RepInstr, Unroll, AllSlots,
     };
 
-    PutArgStkKind gtPutArgStkKind;
+    Kind gtPutArgStkKind;
 
     unsigned gtNumSlots;             // Number of slots for the argument to be passed on stack
-    bool     gtIsStruct;             // This stack arg is a struct.
     unsigned gtNumberReferenceSlots; // Number of reference slots.
     BYTE*    gtGcPtrs;               // gcPointers
 #endif                               // FEATURE_PUT_STRUCT_ARG_STK
