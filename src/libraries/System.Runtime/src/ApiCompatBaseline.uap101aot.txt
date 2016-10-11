@@ -481,3 +481,8 @@ CannotSealType : Type 'System.MulticastDelegate' is sealed in the implementation
 MembersMustExist : Member 'System.MulticastDelegate..ctor(System.Object, System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.MulticastDelegate..ctor(System.Type, System.String)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.MulticastNotSupportedException' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.IO.FileLoadException.FusionLog.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.IO.FileNotFoundException.FusionLog.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.IO.Stream.CreateWaitHandle()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.IO.Stream.ObjectInvariant()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.IO.Stream.Synchronized(System.IO.Stream)' does not exist in the implementation but it does exist in the contract.
