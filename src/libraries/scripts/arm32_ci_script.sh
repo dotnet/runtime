@@ -12,6 +12,7 @@ function usage {
     echo '    --emulatorPath=/opt/linux-arm-emulator'
     echo '    --mountPath=/opt/linux-arm-emulator-root'
     echo '    --buildConfig=Release'
+    echo '    --softfp'
     echo '    --verbose'
     echo ''
     echo 'Required Arguments:'
@@ -22,6 +23,7 @@ function usage {
     echo '    --buildConfig=<config>             : The value of config should be either Debug or Release'
     echo '                                         Any other value is not accepted'
     echo 'Optional Arguments:'
+    echo '    --softfp                           : Build as arm-softfp'
     echo '    -v --verbose                       : Build made verbose'
     echo '    -h --help                          : Prints this usage message and exits'
     echo ''
@@ -153,7 +155,7 @@ function mount_emulator {
     fi
 
     set +x
-    mount_with_checking "" "$__ARMEmulPath/platform/rootfs-t30.ext4" "$__ARMRootfsMountPath"
+    mount_with_checking "" "$__ARMEmulPath/platform/$__ARMRootfsImageBase" "$__ARMRootfsMountPath"
     mount_with_checking "-t proc" "/proc"    "$__ARMRootfsMountPath/proc"
     mount_with_checking "-o bind" "/dev/"    "$__ARMRootfsMountPath/dev"
     mount_with_checking "-o bind" "/dev/pts" "$__ARMRootfsMountPath/dev/pts"
@@ -182,10 +184,11 @@ function cross_build_corefx {
 
 #Define script variables
 __ARMEmulPath=
+__ARMRootfsImageBase="rootfs-u1404.ext4"
 __ARMRootfsMountPath=
 __buildConfig=
 __verboseFlag=
-__buildArch="arm-softfp"
+__buildArch="arm"
 __initialGitHead=`git rev-parse --verify HEAD`
 
 #Parse command line arguments
@@ -203,6 +206,10 @@ do
         if [[ "$__buildConfig" != "debug" && "$__buildConfig" != "release" ]]; then
             exit_with_error "--buildConfig can be only Debug or Release" true
         fi
+        ;;
+    --softfp)
+        __ARMRootfsImageBase="rootfs-t30.ext4"
+        __buildArch="arm-softfp"
         ;;
     -v|--verbose)
         __verboseFlag="verbose"
@@ -228,7 +235,7 @@ fi
 exit_if_empty "$__ARMEmulPath" "--emulatorPath is a mandatory argument, not provided" true
 exit_if_empty "$__ARMRootfsMountPath" "--mountPath is a mandatory argument, not provided" true
 exit_if_empty "$__buildConfig" "--buildConfig is a mandatory argument, not provided" true
-exit_if_path_absent "$__ARMEmulPath/platform/rootfs-t30.ext4" "Path specified in --emulatorPath does not have the rootfs" false
+exit_if_path_absent "$__ARMEmulPath/platform/$__ARMRootfsImageBase" "Path specified in --emulatorPath does not have the rootfs" false
 
 set -x
 set -e
