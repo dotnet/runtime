@@ -2415,12 +2415,6 @@ regMaskTP Compiler::rpPredictTreeRegUse(GenTreePtr   tree,
         {
             case GT_ASG:
 
-                if (tree->OperIsBlkOp())
-                {
-                    interferingRegs |= rpPredictBlkAsgRegUse(tree, predictReg, lockedRegs, rsvdRegs);
-                    regMask = 0;
-                    goto RETURN_CHECK;
-                }
                 /* Is the value being assigned into a LCL_VAR? */
                 if (op1->gtOper == GT_LCL_VAR)
                 {
@@ -2485,6 +2479,12 @@ regMaskTP Compiler::rpPredictTreeRegUse(GenTreePtr   tree,
                             goto ASG_COMMON;
                         }
                     }
+                }
+                else if (tree->OperIsBlkOp())
+                {
+                    interferingRegs |= rpPredictBlkAsgRegUse(tree, predictReg, lockedRegs, rsvdRegs);
+                    regMask = 0;
+                    goto RETURN_CHECK;
                 }
                 __fallthrough;
 
