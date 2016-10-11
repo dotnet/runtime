@@ -496,22 +496,4 @@ namespace System.Tests
             return result;
         }
     }
-
-    // The below extension methods allow the tests to run on targets that *do not* have the new Split overloads.
-    // On targets that *do* have the new Split overloads (e.g. netcoreapp1.1), the actual overloads on String
-    // are called instead of the extension methods below (due to the way extension methods work).
-    internal static class StringSplitExtensions
-    {
-        public static string[] Split(this string value, char separator, StringSplitOptions options = StringSplitOptions.None) =>
-            value.Split(new[] { separator }, options);
-
-        public static string[] Split(this string value, char separator, int count, StringSplitOptions options = StringSplitOptions.None) =>
-            value.Split(new[] { separator }, count, options);
-
-        public static string[] Split(this string value, string separator, StringSplitOptions options = StringSplitOptions.None) =>
-            value.Split(new[] { separator }, options);
-
-        public static string[] Split(this string value, string separator, int count, StringSplitOptions options = StringSplitOptions.None) =>
-            value.Split(new[] { separator }, count, options);
-    }
 }

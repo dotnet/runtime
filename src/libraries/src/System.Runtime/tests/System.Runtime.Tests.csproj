@@ -109,6 +109,9 @@
     <Compile Include="System\Runtime\CompilerServices\RuntimeHelpersTests.netcoreapp1.1.cs" />
     <Compile Include="System\UIntPtrTests.netcoreapp1.1.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netcoreapp1.1'">
+    <Compile Include="System\StringSplitExtensions.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == ''">
     <Compile Include="ArrayTests.netstandard1.7.cs" />
     <Compile Include="System\AttributeTests.netstandard1.7.cs" />
