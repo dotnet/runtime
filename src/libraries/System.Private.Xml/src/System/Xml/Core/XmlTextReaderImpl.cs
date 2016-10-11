@@ -2,18 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.IO;
 using System.Text;
-using System.Security;
-using System.Threading;
 using System.Xml.Schema;
-using System.Collections;
 using System.Diagnostics;
 using System.Globalization;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
 
 namespace System.Xml
 {
@@ -2579,7 +2574,7 @@ namespace System.Xml
         {
             get
             {
-                return _xmlResolver == null || (LocalAppContextSwitches.ProhibitDefaultUrlResolver && !_xmlResolverIsSet);
+                return _xmlResolver == null || !_xmlResolverIsSet;
             }
         }
 

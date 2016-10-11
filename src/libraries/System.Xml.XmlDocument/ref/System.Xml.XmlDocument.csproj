@@ -7,8 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Xml.XmlDocument.cs" />
-    <!-- ToDo: Remove these P2P references once packages are updated -->
-    <ProjectReference Include="..\..\System.Xml.ReaderWriter\ref\System.Xml.ReaderWriter.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

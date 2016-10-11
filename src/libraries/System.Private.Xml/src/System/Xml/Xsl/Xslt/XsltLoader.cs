@@ -13,7 +13,6 @@ using System.Text;
 using System.IO;
 using System.Xml.XPath;
 using System.Xml.Xsl.Qil;
-using System.Runtime.Versioning;
 
 namespace System.Xml.Xsl.Xslt
 {
@@ -1511,7 +1510,7 @@ namespace System.Xml.Xsl.Xslt
         {
             if (++_loadInstructionsDepth > MAX_LOADINSTRUCTIONS_DEPTH)
             {
-                if (LocalAppContextSwitches.LimitXPathComplexity)
+                if (XmlAppContextSwitches.LimitXPathComplexity)
                 {
                     throw XslLoadException.Create(SR.Xslt_InputTooComplex);
                 }

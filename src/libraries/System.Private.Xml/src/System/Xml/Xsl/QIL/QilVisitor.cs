@@ -440,7 +440,7 @@ namespace System.Xml.Xsl.Qil
 
         public static void Check(QilNode input)
         {
-            if (LocalAppContextSwitches.LimitXPathComplexity)
+            if (XmlAppContextSwitches.LimitXPathComplexity)
             {
                 new QilDepthChecker().Check(input, 0);
             }
