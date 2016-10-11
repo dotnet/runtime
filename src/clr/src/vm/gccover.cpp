@@ -1689,24 +1689,6 @@ void DoGcStress (PCONTEXT regs, MethodDesc *pMD)
     bool enableWhenDone = false;
     if (!pThread->PreemptiveGCDisabled())
     {
-#ifdef _TARGET_X86_
-        // We are in preemtive mode in JITTed code. currently this can only
-        // happen in a couple of instructions when we have an inlined PINVOKE
-        // method. 
-
-        // Better be a CALL (direct or indirect),
-        // or a MOV instruction (three flavors),
-        // or pop ECX or add ESP xx (for cdecl pops, two flavors)
-        // or cmp, je (for the PINVOKE ESP checks)
-        // or lea (for PInvoke stack resilience)
-        if (!(instrVal == 0xE8 || instrVal == 0xFF || 
-                 instrVal == 0x89 || instrVal == 0x8B || instrVal == 0xC6 ||
-                 instrVal == 0x59 || instrVal == 0x81 || instrVal == 0x83 ||
-                 instrVal == 0x3B || instrVal == 0x74 || instrVal == 0x8D))
-        {
-            _ASSERTE(!"Unexpected instruction in preemtive JITTED code");
-        }
-#endif // _TARGET_X86_
         pThread->DisablePreemptiveGC();
         enableWhenDone = true;
     }
