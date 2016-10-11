@@ -11,6 +11,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>1718</NoWarn>
     <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
+    <DefineConstants Condition="'$(TargetGroup)'==''">$(DefineConstants);netstandard17</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -63,6 +64,8 @@
     <Compile Include="System\IO\Exceptions.Utility.cs" />
     <Compile Include="System\IO\FileLoadExceptionTests.cs" />
     <Compile Include="System\IO\FileLoadException.InteropTests.cs" />
+    <Compile Include="System\IO\FileNotFoundException.InteropTests.cs" />
+    <Compile Include="System\IO\FileNotFoundExceptionTests.cs" />
     <Compile Include="System\IO\PathTooLongExceptionTests.cs" />
     <Compile Include="System\IO\PathTooLongException.InteropTests.cs" />
     <Compile Include="System\LazyTests.cs" />
