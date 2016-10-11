@@ -9709,7 +9709,7 @@ void CodeGen::genCodeForTreeSmpOp(GenTreePtr tree, regMaskTP destReg, regMaskTP 
     switch (oper)
     {
         case GT_ASG:
-            if (tree->OperIsBlkOp())
+            if (tree->OperIsBlkOp() && op1->gtOper != GT_LCL_VAR)
             {
                 genCodeForBlkOp(tree, destReg);
             }
