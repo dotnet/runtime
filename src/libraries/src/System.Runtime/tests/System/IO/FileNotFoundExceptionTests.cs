@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -6,13 +6,13 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public static class FileLoadExceptionTests
+    public static class FileNotFoundExceptionTests
     {
         [Fact]
         public static void Ctor_Empty()
         {
-            var exception = new FileLoadException();
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: HResults.COR_E_FILELOAD, validateMessage: false);
+            var exception = new FileNotFoundException();
+            ExceptionUtility.ValidateExceptionProperties(exception, hResult: HResults.COR_E_FILENOTFOUND, validateMessage: false);
             Assert.Null(exception.FileName);
         }
 
@@ -20,8 +20,8 @@ namespace System.IO.Tests
         public static void Ctor_String()
         {
             string message = "this is not the file you're looking for";
-            var exception = new FileLoadException(message);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: HResults.COR_E_FILELOAD, message: message);
+            var exception = new FileNotFoundException(message);
+            ExceptionUtility.ValidateExceptionProperties(exception, hResult: HResults.COR_E_FILENOTFOUND, message: message);
             Assert.Null(exception.FileName);
         }
 
@@ -30,8 +30,8 @@ namespace System.IO.Tests
         {
             string message = "this is not the file you're looking for";
             var innerException = new Exception("Inner exception");
-            var exception = new FileLoadException(message, innerException);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: HResults.COR_E_FILELOAD, innerException: innerException, message: message);
+            var exception = new FileNotFoundException(message, innerException);
+            ExceptionUtility.ValidateExceptionProperties(exception, hResult: HResults.COR_E_FILENOTFOUND, innerException: innerException, message: message);
             Assert.Equal(null, exception.FileName);
         }
 
@@ -40,8 +40,8 @@ namespace System.IO.Tests
         {
             string message = "this is not the file you're looking for";
             string fileName = "file.txt";
-            var exception = new FileLoadException(message, fileName);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: HResults.COR_E_FILELOAD, message: message);
+            var exception = new FileNotFoundException(message, fileName);
+            ExceptionUtility.ValidateExceptionProperties(exception, hResult: HResults.COR_E_FILENOTFOUND, message: message);
             Assert.Equal(fileName, exception.FileName);
         }
 
@@ -51,8 +51,8 @@ namespace System.IO.Tests
             string message = "this is not the file you're looking for";
             string fileName = "file.txt";
             var innerException = new Exception("Inner exception");
-            var exception = new FileLoadException(message, fileName, innerException);
-            ExceptionUtility.ValidateExceptionProperties(exception, hResult: HResults.COR_E_FILELOAD, innerException: innerException, message: message);
+            var exception = new FileNotFoundException(message, fileName, innerException);
+            ExceptionUtility.ValidateExceptionProperties(exception, hResult: HResults.COR_E_FILENOTFOUND, innerException: innerException, message: message);
             Assert.Equal(fileName, exception.FileName);
         }
 
@@ -62,7 +62,7 @@ namespace System.IO.Tests
             string message = "this is not the file you're looking for";
             string fileName = "file.txt";
             var innerException = new Exception("Inner exception");
-            var exception = new FileLoadException(message, fileName, innerException);
+            var exception = new FileNotFoundException(message, fileName, innerException);
 
             var toString = exception.ToString();
             Assert.Contains(": " + message, toString);
@@ -85,7 +85,7 @@ namespace System.IO.Tests
             string message = "this is not the file you're looking for";
             string fileName = "file.txt";
             var innerException = new Exception("Inner exception");
-            var exception = new FileLoadException(message, fileName, innerException);
+            var exception = new FileNotFoundException(message, fileName, innerException);
 
             Assert.Null(exception.FusionLog);
         }
