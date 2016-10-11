@@ -31,7 +31,7 @@ namespace System.Net.Mail
         // A FormatException will be thrown if a CR or LF is found NOT in the sequence CRLF.
         internal static int ReadFwsReverse(string data, int index)
         {
-            Debug.Assert(!String.IsNullOrEmpty(data), "data was null or empty");
+            Debug.Assert(!string.IsNullOrEmpty(data), "data was null or empty");
             Debug.Assert(index < data.Length, "index was outside the bounds of the string");
             bool expectCR = false;
 
@@ -95,7 +95,7 @@ namespace System.Net.Mail
         // Throws a FormatException for mismatched '(' and ')', or for unescaped characters not allowed in comments.
         internal static int ReadCfwsReverse(string data, int index)
         {
-            Debug.Assert(!String.IsNullOrEmpty(data), "data was null or empty");
+            Debug.Assert(!string.IsNullOrEmpty(data), "data was null or empty");
             Debug.Assert(index < data.Length, "index was outside the bounds of the string");
 
             int commentDepth = 0;

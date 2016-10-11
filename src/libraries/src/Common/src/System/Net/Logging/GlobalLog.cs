@@ -199,6 +199,24 @@ namespace System.Net
             }
         }
 
+        public static void AssertFormat(bool condition, string messageFormat, params object[] data)
+        {
+            if (condition)
+            {
+                string fullMessage = string.Format(CultureInfo.InvariantCulture, messageFormat, data);
+                int pipeIndex = fullMessage.IndexOf('|');
+                if (pipeIndex == -1)
+                {
+                    Assert(fullMessage);
+                }
+                else
+                {
+                    int detailLength = fullMessage.Length - pipeIndex - 1;
+                    Assert(fullMessage.Substring(0, pipeIndex), detailLength > 0 ? fullMessage.Substring(pipeIndex + 1, detailLength) : null);
+                }
+            }
+        }
+
         public static void Assert(string message)
         {
             Assert(message, null);

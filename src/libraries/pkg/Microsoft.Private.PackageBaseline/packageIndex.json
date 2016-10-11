@@ -1509,7 +1509,7 @@
         "4.0.2.0": "4.4.0"
       }
     },
-    "System.Net.Mime": {
+    "System.Net.Mail": {
       "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.4.0"
