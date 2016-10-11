@@ -8,7 +8,6 @@ namespace System.ComponentModel.Tests
 {
     public class PropertyDescriptorTests
     {
-        [ActiveIssue(12372)]
         [Fact]
         public void CopyConstructorAddsAttribute()
         {
