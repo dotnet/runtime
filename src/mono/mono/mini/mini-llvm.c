@@ -148,6 +148,7 @@ typedef struct {
 	LLVMValueRef rgctx_arg;
 	LLVMValueRef this_arg;
 	LLVMTypeRef *vreg_types;
+	gboolean *is_vphi;
 	LLVMTypeRef method_type;
 	LLVMBasicBlockRef init_bb, inited_bb;
 	gboolean *is_dead;
@@ -6568,7 +6569,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 
 		/* Convert the value to the type required by phi nodes */
 		if (spec [MONO_INST_DEST] != ' ' && !MONO_IS_STORE_MEMBASE (ins) && ctx->vreg_types [ins->dreg]) {
-			if (!values [ins->dreg])
+			if (ctx->is_vphi [ins->dreg])
 				/* vtypes */
 				values [ins->dreg] = addresses [ins->dreg];
 			else
@@ -6717,6 +6718,7 @@ free_ctx (EmitContext *ctx)
 	g_free (ctx->values);
 	g_free (ctx->addresses);
 	g_free (ctx->vreg_types);
+	g_free (ctx->is_vphi);
 	g_free (ctx->vreg_cli_types);
 	g_free (ctx->is_dead);
 	g_free (ctx->unreachable);
@@ -6777,6 +6779,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	 */
 	ctx->addresses = g_new0 (LLVMValueRef, cfg->next_vreg);
 	ctx->vreg_types = g_new0 (LLVMTypeRef, cfg->next_vreg);
+	ctx->is_vphi = g_new0 (gboolean, cfg->next_vreg);
 	ctx->vreg_cli_types = g_new0 (MonoType*, cfg->next_vreg);
 	ctx->phi_values = g_ptr_array_sized_new (256);
 	/* 
@@ -7125,8 +7128,11 @@ emit_method_inner (EmitContext *ctx)
 				for (i = 0; i < ins->inst_phi_args [0]; i++) {
 					int sreg1 = ins->inst_phi_args [i + 1];
 					
-					if (sreg1 != -1)
+					if (sreg1 != -1) {
+						if (ins->opcode == OP_VPHI)
+							ctx->is_vphi [sreg1] = TRUE;
 						ctx->vreg_types [sreg1] = phi_type;
+					}
 				}
 				break;
 				}
