@@ -4110,7 +4110,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
 
             // Build the mkrefany as a GT_FIELD_LIST
             GenTreeFieldList* fieldList = new (this, GT_FIELD_LIST)
-                GenTreeFieldList(argx->gtOp.gtOp1, offsetof(CORINFO_RefAny, dataPtr), TYP_I_IMPL, nullptr);
+                GenTreeFieldList(argx->gtOp.gtOp1, offsetof(CORINFO_RefAny, dataPtr), TYP_BYREF, nullptr);
             (void)new (this, GT_FIELD_LIST)
                 GenTreeFieldList(argx->gtOp.gtOp2, offsetof(CORINFO_RefAny, type), TYP_I_IMPL, fieldList);
             fgArgTabEntryPtr fp = Compiler::gtArgEntryByNode(call, argx);
