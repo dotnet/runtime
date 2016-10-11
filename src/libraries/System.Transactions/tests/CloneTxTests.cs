@@ -48,6 +48,7 @@ namespace System.Transactions.Tests
         [InlineData(CloneType.Normal, IsolationLevel.Snapshot, false, false, TransactionStatus.Committed)]
         [InlineData(CloneType.Normal, IsolationLevel.Chaos, false, false, TransactionStatus.Committed)]
         [InlineData(CloneType.Normal, IsolationLevel.Unspecified, false, false, TransactionStatus.Committed)]
+        [InlineData(CloneType.Normal, true, true, TransactionStatus.Committed)]
         [InlineData(CloneType.BlockingDependent, IsolationLevel.Serializable, true, true, TransactionStatus.Committed)]
         [InlineData(CloneType.BlockingDependent, IsolationLevel.RepeatableRead, true, true, TransactionStatus.Committed)]
         [InlineData(CloneType.BlockingDependent, IsolationLevel.ReadCommitted, true, true, TransactionStatus.Committed)]
@@ -71,6 +72,14 @@ namespace System.Transactions.Tests
                 // Shorten the delay before a timeout for blocking clones.
                 Timeout = TimeSpan.FromSeconds(1)
             };
+
+            // If we are dealing with a "normal" clone, we fully expect the transaction to commit successfully.
+            // But a timeout of 1 seconds may not be enough for that to happen. So increase the timeout
+            // for "normal" clones. This will not increase the test execution time in the "passing" scenario.
+            if (cloneType == CloneType.Normal)
+            {
+                options.Timeout = TimeSpan.FromSeconds(10);
+            }
 
             CommittableTransaction tx = new CommittableTransaction(options);
 
@@ -103,10 +112,10 @@ namespace System.Transactions.Tests
                 HelperFunctions.PromoteTx(tx);
             }
 
-            Assert.Equal(clone.IsolationLevel, tx.IsolationLevel);
-            Assert.Equal(clone.TransactionInformation.Status, tx.TransactionInformation.Status);
-            Assert.Equal(clone.TransactionInformation.LocalIdentifier, tx.TransactionInformation.LocalIdentifier);
-            Assert.Equal(clone.TransactionInformation.DistributedIdentifier, tx.TransactionInformation.DistributedIdentifier);
+            Assert.Equal(tx.IsolationLevel, clone.IsolationLevel);
+            Assert.Equal(tx.TransactionInformation.Status, clone.TransactionInformation.Status);
+            Assert.Equal(tx.TransactionInformation.LocalIdentifier, clone.TransactionInformation.LocalIdentifier);
+            Assert.Equal(tx.TransactionInformation.DistributedIdentifier, clone.TransactionInformation.DistributedIdentifier);
 
             CommittableTransaction cloneCommittable = clone as CommittableTransaction;
             Assert.Null(cloneCommittable);
@@ -115,9 +124,34 @@ namespace System.Transactions.Tests
             {
                 tx.Commit();
             }
-            catch (TransactionAbortedException)
+            catch (TransactionAbortedException ex)
             {
                 Assert.Equal(expectedStatus, TransactionStatus.Aborted);
+                switch (cloneType)
+                {
+                    case CloneType.Normal:
+                        {
+                            // We shouldn't be getting TransactionAbortedException for "normal" clones,
+                            // so we have these two Asserts to possibly help determine what went wrong.
+                            Assert.Null(ex.InnerException);
+                            Assert.Equal("There shouldn't be any exception with this Message property", ex.Message);
+                            break;
+                        }
+                    case CloneType.BlockingDependent:
+                        {
+                            Assert.IsType<TimeoutException>(ex.InnerException);
+                            break;
+                        }
+                    case CloneType.RollbackDependent:
+                        {
+                            Assert.Null(ex.InnerException);
+                            break;
+                        }
+                    default:
+                        {
+                            throw new Exception("Unexpected CloneType - " + cloneType.ToString());
+                        }
+                }
             }
 
             Assert.Equal(expectedStatus, tx.TransactionInformation.Status);
