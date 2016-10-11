@@ -785,9 +785,7 @@ namespace System.Threading {
                 SetApartmentStateNative((int)value, true);
             }
         }
-#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
-#if FEATURE_COMINTEROP_APARTMENT_SUPPORT
         [System.Security.SecuritySafeCritical]  // auto-generated
         [HostProtection(Synchronization=true, SelfAffectingThreading=true)]
         public void SetApartmentState(ApartmentState state)
