@@ -9645,9 +9645,12 @@ GenTreePtr Compiler::fgMorphCopyBlock(GenTreePtr tree)
             asg->gtOp.gtOp1   = dest;
             hasGCPtrs         = ((dest->OperGet() == GT_OBJ) && (dest->AsObj()->gtGcPtrCount != 0));
 
-#ifdef CPBLK_UNROLL_LIMIT
+#if defined(CPBLK_UNROLL_LIMIT) && !defined(JIT32_GCENCODER)
             // Note that the unrolling of CopyBlk is only implemented on some platforms.
-            // Currently that includes x64 and Arm64 but not x64 or Arm32.
+            // Currently that includes x64 and ARM but not x86: the code generation for this
+            // construct requires the ability to mark certain regions of the generated code
+            // as non-interruptible, and the GC encoding for the latter platform does not
+            // have this capability.
 
             // If we have a CopyObj with a dest on the stack
             // we will convert it into an GC Unsafe CopyBlk that is non-interruptible
@@ -9670,7 +9673,8 @@ GenTreePtr Compiler::fgMorphCopyBlock(GenTreePtr tree)
                     tree->gtOp.gtOp1               = dest;
                 }
             }
-#endif
+#endif // defined(CPBLK_UNROLL_LIMIT) && !defined(JIT32_GCENCODER)
+
             // Eliminate the "OBJ or BLK" node on the rhs.
             rhs             = fgMorphBlockOperand(rhs, asgType, blockWidth, false /*!isDest*/);
             asg->gtOp.gtOp2 = rhs;

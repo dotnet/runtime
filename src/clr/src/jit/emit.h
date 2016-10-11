@@ -1822,8 +1822,12 @@ private:
     void emitInsertIGAfter(insGroup* insertAfterIG, insGroup* ig);
 
     void emitNewIG();
+
+#if !defined(JIT32_GCENCODER)
     void emitDisableGC();
     void emitEnableGC();
+#endif // !defined(JIT32_GCENCODER)
+
     void emitGenIG(insGroup* ig);
     insGroup* emitSavIG(bool emitAdd = false);
     void emitNxtIG(bool emitAdd = false);
@@ -2707,6 +2711,7 @@ inline void emitter::emitNewIG()
     emitGenIG(ig);
 }
 
+#if !defined(JIT32_GCENCODER)
 // Start a new instruction group that is not interruptable
 inline void emitter::emitDisableGC()
 {
@@ -2736,6 +2741,7 @@ inline void emitter::emitEnableGC()
     // instruction groups.
     emitForceNewIG = true;
 }
+#endif // !defined(JIT32_GCENCODER)
 
 /*****************************************************************************/
 #endif // _EMIT_H_
