@@ -19462,6 +19462,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
                         regNumber indCallReg;
 
                         case IAT_VALUE:
+                        {
                             //------------------------------------------------------
                             // Non-virtual direct calls to known addressess
                             //
@@ -19469,7 +19470,24 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
                             // it be nice if they all did!
                             CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef _TARGET_ARM_
-                            if (!arm_Valid_Imm_For_BL((ssize_t)addr))
+                            // We may use direct call for some of recursive calls
+                            // as we can safely estimate the distance from the call site to the top of the method
+                            const int codeOffset = MAX_PROLOG_SIZE_BYTES +           // prolog size
+                                                   getEmitter()->emitCurCodeOffset + // offset of the current IG
+                                                   getEmitter()->emitCurIGsize +     // size of the current IG
+                                                   4;                                // size of the jump instruction
+                                                                                     // that we are now emitting
+                            if (compiler->gtIsRecursiveCall(call->AsCall()) && codeOffset <= -CALL_DIST_MAX_NEG)
+                            {
+                                getEmitter()->emitIns_Call(emitter::EC_FUNC_TOKEN, methHnd,
+                                                           INDEBUG_LDISASM_COMMA(sigInfo) NULL, // addr
+                                                           args, retSize, gcInfo.gcVarPtrSetCur,
+                                                           gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur, ilOffset,
+                                                           REG_NA, REG_NA, 0, 0, // ireg, xreg, xmul, disp
+                                                           false,                // isJump
+                                                           emitter::emitNoGChelper(helperNum));
+                            }
+                            else if (!arm_Valid_Imm_For_BL((ssize_t)addr))
                             {
                                 // Load the address into a register and call  through a register
                                 indCallReg = regSet.rsGrabReg(RBM_ALLINT); // Grab an available register to use for the
@@ -19496,7 +19514,8 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
                                                            false, /* isJump */
                                                            emitter::emitNoGChelper(helperNum));
                             }
-                            break;
+                        }
+                        break;
 
                         case IAT_PVALUE:
                             //------------------------------------------------------
