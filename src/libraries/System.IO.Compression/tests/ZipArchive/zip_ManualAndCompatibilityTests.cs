@@ -10,7 +10,6 @@ namespace System.IO.Compression.Tests
     public class zip_ManualAndCompatabilityTests : ZipFileTestBase
     {
         [Theory]
-        [ActiveIssue(11685)]
         [InlineData("7zip.zip", "normal", true, true)]
         [InlineData("deflate64.zip", "normal", true, true)]
         [InlineData("windows.zip", "normalWithoutEmptyDir", false, true)]
