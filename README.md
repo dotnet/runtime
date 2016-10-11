@@ -1,107 +1,222 @@
-.NET Core Runtime (CoreCLR)
+.NET Core Common Language Runtime (CoreCLR)
 ===========================
 
-The CoreCLR repo contains the complete runtime implementation for [.NET Core](http://github.com/dotnet/core). It includes RyuJIT, the .NET GC, native interop and many other components. It is cross-platform, with multiple OS and CPU ports in progress.
+This repository contains complete source code the runtime of [.NET Core](http://dotnet.github.io).
+If you are new to .NET Core start with the [About .NET](https://docs.microsoft.com/en-us/dotnet/articles/about/) 
+that quickly points you to [.NET Core Tutorials](https://docs.microsoft.com/en-us/dotnet/articles/core/getting-started)
 
-Note that the library implementation CoreFX (System.Collections, System.IO, System.Xml and so on) lives in another repo [dotnet/corefx](https://github.com/dotnet/corefx).
 
-Build Status
-------------
+.NET Core is best thought of as 'agile .NET'.   Generally speaking it is the same as 
+the [Desktop .NET Framework](https://en.wikipedia.org/wiki/.NET_Framework)
+distributed as part of the Windows operating system, but it is a cross platform 
+(Windows, Linux, OSX) and cross architecture (x86, x64, arm) subset that can be deployed
+as part of the application (if desired), and thus can be updated quickly to fix bugs or add features.  
 
-|   | Debug | Release |
-|---|:-----:|:-------:|
-|**CentOS 7.1**|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/debug_centos7.1.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/job/debug_centos7.1)|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/release_centos7.1.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/job/release_centos7.1)|
-|**Debian 8.4**|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/debug_debian8.4.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/job/debug_debian8.4)|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/release_debian8.4.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/job/release_debian8.4)|
-|**FreeBSD 10.1**|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/debug_freebsd.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/job/debug_freebsd)|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/release_freebsd.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/job/release_freebsd)|
-|**openSUSE 13.2**|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/debug_opensuse13.2.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/job/debug_opensuse13.2)|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/release_opensuse13.2.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/job/release_opensuse13.2)|
-|**openSUSE 42.1**|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/debug_opensuse42.1.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/job/debug_opensuse42.1)|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/release_opensuse42.1.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/job/release_opensuse42.1)|
-|**OS X 10.11**|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/debug_osx.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/job/debug_osx)|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/release_osx.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/job/release_osx)|
-|**Red Hat 7.2**|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/debug_rhel7.2.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/job/debug_rhel7.2)|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/release_rhel7.2.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/job/release_rhel7.2)|
-|**Fedora 23**|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/debug_fedora23.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/job/debug_fedora23)|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/release_fedora23.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/job/release_fedora23)|
-|**Ubuntu 14.04**|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/debug_ubuntu.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/job/debug_ubuntu)|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/release_ubuntu.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/job/release_ubuntu)|
-|**Ubuntu 16.04**|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/debug_ubuntu16.04.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/job/debug_ubuntu16.04)|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/release_ubuntu16.04.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/job/release_ubuntu16.04)|
-|**Ubuntu 16.10**|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/debug_ubuntu16.10.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/job/debug_ubuntu16.10)|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/release_ubuntu16.10.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/job/release_ubuntu16.10)|
-|**Windows 8.1**|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/debug_windows_nt.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/job/debug_windows_nt)<br/>[![arm64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/arm64_cross_debug_windows_nt.svg?label=arm64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/job/arm64_cross_debug_windows_nt)|[![x64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/release_windows_nt.svg?label=x64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/job/release_windows_nt)<br/>[![arm64 status](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/arm64_cross_release_windows_nt.svg?label=arm64)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr/job/master/job/arm64_cross_release_windows_nt)|
+## If You Just Want to Use .NET Core
 
-Building the Repo
--------------
+Most users don't need build .NET Core from source since there is already an built and tested version for any supported platform.
+You can get the latest **released** version of the .NET Core SDK by following the instructions on 
+the [.NET Core Getting Started](http://dotnet.github.io/getting-started/) page.
+If you need the most up to date (daily) version of this .NET Core installer you can get it from the
+[latest Installers of .NET Core and .NET Core SDK](https://github.com/dotnet/cli#installers-and-binaries).
 
-|Linux   |Windows |Mac OS X |FreeBSD  | NetBSD |
-|--------|--------|---------|---------|--------|
-| [Instructions](Documentation/building/linux-instructions.md) | [Instructions](Documentation/building/windows-instructions.md) | [Instructions](Documentation/building/osx-instructions.md) | [Instructions](Documentation/building/freebsd-instructions.md) | [Instructions](Documentation/building/netbsd-instructions.md) |
+## Are you Here for Something Besides the Source Code?  
 
-Get .NET Core
-----------------------
-You can get the latest released .NET Core SDK from the [.NET Core Getting started](http://dotnet.github.io/getting-started/) page. You can also get the latest development builds of .NET Core and the SDK from the [dotnet/cli repo](https://github.com/dotnet/cli#installers-and-binaries).
+In addition to providing the source code, this repository also acts as a useful nexus for things
+related to .NET Core including:
 
-Chat Room
----------
+ * Want to **learn more** about .NET Runtime Internals?  See the [Documentation on the .NET Core Runtime](Documentation/README.md) page.
+ * Need to **log a issue** or Provide Feedback?   See then [Issues and Feedback Page](Documentation/workflow/IssuesFeedbackEngagement.md) page.
+ * Want to **chat** with other members of the CoreCLR community?  See the [Chat Section](Documentation/workflow/IssuesFeedbackEngagement.md#Chat-with-the-CoreCLR-community) page.
+ * Need a **current build** or **test results** of the CoreCLR repository?   See the [Official and Daily Builds](Documentation/workflow/OfficalAndDailyBuilds.md) page.
 
-Want to chat with other members of the CoreCLR community?
+## What Can you Make from this Repository?
 
-[![.NET Slack Status](https://aspnetcoreslack.herokuapp.com/badge.svg?2)](http://tattoocoder.com/aspnet-slack-sign-up/) [![Join the chat at https://gitter.im/dotnet/coreclr](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/dotnet/coreclr?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+.NET Core relies heavily on the [Nuget](https://en.wikipedia.org/wiki/NuGet) package manager
+which is system to package, distribute and version software components.  See [https://www.nuget.org/](https://www.nuget.org/) 
+for more information on Nuget.   For now it is enough to know Nuget is a system that
+bundles components into `*.nupkg` files (which are ZIP archives) and these packages can be 'published' 
+either through a local file system path or by a URL (e.g. https://www.nuget.org/).   There are then tools 
+(e.g. Nuget.exe, Visual Studio, dotnet.exe) that based on a configuration file (project.json) know 
+how to search these publishing locations and pull down consistent set of packages for the 
+application.   
 
-Learn about CoreCLR and .NET Core
----------------------------------
+In a concrete terms, this repository is best thought of as the source code for the following Nuget package
+ 
+ * **Microsoft.NETCore.Runtime.CoreCLR** - Represents the object allocator, garbage collector (GC), class 
+   loader, type system, interop and the most fundamental parts of the .NET class library (e.g. 
+   System.Object, System.String ...) 
 
-The best ways to learn about CoreCLR are to try out the product instructions and to read the "Book of the Runtime" architecture documents that describe the inner workings of the product. New devs to the CLR team are encouraged to read these documents before making substative changes to the product. They are equally useful for open source contributors.
+It also contains the source code for the following closely related support packages. 
 
-- [.NET Core Roadmap](https://github.com/dotnet/core/blob/master/roadmap.md)
-- [Product instructions](Documentation/README.md)
-- [Introduction to the Common Language Runtime](Documentation/botr/intro-to-clr.md)
-- [Book of the Runtime](Documentation/README.md#book-of-the-runtime)
-- [CoreCLR Documents](Documentation)
+ * **Microsoft.NETCore.Jit** - The Just In Time (JIT) compiler for the 
+   [.NET Intermediate language (IL)](https://en.wikipedia.org/wiki/Common_Intermediate_Language)
+ * **Microsoft.NETCore.ILAsm** - An assembler for the 
+   [.NET Intermediate language (IL)](https://en.wikipedia.org/wiki/Common_Intermediate_Language)
+ * **Microsoft.NETCore.ILDAsm** - A disassembler (Pretty printer) for the
+   [.NET Intermediate language (IL)](https://en.wikipedia.org/wiki/Common_Intermediate_Language)
+ * **Microsoft.NETCore.TestHost** - This contains the corehost.exe program, which is a small wrapper 
+   that uses the .NET Runtime to run IL DLLs passed to it on the command line.
+ * **Microsoft.TargetingPack.Private.CoreCLR** - A set of assemblies that represent the compile time surface 
+   area of class library implemented by the runtime itself.
 
-.NET Core is part of ASP.NET Core and is a subset of the .NET Framework. You can learn more about .NET Core and how and where you can use it in the [CoreCLR is open source][coreclr blog post] blog post.
+## Relationship with the [CoreFX](https://github.com/dotnet/corefx) Repository 
 
-The [.NET Core Libraries][corefx] repo contains the base class libraries, which provides data types and base functionality (ex: String, Collections, HttpClient) on top of CoreCLR. The two repos together make up .NET Core. The [.NET Core is Open Source][.NET Core oss] and [Introducing .NET Core][Introducing .NET Core] blog posts describes our .NET Core OSS strategy and road map in more detail.
+By itself, the Microsoft.NETCore.Runtime.CoreCLR package is actually not enough to do much.
+One reason for this is that the CoreCLR package tries to minimize the amount of the class library that it implements.
+Only types that have a strong dependency on the internal workings of the runtime are included (e.g, 
+System.Object, System.String System.Thread, System.Threading.Tasks.Task and most foundational interfaces).
+Instead most of the class library is implemented as independent Nuget packages that simply use the .NET Core 
+runtime as a dependency.    Many of the most familiar classes (System.Collections, System.IO, System.Xml and 
+so on), live in packages defined in the [dotnet/corefx](https://github.com/dotnet/corefx) repository.
 
-Engage, Contribute and Provide Feedback
----------------------------------------
+But the main reason you can't do much with CoreCLR is that **ALL** of the types in the class library **LOOK** 
+like they are defined by the CoreFX framework and not CoreCLR.   Any library code defined here 
+lives in a single DLL called System.Private.CoreLib.dll and as its name suggests is private (hidden).
+Instead for any particular PUBLIC type defined in CoreCLR, we found the 'right' package in CoreFX where it naturally 
+belongs and use that package as its **public publishing** point.   That 'facade' package then forwards references 
+to the (private) implementation in System.Private.CoreLib.dll defined here.
+For example the *System.Runtime* package defined in CoreFX declares the PUBLIC name for types like 
+System.Object and System.String.   Thus from an applications point of view these types live in System.Runtime.dll. 
+However System.Runtime.dll (defined in the CoreFX repo) forwards references ultimately to System.Private.CoreLib.dll 
+which is defined here.
 
-Some of the best ways to contribute are to try things out, file bugs, and join in design conversations. You are encouraged to start a discussion by filing an issue, or starting a thread in the [.NET Foundation forums](http://forums.dotnetfoundation.org/). If you are having issues with the Full .NET Framework or .NET Runtime the best ways to file a bug are at [Connect](http://connect.microsoft.com/VisualStudio) or through [Product Support](https://support.microsoft.com/en-us/contactus?ws=support) if you have a contract.
+Thus in order to run an application, you need BOTH the Microsoft.NETCore.Runtime.CoreCLR Nuget package 
+(defined in this repository) as well as  packages for whatever you actually references that were defined 
+in the CoreFX repository (which at a minimum includes the System.Runtime package).    You also need some 
+sort of 'host' executable that loads the CoreCLR package as well as the CoreFX packages and starts your code (typically 
+you use dotnet.exe for this).   
 
-Looking for something to work on? The list of [up-for-grabs issues](https://github.com/dotnet/coreclr/issues?q=is%3Aopen+is%3Aissue+label%3Aup-for-grabs) is a great place to start.
+These extra pieces are not defined here, however you don't need to build them in order to use the CoreCLR 
+Nuget package you create here.   There are already versions of the CoreFX packages published on 
+https://www.nuget.org/ so you  can just have your test application's project.json specify the CoreCLR you 
+built it will naturally pull anything else it needs from the official location https://www.nuget.org/ to 
+make a complete application.  More on this in the [Using Your Build](Documentation/workflow/UsingYourBuild.md) page.
+
+--------------------------
+## Setting up your GIT Clone of the CoreCLR Repository
+
+The first step in making a build of the CoreCLR Repository is to clone it locally.   If you already know
+how to do this, just skip this section.  Otherwise if you are developing on windows you can see
+[Setting Up A Git Repository In Visual Studio 2015](https://github.com/Microsoft/perfview/blob/master/documentation/SettingUpRepoInVS2015.md)
+for for instructions on setting up.  This link uses a different repository as an example, but the issues (do you fork or not) and
+the procedure are equally applicable to this repository.  
+
+--------------------------
+## Building the Repository
+
+The build depends on GIT, CMAKE, Python and of course a C++ compiler.  Once these prerequisites are installed
+the build is simply a matter of invoking the 'Build' script (Build.cmd or build.sh) at the base of the 
+repository.  
+
+The details of installing the components differ depending on the operating system.  See the following
+pages based on your OS.  There is no cross-building across OS (only for ARM, which is built on X64).  
+You have to be on the particular platform to build that platform.  
+
+ * [Windows Build Instructions](Documentation/building/windows-instructions.md)
+ * [Linux Build Instructions](Documentation/building/linux-instructions.md)
+ * [OSX Build Instructions](Documentation/building/osx-instructions.md)
+ * [FreeBSD Build Instructions](Documentation/building/freebsd-instructions.md) 
+ * [NetBSD Build Instructions](Documentation/building/netbsd-instructions.md)
+
+The build has two main 'buildTypes'
+
+ * Debug (default)- This compiles the runtime with additional runtime checks (asserts).  These checks slow 
+   runtime execution but are really valuable for debugging, and is recommended for normal development and testing.  
+ * Release - This compiles without any development time runtime checks.  This is what end users will use but 
+   can be difficult to debug.   Passing 'release' to the build script select this.  
+
+In addition, by default the build will not only create the runtime executables, but it will also 
+build all the tests.   There are quit a few tests so this does take a significant amount of time
+that is not necessary if you are just want to experiment with changes.   You can submit the building
+of the tests with the 'skiptests' argument to the build script.
+
+Thus to get a build as quickly as possible type the following (using \ as the directory separator, use / on Unix machines)
+```bat
+    .\build skiptests 
+```
+which will build the Debug flavor which has development time checks (asserts), or 
+```bat 
+    .\build release skiptests
+```
+to build the release (full speed) flavor.  You can find more build options with build by using the -? or -help qualifier.   
+
+## Using Your Build
+
+The build places all of its generated files under the 'bin' directory at the base of the repository.   There 
+is a 'bin\Log' directory that contains log files generated during the build (Most useful when the build fails).
+The the actual output is placed in a directory like this 
+
+* bin\Product\Windows_NT.x64.Release
+
+Where you can see the operating system and CPU architecture, and the build type are part of the name.   While
+the 'raw' output of the build is sometimes useful, normally you are only interested in the Nuget packages 
+that were built, which are placed in the directory 
+
+* bin\Product\Windows_NT.x64.Release\.nuget\pkg
+
+directory.   These packages are the 'output' of your build.   
+
+There are two basic techniques for using your new runtime.
+
+ 1. **Use dotnet.exe and Nuget to compose an application**.   See [Using Your Build](Documentation/workflow/UsingYourBuild.md) for 
+ instructions on creating a program that uses 
+ your new runtime by using the NuGet packages you just created and the'dotnet' command line interface.  This
+ is the expected way non-runtime developers are likely to consume your new runtime.    
+
+ 2. **Use corerun.exe to run an application using unpackaged Dlls**. This repository also defines a simple host called
+ corerun.exe that does NOT take any dependency on NuGet.   Basically it has to be told where to get all the
+ necessary DLLs you actually use, and you have to gather them together 'by hand'.   This is the technique that
+ all the tests in the repo use, and is useful for quick local 'edit-compile-debug' loop (e.g. preliminary unit testsing).
+ See [Executing .NET Core Apps with CoreRun.exe](Documentation/workflow/UsingCoreRun.md) for details on using 
+ this technique.  
+
+## Running Tests 
+
+After you have your modification basically working, and want to determine if you have broken anything it is 
+time to runt tests.  See [Running .NET Core Tests](Documentation/workflow/RunningTests.md) for more. 
+
+## Contributing to Repository 
+
+Looking for something to work on? The list 
+of [up-for-grabs issues](https://github.com/dotnet/coreclr/issues?q=is%3Aopen+is%3Aissue+label%3Aup-for-grabs) is a great place to start.
 
 Please read the following documents to get started.
 
 * [Contributing Guide](Documentation/project-docs/contributing.md)
 * [Developer Guide](Documentation/project-docs/developer-guide.md)
 
-This project has adopted the code of conduct defined by the [Contributor Covenant](http://contributor-covenant.org/) to clarify expected behavior in our community. For more information, see the [.NET Foundation Code of Conduct](http://www.dotnetfoundation.org/code-of-conduct).
+This project has adopted the code of conduct defined by the [Contributor Covenant](http://contributor-covenant.org/) 
+to clarify expected behavior in our community. For more information, see the [.NET Foundation Code of Conduct](http://www.dotnetfoundation.org/code-of-conduct).
 
-### Reporting security issues and security bugs
+-------------------
+## Related Projects
 
-Security issues and bugs should be reported privately, via email, to the
-Microsoft Security Response Center (MSRC) <secure@microsoft.com>. You should
-receive a response within 24 hours. If for some reason you do not, please follow
-up via email to ensure we received your original message. Further information,
-including the MSRC PGP key, can be found in the
-[Security TechCenter](https://technet.microsoft.com/en-us/security/ff852094.aspx).
+As noted above, the CoreCLR Repository does not contain all the source code that makes up the .NET Core distribution.
+Here is a list of the other repositories that complete the picture.  
 
-License
--------
+* [dotnet/corefx](https://github.com/dotnet/corefx) - Source for the most common classes in the .NET Framework library.
+* [dotnet/core-setup](https://github.com/dotnet/core-setup) - Source code for the dotnet.exe program and the policy logic
+to launch basic .NET Core code (hostfxr, hostpolicy) which allow you to say 'dotnet SOME_CORE_CLR_DLL' to run the app.  
+* [dotnet/cli repo](https://github.com/dotnet/cli) - Source for build time actions supported by dotnet.exe Command line Interface (CLI).
+Thus this is the code that runs when you do 'dotnet build', 'dotnet restore' or 'dotnet publish'.
+* [dotnet/core-docs](https://github.com/dotnet/core-docs) - Master copy of documentation for 
+[http://docs.microsoft.com/en-us/dotnet/](https://docs.microsoft.com/en-us/dotnet/)
+
+## See Also
+
+* [Dotnet.github.io](http://dotnet.github.io) is a good place to discover .NET Foundation projects.
+* .NET Core is a [.NET Foundation](http://www.dotnetfoundation.org/projects) project.
+* [.NET home repo](https://github.com/Microsoft/dotnet) links to 100s of .NET projects, from Microsoft and the community.
+* The [.NET Core repo](https://github.com/dotnet/core) links to .NET Core related projects from Microsoft.
+* The [ASP.NET home repo](https://github.com/aspnet/home) is the best place to start learning about ASP.NET Core.
+
+## Important Blog Entries
+
+* [Announcement of .NET Core Open Source Project](http://blogs.msdn.com/b/dotnet/archive/2014/11/12/net-core-is-open-source.aspx)
+* [Introducing .NET Core](http://blogs.msdn.com/b/dotnet/archive/2014/12/04/introducing-net-core.aspx)
+* [Announcement of CoreCLR](http://blogs.msdn.com/b/dotnet/archive/2015/02/03/coreclr-is-now-open-source.aspx)
+
+## License
 
 .NET Core (including the coreclr repo) is licensed under the [MIT license](LICENSE.TXT).
-
-.NET Foundation
----------------
-
-.NET Core is a [.NET Foundation](http://www.dotnetfoundation.org/projects) project.
-
-Related Projects
-----------------
-
-There are many .NET projects on GitHub.
-
-- The
-[.NET home repo](https://github.com/Microsoft/dotnet) links to 100s of .NET projects, from Microsoft and the community.
-- The [.NET Core repo](https://github.com/dotnet/core) links to .NET Core related projects from Microsoft.
-- The [ASP.NET home repo](https://github.com/aspnet/home) is the best place to start learning about ASP.NET Core.
-- [dotnet.github.io](http://dotnet.github.io) is a good place to discover .NET Foundation projects.
-
-[.NET Core oss]: http://blogs.msdn.com/b/dotnet/archive/2014/11/12/net-core-is-open-source.aspx
-[Introducing .NET Core]: http://blogs.msdn.com/b/dotnet/archive/2014/12/04/introducing-net-core.aspx
-[coreclr blog post]: http://blogs.msdn.com/b/dotnet/archive/2015/02/03/coreclr-is-now-open-source.aspx
-[corefx]: http://github.com/dotnet/corefx
-[coreclr]: http://github.com/dotnet/coreclr
