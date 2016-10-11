@@ -7972,8 +7972,19 @@
       <Member Name="get_CurrentThread" />
       <Member Name="get_CurrentUICulture" />
       <Member Name="GetDomain" />
+      <Member Name="get_ManagedThreadId" />
+      <Member Name="get_Name" />
+      <Member Name="set_Name(System.String)" />
+      <Member Name="Sleep(System.Int32)" />
+      <Member Name="Sleep(System.TimeSpan)" />
+      <Member Name="SpinWait(System.Int32)" />
+      <Member Name="Start" />
+      <Member Name="Start(System.Object)" />
       <Member MemberType="Property" Name="CurrentCulture" />
+      <Member MemberType="Property" Name="CurrentThread" />
       <Member MemberType="Property" Name="CurrentUICulture" />
+      <Member MemberType="Property" Name="ManagedThreadId" />
+      <Member MemberType="Property" Name="Name" />
       <Member Status="ImplRoot" Name="InternalGetCurrentThread" />
       <Member Status="ImplRoot" MemberType="Field" Name="DONT_USE_InternalThread" />
       <Member Status="ImplRoot" MemberType="Field" Name="m_Priority" />
