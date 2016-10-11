@@ -1227,9 +1227,11 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 
     switch (treeNode->gtOper)
     {
+#ifndef JIT32_GCENCODER
         case GT_START_NONGC:
             getEmitter()->emitDisableGC();
             break;
+#endif // !defined(JIT32_GCENCODER)
 
         case GT_PROF_HOOK:
 #ifdef PROFILING_SUPPORTED
@@ -2686,10 +2688,15 @@ BAILOUT:
 
 void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
 {
+#ifdef JIT32_GCENCODER
+    assert(!storeBlkNode->gtBlkOpGcUnsafe);
+#else
     if (storeBlkNode->gtBlkOpGcUnsafe)
     {
         getEmitter()->emitDisableGC();
     }
+#endif // JIT32_GCENCODER
+
     bool isCopyBlk = storeBlkNode->OperIsCopyBlkOp();
 
     switch (storeBlkNode->gtBlkOpKind)
@@ -2729,10 +2736,13 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
         default:
             unreached();
     }
+
+#ifndef JIT32_GCENCODER
     if (storeBlkNode->gtBlkOpGcUnsafe)
     {
         getEmitter()->emitEnableGC();
     }
+#endif // !defined(JIT32_GCENCODER)
 }
 
 // Generate code for InitBlk using rep stos.
