@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Runtime.CompilerServices;
 
 namespace System.IO
 {
@@ -265,5 +266,123 @@ namespace System.IO
                 return null;
             }
         }
+
+#if netstandard17
+        public static TextReader Synchronized(TextReader reader)
+        {
+            if (reader == null)
+                throw new ArgumentNullException(nameof(reader));
+
+            if (reader is SyncTextReader)
+                return reader;
+
+            return new SyncTextReader(reader);
+        }
+
+        [Serializable]
+        internal sealed class SyncTextReader : TextReader
+        {
+            internal TextReader _in;
+
+            internal SyncTextReader(TextReader t)
+            {
+                _in = t;
+            }
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public override void Close()
+            {
+                // So that any overriden Close() gets run
+                _in.Close();
+            }
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            protected override void Dispose(bool disposing)
+            {
+                // Explicitly pick up a potentially methodimpl'ed Dispose
+                if (disposing)
+                    ((IDisposable)_in).Dispose();
+            }
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public override int Peek()
+            {
+                return _in.Peek();
+            }
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public override int Read()
+            {
+                return _in.Read();
+            }
+
+            [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public override int Read(char[] buffer, int index, int count)
+            {
+                return _in.Read(buffer, index, count);
+            }
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public override int ReadBlock(char[] buffer, int index, int count)
+            {
+                return _in.ReadBlock(buffer, index, count);
+            }
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public override string ReadLine()
+            {
+                return _in.ReadLine();
+            }
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public override string ReadToEnd()
+            {
+                return _in.ReadToEnd();
+            }
+
+            //
+            // On SyncTextReader all APIs should run synchronously, even the async ones.
+            //
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public override Task<string> ReadLineAsync()
+            {
+                return Task.FromResult(ReadLine());
+            }
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public override Task<string> ReadToEndAsync()
+            {
+                return Task.FromResult(ReadToEnd());
+            }
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public override Task<int> ReadBlockAsync(char[] buffer, int index, int count)
+            {
+                if (buffer == null)
+                    throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
+                if (index < 0 || count < 0)
+                    throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), SR.ArgumentOutOfRange_NeedNonNegNum);
+                if (buffer.Length - index < count)
+                    throw new ArgumentException(SR.Argument_InvalidOffLen);
+
+                return Task.FromResult(ReadBlock(buffer, index, count));
+            }
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public override Task<int> ReadAsync(char[] buffer, int index, int count)
+            {
+                if (buffer == null)
+                    throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
+                if (index < 0 || count < 0)
+                    throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), SR.ArgumentOutOfRange_NeedNonNegNum);
+                if (buffer.Length - index < count)
+                    throw new ArgumentException(SR.Argument_InvalidOffLen);
+
+                return Task.FromResult(Read(buffer, index, count));
+            }
+        }
+#endif
     }
 }
