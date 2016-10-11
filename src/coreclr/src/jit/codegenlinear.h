@@ -40,7 +40,7 @@ void genCkfinite(GenTreePtr treeNode);
 
 void genIntrinsic(GenTreePtr treeNode);
 
-void genPutArgStk(GenTreePtr treeNode);
+void genPutArgStk(GenTreePutArgStk* treeNode);
 unsigned getBaseVarForPutArgStk(GenTreePtr treeNode);
 
 #if defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
@@ -162,6 +162,10 @@ void genCodeForCpBlkRepMovs(GenTreeBlk* cpBlkNode);
 void genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode);
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
+#ifdef _TARGET_X86_
+bool genAdjustStackForPutArgStk(GenTreePutArgStk* putArgStk, bool isSrcInMemory);
+#endif // _TARGET_X86_
+
 void genPutStructArgStk(GenTreePutArgStk* treeNode);
 
 int genMove8IfNeeded(unsigned size, regNumber tmpReg, GenTree* srcAddr, unsigned offset);
@@ -170,7 +174,7 @@ int genMove2IfNeeded(unsigned size, regNumber tmpReg, GenTree* srcAddr, unsigned
 int genMove1IfNeeded(unsigned size, regNumber tmpReg, GenTree* srcAddr, unsigned offset);
 void genStructPutArgRepMovs(GenTreePutArgStk* putArgStkNode);
 void genStructPutArgUnroll(GenTreePutArgStk* putArgStkNode);
-void genStoreRegToStackArg(var_types type, regNumber reg, unsigned offset);
+void genStoreRegToStackArg(var_types type, regNumber reg, int offset);
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 
 void genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst, GenTree* base, unsigned offset);
