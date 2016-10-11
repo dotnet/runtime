@@ -40,7 +40,7 @@ namespace System.Xml
                 Uri uri = new Uri(relativeUri, UriKind.RelativeOrAbsolute);
                 if (!uri.IsAbsoluteUri && uri.OriginalString.Length > 0)
                 {
-                    uri = new Uri(Path.GetFullPath(relativeUri));
+                    uri = new Uri(Uri.UriSchemeFile + Uri.SchemeDelimiter + Path.GetFullPath(relativeUri));
                 }
                 return uri;
             }
