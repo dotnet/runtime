@@ -3069,7 +3069,7 @@ ensure_runtime_vtable (MonoClass *klass, MonoError *error)
 		}
 	}
 
-	if (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_INTERFACE) {
+	if (mono_class_is_interface (klass)) {
 		int slot_num = 0;
 		for (i = 0; i < klass->method.count; ++i) {
 			MonoMethod *im = klass->methods [i];

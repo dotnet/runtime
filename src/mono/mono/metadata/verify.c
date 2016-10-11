@@ -4643,7 +4643,7 @@ merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, gboolean sta
 			}
 
 			/* if old class is an interface that new class implements */
-			if (mono_class_get_flags (old_class) & TYPE_ATTRIBUTE_INTERFACE) {
+			if (mono_class_is_interface (old_class)) {
 				if (verifier_class_is_assignable_from (old_class, new_class)) {
 					match_class = old_class;
 					goto match_found;	
@@ -4656,7 +4656,7 @@ merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, gboolean sta
 				}
 			}
 
-			if (mono_class_get_flags (new_class) & TYPE_ATTRIBUTE_INTERFACE) {
+			if (mono_class_is_interface (new_class)) {
 				if (verifier_class_is_assignable_from (new_class, old_class)) {
 					match_class = new_class;
 					goto match_found;	
@@ -6180,7 +6180,7 @@ verify_interfaces (MonoClass *klass)
 	int i;
 	for (i = 0; i < klass->interface_count; ++i) {
 		MonoClass *iface = klass->interfaces [i];
-		if (!(mono_class_get_flags (iface) & TYPE_ATTRIBUTE_INTERFACE))
+		if (!mono_class_get_flags (iface))
 			return FALSE;
 	}
 	return TRUE;

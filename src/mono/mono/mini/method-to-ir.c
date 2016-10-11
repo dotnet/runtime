@@ -1794,7 +1794,7 @@ mini_emit_castclass_inst (MonoCompile *cfg, int obj_reg, int klass_reg, MonoClas
 			mini_emit_class_check (cfg, eclass_reg, mono_defaults.enum_class);
 		} else if (klass->cast_class == mono_defaults.enum_class) {
 			mini_emit_class_check (cfg, eclass_reg, mono_defaults.enum_class);
-		} else if (mono_class_get_flags (klass->cast_class) & TYPE_ATTRIBUTE_INTERFACE) {
+		} else if (mono_class_is_interface (klass->cast_class)) {
 			mini_emit_iface_class_cast (cfg, eclass_reg, klass->cast_class, NULL, NULL);
 		} else {
 			// Pass -1 as obj_reg to skip the check below for arrays of arrays
@@ -2791,7 +2791,7 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 	if (!sig)
 		sig = mono_method_signature (method);
 
-	if (cfg->llvm_only && (mono_class_get_flags (method->klass) & TYPE_ATTRIBUTE_INTERFACE))
+	if (cfg->llvm_only && (mono_class_is_interface (method->klass)))
 		g_assert_not_reached ();
 
 	if (rgctx_arg) {
@@ -2829,7 +2829,7 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 	if (cfg->llvm_only && !call_target && virtual_ && (method->flags & METHOD_ATTRIBUTE_VIRTUAL))
 		return emit_llvmonly_virtual_call (cfg, method, sig, 0, args);
 
-	need_unbox_trampoline = method->klass == mono_defaults.object_class || (mono_class_get_flags (method->klass) & TYPE_ATTRIBUTE_INTERFACE);
+	need_unbox_trampoline = method->klass == mono_defaults.object_class || mono_class_is_interface (method->klass);
 
 	call = mono_emit_call_args (cfg, sig, args, FALSE, virtual_, tail, rgctx_arg ? TRUE : FALSE, need_unbox_trampoline);
 
@@ -2918,7 +2918,7 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 		} else {
 			vtable_reg = alloc_preg (cfg);
 			MONO_EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, vtable_reg, this_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
-			if (mono_class_get_flags (method->klass) & TYPE_ATTRIBUTE_INTERFACE) {
+			if (mono_class_is_interface (method->klass)) {
 				guint32 imt_slot = mono_method_get_imt_slot (method);
 				emit_imt_argument (cfg, call, call->method, imt_arg);
 				slot_reg = vtable_reg;
@@ -4495,7 +4495,7 @@ method_needs_stack_walk (MonoCompile *cfg, MonoMethod *cmethod)
 	return FALSE;
 }
 
-#define is_complex_isinst(klass) ((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_INTERFACE) || klass->rank || mono_class_is_nullable (klass) || mono_class_is_marshalbyref (klass) || (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_SEALED) || klass->byval_arg.type == MONO_TYPE_VAR || klass->byval_arg.type == MONO_TYPE_MVAR)
+#define is_complex_isinst(klass) (mono_class_is_interface (klass) || klass->rank || mono_class_is_nullable (klass) || mono_class_is_marshalbyref (klass) || (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_SEALED) || klass->byval_arg.type == MONO_TYPE_VAR || klass->byval_arg.type == MONO_TYPE_MVAR)
 
 static MonoInst*
 emit_isinst_with_cache (MonoCompile *cfg, MonoClass *klass, MonoInst **args)
@@ -4605,7 +4605,7 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 
 	save_cast_details (cfg, klass, obj_reg, FALSE);
 
-	if (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_INTERFACE) {
+	if (mono_class_is_interface (klass)) {
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 		mini_emit_iface_cast (cfg, vtable_reg, klass, NULL, NULL);
 	} else {
@@ -4686,7 +4686,7 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context_us
 
 	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 
-	if (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_INTERFACE) {
+	if (mono_class_is_interface (klass)) {
 		g_assert (!context_used);
 		/* the is_null_bb target simply copies the input register to the output */
 		mini_emit_iface_cast (cfg, vtable_reg, klass, false_bb, is_null_bb);
@@ -4716,7 +4716,7 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context_us
 			} else if (klass->cast_class == mono_defaults.enum_class) {
 				mini_emit_class_check_branch (cfg, eclass_reg, mono_defaults.enum_class, OP_PBEQ, is_null_bb);
 				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, false_bb);
-			} else if (mono_class_get_flags (klass->cast_class) & TYPE_ATTRIBUTE_INTERFACE) {
+			} else if (mono_class_is_interface (klass->cast_class)) {
 				mini_emit_iface_class_cast (cfg, eclass_reg, klass->cast_class, false_bb, is_null_bb);
 			} else {
 				if ((klass->rank == 1) && (klass->byval_arg.type == MONO_TYPE_SZARRAY)) {
@@ -4805,7 +4805,7 @@ handle_cisinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
 	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, obj_reg, 0);
 	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, false_bb);
 
-	if (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_INTERFACE) {
+	if (mono_class_is_interface (klass)) {
 #ifndef DISABLE_REMOTING
 		NEW_BBLOCK (cfg, interface_fail_bb);
 #endif
@@ -4909,7 +4909,7 @@ handle_ccastclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
 
 	save_cast_details (cfg, klass, obj_reg, FALSE);
 
-	if (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_INTERFACE) {
+	if (mono_class_is_interface (klass)) {
 #ifndef DISABLE_REMOTING
 		NEW_BBLOCK (cfg, interface_fail_bb);
 	
@@ -5186,7 +5186,7 @@ handle_constrained_gsharedvt_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMe
 	 * This is hard to do with the current call code, since we would have to emit a branch and two different calls. So instead, we
 	 * pack the arguments into an array, and do the rest of the work in in an icall.
 	 */
-	if (((cmethod->klass == mono_defaults.object_class) || (mono_class_get_flags (cmethod->klass) & TYPE_ATTRIBUTE_INTERFACE) || (!cmethod->klass->valuetype && cmethod->klass->image != mono_defaults.corlib)) &&
+	if (((cmethod->klass == mono_defaults.object_class) || mono_class_is_interface (cmethod->klass) || (!cmethod->klass->valuetype && cmethod->klass->image != mono_defaults.corlib)) &&
 		(MONO_TYPE_IS_VOID (fsig->ret) || MONO_TYPE_IS_PRIMITIVE (fsig->ret) || MONO_TYPE_IS_REFERENCE (fsig->ret) || MONO_TYPE_ISSTRUCT (fsig->ret) || mini_is_gsharedvt_type (fsig->ret)) &&
 		(fsig->param_count == 0 || (!fsig->hasthis && fsig->param_count == 1) || (fsig->param_count == 1 && (MONO_TYPE_IS_REFERENCE (fsig->params [0]) || fsig->params [0]->byref || mini_is_gsharedvt_type (fsig->params [0]))))) {
 		MonoInst *args [16];
@@ -7716,7 +7716,7 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 	MonoInst *icall_args [16];
 	MonoInst *call_target, *ins, *vtable_ins;
 	int arg_reg, this_reg, vtable_reg;
-	gboolean is_iface = mono_class_get_flags (cmethod->klass) & TYPE_ATTRIBUTE_INTERFACE;
+	gboolean is_iface = mono_class_is_interface (cmethod->klass);
 	gboolean is_gsharedvt = cfg->gsharedvt && mini_is_gsharedvt_variable_signature (fsig);
 	gboolean variant_iface = FALSE;
 	guint32 slot;
@@ -9400,7 +9400,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (mini_is_gsharedvt_klass (constrained_class)) {
 					if ((cmethod->klass != mono_defaults.object_class) && constrained_class->valuetype && cmethod->klass->valuetype) {
 						/* The 'Own method' case below */
-					} else if (cmethod->klass->image != mono_defaults.corlib && !(mono_class_get_flags (cmethod->klass) & TYPE_ATTRIBUTE_INTERFACE) && !cmethod->klass->valuetype) {
+					} else if (cmethod->klass->image != mono_defaults.corlib && !mono_class_is_interface (cmethod->klass) && !cmethod->klass->valuetype) {
 						/* 'The type parameter is instantiated as a reference type' case below. */
 					} else {
 						ins = handle_constrained_gsharedvt_call (cfg, cmethod, fsig, sp, constrained_class, &emit_widen);
@@ -9421,7 +9421,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					 * A simple solution would be to box always and make a normal virtual call, but that would
 					 * be bad performance wise.
 					 */
-					if (mono_class_get_flags (cmethod->klass) & TYPE_ATTRIBUTE_INTERFACE && mono_class_is_ginst (cmethod->klass)) {
+					if (mono_class_is_interface (cmethod->klass) && mono_class_is_ginst (cmethod->klass)) {
 						/*
 						 * The parent classes implement no generic interfaces, so the called method will be a vtype method, so no boxing neccessary.
 						 */
@@ -9474,7 +9474,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						nonbox_call->dreg = ins->dreg;
 						goto call_end;
 					} else {
-						g_assert (mono_class_get_flags (cmethod->klass) & TYPE_ATTRIBUTE_INTERFACE);
+						g_assert (mono_class_is_interface (cmethod->klass));
 						addr = emit_get_rgctx_virt_method (cfg, mono_class_check_context_used (constrained_class), constrained_class, cmethod, MONO_RGCTX_INFO_VIRT_METHOD_CODE);
 						ins = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr, NULL, NULL);
 						goto call_end;
@@ -9561,7 +9561,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				context_used = mini_method_check_context_used (cfg, cmethod);
 
-				if (context_used && (mono_class_get_flags (cmethod->klass) & TYPE_ATTRIBUTE_INTERFACE)) {
+				if (context_used && mono_class_is_interface (cmethod->klass)) {
 					/* Generic method interface
 					   calls are resolved via a
 					   helper function and don't
@@ -9810,7 +9810,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MonoRgctxInfoType info_type;
 
 				if (virtual_) {
-					//if (cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE)
+					//if (mono_class_is_interface (cmethod->klass))
 						//GSHAREDVT_FAILURE (*ip);
 					// disable for possible remoting calls
 					if (fsig->hasthis && (mono_class_is_marshalbyref (method->klass) || method->klass == mono_defaults.object_class))
@@ -9823,7 +9823,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 														 cmethod, MONO_RGCTX_INFO_METHOD);
 						/* This is not needed, as the trampoline code will pass one, and it might be passed in the same reg as the imt arg */
 						vtable_arg = NULL;
-					} else if ((mono_class_get_flags (cmethod->klass) & TYPE_ATTRIBUTE_INTERFACE) && !imt_arg) {
+					} else if (mono_class_is_interface (cmethod->klass) && !imt_arg) {
 						/* This can happen when we call a fully instantiated iface method */
 						imt_arg = emit_get_rgctx_method (cfg, context_used,
 														 cmethod, MONO_RGCTX_INFO_METHOD);
@@ -15128,7 +15128,7 @@ mono_decompose_typecheck (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 			ret = emit_isinst_with_cache_nonshared (cfg, source, klass);
 		else
 			ret = emit_castclass_with_cache_nonshared (cfg, source, klass);
-	} else if (!context_used && (mono_class_is_marshalbyref (klass) || mono_class_get_flags (klass) & TYPE_ATTRIBUTE_INTERFACE)) {
+	} else if (!context_used && (mono_class_is_marshalbyref (klass) || mono_class_is_interface (klass))) {
 		MonoInst *iargs [1];
 		int costs;
 

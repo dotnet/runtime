@@ -3095,7 +3095,7 @@ mono_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod *met
 		return NULL;
 
 	is_virtual_generic = method->is_inflated && mono_method_get_declaring_generic_method (method)->is_generic;
-	is_interface = mono_class_get_flags (method->klass) & TYPE_ATTRIBUTE_INTERFACE ? TRUE : FALSE;
+	is_interface = mono_class_is_interface (method->klass);
 	load_imt_reg = is_virtual_generic || is_interface;
 
 	if (is_interface)

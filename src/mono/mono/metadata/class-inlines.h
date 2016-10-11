@@ -50,4 +50,10 @@ mono_class_is_abstract (MonoClass *class)
 	return mono_class_get_flags (class) & TYPE_ATTRIBUTE_ABSTRACT;
 }
 
+static inline gboolean
+mono_class_is_interface (MonoClass *class)
+{
+	return mono_class_get_flags (class) & TYPE_ATTRIBUTE_INTERFACE;
+}
+
 #endif
