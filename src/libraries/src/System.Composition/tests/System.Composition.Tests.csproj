@@ -17,6 +17,7 @@
     <Compile Include="CircularityTests.cs" />
     <Compile Include="CompositionContextExtensionsTests.cs" />
     <Compile Include="ConcurrencyTests.cs" />
+    <Compile Include="ConstraintTests.cs" />
     <Compile Include="ContainerTests.cs" />
     <Compile Include="ContractTests.cs" />
     <Compile Include="CustomerReportedMetadataBug.cs" />
