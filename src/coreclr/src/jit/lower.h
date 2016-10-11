@@ -128,6 +128,10 @@ private:
     // return true if this call target is within range of a pc-rel call on the machine
     bool IsCallTargetInRange(void* addr);
 
+#ifdef _TARGET_X86_
+    bool ExcludeNonByteableRegisters(GenTree* tree);
+#endif
+
     void TreeNodeInfoInit(GenTree* stmt);
 
 #if defined(_TARGET_XARCH_)
