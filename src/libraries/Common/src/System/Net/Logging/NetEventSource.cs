@@ -271,7 +271,8 @@ namespace System.Net
             WebSocket,
             Security,
             NetworkInformation,
-            Requests
+            Requests,
+            Web
         }
     }
 }
