@@ -2679,7 +2679,7 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             break;
 
         case GT_PUTARG_STK:
-            genPutArgStk(treeNode);
+            genPutArgStk(treeNode->AsPutArgStk());
             break;
 
         case GT_PUTARG_REG:
@@ -5563,7 +5563,7 @@ void CodeGen::genIntrinsic(GenTreePtr treeNode)
 // Return value:
 //    None
 //
-void CodeGen::genPutArgStk(GenTreePtr treeNode)
+void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 {
     assert(treeNode->OperGet() == GT_PUTARG_STK);
     var_types  targetType = treeNode->TypeGet();
