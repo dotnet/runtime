@@ -12,7 +12,7 @@ namespace System.Collections
     // shifting yourself.
     [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
-    public sealed class BitArray : ICollection
+    public sealed class BitArray : ICollection, ICloneable
     {
         private BitArray()
         {

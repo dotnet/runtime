@@ -21,7 +21,7 @@ namespace System.Collections
     [DebuggerTypeProxy(typeof(System.Collections.Queue.QueueDebugView))]
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
-    public class Queue : ICollection
+    public class Queue : ICollection, ICloneable
     {
         private Object[] _array;
         private int _head;       // First valid element in the queue

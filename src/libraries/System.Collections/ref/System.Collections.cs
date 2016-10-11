@@ -7,7 +7,7 @@
 
 namespace System.Collections
 {
-    public sealed partial class BitArray : System.Collections.ICollection, System.Collections.IEnumerable
+    public sealed partial class BitArray : System.Collections.ICollection, System.Collections.IEnumerable, System.ICloneable
     {
         public BitArray(bool[] values) { }
         public BitArray(byte[] bytes) { }

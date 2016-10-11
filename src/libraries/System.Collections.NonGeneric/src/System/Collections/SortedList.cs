@@ -64,7 +64,7 @@ namespace System.Collections
     [Obsolete("Non-generic collections have been deprecated. Please use collections in System.Collections.Generic.")]
 #endif
     [Serializable]
-    public class SortedList : IDictionary
+    public class SortedList : IDictionary, ICloneable
     {
         private Object[] _keys;
         private Object[] _values;
