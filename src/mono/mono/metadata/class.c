@@ -54,8 +54,9 @@ gboolean mono_print_vtable = FALSE;
 gboolean mono_align_small_structs = FALSE;
 
 /* Statistics */
-guint32 inflated_classes, inflated_classes_size, inflated_methods_size;
+guint32 inflated_classes_size, inflated_methods_size;
 guint32 classes_size, class_ext_size;
+guint32 class_def_count, class_gtd_count, class_ginst_count, class_gparam_count, class_array_count, class_pointer_count;
 
 /* Low level lock which protects data structures in this module */
 static mono_mutex_t classes_mutex;
@@ -5751,10 +5752,12 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 		klass = mono_image_alloc0 (image, sizeof (MonoClassGtd));
 		klass->class_kind = MONO_CLASS_GTD;
 		classes_size += sizeof (MonoClassGtd);
+		++class_gtd_count;
 	} else {
 		klass = mono_image_alloc0 (image, sizeof (MonoClassDef));
 		klass->class_kind = MONO_CLASS_DEF;
 		classes_size += sizeof (MonoClassDef);
+		++class_def_count;
 	}
 
 	klass->name = name;
@@ -6071,7 +6074,7 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 
 	mono_profiler_class_loaded (klass, MONO_PROFILE_OK);
 
-	inflated_classes ++;
+	++class_ginst_count;
 	inflated_classes_size += sizeof (MonoClassGenericInst);
 	
 	mono_loader_unlock ();
@@ -6136,6 +6139,7 @@ make_generic_param_class (MonoGenericParam *param, MonoGenericParamInfo *pinfo)
 	klass = (MonoClass *)mono_image_alloc0 (image, sizeof (MonoClassGenericParam));
 	klass->class_kind = MONO_CLASS_GPARAM;
 	classes_size += sizeof (MonoClassGenericParam);
+	++class_gparam_count;
 
 	if (pinfo) {
 		CHECKED_METADATA_WRITE_PTR_EXEMPT ( klass->name , pinfo->name );
@@ -6413,6 +6417,7 @@ mono_ptr_class_get (MonoType *type)
 	result = (MonoClass *)mono_image_alloc0 (image, sizeof (MonoClassPointer));
 
 	classes_size += sizeof (MonoClassPointer);
+	++class_pointer_count;
 
 	result->parent = NULL; /* no parent for PTR types */
 	result->name_space = el_class->name_space;
@@ -6473,6 +6478,9 @@ mono_fnptr_class_get (MonoMethodSignature *sig)
 		return result;
 	}
 	result = g_new0 (MonoClass, 1);
+
+	classes_size += sizeof (MonoClassPointer);
+	++class_pointer_count;
 
 	result->parent = NULL; /* no parent for PTR types */
 	result->name_space = "System";
@@ -6711,6 +6719,7 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	mono_profiler_class_event (klass, MONO_PROFILE_START_LOAD);
 
 	classes_size += sizeof (MonoClassArray);
+	++class_array_count;\
 
 	klass->type_token = 0;
 	klass->parent = parent;
@@ -9977,10 +9986,20 @@ mono_classes_init (void)
 	mono_native_tls_alloc (&setup_fields_tls_id, NULL);
 	mono_native_tls_alloc (&init_pending_tls_id, NULL);
 
+	mono_counters_register ("MonoClassDef count",
+							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_def_count);
+	mono_counters_register ("MonoClassGtd count",
+							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_gtd_count);
+	mono_counters_register ("MonoClassGenericInst count",
+							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_ginst_count);
+	mono_counters_register ("MonoClassGenericParam count",
+							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_gparam_count);
+	mono_counters_register ("MonoClassArray count",
+							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_array_count);
+	mono_counters_register ("MonoClassPointer count",
+							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_pointer_count);
 	mono_counters_register ("Inflated methods size",
 							MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &inflated_methods_size);
-	mono_counters_register ("Inflated classes",
-							MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &inflated_classes);
 	mono_counters_register ("Inflated classes size",
 							MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &inflated_classes_size);
 	mono_counters_register ("MonoClass size",
