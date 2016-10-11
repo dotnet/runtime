@@ -339,7 +339,6 @@ struct _MonoDomain {
 	/* Needed by Thread:GetDomainID() */
 	gint32             domain_id;
 	gint32             shadow_serial;
-	unsigned char      inet_family_hint; // used in socket-io.c as a cache
 	GSList             *domain_assemblies;
 	MonoAssembly       *entry_assembly;
 	char               *friendly_name;

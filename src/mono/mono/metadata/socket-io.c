@@ -591,61 +591,6 @@ get_socket_assembly (void)
 	return domain->socket_assembly;
 }
 
-static gint32
-get_family_hint (MonoError *error)
-{
-	MonoDomain *domain = mono_domain_get ();
-
-	mono_error_init (error);
-
-	if (!domain->inet_family_hint) {
-		MonoImage *socket_assembly;
-		MonoClass *socket_class;
-		MonoClassField *ipv6_field, *ipv4_field;
-		gint32 ipv6_enabled = -1, ipv4_enabled = -1;
-		MonoVTable *vtable;
-
-		socket_assembly = get_socket_assembly ();
-		g_assert (socket_assembly);
-
-		socket_class = mono_class_load_from_name (socket_assembly, "System.Net.Sockets", "Socket");
-
-		ipv4_field = mono_class_get_field_from_name (socket_class, "ipv4_supported");
-		g_assert (ipv4_field);
-
-		ipv6_field = mono_class_get_field_from_name (socket_class, "ipv6_supported");
-		g_assert (ipv6_field);
-
-		vtable = mono_class_vtable (mono_domain_get (), socket_class);
-		g_assert (vtable);
-
-		mono_runtime_class_init_full (vtable, error);
-		return_val_if_nok (error, -1);
-
-		mono_field_static_get_value_checked (vtable, ipv4_field, &ipv4_enabled, error);
-		return_val_if_nok (error, -1);
-		mono_field_static_get_value_checked (vtable, ipv6_field, &ipv6_enabled, error);
-		return_val_if_nok (error, -1);
-
-		mono_domain_lock (domain);
-		if (ipv4_enabled == 1 && ipv6_enabled == 1) {
-			domain->inet_family_hint = 1;
-		} else if (ipv4_enabled == 1) {
-			domain->inet_family_hint = 2;
-		} else {
-			domain->inet_family_hint = 3;
-		}
-		mono_domain_unlock (domain);
-	}
-	switch (domain->inet_family_hint) {
-	case 1: return PF_UNSPEC;
-	case 2: return PF_INET;
-	case 3: return PF_INET6;
-	default:
-		return PF_UNSPEC;
-	}
-}
-
 gpointer
 ves_icall_System_Net_Sockets_Socket_Socket_internal (MonoObject *this_obj, gint32 family, gint32 type, gint32 proto, gint32 *werror)
 {
@@ -2640,49 +2585,17 @@ leave2:
 	return is_ok (error);
 }
 
-static int
-get_addrinfo_family_hint (MonoError *error)
-{
-	int hint;
-
-	mono_error_init (error);
-
-	hint = get_family_hint (error);
-	return_val_if_nok (error, 0);
-
-	switch (hint) {
-	case PF_UNSPEC:
-		return MONO_HINT_UNSPECIFIED;
-	case PF_INET:
-		return MONO_HINT_IPV4;
-#ifdef PF_INET6
-	case PF_INET6:
-		return MONO_HINT_IPV6;
-#endif
-	default:
-		g_error ("invalid hint");
-		return 0;
-	}
-}
-
 MonoBoolean
-ves_icall_System_Net_Dns_GetHostByName_internal (MonoString *host, MonoString **h_name, MonoArray **h_aliases, MonoArray **h_addr_list)
+ves_icall_System_Net_Dns_GetHostByName_internal (MonoString *host, MonoString **h_name, MonoArray **h_aliases, MonoArray **h_addr_list, gint32 hint)
 {
 	MonoError error;
 	gboolean add_local_ips = FALSE, add_info_ok = TRUE;
 	gchar this_hostname [256];
 	MonoAddressInfo *info = NULL;
-	int hint;
 
 	char *hostname = mono_string_to_utf8_checked (host, &error);
 	if (mono_error_set_pending_exception (&error))
 		return FALSE;
-
-	hint = get_addrinfo_family_hint (&error);
-	if (!mono_error_ok (&error)) {
-		mono_error_set_pending_exception (&error);
-		return FALSE;
-	}
 
 	if (*hostname == '\0') {
 		add_local_ips = TRUE;
@@ -2718,14 +2631,14 @@ ves_icall_System_Net_Dns_GetHostByName_internal (MonoString *host, MonoString **
 }
 
 MonoBoolean
-ves_icall_System_Net_Dns_GetHostByAddr_internal (MonoString *addr, MonoString **h_name, MonoArray **h_aliases, MonoArray **h_addr_list)
+ves_icall_System_Net_Dns_GetHostByAddr_internal (MonoString *addr, MonoString **h_name, MonoArray **h_aliases, MonoArray **h_addr_list, gint32 hint)
 {
 	char *address;
 	struct sockaddr_in saddr;
 	struct sockaddr_in6 saddr6;
 	MonoAddressInfo *info = NULL;
 	MonoError error;
-	gint32 family, hint;
+	gint32 family;
 	gchar hostname [NI_MAXHOST] = { 0 };
 	gboolean ret;
 
@@ -2772,11 +2685,6 @@ ves_icall_System_Net_Dns_GetHostByAddr_internal (MonoString *addr, MonoString **
 	if (!ret)
 		return FALSE;
 
-	hint = get_addrinfo_family_hint (&error);
-	if (!mono_error_ok (&error)) {
-		mono_error_set_pending_exception (&error);
-		return FALSE;
-	}
 	if (mono_get_address_info (hostname, 0, hint | MONO_HINT_CANONICAL_NAME | MONO_HINT_CONFIGURED_ONLY, &info) != 0)
 		return FALSE;
 
