@@ -82,6 +82,8 @@ static MonoNativeTlsKey load_type_info_tls_id;
 
 static gboolean use_aot_wrappers;
 
+static int class_marshal_info_count;
+
 static void ftnptr_eh_callback_default (guint32 gchandle);
 
 static MonoFtnPtrEHCallback ftnptr_eh_callback = ftnptr_eh_callback_default;
@@ -352,6 +354,10 @@ mono_marshal_init (void)
 
 		mono_cominterop_init ();
 		mono_remoting_init ();
+
+		mono_counters_register ("MonoClass::class_marshal_info_count count",
+								MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_marshal_info_count);
+
 	}
 }
 
@@ -11383,6 +11389,7 @@ mono_marshal_load_type_info (MonoClass* klass)
 		/*We do double-checking locking on marshal_info */
 		mono_memory_barrier ();
 		klass->marshal_info = info;
+		++class_marshal_info_count;
 	}
 	mono_marshal_unlock ();
 

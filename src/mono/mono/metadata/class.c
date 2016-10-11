@@ -55,7 +55,7 @@ gboolean mono_align_small_structs = FALSE;
 
 /* Statistics */
 guint32 inflated_classes_size, inflated_methods_size;
-guint32 classes_size, class_ext_size;
+guint32 classes_size, class_ext_size, class_ext_count;
 guint32 class_def_count, class_gtd_count, class_ginst_count, class_gparam_count, class_array_count, class_pointer_count;
 
 /* Low level lock which protects data structures in this module */
@@ -10006,6 +10006,9 @@ mono_classes_init (void)
 							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &classes_size);
 	mono_counters_register ("MonoClassExt size",
 							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_ext_size);
+
+	mono_counters_register ("MonoClassExt count",
+							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_ext_count);
 }
 
 /**
@@ -10591,6 +10594,7 @@ mono_class_alloc_ext (MonoClass *klass)
 	if (!klass->ext)
 		klass->ext = ext;
 	class_ext_size += sizeof (MonoClassExt);
+	++class_ext_count;
 	mono_image_unlock (klass->image);
 }
 

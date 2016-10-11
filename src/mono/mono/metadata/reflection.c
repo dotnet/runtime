@@ -46,6 +46,7 @@
 #include <mono/utils/mono-string.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/checked-build.h>
+#include <mono/utils/mono-counters.h>
 
 static void get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types);
 static MonoType* mono_reflection_get_type_with_rootimage (MonoImage *rootimage, MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve, MonoError *error);
@@ -66,10 +67,17 @@ static GENERATE_GET_CLASS_WITH_CACHE (exception_handling_clause, System.Reflecti
 static GENERATE_GET_CLASS_WITH_CACHE (type_builder, System.Reflection.Emit, TypeBuilder);
 static GENERATE_GET_CLASS_WITH_CACHE (dbnull, System, DBNull);
 
+
+static int class_ref_info_handle_count;
+
 void
 mono_reflection_init (void)
 {
 	mono_reflection_emit_init ();
+
+	mono_counters_register ("MonoClass::ref_info_handle count",
+							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_ref_info_handle_count);
+
 }
 
 /*
@@ -94,6 +102,7 @@ mono_class_set_ref_info (MonoClass *klass, gpointer obj)
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	klass->ref_info_handle = mono_gchandle_new ((MonoObject*)obj, FALSE);
+	++class_ref_info_handle_count;
 	g_assert (klass->ref_info_handle != 0);
 }
 
