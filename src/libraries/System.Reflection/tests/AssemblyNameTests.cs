@@ -31,6 +31,10 @@ namespace System.Reflection.Tests
             yield return new object[] { "name with spaces", "name with spaces" };
             yield return new object[] { "\uD800\uDC00", "\uD800\uDC00" };
             yield return new object[] { "привет", "привет" };
+
+            // Invalid Unicode
+            yield return new object[] { "\uD800", "\uFFFD" };
+            yield return new object[] { "\uDC00", "\uFFFD" };
         }
 
         [Fact]
@@ -48,14 +52,6 @@ namespace System.Reflection.Tests
             AssemblyName assemblyName = new AssemblyName(name);
             Assert.Equal(expectedName, assemblyName.Name);
             Assert.Equal(ProcessorArchitecture.None, assemblyName.ProcessorArchitecture);
-        }
-
-        [Fact]
-        public void Ctor_String_InvalidUnicode_UsesReplacementChar()
-        {
-            // TODO: move into Names_TestData when #7166 is fixed
-            Ctor_String("\uD800", "\uFFFD");
-            Ctor_String("\uDC00", "\uFFFD");
         }
 
         [Theory]
