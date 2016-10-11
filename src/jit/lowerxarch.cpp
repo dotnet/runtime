@@ -905,7 +905,28 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         }
     }
 
+    TreeNodeInfoInitCheckByteable(tree);
+
+    // We need to be sure that we've set info->srcCount and info->dstCount appropriately
+    assert((info->dstCount < 2) || (tree->IsMultiRegCall() && info->dstCount == MAX_RET_REG_COUNT));
+}
+
+//------------------------------------------------------------------------
+// TreeNodeInfoInitCheckByteable: Check the tree to see if "byte-able" registers are
+// required, and set the tree node info accordingly.
+//
+// Arguments:
+//    tree      - The node of interest
+//
+// Return Value:
+//    None.
+//
+void Lowering::TreeNodeInfoInitCheckByteable(GenTree* tree)
+{
 #ifdef _TARGET_X86_
+    LinearScan*   l    = m_lsra;
+    TreeNodeInfo* info = &(tree->gtLsraInfo);
+
     // Exclude RBM_NON_BYTE_REGS from dst candidates of tree node and src candidates of operands
     // if the tree node is a byte type.
     //
@@ -950,9 +971,6 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         }
     }
 #endif //_TARGET_X86_
-
-    // We need to be sure that we've set info->srcCount and info->dstCount appropriately
-    assert((info->dstCount < 2) || (tree->IsMultiRegCall() && info->dstCount == MAX_RET_REG_COUNT));
 }
 
 //------------------------------------------------------------------------
@@ -3177,12 +3195,19 @@ void Lowering::SetIndirAddrOpCounts(GenTreePtr indirTree)
 
 void Lowering::TreeNodeInfoInitCmp(GenTreePtr tree)
 {
+    assert(tree->OperIsCompare());
+
     TreeNodeInfo* info = &(tree->gtLsraInfo);
 
     info->srcCount = 2;
     info->dstCount = 1;
 
 #ifdef _TARGET_X86_
+    // If the compare is used by a jump, we just need to set the condition codes. If not, then we need
+    // to store the result into the low byte of a register, which requires the dst be a byteable register.
+    // We always set the dst candidates, though, because if this is compare is consumed by a jump, they
+    // won't be used. We might be able to use GTF_RELOP_JMP_USED to determine this case, but it's not clear
+    // that flag is maintained until this location (especially for decomposed long compares).
     info->setDstCandidates(m_lsra, RBM_BYTE_REGS);
 #endif // _TARGET_X86_
 
@@ -3206,9 +3231,9 @@ void Lowering::TreeNodeInfoInitCmp(GenTreePtr tree)
 #endif // !defined(_TARGET_64BIT_)
 
     // If either of op1 or op2 is floating point values, then we need to use
-    // ucomiss or ucomisd to compare, both of which support the following form
-    // ucomis[s|d] xmm, xmm/mem.  That is only the second operand can be a memory
-    // op.
+    // ucomiss or ucomisd to compare, both of which support the following form:
+    //     ucomis[s|d] xmm, xmm/mem
+    // That is only the second operand can be a memory op.
     //
     // Second operand is a memory Op:  Note that depending on comparison operator,
     // the operands of ucomis[s|d] need to be reversed.  Therefore, either op1 or
@@ -3264,16 +3289,9 @@ void Lowering::TreeNodeInfoInitCmp(GenTreePtr tree)
     bool hasShortCast = false;
     if (CheckImmedAndMakeContained(tree, op2))
     {
-        bool op1CanBeContained = (op1Type == op2Type);
-        if (!op1CanBeContained)
-        {
-            if (genTypeSize(op1Type) == genTypeSize(op2Type))
-            {
-                // The constant is of the correct size, but we don't have an exact type match
-                // We can treat the isMemoryOp as "contained"
-                op1CanBeContained = true;
-            }
-        }
+        // If the types are the same, or if the constant is of the correct size,
+        // we can treat the isMemoryOp as contained.
+        bool op1CanBeContained = (genTypeSize(op1Type) == genTypeSize(op2Type));
 
         // Do we have a short compare against a constant in op2
         //
@@ -3343,13 +3361,13 @@ void Lowering::TreeNodeInfoInitCmp(GenTreePtr tree)
                 bool op1IsMadeContained = false;
 
                 // When op1 is a GT_AND we can often generate a single "test" instruction
-                // instead of two instructions (an "and" instruction followed by a "cmp"/"test")
+                // instead of two instructions (an "and" instruction followed by a "cmp"/"test").
                 //
-                // This instruction can only be used for equality or inequality comparions.
+                // This instruction can only be used for equality or inequality comparisons.
                 // and we must have a compare against zero.
                 //
                 // If we have a postive test for a single bit we can reverse the condition and
-                // make the compare be against zero
+                // make the compare be against zero.
                 //
                 // Example:
                 //                  GT_EQ                              GT_NE
@@ -3358,8 +3376,8 @@ void Lowering::TreeNodeInfoInitCmp(GenTreePtr tree)
                 //             /    \                             /    \
                 //          andOp1  GT_CNS (0x100)             andOp1  GT_CNS (0x100)
                 //
-                // We will mark the GT_AND node as contained if the tree is a equality compare with zero
-                // Additionally when we do this we also allow for a contained memory operand for "andOp1".
+                // We will mark the GT_AND node as contained if the tree is an equality compare with zero.
+                // Additionally, when we do this we also allow for a contained memory operand for "andOp1".
                 //
                 bool isEqualityCompare = (tree->gtOper == GT_EQ || tree->gtOper == GT_NE);
 
@@ -3483,7 +3501,7 @@ void Lowering::TreeNodeInfoInitCmp(GenTreePtr tree)
                     genTreeOps castOp1Oper   = castOp1->OperGet();
                     bool       safeOper      = false;
 
-                    // It is not always safe to change the gtType of 'castOp1' to TYP_UBYTE
+                    // It is not always safe to change the gtType of 'castOp1' to TYP_UBYTE.
                     // For example when 'castOp1Oper' is a GT_RSZ or GT_RSH then we are shifting
                     // bits from the left into the lower bits.  If we change the type to a TYP_UBYTE
                     // we will instead generate a byte sized shift operation:  shr  al, 24
@@ -3519,6 +3537,8 @@ void Lowering::TreeNodeInfoInitCmp(GenTreePtr tree)
                             castOp1->gtIntCon.gtIconVal = (UINT8)castOp1->gtIntCon.gtIconVal;
                         }
 
+                        // TODO-Cleanup: we're within "if (CheckImmedAndMakeContained(tree, op2))", so isn't
+                        // the following condition always true?
                         if (op2->isContainedIntOrIImmed())
                         {
                             ssize_t val = (ssize_t)op2->AsIntConCommon()->IconValue();
@@ -3538,6 +3558,14 @@ void Lowering::TreeNodeInfoInitCmp(GenTreePtr tree)
                         }
 
                         BlockRange().Remove(removeTreeNode);
+
+                        // We've changed the type on op1 to TYP_UBYTE, but we already processed that node. We need to
+                        // go back and mark it byteable.
+                        // TODO-Cleanup: it might be better to move this out of the TreeNodeInfoInit pass to the earlier
+                        // "lower" pass, in which case the byteable check would just fall out. But that is quite
+                        // complex!
+                        TreeNodeInfoInitCheckByteable(op1);
+
 #ifdef DEBUG
                         if (comp->verbose)
                         {
@@ -3578,7 +3606,7 @@ void Lowering::TreeNodeInfoInitCmp(GenTreePtr tree)
         else
         {
             // One of op1 or op2 could be marked as reg optional
-            // to indicate that codgen can still generate code
+            // to indicate that codegen can still generate code
             // if one of them is on stack.
             SetRegOptional(PreferredRegOptionalOperand(tree));
         }
@@ -4596,7 +4624,7 @@ bool Lowering::ExcludeNonByteableRegisters(GenTree* tree)
         return false;
     }
 }
-#endif
+#endif // _TARGET_X86_
 
 #endif // _TARGET_XARCH_
 
