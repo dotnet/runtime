@@ -139,9 +139,6 @@
   <data name="MailDateInvalidFormat" xml:space="preserve">
     <value>The date is in an invalid format.</value>
   </data>
-  <data name="MailHeaderFieldInvalidCharacter" xml:space="preserve">
-    <value>An invalid character was found in the mail header: '{0}'.</value>
-  </data>
   <data name="MailHeaderFieldMalformedHeader" xml:space="preserve">
     <value>The mail header is malformed.</value>
   </data>
@@ -177,15 +174,6 @@
   </data>
   <data name="MailServerResponse" xml:space="preserve">
     <value>The server response was: {0}</value>
-  </data>
-  <data name="MediaTypeInvalid" xml:space="preserve">
-    <value>The specified media type is invalid.</value>
-  </data>
-  <data name="net_emptystringcall" xml:space="preserve">
-    <value>The parameter '{0}' cannot be an empty string.</value>
-  </data>
-  <data name="net_emptystringset" xml:space="preserve">
-    <value>This property cannot be set to an empty string.</value>
   </data>
   <data name="net_inasync" xml:space="preserve">
     <value>An asynchronous call is already in progress. It must be completed or canceled before you can call this method.</value>
@@ -300,12 +288,6 @@
   </data>
   <data name="net_completed_result" xml:space="preserve">
     <value>This operation cannot be performed on a completed asynchronous result object.</value>
-  </data>
-  <data name="MailBase64InvalidCharacter" xml:space="preserve">
-    <value>An invalid character was found in the Base-64 stream.</value>
-  </data>
-  <data name="MailWriterIsInContent" xml:space="preserve">
-    <value>This operation cannot be performed while in content.</value>
   </data>
   <data name="MailHeaderFieldInvalidCharacter" xml:space="preserve">
     <value>An invalid character was found in the mail header: '{0}'.</value>
