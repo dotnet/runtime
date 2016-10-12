@@ -35,14 +35,20 @@
     <SkipBuildPackages>true</SkipBuildPackages>
   </PropertyGroup>
 
-  <!-- Add required legal files to packages -->
   <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.pkgproj'">
+    <!-- Add required legal files to packages -->
     <File Condition="Exists('$(PackageLicenseFile)')"
           Include="$(PackageLicenseFile)" >
         <SkipPackageFileCheck>true</SkipPackageFileCheck>
     </File>
     <File Condition="Exists('$(PackageThirdPartyNoticesFile)')"
           Include="$(PackageThirdPartyNoticesFile)" >
+        <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    </File>
+
+    <!-- Add version file to packages -->
+    <File Condition="Exists('$(SyncInfoFile)')"
+          Include="$(SyncInfoFile)" >
         <SkipPackageFileCheck>true</SkipPackageFileCheck>
     </File>
   </ItemGroup>
