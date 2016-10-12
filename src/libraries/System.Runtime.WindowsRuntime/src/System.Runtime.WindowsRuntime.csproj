@@ -99,7 +99,6 @@
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="System\InternalHelpers.cs" />
-    <Compile Include="System\IO\BufferedStreamWrapper.cs" />
     <Compile Include="System\IO\NetFxToWinRtStreamAdapter.cs" />
     <Compile Include="System\IO\StreamOperationAsyncResult.cs" />
     <Compile Include="System\IO\StreamOperationsImplementation.cs" />

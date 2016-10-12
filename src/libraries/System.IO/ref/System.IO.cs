@@ -152,6 +152,10 @@ namespace System.IO
         public override void Write(byte[] array, int offset, int count) { }
         public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
         public override void WriteByte(byte value) { }
+#if netcoreapp11
+        public Stream UnderlyingStream { get { return default(Stream); } }
+        public int BufferSize { get { return 0; } }
+#endif
     }
     public partial class EndOfStreamException : System.IO.IOException
     {

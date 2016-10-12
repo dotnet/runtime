@@ -147,6 +147,22 @@ namespace System.IO
                 _buffer = new byte[_bufferSize];
         }
 
+        public Stream UnderlyingStream
+        {
+            get
+            {
+                return _stream;
+            }
+        }
+
+        public int BufferSize
+        {
+            get
+            {
+                return _bufferSize;
+            }
+        }
+
         public override bool CanRead
         {
             [Pure]
