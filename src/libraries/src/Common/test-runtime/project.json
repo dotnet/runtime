@@ -1,10 +1,10 @@
 {
   "dependencies": {
-    "NETStandard.Library": "1.6.2-beta-24611-02",
-    "Microsoft.NETCore.TestHost": "1.2.0-beta-24611-01",
-    "Microsoft.NETCore.Runtime.CoreCLR": "1.2.0-beta-24611-01",
-    "System.Diagnostics.Contracts": "4.4.0-beta-24611-02",
-    "System.Linq.Parallel": "4.4.0-beta-24611-02",
+    "NETStandard.Library": "1.6.2-beta-24612-03",
+    "Microsoft.NETCore.TestHost": "1.2.0-beta-24612-03",
+    "Microsoft.NETCore.Runtime.CoreCLR": "1.2.0-beta-24612-03",
+    "System.Diagnostics.Contracts": "4.4.0-beta-24612-03",
+    "System.Linq.Parallel": "4.4.0-beta-24612-03",
     "coveralls.io": "1.4",
     "OpenCover": "4.6.519",
     "ReportGenerator": "2.4.3",
