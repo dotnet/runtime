@@ -16,12 +16,6 @@ namespace System
             return null;
         }
 
-        public static string AppDomain_CurrentDomain_SetupInformation_LicenseFile()
-        {
-            //(string)AppDomain.CurrentDomain.SetupInformation.LicenseFile;
-            return null;
-        }
-
         public static IEnumerable<Assembly> AppDomain_CurrentDomain_GetAssemblies()
         {
             //AppDomain.CurrentDomain.GetAssemblies()
