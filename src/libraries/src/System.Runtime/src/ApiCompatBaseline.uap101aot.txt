@@ -484,4 +484,8 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.Task' does not im
 MembersMustExist : Member 'System.Threading.Tasks.Task.Dispose()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.Tasks.Task.Dispose(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.Task<TResult>' does not implement interface 'System.IDisposable' in the implementation but it does in the contract.
-Total Issues: 486
+MembersMustExist : Member 'System.Reflection.AssemblyName.KeyPair.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.AssemblyName.KeyPair.set(System.Reflection.StrongNameKeyPair)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Diagnostics.DebuggableAttribute.DebuggingFlags.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.InteropServices.StructLayoutAttribute..ctor(System.Int16)' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Reflection.StrongNameKeyPair' does not exist in the implementation but it does exist in the contract.
