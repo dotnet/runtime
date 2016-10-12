@@ -250,6 +250,8 @@ protected:
 
     void genAdjustSP(ssize_t delta);
 
+    void genAdjustStackLevel(BasicBlock* block);
+
     void genExitCode(BasicBlock* block);
 
     //-------------------------------------------------------------------------

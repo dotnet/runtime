@@ -12762,27 +12762,7 @@ void CodeGen::genCodeForBBlist()
         genResetFPstkLevel();
 #endif // FEATURE_STACK_FP_X87
 
-#if !FEATURE_FIXED_OUT_ARGS
-        /* Check for inserted throw blocks and adjust genStackLevel */
-
-        if (!isFramePointerUsed() && compiler->fgIsThrowHlpBlk(block))
-        {
-            noway_assert(block->bbFlags & BBF_JMP_TARGET);
-
-            genStackLevel = compiler->fgThrowHlpBlkStkLevel(block) * sizeof(int);
-
-            if (genStackLevel)
-            {
-#ifdef _TARGET_X86_
-                getEmitter()->emitMarkStackLvl(genStackLevel);
-                inst_RV_IV(INS_add, REG_SPBASE, genStackLevel, EA_PTRSIZE);
-                genStackLevel = 0;
-#else  // _TARGET_X86_
-                NYI("Need emitMarkStackLvl()");
-#endif // _TARGET_X86_
-            }
-        }
-#endif // !FEATURE_FIXED_OUT_ARGS
+        genAdjustStackLevel(block);
 
         savedStkLvl = genStackLevel;
 
