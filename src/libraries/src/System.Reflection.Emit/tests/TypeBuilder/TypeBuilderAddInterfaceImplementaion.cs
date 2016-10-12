@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 
@@ -23,9 +24,9 @@ namespace System.Reflection.Emit.Tests
 
             TypeBuilder type = Helpers.DynamicType(typeAttributes);
             type.AddInterfaceImplementation(createdInterface);
-            Type testType = type.CreateTypeInfo().AsType();
 
-            Assert.Equal(createdInterface, testType.GetTypeInfo().ImplementedInterfaces.Where(i => i.Name == createdInterface.Name).FirstOrDefault());
+            Type createdType = type.CreateTypeInfo().AsType();
+            Assert.Equal(createdInterface, createdType.GetTypeInfo().ImplementedInterfaces.Single(i => i.Name == createdInterface.Name));
         }
 
         [Fact]
@@ -33,12 +34,9 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder interfaceBuilder = Helpers.DynamicType(TypeAttributes.Abstract | TypeAttributes.Interface | TypeAttributes.Public);
             interfaceBuilder.DefineMethod("TestMethod",
-                                                            MethodAttributes.Abstract |
-                                                            MethodAttributes.Virtual |
-                                                            MethodAttributes.Public,
-                                                            typeof(int),
-                                                            new Type[]
-                                                            { typeof(int), typeof(int) });
+                MethodAttributes.Abstract | MethodAttributes.Virtual | MethodAttributes.Public,
+                typeof(int),
+                new Type[] { typeof(int), typeof(int) });
 
             Type createdInterface = interfaceBuilder.CreateTypeInfo().AsType();
 
@@ -48,15 +46,13 @@ namespace System.Reflection.Emit.Tests
                 MethodAttributes.Public | MethodAttributes.Virtual,
                 typeof(int),
                 new Type[] { typeof(int), typeof(int) });
-
-            ILGenerator ilGenerator = methodBuilder.GetILGenerator();
-            ilGenerator.Emit(OpCodes.Ret);
+            methodBuilder.GetILGenerator().Emit(OpCodes.Ret);
 
             MethodInfo createdMethod = createdInterface.GetMethod("TestMethod");
             type.DefineMethodOverride(methodBuilder, createdMethod);
-            Type testType = type.CreateTypeInfo().AsType();
 
-            Assert.Equal(createdInterface, testType.GetTypeInfo().ImplementedInterfaces.Where(i => i.Name == createdInterface.Name).FirstOrDefault());
+            Type createdType = type.CreateTypeInfo().AsType();
+            Assert.Equal(createdInterface, createdType.GetTypeInfo().ImplementedInterfaces.Single(i => i.Name == createdInterface.Name));
         }
 
         [Fact]
@@ -67,19 +63,82 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        public void AddInterfaceImplementation_ByRefInterfaceType_ThrowsArgumentExceptioN()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            Assert.Throws<ArgumentException>(null, () => type.AddInterfaceImplementation(typeof(int).MakeByRefType()));
+        }
+
+        [Fact]
         public void AddInterfaceImplementation_TypeAlreadyCreated_ThrowsInvalidOperationException()
         {
-            TypeBuilder testTypeBuilder = Helpers.DynamicType(TypeAttributes.Public);
-            testTypeBuilder.CreateTypeInfo().AsType();
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            type.CreateTypeInfo().AsType();
+            
+            Assert.Throws<InvalidOperationException>(() => type.AddInterfaceImplementation(typeof(EmptyNonGenericInterface1)));
+        }
 
-            TypeBuilder interfaceBuilder = Helpers.DynamicType(TypeAttributes.Abstract | TypeAttributes.Interface | TypeAttributes.Public);
-            interfaceBuilder.DefineMethod("TestMethod",
-                MethodAttributes.Abstract | MethodAttributes.Virtual | MethodAttributes.Public,
-                typeof(void),
-                new Type[] { typeof(int), typeof(int) });
-            Type createdInterface = interfaceBuilder.CreateTypeInfo().AsType();
+        public static IEnumerable<object[]> NonInterfaceTypes_TestData()
+        {
+            yield return new object[] { typeof(EmptyNonGenericClass) };
+            yield return new object[] { typeof(EmptyNonGenericStruct) };
+            yield return new object[] { typeof(EmptyGenericClass<int>) };
+            yield return new object[] { typeof(EmptyGenericStruct<>) };
+            yield return new object[] { typeof(EmptyGenericStruct<int>) };
+            yield return new object[] { typeof(EmptyEnum) };
+            yield return new object[] { typeof(int).MakePointerType() };
+            yield return new object[] { typeof(int[]) };
+            yield return new object[] { typeof(GenericInterface<>).GetGenericArguments()[0] };
+            yield return new object[] { typeof(GenericInterface<int>).GetGenericArguments()[0] };
+        }
 
-            Assert.Throws<InvalidOperationException>(() => testTypeBuilder.AddInterfaceImplementation(createdInterface));
+        [Theory]
+        [MemberData(nameof(NonInterfaceTypes_TestData))]
+        public void AddInterfaceImplementation_TypeNotInterface_ThrowsTypeLoadExceptionOnCreation(Type interfaceType)
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            type.AddInterfaceImplementation(interfaceType);
+
+            Assert.Throws<TypeLoadException>(() => type.CreateTypeInfo());
+        }
+
+        [Theory]
+        [InlineData(typeof(EmptyGenericInterface<>))]
+        [InlineData(typeof(EmptyGenericClass<>))]
+        public void AddInterfaceImplementation_OpenGenericType_ThrowsBadImageFormatExceptionOnCreation(Type interfaceType)
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            type.AddInterfaceImplementation(interfaceType);
+
+            Assert.Throws<BadImageFormatException>(() => type.CreateTypeInfo());
+        }
+
+        [Fact]
+        public void AddInterfaceImplementation_TypeDoesntImplementInterface_ThrowsTypeLoadExceptionOnCreation()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            type.AddInterfaceImplementation(typeof(NonGenericInterface));
+
+            Assert.Throws<TypeLoadException>(() => type.CreateTypeInfo());
+        }
+
+        [Fact]
+        public void AddInterfaceImplementation_InterfaceNotCreated_ThrowsTypeLoadExceptionOnCreation()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            type.AddInterfaceImplementation(Helpers.DynamicType(TypeAttributes.Interface | TypeAttributes.Abstract).AsType());
+
+            Assert.Throws<TypeLoadException>(() => type.CreateTypeInfo());
+        }
+
+        public interface NonGenericInterface
+        {
+            void Method();
+        }
+
+        public interface GenericInterface<T>
+        {
+            T Method();
         }
     }
 }

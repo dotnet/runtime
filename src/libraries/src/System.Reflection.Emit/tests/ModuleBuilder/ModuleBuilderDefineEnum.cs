@@ -34,8 +34,8 @@ namespace System.Reflection.Emit.Tests
             EnumBuilder enumBuilder = module.DefineEnum(name, visibility, underlyingType);
             Assert.True(enumBuilder.IsEnum);
 
-            Assert.Same(module.Assembly, enumBuilder.Assembly);
-            Assert.Same(module, enumBuilder.Module);
+            Assert.Equal(module.Assembly, enumBuilder.Assembly);
+            Assert.Equal(module, enumBuilder.Module);
 
             Assert.Equal(name, enumBuilder.Name);
             Assert.Equal(Helpers.GetFullName(name), enumBuilder.FullName);

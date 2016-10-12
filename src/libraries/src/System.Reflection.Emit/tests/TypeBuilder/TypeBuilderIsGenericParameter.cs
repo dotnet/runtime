@@ -9,17 +9,6 @@ namespace System.Reflection.Emit.Tests
     public class TypeBuilderIsGenericParameter
     {
         [Fact]
-        public void IsGenericParameter_GenericType_ReturnsTrue()
-        {
-            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
-            GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters("T1", "T2", "T3");
-            for (int i = 0; i < 3; i++)
-            {
-                Assert.True(typeParams[i].IsGenericParameter);
-            }
-        }
-
-        [Fact]
         public void IsGenericParameter_NonGenericType_ReturnsFalse()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);

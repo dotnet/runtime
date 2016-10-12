@@ -29,6 +29,8 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(attributes);
             Type createdType = type.CreateTypeInfo().AsType();
             Assert.Equal(type.Name, createdType.Name);
+
+            Assert.Equal(type.CreateTypeInfo(), type.CreateTypeInfo());
         }
         
         [Fact]

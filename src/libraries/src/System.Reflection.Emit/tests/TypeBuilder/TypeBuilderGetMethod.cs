@@ -95,5 +95,19 @@ namespace System.Reflection.Emit.Tests
 
             Assert.Throws<ArgumentException>("method", () => TypeBuilder.GetMethod(type.AsType(), genericMethod));
         }
+
+        [Fact]
+        public void GetMethod_TypeNotCreated_ThrowsNotSupportedException()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            Assert.Throws<NotSupportedException>(() => type.AsType().GetMethod("Name"));
+        }
+
+        [Fact]
+        public void GetMethods_TypeNotCreated_ThrowsNotSupportedException()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            Assert.Throws<NotSupportedException>(() => type.AsType().GetMethods());
+        }
     }
 }

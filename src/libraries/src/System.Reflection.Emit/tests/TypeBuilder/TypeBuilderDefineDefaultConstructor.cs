@@ -10,27 +10,70 @@ namespace System.Reflection.Emit.Tests
     public class TypeBuilderDefineDefaultConstructor
     {
         [Theory]
-        [InlineData(MethodAttributes.Public, BindingFlags.Public | BindingFlags.Instance)]
-        [InlineData(MethodAttributes.Static, BindingFlags.Static | BindingFlags.NonPublic)]
-        [InlineData(MethodAttributes.Family, BindingFlags.Instance | BindingFlags.NonPublic)]
-        [InlineData(MethodAttributes.Assembly, BindingFlags.Instance | BindingFlags.NonPublic)]
-        [InlineData(MethodAttributes.Private, BindingFlags.Instance | BindingFlags.NonPublic)]
-        [InlineData(MethodAttributes.PrivateScope, BindingFlags.Instance | BindingFlags.NonPublic)]
-        [InlineData(MethodAttributes.FamORAssem, BindingFlags.Instance | BindingFlags.NonPublic)]
-        [InlineData(MethodAttributes.FamANDAssem, BindingFlags.Instance | BindingFlags.NonPublic)]
-        [InlineData(MethodAttributes.Final | MethodAttributes.Public, BindingFlags.Instance | BindingFlags.Public)]
-        [InlineData(MethodAttributes.Final | MethodAttributes.Family, BindingFlags.Instance | BindingFlags.NonPublic)]
-        [InlineData(MethodAttributes.SpecialName | MethodAttributes.Family, BindingFlags.Instance | BindingFlags.NonPublic)]
-        [InlineData(MethodAttributes.UnmanagedExport | MethodAttributes.Family, BindingFlags.Instance | BindingFlags.NonPublic)]
-        [InlineData(MethodAttributes.RTSpecialName | MethodAttributes.Family, BindingFlags.Instance | BindingFlags.NonPublic)]
-        [InlineData(MethodAttributes.HideBySig | MethodAttributes.Family, BindingFlags.Instance | BindingFlags.NonPublic)]
-        public void DefineDefaultConstructor(MethodAttributes attributes, BindingFlags bindingFlags)
+        [InlineData(MethodAttributes.Public, MethodAttributes.Public)]
+        [InlineData(MethodAttributes.Static, MethodAttributes.Static)]
+        [InlineData(MethodAttributes.Family, MethodAttributes.Family)]
+        [InlineData(MethodAttributes.Assembly, MethodAttributes.Assembly)]
+        [InlineData(MethodAttributes.Private, MethodAttributes.Private)]
+        [InlineData(MethodAttributes.PrivateScope, MethodAttributes.PrivateScope)]
+        [InlineData(MethodAttributes.FamORAssem, MethodAttributes.FamORAssem)]
+        [InlineData(MethodAttributes.FamANDAssem, MethodAttributes.FamANDAssem)]
+        [InlineData(MethodAttributes.Final | MethodAttributes.Public, MethodAttributes.Final | MethodAttributes.Public)]
+        [InlineData(MethodAttributes.Final | MethodAttributes.Family, MethodAttributes.Final | MethodAttributes.Family)]
+        [InlineData(MethodAttributes.SpecialName | MethodAttributes.Family, MethodAttributes.SpecialName | MethodAttributes.Family)]
+        [InlineData(MethodAttributes.UnmanagedExport | MethodAttributes.Family, MethodAttributes.UnmanagedExport | MethodAttributes.Family)]
+        [InlineData(MethodAttributes.RTSpecialName | MethodAttributes.Family, MethodAttributes.RTSpecialName | MethodAttributes.Family)]
+        [InlineData(MethodAttributes.HideBySig | MethodAttributes.Family, MethodAttributes.HideBySig | MethodAttributes.Family)]
+        [InlineData((MethodAttributes)0x8000, MethodAttributes.PrivateScope | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName)]
+        public void DefineDefaultConstructor(MethodAttributes attributes, MethodAttributes expectedAttributes)
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
             ConstructorBuilder constructor = type.DefineDefaultConstructor(attributes);
+            Helpers.VerifyConstructor(constructor, type, attributes, new Type[0]);
+        }
+
+        public static bool s_ranConstructor = false;
+
+        [Fact]
+        public void DefineDefaultConstructor_GenericParentCreated_Works()
+        {
+            ModuleBuilder module = Helpers.DynamicModule();
+            TypeBuilder genericTypeDefinition = module.DefineType("GenericType", TypeAttributes.Public);
+            genericTypeDefinition.DefineGenericParameters("T");
+
+            ConstructorBuilder constructor = genericTypeDefinition.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[0]);
+            ILGenerator constructorILGenerator = constructor.GetILGenerator();
+            constructorILGenerator.Emit(OpCodes.Ldarg_0);
+            constructorILGenerator.Emit(OpCodes.Ldc_I4_1);
+            constructorILGenerator.Emit(OpCodes.Stfld, typeof(TypeBuilderDefineDefaultConstructor).GetField(nameof(s_ranConstructor)));
+            constructorILGenerator.Emit(OpCodes.Ret);
+
+            genericTypeDefinition.CreateTypeInfo();
+
+            Type genericParent = genericTypeDefinition.MakeGenericType(typeof(int));
+
+            TypeBuilder type = module.DefineType("Type");
+            type.SetParent(genericParent);
+            type.DefineDefaultConstructor(MethodAttributes.Public);
 
             Type createdType = type.CreateTypeInfo().AsType();
-            Assert.NotNull(createdType.GetConstructors(bindingFlags).FirstOrDefault());
+            ConstructorInfo defaultConstructor = createdType.GetConstructor(new Type[0]);
+            defaultConstructor.Invoke(null);
+            Assert.True(s_ranConstructor);
+        }
+
+        [Fact]
+        public void DefineDefaultConstructor_CalledMultipleTimes_Works()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+
+            type.DefineDefaultConstructor(MethodAttributes.Public);
+            type.DefineDefaultConstructor(MethodAttributes.Public);
+
+            Type createdType = type.CreateTypeInfo().AsType();
+            ConstructorInfo[] constructors = createdType.GetConstructors();
+            Assert.Equal(2, constructors.Length);
+            Assert.Equal(constructors[0].GetParameters(), constructors[1].GetParameters());
         }
 
         [Fact]
@@ -45,7 +88,6 @@ namespace System.Reflection.Emit.Tests
         public void DefineDefaultConstructor_Interface_ThrowsInvalidOperationException()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract);
-
             Assert.Throws<InvalidOperationException>(() => type.DefineDefaultConstructor(MethodAttributes.Public));
         }
 
@@ -57,7 +99,6 @@ namespace System.Reflection.Emit.Tests
             FieldBuilder field = type.DefineField("TestField", typeof(int), FieldAttributes.Family);
 
             ConstructorBuilder constructor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, new Type[] { typeof(int) });
-
             ILGenerator constructorIlGenerator = constructor.GetILGenerator();
 
             constructorIlGenerator.Emit(OpCodes.Ldarg_0);
@@ -82,17 +123,44 @@ namespace System.Reflection.Emit.Tests
         public void DefineDefaultConstructor_PrivateDefaultConstructor_ThrowsNotSupportedException(MethodAttributes attributes)
         {
             TypeBuilder baseType = Helpers.DynamicType(TypeAttributes.Public | TypeAttributes.Class);
-
             ConstructorBuilder constructor = baseType.DefineConstructor(attributes, CallingConventions.HasThis, new Type[] { typeof(int) });
+            constructor.GetILGenerator().Emit(OpCodes.Ret);
 
-            ILGenerator baseCtorIL = constructor.GetILGenerator();
-            baseCtorIL.Emit(OpCodes.Ret);
+            Type createdParentType = baseType.CreateTypeInfo().AsType();
 
-            Type baseTestType = baseType.CreateTypeInfo().AsType();
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public | TypeAttributes.Class);
+            type.SetParent(createdParentType);
+            Assert.Throws<NotSupportedException>(() => type.DefineDefaultConstructor(MethodAttributes.Public));
+        }
 
-            TypeBuilder nestedType = Helpers.DynamicType(TypeAttributes.Public | TypeAttributes.Class);
-            nestedType.SetParent(baseTestType);
-            Assert.Throws<NotSupportedException>(() => nestedType.DefineDefaultConstructor(MethodAttributes.Public));
+        [Fact]
+        public void DefineDefaultConstructor_ParentNotCreated_ThrowsNotSupportedException()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            TypeBuilder parentType = Helpers.DynamicType(TypeAttributes.Public);
+            type.SetParent(parentType.AsType());
+
+            Assert.Throws<NotSupportedException>(() => type.DefineDefaultConstructor(MethodAttributes.Public));
+        }
+
+        [Fact]
+        public void DefineDefaultConstructor_GenericParentNotCreated_ThrowsNotSupportedException()
+        {
+            ModuleBuilder module = Helpers.DynamicModule();
+            TypeBuilder genericTypeDefinition = module.DefineType("GenericType", TypeAttributes.Public);
+            genericTypeDefinition.DefineGenericParameters("T");
+            Type genericParent = genericTypeDefinition.MakeGenericType(typeof(int));
+
+            TypeBuilder type = module.DefineType("Type");
+            type.SetParent(genericParent);
+            Assert.Throws<NotSupportedException>(() => type.DefineDefaultConstructor(MethodAttributes.Public));
+        }
+
+        [Fact]
+        public void DefineDefaultConstructor_StaticVirtual_ThrowsArgumentException()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            Assert.Throws<ArgumentException>(null, () => type.DefineDefaultConstructor(MethodAttributes.Virtual | MethodAttributes.Static));
         }
     }
 }
