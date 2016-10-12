@@ -31,20 +31,20 @@ namespace System.CodeDom.Tests
 
 	public abstract class CodeDomTestBase
 	{
-        public static IEnumerable<object[]> CodeExpression_TestData()
-        {
-            yield return new object[] { null };
-            yield return new object[] { new CodePrimitiveExpression("Value") };
-        }
+		public static IEnumerable<object[]> CodeExpression_TestData()
+		{
+			yield return new object[] { null };
+			yield return new object[] { new CodePrimitiveExpression("Value") };
+		}
 
-        public static IEnumerable<object[]> CodeTypeReference_TestData()
-        {
-            yield return new object[] { null };
-            yield return new object[] { new CodeTypeReference(typeof(int)) };
-            yield return new object[] { new CodeTypeReference(typeof(int).MakePointerType()) };
-            yield return new object[] { new CodeTypeReference(typeof(int).MakeByRefType()) };
-            yield return new object[] { new CodeTypeReference(typeof(List<>)) };
-            yield return new object[] { new CodeTypeReference(typeof(List<string>)) };
+		public static IEnumerable<object[]> CodeTypeReference_TestData()
+		{
+			yield return new object[] { null };
+			yield return new object[] { new CodeTypeReference(typeof(int)) };
+			yield return new object[] { new CodeTypeReference(typeof(int).MakePointerType()) };
+			yield return new object[] { new CodeTypeReference(typeof(int).MakeByRefType()) };
+			yield return new object[] { new CodeTypeReference(typeof(List<>)) };
+			yield return new object[] { new CodeTypeReference(typeof(List<string>)) };
 		}
 
 		public static IEnumerable<object[]> CodeStatement_TestData()

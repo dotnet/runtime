@@ -8,10 +8,10 @@ using Xunit;
 namespace System.CodeDom.Tests
 {
 	public class CodeTypeDelegateTests : CodeObjectTestBase<CodeTypeDelegate>
-    {
-        [Fact]
-        public void Ctor_Default()
-        {
+	{
+		[Fact]
+		public void Ctor_Default()
+		{
 			var typeDelegate = new CodeTypeDelegate();
 			Assert.Empty(typeDelegate.Name);
 
@@ -23,7 +23,7 @@ namespace System.CodeDom.Tests
 			Assert.Equal(typeof(void).FullName, typeDelegate.ReturnType.BaseType);
 			Assert.Empty(typeDelegate.Parameters);
 		}
-		
+
 		[Theory]
 		[MemberData(nameof(String_TestData))]
 		public void Ctor_String(string name)

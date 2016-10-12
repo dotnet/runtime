@@ -9,12 +9,12 @@ using Xunit;
 namespace System.CodeDom.Tests
 {
 	public class CodeConditionStatementTests : CodeStatementTestBase<CodeConditionStatement>
-    {
-        [Fact]
-        public void Ctor_Default()
-        {
-            var condition = new CodeConditionStatement();
-            Assert.Null(condition.Condition);
+	{
+		[Fact]
+		public void Ctor_Default()
+		{
+			var condition = new CodeConditionStatement();
+			Assert.Null(condition.Condition);
 			Assert.Empty(condition.TrueStatements);
 			Assert.Empty(condition.FalseStatements);
 		}
@@ -28,8 +28,8 @@ namespace System.CodeDom.Tests
 		}
 
 		[Theory]
-        [MemberData(nameof(Ctor_TestData))]
-        public void Ctor(CodeExpression expression, CodeStatement[] trueStatements, CodeStatement[] falseStatements)
+		[MemberData(nameof(Ctor_TestData))]
+		public void Ctor(CodeExpression expression, CodeStatement[] trueStatements, CodeStatement[] falseStatements)
 		{
 			if (falseStatements.Length == 0)
 			{
@@ -54,14 +54,14 @@ namespace System.CodeDom.Tests
 			Assert.Equal(falseStatements, condition3.FalseStatements.Cast<CodeStatement>());
 		}
 
-        [Theory]
-        [MemberData(nameof(CodeExpression_TestData))]
-        public void Condition_Set_Get_ReturnsExpected(CodeExpression value)
+		[Theory]
+		[MemberData(nameof(CodeExpression_TestData))]
+		public void Condition_Set_Get_ReturnsExpected(CodeExpression value)
 		{
 			var condition = new CodeConditionStatement();
 			condition.Condition = value;
-            Assert.Equal(value, condition.Condition);
-        }
+			Assert.Equal(value, condition.Condition);
+		}
 
 		[Fact]
 		public void TrueStatements_AddMultiple_ReturnsExpected()

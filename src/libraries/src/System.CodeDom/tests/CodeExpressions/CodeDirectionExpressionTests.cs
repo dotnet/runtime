@@ -8,7 +8,7 @@ using Xunit;
 namespace System.CodeDom.Tests
 {
 	public class CodeDirectionExpressionTests : CodeObjectTestBase<CodeDirectionExpression>
-    {
+	{
 		[Fact]
 		public void Ctor_Default()
 		{
@@ -26,7 +26,7 @@ namespace System.CodeDom.Tests
 
 		[Theory]
 		[MemberData(nameof(Ctor_TestData))]
-        public void Ctor(FieldDirection direction, CodeExpression expression)
+		public void Ctor(FieldDirection direction, CodeExpression expression)
 		{
 			var directionExpression = new CodeDirectionExpression(direction, expression);
 			Assert.Equal(direction, directionExpression.Direction);

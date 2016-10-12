@@ -8,20 +8,20 @@ using Xunit;
 namespace System.CodeDom.Tests
 {
 	public class CodeNamespaceTests : CodeObjectTestBase<CodeNamespace>
-    {	
-        [Fact]
-        public void Ctor_Default()
-        {
+	{
+		[Fact]
+		public void Ctor_Default()
+		{
 			var codeNamespace = new CodeNamespace();
 			Assert.Empty(codeNamespace.Name);
 			Assert.Empty(codeNamespace.Types);
 			Assert.Empty(codeNamespace.Imports);
 			Assert.Empty(codeNamespace.Comments);
 		}
-		
-        [Theory]
-        [MemberData(nameof(String_TestData))]
-        public void Ctor_String(string name)
+
+		[Theory]
+		[MemberData(nameof(String_TestData))]
+		public void Ctor_String(string name)
 		{
 			var codeNamespace = new CodeNamespace(name);
 			Assert.Equal(name ?? string.Empty, codeNamespace.Name);
@@ -47,7 +47,7 @@ namespace System.CodeDom.Tests
 			CodeTypeDeclaration type1 = new CodeTypeDeclaration("Name1");
 			codeNamespace.Types.Add(type1);
 			Assert.Equal(new CodeTypeDeclaration[] { type1 }, codeNamespace.Types.Cast<CodeTypeDeclaration>());
-			
+
 			CodeTypeDeclaration type2 = new CodeTypeDeclaration("Name2");
 			codeNamespace.Types.Add(type2);
 			Assert.Equal(new CodeTypeDeclaration[] { type1, type2 }, codeNamespace.Types.Cast<CodeTypeDeclaration>());
@@ -64,7 +64,7 @@ namespace System.CodeDom.Tests
 				Assert.Same(codeNamespace, sender);
 				Assert.Equal(EventArgs.Empty, args);
 			};
-			
+
 			codeNamespace.Types.Add(new CodeTypeDeclaration("Name1"));
 			Assert.True(calledPopulateTypes);
 

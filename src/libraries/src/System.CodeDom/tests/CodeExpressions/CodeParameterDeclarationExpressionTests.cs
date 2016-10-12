@@ -8,12 +8,12 @@ using Xunit;
 
 namespace System.CodeDom.Tests
 {
-    public class CodeParameterDeclarationExpressionTests : CodeObjectTestBase<CodeParameterDeclarationExpression>
-    {
-        [Fact]
-        public void Ctor_Default()
-        {
-            var parameter = new CodeParameterDeclarationExpression();
+	public class CodeParameterDeclarationExpressionTests : CodeObjectTestBase<CodeParameterDeclarationExpression>
+	{
+		[Fact]
+		public void Ctor_Default()
+		{
+			var parameter = new CodeParameterDeclarationExpression();
 			Assert.Empty(parameter.CustomAttributes);
 			Assert.Equal(FieldDirection.In, parameter.Direction);
 			Assert.Equal(typeof(void).FullName, parameter.Type.BaseType);
@@ -39,15 +39,15 @@ namespace System.CodeDom.Tests
 		}
 
 		public static IEnumerable<object[]> Ctor_String_String_TestData()
-        {
-            yield return new object[] { null, null, "System.Void" };
-            yield return new object[] { "", "", "System.Void" };
-            yield return new object[] { "Int32", "Name", "Int32" };
-        }
-        
-        [Theory]
-        [MemberData(nameof(Ctor_String_String_TestData))]
-        public void Ctor_String_String(string type, string name, string expectedBaseType)
+		{
+			yield return new object[] { null, null, "System.Void" };
+			yield return new object[] { "", "", "System.Void" };
+			yield return new object[] { "Int32", "Name", "Int32" };
+		}
+
+		[Theory]
+		[MemberData(nameof(Ctor_String_String_TestData))]
+		public void Ctor_String_String(string type, string name, string expectedBaseType)
 		{
 			var parameter = new CodeParameterDeclarationExpression(type, name);
 			Assert.Empty(parameter.CustomAttributes);
@@ -56,11 +56,11 @@ namespace System.CodeDom.Tests
 			Assert.Equal(name ?? string.Empty, parameter.Name);
 		}
 
-        public static IEnumerable<object[]> Ctor_Type_String_TestData()
-        {
-            yield return new object[] { typeof(int), null, "System.Int32" };
-            yield return new object[] { typeof(List<>), "", "System.Collections.Generic.List`1" };
-            yield return new object[] { typeof(void), "Name", "System.Void" };
+		public static IEnumerable<object[]> Ctor_Type_String_TestData()
+		{
+			yield return new object[] { typeof(int), null, "System.Int32" };
+			yield return new object[] { typeof(List<>), "", "System.Collections.Generic.List`1" };
+			yield return new object[] { typeof(void), "Name", "System.Void" };
 		}
 
 		[Theory]
@@ -120,21 +120,21 @@ namespace System.CodeDom.Tests
 		}
 
 		[Theory]
-        [MemberData(nameof(CodeTypeReference_TestData))]
-        public void Type_Set_Get_ReturnsExpected(CodeTypeReference value)
-        {
-            var parameter = new CodeParameterDeclarationExpression();
-            parameter.Type = value;
-            Assert.Equal((value ?? new CodeTypeReference("")).BaseType, parameter.Type.BaseType);
-        }
-        
-        [Theory]
-        [MemberData(nameof(String_TestData))]
-        public void Name_Set_Get_ReturnsExpected(string value)
-        {
-            var parameter = new CodeParameterDeclarationExpression();
-            parameter.Name = value;
-            Assert.Equal(value ?? string.Empty, parameter.Name);
-        }
-    }
+		[MemberData(nameof(CodeTypeReference_TestData))]
+		public void Type_Set_Get_ReturnsExpected(CodeTypeReference value)
+		{
+			var parameter = new CodeParameterDeclarationExpression();
+			parameter.Type = value;
+			Assert.Equal((value ?? new CodeTypeReference("")).BaseType, parameter.Type.BaseType);
+		}
+
+		[Theory]
+		[MemberData(nameof(String_TestData))]
+		public void Name_Set_Get_ReturnsExpected(string value)
+		{
+			var parameter = new CodeParameterDeclarationExpression();
+			parameter.Name = value;
+			Assert.Equal(value ?? string.Empty, parameter.Name);
+		}
+	}
 }

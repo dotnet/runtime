@@ -8,15 +8,15 @@ using Xunit;
 namespace System.CodeDom.Tests
 {
 	public class CodeLabeledStatementTests : CodeStatementTestBase<CodeLabeledStatement>
-    {
-        [Fact]
-        public void Ctor_Default()
-        {
+	{
+		[Fact]
+		public void Ctor_Default()
+		{
 			var labeled = new CodeLabeledStatement();
 			Assert.Empty(labeled.Label);
 			Assert.Null(labeled.Statement);
 		}
-		
+
 		[Theory]
 		[MemberData(nameof(String_TestData))]
 		public void Ctor_String(string label)

@@ -7,10 +7,10 @@ using Xunit;
 namespace System.CodeDom.Tests
 {
 	public class CodeSnippetStatementTests : CodeStatementTestBase<CodeSnippetStatement>
-    {
-        [Fact]
-        public void Ctor_Default()
-        {
+	{
+		[Fact]
+		public void Ctor_Default()
+		{
 			var snippet = new CodeSnippetStatement();
 			Assert.Empty(snippet.Value);
 		}

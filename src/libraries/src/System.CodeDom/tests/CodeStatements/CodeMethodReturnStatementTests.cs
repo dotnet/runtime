@@ -7,29 +7,29 @@ using Xunit;
 namespace System.CodeDom.Tests
 {
 	public class CodeMethodReturnStatementTests : CodeStatementTestBase<CodeMethodReturnStatement>
-    {
-        [Fact]
-        public void Ctor_Default()
-        {
-            var methodReturn = new CodeMethodReturnStatement();
-            Assert.Null(methodReturn.Expression);
-        }
+	{
+		[Fact]
+		public void Ctor_Default()
+		{
+			var methodReturn = new CodeMethodReturnStatement();
+			Assert.Null(methodReturn.Expression);
+		}
 
-        [Theory]
-        [MemberData(nameof(CodeExpression_TestData))]
-        public void Ctor_CodeExpression(CodeExpression expression)
+		[Theory]
+		[MemberData(nameof(CodeExpression_TestData))]
+		public void Ctor_CodeExpression(CodeExpression expression)
 		{
 			var methodReturn = new CodeMethodReturnStatement(expression);
 			Assert.Equal(expression, methodReturn.Expression);
 		}
 
-        [Theory]
-        [MemberData(nameof(CodeExpression_TestData))]
-        public void Expression_Set_Get_ReturnsExpected(CodeExpression value)
+		[Theory]
+		[MemberData(nameof(CodeExpression_TestData))]
+		public void Expression_Set_Get_ReturnsExpected(CodeExpression value)
 		{
 			var methodReturn = new CodeMethodReturnStatement();
 			methodReturn.Expression = value;
-            Assert.Equal(value, methodReturn.Expression);
-        }
-    }
+			Assert.Equal(value, methodReturn.Expression);
+		}
+	}
 }

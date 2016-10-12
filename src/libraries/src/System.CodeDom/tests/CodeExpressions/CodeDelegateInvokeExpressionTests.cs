@@ -9,7 +9,7 @@ using Xunit;
 namespace System.CodeDom.Tests
 {
 	public class CodeDelegateInvokeExpressionTests : CodeObjectTestBase<CodeDelegateInvokeExpression>
-    {
+	{
 		[Fact]
 		public void Ctor_Default()
 		{
@@ -21,7 +21,7 @@ namespace System.CodeDom.Tests
 
 		[Theory]
 		[MemberData(nameof(CodeExpression_TestData))]
-        public void Ctor_CodeExpression(CodeExpression targetObject)
+		public void Ctor_CodeExpression(CodeExpression targetObject)
 		{
 			var delegateInvoke = new CodeDelegateInvokeExpression(targetObject);
 			Assert.Equal(targetObject, delegateInvoke.TargetObject);

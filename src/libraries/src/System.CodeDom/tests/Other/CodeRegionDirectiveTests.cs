@@ -7,42 +7,42 @@ using Xunit;
 
 namespace System.CodeDom.Tests
 {
-    public class CodeRegionDirectiveTests : CodeDomTestBase
-    {
-        [Fact]
-        public void Ctor_Default()
-        {
-            var region = new CodeRegionDirective();
+	public class CodeRegionDirectiveTests : CodeDomTestBase
+	{
+		[Fact]
+		public void Ctor_Default()
+		{
+			var region = new CodeRegionDirective();
 			Assert.Equal(CodeRegionMode.None, region.RegionMode);
 			Assert.Empty(region.RegionText);
-        }
+		}
 
-        public static IEnumerable<object[]> Ctor_TestData()
-        {
-            yield return new object[] { CodeRegionMode.None - 1, null };
+		public static IEnumerable<object[]> Ctor_TestData()
+		{
+			yield return new object[] { CodeRegionMode.None - 1, null };
 			yield return new object[] { CodeRegionMode.None, "" };
 			yield return new object[] { CodeRegionMode.End + 1, "RegionText" };
 		}
 
-        [Theory]
-        [MemberData(nameof(Ctor_TestData))]
-        public void Ctor_CodeRegionMode_String(CodeRegionMode regionMode, string regionText)
-        {
+		[Theory]
+		[MemberData(nameof(Ctor_TestData))]
+		public void Ctor_CodeRegionMode_String(CodeRegionMode regionMode, string regionText)
+		{
 			var region = new CodeRegionDirective(regionMode, regionText);
 			Assert.Equal(regionMode, region.RegionMode);
 			Assert.Equal(regionText ?? string.Empty, region.RegionText);
 		}
 
-        [Theory]
+		[Theory]
 		[MemberData(nameof(String_TestData))]
 		public void RegionText_Set_Get_ReturnsExpected(string value)
-        {
-            var region = new CodeRegionDirective();
-            region.RegionText = value;
-            Assert.Equal(value ?? string.Empty, region.RegionText);
-        }
+		{
+			var region = new CodeRegionDirective();
+			region.RegionText = value;
+			Assert.Equal(value ?? string.Empty, region.RegionText);
+		}
 
-        [Theory]
+		[Theory]
 		[InlineData(CodeRegionMode.None - 1)]
 		[InlineData(CodeRegionMode.None)]
 		[InlineData(CodeRegionMode.Start | CodeRegionMode.End)]
@@ -51,7 +51,7 @@ namespace System.CodeDom.Tests
 		{
 			var region = new CodeRegionDirective();
 			region.RegionMode = value;
-            Assert.Equal(value, region.RegionMode	);
-        }
-    }
+			Assert.Equal(value, region.RegionMode);
+		}
+	}
 }

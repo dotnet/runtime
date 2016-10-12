@@ -8,10 +8,10 @@ using Xunit;
 namespace System.CodeDom.Tests
 {
 	public class CodeChecksumPragmaTests : CodeObjectTestBase<CodeChecksumPragma>
-    {
-        [Fact]
-        public void Ctor_Default()
-        {
+	{
+		[Fact]
+		public void Ctor_Default()
+		{
 			var pragma = new CodeChecksumPragma();
 			Assert.Empty(pragma.FileName);
 			Assert.Equal(Guid.Empty, pragma.ChecksumAlgorithmId);
@@ -25,10 +25,10 @@ namespace System.CodeDom.Tests
 			yield return new object[] { "Value1", Guid.NewGuid(), new byte[] { 0, 1, 2, 3 } };
 		}
 
-        [Theory]
-        [MemberData(nameof(Ctor_TestData))]
-        public void Ctor(string fileName, Guid algorithmId, byte[] checksumData)
-        {
+		[Theory]
+		[MemberData(nameof(Ctor_TestData))]
+		public void Ctor(string fileName, Guid algorithmId, byte[] checksumData)
+		{
 			var pragma = new CodeChecksumPragma(fileName, algorithmId, checksumData);
 			Assert.Equal(fileName ?? string.Empty, pragma.FileName);
 			Assert.Equal(algorithmId, pragma.ChecksumAlgorithmId);
@@ -38,11 +38,11 @@ namespace System.CodeDom.Tests
 		[Theory]
 		[MemberData(nameof(String_TestData))]
 		public void FileName_Set_Get_ReturnsExpected(string value)
-        {
-            var pragma = new CodeChecksumPragma();
-            pragma.FileName = value;
-            Assert.Equal(value ?? string.Empty, pragma.FileName);
-        }
+		{
+			var pragma = new CodeChecksumPragma();
+			pragma.FileName = value;
+			Assert.Equal(value ?? string.Empty, pragma.FileName);
+		}
 
 		public static IEnumerable<object[]> Guid_TestData()
 		{

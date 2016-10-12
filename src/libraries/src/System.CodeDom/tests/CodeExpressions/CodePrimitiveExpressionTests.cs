@@ -8,7 +8,7 @@ using Xunit;
 namespace System.CodeDom.Tests
 {
 	public class CodePrimitiveExpressionTests : CodeObjectTestBase<CodePrimitiveExpression>
-    {
+	{
 		[Fact]
 		public void Ctor_Default()
 		{
@@ -25,7 +25,7 @@ namespace System.CodeDom.Tests
 
 		[Theory]
 		[MemberData(nameof(Object_TestData))]
-        public void Ctor_Object(object value)
+		public void Ctor_Object(object value)
 		{
 			var primitive = new CodePrimitiveExpression(value);
 			Assert.Equal(value, primitive.Value);

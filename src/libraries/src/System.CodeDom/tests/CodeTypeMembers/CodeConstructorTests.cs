@@ -7,11 +7,11 @@ using Xunit;
 
 namespace System.CodeDom.Tests
 {
-    public class CodeConstructorTests : CodeObjectTestBase<CodeConstructor>
-    {
-        [Fact]
-        public void Ctor_Default()
-        {
+	public class CodeConstructorTests : CodeObjectTestBase<CodeConstructor>
+	{
+		[Fact]
+		public void Ctor_Default()
+		{
 			var constructor = new CodeConstructor();
 			Assert.Equal(".ctor", constructor.Name);
 			Assert.Empty(constructor.BaseConstructorArgs);

@@ -8,28 +8,28 @@ using Xunit;
 
 namespace System.CodeDom.Tests
 {
-    public class CodeTryCatchFinallyStatementTests : CodeStatementTestBase<CodeTryCatchFinallyStatement>
-    {
-        [Fact]
-        public void Ctor_Default()
-        {
-            var tryCatchFinally = new CodeTryCatchFinallyStatement();
+	public class CodeTryCatchFinallyStatementTests : CodeStatementTestBase<CodeTryCatchFinallyStatement>
+	{
+		[Fact]
+		public void Ctor_Default()
+		{
+			var tryCatchFinally = new CodeTryCatchFinallyStatement();
 			Assert.Empty(tryCatchFinally.TryStatements);
-            Assert.Empty(tryCatchFinally.CatchClauses);
+			Assert.Empty(tryCatchFinally.CatchClauses);
 			Assert.Empty(tryCatchFinally.FinallyStatements);
 		}
 
-        public static IEnumerable<object[]> Ctor_CodeStatementArray_CodeCatchClauseArray_TestData()
-        {
-            yield return new object[] { new CodeStatement[0], new CodeCatchClause[0] };
+		public static IEnumerable<object[]> Ctor_CodeStatementArray_CodeCatchClauseArray_TestData()
+		{
+			yield return new object[] { new CodeStatement[0], new CodeCatchClause[0] };
 			yield return new object[] { new CodeStatement[] { new CodeCommentStatement("Comment") }, new CodeCatchClause[0] };
 			yield return new object[] { new CodeStatement[0], new CodeCatchClause[] { new CodeCatchClause("Local") } };
 			yield return new object[] { new CodeStatement[] { new CodeCommentStatement("Comment") }, new CodeCatchClause[] { new CodeCatchClause("Local") } };
 		}
 
-        [Theory]
-        [MemberData(nameof(Ctor_CodeStatementArray_CodeCatchClauseArray_TestData))]
-        public void Ctor_CodeStatementArray_CodeCatchClauseArray(CodeStatement[] tryStatements, CodeCatchClause[] catchClauses)
+		[Theory]
+		[MemberData(nameof(Ctor_CodeStatementArray_CodeCatchClauseArray_TestData))]
+		public void Ctor_CodeStatementArray_CodeCatchClauseArray(CodeStatement[] tryStatements, CodeCatchClause[] catchClauses)
 		{
 			var tryCatchFinally = new CodeTryCatchFinallyStatement(tryStatements, catchClauses);
 			Assert.Equal(tryStatements, tryCatchFinally.TryStatements.Cast<CodeStatement>());

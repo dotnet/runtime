@@ -9,15 +9,15 @@ using Xunit;
 namespace System.CodeDom.Tests
 {
 	public class CodeMethodInvokeExpressionTests : CodeObjectTestBase<CodeMethodInvokeExpression>
-    {
-        [Fact]
-        public void Ctor_Default()
-        {
-            var methodInvoke = new CodeMethodInvokeExpression();
+	{
+		[Fact]
+		public void Ctor_Default()
+		{
+			var methodInvoke = new CodeMethodInvokeExpression();
 			Assert.Null(methodInvoke.Method.TargetObject);
 			Assert.Empty(methodInvoke.Method.MethodName);
-            Assert.Empty(methodInvoke.Parameters);
-        }
+			Assert.Empty(methodInvoke.Parameters);
+		}
 
 		public static IEnumerable<object[]> Ctor_CodeMethodReferenceExpression_ParamsCodeExpression_TestData()
 		{
@@ -29,7 +29,7 @@ namespace System.CodeDom.Tests
 		[Theory]
 		[MemberData(nameof(Ctor_CodeMethodReferenceExpression_ParamsCodeExpression_TestData))]
 		public void Ctor(CodeMethodReferenceExpression method, CodeExpression[] parameters)
-        {
+		{
 			var methodInvoke = new CodeMethodInvokeExpression(method, parameters);
 			Assert.Equal((method ?? new CodeMethodReferenceExpression()).TargetObject, methodInvoke.Method.TargetObject);
 			Assert.Equal((method ?? new CodeMethodReferenceExpression()).MethodName, methodInvoke.Method.MethodName);

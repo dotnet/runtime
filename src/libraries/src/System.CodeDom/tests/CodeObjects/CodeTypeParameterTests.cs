@@ -8,17 +8,17 @@ using Xunit;
 namespace System.CodeDom.Tests
 {
 	public class CodeTypeParameterTests : CodeObjectTestBase<CodeTypeParameter>
-    {
-        [Fact]
-        public void Ctor_Default()
-        {
+	{
+		[Fact]
+		public void Ctor_Default()
+		{
 			var typeParameter = new CodeTypeParameter();
 			Assert.Empty(typeParameter.Name);
 			Assert.Empty(typeParameter.Constraints);
 			Assert.Empty(typeParameter.CustomAttributes);
 			Assert.False(typeParameter.HasConstructorConstraint);
 		}
-		
+
 		[Theory]
 		[MemberData(nameof(String_TestData))]
 		public void Ctor_String(string name)
