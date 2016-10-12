@@ -9,7 +9,6 @@ namespace System.Reflection.Emit
 
     using System;
     using System.Globalization;
-    using TextWriter = System.IO.TextWriter;
     using System.Diagnostics.SymbolStore;
     using System.Runtime.InteropServices;
     using System.Reflection;

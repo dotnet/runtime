@@ -7,7 +7,6 @@
 namespace System.Reflection.Emit 
 {
     using System;
-    using TextWriter = System.IO.TextWriter;
     using System.Diagnostics.SymbolStore;
     using System.Runtime.InteropServices;
     using System.Reflection;
@@ -1212,7 +1211,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(Environment.GetResourceString("NotSupported_OutputStreamUsingTypeBuilder"));
             }
             parameterTypes[0] = (Type)cls;
-            MethodInfo mi = typeof(TextWriter).GetMethod("WriteLine", parameterTypes);
+            MethodInfo mi = prop.ReturnType.GetMethod("WriteLine", parameterTypes);
              if (mi==null) {
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmitWriteLineType"), "localBuilder");
             }
@@ -1250,7 +1249,7 @@ namespace System.Reflection.Emit
                 throw new NotSupportedException(Environment.GetResourceString("NotSupported_OutputStreamUsingTypeBuilder"));
             }
             parameterTypes[0] = (Type)cls;
-            MethodInfo mi = typeof(TextWriter).GetMethod("WriteLine", parameterTypes);
+            MethodInfo mi = prop.ReturnType.GetMethod("WriteLine", parameterTypes);
             if (mi==null) {
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmitWriteLineType"), "fld");
             }

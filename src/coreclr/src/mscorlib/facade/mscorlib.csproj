@@ -48,11 +48,6 @@
     <DebugType>none</DebugType>
   </PropertyGroup>
 
-  <!-- Some of the type forwards should only be build when targeting Windows. -->
-  <PropertyGroup>
-    <DefineConstants Condition="'$(TargetsWindows)'=='true'">$(DefineConstants);WINDOWS_TYPEFORWARDS</DefineConstants>
-  </PropertyGroup>
-
   <!-- Output paths -->
   <PropertyGroup>
     <BaseIntermediateOutputPath>$(RootBinDir)\obj</BaseIntermediateOutputPath>
@@ -67,10 +62,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\System.Private.CoreLib.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Include="TypeForwards.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -96,6 +87,42 @@
   <ItemGroup>
     <SeedTypePreference Include="System.Console">
       <Assembly>System.Console</Assembly>
+    </SeedTypePreference>
+    <SeedTypePreference Include="System.IO.BinaryReader">
+      <Assembly>System.IO</Assembly>
+    </SeedTypePreference>
+    <SeedTypePreference Include="System.IO.BinaryWriter">
+      <Assembly>System.IO</Assembly>
+    </SeedTypePreference>
+    <SeedTypePreference Include="System.IO.EndOfStreamException">
+      <Assembly>System.IO</Assembly>
+    </SeedTypePreference>
+    <SeedTypePreference Include="System.IO.MemoryStream">
+      <Assembly>System.IO</Assembly>
+    </SeedTypePreference>
+    <SeedTypePreference Include="System.IO.SeekOrigin">
+      <Assembly>System.IO</Assembly>
+    </SeedTypePreference>
+    <SeedTypePreference Include="System.IO.TextReader">
+      <Assembly>System.IO</Assembly>
+    </SeedTypePreference>
+    <SeedTypePreference Include="System.IO.TextWriter">
+      <Assembly>System.IO</Assembly>
+    </SeedTypePreference>
+    <SeedTypePreference Include="System.IO.StreamReader">
+      <Assembly>System.IO</Assembly>
+    </SeedTypePreference>
+    <SeedTypePreference Include="System.IO.StreamWriter">
+      <Assembly>System.IO</Assembly>
+    </SeedTypePreference>
+    <SeedTypePreference Include="System.IO.StringReader">
+      <Assembly>System.IO</Assembly>
+    </SeedTypePreference>
+    <SeedTypePreference Include="System.IO.StringWriter">
+      <Assembly>System.IO</Assembly>
+    </SeedTypePreference>
+    <SeedTypePreference Include="System.IO.Stream">
+      <Assembly>System.IO</Assembly>
     </SeedTypePreference>
   </ItemGroup>
 
