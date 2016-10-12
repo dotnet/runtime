@@ -77,7 +77,7 @@ namespace System {
         }
         
         internal static void ThrowArgumentException(ExceptionResource resource) {
-            throw new ArgumentException(GetResourceString(resource));
+            throw GetArgumentException(resource);
         }
 
         internal static void ThrowArgumentException(ExceptionResource resource, ExceptionArgument argument) {
@@ -88,8 +88,7 @@ namespace System {
             throw new ArgumentNullException(GetArgumentName(argument));
         }
 
-        internal static void ThrowArgumentNullException(ExceptionResource resource)
-        {
+        internal static void ThrowArgumentNullException(ExceptionResource resource) {
             throw new ArgumentNullException(GetResourceString(resource));
         }
 
@@ -149,6 +148,9 @@ namespace System {
             throw new AggregateException(exceptions);
         }
 
+        internal static void ThrowArgumentException_Argument_InvalidArrayType() {
+            throw GetArgumentException(ExceptionResource.Argument_InvalidArrayType);
+        }
 
         internal static void ThrowInvalidOperationException_InvalidOperation_EnumNotStarted() {
             throw GetInvalidOperationException(ExceptionResource.InvalidOperation_EnumNotStarted);
@@ -166,6 +168,9 @@ namespace System {
             throw GetInvalidOperationException(ExceptionResource.InvalidOperation_EnumOpCantHappen);
         }
 
+        private static ArgumentException GetArgumentException(ExceptionResource resource) {
+            return new ArgumentException(GetResourceString(resource));
+        }
 
         private static InvalidOperationException GetInvalidOperationException(ExceptionResource resource) {
             return new InvalidOperationException(GetResourceString(resource));
