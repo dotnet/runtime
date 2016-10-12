@@ -27,11 +27,11 @@
     <Compile Include="$(CommonPath)\System\Diagnostics\Debug.cs" Condition="'$(TargetGroup)'!='uap101aot'">
       <Link>Common\System\Diagnostics\Debug.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Collections\Generic\ArrayBuilder.cs">
+      <Link>Common\System\Collections\Generic\ArrayBuilder.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelDictionary.cs">
       <Link>Common\System\Collections\Generic\LowLevelDictionary.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelList.cs">
-      <Link>Common\System\Collections\Generic\LowLevelList.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\StringNormalizationExtensions.cs">
       <Link>Common\System\StringNormalizationExtensions.cs</Link>

@@ -34,6 +34,9 @@
     <Compile Include="..\src\System\StringExtensions.cs">
       <Link>Common\System\StringExtensions.cs</Link>
     </Compile>
+    <Compile Include="..\src\System\Collections\Generic\ArrayBuilder.cs">
+      <Link>Common\System\Collections\Generic\ArrayBuilder.cs</Link>
+    </Compile>
     <Compile Include="..\src\System\IO\PathInternal.cs">
       <Link>Common\System\IO\PathInternal.cs</Link>
     </Compile>
@@ -55,10 +58,14 @@
     <Compile Include="..\src\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs">
       <Link>Common\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs</Link>
     </Compile>
-    <Compile Include="Tests\System\IO\PathInternal_Unix_Tests.cs" />
+    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
+      <Link>CommonTest\System\AssertExtensions.cs</Link>
+    </Compile>
     <Compile Include="Tests\System\CharArrayHelpersTests.cs" />
-    <Compile Include="Tests\System\IO\RowConfigReaderTests.cs" />
     <Compile Include="Tests\System\StringExtensions.Tests.cs" />
+    <Compile Include="Tests\System\Collections\Generic\ArrayBuilderTests.cs" />
+    <Compile Include="Tests\System\IO\PathInternal_Unix_Tests.cs" />
+    <Compile Include="Tests\System\IO\RowConfigReaderTests.cs" />
     <Compile Include="Tests\System\IO\PathInternal.Tests.cs" />
     <Compile Include="Tests\System\Net\HttpKnownHeaderNamesTests.cs" />
     <Compile Include="$(CommonPath)\System\Runtime\InteropServices\SafeHeapHandle.cs">

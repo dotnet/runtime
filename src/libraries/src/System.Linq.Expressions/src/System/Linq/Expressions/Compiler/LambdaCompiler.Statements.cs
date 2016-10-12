@@ -684,7 +684,7 @@ namespace System.Linq.Expressions.Compiler
                         nullCase = i;
                     }
                 }
-                cases.Add(Expression.SwitchCase(node.Cases[i].Body, Expression.Constant(i)));
+                cases.UncheckedAdd(Expression.SwitchCase(node.Cases[i].Body, Expression.Constant(i)));
             }
 
             // Create the field to hold the lazily initialized dictionary

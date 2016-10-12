@@ -869,7 +869,7 @@ namespace System
                     }
                     else
                     {
-                        LowLevelList<string> pathSegments = new LowLevelList<string>();
+                        var pathSegments = new ArrayBuilder<string>();
                         int current = 0;
                         while (current < path.Length)
                         {

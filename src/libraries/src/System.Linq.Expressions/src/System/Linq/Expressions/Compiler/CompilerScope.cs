@@ -190,7 +190,7 @@ namespace System.Linq.Expressions.Compiler
                     // real index of variable to get the index to emit.
                     ulong index = (parents << 32) | (uint)locals.Indexes[variable];
 
-                    indexes.Add((long)index);
+                    indexes.UncheckedAdd((long)index);
                 }
 
                 EmitGet(NearestHoistedLocals.SelfVariable);

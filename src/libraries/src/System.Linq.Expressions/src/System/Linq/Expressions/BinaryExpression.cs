@@ -270,8 +270,8 @@ namespace System.Linq.Expressions
             var exprs = new ArrayBuilder<Expression>(index.ArgumentCount + 3);
 
             var tempObj = Expression.Variable(index.Object.Type, "tempObj");
-            vars.Add(tempObj);
-            exprs.Add(Expression.Assign(tempObj, index.Object));
+            vars.UncheckedAdd(tempObj);
+            exprs.UncheckedAdd(Expression.Assign(tempObj, index.Object));
 
             var n = index.ArgumentCount;
             var tempArgs = new ArrayBuilder<Expression>(n);
@@ -279,9 +279,9 @@ namespace System.Linq.Expressions
             {
                 var arg = index.GetArgument(i);
                 var tempArg = Expression.Variable(arg.Type, "tempArg" + i);
-                vars.Add(tempArg);
-                tempArgs.Add(tempArg);
-                exprs.Add(Expression.Assign(tempArg, arg));
+                vars.UncheckedAdd(tempArg);
+                tempArgs.UncheckedAdd(tempArg);
+                exprs.UncheckedAdd(Expression.Assign(tempArg, arg));
             }
 
             var tempIndex = Expression.MakeIndex(tempObj, index.Indexer, tempArgs.ToReadOnly());
@@ -295,11 +295,11 @@ namespace System.Linq.Expressions
                 op = Expression.Invoke(conversion, op);
             }
             var tempValue = Expression.Variable(op.Type, "tempValue");
-            vars.Add(tempValue);
-            exprs.Add(Expression.Assign(tempValue, op));
+            vars.UncheckedAdd(tempValue);
+            exprs.UncheckedAdd(Expression.Assign(tempValue, op));
 
             // tempObj[tempArg0, ... tempArgN] = tempValue
-            exprs.Add(Expression.Assign(tempIndex, tempValue));
+            exprs.UncheckedAdd(Expression.Assign(tempIndex, tempValue));
 
             return Expression.Block(vars.ToReadOnly(), exprs.ToReadOnly());
         }

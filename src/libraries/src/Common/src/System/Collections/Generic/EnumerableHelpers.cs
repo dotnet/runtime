@@ -119,20 +119,22 @@ namespace System.Collections.Generic
 
             // Here's a visualization showing what first, buffers, and current
             // might look like for a 200-length enumerable:
-            //
-            // first: [items 0-31]
-            //
-            // buffers:
-            // [0]: [items 32-63]
-            // [1]: [items 64-127]
-            //
-            // current: [items 128-199], [slots 200-255 empty]
+            
+            /*
+                first: [items 0-31]
 
-            // The up-front allocation for the list will not be that much since
-            // the backing store will be Array.Empty<T>() if you do not pass in a
-            // capacity. It only starts allocating arrays when we add the first item.
+                buffers:
+                [0]: [items 32-63]
+                [1]: [items 64-127]
 
-            var buffers = new List<T[]>(); // list of previous buffers
+                current: [items 128-199], [slots 200-255 empty]
+            */
+
+            // There will be no up-front allocation for the ArrayBuilder, since
+            // the backing store will be nil if you do not pass in a capacity.
+            // It only starts allocating arrays when we add the first item.
+
+            var buffers = new ArrayBuilder<T[]>(); // list of previous buffers
             var current = new T[first.Length]; // the current buffer we're reading the sequence into
             int read = first.Length; // number of items we've read so far, updated every time we exhaust a buffer
 
@@ -172,8 +174,9 @@ namespace System.Collections.Generic
 
                     // Copy from the buffers in the list that came before this one
                     int copied = first.Length;
-                    foreach (T[] buffer in buffers)
+                    for (int i = 0; i < buffers.Count; i++)
                     {
+                        T[] buffer = buffers[i];
                         Array.Copy(buffer, 0, result, copied, buffer.Length);
                         copied += buffer.Length;
                     }
