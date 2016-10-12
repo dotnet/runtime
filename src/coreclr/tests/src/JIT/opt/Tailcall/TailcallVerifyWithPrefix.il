@@ -5610,6 +5610,9 @@
     .method public hidebysig instance void 
             Caller1() cil managed
     {
+      // This method depends on JIT compiler doing automatic tail call, which isn't supported by Ready-to-Run.
+      .custom instance void System.Runtime.BypassReadyToRunAttribute::.ctor() = ( 01 00 00 00 )
+
       // Code size       53 (0x35)
       .maxstack  8
       IL_0000:  ldc.i4.0
@@ -5633,6 +5636,9 @@
     .method public hidebysig instance void 
             Caller1Recursive() cil managed
     {
+      // This method depends on JIT compiler doing automatic tail call, which isn't supported by Ready-to-Run.
+      .custom instance void System.Runtime.BypassReadyToRunAttribute::.ctor() = ( 01 00 00 00 )
+
       // Code size       55 (0x37)
       .maxstack  8
       IL_0000:  ldc.i4.0
@@ -5670,6 +5676,9 @@
     .method private hidebysig instance void 
             Callee1Recursive(int32 i) cil managed
     {
+      // This method depends on JIT compiler doing automatic tail call, which isn't supported by Ready-to-Run.
+      .custom instance void System.Runtime.BypassReadyToRunAttribute::.ctor() = ( 01 00 00 00 )
+
       // Code size       93 (0x5d)
       .maxstack  3
       .locals init ([0] string stackTrace,
@@ -5805,6 +5814,9 @@
             Caller1(!V arg1,
                     !K arg2) cil managed
     {
+      // This method depends on JIT compiler doing automatic tail call, which isn't supported by Ready-to-Run.
+      .custom instance void System.Runtime.BypassReadyToRunAttribute::.ctor() = ( 01 00 00 00 )
+
       // Code size       54 (0x36)
       .maxstack  8
       IL_0000:  ldc.i4.0
@@ -6016,6 +6028,9 @@
 
   .method private hidebysig static void  Caller2() cil managed
   {
+    // This method depends on JIT compiler doing automatic tail call, which isn't supported by Ready-to-Run.
+    .custom instance void System.Runtime.BypassReadyToRunAttribute::.ctor() = ( 01 00 00 00 )
+
     // Code size       52 (0x34)
     .maxstack  8
     IL_0000:  ldc.i4.0
@@ -10375,6 +10390,21 @@
 
   .field static assembly valuetype '<PrivateImplementationDetails>{D1242658-CA16-4D11-A740-6635F112F4B5}'/'__StaticArrayInitTypeSize=20' '$$method0x6000076-1' at I_00005C00
 } // end of class '<PrivateImplementationDetails>{D1242658-CA16-4D11-A740-6635F112F4B5}'
+
+.class private auto ansi sealed beforefieldinit System.Runtime.BypassReadyToRunAttribute
+       extends [mscorlib]System.Attribute
+{
+  .method public hidebysig specialname rtspecialname 
+          instance void  .ctor() cil managed
+  {
+    // Code size       7 (0x7)
+    .maxstack  8
+    IL_0000:  ldarg.0
+    IL_0001:  call       instance void [mscorlib]System.Attribute::.ctor()
+    IL_0006:  ret
+  } // end of method BypassReadyToRunAttribute::.ctor
+
+} // end of class System.Runtime.BypassReadyToRunAttribute
 
 
 // =============================================================
