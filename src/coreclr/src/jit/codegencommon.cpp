@@ -1632,6 +1632,44 @@ void CodeGen::genAdjustSP(ssize_t delta)
         inst_RV_IV(INS_add, REG_SPBASE, delta, EA_PTRSIZE);
 }
 
+//------------------------------------------------------------------------
+// genAdjustStackLevel: Adjust the stack level, if required, for a throw helper block
+//
+// Arguments:
+//    block - The BasicBlock for which we are about to generate code.
+//
+// Assumptions:
+//    Must be called just prior to generating code for 'block'.
+//
+// Notes:
+//    This only makes an adjustment if !FEATURE_FIXED_OUT_ARGS, if there is no frame pointer,
+//    and if 'block' is a throw helper block with a non-zero stack level.
+
+void CodeGen::genAdjustStackLevel(BasicBlock* block)
+{
+#if !FEATURE_FIXED_OUT_ARGS
+    // Check for inserted throw blocks and adjust genStackLevel.
+
+    if (!isFramePointerUsed() && compiler->fgIsThrowHlpBlk(block))
+    {
+        noway_assert(block->bbFlags & BBF_JMP_TARGET);
+
+        genStackLevel = compiler->fgThrowHlpBlkStkLevel(block) * sizeof(int);
+
+        if (genStackLevel != 0)
+        {
+#ifdef _TARGET_X86_
+            getEmitter()->emitMarkStackLvl(genStackLevel);
+            inst_RV_IV(INS_add, REG_SPBASE, genStackLevel, EA_PTRSIZE);
+            genStackLevel = 0;
+#else  // _TARGET_X86_
+            NYI("Need emitMarkStackLvl()");
+#endif // _TARGET_X86_
+        }
+    }
+#endif // !FEATURE_FIXED_OUT_ARGS
+}
+
 #ifdef _TARGET_ARM_
 // return size
 // alignmentWB is out param
