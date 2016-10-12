@@ -4,6 +4,10 @@ The corefx repo contains the library implementation (called "CoreFX") for [.NET 
 
 [mscorlib]: https://github.com/dotnet/coreclr/tree/master/src/mscorlib
 
+## Source Index
+
+.NET Core now has a source index: https://source.dot.net
+
 ## Build & Test Status
 
 | | Inner Loop | Outer Loop |
