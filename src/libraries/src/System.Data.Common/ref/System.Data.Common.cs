@@ -5,17 +5,8 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+[assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.DBNull))]
 
-namespace System
-{
-    public sealed partial class DBNull
-    {
-        internal DBNull() { }
-        public static readonly System.DBNull Value;
-        public override string ToString() { return default(string); }
-        public string ToString(System.IFormatProvider provider) { return default(string); }
-    }
-}
 namespace System.Data
 {
     [System.FlagsAttribute]

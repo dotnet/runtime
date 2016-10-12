@@ -121,6 +121,7 @@
     <Compile Include="System\DelegateTests.netstandard1.7.cs" />
     <Compile Include="System\AttributeTests.netstandard1.7.cs" />
     <Compile Include="CompareToTests.cs" />
+    <Compile Include="DBNullTests.netstandard1.7.cs" />
     <Compile Include="DecimalTests.netstandard1.7.cs" />
     <Compile Include="EnumTests.netstandard1.7.cs" />
     <Compile Include="GetTypeCodeTests.cs" />
