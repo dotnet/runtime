@@ -9161,89 +9161,7 @@ void Thread::ReturnToContextAndOOM(ContextTransitionFrame* pFrame)
     COMPlusThrowOM();
 }
 
-
-#ifdef FEATURE_CORECLR
-
-//---------------------------------------------------------------------------------------
-// Allocates an agile CrossAppDomainMarshaledException whose ToString() and ErrorCode
-// matches the original exception.
-//
-// This is our "remoting" story for exceptions that leak across appdomains in Telesto.
-//---------------------------------------------------------------------------------------
-static OBJECTREF WrapThrowableInCrossAppDomainMarshaledException(OBJECTREF pOriginalThrowable)
-{
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        THROWS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(GetThread() != NULL);
-
-
-    struct _gc
-    {
-        OBJECTREF pOriginalThrowable;
-        OBJECTREF pThrowable;
-        STRINGREF pOriginalMessage;
-    }
-    prot;
-
-
-    memset(&prot, 0, sizeof(prot));
-
-    GCPROTECT_BEGIN(prot);
-    prot.pOriginalThrowable = pOriginalThrowable;
-    prot.pOriginalMessage   = GetExceptionMessage(prot.pOriginalThrowable);
-    HRESULT originalHResult = GetExceptionHResult(prot.pOriginalThrowable);
-
-    MethodTable *pMT = MscorlibBinder::GetClass(CLASS__CROSSAPPDOMAINMARSHALEDEXCEPTION);
-    prot.pThrowable = AllocateObject(pMT);
-
-    MethodDescCallSite exceptionCtor(METHOD__CROSSAPPDOMAINMARSHALEDEXCEPTION__STR_INT_CTOR);
-
-    ARG_SLOT args1[] = { 
-        ObjToArgSlot(prot.pThrowable),
-        ObjToArgSlot(prot.pOriginalMessage),
-        (ARG_SLOT)originalHResult,
-    };
-    exceptionCtor.Call(args1);
-
-#ifndef FEATURE_PAL
-    // Since, on CoreCLR, we dont have serialization of exceptions going across
-    // AD transition boundaries, we will copy over the bucket details to the 
-    // CrossAppDomainMarshalledException object from the original exception object 
-    // if it isnt a preallocated exception.
-    if (IsWatsonEnabled() && (!CLRException::IsPreallocatedExceptionObject(prot.pOriginalThrowable)))
-    {
-        // If the watson buckets are present, then copy them over.
-        // They maybe missing if the original throwable couldnt get them from Watson helper functions
-        // during SetupInitialThrowBucketDetails due to OOM.
-        if (((EXCEPTIONREF)prot.pOriginalThrowable)->AreWatsonBucketsPresent())
-        {
-            _ASSERTE(prot.pThrowable != NULL);
-            // Copy them to CrossADMarshalledException object
-            CopyWatsonBucketsBetweenThrowables(prot.pOriginalThrowable, prot.pThrowable);
-
-            // The exception object should now have the buckets inside it
-            _ASSERTE(((EXCEPTIONREF)prot.pThrowable)->AreWatsonBucketsPresent());
-        }
-    }
-#endif // !FEATURE_PAL
-
-    GCPROTECT_END(); //Prot
-
-
-    return prot.pThrowable;
-}
-
-
-
-#endif
-
-
+#ifdef FEATURE_REMOTING
 // for cases when marshaling is not needed
 // throws it is able to take a shortcut, otherwise just returns
 void Thread::RaiseCrossContextExceptionHelper(Exception* pEx, ContextTransitionFrame* pFrame)
@@ -9413,15 +9331,7 @@ Thread::TryRaiseCrossContextException(Exception **ppExOrig,
             *ppThrowable = CLRException::GetThrowableFromException(exception);
             _ASSERTE(*ppThrowable != NULL);
 
-#ifdef FEATURE_CORECLR
-            (*pOrBlob) = WrapThrowableInCrossAppDomainMarshaledException(*ppThrowable);
-#if CHECK_APP_DOMAIN_LEAKS 
-            (*pOrBlob)->SetAppDomainAgile();
-#endif //CHECK_APP_DOMAIN_LEAKS 
-#else
             AppDomainHelper::MarshalObject(ppThrowable, pOrBlob);
-#endif //FEATURE_CORECLR
-        
         }
     }
     EX_CATCH
@@ -9599,6 +9509,25 @@ void DECLSPEC_NORETURN Thread::RaiseCrossContextException(Exception* pExOrig, Co
         GCPROTECT_END();
     }
 }
+
+#else // FEATURE_REMOTING
+
+void DECLSPEC_NORETURN Thread::RaiseCrossContextException(Exception* pExOrig, ContextTransitionFrame* pFrame)
+{
+    CONTRACTL
+    {
+        THROWS;
+        WRAPPER(GC_TRIGGERS);
+    }
+    CONTRACTL_END;
+
+    // pEx is NULL means that the exception is CLRLastThrownObjectException
+    CLRLastThrownObjectException lastThrown;
+    Exception* pException = pExOrig ? pExOrig : &lastThrown;
+    COMPlusThrow(CLRException::GetThrowableFromException(pException));
+}
+
+#endif
 
 struct FindADCallbackType {
     AppDomain *pSearchDomain;
