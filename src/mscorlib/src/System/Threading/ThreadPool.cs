@@ -1094,11 +1094,7 @@ namespace System.Threading
     }
 
 [System.Runtime.InteropServices.ComVisible(true)]
-#if FEATURE_REMOTING    
     public sealed class RegisteredWaitHandle : MarshalByRefObject {
-#else // FEATURE_REMOTING
-    public sealed class RegisteredWaitHandle {
-#endif // FEATURE_REMOTING
         private RegisteredWaitHandleSafe internalRegisteredWait;
     
         internal RegisteredWaitHandle()

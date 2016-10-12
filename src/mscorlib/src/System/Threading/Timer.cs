@@ -774,11 +774,7 @@ namespace System.Threading
 
     [HostProtection(Synchronization=true, ExternalThreading=true)]
     [System.Runtime.InteropServices.ComVisible(true)]
-#if FEATURE_REMOTING
     public sealed class Timer : MarshalByRefObject, IDisposable
-#else // FEATURE_REMOTING
-    public sealed class Timer : IDisposable
-#endif // FEATURE_REMOTING
     {
         private const UInt32 MAX_SUPPORTED_TIMEOUT = (uint)0xfffffffe;
 
