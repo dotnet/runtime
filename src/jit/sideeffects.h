@@ -136,6 +136,12 @@ public:
 // SideEffectSet:
 //    Represents a set of side effects for the purposes of analyzing code
 //    motion.
+//    Note that for non-fixed-size frames without a frame pointer (currently
+//    x86-only), we don't track the modification of the stack level that occurs
+//    with a GT_PUTARG_STK as a side-effect. If we ever support general code
+//    reordering, that would have to be taken into account. As it happens,
+//    we currently do not reorder any other side-effecting nodes relative to
+//    these.
 //
 class SideEffectSet final
 {
