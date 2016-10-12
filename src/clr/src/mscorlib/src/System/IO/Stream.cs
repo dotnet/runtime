@@ -159,7 +159,7 @@ namespace System.IO {
         [ComVisible(false)]
         public virtual Task CopyToAsync(Stream destination, Int32 bufferSize, CancellationToken cancellationToken)
         {
-            ValidateCopyToArguments(destination, bufferSize);
+            StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
 
             return CopyToAsyncInternal(destination, bufferSize, cancellationToken);
         }
@@ -213,7 +213,7 @@ namespace System.IO {
 
         public virtual void CopyTo(Stream destination, int bufferSize)
         {
-            ValidateCopyToArguments(destination, bufferSize);
+            StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
             
             byte[] buffer = new byte[bufferSize];
             int read;
@@ -850,28 +850,6 @@ namespace System.IO {
         {
             SynchronousAsyncResult.EndWrite(asyncResult);
         }
-        
-        internal void ValidateCopyToArguments(Stream destination, int bufferSize)
-        {
-            if (destination == null)
-                throw new ArgumentNullException("destination");
-            if (bufferSize <= 0)
-                throw new ArgumentOutOfRangeException("bufferSize", Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
-
-            // Cache some virtual method calls for better perf
-            bool canRead = CanRead;
-            bool destCanWrite = destination.CanWrite;
-
-            if (!canRead && !CanWrite)
-                throw new ObjectDisposedException(null, Environment.GetResourceString("ObjectDisposed_StreamClosed"));
-            if (!destination.CanRead && !destCanWrite)
-                throw new ObjectDisposedException("destination", Environment.GetResourceString("ObjectDisposed_StreamClosed"));
-            if (!canRead)
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_UnreadableStream"));
-            if (!destCanWrite)
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_UnwritableStream"));
-            Contract.EndContractBlock();
-        }
 
         [Serializable]
         private sealed class NullStream : Stream
@@ -906,7 +884,7 @@ namespace System.IO {
             {
                 // Validate arguments here for compat, since previously this method
                 // was inherited from Stream (which did check its arguments).
-                ValidateCopyToArguments(destination, bufferSize);
+                StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
                 
                 return cancellationToken.IsCancellationRequested ?
                     Task.FromCanceled(cancellationToken) :
