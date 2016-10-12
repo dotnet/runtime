@@ -106,7 +106,7 @@ namespace System {
         }
 
         internal static void ThrowInvalidOperationException(ExceptionResource resource) {
-            throw new InvalidOperationException(GetResourceString(resource));
+            throw GetInvalidOperationException(resource);
         }
 
         internal static void ThrowInvalidOperationException(ExceptionResource resource, Exception e) {
@@ -149,6 +149,27 @@ namespace System {
             throw new AggregateException(exceptions);
         }
 
+
+        internal static void ThrowInvalidOperationException_InvalidOperation_EnumNotStarted() {
+            throw GetInvalidOperationException(ExceptionResource.InvalidOperation_EnumNotStarted);
+        }
+
+        internal static void ThrowInvalidOperationException_InvalidOperation_EnumEnded() {
+            throw GetInvalidOperationException(ExceptionResource.InvalidOperation_EnumEnded);
+        }
+
+        internal static void ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion() {
+            throw GetInvalidOperationException(ExceptionResource.InvalidOperation_EnumFailedVersion);
+        }
+
+        internal static void ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen() {
+            throw GetInvalidOperationException(ExceptionResource.InvalidOperation_EnumOpCantHappen);
+        }
+
+
+        private static InvalidOperationException GetInvalidOperationException(ExceptionResource resource) {
+            return new InvalidOperationException(GetResourceString(resource));
+        }
 
         private static ArgumentException GetWrongKeyTypeArgumentException(object key, Type targetType) {
             return new ArgumentException(Environment.GetResourceString("Arg_WrongType", key, targetType), "key");

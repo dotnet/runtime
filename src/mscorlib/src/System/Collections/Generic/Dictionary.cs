@@ -733,7 +733,7 @@ namespace System.Collections.Generic {
 
             public bool MoveNext() {
                 if (version != dictionary.version) {
-                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_EnumFailedVersion);
+                    ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
                 }
 
                 // Use unsigned comparison since we set index to dictionary.count+1 when the enumeration ends.
@@ -762,7 +762,7 @@ namespace System.Collections.Generic {
             object IEnumerator.Current {
                 get { 
                     if( index == 0 || (index == dictionary.count + 1)) {
-                        ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_EnumOpCantHappen);                        
+                        ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();                        
                     }      
 
                     if (getEnumeratorRetType == DictEntry) {
@@ -775,7 +775,7 @@ namespace System.Collections.Generic {
 
             void IEnumerator.Reset() {
                 if (version != dictionary.version) {
-                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_EnumFailedVersion);
+                    ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
                 }
 
                 index = 0;
@@ -785,7 +785,7 @@ namespace System.Collections.Generic {
             DictionaryEntry IDictionaryEnumerator.Entry {
                 get { 
                     if( index == 0 || (index == dictionary.count + 1)) {
-                         ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_EnumOpCantHappen);                        
+                         ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();                        
                     }                        
                     
                     return new DictionaryEntry(current.Key, current.Value); 
@@ -795,7 +795,7 @@ namespace System.Collections.Generic {
             object IDictionaryEnumerator.Key {
                 get { 
                     if( index == 0 || (index == dictionary.count + 1)) {
-                         ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_EnumOpCantHappen);                        
+                         ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();                        
                     }                        
                     
                     return current.Key; 
@@ -805,7 +805,7 @@ namespace System.Collections.Generic {
             object IDictionaryEnumerator.Value {
                 get { 
                     if( index == 0 || (index == dictionary.count + 1)) {
-                         ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_EnumOpCantHappen);                        
+                         ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();                        
                     }                        
                     
                     return current.Value; 
@@ -956,7 +956,7 @@ namespace System.Collections.Generic {
 
                 public bool MoveNext() {
                     if (version != dictionary.version) {
-                        ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_EnumFailedVersion);
+                        ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
                     }
 
                     while ((uint)index < (uint)dictionary.count) {
@@ -982,7 +982,7 @@ namespace System.Collections.Generic {
                 Object System.Collections.IEnumerator.Current {
                     get {                      
                         if( index == 0 || (index == dictionary.count + 1)) {
-                             ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_EnumOpCantHappen);                        
+                             ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();                        
                         }                        
                         
                         return currentKey;
@@ -991,7 +991,7 @@ namespace System.Collections.Generic {
                 
                 void System.Collections.IEnumerator.Reset() {
                     if (version != dictionary.version) {
-                        ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_EnumFailedVersion);                        
+                        ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();                        
                     }
 
                     index = 0;                    
@@ -1142,7 +1142,7 @@ namespace System.Collections.Generic {
 
                 public bool MoveNext() {                    
                     if (version != dictionary.version) {
-                        ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_EnumFailedVersion);
+                        ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
                     }
                     
                     while ((uint)index < (uint)dictionary.count) {
@@ -1167,7 +1167,7 @@ namespace System.Collections.Generic {
                 Object System.Collections.IEnumerator.Current {
                     get {                      
                         if( index == 0 || (index == dictionary.count + 1)) {
-                             ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_EnumOpCantHappen);                        
+                             ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();                        
                         }                        
                         
                         return currentValue;
@@ -1176,7 +1176,7 @@ namespace System.Collections.Generic {
                 
                 void System.Collections.IEnumerator.Reset() {
                     if (version != dictionary.version) {
-                        ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_EnumFailedVersion);
+                        ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
                     }
                     index = 0;                    
                     currentValue = default(TValue);
