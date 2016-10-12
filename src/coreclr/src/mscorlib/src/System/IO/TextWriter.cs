@@ -35,11 +35,7 @@ namespace System.IO {
     // There are methods on the Stream class for writing bytes. 
     [Serializable]
     [ComVisible(true)]
-#if FEATURE_REMOTING
     public abstract class TextWriter : MarshalByRefObject, IDisposable {
-#else // FEATURE_REMOTING
-    public abstract class TextWriter : IDisposable {
-#endif // FEATURE_REMOTING
         public static readonly TextWriter Null = new NullTextWriter();
 
         // This should be initialized to Environment.NewLine, but

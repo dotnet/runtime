@@ -96,13 +96,8 @@ namespace Microsoft.Win32 {
      * @security(checkDllCalls=off)
      * @security(checkClassLinking=on)
      */
-#if FEATURE_REMOTING
     [ComVisible(true)]
     public sealed class RegistryKey : MarshalByRefObject, IDisposable 
-#else
-    [ComVisible(true)]
-    public sealed class RegistryKey : IDisposable 
-#endif
     {
 
         // We could use const here, if C# supported ELEMENT_TYPE_I fully.

@@ -30,11 +30,7 @@ using System.Reflection;
 namespace System.IO {
     [Serializable]
     [ComVisible(true)]
-#if FEATURE_REMOTING
     public abstract class Stream : MarshalByRefObject, IDisposable {
-#else // FEATURE_REMOTING
-    public abstract class Stream : IDisposable {
-#endif // FEATURE_REMOTING
 
         public static readonly Stream Null = new NullStream();
 

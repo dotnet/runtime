@@ -32,11 +32,7 @@ namespace System.IO {
     [FileIOPermissionAttribute(SecurityAction.InheritanceDemand,Unrestricted=true)]
 #endif
     [ComVisible(true)]
-#if FEATURE_REMOTING
     public abstract class FileSystemInfo : MarshalByRefObject, ISerializable {
-#else // FEATURE_REMOTING
-    public abstract class FileSystemInfo : ISerializable {   
-#endif  //FEATURE_REMOTING      
         
         [System.Security.SecurityCritical] // auto-generated
         internal Win32Native.WIN32_FILE_ATTRIBUTE_DATA _data; // Cache the file information
