@@ -40,6 +40,9 @@
     <TargetingPackReference Include="System.Private.CoreLib.DynamicDelegate" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
+    <Compile Include="$(CommonPath)\System\Collections\Generic\ArrayBuilder.cs">
+      <Link>Common\System\Collections\Generic\ArrayBuilder.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Collections\Generic\EnumerableHelpers.cs">
       <Link>Common\System\Collections\Generic\EnumerableHelpers.cs</Link>
     </Compile>
@@ -97,7 +100,7 @@
     <Compile Include="System\Dynamic\Utils\ExpressionVisitorUtils.cs" />
     <Compile Include="System\Dynamic\Utils\TypeExtensions.cs" />
     <Compile Include="System\Dynamic\Utils\TypeUtils.cs" />
-    <Compile Include="System\Linq\Expressions\Common\ArrayBuilder.cs" />
+    <Compile Include="System\Linq\Expressions\Common\ArrayBuilderExtensions.cs" />
     <Compile Include="System\Linq\Expressions\Common\ConstantCheck.cs" />
     <Compile Include="System\Linq\Expressions\Common\CachedReflectionInfo.cs" />
     <Compile Include="System\Linq\Expressions\BinaryExpression.cs" />
