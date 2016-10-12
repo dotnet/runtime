@@ -21,7 +21,6 @@ namespace System.Reflection.Emit.Tests
             eventBuilder.SetRemoveOnMethod(method);
         }
 
-
         [Fact]
         public void SetRemoveOnMethod_InstanceMethod_Twice()
         {
