@@ -37,8 +37,8 @@ namespace System.Collections.Tests
         [Fact]
         public static void DefaultInvariant_Compare()
         {
-            CultureInfo culture1 = CultureInfo.DefaultThreadCurrentCulture;
-            CultureInfo culture2 = CultureInfo.DefaultThreadCurrentUICulture;
+            CultureInfo culture1 = CultureInfo.CurrentCulture;
+            CultureInfo culture2 = CultureInfo.CurrentUICulture;
 
             try
             {
@@ -67,8 +67,8 @@ namespace System.Collections.Tests
                     }
 
                     // Set current culture
-                    CultureInfo.DefaultThreadCurrentCulture = culture;
-                    CultureInfo.DefaultThreadCurrentUICulture = culture;
+                    CultureInfo.CurrentCulture = culture;
+                    CultureInfo.CurrentUICulture = culture;
 
                     // All cultures should sort the same way, irrespective of the thread's culture
                     Comparer comp = Comparer.DefaultInvariant;
@@ -78,8 +78,8 @@ namespace System.Collections.Tests
             }
             finally
             {
-                CultureInfo.DefaultThreadCurrentCulture = culture1;
-                CultureInfo.DefaultThreadCurrentUICulture = culture2;
+                CultureInfo.CurrentCulture = culture1;
+                CultureInfo.CurrentUICulture = culture2;
             }
         }
 
