@@ -1453,26 +1453,25 @@ mono_custom_attrs_get_attr (MonoCustomAttrInfo *ainfo, MonoClass *attr_klass)
 MonoObject*
 mono_custom_attrs_get_attr_checked (MonoCustomAttrInfo *ainfo, MonoClass *attr_klass, MonoError *error)
 {
-	int i, attr_index;
-	MonoArray *attrs;
+	int i;
+	MonoCustomAttrEntry *centry = NULL;
+
+	g_assert (attr_klass != NULL);
 
 	mono_error_init (error);
 
-	attr_index = -1;
 	for (i = 0; i < ainfo->num_attrs; ++i) {
-		MonoClass *klass = ainfo->attrs [i].ctor->klass;
-		if (mono_class_has_parent (klass, attr_klass)) {
-			attr_index = i;
+		centry = &ainfo->attrs[i];
+		if (centry->ctor == NULL)
+			continue;
+		MonoClass *klass = centry->ctor->klass;
+		if (mono_class_is_assignable_from (attr_klass, klass))
 			break;
-		}
 	}
-	if (attr_index == -1)
+	if (centry == NULL)
 		return NULL;
 
-	attrs = mono_custom_attrs_construct_by_type (ainfo, NULL, error);
-	if (!mono_error_ok (error))
-		return NULL;
-	return mono_array_get (attrs, MonoObject*, attr_index);
+	return create_custom_attr (ainfo->image, centry->ctor, centry->data, centry->data_size, error);
 }
 
 /*
