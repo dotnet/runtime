@@ -1,14 +1,10 @@
 {
   "dependencies": {
-    "System.Runtime": "4.0.0",
-    "System.Threading.Tasks": "4.0.0",
-    "System.IO": "4.0.0"
+    "System.Runtime": "4.4.0-beta-24608-01",
+    "System.Threading.Tasks": "4.4.0-beta-24608-01",
+    "System.IO": "4.4.0-beta-24608-01"
   },
   "frameworks": {
-    "netstandard1.0": {
-      "imports": [
-        "dotnet5.1"
-      ]
-    }
+    "netstandard1.7": {}
   }
 }

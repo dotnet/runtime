@@ -797,6 +797,30 @@ namespace System
         Tuesday = 2,
         Wednesday = 3,
     }
+    public sealed partial class DBNull : System.IConvertible, System.Runtime.Serialization.ISerializable
+    {
+        internal DBNull() { }
+        public static readonly System.DBNull Value;
+        public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public System.TypeCode GetTypeCode() { return default(System.TypeCode); }
+        bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { return default(bool); }
+        byte System.IConvertible.ToByte(System.IFormatProvider provider) { return default(byte); }
+        char System.IConvertible.ToChar(System.IFormatProvider provider) { return default(char); }
+        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider provider) { return default(System.DateTime); }
+        decimal System.IConvertible.ToDecimal(System.IFormatProvider provider) { return default(decimal); }
+        double System.IConvertible.ToDouble(System.IFormatProvider provider) { return default(double); }
+        short System.IConvertible.ToInt16(System.IFormatProvider provider) { return default(short); }
+        int System.IConvertible.ToInt32(System.IFormatProvider provider) { return default(int); }
+        long System.IConvertible.ToInt64(System.IFormatProvider provider) { return default(long); }
+        sbyte System.IConvertible.ToSByte(System.IFormatProvider provider) { return default(sbyte); }
+        float System.IConvertible.ToSingle(System.IFormatProvider provider) { return default(float); }
+        object System.IConvertible.ToType(System.Type type, System.IFormatProvider provider) { return default(object); }
+        ushort System.IConvertible.ToUInt16(System.IFormatProvider provider) { return default(ushort); }
+        uint System.IConvertible.ToUInt32(System.IFormatProvider provider) { return default(uint); }
+        ulong System.IConvertible.ToUInt64(System.IFormatProvider provider) { return default(ulong); }
+        public override string ToString() { return default(string); }
+        public string ToString(System.IFormatProvider provider) { return default(string); }
+    }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct Decimal : System.IComparable, System.IComparable<decimal>, System.IConvertible, System.IEquatable<decimal>, System.IFormattable
     {
@@ -2522,6 +2546,7 @@ namespace System
         Byte = 6,
         Char = 4,
         DateTime = 16,
+        DBNull = 2,
         Decimal = 15,
         Double = 14,
         Empty = 0,
