@@ -17,9 +17,10 @@ CONFIG_INTEGER(DebugBreakOnVerificationFailure, W("DebugBreakOnVerificationFailu
                                                                                          // verification failure
 CONFIG_INTEGER(DiffableDasm, W("JitDiffableDasm"), 0)            // Make the disassembly diff-able
 CONFIG_INTEGER(DisplayLoopHoistStats, W("JitLoopHoistStats"), 0) // Display JIT loop hoisting statistics
-CONFIG_INTEGER(DumpJittedMethods, W("DumpJittedMethods"), 0)     // Prints all jitted methods to the console
-CONFIG_INTEGER(EnablePCRelAddr, W("JitEnablePCRelAddr"), 1)      // Whether absolute addr be encoded as PC-rel offset by
-                                                                 // RyuJIT where possible
+CONFIG_INTEGER(DisplayLsraStats, W("JitLsraStats"), 0)       // Display JIT Linear Scan Register Allocator statistics
+CONFIG_INTEGER(DumpJittedMethods, W("DumpJittedMethods"), 0) // Prints all jitted methods to the console
+CONFIG_INTEGER(EnablePCRelAddr, W("JitEnablePCRelAddr"), 1)  // Whether absolute addr be encoded as PC-rel offset by
+                                                             // RyuJIT where possible
 CONFIG_INTEGER(InterpreterFallback, W("InterpreterFallback"), 0) // Fallback to the interpreter when the JIT compiler
                                                                  // fails
 CONFIG_INTEGER(JitAssertOnMaxRAPasses, W("JitAssertOnMaxRAPasses"), 0)

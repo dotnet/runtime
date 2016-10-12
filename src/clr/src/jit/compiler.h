@@ -6275,7 +6275,7 @@ public:
 
     BOOL eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd);
 
-#if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD)
+#if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD) || defined(TRACK_LSRA_STATS)
 
     bool IsSuperPMIException(unsigned code)
     {
