@@ -1153,32 +1153,33 @@ namespace System.Diagnostics.Tracing
                     if (relatedActivityId != null)
                         ValidateEventOpcodeForTransfer(ref m_eventData[eventId], m_eventData[eventId].Name);
 
+                    EventOpcode opcode = (EventOpcode)m_eventData[eventId].Descriptor.Opcode;
+                    EventActivityOptions activityOptions = m_eventData[eventId].ActivityOptions;
+                    Guid* pActivityId = null;
+                    Guid activityId = Guid.Empty;
+                    Guid relActivityId = Guid.Empty;
+
+                    if (opcode != EventOpcode.Info && relatedActivityId == null &&
+                       ((activityOptions & EventActivityOptions.Disable) == 0))
+                    {
+                        if (opcode == EventOpcode.Start)
+                        {
+                            m_activityTracker.OnStart(m_name, m_eventData[eventId].Name, m_eventData[eventId].Descriptor.Task, ref activityId, ref relActivityId, m_eventData[eventId].ActivityOptions);
+                        }
+                        else if (opcode == EventOpcode.Stop)
+                        {
+                            m_activityTracker.OnStop(m_name, m_eventData[eventId].Name, m_eventData[eventId].Descriptor.Task, ref activityId);
+                        }
+
+                        if (activityId != Guid.Empty)
+                            pActivityId = &activityId;
+                        if (relActivityId != Guid.Empty)
+                            relatedActivityId = &relActivityId;
+                    }
+
 #if FEATURE_MANAGED_ETW
                     if (m_eventData[eventId].EnabledForETW)
                     {
-                        EventOpcode opcode = (EventOpcode)m_eventData[eventId].Descriptor.Opcode;
-                        EventActivityOptions activityOptions = m_eventData[eventId].ActivityOptions;
-                        Guid* pActivityId = null;
-                        Guid activityId = Guid.Empty;
-                        Guid relActivityId = Guid.Empty;
-
-                        if (opcode != EventOpcode.Info && relatedActivityId == null &&
-                           ((activityOptions & EventActivityOptions.Disable) == 0))
-                        {
-                            if (opcode == EventOpcode.Start)
-                            {
-                                m_activityTracker.OnStart(m_name, m_eventData[eventId].Name, m_eventData[eventId].Descriptor.Task, ref activityId, ref relActivityId, m_eventData[eventId].ActivityOptions);
-                            }
-                            else if (opcode == EventOpcode.Stop)
-                            {
-                                m_activityTracker.OnStop(m_name, m_eventData[eventId].Name, m_eventData[eventId].Descriptor.Task, ref activityId);
-                            }
-
-                            if (activityId != Guid.Empty)
-                                pActivityId = &activityId;
-                            if (relActivityId != Guid.Empty)
-                                relatedActivityId = &relActivityId;
-                        }
 
 #if FEATURE_ACTIVITYSAMPLING
                         // this code should be kept in sync with WriteEventVarargs().
@@ -1917,33 +1918,34 @@ namespace System.Diagnostics.Tracing
                     }
 
                     LogEventArgsMismatches(m_eventData[eventId].Parameters, args);
+
+                    Guid* pActivityId = null;
+                    Guid activityId = Guid.Empty;
+                    Guid relatedActivityId = Guid.Empty;
+                    EventOpcode opcode = (EventOpcode)m_eventData[eventId].Descriptor.Opcode;
+                    EventActivityOptions activityOptions = m_eventData[eventId].ActivityOptions;
+
+                    if (childActivityID == null &&
+                       ((activityOptions & EventActivityOptions.Disable) == 0))
+                    {
+                        if (opcode == EventOpcode.Start)
+                        {
+                            m_activityTracker.OnStart(m_name, m_eventData[eventId].Name, m_eventData[eventId].Descriptor.Task, ref activityId, ref relatedActivityId, m_eventData[eventId].ActivityOptions);
+                        }
+                        else if (opcode == EventOpcode.Stop)
+                        {
+                            m_activityTracker.OnStop(m_name, m_eventData[eventId].Name, m_eventData[eventId].Descriptor.Task, ref activityId);
+                        }
+
+                        if (activityId != Guid.Empty)
+                            pActivityId = &activityId;
+                        if (relatedActivityId != Guid.Empty)
+                            childActivityID = &relatedActivityId;
+                    }
+
 #if FEATURE_MANAGED_ETW
                     if (m_eventData[eventId].EnabledForETW)
                     {
-                        Guid* pActivityId = null;
-                        Guid activityId = Guid.Empty;
-                        Guid relatedActivityId = Guid.Empty;
-                        EventOpcode opcode = (EventOpcode)m_eventData[eventId].Descriptor.Opcode;
-                        EventActivityOptions activityOptions = m_eventData[eventId].ActivityOptions;
-
-                        if (childActivityID == null &&
-                           ((activityOptions & EventActivityOptions.Disable) == 0))
-                        {
-                            if (opcode == EventOpcode.Start)
-                            {
-                                m_activityTracker.OnStart(m_name, m_eventData[eventId].Name, m_eventData[eventId].Descriptor.Task, ref activityId, ref relatedActivityId, m_eventData[eventId].ActivityOptions);
-                            }
-                            else if (opcode == EventOpcode.Stop)
-                            {
-                                m_activityTracker.OnStop(m_name, m_eventData[eventId].Name, m_eventData[eventId].Descriptor.Task, ref activityId);
-                            }
-
-                            if (activityId != Guid.Empty)
-                                pActivityId = &activityId;
-                            if (relatedActivityId != Guid.Empty)
-                                childActivityID = &relatedActivityId;
-                        }
-
 #if FEATURE_ACTIVITYSAMPLING
                         // this code should be kept in sync with WriteEventWithRelatedActivityIdCore().
                         SessionMask etwSessions = SessionMask.All;
