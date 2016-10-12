@@ -770,12 +770,12 @@
     <ThreadingSources Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Threading\Tasks\IAsyncCausalityTracerStatics.cs" />
   </ItemGroup>
   <ItemGroup>
-    <IoSources Include="$(BclSourcesRoot)\System\IO\__DebugOutputTextWriter.cs" />
+    <IoSources Condition="'$(FeatureCoreClr)'!='true'" Include="$(BclSourcesRoot)\System\IO\__DebugOutputTextWriter.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\__Error.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\__HResults.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\BinaryReader.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\BinaryWriter.cs" />
-    <IoSources Include="$(BclSourcesRoot)\System\IO\BufferedStream.cs" />
+    <IoSources Condition="'$(FeatureCoreClr)'!='true'" Include="$(BclSourcesRoot)\System\IO\BufferedStream.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\Directory.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\DirectoryInfo.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\SearchOption.cs" />

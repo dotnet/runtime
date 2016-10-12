@@ -3501,11 +3501,6 @@
       <Member Name="#ctor(System.String,System.Exception)" />
       <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
     </Type>
-    <Type Status="ApiFxInternal" Name="System.IO.BufferedStream">
-      <Member Name="#ctor(System.IO.Stream,System.Int32)" />
-      <Member Name="get_UnderlyingStream" />
-      <Member Name="get_BufferSize" />
-    </Type>
     <Type Name="System.IO.FileLoadException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
