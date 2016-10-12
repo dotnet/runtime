@@ -32,5 +32,7 @@
     <GenerateNetStandardSupportTable Reports="@(Reports)" DocFilePath="$(ProjectDir)Documentation\architecture\net-platform-standard.md" InsertIntoFile="True" />
   </Target>
 
+  <!-- Importing versioning.targets adds the hooks so that a traversal build will generate the "SyncInfoFile" (version.txt) which we package. -->
+  <Import Project="$(ToolsDir)versioning.targets" Condition="Exists('$(ToolsDir)versioning.targets')" />
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
