@@ -567,5 +567,25 @@ namespace System.Globalization
         {
             throw new NotImplementedException();
         }
+        
+        private static int GetAnsiCodePage(string cultureName)
+        {
+            throw new NotImplementedException();
+        }
+
+        private static int GetOemCodePage(string cultureName)
+        {
+            throw new NotImplementedException();
+        }
+
+        private static int GetMacCodePage(string cultureName)
+        {
+            throw new NotImplementedException();
+        }
+
+        private static int GetEbcdicCodePage(string cultureName)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

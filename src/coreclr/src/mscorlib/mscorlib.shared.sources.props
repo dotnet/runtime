@@ -696,6 +696,7 @@
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\CultureInfo.Unix.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\HijriCalendar.Unix.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\JapaneseCalendar.Unix.cs" />
+    <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\LocaleData.Unix.cs" />    
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\TextInfo.Unix.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -145,6 +145,11 @@ namespace System.Globalization
 
         // CoreCLR depends on this even though its not exposed publicly.
 
+        private int _iDefaultAnsiCodePage = undef; // default ansi code page ID (ACP)
+        private int _iDefaultOemCodePage = undef; // default oem code page ID (OCP or OEM)
+        private int _iDefaultMacCodePage = undef; // default macintosh code page
+        private int _iDefaultEbcdicCodePage = undef; // default EBCDIC code page
+
         private int _iLanguage; // locale ID (0409) - NO sort information
         private bool _bUseOverrides; // use user overrides?
         private bool _bNeutral; // Flags for the culture (ie: neutral or not right now)
@@ -488,6 +493,10 @@ namespace System.Globalization
                     // These are desktop only, not coreclr
 
                     invariant._iLanguage = 0x007f;                 // locale ID (0409) - NO sort information
+                    invariant._iDefaultAnsiCodePage = 1252;         // default ansi code page ID (ACP)
+                    invariant._iDefaultOemCodePage = 437;           // default oem code page ID (OCP or OEM)
+                    invariant._iDefaultMacCodePage = 10000;         // default macintosh code page
+                    invariant._iDefaultEbcdicCodePage = 037;        // default EBCDIC code page
                     // Remember it
                     s_Invariant = invariant;
                 }
@@ -1714,6 +1723,54 @@ namespace System.Globalization
             get
             {
                 return IsCustomCultureId(this.ILANGUAGE);
+            }
+        }
+
+        internal int IDEFAULTANSICODEPAGE   // default ansi code page ID (ACP)
+        {
+            get
+            {
+                if (_iDefaultAnsiCodePage == undef)
+                {
+                    _iDefaultAnsiCodePage = GetAnsiCodePage(_sRealName);
+                }
+                return _iDefaultAnsiCodePage;
+            }
+        }
+
+        internal int IDEFAULTOEMCODEPAGE   // default oem code page ID (OCP or OEM)
+        {
+            get
+            {
+                if (_iDefaultOemCodePage == undef)
+                {
+                    _iDefaultOemCodePage = GetOemCodePage(_sRealName);
+                }
+                return _iDefaultOemCodePage;
+            }
+        }
+
+        internal int IDEFAULTMACCODEPAGE   // default macintosh code page
+        {
+            get
+            {
+                if (_iDefaultMacCodePage == undef)
+                {
+                    _iDefaultMacCodePage = GetMacCodePage(_sRealName);
+                }
+                return _iDefaultMacCodePage;
+            }
+        }
+
+        internal int IDEFAULTEBCDICCODEPAGE   // default EBCDIC code page
+        {
+            get
+            {
+                if (_iDefaultEbcdicCodePage == undef)
+                {
+                    _iDefaultEbcdicCodePage = GetEbcdicCodePage(_sRealName);
+                }
+                return _iDefaultEbcdicCodePage;
             }
         }
 
