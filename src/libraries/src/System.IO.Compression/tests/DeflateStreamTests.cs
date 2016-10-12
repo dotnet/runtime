@@ -12,7 +12,7 @@ namespace System.IO.Compression.Tests
 {
     public class DeflateStreamTests
     {
-        static string gzTestFile(String fileName) { return Path.Combine("GZTestData", fileName); }
+        protected static string gzTestFile(String fileName) { return Path.Combine("GZTestData", fileName); }
 
         [Fact]
         public static async Task OverlappingReadAsync()
@@ -947,7 +947,7 @@ namespace System.IO.Compression.Tests
             public override void SetLength(long value) { throw new NotSupportedException(); }
         }
 
-        private class ManualSyncMemoryStream : MemoryStream
+        protected class ManualSyncMemoryStream : MemoryStream
         {
             private bool isSync;
             public ManualResetEventSlim manualResetEvent = new ManualResetEventSlim(false);

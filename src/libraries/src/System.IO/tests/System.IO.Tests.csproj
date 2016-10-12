@@ -23,6 +23,8 @@
     <Compile Include="StreamReader\StreamReader.StringCtorTests.cs" />
     <Compile Include="StreamWriter\StreamWriter.netstandard17.cs" />
     <Compile Include="StreamWriter\StreamWriter.StringCtorTests.cs" />
+	<Compile Include="Stream\Stream.APMMethodsTests.cs" />
+    <Compile Include="BufferedStream\BufferedStreamTests.netstandard1.7.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BinaryWriter\BinaryWriter.WriteByteCharTests.cs" />
