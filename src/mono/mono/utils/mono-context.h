@@ -699,6 +699,8 @@ mono_ia64_context_get_fp (MonoContext *ctx)
 
 #elif ((defined(__mips__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_MIPS))) && SIZEOF_REGISTER == 4 /* defined(__ia64__) */
 
+#define MONO_ARCH_HAS_MONO_CONTEXT 1
+
 #include <mono/arch/mips/mips-codegen.h>
 
 typedef struct {

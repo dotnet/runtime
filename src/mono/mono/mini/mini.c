@@ -3175,6 +3175,9 @@ init_backend (MonoBackend *backend)
 #ifdef MONO_ARCH_DYN_CALL_PARAM_AREA
 	backend->dyn_call_param_area = MONO_ARCH_DYN_CALL_PARAM_AREA;
 #endif
+#ifdef MONO_ARCH_NO_DIV_WITH_MUL
+	backend->disable_div_with_mul = 1;
+#endif
 }
 
 /*
