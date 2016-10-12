@@ -1083,18 +1083,6 @@
     <Type Name="System.Reflection.Metadata.AssemblyExtensions">
       <Member Name="TryGetRawMetadata(System.Reflection.Assembly,System.Byte*@,System.Int32@)"/>
     </Type>
-    <Type Name="System.ContextBoundObject">
-      <Member Name="#ctor" />
-    </Type>
-    <Type Name="System.ContextMarshalException">
-      <Member Name="#ctor" />
-      <Member Name="#ctor(System.String)" />
-      <Member Name="#ctor(System.String,System.Exception)" />
-      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
-    </Type>
-    <Type Name="System.ContextStaticAttribute">
-        <Member Name="#ctor" />
-    </Type>
     <Type Name="System.Convert">
       <Member MemberType="Field" Name="DBNull" />
       <Member Name="ChangeType(System.Object,System.Type)"  />
@@ -6989,16 +6977,6 @@
       <Member MemberType="Field" Name="IInspectable" />
       <Member MemberType="Field" Name="IUnknown" />
     </Type>
-    <Type Status="ApiRoot" Name="System.Runtime.Versioning.ComponentGuaranteesAttribute">
-      <Member Name="#ctor(System.Runtime.Versioning.ComponentGuaranteesOptions)" />
-      <Member MemberType="Property" Name="Guarantees" />
-    </Type>
-    <Type Name="System.Runtime.Versioning.ComponentGuaranteesOptions">
-      <Member MemberType="Field" Name="None" />
-      <Member MemberType="Field" Name="Exchange" />
-      <Member MemberType="Field" Name="Stable" />
-      <Member MemberType="Field" Name="value__" />
-    </Type>
     <Type Name="System.RuntimeFieldHandle">
       <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="Equals(System.RuntimeFieldHandle)" />
@@ -10459,24 +10437,10 @@
       <Member Name="RemoveEventHandler&lt;T&gt;(System.Action&lt;System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken&gt;,T)" />
       <Member Name="StringToHString(System.String)" />
     </Type>
-    <Type Status="ImplRoot" Name="System.Runtime.Versioning.ResourceConsumptionAttribute">
-      <Member Name="#ctor(System.Runtime.Versioning.ResourceScope)" />
-      <Member Name="#ctor(System.Runtime.Versioning.ResourceScope,System.Runtime.Versioning.ResourceScope)" />
-      <Member MemberType="Property" Name="ConsumptionScope" />
-      <Member MemberType="Property" Name="ResourceScope" />
-    </Type>
-    <Type Status="ApiRoot" Name="System.Runtime.Versioning.ResourceExposureAttribute">
-      <Member Name="#ctor(System.Runtime.Versioning.ResourceScope)" />
-      <Member MemberType="Property" Name="ResourceExposureLevel" />
-    </Type>
     <Type Status="ApiRoot" Name="System.Runtime.Versioning.TargetFrameworkAttribute">
       <Member Name="#ctor(System.String)" />
       <Member MemberType="Property" Name="FrameworkName" />
       <Member MemberType="Property" Name="FrameworkDisplayName" />
-    </Type>
-    <Type Status="ApiRoot" Name="System.Runtime.Versioning.VersioningHelper">
-      <Member Name="MakeVersionSafeName(System.String,System.Runtime.Versioning.ResourceScope,System.Runtime.Versioning.ResourceScope)" />
-      <Member Name="MakeVersionSafeName(System.String,System.Runtime.Versioning.ResourceScope,System.Runtime.Versioning.ResourceScope,System.Type)" />
     </Type>
     <Type Name="System.Runtime.Serialization.FormatterServices">
         <Member Name="GetUninitializedObject(System.Type)" />

@@ -803,26 +803,6 @@ namespace System
         public static void WriteLine() { }
         public static void WriteLine(string s) { }
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public abstract partial class ContextBoundObject
-    {
-        protected ContextBoundObject() { }
-    }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public partial class ContextMarshalException : System.SystemException
-    {
-        public ContextMarshalException() { }
-        public ContextMarshalException(string message) { }
-        public ContextMarshalException(string message, System.Exception inner) { }
-        protected ContextMarshalException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
-    }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(256), Inherited=false)]
-    [System.ObsoleteAttribute("ContextStaticAttribute is not supported in this release. It has been left in so that legacy tools can be used with this release, but it cannot be used in your code.", true)]
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public partial class ContextStaticAttribute : System.Attribute
-    {
-        public ContextStaticAttribute() { }
-    }
     public static partial class Convert
     {
         public static readonly object DBNull;
@@ -11979,50 +11959,12 @@ namespace System.Runtime.Serialization
 }
 namespace System.Runtime.Versioning
 {
-    [System.AttributeUsageAttribute((System.AttributeTargets)(5887), AllowMultiple=false, Inherited=false)]
-    public sealed partial class ComponentGuaranteesAttribute : System.Attribute
-    {
-        public ComponentGuaranteesAttribute(System.Runtime.Versioning.ComponentGuaranteesOptions guarantees) { }
-        public System.Runtime.Versioning.ComponentGuaranteesOptions Guarantees { get { throw null; } }
-    }
-    [System.FlagsAttribute]
-    public enum ComponentGuaranteesOptions
-    {
-        Exchange = 1,
-        None = 0,
-        SideBySide = 4,
-        Stable = 2,
-    }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(480), Inherited=false)]
-    [System.Diagnostics.ConditionalAttribute("RESOURCE_ANNOTATION_WORK")]
-    public sealed partial class ResourceExposureAttribute : System.Attribute
-    {
-        public ResourceExposureAttribute(System.Runtime.Versioning.ResourceScope exposureLevel) { }
-        public System.Runtime.Versioning.ResourceScope ResourceExposureLevel { get { throw null; } }
-    }
-    [System.FlagsAttribute]
-    public enum ResourceScope
-    {
-        AppDomain = 4,
-        Assembly = 32,
-        Library = 8,
-        Machine = 1,
-        None = 0,
-        Private = 16,
-        Process = 2,
-    }
     [System.AttributeUsageAttribute((System.AttributeTargets)(1), AllowMultiple=false, Inherited=false)]
     public sealed partial class TargetFrameworkAttribute : System.Attribute
     {
         public TargetFrameworkAttribute(string frameworkName) { }
         public string FrameworkDisplayName { get { throw null; } set { } }
         public string FrameworkName { get { throw null; } }
-    }
-    public static partial class VersioningHelper
-    {
-        public static string MakeVersionSafeName(string name, System.Runtime.Versioning.ResourceScope from, System.Runtime.Versioning.ResourceScope to) { throw null; }
-        [System.Security.SecuritySafeCriticalAttribute]
-        public static string MakeVersionSafeName(string name, System.Runtime.Versioning.ResourceScope from, System.Runtime.Versioning.ResourceScope to, System.Type type) { throw null; }
     }
 }
 namespace System.Security
