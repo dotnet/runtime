@@ -338,6 +338,7 @@ namespace System {
             System.Diagnostics.Log.LogMessage(LoggingLevels.TraceLevel0, logSwitch, trace.ToString());
         }
 
+#if !FEATURE_CORECLR
         // For logging errors related to the console - we often can't expect to
         // write to stdout if it doesn't exist.
         [SecuritySafeCritical]
@@ -360,6 +361,7 @@ namespace System {
                 err.WriteLine(msg);
             }
         }
+#endif // !FEATURE_CORECLR
 
         // For perf-related asserts.  On a debug build, set the registry key
         // BCLPerfWarnings to non-zero.

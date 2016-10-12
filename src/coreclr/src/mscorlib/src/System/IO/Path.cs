@@ -466,8 +466,6 @@ namespace System.IO {
         /// Normalize the path and check for bad characters or other invalid syntax.
         /// </summary>
         [System.Security.SecuritySafeCritical]
-        [ResourceExposure(ResourceScope.Machine)]
-        [ResourceConsumption(ResourceScope.Machine)]
         private static string NewNormalizePath(string path, int maxPathLength, bool expandShortPaths)
         {
             Contract.Requires(path != null, "path can't be null");

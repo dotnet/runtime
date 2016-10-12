@@ -338,8 +338,8 @@
     <SystemSources Condition="'$(FeatureCoreClr)'=='true'" Include="$(BclSourcesRoot)\System\LowLevelConsole.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\ContextMarshalException.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\Convert.cs" />
-    <SystemSources Include="$(BclSourcesRoot)\System\ContextBoundObject.cs" />
-    <SystemSources Include="$(BclSourcesRoot)\System\ContextStaticAttribute.cs" />
+    <SystemSources Condition="'$(FeatureCoreClr)'!='true'" Include="$(BclSourcesRoot)\System\ContextBoundObject.cs" />
+    <SystemSources Condition="'$(FeatureCoreClr)'!='true'" Include="$(BclSourcesRoot)\System\ContextStaticAttribute.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\StringFreezingAttribute.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\Currency.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\DayOfWeek.cs" />
@@ -965,8 +965,8 @@
   </ItemGroup>
   <ItemGroup>
     <VersioningSources Include="$(BclSourcesRoot)\System\Runtime\Versioning\BinaryCompatibility.cs" />
-    <VersioningSources Include="$(BclSourcesRoot)\System\Runtime\Versioning\ComponentGuaranteesAttribute.cs" />
-    <VersioningSources Include="$(BclSourcesRoot)\System\Runtime\Versioning\ResourceAttributes.cs" />
+    <VersioningSources Condition="'$(FeatureCoreClr)'!='true'" Include="$(BclSourcesRoot)\System\Runtime\Versioning\ComponentGuaranteesAttribute.cs" />
+    <VersioningSources Condition="'$(FeatureCoreClr)'!='true'" Include="$(BclSourcesRoot)\System\Runtime\Versioning\ResourceAttributes.cs" />
     <VersioningSources Include="$(BclSourcesRoot)\System\Runtime\Versioning\TargetFrameworkAttribute.cs" />
     <VersioningSources Include="$(BclSourcesRoot)\System\Runtime\Versioning\TargetFrameworkId.cs" />
     <VersioningSources Include="$(BclSourcesRoot)\System\Runtime\Versioning\CompatibilitySwitch.cs" />

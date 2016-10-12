@@ -1295,11 +1295,7 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_BadResourceContainer"));
             }
         }
-#endif // !FEATURE_CORECLR
 
-#if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-#endif
         public void DefineManifestResource(String name, Stream stream, ResourceAttributes attribute)
         {
             if (name == null)
@@ -1324,7 +1320,6 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_BadResourceContainer"));
            Contract.EndContractBlock();
 
-#if !FEATURE_CORECLR
             if (name == null)
                 throw new ArgumentNullException("name");
             if (name.Length == 0)
@@ -1344,13 +1339,9 @@ namespace System.Reflection.Emit
             { 
                 throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_BadResourceContainer"));
             }
-#endif // !FEATURE_CORECLR
         }
 
 
-#if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-#endif
         public void DefineUnmanagedResource(Byte[] resource)
         {
             lock(SyncRoot)
@@ -1372,11 +1363,7 @@ namespace System.Reflection.Emit
             Buffer.BlockCopy(resource, 0, m_moduleData.m_resourceBytes, 0, resource.Length);
         }
 
-#if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-#else
         [System.Security.SecuritySafeCritical]
-#endif
         public void DefineUnmanagedResource(String resourceFileName)
         {
             lock(SyncRoot)
@@ -1415,6 +1402,7 @@ namespace System.Reflection.Emit
 
             m_moduleData.m_strResourceFileName = strFullFileName;
         }
+#endif // !FEATURE_CORECLR
         #endregion
 
         #region Define Global Method

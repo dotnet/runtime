@@ -1306,13 +1306,20 @@ namespace System {
     
         // Protected routine to determine if this class is contextful
         protected virtual bool IsContextfulImpl(){
+#if FEATURE_REMOTING
             return typeof(ContextBoundObject).IsAssignableFrom(this);
+#else
+            return false;
+#endif
         }
-    
 
         // Protected routine to determine if this class is marshaled by ref
         protected virtual bool IsMarshalByRefImpl(){
+#if FEATURE_REMOTING
             return typeof(MarshalByRefObject).IsAssignableFrom(this);
+#else
+            return false;
+#endif
         }
 
         internal virtual bool HasProxyAttributeImpl()
@@ -1362,7 +1369,7 @@ namespace System {
             return rootElementType;
         }
 
-        #region Enum methods
+#region Enum methods
 
         // Default implementations of GetEnumNames, GetEnumValues, and GetEnumUnderlyingType
         // Subclass of types can override these methods.
@@ -1561,7 +1568,7 @@ namespace System {
                     t == typeof(char) ||
                     t == typeof(bool));
         }
-        #endregion
+#endregion
 
         public virtual bool IsSecurityCritical { [Pure] get { throw new NotImplementedException(); } }
 
