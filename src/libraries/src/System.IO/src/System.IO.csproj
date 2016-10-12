@@ -32,6 +32,8 @@
     <DefineConstants>$(DefineConstants);uap101aot</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetGroup)' == ''">
+    <Compile Include="System\IO\TextReader.netstandard17.cs" />
+    <Compile Include="System\IO\TextWriter.netstandard17.cs" />
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj">
       <Project>{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}</Project>
       <Name>System.Diagnostics.Debug</Name>

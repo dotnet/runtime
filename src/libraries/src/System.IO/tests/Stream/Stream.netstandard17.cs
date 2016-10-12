@@ -12,7 +12,7 @@ namespace System.IO.Tests
         [Fact]
         public void CreateWaitHandle()
         {
-            using (var str = CreateStream())
+            using (Stream str = CreateStream())
             {
                 ManualResetEvent first = str.CreateWaitHandle();
                 ManualResetEvent second = str.CreateWaitHandle();
@@ -23,9 +23,9 @@ namespace System.IO.Tests
         [Fact]
         public void Synchronized_NewObject()
         {
-            using (var str = CreateStream())
+            using (Stream str = CreateStream())
             {
-                using (var synced = Stream.Synchronized(str))
+                using (Stream synced = Stream.Synchronized(str))
                 {
                     Assert.NotEqual(synced, str);
                     synced.Write(new byte[] { 1 }, 0, 1);
