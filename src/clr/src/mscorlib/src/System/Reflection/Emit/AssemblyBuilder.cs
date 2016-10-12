@@ -1049,16 +1049,11 @@ namespace System.Reflection.Emit
             return resWriter;
         }
 
-#endif // !FEATURE_CORECLR
-
         /**********************************************
         *
         * Add an existing resource file to the Assembly
         *
         **********************************************/
-        #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-        #endif
         public void AddResourceFile(
             String      name,
             String      fileName)
@@ -1071,9 +1066,6 @@ namespace System.Reflection.Emit
         * Add an existing resource file to the Assembly
         *
         **********************************************/
-        #if FEATURE_CORECLR
-        [System.Security.SecurityCritical] // auto-generated
-        #endif
         public void AddResourceFile(
             String      name,
             String      fileName,
@@ -1133,6 +1125,7 @@ namespace System.Reflection.Emit
                     fileName), fileName);
             m_assemblyData.AddResWriter( new ResWriterData( null, null, name, fileName, fullFileName, attribute) );
         }
+#endif // !FEATURE_CORECLR
 
         #region object overrides
         public override bool Equals(object obj)
@@ -1371,8 +1364,9 @@ namespace System.Reflection.Emit
             }
         }
         #endregion
-        
-       
+
+
+#if !FEATURE_CORECLR
         /**********************************************
         *
         * Add an unmanaged Version resource to the
@@ -1505,9 +1499,9 @@ namespace System.Reflection.Emit
                     resourceFileName), resourceFileName);
             m_assemblyData.m_strResourceFileName = strFullFileName;
         }
-        
+#endif // !FEATURE_CORECLR
 
-        
+
         /**********************************************
         *
         * return a dynamic module with the specified name.

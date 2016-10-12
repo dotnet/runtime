@@ -242,7 +242,7 @@ namespace System.Reflection.Emit {
                     }
                     // CultureInfo attribute overrides the lcid from AssemblyName.                                      
                     CultureInfo culture = new CultureInfo(m_CABuilders[i].m_constructorArgs[0].ToString());
-#if FEATURE_USE_LCID                    
+#if FEATURE_USE_LCID
                     m_nativeVersion.m_lcid = culture.LCID;
 #endif
                 }
