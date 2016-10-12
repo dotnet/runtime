@@ -1214,7 +1214,7 @@ public:
         return OperIsLocalRead(OperGet());
     }
 
-    bool OperIsCompare()
+    bool OperIsCompare() const
     {
         return (OperKind(gtOper) & GTK_RELOP) != 0;
     }

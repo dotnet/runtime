@@ -134,6 +134,8 @@ private:
 
     void TreeNodeInfoInit(GenTree* stmt);
 
+    void TreeNodeInfoInitCheckByteable(GenTree* tree);
+
 #if defined(_TARGET_XARCH_)
     void TreeNodeInfoInitSimple(GenTree* tree);
 
