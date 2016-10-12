@@ -580,7 +580,7 @@ namespace System.Collections.Generic {
             else {
                 object[] objects = array as object[];
                 if (objects == null) {
-                    ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidArrayType);
+                    ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
                 }
 
                 try {
@@ -593,7 +593,7 @@ namespace System.Collections.Generic {
                     }
                 }
                 catch(ArrayTypeMismatchException) {
-                    ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidArrayType);
+                    ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
                 }
             }
         }
@@ -912,7 +912,7 @@ namespace System.Collections.Generic {
                 else {
                     object[] objects = array as object[];
                     if (objects == null) {
-                        ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidArrayType);
+                        ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
                     }
                                          
                     int count = dictionary.count;
@@ -923,7 +923,7 @@ namespace System.Collections.Generic {
                         }
                     }                    
                     catch(ArrayTypeMismatchException) {
-                        ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidArrayType);
+                        ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
                     }
                 }
             }
@@ -1098,7 +1098,7 @@ namespace System.Collections.Generic {
                 else {
                     object[] objects = array as object[];
                     if (objects == null) {
-                        ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidArrayType);
+                        ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
                     }
 
                     int count = dictionary.count;
@@ -1109,7 +1109,7 @@ namespace System.Collections.Generic {
                         }
                     }
                     catch(ArrayTypeMismatchException) {
-                        ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidArrayType);
+                        ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
                     }
                 }
             }
