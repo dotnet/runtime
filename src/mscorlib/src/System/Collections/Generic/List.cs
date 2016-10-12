@@ -369,7 +369,7 @@ namespace System.Collections.Generic {
                 Array.Copy(_items, 0, array, arrayIndex, _size);
             }
             catch(ArrayTypeMismatchException){
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidArrayType);
+                ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
             }
         }
     
