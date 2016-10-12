@@ -63,7 +63,7 @@ namespace System.CodeDom.Tests
 		{
 			var delegateInvoke = new CodeDelegateInvokeExpression();
 			delegateInvoke.TargetObject = value;
-			Assert.Equal(value, delegateInvoke.TargetObject);
+			Assert.Same(value, delegateInvoke.TargetObject);
 		}
 
 		[Fact]
