@@ -71,6 +71,12 @@ namespace DoubLink {
             GC.WaitForPendingFinalizers();
             GC.Collect();
 
+            if (DLinkNode.FinalCount != iRep * iObj)
+            {
+                // see github#4093 for the rationale for fail-fast in this test.
+                Environment.FailFast(string.Empty);
+            }
+
             Console.Write(DLinkNode.FinalCount);
             Console.WriteLine(" DLinkNodes finalized");
             return (DLinkNode.FinalCount==iRep*iObj);
