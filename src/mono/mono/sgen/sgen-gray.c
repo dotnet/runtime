@@ -62,7 +62,8 @@ sgen_gray_object_alloc_queue_section (SgenGrayQueue *queue)
 		STATE_SET (section, GRAY_QUEUE_SECTION_STATE_FLOATING);
 	}
 
-	section->size = SGEN_GRAY_QUEUE_SECTION_SIZE;
+	/* Section is empty */
+	section->size = 0;
 
 	STATE_TRANSITION (section, GRAY_QUEUE_SECTION_STATE_FLOATING, GRAY_QUEUE_SECTION_STATE_ENQUEUED);
 
@@ -104,7 +105,11 @@ sgen_gray_object_enqueue (SgenGrayQueue *queue, GCObject *obj, SgenDescriptor de
 
 	if (G_UNLIKELY (!queue->first || queue->cursor == GRAY_LAST_CURSOR_POSITION (queue->first))) {
 		if (queue->first) {
-			/* Set the current section size back to default, might have been changed by sgen_gray_object_dequeue_section */
+			/*
+			 * We don't actively update the section size with each push/pop. For the first
+			 * section we determine the size from the cursor position. For the reset of the
+			 * sections we need to have the size set.
+			 */
 			queue->first->size = SGEN_GRAY_QUEUE_SECTION_SIZE;
 		}
 
