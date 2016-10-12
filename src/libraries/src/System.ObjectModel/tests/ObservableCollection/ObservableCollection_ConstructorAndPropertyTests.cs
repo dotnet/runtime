@@ -36,6 +36,15 @@ namespace System.Collections.ObjectModel.Tests
             Assert.Equal(collection, actual);
         }
 
+        [Theory]
+        [MemberData(nameof(Collections))]
+        public static void IEnumerableConstructorTest_MakesCopy(IEnumerable<string> collection)
+        {
+            var oc = new ObservableCollectionSubclass<string>(collection);
+            Assert.NotNull(oc.InnerList);
+            Assert.NotSame(collection, oc.InnerList);
+        }
+
         public static readonly object[][] Collections =
         {
             new object[] { new string[] { "one", "two", "three" } },
@@ -113,6 +122,13 @@ namespace System.Collections.ObjectModel.Tests
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(new ObservableCollection<int>());
             DebuggerAttributes.ValidateDebuggerTypeProxyProperties(new ObservableCollection<int>());
+        }
+
+        private partial class ObservableCollectionSubclass<T> : ObservableCollection<T>
+        {
+            public ObservableCollectionSubclass(IEnumerable<T> collection) : base(collection) { }
+
+            public List<T> InnerList => (List<T>)base.Items;
         }
     }
 }

@@ -30,5 +30,19 @@ namespace System.Collections.ObjectModel.Tests
             var actual = new ObservableCollection<string>(collection);
             Assert.Equal(collection, actual);
         }
+
+        [Fact]
+        public static void ListConstructorTest_MakesCopy()
+        {
+            List<string> collection = new List<string> { "one", "two", "three" };
+            var oc = new ObservableCollectionSubclass<string>(collection);
+            Assert.NotNull(oc.InnerList);
+            Assert.NotSame(collection, oc.InnerList);
+        }
+
+        private partial class ObservableCollectionSubclass<T> : ObservableCollection<T>
+        {
+            public ObservableCollectionSubclass(List<T> list) : base(list) { }
+        }
     }
 }
