@@ -139,7 +139,7 @@ namespace Internal.Runtime.Augments
 
 #if FEATURE_COMINTEROP_APARTMENT_SUPPORT
         [SecurityCritical]  // auto-generated
-        protected bool SetApartmentStateHelper(ApartmentState state, bool fireMDAOnMismatch)
+        internal bool SetApartmentStateHelper(ApartmentState state, bool fireMDAOnMismatch)
         {
             ApartmentState retState = (ApartmentState)SetApartmentStateNative((int)state, fireMDAOnMismatch);
 
@@ -158,11 +158,11 @@ namespace Internal.Runtime.Augments
 
         [SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        protected extern int GetApartmentStateNative();
+        internal extern int GetApartmentStateNative();
 
         [SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        protected extern int SetApartmentStateNative(int state, bool fireMDAOnMismatch);
+        internal extern int SetApartmentStateNative(int state, bool fireMDAOnMismatch);
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
         /*=========================================================================
