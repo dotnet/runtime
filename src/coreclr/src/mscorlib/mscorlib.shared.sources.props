@@ -2,7 +2,6 @@
   <ItemGroup>
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\AccessedThroughPropertyAttribute.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\AssemblyAttributesGoHere.cs" />
-    <CompilerServicesSources Condition="'$(FeatureCoreClr)'!='true'" Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CallingConvention.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeHelpers.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CompilerGeneratedAttribute.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CustomConstantAttribute.cs" />
@@ -21,29 +20,14 @@
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\MethodImplAttribute.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\FixedAddressValueTypeAttribute.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\UnsafeValueTypeAttribute.cs" />
-    <CompilerServicesSources Condition="'$(FeatureCoreClr)'!='true'" Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RequiredAttributeAttribute.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\AssemblySettingAttributes.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TypeDependencyAttribute.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CompilerMarshalOverride.cs" />
-    <CompilerServicesSources Condition="'$(FeatureCoreClr)'!='true'"  Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\HasCopySemanticsAttribute.cs" />
-    <CompilerServicesSources Condition="'$(FeatureCoreClr)'!='true'"  Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\IsBoxed.cs" />
-    <CompilerServicesSources Condition="'$(FeatureCoreClr)'!='true'"  Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\IsByValue.cs" />
-    <CompilerServicesSources Condition="'$(FeatureCoreClr)'!='true'"  Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\IsConst.cs" />
-    <CompilerServicesSources Condition="'$(FeatureCoreClr)'!='true'"  Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\IsExplicitlyDereferenced.cs" />
-    <CompilerServicesSources Condition="'$(FeatureCoreClr)'!='true'"  Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\IsImplicitlyDereferenced.cs" />
-    <CompilerServicesSources Condition="'$(FeatureCoreClr)'!='true'"  Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\IsJitIntrinsic.cs" />
-    <CompilerServicesSources Condition="'$(FeatureCoreClr)'!='true'"  Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\IsLong.cs" />
-    <CompilerServicesSources Condition="'$(FeatureCoreClr)'!='true'"  Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\IsPinned.cs" />
-    <CompilerServicesSources Condition="'$(FeatureCoreClr)'!='true'"  Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\IsSignUnspecifiedByte.cs" />
-    <CompilerServicesSources Condition="'$(FeatureCoreClr)'!='true'"  Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\IsUdtReturn.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\jithelpers.cs" />
-    <CompilerServicesSources Condition="'$(FeatureCoreClr)'!='true'"  Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ScopelessEnumAttribute.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\SpecialNameAttribute.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\SuppressMergeCheckAttribute.cs" />
-    <CompilerServicesSources Condition="'$(FeatureCoreClr)'!='true'"  Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\IsCopyConstructed.cs" />
     <CompilerServicesSources Condition="'$(FeatureICastable)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ICastable.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\SuppressIldasmAttribute.cs" />
-    <CompilerServicesSources Condition="'$(FeatureCoreClr)'!='true'" Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\NativeCppClassAttribute.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\DecoratedNameAttribute.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TypeForwardedToAttribute.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TypeForwardedFromAttribute.cs" />
@@ -62,8 +46,6 @@
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\INotifyCompletion.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TaskAwaiter.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\YieldAwaitable.cs" />
-    <CompilerServicesSources Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\IDispatchConstantAttribute.cs" />
-    <CompilerServicesSources Condition="'$(FeatureCoreClr)'!='true'" Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\IUnknownConstantAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
     <ReliabilitySources Include="$(BclSourcesRoot)\System\Runtime\Reliability\CriticalFinalizerObject.cs" />
@@ -338,8 +320,6 @@
     <SystemSources Condition="'$(FeatureCoreClr)'=='true'" Include="$(BclSourcesRoot)\System\LowLevelConsole.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\ContextMarshalException.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\Convert.cs" />
-    <SystemSources Condition="'$(FeatureCoreClr)'!='true'" Include="$(BclSourcesRoot)\System\ContextBoundObject.cs" />
-    <SystemSources Condition="'$(FeatureCoreClr)'!='true'" Include="$(BclSourcesRoot)\System\ContextStaticAttribute.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\StringFreezingAttribute.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\Currency.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\DayOfWeek.cs" />
@@ -771,12 +751,10 @@
     <ThreadingSources Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Threading\Tasks\IAsyncCausalityTracerStatics.cs" />
   </ItemGroup>
   <ItemGroup>
-    <IoSources Condition="'$(FeatureCoreClr)'!='true'" Include="$(BclSourcesRoot)\System\IO\__DebugOutputTextWriter.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\__Error.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\__HResults.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\BinaryReader.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\BinaryWriter.cs" />
-    <IoSources Condition="'$(FeatureCoreClr)'!='true'" Include="$(BclSourcesRoot)\System\IO\BufferedStream.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\Directory.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\DirectoryInfo.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\SearchOption.cs" />
@@ -965,8 +943,6 @@
   </ItemGroup>
   <ItemGroup>
     <VersioningSources Include="$(BclSourcesRoot)\System\Runtime\Versioning\BinaryCompatibility.cs" />
-    <VersioningSources Condition="'$(FeatureCoreClr)'!='true'" Include="$(BclSourcesRoot)\System\Runtime\Versioning\ComponentGuaranteesAttribute.cs" />
-    <VersioningSources Condition="'$(FeatureCoreClr)'!='true'" Include="$(BclSourcesRoot)\System\Runtime\Versioning\ResourceAttributes.cs" />
     <VersioningSources Include="$(BclSourcesRoot)\System\Runtime\Versioning\TargetFrameworkAttribute.cs" />
     <VersioningSources Include="$(BclSourcesRoot)\System\Runtime\Versioning\TargetFrameworkId.cs" />
     <VersioningSources Include="$(BclSourcesRoot)\System\Runtime\Versioning\CompatibilitySwitch.cs" />
