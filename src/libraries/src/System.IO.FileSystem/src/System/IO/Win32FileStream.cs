@@ -1699,7 +1699,7 @@ namespace System.IO
                 return StreamHelpers.ArrayPoolCopyToAsync(_parent, destination, bufferSize, cancellationToken);
             }
 
-            StreamHelpers.ValidateCopyToAsyncArgs(_parent, destination, bufferSize);
+            StreamHelpers.ValidateCopyToArgs(_parent, destination, bufferSize);
 
             // Bail early for cancellation if cancellation has been requested
             if (cancellationToken.IsCancellationRequested)
