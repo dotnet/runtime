@@ -50,7 +50,7 @@ namespace System.IO
 
             if (valueMayBeWrappedInBufferedStream)
             {
-                BufferedStreamWrapper bufferedValueInMap = valueInMap as BufferedStreamWrapper;
+                BufferedStream bufferedValueInMap = valueInMap as BufferedStream;
                 Debug.Assert(Object.ReferenceEquals(value, valueInMap)
                                 || (bufferedValueInMap != null && Object.ReferenceEquals(value, bufferedValueInMap.UnderlyingStream)));
             }
@@ -67,7 +67,7 @@ namespace System.IO
             Debug.Assert(!String.IsNullOrWhiteSpace(methodName));
 
             Int32 currentBufferSize = 0;
-            BufferedStreamWrapper bufferedAdapter = adapter as BufferedStreamWrapper;
+            BufferedStream bufferedAdapter = adapter as BufferedStream;
             if (bufferedAdapter != null)
                 currentBufferSize = bufferedAdapter.BufferSize;
 
@@ -167,7 +167,7 @@ namespace System.IO
             // There is already an adapter:
             if (adapterExists)
             {
-                Debug.Assert((adapter is BufferedStreamWrapper && ((BufferedStreamWrapper)adapter).UnderlyingStream is WinRtToNetFxStreamAdapter)
+                Debug.Assert((adapter is BufferedStream && ((BufferedStream)adapter).UnderlyingStream is WinRtToNetFxStreamAdapter)
                                 || (adapter is WinRtToNetFxStreamAdapter));
 
                 if (forceBufferSize)
@@ -194,7 +194,7 @@ namespace System.IO
         // Separate method so we only pay for closure allocation if this code is executed:
         private static Stream WinRtToNetFxAdapterMap_GetValue(Object winRtStream, Int32 bufferSize)
         {
-            return s_winRtToNetFxAdapterMap.GetValue(winRtStream, (wrtStr) => new BufferedStreamWrapper(WinRtToNetFxStreamAdapter.Create(wrtStr), bufferSize));
+            return s_winRtToNetFxAdapterMap.GetValue(winRtStream, (wrtStr) => new BufferedStream(WinRtToNetFxStreamAdapter.Create(wrtStr), bufferSize));
         }
 
 
@@ -214,7 +214,7 @@ namespace System.IO
                                 : WinRtToNetFxAdapterMap_GetValue(windowsRuntimeStream, bufferSize);
 
             Debug.Assert(adapter != null);
-            Debug.Assert((adapter is BufferedStreamWrapper && ((BufferedStreamWrapper)adapter).UnderlyingStream is WinRtToNetFxStreamAdapter)
+            Debug.Assert((adapter is BufferedStream && ((BufferedStream)adapter).UnderlyingStream is WinRtToNetFxStreamAdapter)
                                 || (adapter is WinRtToNetFxStreamAdapter));
 
             if (forceBufferSize)
@@ -222,7 +222,7 @@ namespace System.IO
 
             WinRtToNetFxStreamAdapter actualAdapter = adapter as WinRtToNetFxStreamAdapter;
             if (actualAdapter == null)
-                actualAdapter = ((BufferedStreamWrapper)adapter).UnderlyingStream as WinRtToNetFxStreamAdapter;
+                actualAdapter = ((BufferedStream)adapter).UnderlyingStream as WinRtToNetFxStreamAdapter;
 
             actualAdapter.SetWonInitializationRace();
 
@@ -307,7 +307,7 @@ namespace System.IO
             WinRtToNetFxStreamAdapter sAdptr = stream as WinRtToNetFxStreamAdapter;
             if (sAdptr == null)
             {
-                BufferedStreamWrapper buffAdptr = stream as BufferedStreamWrapper;
+                BufferedStream buffAdptr = stream as BufferedStream;
                 if (buffAdptr != null)
                     sAdptr = buffAdptr.UnderlyingStream as WinRtToNetFxStreamAdapter;
             }
