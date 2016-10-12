@@ -96,9 +96,6 @@
     <Compile Include="$(CommonPath)\System\Net\Logging\EventSourceLogging.cs">
       <Link>Common\System\Net\Logging\EventSourceLogging.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Shims\DBNull.cs">
-      <Link>Common\System\Net\Shims\DBNull.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\Mail\DotAtomReader.cs">
       <Link>Common\System\Net\Mail\DotAtomReader.cs</Link>
     </Compile>
