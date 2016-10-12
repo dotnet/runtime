@@ -296,7 +296,7 @@ void CodeGen::genCodeForBBlist()
         /* Both stacks are always empty on entry to a basic block */
 
         genStackLevel = 0;
-
+        genAdjustStackLevel(block);
         savedStkLvl = genStackLevel;
 
         /* Tell everyone which basic block we're working on */
