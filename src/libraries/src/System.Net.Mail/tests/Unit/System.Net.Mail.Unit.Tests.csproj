@@ -116,9 +116,6 @@
     <Compile Include="$(CommonPath)\System\Net\Logging\EventSourceLogging.cs">
       <Link>ProductionCode\Common\System\Net\Logging\EventSourceLogging.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Shims\DBNull.cs">
-      <Link>ProductionCode\Common\System\Net\Shims\DBNull.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
