@@ -406,7 +406,7 @@ namespace System.IO {
         {
             // Since we did not originally override this method, validate the arguments
             // the same way Stream does for back-compat.
-            ValidateCopyToArguments(destination, bufferSize);
+            StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
 
             // If we have been inherited into a subclass, the following implementation could be incorrect
             // since it does not call through to Read() which a subclass might have overridden.  
@@ -436,7 +436,7 @@ namespace System.IO {
 
             // This implementation offers beter performance compared to the base class version.
 
-            ValidateCopyToArguments(destination, bufferSize);
+            StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
 
             // If we have been inherited into a subclass, the following implementation could be incorrect
             // since it does not call through to ReadAsync() which a subclass might have overridden.  
