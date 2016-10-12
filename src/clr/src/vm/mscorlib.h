@@ -462,8 +462,9 @@ DEFINE_METHOD(CONTEXT,              CALLBACK,               DoCallBackFromEE,   
 DEFINE_METHOD(CONTEXT,              RESERVE_SLOT,           ReserveSlot,                IM_RetInt)
 #endif
 
+#ifdef FEATURE_REMOTING
 DEFINE_CLASS(CONTEXT_BOUND_OBJECT,  System,                 ContextBoundObject)
-
+#endif
 
 #ifdef FEATURE_CRYPTO
 DEFINE_CLASS(CSP_PARAMETERS,        Cryptography,           CspParameters)
