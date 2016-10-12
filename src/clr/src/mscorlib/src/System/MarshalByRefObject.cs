@@ -35,7 +35,7 @@ namespace System {
 [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class MarshalByRefObject 
     {
-#if FEATURE_REMOTING    
+#if FEATURE_REMOTING
         private Object __identity;        
 
         private Object Identity { get { return __identity; } set { __identity = value; } }        
@@ -87,7 +87,8 @@ namespace System {
             return t.InvokeMember(name, invokeAttr, binder, this, args, modifiers, culture, namedParameters);
         }
 
-        // Returns a new cloned MBR instance that is a memberwise copy of this 
+
+        // Returns a new cloned MBR instance that is a memberwise copy of this
         // with the identity nulled out, so there are no identity conflicts
         // when the cloned object is marshalled
         protected MarshalByRefObject MemberwiseClone(bool cloneIdentity)
@@ -98,8 +99,6 @@ namespace System {
                 mbr.Identity = null;
             return mbr;
         }
-
-
         
         // A helper routine to extract the identity either from the marshalbyrefobject base
         // class if it is not a proxy, otherwise from the real proxy.
@@ -256,7 +255,22 @@ namespace System {
 
             return o.CanCastToXmlType(xmlTypeName, xmlTypeNamespace);
         } // CanCastToXmlType
-
+#else
+        protected MarshalByRefObject() { }
+        public object GetLifetimeService()
+        {
+            throw new PlatformNotSupportedException();
+        }
+        public virtual object InitializeLifetimeService()
+        {
+            throw new PlatformNotSupportedException();
+        }
+        protected MarshalByRefObject MemberwiseClone(bool cloneIdentity)
+        {
+            MarshalByRefObject mbr = (MarshalByRefObject)base.MemberwiseClone();
+            return mbr;
+        }
 #endif // FEATURE_REMOTING
+
     }            
 } // namespace    

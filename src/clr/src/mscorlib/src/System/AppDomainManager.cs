@@ -39,11 +39,7 @@ namespace System {
 #if !FEATURE_CORECLR
     [SecurityPermissionAttribute(SecurityAction.InheritanceDemand, Flags = SecurityPermissionFlag.Infrastructure)]
 #endif
-#if FEATURE_REMOTING
     public class AppDomainManager : MarshalByRefObject {
-#else // FEATURE_REMOTING
-    public class AppDomainManager {
-#endif // FEATURE_REMOTING
         public AppDomainManager () {}
 #if FEATURE_REMOTING
         [System.Security.SecurityCritical]  // auto-generated

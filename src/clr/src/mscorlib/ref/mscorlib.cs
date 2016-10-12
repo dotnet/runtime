@@ -2490,6 +2490,10 @@ namespace System
     public abstract partial class MarshalByRefObject
     {
         protected MarshalByRefObject() { }
+        public object GetLifetimeService() { throw null; }
+        public virtual object InitializeLifetimeService() { throw null; }
+        protected System.MarshalByRefObject MemberwiseClone(bool cloneIdentity) { throw null; }
+    
     }
     public static partial class Math
     {
