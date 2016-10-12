@@ -263,7 +263,7 @@ namespace System.Collections.Generic {
             }
             
             if (index < 0 || index > array.Length ) {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+                ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
             }
 
             if (array.Length - index < Count) {
@@ -557,7 +557,7 @@ namespace System.Collections.Generic {
             }
             
             if (index < 0 || index > array.Length) {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+                ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
             }
 
             if (array.Length - index < Count) {
@@ -837,7 +837,7 @@ namespace System.Collections.Generic {
                 }
 
                 if (index < 0 || index > array.Length) {
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+                    ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
                 }
 
                 if (array.Length - index < dictionary.Count) {
@@ -898,7 +898,7 @@ namespace System.Collections.Generic {
                 }
 
                 if (index < 0 || index > array.Length) {
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+                    ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
                 }
 
                 if (array.Length - index < dictionary.Count) {
@@ -1024,7 +1024,7 @@ namespace System.Collections.Generic {
                 }
 
                 if (index < 0 || index > array.Length) {
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+                    ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
                 }
 
                 if (array.Length - index < dictionary.Count) {
@@ -1085,7 +1085,7 @@ namespace System.Collections.Generic {
                 }
 
                 if (index < 0 || index > array.Length) { 
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+                    ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
                 }
 
                 if (array.Length - index < dictionary.Count)
