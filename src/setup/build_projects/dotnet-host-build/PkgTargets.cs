@@ -31,7 +31,9 @@ namespace Microsoft.DotNet.Host.Build
             Directory.CreateDirectory(PkgsIntermediateDir);
 
             SharedHostComponentId = $"com.microsoft.dotnet.sharedhost.component.osx.x64";
-            HostFxrComponentId = $"com.microsoft.dotnet.hostfxr.component.osx.x64";
+
+            string hostFxrVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostFxrVersion.ToString();
+            HostFxrComponentId = $"com.microsoft.dotnet.hostfxr.{hostFxrVersion}.component.osx.x64";
 
             string sharedFrameworkNugetName = Monikers.SharedFrameworkName;
             SharedFrameworkNugetVersion = c.BuildContext.Get<string>("SharedFrameworkNugetVersion");
