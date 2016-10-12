@@ -8,12 +8,12 @@ using Xunit;
 namespace System.CodeDom.Tests
 {
 	public class CodeCastExpressionTests : CodeObjectTestBase<CodeCastExpression>
-    {
-        [Fact]
-        public void Ctor_Default()
-        {
-            var cast = new CodeCastExpression();
-            Assert.Equal(typeof(void).FullName, cast.TargetType.BaseType);
+	{
+		[Fact]
+		public void Ctor_Default()
+		{
+			var cast = new CodeCastExpression();
+			Assert.Equal(typeof(void).FullName, cast.TargetType.BaseType);
 			Assert.Null(cast.Expression);
 		}
 
@@ -35,53 +35,53 @@ namespace System.CodeDom.Tests
 		}
 
 		public static IEnumerable<object[]> Ctor_TypeString_TestData()
-        {
-            yield return new object[] { null, null, "System.Void" };
-            yield return new object[] { "", new CodePrimitiveExpression(), "System.Void" };
-            yield return new object[] { "Int32", new CodePrimitiveExpression("Value"), "Int32" };
-        }
-        
-        [Theory]
-        [MemberData(nameof(Ctor_TypeString_TestData))]
-        public void Ctor_String_CodeExpression(string type, CodeExpression expression, string expectedBaseType)
-        {
-            var cast = new CodeCastExpression(type, expression);
-            Assert.Equal(expectedBaseType, cast.TargetType.BaseType);
-            Assert.Equal(expression, cast.Expression);
-        }
+		{
+			yield return new object[] { null, null, "System.Void" };
+			yield return new object[] { "", new CodePrimitiveExpression(), "System.Void" };
+			yield return new object[] { "Int32", new CodePrimitiveExpression("Value"), "Int32" };
+		}
 
-        public static IEnumerable<object[]> Ctor_Type_TestData()
-        {
-            yield return new object[] { typeof(int), null, "System.Int32" };
-            yield return new object[] { typeof(List<>), new CodePrimitiveExpression(), "System.Collections.Generic.List`1" };
-            yield return new object[] { typeof(void), new CodePrimitiveExpression("Value"), "System.Void" };
-        }
+		[Theory]
+		[MemberData(nameof(Ctor_TypeString_TestData))]
+		public void Ctor_String_CodeExpression(string type, CodeExpression expression, string expectedBaseType)
+		{
+			var cast = new CodeCastExpression(type, expression);
+			Assert.Equal(expectedBaseType, cast.TargetType.BaseType);
+			Assert.Equal(expression, cast.Expression);
+		}
 
-        [Theory]
-        [MemberData(nameof(Ctor_Type_TestData))]
-        public void Ctor_Type_CodeExpression(Type type, CodeExpression expression, string expectedBaseType)
-        {
-          var cast = new CodeCastExpression(type, expression);
-          Assert.Equal(expectedBaseType, cast.TargetType.BaseType);
-          Assert.Equal(expression, cast.Expression);
-        }
+		public static IEnumerable<object[]> Ctor_Type_TestData()
+		{
+			yield return new object[] { typeof(int), null, "System.Int32" };
+			yield return new object[] { typeof(List<>), new CodePrimitiveExpression(), "System.Collections.Generic.List`1" };
+			yield return new object[] { typeof(void), new CodePrimitiveExpression("Value"), "System.Void" };
+		}
 
-        [Theory]
-        [MemberData(nameof(CodeTypeReference_TestData))]
-        public void TargetType_Set_Get_ReturnsExpected(CodeTypeReference value)
-        {
-            var cast = new CodeCastExpression();
-            cast.TargetType = value;
-            Assert.Equal((value ?? new CodeTypeReference("")).BaseType, cast.TargetType.BaseType);
-        }
-        
-        [Theory]
-        [MemberData(nameof(CodeExpression_TestData))]
-        public void Expression_Set_Get_ReturnsExpected(CodeExpression value)
-        {
-            var cast = new CodeCastExpression();
-            cast.Expression = value;
-            Assert.Equal(value, cast.Expression);
-        }
-    }
+		[Theory]
+		[MemberData(nameof(Ctor_Type_TestData))]
+		public void Ctor_Type_CodeExpression(Type type, CodeExpression expression, string expectedBaseType)
+		{
+			var cast = new CodeCastExpression(type, expression);
+			Assert.Equal(expectedBaseType, cast.TargetType.BaseType);
+			Assert.Equal(expression, cast.Expression);
+		}
+
+		[Theory]
+		[MemberData(nameof(CodeTypeReference_TestData))]
+		public void TargetType_Set_Get_ReturnsExpected(CodeTypeReference value)
+		{
+			var cast = new CodeCastExpression();
+			cast.TargetType = value;
+			Assert.Equal((value ?? new CodeTypeReference("")).BaseType, cast.TargetType.BaseType);
+		}
+
+		[Theory]
+		[MemberData(nameof(CodeExpression_TestData))]
+		public void Expression_Set_Get_ReturnsExpected(CodeExpression value)
+		{
+			var cast = new CodeCastExpression();
+			cast.Expression = value;
+			Assert.Equal(value, cast.Expression);
+		}
+	}
 }

@@ -8,11 +8,11 @@ using Xunit;
 
 namespace System.CodeDom.Tests
 {
-    public class CodeIterationStatementTests : CodeStatementTestBase<CodeIterationStatement>
-    {
-        [Fact]
-        public void Ctor_Default()
-        {
+	public class CodeIterationStatementTests : CodeStatementTestBase<CodeIterationStatement>
+	{
+		[Fact]
+		public void Ctor_Default()
+		{
 			var iteration = new CodeIterationStatement();
 			Assert.Null(iteration.InitStatement);
 			Assert.Null(iteration.TestExpression);

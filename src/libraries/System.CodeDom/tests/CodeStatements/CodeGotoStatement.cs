@@ -6,16 +6,16 @@ using Xunit;
 
 namespace System.CodeDom.Tests
 {
-    public class CodeGotoStatementTests : CodeStatementTestBase<CodeGotoStatement>
-    {
-        [Fact]
-        public void Ctor_Default()
-        {
+	public class CodeGotoStatementTests : CodeStatementTestBase<CodeGotoStatement>
+	{
+		[Fact]
+		public void Ctor_Default()
+		{
 			var gotoStatement = new CodeGotoStatement();
 			Assert.Null(gotoStatement.Label);
-        }
+		}
 
-        [Theory]
+		[Theory]
 		[InlineData("\r n \t")]
 		[InlineData("Label")]
 		public void Ctor_String(string label)
@@ -50,5 +50,5 @@ namespace System.CodeDom.Tests
 			var gotoStatement = new CodeGotoStatement();
 			Assert.Throws<ArgumentNullException>("value", () => gotoStatement.Label = value);
 		}
-    }
+	}
 }

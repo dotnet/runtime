@@ -8,22 +8,22 @@ using Xunit;
 
 namespace System.CodeDom.Tests
 {
-    public class CodeCatchClauseTests : CodeDomTestBase
-    {
-        [Fact]
-        public void Ctor_Default()
-        {
-            var catchClause = new CodeCatchClause();
-            Assert.Empty(catchClause.LocalName);
-            Assert.Empty(catchClause.Statements);
+	public class CodeCatchClauseTests : CodeDomTestBase
+	{
+		[Fact]
+		public void Ctor_Default()
+		{
+			var catchClause = new CodeCatchClause();
+			Assert.Empty(catchClause.LocalName);
+			Assert.Empty(catchClause.Statements);
 
 			Assert.Equal(new CodeTypeReference(typeof(Exception)).BaseType, catchClause.CatchExceptionType.BaseType);
 		}
-		
-        [Theory]
-        [MemberData(nameof(String_TestData))]
-        public void Ctor_String(string localName)
-        {
+
+		[Theory]
+		[MemberData(nameof(String_TestData))]
+		public void Ctor_String(string localName)
+		{
 			var catchClause = new CodeCatchClause(localName);
 			Assert.Equal(localName ?? string.Empty, catchClause.LocalName);
 			Assert.Equal(typeof(Exception).ToString(), catchClause.CatchExceptionType.BaseType);
@@ -80,11 +80,11 @@ namespace System.CodeDom.Tests
 		[Theory]
 		[MemberData(nameof(String_TestData))]
 		public void LocalName_Set_Get_ReturnsExpected(string value)
-        {
-            var catchClause = new CodeCatchClause();
-            catchClause.LocalName = value;
-            Assert.Equal(value ?? string.Empty, catchClause.LocalName);
-        }
+		{
+			var catchClause = new CodeCatchClause();
+			catchClause.LocalName = value;
+			Assert.Equal(value ?? string.Empty, catchClause.LocalName);
+		}
 
 		[Theory]
 		[MemberData(nameof(CodeTypeReference_TestData))]

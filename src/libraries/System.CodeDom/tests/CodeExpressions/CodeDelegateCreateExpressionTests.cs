@@ -8,12 +8,12 @@ using Xunit;
 namespace System.CodeDom.Tests
 {
 	public class CodeDelegateCreateExpressionTests : CodeObjectTestBase<CodeDelegateCreateExpression>
-    {
-        [Fact]
-        public void Ctor_Default()
-        {
-            var delegateCreate = new CodeDelegateCreateExpression();
-            Assert.Equal(typeof(void).FullName, delegateCreate.DelegateType.BaseType);
+	{
+		[Fact]
+		public void Ctor_Default()
+		{
+			var delegateCreate = new CodeDelegateCreateExpression();
+			Assert.Equal(typeof(void).FullName, delegateCreate.DelegateType.BaseType);
 
 			Assert.Null(delegateCreate.TargetObject);
 			Assert.Empty(delegateCreate.MethodName);
@@ -28,7 +28,7 @@ namespace System.CodeDom.Tests
 
 		[Theory]
 		[MemberData(nameof(Ctor_TestData))]
-        public void Ctor(CodeTypeReference delegateType, CodeExpression targetObject, string methodName)
+		public void Ctor(CodeTypeReference delegateType, CodeExpression targetObject, string methodName)
 		{
 			var delegateCreate = new CodeDelegateCreateExpression(delegateType, targetObject, methodName);
 			Assert.Equal((delegateType ?? new CodeTypeReference("")).BaseType, delegateCreate.DelegateType.BaseType);

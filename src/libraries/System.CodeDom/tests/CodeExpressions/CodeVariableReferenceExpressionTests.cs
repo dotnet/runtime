@@ -7,29 +7,29 @@ using Xunit;
 namespace System.CodeDom.Tests
 {
 	public class CodeVariableReferenceExpressionTests : CodeObjectTestBase<CodeVariableReferenceExpression>
-    {
-        [Fact]
-        public void Ctor_Default()
-        {
-            var variableReference = new CodeVariableReferenceExpression();
-            Assert.Empty(variableReference.VariableName);
-        }
+	{
+		[Fact]
+		public void Ctor_Default()
+		{
+			var variableReference = new CodeVariableReferenceExpression();
+			Assert.Empty(variableReference.VariableName);
+		}
 
-        [Theory]
+		[Theory]
 		[MemberData(nameof(String_TestData))]
 		public void Ctor_String(string VariableName)
-        {
-            var variableReference = new CodeVariableReferenceExpression(VariableName);
-            Assert.Equal(VariableName ?? string.Empty, variableReference.VariableName);
-        }
+		{
+			var variableReference = new CodeVariableReferenceExpression(VariableName);
+			Assert.Equal(VariableName ?? string.Empty, variableReference.VariableName);
+		}
 
-        [Theory]
+		[Theory]
 		[MemberData(nameof(String_TestData))]
-        public void VariableName_Set_Get_ReturnsExpected(string VariableName)
-        {
-            var variableReference = new CodeVariableReferenceExpression();
-            variableReference.VariableName = VariableName;
-            Assert.Equal(VariableName ?? string.Empty, variableReference.VariableName);
-        }
-    }
+		public void VariableName_Set_Get_ReturnsExpected(string VariableName)
+		{
+			var variableReference = new CodeVariableReferenceExpression();
+			variableReference.VariableName = VariableName;
+			Assert.Equal(VariableName ?? string.Empty, variableReference.VariableName);
+		}
+	}
 }

@@ -8,12 +8,12 @@ using Xunit;
 
 namespace System.CodeDom.Tests
 {
-    public class CodeObjectCreateExpressionTests : CodeObjectTestBase<CodeObjectCreateExpression>
-    {
-        [Fact]
-        public void Ctor_Default()
-        {
-            var objectCreate = new CodeObjectCreateExpression();
+	public class CodeObjectCreateExpressionTests : CodeObjectTestBase<CodeObjectCreateExpression>
+	{
+		[Fact]
+		public void Ctor_Default()
+		{
+			var objectCreate = new CodeObjectCreateExpression();
 			Assert.Equal(typeof(void).FullName, objectCreate.CreateType.BaseType);
 			Assert.Empty(objectCreate.Parameters);
 		}
@@ -35,10 +35,10 @@ namespace System.CodeDom.Tests
 		}
 
 		public static IEnumerable<object[]> Ctor_String_ParamsCodeExpression_TestData()
-        {
-            yield return new object[] { null, new CodeExpression[0], "System.Void" };
-            yield return new object[] { "", new CodeExpression[] { new CodePrimitiveExpression() }, "System.Void" };
-            yield return new object[] { "Int32", new CodeExpression[] { new CodePrimitiveExpression("Value") }, "Int32" };
+		{
+			yield return new object[] { null, new CodeExpression[0], "System.Void" };
+			yield return new object[] { "", new CodeExpression[] { new CodePrimitiveExpression() }, "System.Void" };
+			yield return new object[] { "Int32", new CodeExpression[] { new CodePrimitiveExpression("Value") }, "Int32" };
 		}
 
 		[Theory]
@@ -51,10 +51,10 @@ namespace System.CodeDom.Tests
 		}
 
 		public static IEnumerable<object[]> Ctor_Type_ParamsCodeExpression_TestData()
-        {
-            yield return new object[] { typeof(int), new CodeExpression[0], "System.Int32" };
-            yield return new object[] { typeof(List<>), new CodeExpression[] { new CodePrimitiveExpression() }, "System.Collections.Generic.List`1" };
-            yield return new object[] { typeof(void), new CodeExpression[] { new CodePrimitiveExpression("Value") }, "System.Void" };
+		{
+			yield return new object[] { typeof(int), new CodeExpression[0], "System.Int32" };
+			yield return new object[] { typeof(List<>), new CodeExpression[] { new CodePrimitiveExpression() }, "System.Collections.Generic.List`1" };
+			yield return new object[] { typeof(void), new CodeExpression[] { new CodePrimitiveExpression("Value") }, "System.Void" };
 		}
 
 		[Theory]
@@ -85,13 +85,13 @@ namespace System.CodeDom.Tests
 		}
 
 		[Theory]
-        [MemberData(nameof(CodeTypeReference_TestData))]
-        public void CreateType_Set_Get_ReturnsExpected(CodeTypeReference value)
-        {
-            var objectCreate = new CodeObjectCreateExpression();
-            objectCreate.CreateType = value;
-            Assert.Equal((value ?? new CodeTypeReference("")).BaseType, objectCreate.CreateType.BaseType);
-        }
+		[MemberData(nameof(CodeTypeReference_TestData))]
+		public void CreateType_Set_Get_ReturnsExpected(CodeTypeReference value)
+		{
+			var objectCreate = new CodeObjectCreateExpression();
+			objectCreate.CreateType = value;
+			Assert.Equal((value ?? new CodeTypeReference("")).BaseType, objectCreate.CreateType.BaseType);
+		}
 
 		[Fact]
 		public void Parameters_AddMultiple_ReturnsExpected()

@@ -9,7 +9,7 @@ using Xunit;
 namespace System.CodeDom.Tests
 {
 	public class CodeIndexerExpressionTests : CodeObjectTestBase<CodeIndexerExpression>
-    {
+	{
 		[Fact]
 		public void Ctor_Default()
 		{
@@ -17,7 +17,7 @@ namespace System.CodeDom.Tests
 			Assert.Null(indexer.TargetObject);
 			Assert.Empty(indexer.Indices);
 		}
-		
+
 		public static IEnumerable<object[]> Ctor_CodeExpression_ParamsCodeExpression_TestData()
 		{
 			yield return new object[] { null, new CodeExpression[0] };

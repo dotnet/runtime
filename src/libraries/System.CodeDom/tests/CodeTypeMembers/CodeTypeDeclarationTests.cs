@@ -8,11 +8,11 @@ using Xunit;
 
 namespace System.CodeDom.Tests
 {
-    public class CodeTypeDeclarationTests : CodeTypeMemberTestBase<CodeTypeDeclaration>
-    {
-        [Fact]
-        public void Ctor_Default()
-        {
+	public class CodeTypeDeclarationTests : CodeTypeMemberTestBase<CodeTypeDeclaration>
+	{
+		[Fact]
+		public void Ctor_Default()
+		{
 			var declaration = new CodeTypeDeclaration();
 			Assert.Empty(declaration.Name);
 			Assert.True(declaration.IsClass);
@@ -139,7 +139,7 @@ namespace System.CodeDom.Tests
 				Assert.Same(declaration, sender);
 				Assert.Equal(EventArgs.Empty, args);
 			};
-			
+
 			declaration.BaseTypes.Add(new CodeTypeReference(typeof(int)));
 			Assert.True(calledPopulateBaseTypes);
 

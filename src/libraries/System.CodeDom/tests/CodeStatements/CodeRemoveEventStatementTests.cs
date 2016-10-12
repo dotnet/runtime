@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.CodeDom.Tests
 {
-    public class CodeRemoveEventStatementTests : CodeStatementTestBase<CodeRemoveEventStatement>
+	public class CodeRemoveEventStatementTests : CodeStatementTestBase<CodeRemoveEventStatement>
 	{
 		[Fact]
 		public void Ctor_Default()
@@ -16,17 +16,17 @@ namespace System.CodeDom.Tests
 			Assert.Empty(removeEvent.Event.EventName);
 			Assert.Null(removeEvent.Event.TargetObject);
 			Assert.Null(removeEvent.Listener);
-        }
+		}
 
-        public static IEnumerable<object[]> Ctor_CodeExpression_String_CodeExpression_TestData()
-        {
+		public static IEnumerable<object[]> Ctor_CodeExpression_String_CodeExpression_TestData()
+		{
 			yield return new object[] { null, null, null };
 			yield return new object[] { new CodePrimitiveExpression("Value1"), "EventName", new CodePrimitiveExpression("Value2") };
 		}
 
-        [Theory]
-        [MemberData(nameof(Ctor_CodeExpression_String_CodeExpression_TestData))]
-        public void Ctor_CodeExpression_String_CodeExpression(CodeExpression targetObject, string eventName, CodeExpression listener)
+		[Theory]
+		[MemberData(nameof(Ctor_CodeExpression_String_CodeExpression_TestData))]
+		public void Ctor_CodeExpression_String_CodeExpression(CodeExpression targetObject, string eventName, CodeExpression listener)
 		{
 			var removeEvent = new CodeRemoveEventStatement(targetObject, eventName, listener);
 			Assert.Equal(targetObject, removeEvent.Event.TargetObject);
@@ -62,12 +62,12 @@ namespace System.CodeDom.Tests
 		}
 
 		[Theory]
-        [MemberData(nameof(CodeExpression_TestData))]
-        public void Listener_Set_Get_ReturnsExpected(CodeExpression value)
-        {
-            var removeEvent = new CodeRemoveEventStatement();
-            removeEvent.Listener = value;
-            Assert.Equal(value, removeEvent.Listener);
-        }
-    }
+		[MemberData(nameof(CodeExpression_TestData))]
+		public void Listener_Set_Get_ReturnsExpected(CodeExpression value)
+		{
+			var removeEvent = new CodeRemoveEventStatement();
+			removeEvent.Listener = value;
+			Assert.Equal(value, removeEvent.Listener);
+		}
+	}
 }

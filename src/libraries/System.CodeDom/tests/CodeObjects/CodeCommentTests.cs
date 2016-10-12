@@ -8,18 +8,18 @@ using Xunit;
 namespace System.CodeDom.Tests
 {
 	public class CodeCommentTests : CodeObjectTestBase<CodeComment>
-    {
-        [Fact]
-        public void Ctor_Default()
-        {
+	{
+		[Fact]
+		public void Ctor_Default()
+		{
 			var comment = new CodeComment();
 			Assert.Empty(comment.Text);
 			Assert.False(comment.DocComment);
-        }
+		}
 
-        [Theory]
-        [MemberData(nameof(String_TestData))]
-        public void Ctor_String(string text)
+		[Theory]
+		[MemberData(nameof(String_TestData))]
+		public void Ctor_String(string text)
 		{
 			var comment = new CodeComment(text);
 			Assert.Equal(text ?? string.Empty, comment.Text);
@@ -48,8 +48,8 @@ namespace System.CodeDom.Tests
 		{
 			var comment = new CodeComment();
 			comment.Text = value;
-            Assert.Equal(value ?? string.Empty, comment.Text);
-        }
+			Assert.Equal(value ?? string.Empty, comment.Text);
+		}
 
 		[Theory]
 		[InlineData(true)]

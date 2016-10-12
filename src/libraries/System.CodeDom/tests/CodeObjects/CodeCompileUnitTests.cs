@@ -8,10 +8,10 @@ using Xunit;
 namespace System.CodeDom.Tests
 {
 	public class CodeCompileUnitTests : CodeObjectTestBase<CodeCompileUnit>
-    {
-        [Fact]
-        public void Ctor_Default()
-        {
+	{
+		[Fact]
+		public void Ctor_Default()
+		{
 			var compileUnit = new CodeCompileUnit();
 			Assert.Empty(compileUnit.Namespaces);
 			Assert.Empty(compileUnit.ReferencedAssemblies);

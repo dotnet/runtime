@@ -9,10 +9,10 @@ using Xunit;
 namespace System.CodeDom.Tests
 {
 	public class CodeTypeReferenceTests : CodeObjectTestBase<CodeTypeReference>
-    {
-        [Fact]
-        public void Ctor_Default()
-        {
+	{
+		[Fact]
+		public void Ctor_Default()
+		{
 			var type = new CodeTypeReference();
 			Assert.Null(type.ArrayElementType);
 			Assert.Equal(0, type.ArrayRank);
@@ -36,7 +36,7 @@ namespace System.CodeDom.Tests
 			yield return new object[] { typeof(ClassWithoutNamespace), typeof(ClassWithoutNamespace).FullName };
 			yield return new object[] { typeof(Nullable), typeof(Nullable).FullName };
 		}
-		
+
 		[Theory]
 		[MemberData(nameof(Ctor_Type_TestData))]
 		public void Ctor_Type(Type type, string expectedBaseType)
@@ -251,7 +251,7 @@ namespace System.CodeDom.Tests
 			Assert.Equal(expectedArrayRank, typeReference.ArrayRank);
 
 			Assert.Equal((CodeTypeReferenceOptions)0, typeReference.Options);
-			
+
 			CodeTypeReference[] actualTypeArguments = typeReference.TypeArguments.Cast<CodeTypeReference>().ToArray();
 			Assert.Equal(expectedTypeArguments.Length, actualTypeArguments.Length);
 			for (int i = 0; i < expectedTypeArguments.Length; i++)

@@ -7,17 +7,17 @@ using Xunit;
 namespace System.CodeDom.Tests
 {
 	public class CodeDefaultValueExpressionTests : CodeObjectTestBase<CodeDefaultValueExpression>
-    {
-        [Fact]
-        public void Ctor_Default()
-        {
-            var defaultValue = new CodeDefaultValueExpression();
-            Assert.Equal(typeof(void).FullName, defaultValue.Type.BaseType);
-        }
-        
-        [Theory]
+	{
+		[Fact]
+		public void Ctor_Default()
+		{
+			var defaultValue = new CodeDefaultValueExpression();
+			Assert.Equal(typeof(void).FullName, defaultValue.Type.BaseType);
+		}
+
+		[Theory]
 		[MemberData(nameof(CodeTypeReference_TestData))]
-        public void Ctor_CodeTypeReference(CodeTypeReference type)
+		public void Ctor_CodeTypeReference(CodeTypeReference type)
 		{
 			var defaultValue = new CodeDefaultValueExpression(type);
 			Assert.Equal((type ?? new CodeTypeReference("")).BaseType, defaultValue.Type.BaseType);
@@ -31,5 +31,5 @@ namespace System.CodeDom.Tests
 			defaultValue.Type = value;
 			Assert.Equal((value ?? new CodeTypeReference("")).BaseType, defaultValue.Type.BaseType);
 		}
-    }
+	}
 }

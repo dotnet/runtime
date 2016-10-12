@@ -7,29 +7,29 @@ using Xunit;
 namespace System.CodeDom.Tests
 {
 	public class CodeThrowExceptionStatementTests : CodeStatementTestBase<CodeThrowExceptionStatement>
-    {
-        [Fact]
-        public void Ctor_Default()
-        {
-            var throwException = new CodeThrowExceptionStatement();
-            Assert.Null(throwException.ToThrow);
-        }
+	{
+		[Fact]
+		public void Ctor_Default()
+		{
+			var throwException = new CodeThrowExceptionStatement();
+			Assert.Null(throwException.ToThrow);
+		}
 
-        [Theory]
-        [MemberData(nameof(CodeExpression_TestData))]
-        public void Ctor_CodeExpression(CodeExpression expression)
+		[Theory]
+		[MemberData(nameof(CodeExpression_TestData))]
+		public void Ctor_CodeExpression(CodeExpression expression)
 		{
 			var throwException = new CodeThrowExceptionStatement(expression);
 			Assert.Equal(expression, throwException.ToThrow);
 		}
 
-        [Theory]
-        [MemberData(nameof(CodeExpression_TestData))]
-        public void Expression_Set_Get_ReturnsExpected(CodeExpression value)
+		[Theory]
+		[MemberData(nameof(CodeExpression_TestData))]
+		public void Expression_Set_Get_ReturnsExpected(CodeExpression value)
 		{
 			var throwException = new CodeThrowExceptionStatement();
 			throwException.ToThrow = value;
-            Assert.Equal(value, throwException.ToThrow);
-        }
-    }
+			Assert.Equal(value, throwException.ToThrow);
+		}
+	}
 }
