@@ -552,7 +552,7 @@ namespace System.Collections.Generic {
             }
 
             if (version != _version && BinaryCompatibility.TargetsAtLeast_Desktop_V4_5)
-                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_EnumFailedVersion);
+                ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
         }
 
         // Returns an enumerator for this list with the given
@@ -1065,7 +1065,7 @@ namespace System.Collections.Generic {
             private bool MoveNextRare()
             {                
                 if (version != list._version) {
-                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_EnumFailedVersion);
+                    ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
                 }
 
                 index = list._size + 1;
@@ -1082,7 +1082,7 @@ namespace System.Collections.Generic {
             Object System.Collections.IEnumerator.Current {
                 get {
                     if( index == 0 || index == list._size + 1) {
-                         ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_EnumOpCantHappen);
+                         ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
                     }
                     return Current;
                 }
@@ -1090,7 +1090,7 @@ namespace System.Collections.Generic {
     
             void System.Collections.IEnumerator.Reset() {
                 if (version != list._version) {
-                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_EnumFailedVersion);
+                    ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
                 }
                 
                 index = 0;
