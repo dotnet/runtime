@@ -1095,7 +1095,8 @@ namespace System.IO
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
-            StreamHelpers.ValidateCopyToAsyncArgs(this, destination, bufferSize);
+            StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+            
             Task flushTask = FlushAsync(cancellationToken);
             return flushTask.Status == TaskStatus.RanToCompletion ?
                 _stream.CopyToAsync(destination, bufferSize, cancellationToken) :
