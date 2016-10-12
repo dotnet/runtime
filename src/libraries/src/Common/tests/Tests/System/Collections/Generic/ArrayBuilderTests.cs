@@ -26,10 +26,6 @@ namespace System.Collections.Generic.Tests
             Assert.Equal(0, builder.Count);
             Assert.Equal(0, builder.Capacity);
 
-            // Indexing into the builder should throw
-            Assert.ThrowsAny<Exception>(() => builder[0]);
-            Assert.ThrowsAny<Exception>(() => builder[0] = default(T));
-
             // Should use a cached array for capacity of 0
             Assert.Same(Array.Empty<T>(), builder.ToArray());
         }
@@ -44,14 +40,6 @@ namespace System.Collections.Generic.Tests
 
             Assert.Equal(0, builder.Count);
             Assert.Equal(capacity, builder.Capacity);
-
-            // Indexing into the builder should be unchecked in Release builds, so the
-            // jit can optimize better and have an easier time inlining the method.
-            // So we may not throw an exception for builder[i] if the Capacity > i.
-
-            // If we index @ Capacity and beyond, however, we should throw regardless of build config
-            Assert.ThrowsAny<Exception>(() => builder[capacity]);
-            Assert.ThrowsAny<Exception>(() => builder[capacity] = default(T));
 
             // Should use a cached array for count of 0, regardless of capacity
             Assert.Same(Array.Empty<T>(), builder.ToArray());
@@ -74,13 +62,6 @@ namespace System.Collections.Generic.Tests
             {
                 T item = builder[i];
             }
-            
-            // Again, builder[count] may not throw for Release builds unless
-            // Count == Capacity, so don't assert that here.
-
-            // After Capacity, we should throw in Debug and Release builds.
-            Assert.ThrowsAny<Exception>(() => builder[builder.Capacity]);
-            Assert.ThrowsAny<Exception>(() => builder[builder.Capacity] = default(T));
         }
 
         [Theory]
@@ -137,10 +118,6 @@ namespace System.Collections.Generic.Tests
             }
 
             VerifyBuilderContents(Enumerable.Repeat(default(T), capacity), builder);
-            
-            // Count == Capacity now, so attempting to add more should raise
-            // an assert or generate an IndexOutOfRangeException
-            Assert.ThrowsAny<Exception>(() => builder.UncheckedAdd(default(T)));
         }
 
         public static TheoryData<int> CapacityData()
