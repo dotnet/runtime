@@ -7280,13 +7280,20 @@ get_bundled_machine_config (MonoError *error)
 	return mono_string_new_handle (mono_domain_get (), machine_config, error);
 }
 
-static MonoStringHandle
+ICALL_EXPORT MonoStringHandle
+ves_icall_System_Environment_get_bundled_machine_config (MonoError *error)
+{
+	return get_bundled_machine_config (error);
+}
+
+
+ICALL_EXPORT MonoStringHandle
 ves_icall_System_Configuration_DefaultConfig_get_bundled_machine_config (MonoError *error)
 {
 	return get_bundled_machine_config (error);
 }
 
-static MonoStringHandle
+ICALL_EXPORT MonoStringHandle
 ves_icall_System_Configuration_InternalConfigurationHost_get_bundled_machine_config (MonoError *error)
 {
 	return get_bundled_machine_config (error);
