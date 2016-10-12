@@ -80,15 +80,4 @@ namespace System.Globalization
         public virtual string ThreeLetterISORegionName { get { throw new NotImplementedException(); } }
         public virtual string ThreeLetterWindowsRegionName { get { throw new NotImplementedException(); } }
     }
-
-    public partial class TextInfo : System.ICloneable, System.Runtime.Serialization.IDeserializationCallback 
-    {
-        public virtual int ANSICodePage { get { throw new NotImplementedException(); } }
-        public virtual int EBCDICCodePage { get { throw new NotImplementedException(); } }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public int LCID { get { throw new NotImplementedException(); } }
-        public virtual int MacCodePage { get { throw new NotImplementedException(); } }
-        public virtual int OEMCodePage { get { throw new NotImplementedException(); } }
-        public string ToTitleCase(string str) { throw new NotImplementedException(); }
-    }
 }
