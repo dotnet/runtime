@@ -27,7 +27,7 @@ namespace System.IO
         public static Task ArrayPoolCopyToAsync(Stream source, Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
             Debug.Assert(source != null);
-            ValidateCopyToAsyncArgs(source, destination, bufferSize);
+            ValidateCopyToArgs(source, destination, bufferSize);
             return ArrayPoolCopyToAsyncCore(source, destination, bufferSize, cancellationToken);
         }
 
