@@ -57,7 +57,7 @@ namespace System.Collections
     [DebuggerTypeProxy(typeof(System.Collections.Hashtable.HashtableDebugView))]
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
-    public class Hashtable : IDictionary, ISerializable, IDeserializationCallback
+    public class Hashtable : IDictionary, ISerializable, IDeserializationCallback, ICloneable
     {
         /*
           This Hashtable uses double hashing.  There are hashsize buckets in the 

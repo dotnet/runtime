@@ -3340,7 +3340,7 @@ namespace System.Collections.Generic
         void SymmetricExceptWith(System.Collections.Generic.IEnumerable<T> other);
         void UnionWith(System.Collections.Generic.IEnumerable<T> other);
     }
-    public partial class KeyNotFoundException : System.Exception, System.Runtime.Serialization.ISerializable
+    public partial class KeyNotFoundException : System.SystemException, System.Runtime.Serialization.ISerializable
     {
         public KeyNotFoundException() { }
         public KeyNotFoundException(string message) { }

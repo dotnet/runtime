@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
 using System.Collections.Generic;
 using Xunit;
 
@@ -19,6 +20,33 @@ namespace System.Collections.Specialized.Tests
 
             Assert.False(((ICollection)nameValueCollection).IsSynchronized);
         }
+#if netstandard17
+        [Fact]
+        public void Ctor_Provider_Comparer()
+        {
+#pragma warning disable CS0618 // Type or member is obsolete
+            NameValueCollection nameValueCollection = new NameValueCollection(CaseInsensitiveHashCodeProvider.Default, CaseInsensitiveComparer.Default);
+#pragma warning restore CS0618 // Type or member is obsolete
+            Assert.Equal(0, nameValueCollection.Count);
+            Assert.Equal(0, nameValueCollection.Keys.Count);
+            Assert.Equal(0, nameValueCollection.AllKeys.Length);
+
+            Assert.False(((ICollection)nameValueCollection).IsSynchronized);
+        }
+
+        [Fact]
+        public void Ctor_Int_Provider_Comparer()
+        {
+#pragma warning disable CS0618 // Type or member is obsolete
+            NameValueCollection nameValueCollection = new NameValueCollection(5, CaseInsensitiveHashCodeProvider.Default, CaseInsensitiveComparer.Default);
+#pragma warning restore CS0618 // Type or member is obsolete
+            Assert.Equal(0, nameValueCollection.Count);
+            Assert.Equal(0, nameValueCollection.Keys.Count);
+            Assert.Equal(0, nameValueCollection.AllKeys.Length);
+
+            Assert.False(((ICollection)nameValueCollection).IsSynchronized);
+        }
+#endif //netstandard17
 
         [Theory]
         [InlineData(0)]
