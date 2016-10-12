@@ -366,21 +366,30 @@ namespace System.Collections
 
                 if (value > m_length)
                 {
-                    // clear high bit values in the last int
-                    int last = GetArrayLength(m_length, BitsPerInt32) - 1;
-                    int bits = m_length % 32;
-                    if (bits > 0)
-                    {
-                        m_array[last] &= (1 << bits) - 1;
-                    }
-
-                    // clear remaining int values
-                    Array.Clear(m_array, last + 1, newints - last - 1);
+                    TrimUpperBits();
                 }
 
                 m_length = value;
-                _version++;
             }
+        }
+
+        private void TrimUpperBits()
+        {
+            // clear high bit values in the last int
+            int last = GetArrayLength(m_length, BitsPerInt32) - 1;
+            int bits = m_length % 32;
+            if (bits > 0)
+            {
+                m_array[last] &= (1 << bits) - 1;
+            }
+
+            // clear remaining int values
+            if (last + 1 < m_array.Length)
+            {
+                Array.Clear(m_array, last + 1, m_array.Length - last - 1);
+            }
+
+            _version++;
         }
 
         public void CopyTo(Array array, int index)
@@ -396,6 +405,8 @@ namespace System.Collections
 
             Contract.EndContractBlock();
 
+            // trim the upper, unused bits to prevent them from leaking into the target array
+            TrimUpperBits();
             if (array is int[])
             {
                 Array.Copy(m_array, 0, array, index, GetArrayLength(m_length, BitsPerInt32));
