@@ -12,7 +12,7 @@ namespace System.IO.Tests
         public void ObjectClosedReadLine()
         {
             var baseInfo = GetCharArrayStream();
-            var sr = baseInfo.Item2;
+            StreamReader sr = baseInfo.Item2;
 
             sr.Close();
             Assert.Throws<ObjectDisposedException>(() => sr.ReadLine());
@@ -21,8 +21,8 @@ namespace System.IO.Tests
         [Fact]
         public void ObjectClosedReadLineBaseStream()
         {
-            var ms = GetLargeStream();
-            var sr = new StreamReader(ms);
+            Stream ms = GetLargeStream();
+            StreamReader sr = new StreamReader(ms);
 
             ms.Close();
             Assert.Throws<ObjectDisposedException>(() => sr.ReadLine());
