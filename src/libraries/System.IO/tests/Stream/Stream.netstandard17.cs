@@ -7,15 +7,26 @@ using Xunit;
 
 namespace System.IO.Tests
 {
+    public class TestStream : MemoryStream
+    {
+        public WaitHandle CreateHandle()
+        {
+#pragma warning disable CS0618
+            return CreateWaitHandle();
+        }
+    }
+
     public partial class StreamMethods
     {
         [Fact]
-        public void CreateWaitHandle()
+        public void CreateWaitHandleTest()
         {
-            using (Stream str = CreateStream())
+            using (TestStream str = new TestStream())
             {
-                ManualResetEvent first = str.CreateWaitHandle();
-                ManualResetEvent second = str.CreateWaitHandle();
+                WaitHandle first = str.CreateHandle();
+                WaitHandle second = str.CreateHandle();
+                Assert.NotNull(first);
+                Assert.NotNull(second);
                 Assert.NotEqual(first, second);
             }
         }
@@ -29,8 +40,8 @@ namespace System.IO.Tests
                 {
                     Assert.NotEqual(synced, str);
                     synced.Write(new byte[] { 1 }, 0, 1);
+                    Assert.Equal(1, str.Length);
                 }
-                Assert.Equal(1, str.Length);
             }
         }
     }
