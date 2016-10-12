@@ -23,7 +23,7 @@ namespace System.Collections
     [DebuggerTypeProxy(typeof(System.Collections.Stack.StackDebugView))]
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
-    public class Stack : ICollection
+    public class Stack : ICollection, ICloneable
     {
         private Object[] _array;     // Storage for stack elements
         [ContractPublicPropertyName("Count")]

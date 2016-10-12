@@ -8,7 +8,7 @@
 
 namespace System.Collections
 {
-    public partial class ArrayList : System.Collections.IEnumerable, System.Collections.IList
+    public partial class ArrayList : System.Collections.IEnumerable, System.Collections.IList, System.ICloneable
     {
         public ArrayList() { }
         public ArrayList(System.Collections.ICollection c) { }
@@ -152,7 +152,7 @@ namespace System.Collections
         void System.Collections.IDictionary.Remove(object key) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { return default(System.Collections.IEnumerator); }
     }
-    public partial class Hashtable : System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable, System.Runtime.Serialization.ISerializable, System.Runtime.Serialization.IDeserializationCallback
+    public partial class Hashtable : System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable, System.Runtime.Serialization.ISerializable, System.Runtime.Serialization.IDeserializationCallback, System.ICloneable
     {
         public Hashtable() { }
         public Hashtable(System.Collections.IDictionary d) { }
@@ -209,7 +209,7 @@ namespace System.Collections
     { 
         int GetHashCode(object obj); 
     } 
-    public partial class Queue : System.Collections.ICollection, System.Collections.IEnumerable
+    public partial class Queue : System.Collections.ICollection, System.Collections.IEnumerable, System.ICloneable
     {
         public Queue() { }
         public Queue(System.Collections.ICollection col) { }
@@ -240,7 +240,7 @@ namespace System.Collections
         public virtual System.Collections.IEnumerator GetEnumerator() { return default(System.Collections.IEnumerator); }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
     }
-    public partial class SortedList : System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable
+    public partial class SortedList : System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable, System.ICloneable
     {
         public SortedList() { }
         public SortedList(System.Collections.IComparer comparer) { }
@@ -278,7 +278,7 @@ namespace System.Collections
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { return default(System.Collections.IEnumerator); }
         public virtual void TrimToSize() { }
     }
-    public partial class Stack : System.Collections.ICollection, System.Collections.IEnumerable
+    public partial class Stack : System.Collections.ICollection, System.Collections.IEnumerable, System.ICloneable
     {
         public Stack() { }
         public Stack(System.Collections.ICollection col) { }
