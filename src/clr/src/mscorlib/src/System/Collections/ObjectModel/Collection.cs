@@ -183,7 +183,7 @@ namespace System.Collections.ObjectModel
             }
             
             if (index < 0 ) {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+                ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
             }
 
             if (array.Length - index < Count) {

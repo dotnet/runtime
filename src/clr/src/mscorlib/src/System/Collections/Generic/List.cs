@@ -274,7 +274,7 @@ namespace System.Collections.Generic {
         // 
         public int BinarySearch(int index, int count, T item, IComparer<T> comparer) {
             if (index < 0)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+                ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
             if (count < 0)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
             if (_size - index < count)
@@ -575,7 +575,7 @@ namespace System.Collections.Generic {
 
         public List<T> GetRange(int index, int count) {
             if (index < 0) {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+                ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
             }
 
             if (count < 0) {
@@ -628,7 +628,7 @@ namespace System.Collections.Generic {
         // 
         public int IndexOf(T item, int index) {
             if (index > _size)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_Index);
+                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
             Contract.Ensures(Contract.Result<int>() >= -1);
             Contract.Ensures(Contract.Result<int>() < Count);
             Contract.EndContractBlock();
@@ -646,7 +646,7 @@ namespace System.Collections.Generic {
         // 
         public int IndexOf(T item, int index, int count) {
             if (index > _size)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_Index);
+                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
 
             if (count <0 || index > _size - count) ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count, ExceptionResource.ArgumentOutOfRange_Count);
             Contract.Ensures(Contract.Result<int>() >= -1);
@@ -698,7 +698,7 @@ namespace System.Collections.Generic {
             }
             
             if ((uint)index > (uint)_size) {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_Index);
+                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
             }
             Contract.EndContractBlock();
 
@@ -766,7 +766,7 @@ namespace System.Collections.Generic {
         public int LastIndexOf(T item, int index)
         {
             if (index >= _size)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_Index);
+                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
             Contract.Ensures(Contract.Result<int>() >= -1);
             Contract.Ensures(((Count == 0) && (Contract.Result<int>() == -1)) || ((Count > 0) && (Contract.Result<int>() <= index)));
             Contract.EndContractBlock();
@@ -784,7 +784,7 @@ namespace System.Collections.Generic {
         // 
         public int LastIndexOf(T item, int index, int count) {
             if ((Count != 0) && (index < 0)) {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+                ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
             }
 
             if ((Count !=0) && (count < 0)) {
@@ -883,7 +883,7 @@ namespace System.Collections.Generic {
         // 
         public void RemoveRange(int index, int count) {
             if (index < 0) {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+                ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
             }
 
             if (count < 0) {
@@ -917,7 +917,7 @@ namespace System.Collections.Generic {
         // 
         public void Reverse(int index, int count) {
             if (index < 0) {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+                ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
             }
                 
             if (count < 0) {
@@ -956,7 +956,7 @@ namespace System.Collections.Generic {
         // 
         public void Sort(int index, int count, IComparer<T> comparer) {
             if (index < 0) {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+                ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
             }
             
             if (count < 0) {
