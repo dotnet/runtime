@@ -3,12 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
-using System.Diagnostics;
 using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
 {
-    public class GroupCollectionTests
+    public static partial class GroupCollectionTests
     {
         [Fact]
         public static void GetEnumerator()
@@ -48,6 +47,15 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Throws<InvalidOperationException>(() => enumerator.Current);
         }
 
+        [Fact]
+        public static void Item_Get()
+        {
+            GroupCollection collection = CreateCollection();
+            Assert.Equal("212-555-6666", collection[0].ToString());
+            Assert.Equal("212", collection[1].ToString());
+            Assert.Equal("555-6666", collection[2].ToString());
+        }
+
         [Theory]
         [InlineData(-1)]
         [InlineData(4)]
@@ -64,20 +72,21 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Fact]
-        public void ICollection_Properties()
+        public static void ICollection_Properties()
         {
             Regex regex = new Regex(@"(?<A1>a*)(?<A2>b*)(?<A3>c*)");
             GroupCollection groups = regex.Match("aaabbccccccccccaaaabc").Groups;
             ICollection collection = groups;
 
             Assert.False(collection.IsSynchronized);
+            Assert.NotNull(collection.SyncRoot);
             Assert.Same(collection.SyncRoot, collection.SyncRoot);
         }
-        
+
         [Theory]
         [InlineData(0)]
         [InlineData(5)]
-        public void ICollection_CopyTo(int index)
+        public static void ICollection_CopyTo(int index)
         {
             Regex regex = new Regex(@"(?<A1>a*)(?<A2>b*)(?<A3>c*)");
             GroupCollection groups = regex.Match("aaabbccccccccccaaaabc").Groups;
@@ -96,7 +105,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Fact]
-        public void ICollection_CopyTo_Invalid()
+        public static void ICollection_CopyTo_Invalid()
         {
             Regex regex = new Regex("e");
             ICollection collection = regex.Match("aaabbccccccccccaaaabc").Groups;
@@ -117,6 +126,13 @@ namespace System.Text.RegularExpressions.Tests
             // Invalid index + length
             Assert.Throws<IndexOutOfRangeException>(() => collection.CopyTo(new object[collection.Count], 1));
             Assert.Throws<IndexOutOfRangeException>(() => collection.CopyTo(new object[collection.Count + 1], 2));
+        }
+
+        private static GroupCollection CreateCollection()
+        {
+            Regex regex = new Regex(@"(\d{3})-(\d{3}-\d{4})");
+            Match match = regex.Match("212-555-6666");
+            return match.Groups;
         }
     }
 }
