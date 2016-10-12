@@ -85,6 +85,12 @@ namespace DoubLink {
 				curTotalMemory = GC.GetTotalMemory(false);
 			}
 
+            if (DLinkNode.FinalCount != iRep * iObj * 10)
+            {
+                // see github#4093 for the rationale for fail-fast in this test.
+                Environment.FailFast(string.Empty);
+            }
+
             Console.WriteLine("{0} DLinkNodes finalized", DLinkNode.FinalCount);
             return (DLinkNode.FinalCount==iRep*iObj*10);
 
