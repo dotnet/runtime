@@ -307,5 +307,50 @@ namespace System.Collections.Tests
             Assert.Same(bitArray.SyncRoot, bitArray.SyncRoot);
             Assert.NotSame(bitArray.SyncRoot, ((ICollection)new BitArray(10)).SyncRoot);
         }
+
+        public static IEnumerable<object> CopyTo_Hidden_Data()
+        {
+            yield return new object[] { "Constructor", new BitArray(BitsPerInt32 / 2 - 3, true) };
+            yield return new object[] { "Not", new BitArray(BitsPerInt32 / 2 - 3, false).Not() };
+            BitArray setAll = new BitArray(BitsPerInt32 / 2 - 3, false);
+            setAll.SetAll(true);
+            yield return new object[] { "SetAll", setAll };
+            BitArray lengthShort = new BitArray(BitsPerInt32, true);
+            lengthShort.Length = BitsPerInt32 / 2 - 3;
+            yield return new object[] { "Length-Short", lengthShort };
+            BitArray lengthLong = new BitArray(2 * BitsPerInt32, true);
+            lengthLong.Length = BitsPerInt32 - 3;
+            yield return new object[] { "Length-Long", lengthLong };
+        }
+
+        [Theory]
+        [MemberData(nameof(CopyTo_Hidden_Data))]
+        public static void CopyTo_Int_Hidden(string label, BitArray bits)
+        {
+            int[] data = new int[2];
+            ((ICollection)bits).CopyTo(data, 0);
+            Assert.Equal((int)Math.Pow(2, bits.Length) - 1, data[0]);
+            Assert.Equal(0, data[1]);
+        }
+
+        [Theory]
+        [MemberData(nameof(CopyTo_Hidden_Data))]
+        public static void CopyTo_Byte_Hidden(string label, BitArray bits)
+        {
+            int maxValue = (int)Math.Pow(2, BitsPerByte) - 1;
+
+            byte[] data = new byte[8];
+            ((ICollection)bits).CopyTo(data, 0);
+
+            int fullBytes = bits.Length / BitsPerByte;
+            int remainder = bits.Length % BitsPerByte;
+
+            for (int i = 0; i < fullBytes; ++i)
+            {
+                Assert.Equal(maxValue, data[i]);
+            }
+
+            Assert.Equal((int)Math.Pow(2, remainder) - 1, data[fullBytes]);
+        }
     }
 }
