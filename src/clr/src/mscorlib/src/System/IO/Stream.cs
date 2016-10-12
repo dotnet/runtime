@@ -880,6 +880,13 @@ namespace System.IO {
                 set {}
             }
             
+            public override void CopyTo(Stream destination, int bufferSize)
+            {
+                StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+                
+                // After we validate arguments this is a nop.
+            }
+            
             public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
             {
                 // Validate arguments here for compat, since previously this method
