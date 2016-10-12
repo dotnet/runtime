@@ -28,11 +28,7 @@ namespace System.Threading
     using Win32Native = Microsoft.Win32.Win32Native;
 
 [System.Runtime.InteropServices.ComVisible(true)]
-#if FEATURE_REMOTING
     public abstract class WaitHandle : MarshalByRefObject, IDisposable {
-#else // FEATURE_REMOTING
-    public abstract class WaitHandle : IDisposable {
-#endif // FEATURE_REMOTING
         public const int WaitTimeout = 0x102;                    
 
         private const int MAX_WAITHANDLES = 64;

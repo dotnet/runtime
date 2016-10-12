@@ -3561,6 +3561,9 @@
     </Type>
     <Type Name="System.MarshalByRefObject">
       <Member Name="#ctor" />
+      <Member Name="GetLifetimeService" />
+      <Member Name="InitializeLifetimeService" />
+      <Member Name="MemberwiseClone(System.Boolean)" />
     </Type>
     <Type Status="ImplRoot" Name="System.System_LazyDebugView&lt;T&gt;">
       <Member Status="ImplRoot" Name="#ctor(System.Lazy&lt;T&gt;)"/>
