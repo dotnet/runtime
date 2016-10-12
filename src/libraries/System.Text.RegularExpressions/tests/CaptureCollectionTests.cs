@@ -77,7 +77,7 @@ namespace System.Text.RegularExpressions.Tests
             CaptureCollection captures = regex.Match("aaabbccccccccccaaaabc").Captures;
             ICollection collection = captures;
 
-            RegularExpressions.Capture[] copy = new RegularExpressions.Capture[collection.Count + index];
+            Capture[] copy = new Capture[collection.Count + index];
             collection.CopyTo(copy, index);
 
             for (int i = 0; i < index; i++)
