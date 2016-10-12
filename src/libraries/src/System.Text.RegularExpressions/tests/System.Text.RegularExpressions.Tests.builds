@@ -8,6 +8,10 @@
       <TestTFMs>netcoreapp1.0</TestTFMs>
     </Project>
     <Project Include="System.Text.RegularExpressions.Tests.csproj">
+      <TargetGroup>netcoreapp1.1</TargetGroup>
+      <TestTFMs>netcoreapp1.1</TestTFMs>
+    </Project>
+    <Project Include="System.Text.RegularExpressions.Tests.csproj">
       <TargetGroup>netstandard1.6</TargetGroup>
       <OSGroup>Windows_NT</OSGroup>
       <TestTFMs>net463</TestTFMs>

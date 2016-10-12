@@ -4,6 +4,7 @@
     "System.Collections.NonGeneric": "4.4.0-beta-24612-03"
   },
   "frameworks": {
-    "netstandard1.7": {}
+    "netstandard1.7": {},
+    "netcoreapp1.1": {},
   }
 }
