@@ -98,6 +98,10 @@ namespace System.Collections.Generic
             _version = 0;
         }
 
+        public HashSet(int capacity)
+            : this(capacity, EqualityComparer<T>.Default)
+        { }
+
         public HashSet(IEnumerable<T> collection)
             : this(collection, EqualityComparer<T>.Default)
         { }
@@ -193,6 +197,21 @@ namespace System.Collections.Generic
                 _lastIndex = index;
             }
             _count = count;
+        }
+
+        public HashSet(int capacity, IEqualityComparer<T> comparer)
+            : this(comparer)
+        {
+            if (capacity < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(capacity));
+            }
+            Contract.EndContractBlock();
+
+            if (capacity > 0)
+            {
+                Initialize(capacity);
+            }
         }
 
         #endregion

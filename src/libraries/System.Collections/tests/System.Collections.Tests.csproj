@@ -95,6 +95,7 @@
     <Compile Include="Generic\Dictionary\Dictionary.Generic.Tests.Values.cs" />
     <Compile Include="Generic\HashSet\HashSet.Generic.cs" />
     <Compile Include="Generic\HashSet\HashSet.Generic.Tests.cs" />
+    <Compile Include="Generic\HashSet\HashSet.Generic.Tests.netcoreapp1.1.cs" Condition="'$(TargetGroup)'=='netcoreapp1.1'" />
     <Compile Include="Generic\HashSet\HashSet.Generic.Tests.AsNonGenericIEnumerable.cs" />
     <Compile Include="Generic\LinkedList\LinkedList.Generic.cs" />
     <Compile Include="Generic\LinkedList\LinkedList.Generic.Tests.AddAfter.cs" />
