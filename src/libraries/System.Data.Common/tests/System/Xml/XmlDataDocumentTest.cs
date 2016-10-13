@@ -25,6 +25,8 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+#pragma warning disable 0618 // XmlDataDocument is obsoleted
+
 using System.Globalization;
 using System.IO;
 using System.Xml;
