@@ -123,8 +123,7 @@
     </ItemGroup>
   </Target>
   
-  <Import Project="$(ToolsDir)buildagainstpackages.targets" Condition="Exists('$(ToolsDir)buildagainstpackages.targets') and '$(BuildTestsAgainstPackages)' == 'true'" />
-  
+  <UsingTask TaskName="AddDependenciesToProjectJson" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
   <Target Name="UpdateVersionsOnTestProjectJson" >
   
     <PropertyGroup>
