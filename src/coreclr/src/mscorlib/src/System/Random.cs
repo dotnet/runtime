@@ -56,7 +56,7 @@ namespace System {
       }
       
       /*=========================================================================================
-      **Action: Initializes a new instance of the Random class, using a the specified seed value
+      **Action: Initializes a new instance of the Random class, using a specified seed value
       ===========================================================================================*/
       public Random(int Seed) {
         int ii;
@@ -125,21 +125,23 @@ namespace System {
 
       [ThreadStatic]
       private static Random t_threadRandom;
-      private static Random s_globalRandom = new Random(GenerateGlobalSeed());
+      private static readonly Random s_globalRandom = new Random(GenerateGlobalSeed());
 
       /*=====================================GenerateSeed=====================================
       **Returns: An integer that can be used as seed values for consecutively
                  creating lots of instances on the same thread within a short period of time.
       ========================================================================================*/
       private static int GenerateSeed() {
-          if (t_threadRandom == null) {
+          Random rnd = t_threadRandom;
+          if (rnd == null) {
               int seed;
               lock (s_globalRandom) {
                   seed = s_globalRandom.Next();
               }
-              t_threadRandom = new Random(seed);
+              rnd = new Random(seed);
+              t_threadRandom = rnd;
           }
-          return t_threadRandom.Next();
+          return rnd.Next();
       }
 
       /*==================================GenerateGlobalSeed====================================
