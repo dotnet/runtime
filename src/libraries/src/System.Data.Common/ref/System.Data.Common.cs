@@ -3303,25 +3303,3 @@ namespace System.Data.SqlTypes
         UnmanagedBuffer = 2,
     }
 }
-namespace System.Xml
-{
-    [System.ObsoleteAttribute("XmlDataDocument class will be removed in a future release.")]
-    public partial class XmlDataDocument : System.Xml.XmlDocument
-    {
-        public XmlDataDocument() { }
-        public XmlDataDocument(System.Data.DataSet dataset) { }
-        public System.Data.DataSet DataSet { get { throw null; } }
-        public override System.Xml.XmlNode CloneNode(bool deep) { throw null; }
-        public override System.Xml.XmlElement CreateElement(string prefix, string localName, string namespaceURI) { throw null; }
-        public override System.Xml.XmlEntityReference CreateEntityReference(string name) { throw null; }
-        protected override System.Xml.XPath.XPathNavigator CreateNavigator(System.Xml.XmlNode node) { throw null; }
-        public override System.Xml.XmlElement GetElementById(string elemId) { throw null; }
-        public System.Xml.XmlElement GetElementFromRow(System.Data.DataRow r) { throw null; }
-        public override System.Xml.XmlNodeList GetElementsByTagName(string name) { throw null; }
-        public System.Data.DataRow GetRowFromElement(System.Xml.XmlElement e) { throw null; }
-        public override void Load(System.IO.Stream inStream) { }
-        public override void Load(System.IO.TextReader txtReader) { }
-        public override void Load(string filename) { }
-        public override void Load(System.Xml.XmlReader reader) { }
-    }
-}
