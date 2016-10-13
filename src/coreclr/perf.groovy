@@ -34,8 +34,8 @@ def static getOSGroup(def os) {
             label('performance')
             steps {
                     // Batch
-                    batchFile("C:\\tools\\nuget install Microsoft.BenchView.JSONFormat -Source http://benchviewtestfeed.azurewebsites.net/nuget -OutputDirectory C:\\tools -Prerelease")
-                    batchFile("python C:\\tools\\Microsoft.BenchView.JSONFormat.0.1.0-pre010\\tools\\machinedata.py")
+                    batchFile("C:\\tools\\nuget install Microsoft.BenchView.JSONFormat -Source http://benchviewtestfeed.azurewebsites.net/nuget -OutputDirectory C:\\tools -Prerelease -ExcludeVersion")
+                    batchFile("python C:\\tools\\Microsoft.BenchView.JSONFormat\\tools\\machinedata.py")
                     batchFile("set __TestIntermediateDir=int&&build.cmd release ${architecture}")
                     batchFile("tests\\runtest.cmd release ${architecture}")
                     batchFile("tests\\scripts\\run-xunit-perf.cmd")
