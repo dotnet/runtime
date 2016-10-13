@@ -32,6 +32,14 @@
     <Compile Include="Regex.Match.Tests.cs" />
     <Compile Include="Regex.Tests.Common.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp1.1'">
+    <Compile Include="CaptureCollectionTests.netcoreapp1.1.cs" />
+    <Compile Include="GroupCollectionTests.netcoreapp1.1.cs" />
+    <Compile Include="MatchCollectionTests.netcoreapp1.1.cs" />
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
+      <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
+    </Compile>
+  </ItemGroup>
   <ItemGroup Condition=" '$(TargetGroup)' == ''">
     <Compile Include="PrecompiledRegexScenarioTest.cs" />
     <Compile Include="RegexGroupNameTests.cs" />

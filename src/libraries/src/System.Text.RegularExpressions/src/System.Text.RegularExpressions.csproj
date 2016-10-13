@@ -21,6 +21,7 @@
     <Compile Include="System\Text\RegularExpressions\RegexCaptureCollection.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCharClass.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCode.cs" />
+    <Compile Include="System\Text\RegularExpressions\RegexCollectionDebuggerProxy.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexFCD.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexGroup.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexGroupCollection.cs" />
