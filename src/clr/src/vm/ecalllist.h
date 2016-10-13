@@ -1251,32 +1251,38 @@ FCFuncStart(gMathFuncs)
     FCIntrinsic("Tanh", COMDouble::Tanh, CORINFO_INTRINSIC_Tanh)
 FCFuncEnd()
 
+FCFuncStart(gRuntimeThreadFuncs)
+    FCFuncElement("get_IsAlive", ThreadNative::IsAlive)
+    FCFuncElement("IsBackgroundNative", ThreadNative::IsBackground)
+    FCFuncElement("SetBackgroundNative", ThreadNative::SetBackground)
+    FCFuncElement("get_IsThreadPoolThread", ThreadNative::IsThreadpoolThread)
+    FCFuncElement("GetPriorityNative", ThreadNative::GetPriority)
+    FCFuncElement("SetPriorityNative", ThreadNative::SetPriority)
+    FCFuncElement("GetThreadStateNative", ThreadNative::GetThreadState)
+#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
+    FCFuncElement("GetApartmentStateNative", ThreadNative::GetApartmentState)
+    FCFuncElement("SetApartmentStateNative", ThreadNative::SetApartmentState)
+#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
+    FCFuncElement("InterruptInternal", ThreadNative::Interrupt)
+    FCFuncElement("JoinInternal", ThreadNative::Join)
+FCFuncEnd()
+
 FCFuncStart(gThreadFuncs)
     FCDynamic("InternalGetCurrentThread", CORINFO_INTRINSIC_Illegal, ECall::InternalGetCurrentThread)
     FCFuncElement("StartInternal", ThreadNative::Start)
 #ifndef FEATURE_CORECLR
     FCFuncElement("SuspendInternal", ThreadNative::Suspend)
     FCFuncElement("ResumeInternal", ThreadNative::Resume)
-    FCFuncElement("InterruptInternal", ThreadNative::Interrupt)
-#endif
-    FCFuncElement("get_IsAlive", ThreadNative::IsAlive)
-    FCFuncElement("GetThreadStateNative", ThreadNative::GetThreadState)
-#ifndef FEATURE_CORECLR
-    FCFuncElement("GetPriorityNative", ThreadNative::GetPriority)
-    FCFuncElement("SetPriorityNative", ThreadNative::SetPriority)
 #endif
 #ifdef FEATURE_LEAK_CULTURE_INFO
     FCFuncElement("nativeGetSafeCulture", ThreadNative::nativeGetSafeCulture)
 #else
     QCFuncElement("nativeInitCultureAccessors", ThreadNative::nativeInitCultureAccessors)
 #endif
-    FCFuncElement("JoinInternal", ThreadNative::Join)
 #undef Sleep
     FCFuncElement("SleepInternal", ThreadNative::Sleep)
 #define Sleep(a) Dont_Use_Sleep(a)
     FCFuncElement("SetStart", ThreadNative::SetStart)
-    FCFuncElement("SetBackgroundNative", ThreadNative::SetBackground)
-    FCFuncElement("IsBackgroundNative", ThreadNative::IsBackground)
 #ifdef FEATURE_REMOTING         
     FCFuncElement("GetContextInternal", ThreadNative::GetContextFromContextID)
 #endif    
@@ -1303,7 +1309,6 @@ FCFuncStart(gThreadFuncs)
 #ifndef FEATURE_CORECLR
     FCFuncElement("ResetAbortNative", ThreadNative::ResetAbort)
 #endif // FEATURE_CORECLR
-    FCFuncElement("get_IsThreadPoolThread", ThreadNative::IsThreadpoolThread)
     FCFuncElement("SpinWaitInternal", ThreadNative::SpinWait)
     QCFuncElement("YieldInternal", ThreadNative::YieldThread)
     FCIntrinsic("GetCurrentThreadNative", ThreadNative::GetCurrentThread, CORINFO_INTRINSIC_GetCurrentManagedThread)
@@ -1316,10 +1321,6 @@ FCFuncStart(gThreadFuncs)
     FCFuncElement("nativeSetThreadUILocale", ThreadNative::SetThreadUILocale)
 #endif
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
-#ifndef FEATURE_CORECLR
-    FCFuncElement("SetApartmentStateNative", ThreadNative::SetApartmentState)
-    FCFuncElement("GetApartmentStateNative", ThreadNative::GetApartmentState)
-#endif // FEATURE_CORECLR
     FCFuncElement("StartupSetApartmentStateInternal", ThreadNative::StartupSetApartmentState)
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
     FCIntrinsic("MemoryBarrier", ThreadNative::FCMemoryBarrier, CORINFO_INTRINSIC_MemoryBarrier)
@@ -2340,6 +2341,7 @@ FCClassElement("RuntimeFieldHandle", "System", gCOMFieldHandleNewFuncs)
 FCClassElement("RuntimeHelpers", "System.Runtime.CompilerServices", gCompilerFuncs)
 FCClassElement("RuntimeMethodHandle", "System", gRuntimeMethodHandle)
 FCClassElement("RuntimeModule", "System.Reflection", gCOMModuleFuncs)
+FCClassElement("RuntimeThread", "Internal.Runtime.Augments", gRuntimeThreadFuncs)
 FCClassElement("RuntimeType", "System", gSystem_RuntimeType)
 FCClassElement("RuntimeTypeHandle", "System", gCOMTypeHandleFuncs)
 FCClassElement("SafeBuffer", "System.Runtime.InteropServices", gSafeBufferFuncs)
