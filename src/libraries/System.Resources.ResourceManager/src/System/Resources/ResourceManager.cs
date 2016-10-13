@@ -13,7 +13,7 @@ namespace System.Resources
 {
     public class ResourceManager
     {
-        private readonly ResourceMap _resourceMap;
+        private readonly object _resourceMap;
         private readonly string _resourcesSubtree;
         private readonly string _neutralResourcesCultureName;
 
@@ -106,10 +106,10 @@ namespace System.Resources
         // WinRT Wrappers
         //
 
-        private ResourceMap GetResourceMap(string subtreeName)
+        private object GetResourceMap(string subtreeName)
         {
             if (WinRTInterop.Callbacks.IsAppxModel())
-                return Windows.ApplicationModel.Resources.Core.ResourceManager.Current.MainResourceMap.GetSubtree(subtreeName);
+                return WinRTInterop.Callbacks.GetResourceMap(subtreeName) ;
 
             return null;
         }
@@ -122,25 +122,7 @@ namespace System.Resources
                 return resourceName;
             }
 
-            if (_resourceMap == null)
-                return null;
-
-            ResourceContext context;
-            ResourceCandidate candidate;
-
-            if (languageName == null && _neutralResourcesCultureName == null)
-            {
-                candidate = _resourceMap.GetValue(resourceName,ResourceContext.GetForViewIndependentUse());
-            }
-            else
-            {
-                context = new ResourceContext();
-                context.QualifierValues["language"] = (languageName != null ? languageName + ";" : "") + 
-                                                      (_neutralResourcesCultureName != null ? _neutralResourcesCultureName : ""); 
-                candidate = _resourceMap.GetValue(resourceName, context);
-            }
-
-            return candidate == null ? null : candidate.ValueAsString;
+            return WinRTInterop.Callbacks.GetResourceString(_resourceMap, resourceName, languageName, _neutralResourcesCultureName);
         }
     }
 }
