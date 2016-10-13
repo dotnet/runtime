@@ -310,6 +310,7 @@ namespace System.Collections.Tests
 
         public static IEnumerable<object> CopyTo_Hidden_Data()
         {
+            yield return new object[] { "ZeroLength", new BitArray(0) };
             yield return new object[] { "Constructor", new BitArray(BitsPerInt32 / 2 - 3, true) };
             yield return new object[] { "Not", new BitArray(BitsPerInt32 / 2 - 3, false).Not() };
             BitArray setAll = new BitArray(BitsPerInt32 / 2 - 3, false);
@@ -320,7 +321,10 @@ namespace System.Collections.Tests
             yield return new object[] { "Length-Short", lengthShort };
             BitArray lengthLong = new BitArray(2 * BitsPerInt32, true);
             lengthLong.Length = BitsPerInt32 - 3;
-            yield return new object[] { "Length-Long", lengthLong };
+            yield return new object[] { "Length-Long < 32", lengthLong };
+            BitArray lengthLong2 = new BitArray(2 * BitsPerInt32, true);
+            lengthLong2.Length = BitsPerInt32 + 3;
+            yield return new object[] { "Length-Long > 32", lengthLong2 };
         }
 
         [Theory]
@@ -329,8 +333,17 @@ namespace System.Collections.Tests
         {
             int[] data = new int[2];
             ((ICollection)bits).CopyTo(data, 0);
-            Assert.Equal((int)Math.Pow(2, bits.Length) - 1, data[0]);
-            Assert.Equal(0, data[1]);
+
+            int maxValue = unchecked(((int)0xffffffff));
+            int fullInts = bits.Length / BitsPerInt32;
+            int remainder = bits.Length % BitsPerInt32;
+
+            for (int i = 0; i < fullInts; ++i)
+            {
+                Assert.Equal(maxValue, data[i]);
+            }
+
+            Assert.Equal((int)Math.Pow(2, remainder) - 1, data[fullInts]);
         }
 
         [Theory]

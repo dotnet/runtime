@@ -366,30 +366,24 @@ namespace System.Collections
 
                 if (value > m_length)
                 {
-                    TrimUpperBits();
+                    // clear high bit values in the last int
+                    int last = GetArrayLength(m_length, BitsPerInt32) - 1;
+                    int bits = m_length % 32;
+                    if (bits > 0)
+                    {
+                        m_array[last] &= (1 << bits) - 1;
+                    }
+
+                    // clear remaining int values
+                    if (last + 1 < m_array.Length)
+                    {
+                        Array.Clear(m_array, last + 1, m_array.Length - last - 1);
+                    }
                 }
 
                 m_length = value;
+                _version++;
             }
-        }
-
-        private void TrimUpperBits()
-        {
-            // clear high bit values in the last int
-            int last = GetArrayLength(m_length, BitsPerInt32) - 1;
-            int bits = m_length % 32;
-            if (bits > 0)
-            {
-                m_array[last] &= (1 << bits) - 1;
-            }
-
-            // clear remaining int values
-            if (last + 1 < m_array.Length)
-            {
-                Array.Clear(m_array, last + 1, m_array.Length - last - 1);
-            }
-
-            _version++;
         }
 
         public void CopyTo(Array array, int index)
@@ -405,21 +399,51 @@ namespace System.Collections
 
             Contract.EndContractBlock();
 
-            // trim the upper, unused bits to prevent them from leaking into the target array
-            TrimUpperBits();
             if (array is int[])
             {
-                Array.Copy(m_array, 0, array, index, GetArrayLength(m_length, BitsPerInt32));
+                int last = GetArrayLength(m_length, BitsPerInt32) - 1;
+                int bits = m_length % BitsPerInt32;
+
+                if (bits == 0)
+                {
+                    // we have perfect bit alignment, no need to sanitize, just copy
+                    Array.Copy(m_array, 0, array, index, GetArrayLength(m_length, BitsPerInt32));
+                }
+                else
+                {
+                    // do not copy the last int, as it is not completely used
+                    Array.Copy(m_array, 0, array, index, GetArrayLength(m_length, BitsPerInt32) - 1);
+
+                    // the last int needs to be masked
+                    ((int[])array)[last] = m_array[last] & (1 << bits) - 1;
+                }
             }
             else if (array is byte[])
             {
+                int bits = m_length % BitsPerByte;
+
                 int arrayLength = GetArrayLength(m_length, BitsPerByte);
                 if ((array.Length - index) < arrayLength)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
 
+                if (bits > 0)
+                {
+                    // last byte is not aligned, we will directly copy one less byte
+                    arrayLength -= 1;
+                }
+
                 byte[] b = (byte[])array;
+
+                // copy all the perfectly-aligned bytes
                 for (int i = 0; i < arrayLength; i++)
                     b[index + i] = (byte)((m_array[i / 4] >> ((i % 4) * 8)) & 0x000000FF); // Shift to bring the required byte to LSB, then mask
+
+                if (bits > 0)
+                {
+                    // mask the final byte
+                    var i = arrayLength;
+                    b[index + i] = (byte)((m_array[i / 4] >> ((i % 4) * 8)) & 0x000000FF & ((1 << bits) - 1));
+                }
             }
             else if (array is bool[])
             {
