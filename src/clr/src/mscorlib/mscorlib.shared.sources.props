@@ -810,8 +810,8 @@
     <IoSources Include="$(BclSourcesRoot)\System\IO\StreamHelpers.CopyValidation.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\StreamReader.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\StreamWriter.cs" />
-    <IoSources Include="$(BclSourcesRoot)\System\IO\StringReader.cs" />
-    <IoSources Include="$(BclSourcesRoot)\System\IO\StringWriter.cs" />
+    <IoSources Condition="'$(FeatureCoreClr)'!='true'" Include="$(BclSourcesRoot)\System\IO\StringReader.cs" />
+    <IoSources Condition="'$(FeatureCoreClr)'!='true'" Include="$(BclSourcesRoot)\System\IO\StringWriter.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\TextReader.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\TextWriter.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\UnmanagedMemoryAccessor.cs" />
