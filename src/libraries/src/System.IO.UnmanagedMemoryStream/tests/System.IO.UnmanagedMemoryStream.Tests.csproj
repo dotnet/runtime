@@ -44,9 +44,12 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.IO.FileSystem.Primitives\pkg\System.IO.FileSystem.Primitives.pkgproj">
-      <Name>System.IO.FileSystem.Primitives</Name>
-    </ProjectReference>
+    <!-- TODO: Remove this when package update happens -->
+    <ProjectReference Include="..\..\System.IO.FileSystem.Primitives\pkg\System.IO.FileSystem.Primitives.pkgproj"/>
+    <!-- TODO: Remove this when package update happens -->
+    <ProjectReference Include="..\..\System.Runtime.InteropServices\pkg\System.Runtime.InteropServices.pkgproj"/>
+    <!-- TODO: Remove this when package update happens -->
+    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj"/>
     <ProjectReference Include="..\pkg\System.IO.UnmanagedMemoryStream.pkgproj">
       <Project>{bcf9255a-4321-4277-ad7d-f5094092c554}</Project>
       <Name>System.IO.UnmanagedMemoryStream</Name>

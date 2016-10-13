@@ -5,16 +5,10 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.IO.FileAccess))]
 
 namespace System.IO
 {
-    [System.FlagsAttribute]
-    public enum FileAccess
-    {
-        Read = 1,
-        ReadWrite = 3,
-        Write = 2,
-    }
     [System.FlagsAttribute]
     public enum FileAttributes
     {

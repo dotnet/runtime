@@ -117,55 +117,22 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="InvalidOperation_ResourceWriterSaved" xml:space="preserve">
-    <value>The resource writer has already been closed and cannot be edited.</value>
+  <assembly alias="mscorlib" name="mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <data name="Int" type="System.Int32, mscorlib">
+    <value>42</value>
   </data>
-  <data name="Argument_StreamNotSeekable" xml:space="preserve">
-    <value>Stream was not seekable.</value>
+  <data name="Float" type="System.Double, mscorlib">
+    <value>3.14159</value>
   </data>
-  <data name="Arg_ResourceFileUnsupportedVersion" xml:space="preserve">
-    <value>The ResourceReader class does not know how to read this version of .resources files.</value>
+  <data name="Bytes" type="System.Byte[], mscorlib">
+    <value>KSorLMCoAQE=</value>
   </data>
-  <data name="Resources_StreamNotValid" xml:space="preserve">
-    <value>Stream is not a valid resource file.</value>
-  </data>
-  <data name="BadImageFormat_ResourcesHeaderCorrupted" xml:space="preserve">
-    <value>Corrupt .resources file. Unable to read resources from this file because of invalid header information. Try regenerating the .resources file.</value>
-  </data>
-  <data name="Argument_StreamNotReadable" xml:space="preserve">
-    <value>Stream was not readable.</value>
-  </data>
-  <data name="BadImageFormat_NegativeStringLength" xml:space="preserve">
-    <value>Corrupt .resources file. String length must be non-negative.</value>
-  </data>
-  <data name="BadImageFormat_ResourcesNameInvalidOffset" xml:space="preserve">
-    <value>Corrupt .resources file. The Invalid offset into name section is .</value>
-  </data>
-  <data name="NotSupported_WrongResourceReader_Type" xml:space="preserve">
-    <value>This .resources file should not be read with this reader. The resource reader type is</value>
-  </data>
-  <data name="BadImageFormat_TypeMismatch" xml:space="preserve">
-    <value>Corrupt .resources file.  The specified type doesn't match the available data in the stream.</value>
-  </data>
-  <data name="BadImageFormat_ResourceNameCorrupted_NameIndex" xml:space="preserve">
-    <value>Corrupt .resources file. The resource name for name index that extends past the end of the stream is </value>
-  </data>
-  <data name="BadImageFormat_ResourcesDataInvalidOffset" xml:space="preserve">
-    <value>Corrupt .resources file. Invalid offset  into data section is </value>
-  </data>
-  <data name="Format_Bad7BitInt32" xml:space="preserve">
-    <value>Too many bytes in what should have been a 7 bit encoded Int32.</value>
-  </data>
-  <data name="BadImageFormat_InvalidType" xml:space="preserve">
-    <value>Corrupt .resources file.  The specified type doesn't exist.</value>
-  </data>
-  <data name="InvalidOperation_EnumNotStarted" xml:space="preserve">
-    <value>Enumeration has not started. Call MoveNext</value>
-  </data>
-  <data name="InvalidOperation_EnumEnded" xml:space="preserve">
-    <value>Enumeration already finished.</value>
-  </data>
-  <data name="ResourceReaderIsClosed" xml:space="preserve">
-    <value>ResourceReader is closed.</value>
+  <data name="ByteStream" mimetype="application/x-microsoft.net.object.binary.base64">
+    <value>
+        AAEAAAD/////AQAAAAAAAAAEAQAAABZTeXN0ZW0uSU8uTWVtb3J5U3RyZWFtCgAAAAdfYnVmZmVyB19v
+        cmlnaW4JX3Bvc2l0aW9uB19sZW5ndGgJX2NhcGFjaXR5C19leHBhbmRhYmxlCV93cml0YWJsZQpfZXhw
+        b3NhYmxlB19pc09wZW4dTWFyc2hhbEJ5UmVmT2JqZWN0K19faWRlbnRpdHkHAAAAAAAAAAACAggICAgB
+        AQEBCQIAAAAAAAAAAAAAAAgAAAAIAAAAAAEAAQoPAgAAAAgAAAACKSorLMCoAQEL
+</value>
   </data>
 </root>

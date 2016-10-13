@@ -8,7 +8,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Resources.Writer.Tests</AssemblyName>
     <RootNamespace>System.Resources.Writer.Tests</RootNamespace>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -20,6 +20,9 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\System.Resources.ResourceManager\pkg\System.Resources.ResourceManager.pkgproj">
+      <Name>System.Resources.ResourceManager</Name>
+    </ProjectReference>
     <ProjectReference Include="..\pkg\System.Resources.Writer.pkgproj">
       <Project>{16EE5522-F387-4C9E-9EF2-B5134B043F37}</Project>
       <Name>System.Resources.Writer</Name>
