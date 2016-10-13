@@ -11,6 +11,6 @@ namespace System.Xml.XPath
 {
     public static partial class XDocumentExtensions
     {
-        public static System.Xml.XPath.IXPathNavigable ToXPathNavigable(this System.Xml.Linq.XNode node) { return default(System.Xml.XPath.IXPathNavigable); }
+        public static System.Xml.XPath.IXPathNavigable ToXPathNavigable(this System.Xml.Linq.XNode node) { throw null; }
     }
 }

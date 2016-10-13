@@ -14,12 +14,12 @@ namespace System
 
     public static class StringNormalizationExtensions
     {
-        public static bool IsNormalized(this string value) { return default(bool); }
+        public static bool IsNormalized(this string value) { throw null; }
         [System.Security.SecurityCritical]
-        public static bool IsNormalized(this string value, NormalizationForm normalizationForm) { return default(bool); }
-        public static String Normalize(this string value) { return default(string); }
+        public static bool IsNormalized(this string value, NormalizationForm normalizationForm) { throw null; }
+        public static String Normalize(this string value) { throw null; }
         [System.Security.SecurityCritical]
-        public static String Normalize(this string value, NormalizationForm normalizationForm) { return default(string); }
+        public static String Normalize(this string value, NormalizationForm normalizationForm) { throw null; }
     }
 }
 
@@ -27,6 +27,6 @@ namespace System.Globalization
 {
     public static partial class GlobalizationExtensions
     {
-        public static StringComparer GetStringComparer(this CompareInfo compareInfo, CompareOptions options) { return default(StringComparer); }
+        public static StringComparer GetStringComparer(this CompareInfo compareInfo, CompareOptions options) { throw null; }
     }
 }

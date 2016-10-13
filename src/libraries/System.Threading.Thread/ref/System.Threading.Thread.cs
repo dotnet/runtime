@@ -14,15 +14,15 @@ namespace System.Threading
     {
         public Thread(System.Threading.ParameterizedThreadStart start) { }
         public Thread(System.Threading.ThreadStart start) { }
-        public static System.Threading.Thread CurrentThread { get { return default(System.Threading.Thread); } }
-        public bool IsAlive { get { return default(bool); } }
-        public bool IsBackground { get { return default(bool); } set { } }
-        public int ManagedThreadId { get { return default(int); } }
-        public string Name { get { return default(string); } set { } }
-        public System.Threading.ThreadState ThreadState { get { return default(System.Threading.ThreadState); } }
+        public static System.Threading.Thread CurrentThread { get { throw null; } }
+        public bool IsAlive { get { throw null; } }
+        public bool IsBackground { get { throw null; } set { } }
+        public int ManagedThreadId { get { throw null; } }
+        public string Name { get { throw null; } set { } }
+        public System.Threading.ThreadState ThreadState { get { throw null; } }
         ~Thread() { }
         public void Join() { }
-        public bool Join(int millisecondsTimeout) { return default(bool); }
+        public bool Join(int millisecondsTimeout) { throw null; }
         public static void Sleep(int millisecondsTimeout) { }
         public static void Sleep(System.TimeSpan timeout) { }
         public void Start() { }
@@ -36,7 +36,7 @@ namespace System.Threading
     public partial class ThreadExceptionEventArgs : System.EventArgs
     {
         public ThreadExceptionEventArgs(System.Exception exception) { }
-        public System.Exception Exception { get { return default(System.Exception); } }
+        public System.Exception Exception { get { throw null; } }
     }
     public delegate void ThreadExceptionEventHandler(object sender, System.Threading.ThreadExceptionEventArgs e);
     public partial class ThreadInterruptedException : System.SystemException

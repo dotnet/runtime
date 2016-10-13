@@ -200,7 +200,7 @@ namespace System.Security.Cryptography
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct CngProperty : System.IEquatable<System.Security.Cryptography.CngProperty>
     {
-        public CngProperty(string name, byte[] value, System.Security.Cryptography.CngPropertyOptions options) { throw null;}
+        public CngProperty(string name, byte[] value, System.Security.Cryptography.CngPropertyOptions options) { throw null; }
         public string Name { get { throw null; } }
         public System.Security.Cryptography.CngPropertyOptions Options { get { throw null; } }
         public override bool Equals(object obj) { throw null; }

@@ -9,6 +9,6 @@ namespace System.ComponentModel
 {
     public partial class DoWorkEventArgs : System.EventArgs
     {
-        public bool Cancel { get { return false; } set { } }
+        public bool Cancel { get { throw null; } set { } }
     }
 }

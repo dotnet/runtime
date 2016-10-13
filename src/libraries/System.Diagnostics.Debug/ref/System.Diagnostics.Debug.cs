@@ -59,15 +59,15 @@ namespace System.Diagnostics
     }
     public static partial class Debugger
     {
-        public static bool IsAttached { get { return default(bool); } }
+        public static bool IsAttached { get { throw null; } }
         public static void Break() { }
-        public static bool Launch() { return default(bool); }
+        public static bool Launch() { throw null; }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(384), AllowMultiple = false)]
     public sealed partial class DebuggerBrowsableAttribute : System.Attribute
     {
         public DebuggerBrowsableAttribute(System.Diagnostics.DebuggerBrowsableState state) { }
-        public System.Diagnostics.DebuggerBrowsableState State { get { return default(System.Diagnostics.DebuggerBrowsableState); } }
+        public System.Diagnostics.DebuggerBrowsableState State { get { throw null; } }
     }
     public enum DebuggerBrowsableState
     {
@@ -79,11 +79,11 @@ namespace System.Diagnostics
     public sealed partial class DebuggerDisplayAttribute : System.Attribute
     {
         public DebuggerDisplayAttribute(string value) { }
-        public string Name { get { return default(string); } set { } }
-        public System.Type Target { get { return default(System.Type); } set { } }
-        public string TargetTypeName { get { return default(string); } set { } }
-        public string Type { get { return default(string); } set { } }
-        public string Value { get { return default(string); } }
+        public string Name { get { throw null; } set { } }
+        public System.Type Target { get { throw null; } set { } }
+        public string TargetTypeName { get { throw null; } set { } }
+        public string Type { get { throw null; } set { } }
+        public string Value { get { throw null; } }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(224), Inherited = false)]
     public sealed partial class DebuggerHiddenAttribute : System.Attribute
@@ -105,8 +105,8 @@ namespace System.Diagnostics
     {
         public DebuggerTypeProxyAttribute(string typeName) { }
         public DebuggerTypeProxyAttribute(System.Type type) { }
-        public string ProxyTypeName { get { return default(string); } }
-        public System.Type Target { get { return default(System.Type); } set { } }
-        public string TargetTypeName { get { return default(string); } set { } }
+        public string ProxyTypeName { get { throw null; } }
+        public System.Type Target { get { throw null; } set { } }
+        public string TargetTypeName { get { throw null; } set { } }
     }
 }

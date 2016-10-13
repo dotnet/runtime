@@ -11,7 +11,7 @@ namespace System.Net.WebSockets
     public abstract partial class WebSocket : System.IDisposable
     {
         protected WebSocket() { }
-        public static System.TimeSpan DefaultKeepAliveInterval { get { return default(System.TimeSpan); } }
+        public static System.TimeSpan DefaultKeepAliveInterval { get { throw null; } }
         public abstract System.Nullable<System.Net.WebSockets.WebSocketCloseStatus> CloseStatus { get; }
         public abstract string CloseStatusDescription { get; }
         public abstract System.Net.WebSockets.WebSocketState State { get; }
@@ -19,15 +19,15 @@ namespace System.Net.WebSockets
         public abstract void Abort();
         public abstract System.Threading.Tasks.Task CloseAsync(System.Net.WebSockets.WebSocketCloseStatus closeStatus, string statusDescription, System.Threading.CancellationToken cancellationToken);
         public abstract System.Threading.Tasks.Task CloseOutputAsync(System.Net.WebSockets.WebSocketCloseStatus closeStatus, string statusDescription, System.Threading.CancellationToken cancellationToken);
-        public static System.ArraySegment<byte> CreateClientBuffer(int receiveBufferSize, int sendBufferSize) { return default(System.ArraySegment<byte>); }
+        public static System.ArraySegment<byte> CreateClientBuffer(int receiveBufferSize, int sendBufferSize) { throw null; }
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        public static System.Net.WebSockets.WebSocket CreateClientWebSocket(System.IO.Stream innerStream, string subProtocol, int receiveBufferSize, int sendBufferSize, System.TimeSpan keepAliveInterval, bool useZeroMaskingKey, System.ArraySegment<byte> internalBuffer) { return default(System.Net.WebSockets.WebSocket); }
-        public static System.ArraySegment<byte> CreateServerBuffer(int receiveBufferSize) { return default(System.ArraySegment<byte>); }
+        public static System.Net.WebSockets.WebSocket CreateClientWebSocket(System.IO.Stream innerStream, string subProtocol, int receiveBufferSize, int sendBufferSize, System.TimeSpan keepAliveInterval, bool useZeroMaskingKey, System.ArraySegment<byte> internalBuffer) { throw null; }
+        public static System.ArraySegment<byte> CreateServerBuffer(int receiveBufferSize) { throw null; }
         public abstract void Dispose();
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [System.Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.")]
-        public static bool IsApplicationTargeting45() { return default(bool); }
-        protected static bool IsStateTerminal(System.Net.WebSockets.WebSocketState state) { return default(bool); }
+        public static bool IsApplicationTargeting45() { throw null; }
+        protected static bool IsStateTerminal(System.Net.WebSockets.WebSocketState state) { throw null; }
         public abstract System.Threading.Tasks.Task<System.Net.WebSockets.WebSocketReceiveResult> ReceiveAsync(System.ArraySegment<byte> buffer, System.Threading.CancellationToken cancellationToken);
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static void RegisterPrefixes() { }
@@ -91,7 +91,7 @@ namespace System.Net.WebSockets
         public WebSocketException(System.Net.WebSockets.WebSocketError error, string message, System.Exception innerException) { }
         public WebSocketException(string message) { }
         public WebSocketException(string message, System.Exception innerException) { }
-        public System.Net.WebSockets.WebSocketError WebSocketErrorCode { get { return default(System.Net.WebSockets.WebSocketError); } }
+        public System.Net.WebSockets.WebSocketError WebSocketErrorCode { get { throw null; } }
     }
     public enum WebSocketMessageType
     {
@@ -103,11 +103,11 @@ namespace System.Net.WebSockets
     {
         public WebSocketReceiveResult(int count, System.Net.WebSockets.WebSocketMessageType messageType, bool endOfMessage) { }
         public WebSocketReceiveResult(int count, System.Net.WebSockets.WebSocketMessageType messageType, bool endOfMessage, System.Nullable<System.Net.WebSockets.WebSocketCloseStatus> closeStatus, string closeStatusDescription) { }
-        public System.Nullable<System.Net.WebSockets.WebSocketCloseStatus> CloseStatus { get { return default(System.Nullable<System.Net.WebSockets.WebSocketCloseStatus>); } }
-        public string CloseStatusDescription { get { return default(string); } }
-        public int Count { get { return default(int); } }
-        public bool EndOfMessage { get { return default(bool); } }
-        public System.Net.WebSockets.WebSocketMessageType MessageType { get { return default(System.Net.WebSockets.WebSocketMessageType); } }
+        public System.Nullable<System.Net.WebSockets.WebSocketCloseStatus> CloseStatus { get { throw null; } }
+        public string CloseStatusDescription { get { throw null; } }
+        public int Count { get { throw null; } }
+        public bool EndOfMessage { get { throw null; } }
+        public System.Net.WebSockets.WebSocketMessageType MessageType { get { throw null; } }
     }
     public enum WebSocketState
     {

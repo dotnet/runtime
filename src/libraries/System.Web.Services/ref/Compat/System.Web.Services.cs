@@ -7,36 +7,36 @@ namespace System.Web
     public sealed partial class HttpUtility
     {
         public HttpUtility() { }
-        public static string HtmlAttributeEncode(string s) { return default(string); }
+        public static string HtmlAttributeEncode(string s) { throw null; }
         public static void HtmlAttributeEncode(string s, System.IO.TextWriter output) { }
-        public static string HtmlDecode(string s) { return default(string); }
+        public static string HtmlDecode(string s) { throw null; }
         public static void HtmlDecode(string s, System.IO.TextWriter output) { }
-        public static string HtmlEncode(object value) { return default(string); }
-        public static string HtmlEncode(string s) { return default(string); }
+        public static string HtmlEncode(object value) { throw null; }
+        public static string HtmlEncode(string s) { throw null; }
         public static void HtmlEncode(string s, System.IO.TextWriter output) { }
-        public static string JavaScriptStringEncode(string value) { return default(string); }
-        public static string JavaScriptStringEncode(string value, bool addDoubleQuotes) { return default(string); }
-        public static System.Collections.Specialized.NameValueCollection ParseQueryString(string query) { return default(System.Collections.Specialized.NameValueCollection); }
-        public static System.Collections.Specialized.NameValueCollection ParseQueryString(string query, System.Text.Encoding encoding) { return default(System.Collections.Specialized.NameValueCollection); }
-        public static string UrlDecode(byte[] bytes, int offset, int count, System.Text.Encoding e) { return default(string); }
-        public static string UrlDecode(byte[] bytes, System.Text.Encoding e) { return default(string); }
-        public static string UrlDecode(string str) { return default(string); }
-        public static string UrlDecode(string s, System.Text.Encoding e) { return default(string); }
-        public static byte[] UrlDecodeToBytes(byte[] bytes) { return default(byte[]); }
-        public static byte[] UrlDecodeToBytes(byte[] bytes, int offset, int count) { return default(byte[]); }
-        public static byte[] UrlDecodeToBytes(string str) { return default(byte[]); }
-        public static byte[] UrlDecodeToBytes(string str, System.Text.Encoding e) { return default(byte[]); }
-        public static string UrlEncode(byte[] bytes) { return default(string); }
-        public static string UrlEncode(byte[] bytes, int offset, int count) { return default(string); }
-        public static string UrlEncode(string str) { return default(string); }
-        public static string UrlEncode(string s, System.Text.Encoding Enc) { return default(string); }
-        public static byte[] UrlEncodeToBytes(byte[] bytes) { return default(byte[]); }
-        public static byte[] UrlEncodeToBytes(byte[] bytes, int offset, int count) { return default(byte[]); }
-        public static byte[] UrlEncodeToBytes(string str) { return default(byte[]); }
-        public static byte[] UrlEncodeToBytes(string str, System.Text.Encoding e) { return default(byte[]); }
-        public static string UrlEncodeUnicode(string str) { return default(string); }
-        public static byte[] UrlEncodeUnicodeToBytes(string str) { return default(byte[]); }
-        public static string UrlPathEncode(string s) { return default(string); }
+        public static string JavaScriptStringEncode(string value) { throw null; }
+        public static string JavaScriptStringEncode(string value, bool addDoubleQuotes) { throw null; }
+        public static System.Collections.Specialized.NameValueCollection ParseQueryString(string query) { throw null; }
+        public static System.Collections.Specialized.NameValueCollection ParseQueryString(string query, System.Text.Encoding encoding) { throw null; }
+        public static string UrlDecode(byte[] bytes, int offset, int count, System.Text.Encoding e) { throw null; }
+        public static string UrlDecode(byte[] bytes, System.Text.Encoding e) { throw null; }
+        public static string UrlDecode(string str) { throw null; }
+        public static string UrlDecode(string s, System.Text.Encoding e) { throw null; }
+        public static byte[] UrlDecodeToBytes(byte[] bytes) { throw null; }
+        public static byte[] UrlDecodeToBytes(byte[] bytes, int offset, int count) { throw null; }
+        public static byte[] UrlDecodeToBytes(string str) { throw null; }
+        public static byte[] UrlDecodeToBytes(string str, System.Text.Encoding e) { throw null; }
+        public static string UrlEncode(byte[] bytes) { throw null; }
+        public static string UrlEncode(byte[] bytes, int offset, int count) { throw null; }
+        public static string UrlEncode(string str) { throw null; }
+        public static string UrlEncode(string s, System.Text.Encoding Enc) { throw null; }
+        public static byte[] UrlEncodeToBytes(byte[] bytes) { throw null; }
+        public static byte[] UrlEncodeToBytes(byte[] bytes, int offset, int count) { throw null; }
+        public static byte[] UrlEncodeToBytes(string str) { throw null; }
+        public static byte[] UrlEncodeToBytes(string str, System.Text.Encoding e) { throw null; }
+        public static string UrlEncodeUnicode(string str) { throw null; }
+        public static byte[] UrlEncodeUnicodeToBytes(string str) { throw null; }
+        public static string UrlPathEncode(string s) { throw null; }
     }
 }
 namespace System.Web.Services
@@ -57,21 +57,21 @@ namespace System.Web.Services
         public WebMethodAttribute(bool enableSession, System.Web.Services.TransactionOption transactionOption) { }
         public WebMethodAttribute(bool enableSession, System.Web.Services.TransactionOption transactionOption, int cacheDuration) { }
         public WebMethodAttribute(bool enableSession, System.Web.Services.TransactionOption transactionOption, int cacheDuration, bool bufferResponse) { }
-        public bool BufferResponse { get { return default(bool); } set { } }
-        public int CacheDuration { get { return default(int); } set { } }
-        public string Description { get { return default(string); } set { } }
-        public bool EnableSession { get { return default(bool); } set { } }
-        public string MessageName { get { return default(string); } set { } }
-        public System.Web.Services.TransactionOption TransactionOption { get { return default(System.Web.Services.TransactionOption); } set { } }
+        public bool BufferResponse { get { throw null; } set { } }
+        public int CacheDuration { get { throw null; } set { } }
+        public string Description { get { throw null; } set { } }
+        public bool EnableSession { get { throw null; } set { } }
+        public string MessageName { get { throw null; } set { } }
+        public System.Web.Services.TransactionOption TransactionOption { get { throw null; } set { } }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(1028), Inherited=true)]
     public sealed partial class WebServiceAttribute : System.Attribute
     {
         public const string DefaultNamespace = "http://tempuri.org/";
         public WebServiceAttribute() { }
-        public string Description { get { return default(string); } set { } }
-        public string Name { get { return default(string); } set { } }
-        public string Namespace { get { return default(string); } set { } }
+        public string Description { get { throw null; } set { } }
+        public string Name { get { throw null; } set { } }
+        public string Namespace { get { throw null; } set { } }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(1028), AllowMultiple=true, Inherited=true)]
     public sealed partial class WebServiceBindingAttribute : System.Attribute
@@ -80,11 +80,11 @@ namespace System.Web.Services
         public WebServiceBindingAttribute(string name) { }
         public WebServiceBindingAttribute(string name, string ns) { }
         public WebServiceBindingAttribute(string name, string ns, string location) { }
-        public System.Web.Services.WsiProfiles ConformsTo { get { return default(System.Web.Services.WsiProfiles); } set { } }
-        public bool EmitConformanceClaims { get { return default(bool); } set { } }
-        public string Location { get { return default(string); } set { } }
-        public string Name { get { return default(string); } set { } }
-        public string Namespace { get { return default(string); } set { } }
+        public System.Web.Services.WsiProfiles ConformsTo { get { throw null; } set { } }
+        public bool EmitConformanceClaims { get { throw null; } set { } }
+        public string Location { get { throw null; } set { } }
+        public string Name { get { throw null; } set { } }
+        public string Namespace { get { throw null; } set { } }
     }
     [System.FlagsAttribute]
     public enum WsiProfiles
@@ -104,24 +104,24 @@ namespace System.Web.Services.Configuration
         public XmlFormatExtensionAttribute(string elementName, string ns, System.Type extensionPoint1, System.Type extensionPoint2, System.Type extensionPoint3) { }
         public XmlFormatExtensionAttribute(string elementName, string ns, System.Type extensionPoint1, System.Type extensionPoint2, System.Type extensionPoint3, System.Type extensionPoint4) { }
         public XmlFormatExtensionAttribute(string elementName, string ns, System.Type[] extensionPoints) { }
-        public string ElementName { get { return default(string); } set { } }
-        public System.Type[] ExtensionPoints { get { return default(System.Type[]); } set { } }
-        public string Namespace { get { return default(string); } set { } }
+        public string ElementName { get { throw null; } set { } }
+        public System.Type[] ExtensionPoints { get { throw null; } set { } }
+        public string Namespace { get { throw null; } set { } }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(4), Inherited=true)]
     public sealed partial class XmlFormatExtensionPointAttribute : System.Attribute
     {
         public XmlFormatExtensionPointAttribute(string memberName) { }
-        public bool AllowElements { get { return default(bool); } set { } }
-        public string MemberName { get { return default(string); } set { } }
+        public bool AllowElements { get { throw null; } set { } }
+        public string MemberName { get { throw null; } set { } }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(4), AllowMultiple=true, Inherited=true)]
     public sealed partial class XmlFormatExtensionPrefixAttribute : System.Attribute
     {
         public XmlFormatExtensionPrefixAttribute() { }
         public XmlFormatExtensionPrefixAttribute(string prefix, string ns) { }
-        public string Namespace { get { return default(string); } set { } }
-        public string Prefix { get { return default(string); } set { } }
+        public string Namespace { get { throw null; } set { } }
+        public string Prefix { get { throw null; } set { } }
     }
 }
 namespace System.Web.Services.Description
@@ -131,23 +131,23 @@ namespace System.Web.Services.Description
     {
         public Binding() { }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public override System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { return default(System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection); } }
+        public override System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { throw null; } }
         [System.Xml.Serialization.XmlElementAttribute("operation")]
-        public System.Web.Services.Description.OperationBindingCollection Operations { get { return default(System.Web.Services.Description.OperationBindingCollection); } }
-        public System.Web.Services.Description.ServiceDescription ServiceDescription { get { return default(System.Web.Services.Description.ServiceDescription); } }
+        public System.Web.Services.Description.OperationBindingCollection Operations { get { throw null; } }
+        public System.Web.Services.Description.ServiceDescription ServiceDescription { get { throw null; } }
         [System.Xml.Serialization.XmlAttributeAttribute("type")]
-        public System.Xml.XmlQualifiedName Type { get { return default(System.Xml.XmlQualifiedName); } set { } }
+        public System.Xml.XmlQualifiedName Type { get { throw null; } set { } }
     }
     public sealed partial class BindingCollection : System.Web.Services.Description.ServiceDescriptionBaseCollection
     {
         internal BindingCollection() { }
-        public System.Web.Services.Description.Binding this[int index] { get { return default(System.Web.Services.Description.Binding); } set { } }
-        public System.Web.Services.Description.Binding this[string name] { get { return default(System.Web.Services.Description.Binding); } }
-        public int Add(System.Web.Services.Description.Binding binding) { return default(int); }
-        public bool Contains(System.Web.Services.Description.Binding binding) { return default(bool); }
+        public System.Web.Services.Description.Binding this[int index] { get { throw null; } set { } }
+        public System.Web.Services.Description.Binding this[string name] { get { throw null; } }
+        public int Add(System.Web.Services.Description.Binding binding) { throw null; }
+        public bool Contains(System.Web.Services.Description.Binding binding) { throw null; }
         public void CopyTo(System.Web.Services.Description.Binding[] array, int index) { }
-        protected override string GetKey(object value) { return default(string); }
-        public int IndexOf(System.Web.Services.Description.Binding binding) { return default(int); }
+        protected override string GetKey(object value) { throw null; }
+        public int IndexOf(System.Web.Services.Description.Binding binding) { throw null; }
         public void Insert(int index, System.Web.Services.Description.Binding binding) { }
         public void Remove(System.Web.Services.Description.Binding binding) { }
         protected override void SetParent(object value, object parent) { }
@@ -156,34 +156,34 @@ namespace System.Web.Services.Description
     {
         protected DocumentableItem() { }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public string Documentation { get { return default(string); } set { } }
+        public string Documentation { get { throw null; } set { } }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         [System.Xml.Serialization.XmlAnyElementAttribute(Name="documentation", Namespace="http://schemas.xmlsoap.org/wsdl/")]
-        public System.Xml.XmlElement DocumentationElement { get { return default(System.Xml.XmlElement); } set { } }
+        public System.Xml.XmlElement DocumentationElement { get { throw null; } set { } }
         [System.Xml.Serialization.XmlAnyAttributeAttribute]
-        public System.Xml.XmlAttribute[] ExtensibleAttributes { get { return default(System.Xml.XmlAttribute[]); } set { } }
+        public System.Xml.XmlAttribute[] ExtensibleAttributes { get { throw null; } set { } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
         public abstract System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get; }
         [System.Xml.Serialization.XmlNamespaceDeclarationsAttribute]
-        public System.Xml.Serialization.XmlSerializerNamespaces Namespaces { get { return default(System.Xml.Serialization.XmlSerializerNamespaces); } set { } }
+        public System.Xml.Serialization.XmlSerializerNamespaces Namespaces { get { throw null; } set { } }
     }
     [System.Web.Services.Configuration.XmlFormatExtensionPointAttribute("Extensions")]
     public sealed partial class FaultBinding : System.Web.Services.Description.MessageBinding
     {
         public FaultBinding() { }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public override System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { return default(System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection); } }
+        public override System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { throw null; } }
     }
     public sealed partial class FaultBindingCollection : System.Web.Services.Description.ServiceDescriptionBaseCollection
     {
         internal FaultBindingCollection() { }
-        public System.Web.Services.Description.FaultBinding this[int index] { get { return default(System.Web.Services.Description.FaultBinding); } set { } }
-        public System.Web.Services.Description.FaultBinding this[string name] { get { return default(System.Web.Services.Description.FaultBinding); } }
-        public int Add(System.Web.Services.Description.FaultBinding bindingOperationFault) { return default(int); }
-        public bool Contains(System.Web.Services.Description.FaultBinding bindingOperationFault) { return default(bool); }
+        public System.Web.Services.Description.FaultBinding this[int index] { get { throw null; } set { } }
+        public System.Web.Services.Description.FaultBinding this[string name] { get { throw null; } }
+        public int Add(System.Web.Services.Description.FaultBinding bindingOperationFault) { throw null; }
+        public bool Contains(System.Web.Services.Description.FaultBinding bindingOperationFault) { throw null; }
         public void CopyTo(System.Web.Services.Description.FaultBinding[] array, int index) { }
-        protected override string GetKey(object value) { return default(string); }
-        public int IndexOf(System.Web.Services.Description.FaultBinding bindingOperationFault) { return default(int); }
+        protected override string GetKey(object value) { throw null; }
+        public int IndexOf(System.Web.Services.Description.FaultBinding bindingOperationFault) { throw null; }
         public void Insert(int index, System.Web.Services.Description.FaultBinding bindingOperationFault) { }
         public void Remove(System.Web.Services.Description.FaultBinding bindingOperationFault) { }
         protected override void SetParent(object value, object parent) { }
@@ -193,7 +193,7 @@ namespace System.Web.Services.Description
     {
         public HttpAddressBinding() { }
         [System.Xml.Serialization.XmlAttributeAttribute("location")]
-        public string Location { get { return default(string); } set { } }
+        public string Location { get { throw null; } set { } }
     }
     [System.Web.Services.Configuration.XmlFormatExtensionAttribute("binding", "http://schemas.xmlsoap.org/wsdl/http/", typeof(System.Web.Services.Description.Binding))]
     [System.Web.Services.Configuration.XmlFormatExtensionPrefixAttribute("http", "http://schemas.xmlsoap.org/wsdl/http/")]
@@ -202,14 +202,14 @@ namespace System.Web.Services.Description
         public const string Namespace = "http://schemas.xmlsoap.org/wsdl/http/";
         public HttpBinding() { }
         [System.Xml.Serialization.XmlAttributeAttribute("verb")]
-        public string Verb { get { return default(string); } set { } }
+        public string Verb { get { throw null; } set { } }
     }
     [System.Web.Services.Configuration.XmlFormatExtensionAttribute("operation", "http://schemas.xmlsoap.org/wsdl/http/", typeof(System.Web.Services.Description.OperationBinding))]
     public sealed partial class HttpOperationBinding : System.Web.Services.Description.ServiceDescriptionFormatExtension
     {
         public HttpOperationBinding() { }
         [System.Xml.Serialization.XmlAttributeAttribute("location")]
-        public string Location { get { return default(string); } set { } }
+        public string Location { get { throw null; } set { } }
     }
     [System.Web.Services.Configuration.XmlFormatExtensionAttribute("urlEncoded", "http://schemas.xmlsoap.org/wsdl/http/", typeof(System.Web.Services.Description.InputBinding))]
     public sealed partial class HttpUrlEncodedBinding : System.Web.Services.Description.ServiceDescriptionFormatExtension
@@ -226,21 +226,21 @@ namespace System.Web.Services.Description
     {
         public Import() { }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public override System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { return default(System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection); } }
+        public override System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { throw null; } }
         [System.Xml.Serialization.XmlAttributeAttribute("location")]
-        public string Location { get { return default(string); } set { } }
+        public string Location { get { throw null; } set { } }
         [System.Xml.Serialization.XmlAttributeAttribute("namespace")]
-        public string Namespace { get { return default(string); } set { } }
-        public System.Web.Services.Description.ServiceDescription ServiceDescription { get { return default(System.Web.Services.Description.ServiceDescription); } }
+        public string Namespace { get { throw null; } set { } }
+        public System.Web.Services.Description.ServiceDescription ServiceDescription { get { throw null; } }
     }
     public sealed partial class ImportCollection : System.Web.Services.Description.ServiceDescriptionBaseCollection
     {
         internal ImportCollection() { }
-        public System.Web.Services.Description.Import this[int index] { get { return default(System.Web.Services.Description.Import); } set { } }
-        public int Add(System.Web.Services.Description.Import import) { return default(int); }
-        public bool Contains(System.Web.Services.Description.Import import) { return default(bool); }
+        public System.Web.Services.Description.Import this[int index] { get { throw null; } set { } }
+        public int Add(System.Web.Services.Description.Import import) { throw null; }
+        public bool Contains(System.Web.Services.Description.Import import) { throw null; }
         public void CopyTo(System.Web.Services.Description.Import[] array, int index) { }
-        public int IndexOf(System.Web.Services.Description.Import import) { return default(int); }
+        public int IndexOf(System.Web.Services.Description.Import import) { throw null; }
         public void Insert(int index, System.Web.Services.Description.Import import) { }
         public void Remove(System.Web.Services.Description.Import import) { }
         protected override void SetParent(object value, object parent) { }
@@ -250,35 +250,35 @@ namespace System.Web.Services.Description
     {
         public InputBinding() { }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public override System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { return default(System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection); } }
+        public override System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { throw null; } }
     }
     [System.Web.Services.Configuration.XmlFormatExtensionPointAttribute("Extensions")]
     public sealed partial class Message : System.Web.Services.Description.NamedItem
     {
         public Message() { }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public override System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { return default(System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection); } }
+        public override System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { throw null; } }
         [System.Xml.Serialization.XmlElementAttribute("part")]
-        public System.Web.Services.Description.MessagePartCollection Parts { get { return default(System.Web.Services.Description.MessagePartCollection); } }
-        public System.Web.Services.Description.ServiceDescription ServiceDescription { get { return default(System.Web.Services.Description.ServiceDescription); } }
-        public System.Web.Services.Description.MessagePart FindPartByName(string partName) { return default(System.Web.Services.Description.MessagePart); }
-        public System.Web.Services.Description.MessagePart[] FindPartsByName(string[] partNames) { return default(System.Web.Services.Description.MessagePart[]); }
+        public System.Web.Services.Description.MessagePartCollection Parts { get { throw null; } }
+        public System.Web.Services.Description.ServiceDescription ServiceDescription { get { throw null; } }
+        public System.Web.Services.Description.MessagePart FindPartByName(string partName) { throw null; }
+        public System.Web.Services.Description.MessagePart[] FindPartsByName(string[] partNames) { throw null; }
     }
     public abstract partial class MessageBinding : System.Web.Services.Description.NamedItem
     {
         protected MessageBinding() { }
-        public System.Web.Services.Description.OperationBinding OperationBinding { get { return default(System.Web.Services.Description.OperationBinding); } }
+        public System.Web.Services.Description.OperationBinding OperationBinding { get { throw null; } }
     }
     public sealed partial class MessageCollection : System.Web.Services.Description.ServiceDescriptionBaseCollection
     {
         internal MessageCollection() { }
-        public System.Web.Services.Description.Message this[int index] { get { return default(System.Web.Services.Description.Message); } set { } }
-        public System.Web.Services.Description.Message this[string name] { get { return default(System.Web.Services.Description.Message); } }
-        public int Add(System.Web.Services.Description.Message message) { return default(int); }
-        public bool Contains(System.Web.Services.Description.Message message) { return default(bool); }
+        public System.Web.Services.Description.Message this[int index] { get { throw null; } set { } }
+        public System.Web.Services.Description.Message this[string name] { get { throw null; } }
+        public int Add(System.Web.Services.Description.Message message) { throw null; }
+        public bool Contains(System.Web.Services.Description.Message message) { throw null; }
         public void CopyTo(System.Web.Services.Description.Message[] array, int index) { }
-        protected override string GetKey(object value) { return default(string); }
-        public int IndexOf(System.Web.Services.Description.Message message) { return default(int); }
+        protected override string GetKey(object value) { throw null; }
+        public int IndexOf(System.Web.Services.Description.Message message) { throw null; }
         public void Insert(int index, System.Web.Services.Description.Message message) { }
         public void Remove(System.Web.Services.Description.Message message) { }
         protected override void SetParent(object value, object parent) { }
@@ -288,23 +288,23 @@ namespace System.Web.Services.Description
     {
         public MessagePart() { }
         [System.Xml.Serialization.XmlAttributeAttribute("element")]
-        public System.Xml.XmlQualifiedName Element { get { return default(System.Xml.XmlQualifiedName); } set { } }
+        public System.Xml.XmlQualifiedName Element { get { throw null; } set { } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public override System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { return default(System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection); } }
-        public System.Web.Services.Description.Message Message { get { return default(System.Web.Services.Description.Message); } }
+        public override System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { throw null; } }
+        public System.Web.Services.Description.Message Message { get { throw null; } }
         [System.Xml.Serialization.XmlAttributeAttribute("type")]
-        public System.Xml.XmlQualifiedName Type { get { return default(System.Xml.XmlQualifiedName); } set { } }
+        public System.Xml.XmlQualifiedName Type { get { throw null; } set { } }
     }
     public sealed partial class MessagePartCollection : System.Web.Services.Description.ServiceDescriptionBaseCollection
     {
         internal MessagePartCollection() { }
-        public System.Web.Services.Description.MessagePart this[int index] { get { return default(System.Web.Services.Description.MessagePart); } set { } }
-        public System.Web.Services.Description.MessagePart this[string name] { get { return default(System.Web.Services.Description.MessagePart); } }
-        public int Add(System.Web.Services.Description.MessagePart messagePart) { return default(int); }
-        public bool Contains(System.Web.Services.Description.MessagePart messagePart) { return default(bool); }
+        public System.Web.Services.Description.MessagePart this[int index] { get { throw null; } set { } }
+        public System.Web.Services.Description.MessagePart this[string name] { get { throw null; } }
+        public int Add(System.Web.Services.Description.MessagePart messagePart) { throw null; }
+        public bool Contains(System.Web.Services.Description.MessagePart messagePart) { throw null; }
         public void CopyTo(System.Web.Services.Description.MessagePart[] array, int index) { }
-        protected override string GetKey(object value) { return default(string); }
-        public int IndexOf(System.Web.Services.Description.MessagePart messagePart) { return default(int); }
+        protected override string GetKey(object value) { throw null; }
+        public int IndexOf(System.Web.Services.Description.MessagePart messagePart) { throw null; }
         public void Insert(int index, System.Web.Services.Description.MessagePart messagePart) { }
         public void Remove(System.Web.Services.Description.MessagePart messagePart) { }
         protected override void SetParent(object value, object parent) { }
@@ -316,32 +316,32 @@ namespace System.Web.Services.Description
         public const string Namespace = "http://schemas.xmlsoap.org/wsdl/mime/";
         public MimeContentBinding() { }
         [System.Xml.Serialization.XmlAttributeAttribute("part")]
-        public string Part { get { return default(string); } set { } }
+        public string Part { get { throw null; } set { } }
         [System.Xml.Serialization.XmlAttributeAttribute("type")]
-        public string Type { get { return default(string); } set { } }
+        public string Type { get { throw null; } set { } }
     }
     [System.Web.Services.Configuration.XmlFormatExtensionAttribute("multipartRelated", "http://schemas.xmlsoap.org/wsdl/mime/", typeof(System.Web.Services.Description.InputBinding), typeof(System.Web.Services.Description.OutputBinding))]
     public sealed partial class MimeMultipartRelatedBinding : System.Web.Services.Description.ServiceDescriptionFormatExtension
     {
         public MimeMultipartRelatedBinding() { }
         [System.Xml.Serialization.XmlElementAttribute("part")]
-        public System.Web.Services.Description.MimePartCollection Parts { get { return default(System.Web.Services.Description.MimePartCollection); } }
+        public System.Web.Services.Description.MimePartCollection Parts { get { throw null; } }
     }
     [System.Web.Services.Configuration.XmlFormatExtensionPointAttribute("Extensions")]
     public sealed partial class MimePart : System.Web.Services.Description.ServiceDescriptionFormatExtension
     {
         public MimePart() { }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { return default(System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection); } }
+        public System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { throw null; } }
     }
     public sealed partial class MimePartCollection : System.Collections.CollectionBase
     {
         public MimePartCollection() { }
-        public System.Web.Services.Description.MimePart this[int index] { get { return default(System.Web.Services.Description.MimePart); } set { } }
-        public int Add(System.Web.Services.Description.MimePart mimePart) { return default(int); }
-        public bool Contains(System.Web.Services.Description.MimePart mimePart) { return default(bool); }
+        public System.Web.Services.Description.MimePart this[int index] { get { throw null; } set { } }
+        public int Add(System.Web.Services.Description.MimePart mimePart) { throw null; }
+        public bool Contains(System.Web.Services.Description.MimePart mimePart) { throw null; }
         public void CopyTo(System.Web.Services.Description.MimePart[] array, int index) { }
-        public int IndexOf(System.Web.Services.Description.MimePart mimePart) { return default(int); }
+        public int IndexOf(System.Web.Services.Description.MimePart mimePart) { throw null; }
         public void Insert(int index, System.Web.Services.Description.MimePart mimePart) { }
         public void Remove(System.Web.Services.Description.MimePart mimePart) { }
     }
@@ -352,41 +352,41 @@ namespace System.Web.Services.Description
         public const string Namespace = "http://microsoft.com/wsdl/mime/textMatching/";
         public MimeTextBinding() { }
         [System.Xml.Serialization.XmlElementAttribute("match", typeof(System.Web.Services.Description.MimeTextMatch))]
-        public System.Web.Services.Description.MimeTextMatchCollection Matches { get { return default(System.Web.Services.Description.MimeTextMatchCollection); } }
+        public System.Web.Services.Description.MimeTextMatchCollection Matches { get { throw null; } }
     }
     public sealed partial class MimeTextMatch
     {
         public MimeTextMatch() { }
         [System.ComponentModel.DefaultValueAttribute(0)]
         [System.Xml.Serialization.XmlAttributeAttribute("capture")]
-        public int Capture { get { return default(int); } set { } }
+        public int Capture { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(1)]
         [System.Xml.Serialization.XmlAttributeAttribute("group")]
-        public int Group { get { return default(int); } set { } }
+        public int Group { get { throw null; } set { } }
         [System.Xml.Serialization.XmlAttributeAttribute("ignoreCase")]
-        public bool IgnoreCase { get { return default(bool); } set { } }
+        public bool IgnoreCase { get { throw null; } set { } }
         [System.Xml.Serialization.XmlElementAttribute("match")]
-        public System.Web.Services.Description.MimeTextMatchCollection Matches { get { return default(System.Web.Services.Description.MimeTextMatchCollection); } }
+        public System.Web.Services.Description.MimeTextMatchCollection Matches { get { throw null; } }
         [System.Xml.Serialization.XmlAttributeAttribute("name")]
-        public string Name { get { return default(string); } set { } }
+        public string Name { get { throw null; } set { } }
         [System.Xml.Serialization.XmlAttributeAttribute("pattern")]
-        public string Pattern { get { return default(string); } set { } }
+        public string Pattern { get { throw null; } set { } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public int Repeats { get { return default(int); } set { } }
+        public int Repeats { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("1")]
         [System.Xml.Serialization.XmlAttributeAttribute("repeats")]
-        public string RepeatsString { get { return default(string); } set { } }
+        public string RepeatsString { get { throw null; } set { } }
         [System.Xml.Serialization.XmlAttributeAttribute("type")]
-        public string Type { get { return default(string); } set { } }
+        public string Type { get { throw null; } set { } }
     }
     public sealed partial class MimeTextMatchCollection : System.Collections.CollectionBase
     {
         public MimeTextMatchCollection() { }
-        public System.Web.Services.Description.MimeTextMatch this[int index] { get { return default(System.Web.Services.Description.MimeTextMatch); } set { } }
-        public int Add(System.Web.Services.Description.MimeTextMatch match) { return default(int); }
-        public bool Contains(System.Web.Services.Description.MimeTextMatch match) { return default(bool); }
+        public System.Web.Services.Description.MimeTextMatch this[int index] { get { throw null; } set { } }
+        public int Add(System.Web.Services.Description.MimeTextMatch match) { throw null; }
+        public bool Contains(System.Web.Services.Description.MimeTextMatch match) { throw null; }
         public void CopyTo(System.Web.Services.Description.MimeTextMatch[] array, int index) { }
-        public int IndexOf(System.Web.Services.Description.MimeTextMatch match) { return default(int); }
+        public int IndexOf(System.Web.Services.Description.MimeTextMatch match) { throw null; }
         public void Insert(int index, System.Web.Services.Description.MimeTextMatch match) { }
         public void Remove(System.Web.Services.Description.MimeTextMatch match) { }
     }
@@ -395,55 +395,55 @@ namespace System.Web.Services.Description
     {
         public MimeXmlBinding() { }
         [System.Xml.Serialization.XmlAttributeAttribute("part")]
-        public string Part { get { return default(string); } set { } }
+        public string Part { get { throw null; } set { } }
     }
     public abstract partial class NamedItem : System.Web.Services.Description.DocumentableItem
     {
         protected NamedItem() { }
         [System.Xml.Serialization.XmlAttributeAttribute("name")]
-        public string Name { get { return default(string); } set { } }
+        public string Name { get { throw null; } set { } }
     }
     [System.Web.Services.Configuration.XmlFormatExtensionPointAttribute("Extensions")]
     public sealed partial class Operation : System.Web.Services.Description.NamedItem
     {
         public Operation() { }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public override System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { return default(System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection); } }
+        public override System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { throw null; } }
         [System.Xml.Serialization.XmlElementAttribute("fault")]
-        public System.Web.Services.Description.OperationFaultCollection Faults { get { return default(System.Web.Services.Description.OperationFaultCollection); } }
+        public System.Web.Services.Description.OperationFaultCollection Faults { get { throw null; } }
         [System.Xml.Serialization.XmlElementAttribute("input", typeof(System.Web.Services.Description.OperationInput))]
         [System.Xml.Serialization.XmlElementAttribute("output", typeof(System.Web.Services.Description.OperationOutput))]
-        public System.Web.Services.Description.OperationMessageCollection Messages { get { return default(System.Web.Services.Description.OperationMessageCollection); } }
+        public System.Web.Services.Description.OperationMessageCollection Messages { get { throw null; } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public string[] ParameterOrder { get { return default(string[]); } set { } }
+        public string[] ParameterOrder { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
         [System.Xml.Serialization.XmlAttributeAttribute("parameterOrder")]
-        public string ParameterOrderString { get { return default(string); } set { } }
-        public System.Web.Services.Description.PortType PortType { get { return default(System.Web.Services.Description.PortType); } }
-        public bool IsBoundBy(System.Web.Services.Description.OperationBinding operationBinding) { return default(bool); }
+        public string ParameterOrderString { get { throw null; } set { } }
+        public System.Web.Services.Description.PortType PortType { get { throw null; } }
+        public bool IsBoundBy(System.Web.Services.Description.OperationBinding operationBinding) { throw null; }
     }
     [System.Web.Services.Configuration.XmlFormatExtensionPointAttribute("Extensions")]
     public sealed partial class OperationBinding : System.Web.Services.Description.NamedItem
     {
         public OperationBinding() { }
-        public System.Web.Services.Description.Binding Binding { get { return default(System.Web.Services.Description.Binding); } }
+        public System.Web.Services.Description.Binding Binding { get { throw null; } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public override System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { return default(System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection); } }
+        public override System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { throw null; } }
         [System.Xml.Serialization.XmlElementAttribute("fault")]
-        public System.Web.Services.Description.FaultBindingCollection Faults { get { return default(System.Web.Services.Description.FaultBindingCollection); } }
+        public System.Web.Services.Description.FaultBindingCollection Faults { get { throw null; } }
         [System.Xml.Serialization.XmlElementAttribute("input")]
-        public System.Web.Services.Description.InputBinding Input { get { return default(System.Web.Services.Description.InputBinding); } set { } }
+        public System.Web.Services.Description.InputBinding Input { get { throw null; } set { } }
         [System.Xml.Serialization.XmlElementAttribute("output")]
-        public System.Web.Services.Description.OutputBinding Output { get { return default(System.Web.Services.Description.OutputBinding); } set { } }
+        public System.Web.Services.Description.OutputBinding Output { get { throw null; } set { } }
     }
     public sealed partial class OperationBindingCollection : System.Web.Services.Description.ServiceDescriptionBaseCollection
     {
         internal OperationBindingCollection() { }
-        public System.Web.Services.Description.OperationBinding this[int index] { get { return default(System.Web.Services.Description.OperationBinding); } set { } }
-        public int Add(System.Web.Services.Description.OperationBinding bindingOperation) { return default(int); }
-        public bool Contains(System.Web.Services.Description.OperationBinding bindingOperation) { return default(bool); }
+        public System.Web.Services.Description.OperationBinding this[int index] { get { throw null; } set { } }
+        public int Add(System.Web.Services.Description.OperationBinding bindingOperation) { throw null; }
+        public bool Contains(System.Web.Services.Description.OperationBinding bindingOperation) { throw null; }
         public void CopyTo(System.Web.Services.Description.OperationBinding[] array, int index) { }
-        public int IndexOf(System.Web.Services.Description.OperationBinding bindingOperation) { return default(int); }
+        public int IndexOf(System.Web.Services.Description.OperationBinding bindingOperation) { throw null; }
         public void Insert(int index, System.Web.Services.Description.OperationBinding bindingOperation) { }
         public void Remove(System.Web.Services.Description.OperationBinding bindingOperation) { }
         protected override void SetParent(object value, object parent) { }
@@ -451,11 +451,11 @@ namespace System.Web.Services.Description
     public sealed partial class OperationCollection : System.Web.Services.Description.ServiceDescriptionBaseCollection
     {
         internal OperationCollection() { }
-        public System.Web.Services.Description.Operation this[int index] { get { return default(System.Web.Services.Description.Operation); } set { } }
-        public int Add(System.Web.Services.Description.Operation operation) { return default(int); }
-        public bool Contains(System.Web.Services.Description.Operation operation) { return default(bool); }
+        public System.Web.Services.Description.Operation this[int index] { get { throw null; } set { } }
+        public int Add(System.Web.Services.Description.Operation operation) { throw null; }
+        public bool Contains(System.Web.Services.Description.Operation operation) { throw null; }
         public void CopyTo(System.Web.Services.Description.Operation[] array, int index) { }
-        public int IndexOf(System.Web.Services.Description.Operation operation) { return default(int); }
+        public int IndexOf(System.Web.Services.Description.Operation operation) { throw null; }
         public void Insert(int index, System.Web.Services.Description.Operation operation) { }
         public void Remove(System.Web.Services.Description.Operation operation) { }
         protected override void SetParent(object value, object parent) { }
@@ -465,18 +465,18 @@ namespace System.Web.Services.Description
     {
         public OperationFault() { }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public override System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { return default(System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection); } }
+        public override System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { throw null; } }
     }
     public sealed partial class OperationFaultCollection : System.Web.Services.Description.ServiceDescriptionBaseCollection
     {
         internal OperationFaultCollection() { }
-        public System.Web.Services.Description.OperationFault this[int index] { get { return default(System.Web.Services.Description.OperationFault); } set { } }
-        public System.Web.Services.Description.OperationFault this[string name] { get { return default(System.Web.Services.Description.OperationFault); } }
-        public int Add(System.Web.Services.Description.OperationFault operationFaultMessage) { return default(int); }
-        public bool Contains(System.Web.Services.Description.OperationFault operationFaultMessage) { return default(bool); }
+        public System.Web.Services.Description.OperationFault this[int index] { get { throw null; } set { } }
+        public System.Web.Services.Description.OperationFault this[string name] { get { throw null; } }
+        public int Add(System.Web.Services.Description.OperationFault operationFaultMessage) { throw null; }
+        public bool Contains(System.Web.Services.Description.OperationFault operationFaultMessage) { throw null; }
         public void CopyTo(System.Web.Services.Description.OperationFault[] array, int index) { }
-        protected override string GetKey(object value) { return default(string); }
-        public int IndexOf(System.Web.Services.Description.OperationFault operationFaultMessage) { return default(int); }
+        protected override string GetKey(object value) { throw null; }
+        public int IndexOf(System.Web.Services.Description.OperationFault operationFaultMessage) { throw null; }
         public void Insert(int index, System.Web.Services.Description.OperationFault operationFaultMessage) { }
         public void Remove(System.Web.Services.Description.OperationFault operationFaultMessage) { }
         protected override void SetParent(object value, object parent) { }
@@ -494,26 +494,26 @@ namespace System.Web.Services.Description
     {
         public OperationInput() { }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public override System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { return default(System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection); } }
+        public override System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { throw null; } }
     }
     public abstract partial class OperationMessage : System.Web.Services.Description.NamedItem
     {
         protected OperationMessage() { }
         [System.Xml.Serialization.XmlAttributeAttribute("message")]
-        public System.Xml.XmlQualifiedName Message { get { return default(System.Xml.XmlQualifiedName); } set { } }
-        public System.Web.Services.Description.Operation Operation { get { return default(System.Web.Services.Description.Operation); } }
+        public System.Xml.XmlQualifiedName Message { get { throw null; } set { } }
+        public System.Web.Services.Description.Operation Operation { get { throw null; } }
     }
     public sealed partial class OperationMessageCollection : System.Web.Services.Description.ServiceDescriptionBaseCollection
     {
         internal OperationMessageCollection() { }
-        public System.Web.Services.Description.OperationFlow Flow { get { return default(System.Web.Services.Description.OperationFlow); } }
-        public System.Web.Services.Description.OperationInput Input { get { return default(System.Web.Services.Description.OperationInput); } }
-        public System.Web.Services.Description.OperationMessage this[int index] { get { return default(System.Web.Services.Description.OperationMessage); } set { } }
-        public System.Web.Services.Description.OperationOutput Output { get { return default(System.Web.Services.Description.OperationOutput); } }
-        public int Add(System.Web.Services.Description.OperationMessage operationMessage) { return default(int); }
-        public bool Contains(System.Web.Services.Description.OperationMessage operationMessage) { return default(bool); }
+        public System.Web.Services.Description.OperationFlow Flow { get { throw null; } }
+        public System.Web.Services.Description.OperationInput Input { get { throw null; } }
+        public System.Web.Services.Description.OperationMessage this[int index] { get { throw null; } set { } }
+        public System.Web.Services.Description.OperationOutput Output { get { throw null; } }
+        public int Add(System.Web.Services.Description.OperationMessage operationMessage) { throw null; }
+        public bool Contains(System.Web.Services.Description.OperationMessage operationMessage) { throw null; }
         public void CopyTo(System.Web.Services.Description.OperationMessage[] array, int index) { }
-        public int IndexOf(System.Web.Services.Description.OperationMessage operationMessage) { return default(int); }
+        public int IndexOf(System.Web.Services.Description.OperationMessage operationMessage) { throw null; }
         public void Insert(int index, System.Web.Services.Description.OperationMessage operationMessage) { }
         protected override void OnInsert(int index, object value) { }
         protected override void OnSet(int index, object oldValue, object newValue) { }
@@ -526,35 +526,35 @@ namespace System.Web.Services.Description
     {
         public OperationOutput() { }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public override System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { return default(System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection); } }
+        public override System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { throw null; } }
     }
     [System.Web.Services.Configuration.XmlFormatExtensionPointAttribute("Extensions")]
     public sealed partial class OutputBinding : System.Web.Services.Description.MessageBinding
     {
         public OutputBinding() { }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public override System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { return default(System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection); } }
+        public override System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { throw null; } }
     }
     [System.Web.Services.Configuration.XmlFormatExtensionPointAttribute("Extensions")]
     public sealed partial class Port : System.Web.Services.Description.NamedItem
     {
         public Port() { }
         [System.Xml.Serialization.XmlAttributeAttribute("binding")]
-        public System.Xml.XmlQualifiedName Binding { get { return default(System.Xml.XmlQualifiedName); } set { } }
+        public System.Xml.XmlQualifiedName Binding { get { throw null; } set { } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public override System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { return default(System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection); } }
-        public System.Web.Services.Description.Service Service { get { return default(System.Web.Services.Description.Service); } }
+        public override System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { throw null; } }
+        public System.Web.Services.Description.Service Service { get { throw null; } }
     }
     public sealed partial class PortCollection : System.Web.Services.Description.ServiceDescriptionBaseCollection
     {
         internal PortCollection() { }
-        public System.Web.Services.Description.Port this[int index] { get { return default(System.Web.Services.Description.Port); } set { } }
-        public System.Web.Services.Description.Port this[string name] { get { return default(System.Web.Services.Description.Port); } }
-        public int Add(System.Web.Services.Description.Port port) { return default(int); }
-        public bool Contains(System.Web.Services.Description.Port port) { return default(bool); }
+        public System.Web.Services.Description.Port this[int index] { get { throw null; } set { } }
+        public System.Web.Services.Description.Port this[string name] { get { throw null; } }
+        public int Add(System.Web.Services.Description.Port port) { throw null; }
+        public bool Contains(System.Web.Services.Description.Port port) { throw null; }
         public void CopyTo(System.Web.Services.Description.Port[] array, int index) { }
-        protected override string GetKey(object value) { return default(string); }
-        public int IndexOf(System.Web.Services.Description.Port port) { return default(int); }
+        protected override string GetKey(object value) { throw null; }
+        public int IndexOf(System.Web.Services.Description.Port port) { throw null; }
         public void Insert(int index, System.Web.Services.Description.Port port) { }
         public void Remove(System.Web.Services.Description.Port port) { }
         protected override void SetParent(object value, object parent) { }
@@ -564,21 +564,21 @@ namespace System.Web.Services.Description
     {
         public PortType() { }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public override System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { return default(System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection); } }
+        public override System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { throw null; } }
         [System.Xml.Serialization.XmlElementAttribute("operation")]
-        public System.Web.Services.Description.OperationCollection Operations { get { return default(System.Web.Services.Description.OperationCollection); } }
-        public System.Web.Services.Description.ServiceDescription ServiceDescription { get { return default(System.Web.Services.Description.ServiceDescription); } }
+        public System.Web.Services.Description.OperationCollection Operations { get { throw null; } }
+        public System.Web.Services.Description.ServiceDescription ServiceDescription { get { throw null; } }
     }
     public sealed partial class PortTypeCollection : System.Web.Services.Description.ServiceDescriptionBaseCollection
     {
         internal PortTypeCollection() { }
-        public System.Web.Services.Description.PortType this[int index] { get { return default(System.Web.Services.Description.PortType); } set { } }
-        public System.Web.Services.Description.PortType this[string name] { get { return default(System.Web.Services.Description.PortType); } }
-        public int Add(System.Web.Services.Description.PortType portType) { return default(int); }
-        public bool Contains(System.Web.Services.Description.PortType portType) { return default(bool); }
+        public System.Web.Services.Description.PortType this[int index] { get { throw null; } set { } }
+        public System.Web.Services.Description.PortType this[string name] { get { throw null; } }
+        public int Add(System.Web.Services.Description.PortType portType) { throw null; }
+        public bool Contains(System.Web.Services.Description.PortType portType) { throw null; }
         public void CopyTo(System.Web.Services.Description.PortType[] array, int index) { }
-        protected override string GetKey(object value) { return default(string); }
-        public int IndexOf(System.Web.Services.Description.PortType portType) { return default(int); }
+        protected override string GetKey(object value) { throw null; }
+        public int IndexOf(System.Web.Services.Description.PortType portType) { throw null; }
         public void Insert(int index, System.Web.Services.Description.PortType portType) { }
         public void Remove(System.Web.Services.Description.PortType portType) { }
         protected override void SetParent(object value, object parent) { }
@@ -588,21 +588,21 @@ namespace System.Web.Services.Description
     {
         public Service() { }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public override System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { return default(System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection); } }
+        public override System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { throw null; } }
         [System.Xml.Serialization.XmlElementAttribute("port")]
-        public System.Web.Services.Description.PortCollection Ports { get { return default(System.Web.Services.Description.PortCollection); } }
-        public System.Web.Services.Description.ServiceDescription ServiceDescription { get { return default(System.Web.Services.Description.ServiceDescription); } }
+        public System.Web.Services.Description.PortCollection Ports { get { throw null; } }
+        public System.Web.Services.Description.ServiceDescription ServiceDescription { get { throw null; } }
     }
     public sealed partial class ServiceCollection : System.Web.Services.Description.ServiceDescriptionBaseCollection
     {
         internal ServiceCollection() { }
-        public System.Web.Services.Description.Service this[int index] { get { return default(System.Web.Services.Description.Service); } set { } }
-        public System.Web.Services.Description.Service this[string name] { get { return default(System.Web.Services.Description.Service); } }
-        public int Add(System.Web.Services.Description.Service service) { return default(int); }
-        public bool Contains(System.Web.Services.Description.Service service) { return default(bool); }
+        public System.Web.Services.Description.Service this[int index] { get { throw null; } set { } }
+        public System.Web.Services.Description.Service this[string name] { get { throw null; } }
+        public int Add(System.Web.Services.Description.Service service) { throw null; }
+        public bool Contains(System.Web.Services.Description.Service service) { throw null; }
         public void CopyTo(System.Web.Services.Description.Service[] array, int index) { }
-        protected override string GetKey(object value) { return default(string); }
-        public int IndexOf(System.Web.Services.Description.Service service) { return default(int); }
+        protected override string GetKey(object value) { throw null; }
+        public int IndexOf(System.Web.Services.Description.Service service) { throw null; }
         public void Insert(int index, System.Web.Services.Description.Service service) { }
         public void Remove(System.Web.Services.Description.Service service) { }
         protected override void SetParent(object value, object parent) { }
@@ -614,39 +614,39 @@ namespace System.Web.Services.Description
         public const string Namespace = "http://schemas.xmlsoap.org/wsdl/";
         public ServiceDescription() { }
         [System.Xml.Serialization.XmlElementAttribute("binding")]
-        public System.Web.Services.Description.BindingCollection Bindings { get { return default(System.Web.Services.Description.BindingCollection); } }
+        public System.Web.Services.Description.BindingCollection Bindings { get { throw null; } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public override System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { return default(System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection); } }
+        public override System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { throw null; } }
         [System.Xml.Serialization.XmlElementAttribute("import")]
-        public System.Web.Services.Description.ImportCollection Imports { get { return default(System.Web.Services.Description.ImportCollection); } }
+        public System.Web.Services.Description.ImportCollection Imports { get { throw null; } }
         [System.Xml.Serialization.XmlElementAttribute("message")]
-        public System.Web.Services.Description.MessageCollection Messages { get { return default(System.Web.Services.Description.MessageCollection); } }
+        public System.Web.Services.Description.MessageCollection Messages { get { throw null; } }
         [System.Xml.Serialization.XmlElementAttribute("portType")]
-        public System.Web.Services.Description.PortTypeCollection PortTypes { get { return default(System.Web.Services.Description.PortTypeCollection); } }
+        public System.Web.Services.Description.PortTypeCollection PortTypes { get { throw null; } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public string RetrievalUrl { get { return default(string); } set { } }
-        public static System.Xml.Schema.XmlSchema Schema { get { return default(System.Xml.Schema.XmlSchema); } }
+        public string RetrievalUrl { get { throw null; } set { } }
+        public static System.Xml.Schema.XmlSchema Schema { get { throw null; } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public static System.Xml.Serialization.XmlSerializer Serializer { get { return default(System.Xml.Serialization.XmlSerializer); } }
+        public static System.Xml.Serialization.XmlSerializer Serializer { get { throw null; } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public System.Web.Services.Description.ServiceDescriptionCollection ServiceDescriptions { get { return default(System.Web.Services.Description.ServiceDescriptionCollection); } }
+        public System.Web.Services.Description.ServiceDescriptionCollection ServiceDescriptions { get { throw null; } }
         [System.Xml.Serialization.XmlElementAttribute("service")]
-        public System.Web.Services.Description.ServiceCollection Services { get { return default(System.Web.Services.Description.ServiceCollection); } }
+        public System.Web.Services.Description.ServiceCollection Services { get { throw null; } }
         [System.Xml.Serialization.XmlAttributeAttribute("targetNamespace")]
-        public string TargetNamespace { get { return default(string); } set { } }
+        public string TargetNamespace { get { throw null; } set { } }
         [System.Xml.Serialization.XmlElementAttribute("types")]
-        public System.Web.Services.Description.Types Types { get { return default(System.Web.Services.Description.Types); } set { } }
+        public System.Web.Services.Description.Types Types { get { throw null; } set { } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public System.Collections.Specialized.StringCollection ValidationWarnings { get { return default(System.Collections.Specialized.StringCollection); } }
-        public static bool CanRead(System.Xml.XmlReader reader) { return default(bool); }
-        public static System.Web.Services.Description.ServiceDescription Read(System.IO.Stream stream) { return default(System.Web.Services.Description.ServiceDescription); }
-        public static System.Web.Services.Description.ServiceDescription Read(System.IO.Stream stream, bool validate) { return default(System.Web.Services.Description.ServiceDescription); }
-        public static System.Web.Services.Description.ServiceDescription Read(System.IO.TextReader textReader) { return default(System.Web.Services.Description.ServiceDescription); }
-        public static System.Web.Services.Description.ServiceDescription Read(System.IO.TextReader reader, bool validate) { return default(System.Web.Services.Description.ServiceDescription); }
-        public static System.Web.Services.Description.ServiceDescription Read(string fileName) { return default(System.Web.Services.Description.ServiceDescription); }
-        public static System.Web.Services.Description.ServiceDescription Read(string fileName, bool validate) { return default(System.Web.Services.Description.ServiceDescription); }
-        public static System.Web.Services.Description.ServiceDescription Read(System.Xml.XmlReader reader) { return default(System.Web.Services.Description.ServiceDescription); }
-        public static System.Web.Services.Description.ServiceDescription Read(System.Xml.XmlReader reader, bool validate) { return default(System.Web.Services.Description.ServiceDescription); }
+        public System.Collections.Specialized.StringCollection ValidationWarnings { get { throw null; } }
+        public static bool CanRead(System.Xml.XmlReader reader) { throw null; }
+        public static System.Web.Services.Description.ServiceDescription Read(System.IO.Stream stream) { throw null; }
+        public static System.Web.Services.Description.ServiceDescription Read(System.IO.Stream stream, bool validate) { throw null; }
+        public static System.Web.Services.Description.ServiceDescription Read(System.IO.TextReader textReader) { throw null; }
+        public static System.Web.Services.Description.ServiceDescription Read(System.IO.TextReader reader, bool validate) { throw null; }
+        public static System.Web.Services.Description.ServiceDescription Read(string fileName) { throw null; }
+        public static System.Web.Services.Description.ServiceDescription Read(string fileName, bool validate) { throw null; }
+        public static System.Web.Services.Description.ServiceDescription Read(System.Xml.XmlReader reader) { throw null; }
+        public static System.Web.Services.Description.ServiceDescription Read(System.Xml.XmlReader reader, bool validate) { throw null; }
         public void Write(System.IO.Stream stream) { }
         public void Write(System.IO.TextWriter writer) { }
         public void Write(string fileName) { }
@@ -655,8 +655,8 @@ namespace System.Web.Services.Description
     public abstract partial class ServiceDescriptionBaseCollection : System.Collections.CollectionBase
     {
         internal ServiceDescriptionBaseCollection() { }
-        protected virtual System.Collections.IDictionary Table { get { return default(System.Collections.IDictionary); } }
-        protected virtual string GetKey(object value) { return default(string); }
+        protected virtual System.Collections.IDictionary Table { get { throw null; } }
+        protected virtual string GetKey(object value) { throw null; }
         protected override void OnClear() { }
         protected override void OnInsertComplete(int index, object value) { }
         protected override void OnRemove(int index, object value) { }
@@ -666,17 +666,17 @@ namespace System.Web.Services.Description
     public sealed partial class ServiceDescriptionCollection : System.Web.Services.Description.ServiceDescriptionBaseCollection
     {
         public ServiceDescriptionCollection() { }
-        public System.Web.Services.Description.ServiceDescription this[int index] { get { return default(System.Web.Services.Description.ServiceDescription); } set { } }
-        public System.Web.Services.Description.ServiceDescription this[string ns] { get { return default(System.Web.Services.Description.ServiceDescription); } }
-        public int Add(System.Web.Services.Description.ServiceDescription serviceDescription) { return default(int); }
-        public bool Contains(System.Web.Services.Description.ServiceDescription serviceDescription) { return default(bool); }
+        public System.Web.Services.Description.ServiceDescription this[int index] { get { throw null; } set { } }
+        public System.Web.Services.Description.ServiceDescription this[string ns] { get { throw null; } }
+        public int Add(System.Web.Services.Description.ServiceDescription serviceDescription) { throw null; }
+        public bool Contains(System.Web.Services.Description.ServiceDescription serviceDescription) { throw null; }
         public void CopyTo(System.Web.Services.Description.ServiceDescription[] array, int index) { }
-        public System.Web.Services.Description.Binding GetBinding(System.Xml.XmlQualifiedName name) { return default(System.Web.Services.Description.Binding); }
-        protected override string GetKey(object value) { return default(string); }
-        public System.Web.Services.Description.Message GetMessage(System.Xml.XmlQualifiedName name) { return default(System.Web.Services.Description.Message); }
-        public System.Web.Services.Description.PortType GetPortType(System.Xml.XmlQualifiedName name) { return default(System.Web.Services.Description.PortType); }
-        public System.Web.Services.Description.Service GetService(System.Xml.XmlQualifiedName name) { return default(System.Web.Services.Description.Service); }
-        public int IndexOf(System.Web.Services.Description.ServiceDescription serviceDescription) { return default(int); }
+        public System.Web.Services.Description.Binding GetBinding(System.Xml.XmlQualifiedName name) { throw null; }
+        protected override string GetKey(object value) { throw null; }
+        public System.Web.Services.Description.Message GetMessage(System.Xml.XmlQualifiedName name) { throw null; }
+        public System.Web.Services.Description.PortType GetPortType(System.Xml.XmlQualifiedName name) { throw null; }
+        public System.Web.Services.Description.Service GetService(System.Xml.XmlQualifiedName name) { throw null; }
+        public int IndexOf(System.Web.Services.Description.ServiceDescription serviceDescription) { throw null; }
         public void Insert(int index, System.Web.Services.Description.ServiceDescription serviceDescription) { }
         protected override void OnInsertComplete(int index, object item) { }
         public void Remove(System.Web.Services.Description.ServiceDescription serviceDescription) { }
@@ -686,27 +686,27 @@ namespace System.Web.Services.Description
     {
         protected ServiceDescriptionFormatExtension() { }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public bool Handled { get { return default(bool); } set { } }
-        public object Parent { get { return default(object); } }
+        public bool Handled { get { throw null; } set { } }
+        public object Parent { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute(false)]
         [System.Xml.Serialization.XmlAttributeAttribute("required", Namespace="http://schemas.xmlsoap.org/wsdl/")]
-        public bool Required { get { return default(bool); } set { } }
+        public bool Required { get { throw null; } set { } }
     }
     public sealed partial class ServiceDescriptionFormatExtensionCollection : System.Web.Services.Description.ServiceDescriptionBaseCollection
     {
         public ServiceDescriptionFormatExtensionCollection(object parent) { }
-        public object this[int index] { get { return default(object); } set { } }
-        public int Add(object extension) { return default(int); }
-        public bool Contains(object extension) { return default(bool); }
+        public object this[int index] { get { throw null; } set { } }
+        public int Add(object extension) { throw null; }
+        public bool Contains(object extension) { throw null; }
         public void CopyTo(object[] array, int index) { }
-        public System.Xml.XmlElement Find(string name, string ns) { return default(System.Xml.XmlElement); }
-        public object Find(System.Type type) { return default(object); }
-        public System.Xml.XmlElement[] FindAll(string name, string ns) { return default(System.Xml.XmlElement[]); }
-        public object[] FindAll(System.Type type) { return default(object[]); }
-        public int IndexOf(object extension) { return default(int); }
+        public System.Xml.XmlElement Find(string name, string ns) { throw null; }
+        public object Find(System.Type type) { throw null; }
+        public System.Xml.XmlElement[] FindAll(string name, string ns) { throw null; }
+        public object[] FindAll(System.Type type) { throw null; }
+        public int IndexOf(object extension) { throw null; }
         public void Insert(int index, object extension) { }
-        public bool IsHandled(object item) { return default(bool); }
-        public bool IsRequired(object item) { return default(bool); }
+        public bool IsHandled(object item) { throw null; }
+        public bool IsRequired(object item) { throw null; }
         protected override void OnValidate(object value) { }
         public void Remove(object extension) { }
         protected override void SetParent(object value, object parent) { }
@@ -714,10 +714,10 @@ namespace System.Web.Services.Description
     public partial class ServiceDescriptionImporter
     {
         public ServiceDescriptionImporter() { }
-        public string ProtocolName { get { return default(string); } set { } }
-        public System.Xml.Serialization.XmlSchemas Schemas { get { return default(System.Xml.Serialization.XmlSchemas); } }
-        public System.Web.Services.Description.ServiceDescriptionCollection ServiceDescriptions { get { return default(System.Web.Services.Description.ServiceDescriptionCollection); } }
-        public System.Web.Services.Description.ServiceDescriptionImportStyle Style { get { return default(System.Web.Services.Description.ServiceDescriptionImportStyle); } set { } }
+        public string ProtocolName { get { throw null; } set { } }
+        public System.Xml.Serialization.XmlSchemas Schemas { get { throw null; } }
+        public System.Web.Services.Description.ServiceDescriptionCollection ServiceDescriptions { get { throw null; } }
+        public System.Web.Services.Description.ServiceDescriptionImportStyle Style { get { throw null; } set { } }
         public void AddServiceDescription(System.Web.Services.Description.ServiceDescription serviceDescription, string appSettingUrlKey, string appSettingBaseUrl) { }
     }
     public enum ServiceDescriptionImportStyle
@@ -763,14 +763,14 @@ namespace System.Web.Services.Description
         public Soap12OperationBinding() { }
         [System.ComponentModel.DefaultValueAttribute(false)]
         [System.Xml.Serialization.XmlAttributeAttribute("soapActionRequired")]
-        public bool SoapActionRequired { get { return default(bool); } set { } }
+        public bool SoapActionRequired { get { throw null; } set { } }
     }
     [System.Web.Services.Configuration.XmlFormatExtensionAttribute("address", "http://schemas.xmlsoap.org/wsdl/soap/", typeof(System.Web.Services.Description.Port))]
     public partial class SoapAddressBinding : System.Web.Services.Description.ServiceDescriptionFormatExtension
     {
         public SoapAddressBinding() { }
         [System.Xml.Serialization.XmlAttributeAttribute("location")]
-        public string Location { get { return default(string); } set { } }
+        public string Location { get { throw null; } set { } }
     }
     [System.Web.Services.Configuration.XmlFormatExtensionAttribute("binding", "http://schemas.xmlsoap.org/wsdl/soap/", typeof(System.Web.Services.Description.Binding))]
     [System.Web.Services.Configuration.XmlFormatExtensionPrefixAttribute("soap", "http://schemas.xmlsoap.org/wsdl/soap/")]
@@ -780,12 +780,12 @@ namespace System.Web.Services.Description
         public const string HttpTransport = "http://schemas.xmlsoap.org/soap/http";
         public const string Namespace = "http://schemas.xmlsoap.org/wsdl/soap/";
         public SoapBinding() { }
-        public static System.Xml.Schema.XmlSchema Schema { get { return default(System.Xml.Schema.XmlSchema); } }
+        public static System.Xml.Schema.XmlSchema Schema { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute((System.Web.Services.Description.SoapBindingStyle)(1))]
         [System.Xml.Serialization.XmlAttributeAttribute("style")]
-        public System.Web.Services.Description.SoapBindingStyle Style { get { return default(System.Web.Services.Description.SoapBindingStyle); } set { } }
+        public System.Web.Services.Description.SoapBindingStyle Style { get { throw null; } set { } }
         [System.Xml.Serialization.XmlAttributeAttribute("transport")]
-        public string Transport { get { return default(string); } set { } }
+        public string Transport { get { throw null; } set { } }
     }
     public enum SoapBindingStyle
     {
@@ -811,17 +811,17 @@ namespace System.Web.Services.Description
         public SoapBodyBinding() { }
         [System.ComponentModel.DefaultValueAttribute("")]
         [System.Xml.Serialization.XmlAttributeAttribute("encodingStyle")]
-        public string Encoding { get { return default(string); } set { } }
+        public string Encoding { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
         [System.Xml.Serialization.XmlAttributeAttribute("namespace")]
-        public string Namespace { get { return default(string); } set { } }
+        public string Namespace { get { throw null; } set { } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public string[] Parts { get { return default(string[]); } set { } }
+        public string[] Parts { get { throw null; } set { } }
         [System.Xml.Serialization.XmlAttributeAttribute("parts")]
-        public string PartsString { get { return default(string); } set { } }
+        public string PartsString { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute((System.Web.Services.Description.SoapBindingUse)(0))]
         [System.Xml.Serialization.XmlAttributeAttribute("use")]
-        public System.Web.Services.Description.SoapBindingUse Use { get { return default(System.Web.Services.Description.SoapBindingUse); } set { } }
+        public System.Web.Services.Description.SoapBindingUse Use { get { throw null; } set { } }
     }
     [System.Web.Services.Configuration.XmlFormatExtensionAttribute("fault", "http://schemas.xmlsoap.org/wsdl/soap/", typeof(System.Web.Services.Description.FaultBinding))]
     public partial class SoapFaultBinding : System.Web.Services.Description.ServiceDescriptionFormatExtension
@@ -829,14 +829,14 @@ namespace System.Web.Services.Description
         public SoapFaultBinding() { }
         [System.ComponentModel.DefaultValueAttribute("")]
         [System.Xml.Serialization.XmlAttributeAttribute("encodingStyle")]
-        public string Encoding { get { return default(string); } set { } }
+        public string Encoding { get { throw null; } set { } }
         [System.Xml.Serialization.XmlAttributeAttribute("name")]
-        public string Name { get { return default(string); } set { } }
+        public string Name { get { throw null; } set { } }
         [System.Xml.Serialization.XmlAttributeAttribute("namespace")]
-        public string Namespace { get { return default(string); } set { } }
+        public string Namespace { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute((System.Web.Services.Description.SoapBindingUse)(0))]
         [System.Xml.Serialization.XmlAttributeAttribute("use")]
-        public System.Web.Services.Description.SoapBindingUse Use { get { return default(System.Web.Services.Description.SoapBindingUse); } set { } }
+        public System.Web.Services.Description.SoapBindingUse Use { get { throw null; } set { } }
     }
     [System.Web.Services.Configuration.XmlFormatExtensionAttribute("header", "http://schemas.xmlsoap.org/wsdl/soap/", typeof(System.Web.Services.Description.InputBinding), typeof(System.Web.Services.Description.OutputBinding))]
     public partial class SoapHeaderBinding : System.Web.Services.Description.ServiceDescriptionFormatExtension
@@ -844,66 +844,66 @@ namespace System.Web.Services.Description
         public SoapHeaderBinding() { }
         [System.ComponentModel.DefaultValueAttribute("")]
         [System.Xml.Serialization.XmlAttributeAttribute("encodingStyle")]
-        public string Encoding { get { return default(string); } set { } }
+        public string Encoding { get { throw null; } set { } }
         [System.Xml.Serialization.XmlElementAttribute("headerfault")]
-        public System.Web.Services.Description.SoapHeaderFaultBinding Fault { get { return default(System.Web.Services.Description.SoapHeaderFaultBinding); } set { } }
+        public System.Web.Services.Description.SoapHeaderFaultBinding Fault { get { throw null; } set { } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public bool MapToProperty { get { return default(bool); } set { } }
+        public bool MapToProperty { get { throw null; } set { } }
         [System.Xml.Serialization.XmlAttributeAttribute("message")]
-        public System.Xml.XmlQualifiedName Message { get { return default(System.Xml.XmlQualifiedName); } set { } }
+        public System.Xml.XmlQualifiedName Message { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
         [System.Xml.Serialization.XmlAttributeAttribute("namespace")]
-        public string Namespace { get { return default(string); } set { } }
+        public string Namespace { get { throw null; } set { } }
         [System.Xml.Serialization.XmlAttributeAttribute("part")]
-        public string Part { get { return default(string); } set { } }
+        public string Part { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute((System.Web.Services.Description.SoapBindingUse)(0))]
         [System.Xml.Serialization.XmlAttributeAttribute("use")]
-        public System.Web.Services.Description.SoapBindingUse Use { get { return default(System.Web.Services.Description.SoapBindingUse); } set { } }
+        public System.Web.Services.Description.SoapBindingUse Use { get { throw null; } set { } }
     }
     public partial class SoapHeaderFaultBinding : System.Web.Services.Description.ServiceDescriptionFormatExtension
     {
         public SoapHeaderFaultBinding() { }
         [System.ComponentModel.DefaultValueAttribute("")]
         [System.Xml.Serialization.XmlAttributeAttribute("encodingStyle")]
-        public string Encoding { get { return default(string); } set { } }
+        public string Encoding { get { throw null; } set { } }
         [System.Xml.Serialization.XmlAttributeAttribute("message")]
-        public System.Xml.XmlQualifiedName Message { get { return default(System.Xml.XmlQualifiedName); } set { } }
+        public System.Xml.XmlQualifiedName Message { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
         [System.Xml.Serialization.XmlAttributeAttribute("namespace")]
-        public string Namespace { get { return default(string); } set { } }
+        public string Namespace { get { throw null; } set { } }
         [System.Xml.Serialization.XmlAttributeAttribute("part")]
-        public string Part { get { return default(string); } set { } }
+        public string Part { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute((System.Web.Services.Description.SoapBindingUse)(0))]
         [System.Xml.Serialization.XmlAttributeAttribute("use")]
-        public System.Web.Services.Description.SoapBindingUse Use { get { return default(System.Web.Services.Description.SoapBindingUse); } set { } }
+        public System.Web.Services.Description.SoapBindingUse Use { get { throw null; } set { } }
     }
     [System.Web.Services.Configuration.XmlFormatExtensionAttribute("operation", "http://schemas.xmlsoap.org/wsdl/soap/", typeof(System.Web.Services.Description.OperationBinding))]
     public partial class SoapOperationBinding : System.Web.Services.Description.ServiceDescriptionFormatExtension
     {
         public SoapOperationBinding() { }
         [System.Xml.Serialization.XmlAttributeAttribute("soapAction")]
-        public string SoapAction { get { return default(string); } set { } }
+        public string SoapAction { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute((System.Web.Services.Description.SoapBindingStyle)(0))]
         [System.Xml.Serialization.XmlAttributeAttribute("style")]
-        public System.Web.Services.Description.SoapBindingStyle Style { get { return default(System.Web.Services.Description.SoapBindingStyle); } set { } }
+        public System.Web.Services.Description.SoapBindingStyle Style { get { throw null; } set { } }
     }
     [System.Web.Services.Configuration.XmlFormatExtensionPointAttribute("Extensions")]
     public sealed partial class Types : System.Web.Services.Description.DocumentableItem
     {
         public Types() { }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public override System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { return default(System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection); } }
+        public override System.Web.Services.Description.ServiceDescriptionFormatExtensionCollection Extensions { get { throw null; } }
         [System.Xml.Serialization.XmlElementAttribute("schema", typeof(System.Xml.Schema.XmlSchema), Namespace="http://www.w3.org/2001/XMLSchema")]
-        public System.Xml.Serialization.XmlSchemas Schemas { get { return default(System.Xml.Serialization.XmlSchemas); } }
+        public System.Xml.Serialization.XmlSchemas Schemas { get { throw null; } }
     }
     public sealed partial class WebReference
     {
         public WebReference() { }
-        public string AppSettingBaseUrl { get { return default(string); } }
-        public string AppSettingUrlKey { get { return default(string); } }
-        public System.Web.Services.Discovery.DiscoveryClientDocumentCollection Documents { get { return default(System.Web.Services.Discovery.DiscoveryClientDocumentCollection); } }
-        public string ProtocolName { get { return default(string); } set { } }
-        public System.Collections.Specialized.StringCollection ValidationWarnings { get { return default(System.Collections.Specialized.StringCollection); } }
+        public string AppSettingBaseUrl { get { throw null; } }
+        public string AppSettingUrlKey { get { throw null; } }
+        public System.Web.Services.Discovery.DiscoveryClientDocumentCollection Documents { get { throw null; } }
+        public string ProtocolName { get { throw null; } set { } }
+        public System.Collections.Specialized.StringCollection ValidationWarnings { get { throw null; } }
     }
 }
 namespace System.Web.Services.Discovery
@@ -916,68 +916,68 @@ namespace System.Web.Services.Discovery
         public ContractReference(string href) { }
         public ContractReference(string href, string docRef) { }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public System.Web.Services.Description.ServiceDescription Contract { get { return default(System.Web.Services.Description.ServiceDescription); } }
+        public System.Web.Services.Description.ServiceDescription Contract { get { throw null; } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public override string DefaultFilename { get { return default(string); } }
+        public override string DefaultFilename { get { throw null; } }
         [System.Xml.Serialization.XmlAttributeAttribute("docRef")]
-        public string DocRef { get { return default(string); } set { } }
+        public string DocRef { get { throw null; } set { } }
         [System.Xml.Serialization.XmlAttributeAttribute("ref")]
-        public string Ref { get { return default(string); } set { } }
+        public string Ref { get { throw null; } set { } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public override string Url { get { return default(string); } set { } }
-        public override object ReadDocument(System.IO.Stream stream) { return default(object); }
+        public override string Url { get { throw null; } set { } }
+        public override object ReadDocument(System.IO.Stream stream) { throw null; }
         protected internal override void Resolve(string contentType, System.IO.Stream stream) { }
         public override void WriteDocument(object document, System.IO.Stream stream) { }
     }
     public sealed partial class ContractSearchPattern : System.Web.Services.Discovery.DiscoverySearchPattern
     {
         public ContractSearchPattern() { }
-        public override string Pattern { get { return default(string); } }
-        public override System.Web.Services.Discovery.DiscoveryReference GetDiscoveryReference(string filename) { return default(System.Web.Services.Discovery.DiscoveryReference); }
+        public override string Pattern { get { throw null; } }
+        public override System.Web.Services.Discovery.DiscoveryReference GetDiscoveryReference(string filename) { throw null; }
     }
     public sealed partial class DiscoveryClientDocumentCollection : System.Collections.DictionaryBase
     {
         public DiscoveryClientDocumentCollection() { }
-        public object this[string url] { get { return default(object); } set { } }
-        public System.Collections.ICollection Keys { get { return default(System.Collections.ICollection); } }
-        public System.Collections.ICollection Values { get { return default(System.Collections.ICollection); } }
+        public object this[string url] { get { throw null; } set { } }
+        public System.Collections.ICollection Keys { get { throw null; } }
+        public System.Collections.ICollection Values { get { throw null; } }
         public void Add(string url, object value) { }
-        public bool Contains(string url) { return default(bool); }
+        public bool Contains(string url) { throw null; }
         public void Remove(string url) { }
     }
     public partial class DiscoveryClientProtocol : System.Web.Services.Protocols.HttpWebClientProtocol
     {
         public DiscoveryClientProtocol() { }
-        public System.Collections.IList AdditionalInformation { get { return default(System.Collections.IList); } }
-        public System.Web.Services.Discovery.DiscoveryClientDocumentCollection Documents { get { return default(System.Web.Services.Discovery.DiscoveryClientDocumentCollection); } }
-        public System.Web.Services.Discovery.DiscoveryExceptionDictionary Errors { get { return default(System.Web.Services.Discovery.DiscoveryExceptionDictionary); } }
-        public System.Web.Services.Discovery.DiscoveryClientReferenceCollection References { get { return default(System.Web.Services.Discovery.DiscoveryClientReferenceCollection); } }
-        public System.Web.Services.Discovery.DiscoveryDocument Discover(string url) { return default(System.Web.Services.Discovery.DiscoveryDocument); }
-        public System.Web.Services.Discovery.DiscoveryDocument DiscoverAny(string url) { return default(System.Web.Services.Discovery.DiscoveryDocument); }
-        public System.IO.Stream Download(ref string url) { return default(System.IO.Stream); }
-        public System.IO.Stream Download(ref string url, ref string contentType) { return default(System.IO.Stream); }
+        public System.Collections.IList AdditionalInformation { get { throw null; } }
+        public System.Web.Services.Discovery.DiscoveryClientDocumentCollection Documents { get { throw null; } }
+        public System.Web.Services.Discovery.DiscoveryExceptionDictionary Errors { get { throw null; } }
+        public System.Web.Services.Discovery.DiscoveryClientReferenceCollection References { get { throw null; } }
+        public System.Web.Services.Discovery.DiscoveryDocument Discover(string url) { throw null; }
+        public System.Web.Services.Discovery.DiscoveryDocument DiscoverAny(string url) { throw null; }
+        public System.IO.Stream Download(ref string url) { throw null; }
+        public System.IO.Stream Download(ref string url, ref string contentType) { throw null; }
         [System.ObsoleteAttribute("This method will be removed from a future version. The method call is no longer required for resource discovery", false)]
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public void LoadExternals() { }
-        public System.Web.Services.Discovery.DiscoveryClientResultCollection ReadAll(string topLevelFilename) { return default(System.Web.Services.Discovery.DiscoveryClientResultCollection); }
+        public System.Web.Services.Discovery.DiscoveryClientResultCollection ReadAll(string topLevelFilename) { throw null; }
         public void ResolveAll() { }
         public void ResolveOneLevel() { }
-        public System.Web.Services.Discovery.DiscoveryClientResultCollection WriteAll(string directory, string topLevelFilename) { return default(System.Web.Services.Discovery.DiscoveryClientResultCollection); }
+        public System.Web.Services.Discovery.DiscoveryClientResultCollection WriteAll(string directory, string topLevelFilename) { throw null; }
         public sealed partial class DiscoveryClientResultsFile
         {
             public DiscoveryClientResultsFile() { }
-            public System.Web.Services.Discovery.DiscoveryClientResultCollection Results { get { return default(System.Web.Services.Discovery.DiscoveryClientResultCollection); } }
+            public System.Web.Services.Discovery.DiscoveryClientResultCollection Results { get { throw null; } }
         }
     }
     public sealed partial class DiscoveryClientReferenceCollection : System.Collections.DictionaryBase
     {
         public DiscoveryClientReferenceCollection() { }
-        public System.Web.Services.Discovery.DiscoveryReference this[string url] { get { return default(System.Web.Services.Discovery.DiscoveryReference); } set { } }
-        public System.Collections.ICollection Keys { get { return default(System.Collections.ICollection); } }
-        public System.Collections.ICollection Values { get { return default(System.Collections.ICollection); } }
+        public System.Web.Services.Discovery.DiscoveryReference this[string url] { get { throw null; } set { } }
+        public System.Collections.ICollection Keys { get { throw null; } }
+        public System.Collections.ICollection Values { get { throw null; } }
         public void Add(string url, System.Web.Services.Discovery.DiscoveryReference value) { }
         public void Add(System.Web.Services.Discovery.DiscoveryReference value) { }
-        public bool Contains(string url) { return default(bool); }
+        public bool Contains(string url) { throw null; }
         public void Remove(string url) { }
     }
     public sealed partial class DiscoveryClientResult
@@ -985,18 +985,18 @@ namespace System.Web.Services.Discovery
         public DiscoveryClientResult() { }
         public DiscoveryClientResult(System.Type referenceType, string url, string filename) { }
         [System.Xml.Serialization.XmlAttributeAttribute("filename")]
-        public string Filename { get { return default(string); } set { } }
+        public string Filename { get { throw null; } set { } }
         [System.Xml.Serialization.XmlAttributeAttribute("referenceType")]
-        public string ReferenceTypeName { get { return default(string); } set { } }
+        public string ReferenceTypeName { get { throw null; } set { } }
         [System.Xml.Serialization.XmlAttributeAttribute("url")]
-        public string Url { get { return default(string); } set { } }
+        public string Url { get { throw null; } set { } }
     }
     public sealed partial class DiscoveryClientResultCollection : System.Collections.CollectionBase
     {
         public DiscoveryClientResultCollection() { }
-        public System.Web.Services.Discovery.DiscoveryClientResult this[int i] { get { return default(System.Web.Services.Discovery.DiscoveryClientResult); } set { } }
-        public int Add(System.Web.Services.Discovery.DiscoveryClientResult value) { return default(int); }
-        public bool Contains(System.Web.Services.Discovery.DiscoveryClientResult value) { return default(bool); }
+        public System.Web.Services.Discovery.DiscoveryClientResult this[int i] { get { throw null; } set { } }
+        public int Add(System.Web.Services.Discovery.DiscoveryClientResult value) { throw null; }
+        public bool Contains(System.Web.Services.Discovery.DiscoveryClientResult value) { throw null; }
         public void Remove(System.Web.Services.Discovery.DiscoveryClientResult value) { }
     }
     [System.Xml.Serialization.XmlRootAttribute("discovery", Namespace="http://schemas.xmlsoap.org/disco/")]
@@ -1005,11 +1005,11 @@ namespace System.Web.Services.Discovery
         public const string Namespace = "http://schemas.xmlsoap.org/disco/";
         public DiscoveryDocument() { }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public System.Collections.IList References { get { return default(System.Collections.IList); } }
-        public static bool CanRead(System.Xml.XmlReader xmlReader) { return default(bool); }
-        public static System.Web.Services.Discovery.DiscoveryDocument Read(System.IO.Stream stream) { return default(System.Web.Services.Discovery.DiscoveryDocument); }
-        public static System.Web.Services.Discovery.DiscoveryDocument Read(System.IO.TextReader textReader) { return default(System.Web.Services.Discovery.DiscoveryDocument); }
-        public static System.Web.Services.Discovery.DiscoveryDocument Read(System.Xml.XmlReader xmlReader) { return default(System.Web.Services.Discovery.DiscoveryDocument); }
+        public System.Collections.IList References { get { throw null; } }
+        public static bool CanRead(System.Xml.XmlReader xmlReader) { throw null; }
+        public static System.Web.Services.Discovery.DiscoveryDocument Read(System.IO.Stream stream) { throw null; }
+        public static System.Web.Services.Discovery.DiscoveryDocument Read(System.IO.TextReader textReader) { throw null; }
+        public static System.Web.Services.Discovery.DiscoveryDocument Read(System.Xml.XmlReader xmlReader) { throw null; }
         public void Write(System.IO.Stream stream) { }
         public void Write(System.IO.TextWriter textWriter) { }
         public void Write(System.Xml.XmlWriter xmlWriter) { }
@@ -1017,8 +1017,8 @@ namespace System.Web.Services.Discovery
     public partial class DiscoveryDocumentLinksPattern : System.Web.Services.Discovery.DiscoverySearchPattern
     {
         public DiscoveryDocumentLinksPattern() { }
-        public override string Pattern { get { return default(string); } }
-        public override System.Web.Services.Discovery.DiscoveryReference GetDiscoveryReference(string filename) { return default(System.Web.Services.Discovery.DiscoveryReference); }
+        public override string Pattern { get { throw null; } }
+        public override System.Web.Services.Discovery.DiscoveryReference GetDiscoveryReference(string filename) { throw null; }
     }
     [System.Xml.Serialization.XmlRootAttribute("discoveryRef", Namespace="http://schemas.xmlsoap.org/disco/", IsNullable=true)]
     public sealed partial class DiscoveryDocumentReference : System.Web.Services.Discovery.DiscoveryReference
@@ -1026,14 +1026,14 @@ namespace System.Web.Services.Discovery
         public DiscoveryDocumentReference() { }
         public DiscoveryDocumentReference(string href) { }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public override string DefaultFilename { get { return default(string); } }
+        public override string DefaultFilename { get { throw null; } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public System.Web.Services.Discovery.DiscoveryDocument Document { get { return default(System.Web.Services.Discovery.DiscoveryDocument); } }
+        public System.Web.Services.Discovery.DiscoveryDocument Document { get { throw null; } }
         [System.Xml.Serialization.XmlAttributeAttribute("ref")]
-        public string Ref { get { return default(string); } set { } }
+        public string Ref { get { throw null; } set { } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public override string Url { get { return default(string); } set { } }
-        public override object ReadDocument(System.IO.Stream stream) { return default(object); }
+        public override string Url { get { throw null; } set { } }
+        public override object ReadDocument(System.IO.Stream stream) { throw null; }
         protected internal override void Resolve(string contentType, System.IO.Stream stream) { }
         public void ResolveAll() { }
         public override void WriteDocument(object document, System.IO.Stream stream) { }
@@ -1041,29 +1041,29 @@ namespace System.Web.Services.Discovery
     public sealed partial class DiscoveryDocumentSearchPattern : System.Web.Services.Discovery.DiscoverySearchPattern
     {
         public DiscoveryDocumentSearchPattern() { }
-        public override string Pattern { get { return default(string); } }
-        public override System.Web.Services.Discovery.DiscoveryReference GetDiscoveryReference(string filename) { return default(System.Web.Services.Discovery.DiscoveryReference); }
+        public override string Pattern { get { throw null; } }
+        public override System.Web.Services.Discovery.DiscoveryReference GetDiscoveryReference(string filename) { throw null; }
     }
     public sealed partial class DiscoveryExceptionDictionary : System.Collections.DictionaryBase
     {
         public DiscoveryExceptionDictionary() { }
-        public System.Exception this[string url] { get { return default(System.Exception); } set { } }
-        public System.Collections.ICollection Keys { get { return default(System.Collections.ICollection); } }
-        public System.Collections.ICollection Values { get { return default(System.Collections.ICollection); } }
+        public System.Exception this[string url] { get { throw null; } set { } }
+        public System.Collections.ICollection Keys { get { throw null; } }
+        public System.Collections.ICollection Values { get { throw null; } }
         public void Add(string url, System.Exception value) { }
-        public bool Contains(string url) { return default(bool); }
+        public bool Contains(string url) { throw null; }
         public void Remove(string url) { }
     }
     public abstract partial class DiscoveryReference
     {
         protected DiscoveryReference() { }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public System.Web.Services.Discovery.DiscoveryClientProtocol ClientProtocol { get { return default(System.Web.Services.Discovery.DiscoveryClientProtocol); } set { } }
+        public System.Web.Services.Discovery.DiscoveryClientProtocol ClientProtocol { get { throw null; } set { } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public virtual string DefaultFilename { get { return default(string); } }
+        public virtual string DefaultFilename { get { throw null; } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
         public abstract string Url { get; set; }
-        public static string FilenameFromUrl(string url) { return default(string); }
+        public static string FilenameFromUrl(string url) { throw null; }
         public abstract object ReadDocument(System.IO.Stream stream);
         public void Resolve() { }
         protected internal abstract void Resolve(string contentType, System.IO.Stream stream);
@@ -1072,9 +1072,9 @@ namespace System.Web.Services.Discovery
     public sealed partial class DiscoveryReferenceCollection : System.Collections.CollectionBase
     {
         public DiscoveryReferenceCollection() { }
-        public System.Web.Services.Discovery.DiscoveryReference this[int i] { get { return default(System.Web.Services.Discovery.DiscoveryReference); } set { } }
-        public int Add(System.Web.Services.Discovery.DiscoveryReference value) { return default(int); }
-        public bool Contains(System.Web.Services.Discovery.DiscoveryReference value) { return default(bool); }
+        public System.Web.Services.Discovery.DiscoveryReference this[int i] { get { throw null; } set { } }
+        public int Add(System.Web.Services.Discovery.DiscoveryReference value) { throw null; }
+        public bool Contains(System.Web.Services.Discovery.DiscoveryReference value) { throw null; }
         public void Remove(System.Web.Services.Discovery.DiscoveryReference value) { }
     }
     public abstract partial class DiscoverySearchPattern
@@ -1089,8 +1089,8 @@ namespace System.Web.Services.Discovery
         public const string Namespace = "urn:schemas-dynamicdiscovery:disco.2000-03-17";
         public DynamicDiscoveryDocument() { }
         [System.Xml.Serialization.XmlElementAttribute("exclude", typeof(System.Web.Services.Discovery.ExcludePathInfo))]
-        public System.Web.Services.Discovery.ExcludePathInfo[] ExcludePaths { get { return default(System.Web.Services.Discovery.ExcludePathInfo[]); } set { } }
-        public static System.Web.Services.Discovery.DynamicDiscoveryDocument Load(System.IO.Stream stream) { return default(System.Web.Services.Discovery.DynamicDiscoveryDocument); }
+        public System.Web.Services.Discovery.ExcludePathInfo[] ExcludePaths { get { throw null; } set { } }
+        public static System.Web.Services.Discovery.DynamicDiscoveryDocument Load(System.IO.Stream stream) { throw null; }
         public void Write(System.IO.Stream stream) { }
     }
     public sealed partial class ExcludePathInfo
@@ -1098,7 +1098,7 @@ namespace System.Web.Services.Discovery
         public ExcludePathInfo() { }
         public ExcludePathInfo(string path) { }
         [System.Xml.Serialization.XmlAttributeAttribute("path")]
-        public string Path { get { return default(string); } set { } }
+        public string Path { get { throw null; } set { } }
     }
     [System.Xml.Serialization.XmlRootAttribute("schemaRef", Namespace="http://schemas.xmlsoap.org/disco/schema/", IsNullable=true)]
     public sealed partial class SchemaReference : System.Web.Services.Discovery.DiscoveryReference
@@ -1107,17 +1107,17 @@ namespace System.Web.Services.Discovery
         public SchemaReference() { }
         public SchemaReference(string href) { }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public override string DefaultFilename { get { return default(string); } }
+        public override string DefaultFilename { get { throw null; } }
         [System.Xml.Serialization.XmlAttributeAttribute("ref")]
-        public string Ref { get { return default(string); } set { } }
+        public string Ref { get { throw null; } set { } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public System.Xml.Schema.XmlSchema Schema { get { return default(System.Xml.Schema.XmlSchema); } }
+        public System.Xml.Schema.XmlSchema Schema { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute(null)]
         [System.Xml.Serialization.XmlAttributeAttribute("targetNamespace")]
-        public string TargetNamespace { get { return default(string); } set { } }
+        public string TargetNamespace { get { throw null; } set { } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public override string Url { get { return default(string); } set { } }
-        public override object ReadDocument(System.IO.Stream stream) { return default(object); }
+        public override string Url { get { throw null; } set { } }
+        public override object ReadDocument(System.IO.Stream stream) { throw null; }
         protected internal override void Resolve(string contentType, System.IO.Stream stream) { }
         public override void WriteDocument(object document, System.IO.Stream stream) { }
     }
@@ -1127,15 +1127,15 @@ namespace System.Web.Services.Discovery
         public const string Namespace = "http://schemas.xmlsoap.org/disco/soap/";
         public SoapBinding() { }
         [System.Xml.Serialization.XmlAttributeAttribute("address")]
-        public string Address { get { return default(string); } set { } }
+        public string Address { get { throw null; } set { } }
         [System.Xml.Serialization.XmlAttributeAttribute("binding")]
-        public System.Xml.XmlQualifiedName Binding { get { return default(System.Xml.XmlQualifiedName); } set { } }
+        public System.Xml.XmlQualifiedName Binding { get { throw null; } set { } }
     }
     public sealed partial class XmlSchemaSearchPattern : System.Web.Services.Discovery.DiscoverySearchPattern
     {
         public XmlSchemaSearchPattern() { }
-        public override string Pattern { get { return default(string); } }
-        public override System.Web.Services.Discovery.DiscoveryReference GetDiscoveryReference(string filename) { return default(System.Web.Services.Discovery.DiscoveryReference); }
+        public override string Pattern { get { throw null; } }
+        public override System.Web.Services.Discovery.DiscoveryReference GetDiscoveryReference(string filename) { throw null; }
     }
 }
 namespace System.Web.Services.Protocols
@@ -1145,73 +1145,73 @@ namespace System.Web.Services.Protocols
     {
         public HttpMethodAttribute() { }
         public HttpMethodAttribute(System.Type returnFormatter, System.Type parameterFormatter) { }
-        public System.Type ParameterFormatter { get { return default(System.Type); } set { } }
-        public System.Type ReturnFormatter { get { return default(System.Type); } set { } }
+        public System.Type ParameterFormatter { get { throw null; } set { } }
+        public System.Type ReturnFormatter { get { throw null; } set { } }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public abstract partial class HttpWebClientProtocol : System.Web.Services.Protocols.WebClientProtocol
     {
         protected HttpWebClientProtocol() { }
         [System.ComponentModel.DefaultValueAttribute(false)]
-        public bool AllowAutoRedirect { get { return default(bool); } set { } }
+        public bool AllowAutoRedirect { get { throw null; } set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
-        public System.Security.Cryptography.X509Certificates.X509CertificateCollection ClientCertificates { get { return default(System.Security.Cryptography.X509Certificates.X509CertificateCollection); } }
+        public System.Security.Cryptography.X509Certificates.X509CertificateCollection ClientCertificates { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute(null)]
-        public System.Net.CookieContainer CookieContainer { get { return default(System.Net.CookieContainer); } set { } }
+        public System.Net.CookieContainer CookieContainer { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(false)]
-        public bool EnableDecompression { get { return default(bool); } set { } }
+        public bool EnableDecompression { get { throw null; } set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
-        public System.Net.IWebProxy Proxy { get { return default(System.Net.IWebProxy); } set { } }
+        public System.Net.IWebProxy Proxy { get { throw null; } set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
-        public bool UnsafeAuthenticatedConnectionSharing { get { return default(bool); } set { } }
+        public bool UnsafeAuthenticatedConnectionSharing { get { throw null; } set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
-        public string UserAgent { get { return default(string); } set { } }
+        public string UserAgent { get { throw null; } set { } }
         protected void CancelAsync(object userState) { }
-        public static bool GenerateXmlMappings(System.Type type, System.Collections.ArrayList mapping) { return default(bool); }
-        public static System.Collections.Hashtable GenerateXmlMappings(System.Type[] types, System.Collections.ArrayList mapping) { return default(System.Collections.Hashtable); }
-        protected override System.Net.WebRequest GetWebRequest(System.Uri uri) { return default(System.Net.WebRequest); }
-        protected override System.Net.WebResponse GetWebResponse(System.Net.WebRequest request) { return default(System.Net.WebResponse); }
-        protected override System.Net.WebResponse GetWebResponse(System.Net.WebRequest request, System.IAsyncResult result) { return default(System.Net.WebResponse); }
+        public static bool GenerateXmlMappings(System.Type type, System.Collections.ArrayList mapping) { throw null; }
+        public static System.Collections.Hashtable GenerateXmlMappings(System.Type[] types, System.Collections.ArrayList mapping) { throw null; }
+        protected override System.Net.WebRequest GetWebRequest(System.Uri uri) { throw null; }
+        protected override System.Net.WebResponse GetWebResponse(System.Net.WebRequest request) { throw null; }
+        protected override System.Net.WebResponse GetWebResponse(System.Net.WebRequest request, System.IAsyncResult result) { throw null; }
     }
     public partial class InvokeCompletedEventArgs : System.ComponentModel.AsyncCompletedEventArgs
     {
         internal InvokeCompletedEventArgs() { }
-        public object[] Results { get { return default(object[]); } }
+        public object[] Results { get { throw null; } }
     }
     public delegate void InvokeCompletedEventHandler(object sender, System.Web.Services.Protocols.InvokeCompletedEventArgs e);
     public sealed partial class LogicalMethodInfo
     {
         public LogicalMethodInfo(System.Reflection.MethodInfo method_info) { }
-        public System.Reflection.ParameterInfo AsyncCallbackParameter { get { return default(System.Reflection.ParameterInfo); } }
-        public System.Reflection.ParameterInfo AsyncResultParameter { get { return default(System.Reflection.ParameterInfo); } }
-        public System.Reflection.ParameterInfo AsyncStateParameter { get { return default(System.Reflection.ParameterInfo); } }
-        public System.Reflection.MethodInfo BeginMethodInfo { get { return default(System.Reflection.MethodInfo); } }
-        public System.Reflection.ICustomAttributeProvider CustomAttributeProvider { get { return default(System.Reflection.ICustomAttributeProvider); } }
-        public System.Type DeclaringType { get { return default(System.Type); } }
-        public System.Reflection.MethodInfo EndMethodInfo { get { return default(System.Reflection.MethodInfo); } }
-        public System.Reflection.ParameterInfo[] InParameters { get { return default(System.Reflection.ParameterInfo[]); } }
-        public bool IsAsync { get { return default(bool); } }
-        public bool IsVoid { get { return default(bool); } }
-        public System.Reflection.MethodInfo MethodInfo { get { return default(System.Reflection.MethodInfo); } }
-        public string Name { get { return default(string); } }
-        public System.Reflection.ParameterInfo[] OutParameters { get { return default(System.Reflection.ParameterInfo[]); } }
-        public System.Reflection.ParameterInfo[] Parameters { get { return default(System.Reflection.ParameterInfo[]); } }
-        public System.Type ReturnType { get { return default(System.Type); } }
-        public System.Reflection.ICustomAttributeProvider ReturnTypeCustomAttributeProvider { get { return default(System.Reflection.ICustomAttributeProvider); } }
-        public System.IAsyncResult BeginInvoke(object target, object[] values, System.AsyncCallback callback, object asyncState) { return default(System.IAsyncResult); }
-        public static System.Web.Services.Protocols.LogicalMethodInfo[] Create(System.Reflection.MethodInfo[] method_infos) { return default(System.Web.Services.Protocols.LogicalMethodInfo[]); }
-        public static System.Web.Services.Protocols.LogicalMethodInfo[] Create(System.Reflection.MethodInfo[] method_infos, System.Web.Services.Protocols.LogicalMethodTypes types) { return default(System.Web.Services.Protocols.LogicalMethodInfo[]); }
-        public object[] EndInvoke(object target, System.IAsyncResult asyncResult) { return default(object[]); }
-        public object GetCustomAttribute(System.Type type) { return default(object); }
-        public object[] GetCustomAttributes(System.Type type) { return default(object[]); }
-        public object[] Invoke(object target, object[] values) { return default(object[]); }
-        public static bool IsBeginMethod(System.Reflection.MethodInfo method_info) { return default(bool); }
-        public static bool IsEndMethod(System.Reflection.MethodInfo method_info) { return default(bool); }
-        public override string ToString() { return default(string); }
+        public System.Reflection.ParameterInfo AsyncCallbackParameter { get { throw null; } }
+        public System.Reflection.ParameterInfo AsyncResultParameter { get { throw null; } }
+        public System.Reflection.ParameterInfo AsyncStateParameter { get { throw null; } }
+        public System.Reflection.MethodInfo BeginMethodInfo { get { throw null; } }
+        public System.Reflection.ICustomAttributeProvider CustomAttributeProvider { get { throw null; } }
+        public System.Type DeclaringType { get { throw null; } }
+        public System.Reflection.MethodInfo EndMethodInfo { get { throw null; } }
+        public System.Reflection.ParameterInfo[] InParameters { get { throw null; } }
+        public bool IsAsync { get { throw null; } }
+        public bool IsVoid { get { throw null; } }
+        public System.Reflection.MethodInfo MethodInfo { get { throw null; } }
+        public string Name { get { throw null; } }
+        public System.Reflection.ParameterInfo[] OutParameters { get { throw null; } }
+        public System.Reflection.ParameterInfo[] Parameters { get { throw null; } }
+        public System.Type ReturnType { get { throw null; } }
+        public System.Reflection.ICustomAttributeProvider ReturnTypeCustomAttributeProvider { get { throw null; } }
+        public System.IAsyncResult BeginInvoke(object target, object[] values, System.AsyncCallback callback, object asyncState) { throw null; }
+        public static System.Web.Services.Protocols.LogicalMethodInfo[] Create(System.Reflection.MethodInfo[] method_infos) { throw null; }
+        public static System.Web.Services.Protocols.LogicalMethodInfo[] Create(System.Reflection.MethodInfo[] method_infos, System.Web.Services.Protocols.LogicalMethodTypes types) { throw null; }
+        public object[] EndInvoke(object target, System.IAsyncResult asyncResult) { throw null; }
+        public object GetCustomAttribute(System.Type type) { throw null; }
+        public object[] GetCustomAttributes(System.Type type) { throw null; }
+        public object[] Invoke(object target, object[] values) { throw null; }
+        public static bool IsBeginMethod(System.Reflection.MethodInfo method_info) { throw null; }
+        public static bool IsEndMethod(System.Reflection.MethodInfo method_info) { throw null; }
+        public override string ToString() { throw null; }
     }
     public enum LogicalMethodTypes
     {
@@ -1221,19 +1221,19 @@ namespace System.Web.Services.Protocols
     public abstract partial class MimeFormatter
     {
         protected MimeFormatter() { }
-        public static System.Web.Services.Protocols.MimeFormatter CreateInstance(System.Type type, object initializer) { return default(System.Web.Services.Protocols.MimeFormatter); }
-        public static object GetInitializer(System.Type type, System.Web.Services.Protocols.LogicalMethodInfo methodInfo) { return default(object); }
+        public static System.Web.Services.Protocols.MimeFormatter CreateInstance(System.Type type, object initializer) { throw null; }
+        public static object GetInitializer(System.Type type, System.Web.Services.Protocols.LogicalMethodInfo methodInfo) { throw null; }
         public abstract object GetInitializer(System.Web.Services.Protocols.LogicalMethodInfo methodInfo);
-        public static object[] GetInitializers(System.Type type, System.Web.Services.Protocols.LogicalMethodInfo[] methodInfos) { return default(object[]); }
-        public virtual object[] GetInitializers(System.Web.Services.Protocols.LogicalMethodInfo[] methodInfos) { return default(object[]); }
+        public static object[] GetInitializers(System.Type type, System.Web.Services.Protocols.LogicalMethodInfo[] methodInfos) { throw null; }
+        public virtual object[] GetInitializers(System.Web.Services.Protocols.LogicalMethodInfo[] methodInfos) { throw null; }
         public abstract void Initialize(object initializer);
     }
     public abstract partial class MimeParameterWriter : System.Web.Services.Protocols.MimeFormatter
     {
         protected MimeParameterWriter() { }
-        public virtual System.Text.Encoding RequestEncoding { get { return default(System.Text.Encoding); } set { } }
-        public virtual bool UsesWriteRequest { get { return default(bool); } }
-        public virtual string GetRequestUrl(string url, object[] parameters) { return default(string); }
+        public virtual System.Text.Encoding RequestEncoding { get { throw null; } set { } }
+        public virtual bool UsesWriteRequest { get { throw null; } }
+        public virtual string GetRequestUrl(string url, object[] parameters) { throw null; }
         public virtual void InitializeRequest(System.Net.WebRequest request, object[] values) { }
         public virtual void WriteRequest(System.IO.Stream requestStream, object[] values) { }
     }
@@ -1245,9 +1245,9 @@ namespace System.Web.Services.Protocols
     public partial class NopReturnReader : System.Web.Services.Protocols.MimeReturnReader
     {
         public NopReturnReader() { }
-        public override object GetInitializer(System.Web.Services.Protocols.LogicalMethodInfo methodInfo) { return default(object); }
+        public override object GetInitializer(System.Web.Services.Protocols.LogicalMethodInfo methodInfo) { throw null; }
         public override void Initialize(object initializer) { }
-        public override object Read(System.Net.WebResponse response, System.IO.Stream responseStream) { return default(object); }
+        public override object Read(System.Net.WebResponse response, System.IO.Stream responseStream) { throw null; }
     }
     public partial class ServerType
     {
@@ -1269,13 +1269,13 @@ namespace System.Web.Services.Protocols
     public sealed partial class SoapClientMessage : System.Web.Services.Protocols.SoapMessage
     {
         internal SoapClientMessage() { }
-        public override string Action { get { return default(string); } }
-        public System.Web.Services.Protocols.SoapHttpClientProtocol Client { get { return default(System.Web.Services.Protocols.SoapHttpClientProtocol); } }
-        public override System.Web.Services.Protocols.LogicalMethodInfo MethodInfo { get { return default(System.Web.Services.Protocols.LogicalMethodInfo); } }
-        public override bool OneWay { get { return default(bool); } }
+        public override string Action { get { throw null; } }
+        public System.Web.Services.Protocols.SoapHttpClientProtocol Client { get { throw null; } }
+        public override System.Web.Services.Protocols.LogicalMethodInfo MethodInfo { get { throw null; } }
+        public override bool OneWay { get { throw null; } }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public override System.Web.Services.Protocols.SoapProtocolVersion SoapVersion { get { return default(System.Web.Services.Protocols.SoapProtocolVersion); } }
-        public override string Url { get { return default(string); } }
+        public override System.Web.Services.Protocols.SoapProtocolVersion SoapVersion { get { throw null; } }
+        public override string Url { get { throw null; } }
         protected override void EnsureInStage() { }
         protected override void EnsureOutStage() { }
     }
@@ -1284,15 +1284,15 @@ namespace System.Web.Services.Protocols
     {
         public SoapDocumentMethodAttribute() { }
         public SoapDocumentMethodAttribute(string action) { }
-        public string Action { get { return default(string); } set { } }
-        public string Binding { get { return default(string); } set { } }
-        public bool OneWay { get { return default(bool); } set { } }
-        public System.Web.Services.Protocols.SoapParameterStyle ParameterStyle { get { return default(System.Web.Services.Protocols.SoapParameterStyle); } set { } }
-        public string RequestElementName { get { return default(string); } set { } }
-        public string RequestNamespace { get { return default(string); } set { } }
-        public string ResponseElementName { get { return default(string); } set { } }
-        public string ResponseNamespace { get { return default(string); } set { } }
-        public System.Web.Services.Description.SoapBindingUse Use { get { return default(System.Web.Services.Description.SoapBindingUse); } set { } }
+        public string Action { get { throw null; } set { } }
+        public string Binding { get { throw null; } set { } }
+        public bool OneWay { get { throw null; } set { } }
+        public System.Web.Services.Protocols.SoapParameterStyle ParameterStyle { get { throw null; } set { } }
+        public string RequestElementName { get { throw null; } set { } }
+        public string RequestNamespace { get { throw null; } set { } }
+        public string ResponseElementName { get { throw null; } set { } }
+        public string ResponseNamespace { get { throw null; } set { } }
+        public System.Web.Services.Description.SoapBindingUse Use { get { throw null; } set { } }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(4), Inherited=true)]
     public sealed partial class SoapDocumentServiceAttribute : System.Attribute
@@ -1300,9 +1300,9 @@ namespace System.Web.Services.Protocols
         public SoapDocumentServiceAttribute() { }
         public SoapDocumentServiceAttribute(System.Web.Services.Description.SoapBindingUse use) { }
         public SoapDocumentServiceAttribute(System.Web.Services.Description.SoapBindingUse use, System.Web.Services.Protocols.SoapParameterStyle paramStyle) { }
-        public System.Web.Services.Protocols.SoapParameterStyle ParameterStyle { get { return default(System.Web.Services.Protocols.SoapParameterStyle); } set { } }
-        public System.Web.Services.Protocols.SoapServiceRoutingStyle RoutingStyle { get { return default(System.Web.Services.Protocols.SoapServiceRoutingStyle); } set { } }
-        public System.Web.Services.Description.SoapBindingUse Use { get { return default(System.Web.Services.Description.SoapBindingUse); } set { } }
+        public System.Web.Services.Protocols.SoapParameterStyle ParameterStyle { get { throw null; } set { } }
+        public System.Web.Services.Protocols.SoapServiceRoutingStyle RoutingStyle { get { throw null; } set { } }
+        public System.Web.Services.Description.SoapBindingUse Use { get { throw null; } set { } }
     }
     public partial class SoapException : System.SystemException
     {
@@ -1322,27 +1322,27 @@ namespace System.Web.Services.Protocols
         public SoapException(string message, System.Xml.XmlQualifiedName code, string actor, System.Xml.XmlNode detail) { }
         public SoapException(string message, System.Xml.XmlQualifiedName code, string actor, System.Xml.XmlNode detail, System.Exception innerException) { }
         public SoapException(string message, System.Xml.XmlQualifiedName code, System.Web.Services.Protocols.SoapFaultSubCode subcode) { }
-        public string Actor { get { return default(string); } }
-        public System.Xml.XmlQualifiedName Code { get { return default(System.Xml.XmlQualifiedName); } }
-        public System.Xml.XmlNode Detail { get { return default(System.Xml.XmlNode); } }
+        public string Actor { get { throw null; } }
+        public System.Xml.XmlQualifiedName Code { get { throw null; } }
+        public System.Xml.XmlNode Detail { get { throw null; } }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public string Lang { get { return default(string); } }
+        public string Lang { get { throw null; } }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public string Node { get { return default(string); } }
+        public string Node { get { throw null; } }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public string Role { get { return default(string); } }
+        public string Role { get { throw null; } }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public System.Web.Services.Protocols.SoapFaultSubCode SubCode { get { return default(System.Web.Services.Protocols.SoapFaultSubCode); } }
+        public System.Web.Services.Protocols.SoapFaultSubCode SubCode { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public static bool IsClientFaultCode(System.Xml.XmlQualifiedName code) { return default(bool); }
-        public static bool IsMustUnderstandFaultCode(System.Xml.XmlQualifiedName code) { return default(bool); }
-        public static bool IsServerFaultCode(System.Xml.XmlQualifiedName code) { return default(bool); }
-        public static bool IsVersionMismatchFaultCode(System.Xml.XmlQualifiedName code) { return default(bool); }
+        public static bool IsClientFaultCode(System.Xml.XmlQualifiedName code) { throw null; }
+        public static bool IsMustUnderstandFaultCode(System.Xml.XmlQualifiedName code) { throw null; }
+        public static bool IsServerFaultCode(System.Xml.XmlQualifiedName code) { throw null; }
+        public static bool IsVersionMismatchFaultCode(System.Xml.XmlQualifiedName code) { throw null; }
     }
     public abstract partial class SoapExtension
     {
         protected SoapExtension() { }
-        public virtual System.IO.Stream ChainStream(System.IO.Stream stream) { return default(System.IO.Stream); }
+        public virtual System.IO.Stream ChainStream(System.IO.Stream stream) { throw null; }
         public abstract object GetInitializer(System.Type serviceType);
         public abstract object GetInitializer(System.Web.Services.Protocols.LogicalMethodInfo methodInfo, System.Web.Services.Protocols.SoapExtensionAttribute attribute);
         public abstract void Initialize(object initializer);
@@ -1358,8 +1358,8 @@ namespace System.Web.Services.Protocols
     {
         public SoapFaultSubCode(System.Xml.XmlQualifiedName code) { }
         public SoapFaultSubCode(System.Xml.XmlQualifiedName code, System.Web.Services.Protocols.SoapFaultSubCode subcode) { }
-        public System.Xml.XmlQualifiedName Code { get { return default(System.Xml.XmlQualifiedName); } }
-        public System.Web.Services.Protocols.SoapFaultSubCode SubCode { get { return default(System.Web.Services.Protocols.SoapFaultSubCode); } }
+        public System.Xml.XmlQualifiedName Code { get { throw null; } }
+        public System.Web.Services.Protocols.SoapFaultSubCode SubCode { get { throw null; } }
     }
     [System.Xml.Serialization.SoapTypeAttribute(IncludeInSchema=false)]
     [System.Xml.Serialization.XmlTypeAttribute(IncludeInSchema=false)]
@@ -1369,54 +1369,54 @@ namespace System.Web.Services.Protocols
         [System.ComponentModel.DefaultValueAttribute("")]
         [System.Xml.Serialization.SoapAttributeAttribute("actor", Namespace="http://schemas.xmlsoap.org/soap/envelope/")]
         [System.Xml.Serialization.XmlAttributeAttribute("actor", Namespace="http://schemas.xmlsoap.org/soap/envelope/")]
-        public string Actor { get { return default(string); } set { } }
+        public string Actor { get { throw null; } set { } }
         [System.Xml.Serialization.SoapIgnoreAttribute]
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public bool DidUnderstand { get { return default(bool); } set { } }
+        public bool DidUnderstand { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("0")]
         [System.Xml.Serialization.SoapAttributeAttribute("mustUnderstand", Namespace="http://schemas.xmlsoap.org/soap/envelope/")]
         [System.Xml.Serialization.XmlAttributeAttribute("mustUnderstand", Namespace="http://schemas.xmlsoap.org/soap/envelope/")]
-        public string EncodedMustUnderstand { get { return default(string); } set { } }
+        public string EncodedMustUnderstand { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("0")]
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         [System.Xml.Serialization.SoapAttributeAttribute("mustUnderstand", Namespace="http://www.w3.org/2003/05/soap-envelope")]
         [System.Xml.Serialization.XmlAttributeAttribute("mustUnderstand", Namespace="http://www.w3.org/2003/05/soap-envelope")]
-        public string EncodedMustUnderstand12 { get { return default(string); } set { } }
+        public string EncodedMustUnderstand12 { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("0")]
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         [System.Xml.Serialization.SoapAttributeAttribute("relay", Namespace="http://www.w3.org/2003/05/soap-envelope")]
         [System.Xml.Serialization.XmlAttributeAttribute("relay", Namespace="http://www.w3.org/2003/05/soap-envelope")]
-        public string EncodedRelay { get { return default(string); } set { } }
+        public string EncodedRelay { get { throw null; } set { } }
         [System.Xml.Serialization.SoapIgnoreAttribute]
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public bool MustUnderstand { get { return default(bool); } set { } }
+        public bool MustUnderstand { get { throw null; } set { } }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         [System.Xml.Serialization.SoapIgnoreAttribute]
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public bool Relay { get { return default(bool); } set { } }
+        public bool Relay { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         [System.Xml.Serialization.SoapAttributeAttribute("role", Namespace="http://www.w3.org/2003/05/soap-envelope")]
         [System.Xml.Serialization.XmlAttributeAttribute("role", Namespace="http://www.w3.org/2003/05/soap-envelope")]
-        public string Role { get { return default(string); } set { } }
+        public string Role { get { throw null; } set { } }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(64), AllowMultiple=true, Inherited=true)]
     public sealed partial class SoapHeaderAttribute : System.Attribute
     {
         public SoapHeaderAttribute(string memberName) { }
-        public System.Web.Services.Protocols.SoapHeaderDirection Direction { get { return default(System.Web.Services.Protocols.SoapHeaderDirection); } set { } }
-        public string MemberName { get { return default(string); } set { } }
+        public System.Web.Services.Protocols.SoapHeaderDirection Direction { get { throw null; } set { } }
+        public string MemberName { get { throw null; } set { } }
         [System.ObsoleteAttribute("This property will be removed from a future version. The presence of a particular header in a SOAP message is no longer enforced", false)]
-        public bool Required { get { return default(bool); } set { } }
+        public bool Required { get { throw null; } set { } }
     }
     public partial class SoapHeaderCollection : System.Collections.CollectionBase
     {
         public SoapHeaderCollection() { }
-        public System.Web.Services.Protocols.SoapHeader this[int index] { get { return default(System.Web.Services.Protocols.SoapHeader); } set { } }
-        public int Add(System.Web.Services.Protocols.SoapHeader header) { return default(int); }
-        public bool Contains(System.Web.Services.Protocols.SoapHeader header) { return default(bool); }
+        public System.Web.Services.Protocols.SoapHeader this[int index] { get { throw null; } set { } }
+        public int Add(System.Web.Services.Protocols.SoapHeader header) { throw null; }
+        public bool Contains(System.Web.Services.Protocols.SoapHeader header) { throw null; }
         public void CopyTo(System.Web.Services.Protocols.SoapHeader[] array, int index) { }
-        public int IndexOf(System.Web.Services.Protocols.SoapHeader header) { return default(int); }
+        public int IndexOf(System.Web.Services.Protocols.SoapHeader header) { throw null; }
         public void Insert(int index, System.Web.Services.Protocols.SoapHeader header) { }
         public void Remove(System.Web.Services.Protocols.SoapHeader header) { }
     }
@@ -1431,11 +1431,11 @@ namespace System.Web.Services.Protocols
     public sealed partial class SoapHeaderMapping
     {
         internal SoapHeaderMapping() { }
-        public bool Custom { get { return default(bool); } }
-        public System.Web.Services.Protocols.SoapHeaderDirection Direction { get { return default(System.Web.Services.Protocols.SoapHeaderDirection); } }
-        public System.Type HeaderType { get { return default(System.Type); } }
-        public System.Reflection.MemberInfo MemberInfo { get { return default(System.Reflection.MemberInfo); } }
-        public bool Repeats { get { return default(bool); } }
+        public bool Custom { get { throw null; } }
+        public System.Web.Services.Protocols.SoapHeaderDirection Direction { get { throw null; } }
+        public System.Type HeaderType { get { throw null; } }
+        public System.Reflection.MemberInfo MemberInfo { get { throw null; } }
+        public bool Repeats { get { throw null; } }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class SoapHttpClientProtocol : System.Web.Services.Protocols.HttpWebClientProtocol
@@ -1443,14 +1443,14 @@ namespace System.Web.Services.Protocols
         public SoapHttpClientProtocol() { }
         [System.ComponentModel.DefaultValueAttribute((System.Web.Services.Protocols.SoapProtocolVersion)(0))]
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public System.Web.Services.Protocols.SoapProtocolVersion SoapVersion { get { return default(System.Web.Services.Protocols.SoapProtocolVersion); } set { } }
-        protected System.IAsyncResult BeginInvoke(string methodName, object[] parameters, System.AsyncCallback callback, object asyncState) { return default(System.IAsyncResult); }
+        public System.Web.Services.Protocols.SoapProtocolVersion SoapVersion { get { throw null; } set { } }
+        protected System.IAsyncResult BeginInvoke(string methodName, object[] parameters, System.AsyncCallback callback, object asyncState) { throw null; }
         public void Discover() { }
-        protected object[] EndInvoke(System.IAsyncResult asyncResult) { return default(object[]); }
-        protected virtual System.Xml.XmlReader GetReaderForMessage(System.Web.Services.Protocols.SoapClientMessage message, int bufferSize) { return default(System.Xml.XmlReader); }
-        protected override System.Net.WebRequest GetWebRequest(System.Uri uri) { return default(System.Net.WebRequest); }
-        protected virtual System.Xml.XmlWriter GetWriterForMessage(System.Web.Services.Protocols.SoapClientMessage message, int bufferSize) { return default(System.Xml.XmlWriter); }
-        protected object[] Invoke(string method_name, object[] parameters) { return default(object[]); }
+        protected object[] EndInvoke(System.IAsyncResult asyncResult) { throw null; }
+        protected virtual System.Xml.XmlReader GetReaderForMessage(System.Web.Services.Protocols.SoapClientMessage message, int bufferSize) { throw null; }
+        protected override System.Net.WebRequest GetWebRequest(System.Uri uri) { throw null; }
+        protected virtual System.Xml.XmlWriter GetWriterForMessage(System.Web.Services.Protocols.SoapClientMessage message, int bufferSize) { throw null; }
+        protected object[] Invoke(string method_name, object[] parameters) { throw null; }
         protected void InvokeAsync(string methodName, object[] parameters, System.Threading.SendOrPostCallback callback) { }
         protected void InvokeAsync(string methodName, object[] parameters, System.Threading.SendOrPostCallback callback, object userState) { }
     }
@@ -1458,24 +1458,24 @@ namespace System.Web.Services.Protocols
     {
         internal SoapMessage() { }
         public abstract string Action { get; }
-        public string ContentEncoding { get { return default(string); } set { } }
-        public string ContentType { get { return default(string); } set { } }
-        public System.Web.Services.Protocols.SoapException Exception { get { return default(System.Web.Services.Protocols.SoapException); } set { } }
-        public System.Web.Services.Protocols.SoapHeaderCollection Headers { get { return default(System.Web.Services.Protocols.SoapHeaderCollection); } }
+        public string ContentEncoding { get { throw null; } set { } }
+        public string ContentType { get { throw null; } set { } }
+        public System.Web.Services.Protocols.SoapException Exception { get { throw null; } set { } }
+        public System.Web.Services.Protocols.SoapHeaderCollection Headers { get { throw null; } }
         public abstract System.Web.Services.Protocols.LogicalMethodInfo MethodInfo { get; }
         public abstract bool OneWay { get; }
         [System.ComponentModel.DefaultValueAttribute((System.Web.Services.Protocols.SoapProtocolVersion)(0))]
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public virtual System.Web.Services.Protocols.SoapProtocolVersion SoapVersion { get { return default(System.Web.Services.Protocols.SoapProtocolVersion); } }
-        public System.Web.Services.Protocols.SoapMessageStage Stage { get { return default(System.Web.Services.Protocols.SoapMessageStage); } }
-        public System.IO.Stream Stream { get { return default(System.IO.Stream); } }
+        public virtual System.Web.Services.Protocols.SoapProtocolVersion SoapVersion { get { throw null; } }
+        public System.Web.Services.Protocols.SoapMessageStage Stage { get { throw null; } }
+        public System.IO.Stream Stream { get { throw null; } }
         public abstract string Url { get; }
         protected abstract void EnsureInStage();
         protected abstract void EnsureOutStage();
         protected void EnsureStage(System.Web.Services.Protocols.SoapMessageStage stage) { }
-        public object GetInParameterValue(int index) { return default(object); }
-        public object GetOutParameterValue(int index) { return default(object); }
-        public object GetReturnValue() { return default(object); }
+        public object GetInParameterValue(int index) { throw null; }
+        public object GetOutParameterValue(int index) { throw null; }
+        public object GetReturnValue() { throw null; }
     }
     public enum SoapMessageStage
     {
@@ -1501,23 +1501,23 @@ namespace System.Web.Services.Protocols
     {
         public SoapRpcMethodAttribute() { }
         public SoapRpcMethodAttribute(string action) { }
-        public string Action { get { return default(string); } set { } }
-        public string Binding { get { return default(string); } set { } }
-        public bool OneWay { get { return default(bool); } set { } }
-        public string RequestElementName { get { return default(string); } set { } }
-        public string RequestNamespace { get { return default(string); } set { } }
-        public string ResponseElementName { get { return default(string); } set { } }
-        public string ResponseNamespace { get { return default(string); } set { } }
+        public string Action { get { throw null; } set { } }
+        public string Binding { get { throw null; } set { } }
+        public bool OneWay { get { throw null; } set { } }
+        public string RequestElementName { get { throw null; } set { } }
+        public string RequestNamespace { get { throw null; } set { } }
+        public string ResponseElementName { get { throw null; } set { } }
+        public string ResponseNamespace { get { throw null; } set { } }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public System.Web.Services.Description.SoapBindingUse Use { get { return default(System.Web.Services.Description.SoapBindingUse); } set { } }
+        public System.Web.Services.Description.SoapBindingUse Use { get { throw null; } set { } }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(4), Inherited=true)]
     public sealed partial class SoapRpcServiceAttribute : System.Attribute
     {
         public SoapRpcServiceAttribute() { }
-        public System.Web.Services.Protocols.SoapServiceRoutingStyle RoutingStyle { get { return default(System.Web.Services.Protocols.SoapServiceRoutingStyle); } set { } }
+        public System.Web.Services.Protocols.SoapServiceRoutingStyle RoutingStyle { get { throw null; } set { } }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public System.Web.Services.Description.SoapBindingUse Use { get { return default(System.Web.Services.Description.SoapBindingUse); } set { } }
+        public System.Web.Services.Description.SoapBindingUse Use { get { throw null; } set { } }
     }
     public enum SoapServiceRoutingStyle
     {
@@ -1528,29 +1528,29 @@ namespace System.Web.Services.Protocols
     {
         public SoapUnknownHeader() { }
         [System.Xml.Serialization.XmlIgnoreAttribute]
-        public System.Xml.XmlElement Element { get { return default(System.Xml.XmlElement); } set { } }
+        public System.Xml.XmlElement Element { get { throw null; } set { } }
     }
     public abstract partial class UrlEncodedParameterWriter : System.Web.Services.Protocols.MimeParameterWriter
     {
         protected UrlEncodedParameterWriter() { }
-        public override System.Text.Encoding RequestEncoding { get { return default(System.Text.Encoding); } set { } }
+        public override System.Text.Encoding RequestEncoding { get { throw null; } set { } }
         protected void Encode(System.IO.TextWriter writer, object[] values) { }
         protected void Encode(System.IO.TextWriter writer, string name, object value) { }
-        public override object GetInitializer(System.Web.Services.Protocols.LogicalMethodInfo methodInfo) { return default(object); }
+        public override object GetInitializer(System.Web.Services.Protocols.LogicalMethodInfo methodInfo) { throw null; }
         public override void Initialize(object initializer) { }
     }
     public partial class UrlParameterWriter : System.Web.Services.Protocols.UrlEncodedParameterWriter
     {
         public UrlParameterWriter() { }
-        public override string GetRequestUrl(string url, object[] parameters) { return default(string); }
+        public override string GetRequestUrl(string url, object[] parameters) { throw null; }
     }
     public partial class WebClientAsyncResult : System.IAsyncResult
     {
         internal WebClientAsyncResult() { }
-        public object AsyncState { get { return default(object); } }
-        public System.Threading.WaitHandle AsyncWaitHandle { get { return default(System.Threading.WaitHandle); } }
-        public bool CompletedSynchronously { get { return default(bool); } }
-        public bool IsCompleted { get { return default(bool); } }
+        public object AsyncState { get { throw null; } }
+        public System.Threading.WaitHandle AsyncWaitHandle { get { throw null; } }
+        public bool CompletedSynchronously { get { throw null; } }
+        public bool IsCompleted { get { throw null; } }
         public void Abort() { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
@@ -1558,34 +1558,34 @@ namespace System.Web.Services.Protocols
     {
         protected WebClientProtocol() { }
         [System.ComponentModel.DefaultValueAttribute("")]
-        public string ConnectionGroupName { get { return default(string); } set { } }
-        public System.Net.ICredentials Credentials { get { return default(System.Net.ICredentials); } set { } }
+        public string ConnectionGroupName { get { throw null; } set { } }
+        public System.Net.ICredentials Credentials { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(false)]
-        public bool PreAuthenticate { get { return default(bool); } set { } }
+        public bool PreAuthenticate { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(null)]
         [System.ComponentModel.RecommendedAsConfigurableAttribute(true)]
-        public System.Text.Encoding RequestEncoding { get { return default(System.Text.Encoding); } set { } }
+        public System.Text.Encoding RequestEncoding { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(100000)]
         [System.ComponentModel.RecommendedAsConfigurableAttribute(true)]
-        public int Timeout { get { return default(int); } set { } }
+        public int Timeout { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
         [System.ComponentModel.RecommendedAsConfigurableAttribute(true)]
-        public string Url { get { return default(string); } set { } }
-        public bool UseDefaultCredentials { get { return default(bool); } set { } }
+        public string Url { get { throw null; } set { } }
+        public bool UseDefaultCredentials { get { throw null; } set { } }
         public virtual void Abort() { }
         protected static void AddToCache(System.Type type, object value) { }
-        protected static object GetFromCache(System.Type type) { return default(object); }
-        protected virtual System.Net.WebRequest GetWebRequest(System.Uri uri) { return default(System.Net.WebRequest); }
-        protected virtual System.Net.WebResponse GetWebResponse(System.Net.WebRequest request) { return default(System.Net.WebResponse); }
-        protected virtual System.Net.WebResponse GetWebResponse(System.Net.WebRequest request, System.IAsyncResult result) { return default(System.Net.WebResponse); }
+        protected static object GetFromCache(System.Type type) { throw null; }
+        protected virtual System.Net.WebRequest GetWebRequest(System.Uri uri) { throw null; }
+        protected virtual System.Net.WebResponse GetWebResponse(System.Net.WebRequest request) { throw null; }
+        protected virtual System.Net.WebResponse GetWebResponse(System.Net.WebRequest request, System.IAsyncResult result) { throw null; }
     }
     public partial class XmlReturnReader : System.Web.Services.Protocols.MimeReturnReader
     {
         public XmlReturnReader() { }
-        public override object GetInitializer(System.Web.Services.Protocols.LogicalMethodInfo methodInfo) { return default(object); }
-        public override object[] GetInitializers(System.Web.Services.Protocols.LogicalMethodInfo[] methodInfos) { return default(object[]); }
+        public override object GetInitializer(System.Web.Services.Protocols.LogicalMethodInfo methodInfo) { throw null; }
+        public override object[] GetInitializers(System.Web.Services.Protocols.LogicalMethodInfo[] methodInfos) { throw null; }
         public override void Initialize(object o) { }
-        public override object Read(System.Net.WebResponse response, System.IO.Stream responseStream) { return default(object); }
+        public override object Read(System.Net.WebResponse response, System.IO.Stream responseStream) { throw null; }
     }
 }
 namespace System.Web.Util
@@ -1593,13 +1593,13 @@ namespace System.Web.Util
     public partial class HttpEncoder
     {
         public HttpEncoder() { }
-        public static System.Web.Util.HttpEncoder Current { get { return default(System.Web.Util.HttpEncoder); } set { } }
-        public static System.Web.Util.HttpEncoder Default { get { return default(System.Web.Util.HttpEncoder); } }
-        protected internal virtual void HeaderNameValueEncode(string headerName, string headerValue, out string encodedHeaderName, out string encodedHeaderValue) { encodedHeaderName = default(string); encodedHeaderValue = default(string); }
+        public static System.Web.Util.HttpEncoder Current { get { throw null; } set { } }
+        public static System.Web.Util.HttpEncoder Default { get { throw null; } }
+        protected internal virtual void HeaderNameValueEncode(string headerName, string headerValue, out string encodedHeaderName, out string encodedHeaderValue) { throw null; }
         protected internal virtual void HtmlAttributeEncode(string value, System.IO.TextWriter output) { }
         protected internal virtual void HtmlDecode(string value, System.IO.TextWriter output) { }
         protected internal virtual void HtmlEncode(string value, System.IO.TextWriter output) { }
-        protected internal virtual byte[] UrlEncode(byte[] bytes, int offset, int count) { return default(byte[]); }
-        protected internal virtual string UrlPathEncode(string value) { return default(string); }
+        protected internal virtual byte[] UrlEncode(byte[] bytes, int offset, int count) { throw null; }
+        protected internal virtual string UrlPathEncode(string value) { throw null; }
     }
 }
