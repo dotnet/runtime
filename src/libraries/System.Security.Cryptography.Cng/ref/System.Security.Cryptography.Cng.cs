@@ -8,10 +8,10 @@
 
 namespace Microsoft.Win32.SafeHandles
 {
-    public abstract partial class SafeNCryptHandle : System.Runtime.InteropServices.SafeHandle
+    public abstract partial class SafeNCryptHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
-        protected SafeNCryptHandle() : base(default(System.IntPtr), default(bool)) { }
-        protected SafeNCryptHandle(System.IntPtr handle, System.Runtime.InteropServices.SafeHandle parentHandle) : base(default(System.IntPtr), default(bool)) { }
+        protected SafeNCryptHandle() : base (default(bool)) { }
+        protected SafeNCryptHandle(System.IntPtr handle, System.Runtime.InteropServices.SafeHandle parentHandle) : base(default(bool)) { }
         public override bool IsInvalid { get { throw null; } }
         protected override bool ReleaseHandle() { throw null; }
         protected abstract bool ReleaseNativeHandle();

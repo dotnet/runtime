@@ -8,6 +8,18 @@
 namespace Microsoft.Win32.SafeHandles
 {
     [System.Security.SecurityCriticalAttribute]
+    public abstract partial class CriticalHandleMinusOneIsInvalid : System.Runtime.InteropServices.CriticalHandle
+    {
+        protected CriticalHandleMinusOneIsInvalid() : base(System.IntPtr.Zero) { }
+        public override bool IsInvalid { [System.Security.SecurityCriticalAttribute]get { return default(bool); } }
+    }
+    [System.Security.SecurityCriticalAttribute]
+    public abstract partial class CriticalHandleZeroOrMinusOneIsInvalid : System.Runtime.InteropServices.CriticalHandle
+    {
+        protected CriticalHandleZeroOrMinusOneIsInvalid() : base(System.IntPtr.Zero) { }
+        public override bool IsInvalid { [System.Security.SecurityCriticalAttribute]get { return default(bool); } }
+    }
+    [System.Security.SecurityCriticalAttribute]
     public abstract partial class SafeHandleMinusOneIsInvalid : System.Runtime.InteropServices.SafeHandle
     {
         protected SafeHandleMinusOneIsInvalid(bool ownsHandle) : base(System.IntPtr.Zero, ownsHandle) { }
@@ -3080,6 +3092,22 @@ namespace System.Runtime.ConstrainedExecution
 
 namespace System.Runtime.InteropServices
 {
+    [System.Security.SecurityCriticalAttribute]
+    public abstract partial class CriticalHandle : System.Runtime.ConstrainedExecution.CriticalFinalizerObject, System.IDisposable
+    {
+        protected System.IntPtr handle;
+        protected CriticalHandle(System.IntPtr invalidHandleValue) { }
+        public bool IsClosed { get { return default(bool); } }
+        public abstract bool IsInvalid { get; }
+        [System.Security.SecuritySafeCriticalAttribute]
+        public void Dispose() { }
+        [System.Security.SecurityCriticalAttribute]
+        protected virtual void Dispose(bool disposing) { }
+        ~CriticalHandle() { }
+        protected abstract bool ReleaseHandle();
+        protected void SetHandle(System.IntPtr handle) { }
+        public void SetHandleAsInvalid() { }
+    }
     public partial class ExternalException : System.SystemException
     {
         public ExternalException() { }
@@ -4372,6 +4400,11 @@ namespace System.IO
         public string FusionLog { get { return default(string); } }
         public override string Message { get { return default(string); } }
         public override string ToString() { return default(string); }
+    }
+    public enum HandleInheritability
+    {
+        Inheritable = 1,
+        None = 0,
     }
     public partial class IOException : System.Exception
     {
@@ -6527,6 +6560,13 @@ namespace System.Threading
         public virtual bool WaitOne(int millisecondsTimeout, bool exitContext) { return default(bool); }
         public virtual bool WaitOne(System.TimeSpan timeout) { return default(bool); }
         public virtual bool WaitOne(System.TimeSpan timeout, bool exitContext) { return default(bool); }
+    }
+    public static partial class WaitHandleExtensions
+    {
+        [System.Security.SecurityCriticalAttribute]
+        public static Microsoft.Win32.SafeHandles.SafeWaitHandle GetSafeWaitHandle(this System.Threading.WaitHandle waitHandle) { return default(Microsoft.Win32.SafeHandles.SafeWaitHandle); }
+        [System.Security.SecurityCriticalAttribute]
+        public static void SetSafeWaitHandle(this System.Threading.WaitHandle waitHandle, Microsoft.Win32.SafeHandles.SafeWaitHandle value) { }
     }
 }
 namespace System.Threading.Tasks

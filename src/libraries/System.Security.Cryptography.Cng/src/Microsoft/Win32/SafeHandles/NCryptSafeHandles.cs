@@ -35,7 +35,7 @@ namespace Microsoft.Win32.SafeHandles
     ///                       ref count to zero.  Instances of a holder handle should never be referenced by
     ///                       anything but a duplicate handle.
     /// </remarks>
-    public abstract class SafeNCryptHandle : SafeHandle
+    public abstract class SafeNCryptHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         private enum OwnershipState
         {
@@ -65,13 +65,13 @@ namespace Microsoft.Win32.SafeHandles
 
         private SafeHandle _parentHandle;
 
-        protected SafeNCryptHandle() : base(IntPtr.Zero, true)
+        protected SafeNCryptHandle() : base(true)
         {
             return;
         }
 
         protected SafeNCryptHandle(IntPtr handle, SafeHandle parentHandle)
-            : base(IntPtr.Zero, true)
+            : base(true)
         {
             if (parentHandle == null)
                 throw new ArgumentNullException(nameof(parentHandle));
@@ -302,11 +302,6 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             return duplicate;
-        }
-
-        public override bool IsInvalid
-        {
-            get { return handle == IntPtr.Zero || handle == new IntPtr(-1); }
         }
 
         /// <summary>

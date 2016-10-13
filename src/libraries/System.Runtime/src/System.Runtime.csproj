@@ -38,6 +38,10 @@
     <Compile Include="System\Reflection\RuntimeReflectionExtensions.cs" />
     <Compile Include="System\Runtime\CompilerServices\Attributes.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == '' OR '$(TargetGroup)' == 'netstandard1.7' OR '$(TargetGroup)' == 'uap101aot'">
+    <Compile Include="System\IO\HandleInheritability.cs" />
+    <Compile Include="System\Threading\WaitHandleExtensions.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'!='netcore50aot' And '$(TargetGroup)'!='uap101aot' And '$(TargetGroup)'!='net462' AND '$(TargetGroup)'!='net463'">
     <Compile Include="System\ComponentModel\DefaultValueAttribute.cs" />
   </ItemGroup>

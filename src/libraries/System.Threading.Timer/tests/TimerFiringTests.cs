@@ -7,7 +7,7 @@ using System.Linq;
 using System.Threading;
 using Xunit;
 
-public class TimerFiringTests
+public partial class TimerFiringTests
 {
     internal const int MaxPositiveTimeoutInMs = 30000;
 

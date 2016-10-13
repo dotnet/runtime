@@ -11,7 +11,7 @@
 
     <!-- AOT implementation comes from AOT package -->
     <File Include="$(PlaceholderFile)">
-      <TargetPath>runtimes/aot/lib/netcore50</TargetPath>
+      <TargetPath>runtimes/aot/lib/uap101</TargetPath>
       <TargetFramework>aot</TargetFramework>
     </File>
 

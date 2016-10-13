@@ -7,7 +7,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Threading.Tests</AssemblyName>
     <ProjectGuid>{33F5A50E-B823-4FDD-8571-365C909ACEAE}</ProjectGuid>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -44,6 +44,9 @@
     <Compile Include="$(CommonTestPath)\System\IO\FileCleanupTestBase.cs">
       <Link>Common\System\IO\FileCleanupTestBase.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
+    <Compile Include="MonitorTests.netstandard1.7.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

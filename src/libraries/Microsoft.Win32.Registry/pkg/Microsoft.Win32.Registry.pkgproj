@@ -4,7 +4,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ref\Microsoft.Win32.Registry.csproj">
-      <SupportedFramework>net46;netcoreapp1.0</SupportedFramework>
+      <SupportedFramework>net463;netcoreapp1.1</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\Microsoft.Win32.Registry.builds" />
     

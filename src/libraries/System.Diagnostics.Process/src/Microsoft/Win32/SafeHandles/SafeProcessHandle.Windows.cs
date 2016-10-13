@@ -17,15 +17,9 @@ using System.Security;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    public sealed partial class SafeProcessHandle : SafeHandle
+    public sealed partial class SafeProcessHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         private const int DefaultInvalidHandleValue = 0;
-
-        public override bool IsInvalid
-        {
-            [SecurityCritical]
-            get { return handle == IntPtr.Zero || handle == new IntPtr(-1); }
-        }
 
         [SecurityCritical]
         protected override bool ReleaseHandle()

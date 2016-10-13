@@ -10,7 +10,6 @@
     <ProjectReference Include="..\..\src\System.Net.Primitives.csproj" >
       <OSGroup>Unix</OSGroup>
     </ProjectReference>
-
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

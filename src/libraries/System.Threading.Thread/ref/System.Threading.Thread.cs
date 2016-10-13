@@ -10,7 +10,7 @@ namespace System.Threading
     [System.Runtime.InteropServices.ComVisibleAttribute(false)]
     public delegate void ParameterizedThreadStart(object obj);
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public sealed partial class Thread
+    public sealed partial class Thread : System.Runtime.ConstrainedExecution.CriticalFinalizerObject
     {
         public Thread(System.Threading.ParameterizedThreadStart start) { }
         public Thread(System.Threading.ThreadStart start) { }
@@ -20,12 +20,31 @@ namespace System.Threading
         public int ManagedThreadId { get { return default(int); } }
         public string Name { get { return default(string); } set { } }
         public System.Threading.ThreadState ThreadState { get { return default(System.Threading.ThreadState); } }
+        ~Thread() { }
         public void Join() { }
         public bool Join(int millisecondsTimeout) { return default(bool); }
         public static void Sleep(int millisecondsTimeout) { }
         public static void Sleep(System.TimeSpan timeout) { }
         public void Start() { }
         public void Start(object parameter) { }
+    }
+    public sealed partial class ThreadAbortException : System.SystemException
+    {
+        private ThreadAbortException() { }
+        public object ExceptionState { get { throw null; } }
+    }
+    public partial class ThreadExceptionEventArgs : System.EventArgs
+    {
+        public ThreadExceptionEventArgs(System.Exception exception) { }
+        public System.Exception Exception { get { return default(System.Exception); } }
+    }
+    public delegate void ThreadExceptionEventHandler(object sender, System.Threading.ThreadExceptionEventArgs e);
+    public partial class ThreadInterruptedException : System.SystemException
+    {
+        public ThreadInterruptedException() { }
+        public ThreadInterruptedException(string message) { }
+        public ThreadInterruptedException(string message, System.Exception innerException) { }
+        protected ThreadInterruptedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public delegate void ThreadStart();
@@ -54,5 +73,6 @@ namespace System.Threading
         public ThreadStateException() { }
         public ThreadStateException(string message) { }
         public ThreadStateException(string message, System.Exception innerException) { }
+        protected ThreadStateException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
 }

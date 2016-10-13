@@ -14,8 +14,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Debug|AnyCPU' " />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU' " />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU' " />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU' " />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU' " />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU' " />
   <ItemGroup Condition="'$(TargetGroup)' == ''">
     <Compile Include="System\Threading\Helpers.CoreCLR.cs" />
     <Compile Include="System\Threading\Barrier.cs" />
@@ -28,12 +28,12 @@
       <OSGroup>$(InputOSGroup)</OSGroup>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
     <TargetingPackReference Include="System.Core" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
     <TargetingPackReference Include="System.Private.CoreLib" Condition="'$(TargetGroup)' != 'netcore50aot'" />
     <TargetingPackReference Include="System.Private.CoreLib.Threading" Condition="'$(TargetGroup)' == 'netcore50aot'" />
     <TargetingPackReference Include="System.Private.Threading" Condition="'$(TargetGroup)' == 'netcore50aot'" />

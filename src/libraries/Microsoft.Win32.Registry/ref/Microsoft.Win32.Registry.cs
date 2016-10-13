@@ -99,10 +99,11 @@ namespace Microsoft.Win32
 namespace Microsoft.Win32.SafeHandles
 {
     [System.Security.SecurityCriticalAttribute]
-    public sealed partial class SafeRegistryHandle : System.Runtime.InteropServices.SafeHandle
+    public sealed partial class SafeRegistryHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
         [System.Security.SecurityCriticalAttribute]
-        public SafeRegistryHandle(System.IntPtr preexistingHandle, bool ownsHandle) : base(default(System.IntPtr), default(bool)) { }
+        public SafeRegistryHandle(System.IntPtr preexistingHandle, bool ownsHandle) : base(default(bool)) { }
+        public override bool IsInvalid { [System.Security.SecurityCriticalAttribute]get { return default(bool); } }
         [System.Security.SecurityCriticalAttribute]
         protected override bool ReleaseHandle() { return default(bool); }
     }

@@ -17,7 +17,7 @@ using System.Security;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    public sealed partial class SafeProcessHandle : SafeHandle
+    public sealed partial class SafeProcessHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         private const int DefaultInvalidHandleValue = -1;
 

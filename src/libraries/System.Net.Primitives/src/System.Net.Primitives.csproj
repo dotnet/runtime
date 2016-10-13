@@ -221,6 +221,10 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'uap101'">
     <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" />
+    <!-- ToDo: Remove this reference once prerelease gets updated again -->
+    <ProjectReference Include="..\..\System.Globalization\pkg\System.Globalization.pkgproj" />
+    <!-- ToDo: Remove this reference once prerelease gets updated again -->
+    <ProjectReference Include="..\..\System.Threading.Tasks\pkg\System.Threading.Tasks.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
