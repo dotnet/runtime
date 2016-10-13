@@ -29,8 +29,8 @@ namespace System.Runtime.Serialization
         public abstract System.Runtime.Serialization.StreamingContext Context { get; set; }
         public abstract System.Runtime.Serialization.ISurrogateSelector SurrogateSelector { get; set; }
         public abstract object Deserialize(System.IO.Stream serializationStream);
-        protected virtual object GetNext(out long objID) { objID = default(long); return default(object); }
-        protected virtual long Schedule(object obj) { return default(long); }
+        protected virtual object GetNext(out long objID) { throw null; }
+        protected virtual long Schedule(object obj) { throw null; }
         public abstract void Serialize(System.IO.Stream serializationStream, object graph);
         protected abstract void WriteArray(object obj, string name, System.Type memberType);
         protected abstract void WriteBoolean(bool val, string name);
@@ -59,39 +59,39 @@ namespace System.Runtime.Serialization
     public partial class FormatterConverter : System.Runtime.Serialization.IFormatterConverter
     {
         public FormatterConverter() { }
-        public object Convert(object value, System.Type type) { return default(object); }
-        public object Convert(object value, System.TypeCode typeCode) { return default(object); }
-        public bool ToBoolean(object value) { return default(bool); }
-        public byte ToByte(object value) { return default(byte); }
-        public char ToChar(object value) { return default(char); }
-        public System.DateTime ToDateTime(object value) { return default(System.DateTime); }
-        public decimal ToDecimal(object value) { return default(decimal); }
-        public double ToDouble(object value) { return default(double); }
-        public short ToInt16(object value) { return default(short); }
-        public int ToInt32(object value) { return default(int); }
-        public long ToInt64(object value) { return default(long); }
+        public object Convert(object value, System.Type type) { throw null; }
+        public object Convert(object value, System.TypeCode typeCode) { throw null; }
+        public bool ToBoolean(object value) { throw null; }
+        public byte ToByte(object value) { throw null; }
+        public char ToChar(object value) { throw null; }
+        public System.DateTime ToDateTime(object value) { throw null; }
+        public decimal ToDecimal(object value) { throw null; }
+        public double ToDouble(object value) { throw null; }
+        public short ToInt16(object value) { throw null; }
+        public int ToInt32(object value) { throw null; }
+        public long ToInt64(object value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public sbyte ToSByte(object value) { return default(sbyte); }
-        public float ToSingle(object value) { return default(float); }
-        public string ToString(object value) { return default(string); }
+        public sbyte ToSByte(object value) { throw null; }
+        public float ToSingle(object value) { throw null; }
+        public string ToString(object value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public ushort ToUInt16(object value) { return default(ushort); }
+        public ushort ToUInt16(object value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public uint ToUInt32(object value) { return default(uint); }
+        public uint ToUInt32(object value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public ulong ToUInt64(object value) { return default(ulong); }
+        public ulong ToUInt64(object value) { throw null; }
     }
     public static partial class FormatterServices
     {
         public static void CheckTypeSecurity(System.Type t, System.Runtime.Serialization.Formatters.TypeFilterLevel securityLevel) { }
-        public static object[] GetObjectData(object obj, System.Reflection.MemberInfo[] members) { return default(object[]); }
-        public static object GetSafeUninitializedObject(System.Type type) { return default(object); }
-        public static System.Reflection.MemberInfo[] GetSerializableMembers(System.Type type) { return default(System.Reflection.MemberInfo[]); }
-        public static System.Reflection.MemberInfo[] GetSerializableMembers(System.Type type, System.Runtime.Serialization.StreamingContext context) { return default(System.Reflection.MemberInfo[]); }
-        public static System.Runtime.Serialization.ISerializationSurrogate GetSurrogateForCyclicalReference(System.Runtime.Serialization.ISerializationSurrogate innerSurrogate) { return default(System.Runtime.Serialization.ISerializationSurrogate); }
-        public static System.Type GetTypeFromAssembly(System.Reflection.Assembly assem, string name) { return default(System.Type); }
-        public static object GetUninitializedObject(System.Type type) { return default(object); }
-        public static object PopulateObjectMembers(object obj, System.Reflection.MemberInfo[] members, object[] data) { return default(object); }
+        public static object[] GetObjectData(object obj, System.Reflection.MemberInfo[] members) { throw null; }
+        public static object GetSafeUninitializedObject(System.Type type) { throw null; }
+        public static System.Reflection.MemberInfo[] GetSerializableMembers(System.Type type) { throw null; }
+        public static System.Reflection.MemberInfo[] GetSerializableMembers(System.Type type, System.Runtime.Serialization.StreamingContext context) { throw null; }
+        public static System.Runtime.Serialization.ISerializationSurrogate GetSurrogateForCyclicalReference(System.Runtime.Serialization.ISerializationSurrogate innerSurrogate) { throw null; }
+        public static System.Type GetTypeFromAssembly(System.Reflection.Assembly assem, string name) { throw null; }
+        public static object GetUninitializedObject(System.Type type) { throw null; }
+        public static object PopulateObjectMembers(object obj, System.Reflection.MemberInfo[] members, object[] data) { throw null; }
     }
     public partial interface IFormatter
     {
@@ -115,14 +115,14 @@ namespace System.Runtime.Serialization
     public partial class ObjectIDGenerator
     {
         public ObjectIDGenerator() { }
-        public virtual long GetId(object obj, out bool firstTime) { firstTime = default(bool); return default(long); }
-        public virtual long HasId(object obj, out bool firstTime) { firstTime = default(bool); return default(long); }
+        public virtual long GetId(object obj, out bool firstTime) { throw null; }
+        public virtual long HasId(object obj, out bool firstTime) { throw null; }
     }
     public partial class ObjectManager
     {
         public ObjectManager(System.Runtime.Serialization.ISurrogateSelector selector, System.Runtime.Serialization.StreamingContext context) { }
         public virtual void DoFixups() { }
-        public virtual object GetObject(long objectID) { return default(object); }
+        public virtual object GetObject(long objectID) { throw null; }
         public virtual void RaiseDeserializationEvent() { }
         public void RaiseOnDeserializingEvent(object obj) { }
         public virtual void RecordArrayElementFixup(long arrayToBeFixed, int index, long objectRequired) { }
@@ -137,7 +137,7 @@ namespace System.Runtime.Serialization
     public abstract partial class SerializationBinder
     {
         protected SerializationBinder() { }
-        public virtual void BindToName(System.Type serializedType, out string assemblyName, out string typeName) { assemblyName = default(string); typeName = default(string); }
+        public virtual void BindToName(System.Type serializedType, out string assemblyName, out string typeName) { throw null; }
         public abstract System.Type BindToType(string assemblyName, string typeName);
     }
     public sealed partial class SerializationObjectManager
@@ -151,8 +151,8 @@ namespace System.Runtime.Serialization
         public SurrogateSelector() { }
         public virtual void AddSurrogate(System.Type type, System.Runtime.Serialization.StreamingContext context, System.Runtime.Serialization.ISerializationSurrogate surrogate) { }
         public virtual void ChainSelector(System.Runtime.Serialization.ISurrogateSelector selector) { }
-        public virtual System.Runtime.Serialization.ISurrogateSelector GetNextSelector() { return default(System.Runtime.Serialization.ISurrogateSelector); }
-        public virtual System.Runtime.Serialization.ISerializationSurrogate GetSurrogate(System.Type type, System.Runtime.Serialization.StreamingContext context, out System.Runtime.Serialization.ISurrogateSelector selector) { selector = default(System.Runtime.Serialization.ISurrogateSelector); return default(System.Runtime.Serialization.ISerializationSurrogate); }
+        public virtual System.Runtime.Serialization.ISurrogateSelector GetNextSelector() { throw null; }
+        public virtual System.Runtime.Serialization.ISerializationSurrogate GetSurrogate(System.Type type, System.Runtime.Serialization.StreamingContext context, out System.Runtime.Serialization.ISurrogateSelector selector) { throw null; }
         public virtual void RemoveSurrogate(System.Type type, System.Runtime.Serialization.StreamingContext context) { }
     }
 } // end of System.Runtime.Serialization
@@ -186,17 +186,17 @@ namespace System.Runtime.Serialization.Formatters.Binary
     {
         public BinaryFormatter() { }
         public BinaryFormatter(System.Runtime.Serialization.ISurrogateSelector selector, System.Runtime.Serialization.StreamingContext context) { }
-        public System.Runtime.Serialization.Formatters.FormatterAssemblyStyle AssemblyFormat { get { return default(System.Runtime.Serialization.Formatters.FormatterAssemblyStyle); } set { } }
-        public System.Runtime.Serialization.SerializationBinder Binder { get { return default(System.Runtime.Serialization.SerializationBinder); } set { } }
-        public System.Runtime.Serialization.StreamingContext Context { get { return default(System.Runtime.Serialization.StreamingContext); } set { } }
-        public System.Runtime.Serialization.Formatters.TypeFilterLevel FilterLevel { get { return default(System.Runtime.Serialization.Formatters.TypeFilterLevel); } set { } }
-        public System.Runtime.Serialization.ISurrogateSelector SurrogateSelector { get { return default(System.Runtime.Serialization.ISurrogateSelector); } set { } }
-        public System.Runtime.Serialization.Formatters.FormatterTypeStyle TypeFormat { get { return default(System.Runtime.Serialization.Formatters.FormatterTypeStyle); } set { } }
-        public object Deserialize(System.IO.Stream serializationStream) { return default(object); }
-        public object Deserialize(System.IO.Stream serializationStream, System.Runtime.Remoting.Messaging.HeaderHandler handler) { return default(object); }
+        public System.Runtime.Serialization.Formatters.FormatterAssemblyStyle AssemblyFormat { get { throw null; } set { } }
+        public System.Runtime.Serialization.SerializationBinder Binder { get { throw null; } set { } }
+        public System.Runtime.Serialization.StreamingContext Context { get { throw null; } set { } }
+        public System.Runtime.Serialization.Formatters.TypeFilterLevel FilterLevel { get { throw null; } set { } }
+        public System.Runtime.Serialization.ISurrogateSelector SurrogateSelector { get { throw null; } set { } }
+        public System.Runtime.Serialization.Formatters.FormatterTypeStyle TypeFormat { get { throw null; } set { } }
+        public object Deserialize(System.IO.Stream serializationStream) { throw null; }
+        public object Deserialize(System.IO.Stream serializationStream, System.Runtime.Remoting.Messaging.HeaderHandler handler) { throw null; }
         public void Serialize(System.IO.Stream serializationStream, object graph) { }
         public void Serialize(System.IO.Stream serializationStream, object graph, System.Runtime.Remoting.Messaging.Header[] headers) { }
-        public object UnsafeDeserialize(System.IO.Stream serializationStream, System.Runtime.Remoting.Messaging.HeaderHandler handler) { return default(object); }
+        public object UnsafeDeserialize(System.IO.Stream serializationStream, System.Runtime.Remoting.Messaging.HeaderHandler handler) { throw null; }
     }
 } // end of System.Runtime.Serialization.Formatters.Binary
 namespace System.Runtime.Remoting.Messaging

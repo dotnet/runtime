@@ -40,9 +40,9 @@ namespace Microsoft.VisualBasic
     public sealed partial class Strings
     {
         internal Strings() { }
-        public static int AscW(char String) { return default(int); }
-        public static int AscW(string String) { return default(int); }
-        public static char ChrW(int CharCode) { return default(char); }
+        public static int AscW(char String) { throw null; }
+        public static int AscW(string String) { throw null; }
+        public static char ChrW(int CharCode) { throw null; }
     }
 }
 namespace Microsoft.VisualBasic.CompilerServices
@@ -51,62 +51,62 @@ namespace Microsoft.VisualBasic.CompilerServices
     public sealed partial class Conversions
     {
         internal Conversions() { }
-        public static object ChangeType(object Expression, System.Type TargetType) { return default(object); }
-        public static bool ToBoolean(object Value) { return default(bool); }
-        public static bool ToBoolean(string Value) { return default(bool); }
-        public static byte ToByte(object Value) { return default(byte); }
-        public static byte ToByte(string Value) { return default(byte); }
-        public static char ToChar(object Value) { return default(char); }
-        public static char ToChar(string Value) { return default(char); }
-        public static char[] ToCharArrayRankOne(object Value) { return default(char[]); }
-        public static char[] ToCharArrayRankOne(string Value) { return default(char[]); }
-        public static System.DateTime ToDate(object Value) { return default(System.DateTime); }
-        public static System.DateTime ToDate(string Value) { return default(System.DateTime); }
-        public static decimal ToDecimal(bool Value) { return default(decimal); }
-        public static decimal ToDecimal(object Value) { return default(decimal); }
-        public static decimal ToDecimal(string Value) { return default(decimal); }
-        public static double ToDouble(object Value) { return default(double); }
-        public static double ToDouble(string Value) { return default(double); }
-        public static T ToGenericParameter<T>(object Value) { return default(T); }
-        public static int ToInteger(object Value) { return default(int); }
-        public static int ToInteger(string Value) { return default(int); }
-        public static long ToLong(object Value) { return default(long); }
-        public static long ToLong(string Value) { return default(long); }
+        public static object ChangeType(object Expression, System.Type TargetType) { throw null; }
+        public static bool ToBoolean(object Value) { throw null; }
+        public static bool ToBoolean(string Value) { throw null; }
+        public static byte ToByte(object Value) { throw null; }
+        public static byte ToByte(string Value) { throw null; }
+        public static char ToChar(object Value) { throw null; }
+        public static char ToChar(string Value) { throw null; }
+        public static char[] ToCharArrayRankOne(object Value) { throw null; }
+        public static char[] ToCharArrayRankOne(string Value) { throw null; }
+        public static System.DateTime ToDate(object Value) { throw null; }
+        public static System.DateTime ToDate(string Value) { throw null; }
+        public static decimal ToDecimal(bool Value) { throw null; }
+        public static decimal ToDecimal(object Value) { throw null; }
+        public static decimal ToDecimal(string Value) { throw null; }
+        public static double ToDouble(object Value) { throw null; }
+        public static double ToDouble(string Value) { throw null; }
+        public static T ToGenericParameter<T>(object Value) { throw null; }
+        public static int ToInteger(object Value) { throw null; }
+        public static int ToInteger(string Value) { throw null; }
+        public static long ToLong(object Value) { throw null; }
+        public static long ToLong(string Value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static sbyte ToSByte(object Value) { return default(sbyte); }
+        public static sbyte ToSByte(object Value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static sbyte ToSByte(string Value) { return default(sbyte); }
-        public static short ToShort(object Value) { return default(short); }
-        public static short ToShort(string Value) { return default(short); }
-        public static float ToSingle(object Value) { return default(float); }
-        public static float ToSingle(string Value) { return default(float); }
-        public static string ToString(bool Value) { return default(string); }
-        public static string ToString(byte Value) { return default(string); }
-        public static string ToString(char Value) { return default(string); }
-        public static string ToString(System.DateTime Value) { return default(string); }
-        public static string ToString(decimal Value) { return default(string); }
-        public static string ToString(double Value) { return default(string); }
-        public static string ToString(short Value) { return default(string); }
-        public static string ToString(int Value) { return default(string); }
-        public static string ToString(long Value) { return default(string); }
-        public static string ToString(object Value) { return default(string); }
-        public static string ToString(float Value) { return default(string); }
+        public static sbyte ToSByte(string Value) { throw null; }
+        public static short ToShort(object Value) { throw null; }
+        public static short ToShort(string Value) { throw null; }
+        public static float ToSingle(object Value) { throw null; }
+        public static float ToSingle(string Value) { throw null; }
+        public static string ToString(bool Value) { throw null; }
+        public static string ToString(byte Value) { throw null; }
+        public static string ToString(char Value) { throw null; }
+        public static string ToString(System.DateTime Value) { throw null; }
+        public static string ToString(decimal Value) { throw null; }
+        public static string ToString(double Value) { throw null; }
+        public static string ToString(short Value) { throw null; }
+        public static string ToString(int Value) { throw null; }
+        public static string ToString(long Value) { throw null; }
+        public static string ToString(object Value) { throw null; }
+        public static string ToString(float Value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static string ToString(uint Value) { return default(string); }
+        public static string ToString(uint Value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static string ToString(ulong Value) { return default(string); }
+        public static string ToString(ulong Value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static uint ToUInteger(object Value) { return default(uint); }
+        public static uint ToUInteger(object Value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static uint ToUInteger(string Value) { return default(uint); }
+        public static uint ToUInteger(string Value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static ulong ToULong(object Value) { return default(ulong); }
+        public static ulong ToULong(object Value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static ulong ToULong(string Value) { return default(ulong); }
+        public static ulong ToULong(string Value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static ushort ToUShort(object Value) { return default(ushort); }
+        public static ushort ToUShort(object Value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static ushort ToUShort(string Value) { return default(ushort); }
+        public static ushort ToUShort(string Value) { throw null; }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(4), AllowMultiple = false, Inherited = false)]
     [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
@@ -123,9 +123,9 @@ namespace Microsoft.VisualBasic.CompilerServices
     public sealed partial class NewLateBinding
     {
         internal NewLateBinding() { }
-        public static object LateCall(object Instance, System.Type Type, string MemberName, object[] Arguments, string[] ArgumentNames, System.Type[] TypeArguments, bool[] CopyBack, bool IgnoreReturn) { return default(object); }
-        public static object LateGet(object Instance, System.Type Type, string MemberName, object[] Arguments, string[] ArgumentNames, System.Type[] TypeArguments, bool[] CopyBack) { return default(object); }
-        public static object LateIndexGet(object Instance, object[] Arguments, string[] ArgumentNames) { return default(object); }
+        public static object LateCall(object Instance, System.Type Type, string MemberName, object[] Arguments, string[] ArgumentNames, System.Type[] TypeArguments, bool[] CopyBack, bool IgnoreReturn) { throw null; }
+        public static object LateGet(object Instance, System.Type Type, string MemberName, object[] Arguments, string[] ArgumentNames, System.Type[] TypeArguments, bool[] CopyBack) { throw null; }
+        public static object LateIndexGet(object Instance, object[] Arguments, string[] ArgumentNames) { throw null; }
         public static void LateIndexSet(object Instance, object[] Arguments, string[] ArgumentNames) { }
         public static void LateIndexSetComplex(object Instance, object[] Arguments, string[] ArgumentNames, bool OptimisticSet, bool RValueBase) { }
         public static void LateSet(object Instance, System.Type Type, string MemberName, object[] Arguments, string[] ArgumentNames, System.Type[] TypeArguments) { }
@@ -141,46 +141,46 @@ namespace Microsoft.VisualBasic.CompilerServices
         public sealed partial class ForLoopControl
         {
             internal ForLoopControl() { }
-            public static bool ForLoopInitObj(object Counter, object Start, object Limit, object StepValue, ref object LoopForResult, ref object CounterResult) { return default(bool); }
-            public static bool ForNextCheckDec(decimal count, decimal limit, decimal StepValue) { return default(bool); }
-            public static bool ForNextCheckObj(object Counter, object LoopObj, ref object CounterResult) { return default(bool); }
-            public static bool ForNextCheckR4(float count, float limit, float StepValue) { return default(bool); }
-            public static bool ForNextCheckR8(double count, double limit, double StepValue) { return default(bool); }
+            public static bool ForLoopInitObj(object Counter, object Start, object Limit, object StepValue, ref object LoopForResult, ref object CounterResult) { throw null; }
+            public static bool ForNextCheckDec(decimal count, decimal limit, decimal StepValue) { throw null; }
+            public static bool ForNextCheckObj(object Counter, object LoopObj, ref object CounterResult) { throw null; }
+            public static bool ForNextCheckR4(float count, float limit, float StepValue) { throw null; }
+            public static bool ForNextCheckR8(double count, double limit, double StepValue) { throw null; }
         }
     }
     [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
     public sealed partial class Operators
     {
         internal Operators() { }
-        public static object AddObject(object Left, object Right) { return default(object); }
-        public static object AndObject(object Left, object Right) { return default(object); }
-        public static object CompareObjectEqual(object Left, object Right, bool TextCompare) { return default(object); }
-        public static object CompareObjectGreater(object Left, object Right, bool TextCompare) { return default(object); }
-        public static object CompareObjectGreaterEqual(object Left, object Right, bool TextCompare) { return default(object); }
-        public static object CompareObjectLess(object Left, object Right, bool TextCompare) { return default(object); }
-        public static object CompareObjectLessEqual(object Left, object Right, bool TextCompare) { return default(object); }
-        public static object CompareObjectNotEqual(object Left, object Right, bool TextCompare) { return default(object); }
-        public static int CompareString(string Left, string Right, bool TextCompare) { return default(int); }
-        public static object ConcatenateObject(object Left, object Right) { return default(object); }
-        public static bool ConditionalCompareObjectEqual(object Left, object Right, bool TextCompare) { return default(bool); }
-        public static bool ConditionalCompareObjectGreater(object Left, object Right, bool TextCompare) { return default(bool); }
-        public static bool ConditionalCompareObjectGreaterEqual(object Left, object Right, bool TextCompare) { return default(bool); }
-        public static bool ConditionalCompareObjectLess(object Left, object Right, bool TextCompare) { return default(bool); }
-        public static bool ConditionalCompareObjectLessEqual(object Left, object Right, bool TextCompare) { return default(bool); }
-        public static bool ConditionalCompareObjectNotEqual(object Left, object Right, bool TextCompare) { return default(bool); }
-        public static object DivideObject(object Left, object Right) { return default(object); }
-        public static object ExponentObject(object Left, object Right) { return default(object); }
-        public static object IntDivideObject(object Left, object Right) { return default(object); }
-        public static object LeftShiftObject(object Operand, object Amount) { return default(object); }
-        public static object ModObject(object Left, object Right) { return default(object); }
-        public static object MultiplyObject(object Left, object Right) { return default(object); }
-        public static object NegateObject(object Operand) { return default(object); }
-        public static object NotObject(object Operand) { return default(object); }
-        public static object OrObject(object Left, object Right) { return default(object); }
-        public static object PlusObject(object Operand) { return default(object); }
-        public static object RightShiftObject(object Operand, object Amount) { return default(object); }
-        public static object SubtractObject(object Left, object Right) { return default(object); }
-        public static object XorObject(object Left, object Right) { return default(object); }
+        public static object AddObject(object Left, object Right) { throw null; }
+        public static object AndObject(object Left, object Right) { throw null; }
+        public static object CompareObjectEqual(object Left, object Right, bool TextCompare) { throw null; }
+        public static object CompareObjectGreater(object Left, object Right, bool TextCompare) { throw null; }
+        public static object CompareObjectGreaterEqual(object Left, object Right, bool TextCompare) { throw null; }
+        public static object CompareObjectLess(object Left, object Right, bool TextCompare) { throw null; }
+        public static object CompareObjectLessEqual(object Left, object Right, bool TextCompare) { throw null; }
+        public static object CompareObjectNotEqual(object Left, object Right, bool TextCompare) { throw null; }
+        public static int CompareString(string Left, string Right, bool TextCompare) { throw null; }
+        public static object ConcatenateObject(object Left, object Right) { throw null; }
+        public static bool ConditionalCompareObjectEqual(object Left, object Right, bool TextCompare) { throw null; }
+        public static bool ConditionalCompareObjectGreater(object Left, object Right, bool TextCompare) { throw null; }
+        public static bool ConditionalCompareObjectGreaterEqual(object Left, object Right, bool TextCompare) { throw null; }
+        public static bool ConditionalCompareObjectLess(object Left, object Right, bool TextCompare) { throw null; }
+        public static bool ConditionalCompareObjectLessEqual(object Left, object Right, bool TextCompare) { throw null; }
+        public static bool ConditionalCompareObjectNotEqual(object Left, object Right, bool TextCompare) { throw null; }
+        public static object DivideObject(object Left, object Right) { throw null; }
+        public static object ExponentObject(object Left, object Right) { throw null; }
+        public static object IntDivideObject(object Left, object Right) { throw null; }
+        public static object LeftShiftObject(object Operand, object Amount) { throw null; }
+        public static object ModObject(object Left, object Right) { throw null; }
+        public static object MultiplyObject(object Left, object Right) { throw null; }
+        public static object NegateObject(object Operand) { throw null; }
+        public static object NotObject(object Operand) { throw null; }
+        public static object OrObject(object Left, object Right) { throw null; }
+        public static object PlusObject(object Operand) { throw null; }
+        public static object RightShiftObject(object Operand, object Amount) { throw null; }
+        public static object SubtractObject(object Left, object Right) { throw null; }
+        public static object XorObject(object Left, object Right) { throw null; }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(2048), Inherited = false, AllowMultiple = false)]
     [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
@@ -221,6 +221,6 @@ namespace Microsoft.VisualBasic.CompilerServices
     public sealed partial class Utils
     {
         internal Utils() { }
-        public static System.Array CopyArray(System.Array arySrc, System.Array aryDest) { return default(System.Array); }
+        public static System.Array CopyArray(System.Array arySrc, System.Array aryDest) { throw null; }
     }
 }

@@ -77,50 +77,50 @@ namespace System.Net
     public partial class HttpWebRequest : System.Net.WebRequest
     {
         internal HttpWebRequest() { }
-        public string Accept { get { return default(string); } set { } }
-        public virtual bool AllowReadStreamBuffering { get { return default(bool); } set { } }
-        public override string ContentType { get { return default(string); } set { } }
-        public int ContinueTimeout { get { return default(int); } set { } }
-        public virtual System.Net.CookieContainer CookieContainer { get { return default(System.Net.CookieContainer); } set { } }
-        public override System.Net.ICredentials Credentials { get { return default(System.Net.ICredentials); } set { } }
-        public virtual bool HaveResponse { get { return default(bool); } }
-        public override System.Net.WebHeaderCollection Headers { get { return default(System.Net.WebHeaderCollection); } set { } }
-        public override string Method { get { return default(string); } set { } }
-        public override System.Uri RequestUri { get { return default(System.Uri); } }
-        public virtual bool SupportsCookieContainer { get { return default(bool); } }
-        public override bool UseDefaultCredentials { get { return default(bool); } set { } }
+        public string Accept { get { throw null; } set { } }
+        public virtual bool AllowReadStreamBuffering { get { throw null; } set { } }
+        public override string ContentType { get { throw null; } set { } }
+        public int ContinueTimeout { get { throw null; } set { } }
+        public virtual System.Net.CookieContainer CookieContainer { get { throw null; } set { } }
+        public override System.Net.ICredentials Credentials { get { throw null; } set { } }
+        public virtual bool HaveResponse { get { throw null; } }
+        public override System.Net.WebHeaderCollection Headers { get { throw null; } set { } }
+        public override string Method { get { throw null; } set { } }
+        public override System.Uri RequestUri { get { throw null; } }
+        public virtual bool SupportsCookieContainer { get { throw null; } }
+        public override bool UseDefaultCredentials { get { throw null; } set { } }
         public override void Abort() { }
-        public override System.IAsyncResult BeginGetRequestStream(System.AsyncCallback callback, object state) { return default(System.IAsyncResult); }
-        public override System.IAsyncResult BeginGetResponse(System.AsyncCallback callback, object state) { return default(System.IAsyncResult); }
-        public override System.IO.Stream EndGetRequestStream(System.IAsyncResult asyncResult) { return default(System.IO.Stream); }       
-        public override System.Net.WebResponse EndGetResponse(System.IAsyncResult asyncResult) { return default(System.Net.WebResponse); }
-        public override System.Net.WebResponse GetResponse() { return default(System.Net.WebResponse); }
-        public virtual bool AllowWriteStreamBuffering { get { return default(bool); } set { } }        
-        public virtual bool AllowAutoRedirect { get { return default(bool); } set { } }
-        public Uri Address { get { return default(Uri); } }
-        public DecompressionMethods AutomaticDecompression { get { return default(DecompressionMethods); } set { } }
-        public DateTime Date { get { return default(DateTime); } set { } }
-        public static int DefaultMaximumResponseHeadersLength { get { return default(int); } set { } }
-        public static int DefaultMaximumErrorResponseLength { get { return default(int); } set { } }
+        public override System.IAsyncResult BeginGetRequestStream(System.AsyncCallback callback, object state) { throw null; }
+        public override System.IAsyncResult BeginGetResponse(System.AsyncCallback callback, object state) { throw null; }
+        public override System.IO.Stream EndGetRequestStream(System.IAsyncResult asyncResult) { throw null; }       
+        public override System.Net.WebResponse EndGetResponse(System.IAsyncResult asyncResult) { throw null; }
+        public override System.Net.WebResponse GetResponse() { throw null; }
+        public virtual bool AllowWriteStreamBuffering { get { throw null; } set { } }        
+        public virtual bool AllowAutoRedirect { get { throw null; } set { } }
+        public Uri Address { get { throw null; } }
+        public DecompressionMethods AutomaticDecompression { get { throw null; } set { } }
+        public DateTime Date { get { throw null; } set { } }
+        public static int DefaultMaximumResponseHeadersLength { get { throw null; } set { } }
+        public static int DefaultMaximumErrorResponseLength { get { throw null; } set { } }
         public System.Security.Cryptography.X509Certificates.X509CertificateCollection ClientCertificates {
-            get { return default(System.Security.Cryptography.X509Certificates.X509CertificateCollection); } set { } }
-        public string Expect { get { return default(string); } set { } }
-        public DateTime IfModifiedSince { get { return default(DateTime); } set { } }
-        public bool KeepAlive { get { return default(bool); } set { } }
-        public int MaximumAutomaticRedirections { get { return default(int); } set { } }
-        public int MaximumResponseHeadersLength { get { return default(int); } set { } }
-        public string MediaType { get { return default(string); } set { } }        
+            get { throw null; } set { } }
+        public string Expect { get { throw null; } set { } }
+        public DateTime IfModifiedSince { get { throw null; } set { } }
+        public bool KeepAlive { get { throw null; } set { } }
+        public int MaximumAutomaticRedirections { get { throw null; } set { } }
+        public int MaximumResponseHeadersLength { get { throw null; } set { } }
+        public string MediaType { get { throw null; } set { } }        
         public System.IO.Stream GetRequestStream(out TransportContext context) { throw null; }
-        public bool Pipelined { get { return default(bool); } set { } }
-        public Version ProtocolVersion { get { return default(Version); } set { } }
-        public int ReadWriteTimeout { get { return default(int); } set { } }
-        public string Referer { get { return default(string); } set { } }
-        public bool SendChunked { get { return default(bool); } set { } }
-        public ServicePoint ServicePoint { get { return default(ServicePoint); } }
-        public string TransferEncoding { get { return default(string); } set { } }
-        public string UserAgent { get { return default(string); } set { } }
-        public bool UnsafeAuthenticatedConnectionSharing { get { return default(bool); } set { } }
-        public override System.IO.Stream GetRequestStream() { return default(System.IO.Stream); }
+        public bool Pipelined { get { throw null; } set { } }
+        public Version ProtocolVersion { get { throw null; } set { } }
+        public int ReadWriteTimeout { get { throw null; } set { } }
+        public string Referer { get { throw null; } set { } }
+        public bool SendChunked { get { throw null; } set { } }
+        public ServicePoint ServicePoint { get { throw null; } }
+        public string TransferEncoding { get { throw null; } set { } }
+        public string UserAgent { get { throw null; } set { } }
+        public bool UnsafeAuthenticatedConnectionSharing { get { throw null; } set { } }
+        public override System.IO.Stream GetRequestStream() { throw null; }
         public void AddRange(int range) { }
         public void AddRange(int from,int to) { }
         public void AddRange(long range) { }
@@ -129,30 +129,30 @@ namespace System.Net
         public void AddRange(string rangeSpecifier, int from,int to) { }
         public void AddRange(string rangeSpecifier, long range) { }
         public void AddRange(string rangeSpecifier, long from,long to) { }
-        public string Host { get { return default(string); } set { } }
+        public string Host { get { throw null; } set { } }
         public override string ConnectionGroupName { get { throw null; } set { } }
         public System.Net.Security.RemoteCertificateValidationCallback ServerCertificateValidationCallback { get; set; }
     }
     public partial class HttpWebResponse : System.Net.WebResponse
     {
         public HttpWebResponse() { }
-        public override long ContentLength { get { return default(long); } }
-        public override string ContentType { get { return default(string); } }
-        public virtual System.Net.CookieCollection Cookies { get { return default(System.Net.CookieCollection); } }
-        public override System.Net.WebHeaderCollection Headers { get { return default(System.Net.WebHeaderCollection); } }
-        public virtual string Method { get { return default(string); } }
-        public override System.Uri ResponseUri { get { return default(System.Uri); } }
-        public virtual System.Net.HttpStatusCode StatusCode { get { return default(System.Net.HttpStatusCode); } }
-        public virtual string StatusDescription { get { return default(string); } }
-        public override bool SupportsHeaders { get { return default(bool); } }
+        public override long ContentLength { get { throw null; } }
+        public override string ContentType { get { throw null; } }
+        public virtual System.Net.CookieCollection Cookies { get { throw null; } }
+        public override System.Net.WebHeaderCollection Headers { get { throw null; } }
+        public virtual string Method { get { throw null; } }
+        public override System.Uri ResponseUri { get { throw null; } }
+        public virtual System.Net.HttpStatusCode StatusCode { get { throw null; } }
+        public virtual string StatusDescription { get { throw null; } }
+        public override bool SupportsHeaders { get { throw null; } }
         protected override void Dispose(bool disposing) { }
-        public override System.IO.Stream GetResponseStream() { return default(System.IO.Stream); }
-        public string GetResponseHeader(string headerName) { return default(string); }        
-        public Version ProtocolVersion { get { return default(Version); } }        
-        public DateTime LastModified { get { return default(DateTime); } }        
-        public String ContentEncoding { get { return default(string); } }
-        public string CharacterSet { get { return default(string); } }
-        public string Server { get { return default(string); } }
+        public override System.IO.Stream GetResponseStream() { throw null; }
+        public string GetResponseHeader(string headerName) { throw null; }        
+        public Version ProtocolVersion { get { throw null; } }        
+        public DateTime LastModified { get { throw null; } }        
+        public String ContentEncoding { get { throw null; } }
+        public string CharacterSet { get { throw null; } }
+        public string Server { get { throw null; } }
     }
     public interface IAuthenticationModule
     {
@@ -185,8 +185,8 @@ namespace System.Net
         public WebException(string message, System.Exception innerException) { }
         public WebException(string message, System.Exception innerException, System.Net.WebExceptionStatus status, System.Net.WebResponse response) { }
         public WebException(string message, System.Net.WebExceptionStatus status) { }
-        public System.Net.WebResponse Response { get { return default(System.Net.WebResponse); } }
-        public System.Net.WebExceptionStatus Status { get { return default(System.Net.WebExceptionStatus); } }
+        public System.Net.WebResponse Response { get { throw null; } }
+        public System.Net.WebExceptionStatus Status { get { throw null; } }
     }
     public enum WebExceptionStatus
     {
@@ -221,35 +221,35 @@ namespace System.Net
         public virtual string ContentType { get { throw null; } set { } }
         public virtual System.Net.Cache.RequestCachePolicy CachePolicy { get { throw null; } set { } }
         public virtual string ConnectionGroupName { get { throw null; } set { } }
-        public virtual System.Net.ICredentials Credentials { get { return default(System.Net.ICredentials); } set { } }
+        public virtual System.Net.ICredentials Credentials { get { throw null; } set { } }
         public static System.Net.Cache.RequestCachePolicy DefaultCachePolicy { get { throw null; } set { } }
-        public static System.Net.IWebProxy DefaultWebProxy { get { return default(System.Net.IWebProxy); } set { } }
+        public static System.Net.IWebProxy DefaultWebProxy { get { throw null; } set { } }
         public virtual System.Net.WebHeaderCollection Headers { get { throw null; } set { } }
         public System.Security.Principal.TokenImpersonationLevel ImpersonationLevel { get { throw null; } set { } }
         public virtual string Method { get { throw null; } set { } }
         public virtual bool PreAuthenticate { get { throw null; } set { } }
-        public virtual System.Net.IWebProxy Proxy { get { return default(System.Net.IWebProxy); } set { } }
+        public virtual System.Net.IWebProxy Proxy { get { throw null; } set { } }
         public virtual System.Uri RequestUri { get { throw null; } }
         public virtual int Timeout { get { throw null; } set { } }
-        public virtual bool UseDefaultCredentials { get { return default(bool); } set { } }
+        public virtual bool UseDefaultCredentials { get { throw null; } set { } }
         public virtual void Abort() { throw null; }
         public virtual System.IAsyncResult BeginGetRequestStream(System.AsyncCallback callback, object state) { throw null; }
         public virtual System.IAsyncResult BeginGetResponse(System.AsyncCallback callback, object state) { throw null; }
-        public static System.Net.WebRequest Create(string requestUriString) { return default(System.Net.WebRequest); }
-        public static System.Net.WebRequest Create(System.Uri requestUri) { return default(System.Net.WebRequest); }
+        public static System.Net.WebRequest Create(string requestUriString) { throw null; }
+        public static System.Net.WebRequest Create(System.Uri requestUri) { throw null; }
         public static System.Net.WebRequest CreateDefault(Uri requestUri) { throw null; }
-        public static System.Net.HttpWebRequest CreateHttp(string requestUriString) { return default(System.Net.HttpWebRequest); }
-        public static System.Net.HttpWebRequest CreateHttp(System.Uri requestUri) { return default(System.Net.HttpWebRequest); }
+        public static System.Net.HttpWebRequest CreateHttp(string requestUriString) { throw null; }
+        public static System.Net.HttpWebRequest CreateHttp(System.Uri requestUri) { throw null; }
         public virtual System.IO.Stream EndGetRequestStream(System.IAsyncResult asyncResult) { throw null; }
         public virtual System.Net.WebResponse EndGetResponse(System.IAsyncResult asyncResult) { throw null; }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { throw null; }
         protected virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { throw null; }
         public virtual System.IO.Stream GetRequestStream() { throw null; }
-        public virtual System.Threading.Tasks.Task<System.IO.Stream> GetRequestStreamAsync() { return default(System.Threading.Tasks.Task<System.IO.Stream>); }
+        public virtual System.Threading.Tasks.Task<System.IO.Stream> GetRequestStreamAsync() { throw null; }
         public virtual System.Net.WebResponse GetResponse() { throw null; }
-        public virtual System.Threading.Tasks.Task<System.Net.WebResponse> GetResponseAsync() { return default(System.Threading.Tasks.Task<System.Net.WebResponse>); }        
+        public virtual System.Threading.Tasks.Task<System.Net.WebResponse> GetResponseAsync() { throw null; }        
         public static System.Net.IWebProxy GetSystemWebProxy() { throw null; }
-        public static bool RegisterPrefix(string prefix, System.Net.IWebRequestCreate creator) { return default(bool); }
+        public static bool RegisterPrefix(string prefix, System.Net.IWebRequestCreate creator) { throw null; }
     }
     public static class WebRequestMethods
     {
@@ -290,11 +290,11 @@ namespace System.Net
         protected WebResponse(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public virtual long ContentLength { get { throw null; } set { } }
         public virtual string ContentType { get { throw null; } set { } }
-        public virtual System.Net.WebHeaderCollection Headers { get { return default(System.Net.WebHeaderCollection); } }
+        public virtual System.Net.WebHeaderCollection Headers { get { throw null; } }
         public virtual bool IsFromCache { get { throw null; } }
         public virtual bool IsMutuallyAuthenticated { get { throw null; } }
         public virtual System.Uri ResponseUri { get { throw null; } }
-        public virtual bool SupportsHeaders { get { return default(bool); } }
+        public virtual bool SupportsHeaders { get { throw null; } }
         public virtual void Close() { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }

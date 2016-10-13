@@ -20,7 +20,7 @@ namespace System.Resources
         public void Close() { }
         public void Dispose() { }
         public void GetResourceData(string resourceName, out string resourceType, out byte[] resourceData) { throw null; }
-        public System.Collections.IDictionaryEnumerator GetEnumerator() { return default(System.Collections.IDictionaryEnumerator); }
+        public System.Collections.IDictionaryEnumerator GetEnumerator() { throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
@@ -46,7 +46,7 @@ namespace System.Resources
     public sealed class NeutralResourcesLanguageAttribute : System.Attribute
     {
         public NeutralResourcesLanguageAttribute(string cultureName) { }
-        public string CultureName { get { return default(string); } }
+        public string CultureName { get { throw null; } }
         public NeutralResourcesLanguageAttribute(string cultureName, UltimateResourceFallbackLocation location) { }
         public UltimateResourceFallbackLocation Location { get { throw null; } }
     }
@@ -70,8 +70,8 @@ namespace System.Resources
         protected static System.Version GetSatelliteContractVersion(System.Reflection.Assembly a) { throw null; }
         public System.IO.UnmanagedMemoryStream GetStream(string name) { throw null; }
         public System.IO.UnmanagedMemoryStream GetStream(string name, System.Globalization.CultureInfo culture) { throw null; }
-        public virtual string GetString(string name) { return default(string); }
-        public virtual string GetString(string name, System.Globalization.CultureInfo culture) { return default(string); }
+        public virtual string GetString(string name) { throw null; }
+        public virtual string GetString(string name, System.Globalization.CultureInfo culture) { throw null; }
         protected virtual ResourceSet InternalGetResourceSet(System.Globalization.CultureInfo culture, bool createIfNotExists, bool tryParents) { throw null; }
         public virtual void ReleaseAllResources() { }
         protected UltimateResourceFallbackLocation FallbackLocation { get { throw null; } set { } }
@@ -103,7 +103,7 @@ namespace System.Resources
     public sealed class SatelliteContractVersionAttribute : System.Attribute
     {
         public SatelliteContractVersionAttribute(string version) { }
-        public string Version { get { return default(string); } }
+        public string Version { get { throw null; } }
     }
     [System.Serializable]
     public enum UltimateResourceFallbackLocation

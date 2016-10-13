@@ -11,30 +11,30 @@ namespace System.Net.Mime
     {
         public ContentDisposition() { }
         public ContentDisposition(string disposition) { }
-        public string DispositionType { get { return default(string); } set { } }
-        public System.Collections.Specialized.StringDictionary Parameters { get { return default(System.Collections.Specialized.StringDictionary); } }
-        public string FileName { get { return default(string); } set { } }
-        public DateTime CreationDate { get { return default(DateTime); } set { } }
-        public DateTime ModificationDate { get { return default(DateTime); } set { } }
-        public bool Inline { get { return default(bool); } set { } }
-        public DateTime ReadDate { get { return default(DateTime); } set { } }
-        public long Size { get { return default(long); } set { } }
-        public override string ToString() { return default(string); }
-        public override bool Equals(object rparam) { return default(bool); }
-        public override int GetHashCode() { return default(int); }
+        public string DispositionType { get { throw null; } set { } }
+        public System.Collections.Specialized.StringDictionary Parameters { get { throw null; } }
+        public string FileName { get { throw null; } set { } }
+        public DateTime CreationDate { get { throw null; } set { } }
+        public DateTime ModificationDate { get { throw null; } set { } }
+        public bool Inline { get { throw null; } set { } }
+        public DateTime ReadDate { get { throw null; } set { } }
+        public long Size { get { throw null; } set { } }
+        public override string ToString() { throw null; }
+        public override bool Equals(object rparam) { throw null; }
+        public override int GetHashCode() { throw null; }
     }
     public class ContentType
     {
         public ContentType() { }
         public ContentType(string contentType) { }
-        public string Boundary { get { return default(string); } set { } }
-        public string CharSet { get { return default(string); } set { } }
-        public string MediaType { get { return default(string); } set { } }
-        public string Name { get { return default(string); } set { } }
-        public System.Collections.Specialized.StringDictionary Parameters { get { return default(System.Collections.Specialized.StringDictionary); } }
-        public override string ToString() { return default(string); }
-        public override bool Equals(object rparam) { return default(bool); }
-        public override int GetHashCode() { return default(int); }
+        public string Boundary { get { throw null; } set { } }
+        public string CharSet { get { throw null; } set { } }
+        public string MediaType { get { throw null; } set { } }
+        public string Name { get { throw null; } set { } }
+        public System.Collections.Specialized.StringDictionary Parameters { get { throw null; } }
+        public override string ToString() { throw null; }
+        public override bool Equals(object rparam) { throw null; }
+        public override int GetHashCode() { throw null; }
     }
     public static class DispositionTypeNames
     {

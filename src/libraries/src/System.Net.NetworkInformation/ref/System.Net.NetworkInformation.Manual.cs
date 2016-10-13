@@ -10,6 +10,6 @@ namespace System.Net.NetworkInformation
     public partial class NetworkInformationException : Exception
     {
         // Following property was added after removing the Win32Exception base class.
-        public int ErrorCode { get { return default(int); } }
+        public int ErrorCode { get { throw null; } }
     }
 }

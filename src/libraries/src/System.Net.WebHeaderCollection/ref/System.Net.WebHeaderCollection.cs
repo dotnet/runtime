@@ -88,10 +88,10 @@ namespace System.Net
     public sealed partial class WebHeaderCollection
     {
         public WebHeaderCollection() { }
-        public string[] AllKeys { get { return default(string[]); } }
-        public int Count { get { return default(int); } }
-        public string this[System.Net.HttpRequestHeader header] { get { return default(string); } set { } }
-        public string this[System.Net.HttpResponseHeader header] { get { return default(string); } set { } }
-        public override string ToString() { return default(string); }
+        public string[] AllKeys { get { throw null; } }
+        public int Count { get { throw null; } }
+        public string this[System.Net.HttpRequestHeader header] { get { throw null; } set { } }
+        public string this[System.Net.HttpResponseHeader header] { get { throw null; } set { } }
+        public override string ToString() { throw null; }
     }
 }
