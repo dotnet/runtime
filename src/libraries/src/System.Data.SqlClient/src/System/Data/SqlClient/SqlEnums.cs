@@ -209,6 +209,7 @@ namespace System.Data.SqlClient
                 case SqlDbType.Variant: return s_metaVariant;
                 case (SqlDbType)TdsEnums.SmallVarBinary: return s_metaSmallVarBinary;
                 case SqlDbType.Xml: return MetaXml;
+                case SqlDbType.Udt: return MetaUdt;
                 case SqlDbType.Structured:
                     if (isMultiValued)
                     {
@@ -280,8 +281,7 @@ namespace System.Data.SqlClient
                 case SqlDbType.NChar:
                     return MetaMaxNVarChar;
                 case SqlDbType.Udt:
-                    Debug.Assert(false, "UDT is not supported");
-                    return mt;
+                    return s_metaMaxUdt;
                 default:
                     return mt;
             }
@@ -699,7 +699,7 @@ namespace System.Data.SqlClient
                 case TdsEnums.SQLNVARCHAR: return MetaNVarChar;
                 case TdsEnums.SQLNTEXT: return MetaNText;
                 case TdsEnums.SQLVARIANT: return s_metaVariant;
-                case TdsEnums.SQLUDT: return s_metaUdt;
+                case TdsEnums.SQLUDT: return MetaUdt;
                 case TdsEnums.SQLXMLTYPE: return MetaXml;
                 case TdsEnums.SQLTABLE: return s_metaTable;
                 case TdsEnums.SQLDATE: return s_metaDate;
@@ -828,8 +828,11 @@ namespace System.Data.SqlClient
         private static readonly MetaType s_metaVariant = new MetaType
             (255, 255, -1, true, false, false, TdsEnums.SQLVARIANT, TdsEnums.SQLVARIANT, MetaTypeName.VARIANT, typeof(System.Object), typeof(System.Object), SqlDbType.Variant, DbType.Object, 0);
 
-        private static readonly MetaType s_metaUdt = new MetaType
+        internal static readonly MetaType MetaUdt = new MetaType
            (255, 255, -1, false, false, true, TdsEnums.SQLUDT, TdsEnums.SQLUDT, MetaTypeName.UDT, typeof(System.Object), typeof(System.Object), SqlDbType.Udt, DbType.Object, 0);
+
+        private static readonly MetaType s_metaMaxUdt = new MetaType
+            (255, 255, -1, false, true, true, TdsEnums.SQLUDT, TdsEnums.SQLUDT, MetaTypeName.UDT, typeof(System.Object), typeof(System.Object), SqlDbType.Udt, DbType.Object, 0);
 
         private static readonly MetaType s_metaTable = new MetaType
             (255, 255, -1, false, false, false, TdsEnums.SQLTABLE, TdsEnums.SQLTABLE, MetaTypeName.TABLE, typeof(IEnumerable<DbDataRecord>), typeof(IEnumerable<DbDataRecord>), SqlDbType.Structured, DbType.Object, 0);
