@@ -4122,7 +4122,6 @@ DWORD ProfToEEInterfaceImpl::GetModuleFlags(Module * pModule)
         }
 #endif
         // Not NGEN or ReadyToRun.
-	    
         if (pPEFile->HasOpenedILimage())
         {
             PEImage * pILImage = pPEFile->GetOpenedILimage();
@@ -6051,7 +6050,7 @@ HRESULT ProfToEEInterfaceImpl::SetEnterLeaveFunctionHooks3WithInfo(FunctionEnter
 
     // The profiler must call SetEnterLeaveFunctionHooks3WithInfo during initialization, since
     // the enter/leave events are immutable and must also be set during initialization.
-    PROFILER_TO_CLR_ENTRYPOINT_SET_ELT((LF_CORPROF, 
+    PROFILER_TO_CLR_ENTRYPOINT_SET_ELT((LF_CORPROF,
                                         LL_INFO10, 
                                         "**PROF: SetEnterLeaveFunctionHooks3WithInfo 0x%p, 0x%p, 0x%p.\n", 
                                         pFuncEnter3WithInfo, 
@@ -7236,18 +7235,13 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshot(ThreadID thread,
                                               ULONG32 contextSize)
 {
 
-#ifdef _TARGET_ARM_
-    // DoStackSnapshot is not supported on arm. Profilers can use OS apis to get the call stack.
-    return E_NOTIMPL;
-#endif
-
-#if !defined(FEATURE_HIJACK) || !defined(PLATFORM_SUPPORTS_SAFE_THREADSUSPEND)
+#if !defined(FEATURE_HIJACK)
 
     // DoStackSnapshot needs Thread::Suspend/ResumeThread functionality.
     // On platforms w/o support for these APIs return E_NOTIMPL.
     return E_NOTIMPL;
 
-#else // !defined(FEATURE_HIJACK) || !defined(PLATFORM_SUPPORTS_SAFE_THREADSUSPEND)
+#else // !defined(FEATURE_HIJACK)
 
     CONTRACTL
     {
@@ -7415,6 +7409,10 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshot(ThreadID thread,
     // First, check "1) Target thread to walk == current thread OR Target thread is suspended"
     if (pThreadToSnapshot != pCurrentThread)
     {
+#ifndef PLATFORM_SUPPORTS_SAFE_THREADSUSPEND
+        hr = E_NOTIMPL;
+        goto Cleanup;
+#else
         // Walking separate thread, so it must be suspended.  First, ensure that
         // target thread exists.
         //
@@ -7450,6 +7448,7 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshot(ThreadID thread,
             hr = CORPROF_E_STACKSNAPSHOT_UNSAFE;
             goto Cleanup;            
         }
+#endif // !PLATFORM_SUPPORTS_SAFE_THREADSUSPEND
     }
 
     hostCallPreference =
@@ -7482,7 +7481,10 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshot(ThreadID thread,
         // (Note that this whole block is skipped if pThreadToSnapshot is in preemptive mode (the IF
         // above), as the context is unused in such a case--the EE Frame chain is used
         // to seed the walk instead.)
-
+#ifndef PLATFORM_SUPPORTS_SAFE_THREADSUSPEND
+        hr = E_NOTIMPL;
+        goto Cleanup;
+#else
         if (!pThreadToSnapshot->GetSafelyRedirectableThreadContext(Thread::kDefaultChecks, &ctxCurrent, &rd))
         {
             LOG((LF_CORPROF, LL_INFO100, "**PROF: GetSafelyRedirectableThreadContext failure leads to CORPROF_E_STACKSNAPSHOT_UNSAFE.\n"));
@@ -7543,6 +7545,7 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshot(ThreadID thread,
         {
             pctxSeed = &ctxCurrent;
         }
+#endif // !PLATFORM_SUPPORTS_SAFE_THREADSUSPEND
     }
 
     // Second, check "2) Target thread to walk is currently executing JITted / NGENd code"
@@ -7589,6 +7592,10 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshot(ThreadID thread,
     //
     if (pThreadToSnapshot != pCurrentThread)
     {
+#ifndef PLATFORM_SUPPORTS_SAFE_THREADSUSPEND
+        hr = E_NOTIMPL;
+        goto Cleanup;
+#else
         if (pctxSeed == NULL)
         {
             if (pThreadToSnapshot->GetSafelyRedirectableThreadContext(Thread::kDefaultChecks, &ctxCurrent, &rd))
@@ -7605,9 +7612,9 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshot(ThreadID thread,
                 }
             }
         }
+#endif // !PLATFORM_SUPPORTS_SAFE_THREADSUSPEND
     }
-#endif
-
+#endif //_DEBUG
     // Third, verify the target thread is seeded or not in the midst of an unwind.
     if (pctxSeed == NULL)
     {
@@ -7672,12 +7679,13 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshot(ThreadID thread,
 
     INDEBUG(if (pCurrentThread) pCurrentThread->m_ulForbidTypeLoad = ulForbidTypeLoad;)
 
-
 Cleanup:
+#if defined(PLATFORM_SUPPORTS_SAFE_THREADSUSPEND)
     if (fResumeThread)
     {
         pThreadToSnapshot->ResumeThread();
     }
+#endif // PLATFORM_SUPPORTS_SAFE_THREADSUSPEND
     if (fResetSnapshotThreadExternalCount)
     {
         pThreadToSnapshot->DecExternalCountDANGEROUSProfilerOnly();
@@ -7685,7 +7693,7 @@ Cleanup:
 
     return hr;
 
-#endif // !defined(FEATURE_HIJACK) || !defined(PLATFORM_SUPPORTS_SAFE_THREADSUSPEND)
+#endif // !defined(FEATURE_HIJACK)
 }
 
 
@@ -8440,7 +8448,7 @@ HRESULT ProfToEEInterfaceImpl::RequestProfilerDetach(DWORD dwExpectedCompletionM
 typedef struct _COR_PRF_ELT_INFO_INTERNAL
 {
     // Point to a platform dependent structure ASM helper push on the stack
-    void * platformSpecificHandle;  	  
+    void * platformSpecificHandle;
 
     // startAddress of COR_PRF_FUNCTION_ARGUMENT_RANGE structure needs to point 
     // TO the argument value, not BE the argument value.  So, when the argument 
