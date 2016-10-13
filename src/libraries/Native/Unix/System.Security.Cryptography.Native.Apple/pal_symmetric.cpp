@@ -10,7 +10,9 @@ static_assert(PAL_OperationEncrypt == kCCEncrypt, "");
 static_assert(PAL_OperationDecrypt == kCCDecrypt, "");
 
 static_assert(PAL_AlgorithmAES == kCCAlgorithmAES128, "");
+static_assert(PAL_AlgorithmDES == kCCAlgorithmDES, "");
 static_assert(PAL_Algorithm3DES == kCCAlgorithm3DES, "");
+static_assert(PAL_AlgorithmRC2 == kCCAlgorithmRC2, "");
 
 static_assert(PAL_ChainingModeECB == kCCModeECB, "");
 static_assert(PAL_ChainingModeCBC == kCCModeCBC, "");
@@ -51,7 +53,8 @@ extern "C" int AppleCryptoNative_CryptorCreate(PAL_SymmetricOperation operation,
 
     // Ensure we aren't passing through things we don't understand
     assert(operation == PAL_OperationEncrypt || operation == PAL_OperationDecrypt);
-    assert(algorithm == PAL_AlgorithmAES || algorithm == PAL_Algorithm3DES);
+    assert(algorithm == PAL_AlgorithmAES || algorithm == PAL_AlgorithmDES ||
+           algorithm == PAL_Algorithm3DES || algorithm == PAL_AlgorithmRC2);
     assert(chainingMode == PAL_ChainingModeECB || chainingMode == PAL_ChainingModeCBC);
     assert(paddingMode == PAL_PaddingModeNone || paddingMode == PAL_PaddingModePkcs7);
     assert(options == 0);

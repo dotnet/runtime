@@ -25,13 +25,29 @@
     </Compile>
     <Compile Include="System\Security\Cryptography\CapiHelper.cs" />
     <Compile Include="System\Security\Cryptography\CapiHelper.DSA.cs" />
+    <Compile Include="System\Security\Cryptography\CapiHelper.SymmetricKey.cs" />
     <Compile Include="System\Security\Cryptography\CspKeyContainerInfo.cs" />
     <Compile Include="System\Security\Cryptography\CspParameters.cs" />
+    <Compile Include="System\Security\Cryptography\DESCryptoServiceProvider.cs" />
     <Compile Include="System\Security\Cryptography\DSACryptoServiceProvider.cs" />
+    <Compile Include="System\Security\Cryptography\RC2CryptoServiceProvider.cs" />
     <Compile Include="System\Security\Cryptography\RSACryptoServiceProvider.cs" />
     <Compile Include="System\Security\Cryptography\SafeCryptoHandles.cs" />
     <Compile Include="System\Security\Cryptography\Utils.cs" />
+    <Compile Include="Internal\Cryptography\BasicSymmetricCipherCsp.cs" />
     <Compile Include="Internal\Cryptography\Helpers.cs" />
+    <Compile Include="$(CommonPath)\Internal\Cryptography\BasicSymmetricCipher.cs">
+      <Link>Internal\Cryptography\BasicSymmetricCipher.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Internal\Cryptography\UniversalCryptoTransform.cs">
+      <Link>Internal\Cryptography\UniversalCryptoTransform.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Internal\Cryptography\UniversalCryptoEncryptor.cs">
+      <Link>Internal\Cryptography\UniversalCryptoEncryptor.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Internal\Cryptography\UniversalCryptoDecryptor.cs">
+      <Link>Internal\Cryptography\UniversalCryptoDecryptor.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Internal\Cryptography\Windows\CryptoThrowHelper.cs">
       <Link>Internal\Cryptography\Windows\CryptoThrowHelper.cs</Link>
     </Compile>
@@ -47,6 +63,12 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="mscorlib" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- ToDo: Remove once prerelease gets updated again -->
+    <ProjectReference Include="..\..\System.Security.Cryptography.Algorithms\pkg\System.Security.Cryptography.Algorithms.pkgproj">
+      <Name>System.Security.Cryptography.Algorithms</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

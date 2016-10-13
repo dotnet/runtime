@@ -7,7 +7,7 @@ using System.Security.Cryptography;
 
 namespace Internal.Cryptography
 {
-    partial class TripleDesImplementation
+    partial class DesImplementation
     {
         private static ICryptoTransform CreateTransformCore(
             CipherMode cipherMode,
@@ -22,10 +22,10 @@ namespace Internal.Cryptography
             switch (cipherMode)
             {
                 case CipherMode.CBC:
-                    algorithm = Interop.Crypto.EvpDes3Cbc();
+                    algorithm = Interop.Crypto.EvpDesCbc();
                     break;
                 case CipherMode.ECB:
-                    algorithm = Interop.Crypto.EvpDes3Ecb();
+                    algorithm = Interop.Crypto.EvpDesEcb();
                     break;
                 default:
                     throw new NotSupportedException();
@@ -34,9 +34,5 @@ namespace Internal.Cryptography
             BasicSymmetricCipher cipher = new OpenSslCipher(algorithm, cipherMode, blockSize, key, 0, iv, encrypting);
             return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
         }
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------    
     }
 }

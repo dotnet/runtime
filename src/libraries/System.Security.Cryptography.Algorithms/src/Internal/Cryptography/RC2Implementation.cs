@@ -8,18 +8,21 @@ using System.Security.Cryptography;
 namespace Internal.Cryptography
 {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350")]
-    internal sealed partial class TripleDesImplementation : TripleDES
+    internal sealed partial class RC2Implementation : RC2
     {
         private const int BitsPerByte = 8;
         private static readonly RandomNumberGenerator s_rng = RandomNumberGenerator.Create();
 
-        public override KeySizes[] LegalKeySizes
+        public override int EffectiveKeySize
         {
             get
             {
-                // CNG does not support 128-bit keys.
-                // Only support 192-bit keys on all platforms for simplicity.
-                return new KeySizes[] { new KeySizes(minSize: 3 * 64, maxSize: 3 * 64, skipSize: 0) };
+                return KeySizeValue;
+            }
+            set
+            {
+                if (value != KeySizeValue)
+                    throw new CryptographicUnexpectedOperationException(SR.Cryptography_RC2_EKSKS2);
             }
         }
 
@@ -75,7 +78,8 @@ namespace Internal.Cryptography
                     throw new ArgumentException(SR.Cryptography_InvalidIVSize, nameof(rgbIV));
             }
 
-            return CreateTransformCore(Mode, Padding, rgbKey, rgbIV, BlockSize / BitsPerByte, encrypting);
+            int effectiveKeySize = EffectiveKeySizeValue == 0 ? (int)keySize : EffectiveKeySize;
+            return CreateTransformCore(Mode, Padding, rgbKey, effectiveKeySize, rgbIV, BlockSize / BitsPerByte, encrypting);
         }
     }
 }

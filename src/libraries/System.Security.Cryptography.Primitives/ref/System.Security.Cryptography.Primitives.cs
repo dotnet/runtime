@@ -21,8 +21,12 @@ namespace System.Security.Cryptography
     public enum CipherMode
     {
         CBC = 1,
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+        CFB = 4,
         CTS = 5,
         ECB = 2,
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+        OFB = 3,
     }
     public partial class CryptographicException : System.SystemException
     {
