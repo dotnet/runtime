@@ -1,0 +1,544 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System.Data.Common;
+using System.Runtime.InteropServices;
+using System.Xml;
+using System.Xml.Schema;
+using System.Xml.Serialization;
+
+namespace System.Data.SqlTypes
+{
+    /// <summary>
+    /// Represents a 16-bit signed integer to be stored in or retrieved from a database.
+    /// </summary>
+    [Serializable]
+    [StructLayout(LayoutKind.Sequential)]
+    [XmlSchemaProvider("GetXsdType")]
+    public struct SqlInt16 : INullable, IComparable, IXmlSerializable
+    {
+        private bool _fNotNull; // false if null
+        private short _value;
+
+        private static readonly int s_MASKI2 = ~0x00007fff;
+
+        // constructor
+        // construct a Null
+        private SqlInt16(bool fNull)
+        {
+            _fNotNull = false;
+            _value = 0;
+        }
+
+        public SqlInt16(short value)
+        {
+            _value = value;
+            _fNotNull = true;
+        }
+
+        // INullable
+        public bool IsNull
+        {
+            get { return !_fNotNull; }
+        }
+
+        // property: Value
+        public short Value
+        {
+            get
+            {
+                if (_fNotNull)
+                    return _value;
+                else
+                    throw new SqlNullValueException();
+            }
+        }
+
+        // Implicit conversion from short to SqlInt16
+        public static implicit operator SqlInt16(short x)
+        {
+            return new SqlInt16(x);
+        }
+
+        // Explicit conversion from SqlInt16 to short. Throw exception if x is Null.
+        public static explicit operator short (SqlInt16 x)
+        {
+            return x.Value;
+        }
+
+        public override string ToString()
+        {
+            return IsNull ? SQLResource.s_nullString : _value.ToString((IFormatProvider)null);
+        }
+
+        public static SqlInt16 Parse(string s)
+        {
+            if (s == SQLResource.s_nullString)
+                return SqlInt16.Null;
+            else
+                return new SqlInt16(short.Parse(s, null));
+        }
+
+
+        // Unary operators
+        public static SqlInt16 operator -(SqlInt16 x)
+        {
+            return x.IsNull ? Null : new SqlInt16((short)-x._value);
+        }
+
+        public static SqlInt16 operator ~(SqlInt16 x)
+        {
+            return x.IsNull ? Null : new SqlInt16((short)~x._value);
+        }
+
+
+        // Binary operators
+
+        // Arithmetic operators
+        public static SqlInt16 operator +(SqlInt16 x, SqlInt16 y)
+        {
+            if (x.IsNull || y.IsNull)
+                return Null;
+
+            int iResult = x._value + y._value;
+            if ((((iResult >> 15) ^ (iResult >> 16)) & 1) != 0) // Bit 15 != bit 16
+                throw new OverflowException(SQLResource.s_arithOverflowMessage);
+            else
+                return new SqlInt16((short)iResult);
+        }
+
+        public static SqlInt16 operator -(SqlInt16 x, SqlInt16 y)
+        {
+            if (x.IsNull || y.IsNull)
+                return Null;
+
+            int iResult = x._value - y._value;
+            if ((((iResult >> 15) ^ (iResult >> 16)) & 1) != 0) // Bit 15 != bit 16
+                throw new OverflowException(SQLResource.s_arithOverflowMessage);
+            else
+                return new SqlInt16((short)iResult);
+        }
+
+        public static SqlInt16 operator *(SqlInt16 x, SqlInt16 y)
+        {
+            if (x.IsNull || y.IsNull)
+                return Null;
+
+            int iResult = x._value * y._value;
+            int iTemp = iResult & s_MASKI2;
+            if (iTemp != 0 && iTemp != s_MASKI2)
+                throw new OverflowException(SQLResource.s_arithOverflowMessage);
+            else
+                return new SqlInt16((short)iResult);
+        }
+
+        public static SqlInt16 operator /(SqlInt16 x, SqlInt16 y)
+        {
+            if (x.IsNull || y.IsNull)
+                return Null;
+
+            if (y._value != 0)
+            {
+                if ((x._value == short.MinValue) && (y._value == -1))
+                    throw new OverflowException(SQLResource.s_arithOverflowMessage);
+
+                return new SqlInt16((short)(x._value / y._value));
+            }
+            else
+                throw new DivideByZeroException(SQLResource.s_divideByZeroMessage);
+        }
+
+        public static SqlInt16 operator %(SqlInt16 x, SqlInt16 y)
+        {
+            if (x.IsNull || y.IsNull)
+                return Null;
+
+            if (y._value != 0)
+            {
+                if ((x._value == short.MinValue) && (y._value == -1))
+                    throw new OverflowException(SQLResource.s_arithOverflowMessage);
+
+                return new SqlInt16((short)(x._value % y._value));
+            }
+            else
+                throw new DivideByZeroException(SQLResource.s_divideByZeroMessage);
+        }
+
+        // Bitwise operators
+        public static SqlInt16 operator &(SqlInt16 x, SqlInt16 y)
+        {
+            return (x.IsNull || y.IsNull) ? Null : new SqlInt16((short)(x._value & y._value));
+        }
+
+        public static SqlInt16 operator |(SqlInt16 x, SqlInt16 y)
+        {
+            return (x.IsNull || y.IsNull) ? Null : new SqlInt16((short)((ushort)x._value | (ushort)y._value));
+        }
+
+        public static SqlInt16 operator ^(SqlInt16 x, SqlInt16 y)
+        {
+            return (x.IsNull || y.IsNull) ? Null : new SqlInt16((short)(x._value ^ y._value));
+        }
+
+
+
+        // Implicit conversions
+
+        // Implicit conversion from SqlBoolean to SqlInt16
+        public static explicit operator SqlInt16(SqlBoolean x)
+        {
+            return x.IsNull ? Null : new SqlInt16(x.ByteValue);
+        }
+
+        // Implicit conversion from SqlByte to SqlInt16
+        public static implicit operator SqlInt16(SqlByte x)
+        {
+            return x.IsNull ? Null : new SqlInt16(x.Value);
+        }
+
+        // Explicit conversions
+
+        // Explicit conversion from SqlInt32 to SqlInt16
+        public static explicit operator SqlInt16(SqlInt32 x)
+        {
+            if (x.IsNull)
+                return Null;
+
+            int value = x.Value;
+            if (value > short.MaxValue || value < short.MinValue)
+                throw new OverflowException(SQLResource.s_arithOverflowMessage);
+            else
+                return new SqlInt16((short)value);
+        }
+
+        // Explicit conversion from SqlInt64 to SqlInt16
+        public static explicit operator SqlInt16(SqlInt64 x)
+        {
+            if (x.IsNull)
+                return Null;
+
+            long value = x.Value;
+            if (value > short.MaxValue || value < short.MinValue)
+                throw new OverflowException(SQLResource.s_arithOverflowMessage);
+            else
+                return new SqlInt16((short)value);
+        }
+
+        // Explicit conversion from SqlSingle to SqlInt16
+        public static explicit operator SqlInt16(SqlSingle x)
+        {
+            if (x.IsNull)
+                return Null;
+
+            float value = x.Value;
+            if (value < short.MinValue || value > short.MaxValue)
+                throw new OverflowException(SQLResource.s_arithOverflowMessage);
+            else
+                return new SqlInt16((short)value);
+        }
+
+        // Explicit conversion from SqlDouble to SqlInt16
+        public static explicit operator SqlInt16(SqlDouble x)
+        {
+            if (x.IsNull)
+                return Null;
+
+            double value = x.Value;
+            if (value < short.MinValue || value > short.MaxValue)
+                throw new OverflowException(SQLResource.s_arithOverflowMessage);
+            else
+                return new SqlInt16((short)value);
+        }
+
+        // Explicit conversion from SqlMoney to SqlInt16
+        public static explicit operator SqlInt16(SqlMoney x)
+        {
+            return x.IsNull ? Null : new SqlInt16(checked((short)x.ToInt32()));
+        }
+
+        // Explicit conversion from SqlDecimal to SqlInt16
+        public static explicit operator SqlInt16(SqlDecimal x)
+        {
+            return (SqlInt16)(SqlInt32)x;
+        }
+
+        // Explicit conversion from SqlString to SqlInt16
+        public static explicit operator SqlInt16(SqlString x)
+        {
+            return x.IsNull ? Null : new SqlInt16(short.Parse(x.Value, null));
+        }
+
+        // Overloading comparison operators
+        public static SqlBoolean operator ==(SqlInt16 x, SqlInt16 y)
+        {
+            return (x.IsNull || y.IsNull) ? SqlBoolean.Null : new SqlBoolean(x._value == y._value);
+        }
+
+        public static SqlBoolean operator !=(SqlInt16 x, SqlInt16 y)
+        {
+            return !(x == y);
+        }
+
+        public static SqlBoolean operator <(SqlInt16 x, SqlInt16 y)
+        {
+            return (x.IsNull || y.IsNull) ? SqlBoolean.Null : new SqlBoolean(x._value < y._value);
+        }
+
+        public static SqlBoolean operator >(SqlInt16 x, SqlInt16 y)
+        {
+            return (x.IsNull || y.IsNull) ? SqlBoolean.Null : new SqlBoolean(x._value > y._value);
+        }
+
+        public static SqlBoolean operator <=(SqlInt16 x, SqlInt16 y)
+        {
+            return (x.IsNull || y.IsNull) ? SqlBoolean.Null : new SqlBoolean(x._value <= y._value);
+        }
+
+        public static SqlBoolean operator >=(SqlInt16 x, SqlInt16 y)
+        {
+            return (x.IsNull || y.IsNull) ? SqlBoolean.Null : new SqlBoolean(x._value >= y._value);
+        }
+
+        //--------------------------------------------------
+        // Alternative methods for overloaded operators
+        //--------------------------------------------------
+
+        // Alternative method for operator ~
+        public static SqlInt16 OnesComplement(SqlInt16 x)
+        {
+            return ~x;
+        }
+
+        // Alternative method for operator +
+        public static SqlInt16 Add(SqlInt16 x, SqlInt16 y)
+        {
+            return x + y;
+        }
+        // Alternative method for operator -
+        public static SqlInt16 Subtract(SqlInt16 x, SqlInt16 y)
+        {
+            return x - y;
+        }
+
+        // Alternative method for operator *
+        public static SqlInt16 Multiply(SqlInt16 x, SqlInt16 y)
+        {
+            return x * y;
+        }
+
+        // Alternative method for operator /
+        public static SqlInt16 Divide(SqlInt16 x, SqlInt16 y)
+        {
+            return x / y;
+        }
+
+        // Alternative method for operator %
+        public static SqlInt16 Mod(SqlInt16 x, SqlInt16 y)
+        {
+            return x % y;
+        }
+
+        public static SqlInt16 Modulus(SqlInt16 x, SqlInt16 y)
+        {
+            return x % y;
+        }
+
+        // Alternative method for operator &
+        public static SqlInt16 BitwiseAnd(SqlInt16 x, SqlInt16 y)
+        {
+            return x & y;
+        }
+
+        // Alternative method for operator |
+        public static SqlInt16 BitwiseOr(SqlInt16 x, SqlInt16 y)
+        {
+            return x | y;
+        }
+
+        // Alternative method for operator ^
+        public static SqlInt16 Xor(SqlInt16 x, SqlInt16 y)
+        {
+            return x ^ y;
+        }
+
+        // Alternative method for operator ==
+        public static SqlBoolean Equals(SqlInt16 x, SqlInt16 y)
+        {
+            return (x == y);
+        }
+
+        // Alternative method for operator !=
+        public static SqlBoolean NotEquals(SqlInt16 x, SqlInt16 y)
+        {
+            return (x != y);
+        }
+
+        // Alternative method for operator <
+        public static SqlBoolean LessThan(SqlInt16 x, SqlInt16 y)
+        {
+            return (x < y);
+        }
+
+        // Alternative method for operator >
+        public static SqlBoolean GreaterThan(SqlInt16 x, SqlInt16 y)
+        {
+            return (x > y);
+        }
+
+        // Alternative method for operator <=
+        public static SqlBoolean LessThanOrEqual(SqlInt16 x, SqlInt16 y)
+        {
+            return (x <= y);
+        }
+
+        // Alternative method for operator >=
+        public static SqlBoolean GreaterThanOrEqual(SqlInt16 x, SqlInt16 y)
+        {
+            return (x >= y);
+        }
+
+        // Alternative method for conversions.
+
+        public SqlBoolean ToSqlBoolean()
+        {
+            return (SqlBoolean)this;
+        }
+
+        public SqlByte ToSqlByte()
+        {
+            return (SqlByte)this;
+        }
+
+        public SqlDouble ToSqlDouble()
+        {
+            return this;
+        }
+
+        public SqlInt32 ToSqlInt32()
+        {
+            return this;
+        }
+
+        public SqlInt64 ToSqlInt64()
+        {
+            return this;
+        }
+
+        public SqlMoney ToSqlMoney()
+        {
+            return this;
+        }
+
+        public SqlDecimal ToSqlDecimal()
+        {
+            return this;
+        }
+
+        public SqlSingle ToSqlSingle()
+        {
+            return this;
+        }
+
+        public SqlString ToSqlString()
+        {
+            return (SqlString)this;
+        }
+
+
+
+        // IComparable
+        // Compares this object to another object, returning an integer that
+        // indicates the relationship.
+        // Returns a value less than zero if this < object, zero if this = object,
+        // or a value greater than zero if this > object.
+        // null is considered to be less than any instance.
+        // If object is not of same type, this method throws an ArgumentException.
+        public int CompareTo(object value)
+        {
+            if (value is SqlInt16)
+            {
+                SqlInt16 i = (SqlInt16)value;
+
+                return CompareTo(i);
+            }
+            throw ADP.WrongType(value.GetType(), typeof(SqlInt16));
+        }
+
+        public int CompareTo(SqlInt16 value)
+        {
+            // If both Null, consider them equal.
+            // Otherwise, Null is less than anything.
+            if (IsNull)
+                return value.IsNull ? 0 : -1;
+            else if (value.IsNull)
+                return 1;
+
+            if (this < value) return -1;
+            if (this > value) return 1;
+            return 0;
+        }
+
+        // Compares this instance with a specified object
+        public override bool Equals(object value)
+        {
+            if (!(value is SqlInt16))
+            {
+                return false;
+            }
+
+            SqlInt16 i = (SqlInt16)value;
+
+            if (i.IsNull || IsNull)
+                return (i.IsNull && IsNull);
+            else
+                return (this == i).Value;
+        }
+
+        // For hashing purpose
+        public override int GetHashCode()
+        {
+            return IsNull ? 0 : Value.GetHashCode();
+        }
+
+        XmlSchema IXmlSerializable.GetSchema() { return null; }
+
+        void IXmlSerializable.ReadXml(XmlReader reader)
+        {
+            string isNull = reader.GetAttribute("nil", XmlSchema.InstanceNamespace);
+            if (isNull != null && XmlConvert.ToBoolean(isNull))
+            {
+                // Read the next value.
+                reader.ReadElementString();
+                _fNotNull = false;
+            }
+            else
+            {
+                _value = XmlConvert.ToInt16(reader.ReadElementString());
+                _fNotNull = true;
+            }
+        }
+
+        void IXmlSerializable.WriteXml(XmlWriter writer)
+        {
+            if (IsNull)
+            {
+                writer.WriteAttributeString("xsi", "nil", XmlSchema.InstanceNamespace, "true");
+            }
+            else
+            {
+                writer.WriteString(XmlConvert.ToString(_value));
+            }
+        }
+
+        public static XmlQualifiedName GetXsdType(XmlSchemaSet schemaSet)
+        {
+            return new XmlQualifiedName("short", XmlSchema.Namespace);
+        }
+
+        public static readonly SqlInt16 Null = new SqlInt16(true);
+        public static readonly SqlInt16 Zero = new SqlInt16(0);
+        public static readonly SqlInt16 MinValue = new SqlInt16(short.MinValue);
+        public static readonly SqlInt16 MaxValue = new SqlInt16(short.MaxValue);
+    } // SqlInt16
+} // namespace System.Data.SqlTypes

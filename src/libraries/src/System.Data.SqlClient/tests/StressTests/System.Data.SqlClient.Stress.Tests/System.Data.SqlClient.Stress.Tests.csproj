@@ -30,10 +30,10 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\System.Data.SqlClient.csproj">
-      <Name>System.Data.SqlClient</Name>
-      <OSGroup>$(InputOSGroup)</OSGroup>
-    </ProjectReference>
+    <ProjectReference Include="..\..\pkg\System.Data.SqlClient.pkgproj" />
+
+    <!-- TODO: Remove Common reference once packages are updated -->
+    <ProjectReference Include="..\..\..\System.Data.Common\pkg\System.Data.Common.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
