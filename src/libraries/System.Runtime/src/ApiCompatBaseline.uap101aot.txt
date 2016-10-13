@@ -1,3 +1,5 @@
+TypesMustExist : Type 'Microsoft.Win32.SafeHandles.CriticalHandleMinusOneIsInvalid' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'Microsoft.Win32.SafeHandles.CriticalHandleZeroOrMinusOneIsInvalid' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'Microsoft.Win32.SafeHandles.SafeHandleMinusOneIsInvalid' does not inherit from base type 'System.Runtime.ConstrainedExecution.CriticalFinalizerObject' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid' does not inherit from base type 'System.Runtime.ConstrainedExecution.CriticalFinalizerObject' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'Microsoft.Win32.SafeHandles.SafeWaitHandle' does not inherit from base type 'System.Runtime.ConstrainedExecution.CriticalFinalizerObject' in the implementation but it does in the contract.
@@ -302,6 +304,9 @@ MembersMustExist : Member 'System.WeakReference<T>.GetObjectData(System.Runtime.
 CannotRemoveBaseTypeOrInterface : Type 'System.Collections.Generic.KeyNotFoundException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Collections.Generic.KeyNotFoundException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Diagnostics.DebuggableAttribute..ctor(System.Boolean, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Diagnostics.DebuggableAttribute.DebuggingFlags.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Diagnostics.DebuggableAttribute.IsJITOptimizerDisabled.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Diagnostics.DebuggableAttribute.IsJITTrackingEnabled.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Globalization.Calendar.AlgorithmType.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Globalization.Calendar.GetLeapMonth(System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Globalization.Calendar.ReadOnly(System.Globalization.Calendar)' does not exist in the implementation but it does exist in the contract.
@@ -438,6 +443,7 @@ TypesMustExist : Type 'System.Runtime.ConstrainedExecution.CriticalFinalizerObje
 TypesMustExist : Type 'System.Runtime.ConstrainedExecution.ReliabilityContractAttribute' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptionsAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.InteropServices.CriticalHandle' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.InteropServices.ExternalException' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.SafeHandle' does not inherit from base type 'System.Runtime.ConstrainedExecution.CriticalFinalizerObject' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.SafeHandle.Close()' does not exist in the implementation but it does exist in the contract.
@@ -478,6 +484,4 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.Task' does not im
 MembersMustExist : Member 'System.Threading.Tasks.Task.Dispose()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.Tasks.Task.Dispose(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.Task<TResult>' does not implement interface 'System.IDisposable' in the implementation but it does in the contract.
-TypesMustExist : Type 'System.Runtime.InteropServices.CriticalHandle' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'Microsoft.Win32.SafeHandles.CriticalHandleMinusOneIsInvalid' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'Microsoft.Win32.SafeHandles.CriticalHandleZeroOrMinusOneIsInvalid' does not exist in the implementation but it does exist in the contract.
+Total Issues: 486

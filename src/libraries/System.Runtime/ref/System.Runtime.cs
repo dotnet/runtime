@@ -3519,6 +3519,9 @@ namespace System.Diagnostics
     {
         public DebuggableAttribute(bool isJITTrackingEnabled, bool isJITOptimizerDisabled) { }
         public DebuggableAttribute(System.Diagnostics.DebuggableAttribute.DebuggingModes modes) { }
+        public System.Diagnostics.DebuggableAttribute.DebuggingModes DebuggingFlags { get { return default(System.Diagnostics.DebuggableAttribute.DebuggingModes); } }
+        public bool IsJITOptimizerDisabled { get { return default(bool); } }
+        public bool IsJITTrackingEnabled { get { return default(bool); } }
         [System.FlagsAttribute]
         public enum DebuggingModes
         {
