@@ -25,9 +25,9 @@ namespace System.Text.RegularExpressions.Tests
         }
     }
 
-    public class Capture
+    public class CaptureData
     {
-        private Capture(string value, int index, int length, bool createCaptures)
+        private CaptureData(string value, int index, int length, bool createCaptures)
         {
             Value = value;
             Index = index;
@@ -36,15 +36,15 @@ namespace System.Text.RegularExpressions.Tests
             // Prevent a StackOverflow recursion in the constructor
             if (createCaptures)
             {
-                Captures = new Capture[] { new Capture(value, index, length, false) };
+                Captures = new CaptureData[] { new CaptureData(value, index, length, false) };
             }
         }
 
-        public Capture(string value, int index, int length) : this(value, index, length, true)
+        public CaptureData(string value, int index, int length) : this(value, index, length, true)
         {
         }
 
-        public Capture(string value, int index, int length, Capture[] captures) : this(value, index, length, false)
+        public CaptureData(string value, int index, int length, CaptureData[] captures) : this(value, index, length, false)
         {
             Captures = captures;
         }
@@ -52,6 +52,6 @@ namespace System.Text.RegularExpressions.Tests
         public string Value { get; }
         public int Index { get; }
         public int Length { get; }
-        public Capture[] Captures { get; }
+        public CaptureData[] Captures { get; }
     }
 }

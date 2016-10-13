@@ -8,6 +8,9 @@
   <ItemGroup>
     <Compile Include="System.Text.RegularExpressions.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp1.1'">
+    <Compile Include="System.Text.RegularExpressions.netcoreapp1.1.cs" />
+  </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
