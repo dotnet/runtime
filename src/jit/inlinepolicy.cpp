@@ -842,7 +842,7 @@ int LegacyPolicy::CodeSizeEstimate()
 // NoteBool: handle a boolean observation with non-fatal impact
 //
 // Arguments:
-//    obs      - the current obsevation
+//    obs      - the current observation
 //    value    - the value of the observation
 
 void EnhancedLegacyPolicy::NoteBool(InlineObservation obs, bool value)
@@ -852,6 +852,25 @@ void EnhancedLegacyPolicy::NoteBool(InlineObservation obs, bool value)
         case InlineObservation::CALLEE_DOES_NOT_RETURN:
             m_IsNoReturn      = value;
             m_IsNoReturnKnown = true;
+            break;
+
+        case InlineObservation::CALLSITE_RARE_GC_STRUCT:
+            // If this is a discretionary or always inline candidate
+            // with a gc struct, we may change our mind about inlining
+            // if the call site is rare, to avoid costs associated with
+            // zeroing the GC struct up in the root prolog.
+            if (m_Observation == InlineObservation::CALLEE_BELOW_ALWAYS_INLINE_SIZE)
+            {
+                assert(m_CallsiteFrequency == InlineCallsiteFrequency::UNUSED);
+                SetFailure(obs);
+                return;
+            }
+            else if (m_Observation == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE)
+            {
+                assert(m_CallsiteFrequency == InlineCallsiteFrequency::RARE);
+                SetFailure(obs);
+                return;
+            }
             break;
 
         default:
