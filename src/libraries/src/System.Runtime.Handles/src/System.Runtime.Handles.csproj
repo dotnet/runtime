@@ -16,16 +16,15 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
-    <Compile Include="System\IO\HandleInheritability.cs" />
-    <Compile Include="System\Threading\WaitHandleExtensions.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
     <TargetingPackReference Include="System.Private.CoreLib" Condition="'$(TargetGroup)' != 'uap101aot'" />
-    <TargetingPackReference Include="System.Private.Interop" Condition="'$(TargetGroup)' == 'uap101aot'" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- ToDo: Remove this reference once prerelease gets updated again -->
+    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

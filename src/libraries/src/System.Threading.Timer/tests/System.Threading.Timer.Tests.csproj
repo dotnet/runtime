@@ -7,7 +7,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Threading.Timer.Tests</AssemblyName>
     <ProjectGuid>{ac20a28f-fda8-45e8-8728-058ead16e44c}</ProjectGuid>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -16,6 +16,14 @@
     <Compile Include="TimerConstructorTests.cs" />
     <Compile Include="TimerChangeTests.cs" />
     <Compile Include="TimerFiringTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
+    <Compile Include="TimerConstructorTests.netstandard1.7.cs" />
+    <Compile Include="TimerChangeTests.netstandard1.7.cs" />
+    <Compile Include="TimerFiringTests.netstandard1.7.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\pkg\System.Threading.Timer.pkgproj"/>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

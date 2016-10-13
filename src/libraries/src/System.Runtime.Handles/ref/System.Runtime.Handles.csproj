@@ -8,9 +8,7 @@
     <PackageTargetFramework>netstandard1.7;uap10.1</PackageTargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System.Runtime.Handles.cs" />
     <Compile Include="System.Runtime.Handles.Forwards.cs" />
-    <Compile Include="System.Runtime.Handles.Manual.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

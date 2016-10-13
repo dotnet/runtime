@@ -9,9 +9,10 @@
 namespace Microsoft.Win32.SafeHandles
 {
     [System.Security.SecurityCriticalAttribute]
-    public sealed partial class SafeFileHandle : System.Runtime.InteropServices.SafeHandle
+    public sealed partial class SafeFileHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
-        public SafeFileHandle(System.IntPtr preexistingHandle, bool ownsHandle) : base(default(System.IntPtr), default(bool)) { }
+        public SafeFileHandle(System.IntPtr preexistingHandle, bool ownsHandle) : base(default(bool)) { }
+        public override bool IsInvalid { [System.Security.SecurityCriticalAttribute]get { return default(bool); } }
         [System.Security.SecurityCriticalAttribute]
         protected override bool ReleaseHandle() { return default(bool); }
     }

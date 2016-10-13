@@ -12,7 +12,7 @@ using System.Threading;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    public sealed partial class SafeMemoryMappedFileHandle : SafeHandle
+    public sealed partial class SafeMemoryMappedFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         /// <summary>Counter used to produce a unique handle value.</summary>
         private static long s_counter = 0;
@@ -50,7 +50,7 @@ namespace Microsoft.Win32.SafeHandles
             FileStream fileStream, bool ownsFileStream, HandleInheritability inheritability,
             MemoryMappedFileAccess access, MemoryMappedFileOptions options,
             long capacity)
-            : base(new IntPtr(-1), ownsHandle: true)
+            : base(ownsHandle: true)
         {
             Debug.Assert(!ownsFileStream || fileStream != null, "We can only own a FileStream we're actually given.");
 

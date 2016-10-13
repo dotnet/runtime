@@ -8,9 +8,10 @@
 
 namespace Microsoft.Win32.SafeHandles
 {
-    public sealed partial class SafePipeHandle : System.Runtime.InteropServices.SafeHandle
+    public sealed partial class SafePipeHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
-        public SafePipeHandle(System.IntPtr preexistingHandle, bool ownsHandle) : base(default(System.IntPtr), default(bool)) { }
+        public SafePipeHandle(System.IntPtr preexistingHandle, bool ownsHandle) : base(default(bool)) { }
+        public override bool IsInvalid { get { return default(bool); } }
         protected override bool ReleaseHandle() { return default(bool); }
     }
 }

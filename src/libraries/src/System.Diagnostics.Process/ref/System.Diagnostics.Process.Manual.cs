@@ -28,12 +28,3 @@ namespace System.Diagnostics
         public string PasswordInClearText { get { return default(string); } set { } }
     }
 }
-namespace Microsoft.Win32.SafeHandles
-{
-    // Members from SafeHandleMinusOneOrZeroIsInvalid needed after removing base
-    [System.Security.SecurityCritical]
-    public sealed partial class SafeProcessHandle : System.Runtime.InteropServices.SafeHandle
-    {
-        public override bool IsInvalid {[System.Security.SecurityCritical] get { return false; } }
-    }
-}

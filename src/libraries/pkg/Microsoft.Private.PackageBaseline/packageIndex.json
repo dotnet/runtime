@@ -62,7 +62,7 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
-        "4.0.2.0": "4.4.0"
+        "4.1.0.0": "4.4.0"
       }
     },
     "Microsoft.Win32.Registry.AccessControl": {
@@ -122,7 +122,6 @@
       ],
       "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
-        "4.0.12.0": "4.3.0",
         "4.1.0.0": "4.4.0",
         "4.0.11.0": "4.4.0"
       }
@@ -261,7 +260,7 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.2.0": "4.3.0",
         "4.0.1.0": "4.4.0",
-        "4.0.3.0": "4.4.0"
+        "4.1.0.0": "4.4.0"
       }
     },
     "runtime.aot.System.Collections": {
@@ -418,7 +417,7 @@
       "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.2.0": "4.3.0",
-        "4.0.3.0": "4.4.0"
+        "4.0.1.0": "4.4.0"
       }
     },
     "runtime.debian.8-x64.runtime.native.System": {
@@ -706,7 +705,6 @@
       ],
       "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
-        "4.0.2.0": "4.4.0",
         "4.1.0.0": "4.4.0"
       }
     },
@@ -790,7 +788,6 @@
       ],
       "BaselineVersion": "4.4.0",
       "AssemblyVersionInPackageVersion": {
-        "4.0.2.0": "4.4.0",
         "4.1.0.0": "4.4.0"
       }
     },
@@ -1234,8 +1231,7 @@
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
         "4.0.11.0": "4.0.11",
-        "4.1.0.0": "4.4.0",
-        "4.0.12.0": "4.4.0"
+        "4.1.0.0": "4.4.0"
       }
     },
     "System.Globalization.Calendars": {
@@ -1312,7 +1308,6 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
-        "4.0.2.0": "4.4.0",
         "4.1.0.0": "4.4.0"
       }
     },
@@ -1381,7 +1376,7 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
-        "4.0.2.0": "4.4.0"
+        "4.1.0.0": "4.4.0"
       }
     },
     "System.IO.Packaging": {
@@ -1403,7 +1398,7 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
-        "4.0.2.0": "4.4.0"
+        "4.1.0.0": "4.4.0"
       }
     },
     "System.IO.UnmanagedMemoryStream": {
@@ -2333,7 +2328,7 @@
         "4.0.10.0": "4.0.10",
         "4.0.11.0": "4.0.11",
         "4.0.12.0": "4.3.0",
-        "4.0.13.0": "4.4.0"
+        "4.1.0.0": "4.4.0"
       }
     },
     "System.Threading.AccessControl": {
@@ -2419,7 +2414,7 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
-        "4.0.2.0": "4.4.0"
+        "4.1.0.0": "4.4.0"
       }
     },
     "System.Threading.ThreadPool": {
@@ -2443,7 +2438,7 @@
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
         "4.0.2.0": "4.3.0",
-        "4.0.3.0": "4.4.0"
+        "4.1.0.0": "4.4.0"
       }
     },
     "System.Xml.ReaderWriter": {

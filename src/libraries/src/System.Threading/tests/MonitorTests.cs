@@ -9,8 +9,10 @@ using Xunit;
 
 namespace System.Threading.Tests
 {
-    static class MonitorTests
+    static partial class MonitorTests
     {
+        private const int FailTimeoutMilliseconds = 30000;
+
         // Attempts a single recursive acquisition/release cycle of a newly-created lock.
         [Fact]
         public static void BasicRecursion(ref string message)

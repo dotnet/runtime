@@ -790,10 +790,9 @@ namespace System.Runtime.InteropServices
         public SafeArrayTypeMismatchException(string message, System.Exception inner) { }
     }
     [System.Security.SecurityCriticalAttribute]
-    public abstract partial class SafeBuffer : System.Runtime.InteropServices.SafeHandle
+    public abstract partial class SafeBuffer : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
-        protected SafeBuffer(bool ownsHandle) : base(default(System.IntPtr), default(bool)) { }
-        // Added because SafeHandleZeroOrMinusOneIsInvalid is removed
+        protected SafeBuffer(bool ownsHandle) : base(default(bool)) { }
         public override bool IsInvalid { get { return default(bool); } }
         [System.CLSCompliantAttribute(false)]
         public ulong ByteLength { get { return default(ulong); } }

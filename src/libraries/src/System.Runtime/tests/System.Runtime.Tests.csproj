@@ -170,6 +170,7 @@
       <LogicalName>System.Reflection.Tests.EmbeddedTextFile.txt</LogicalName>
     </EmbeddedResource>
     <Compile Include="System\Threading\WaitHandleTests.netstandard1.7.cs" />
+    <Compile Include="Microsoft\Win32\SafeHandles\CriticalHandleZeroOrMinusOneIsInvalid.netstandard1.7.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.netstandard1.7.cs" />
     <Compile Include="System\Reflection\ModuleTests.cs" />
     <Compile Include="System\Reflection\PointerTests.cs" />

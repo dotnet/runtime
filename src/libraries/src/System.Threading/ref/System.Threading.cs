@@ -16,6 +16,7 @@ namespace System.Threading
         public AbandonedMutexException(string message, System.Exception inner) { }
         public AbandonedMutexException(string message, System.Exception inner, int location, System.Threading.WaitHandle handle) { }
         public AbandonedMutexException(string message, int location, System.Threading.WaitHandle handle) { }
+        protected AbandonedMutexException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public System.Threading.Mutex Mutex { get { return default(System.Threading.Mutex); } }
         public int MutexIndex { get { return default(int); } }
     }
@@ -63,6 +64,7 @@ namespace System.Threading
         public BarrierPostPhaseException(System.Exception innerException) { }
         public BarrierPostPhaseException(string message) { }
         public BarrierPostPhaseException(string message, System.Exception innerException) { }
+        protected BarrierPostPhaseException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public delegate void ContextCallback(object state);
     public partial class CountdownEvent : System.IDisposable
@@ -152,6 +154,7 @@ namespace System.Threading
         public LockRecursionException() { }
         public LockRecursionException(string message) { }
         public LockRecursionException(string message, System.Exception innerException) { }
+        protected LockRecursionException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public enum LockRecursionPolicy
     {
@@ -197,7 +200,9 @@ namespace System.Threading
         public static void TryEnter(object obj, System.TimeSpan timeout, ref bool lockTaken) { }
         public static bool Wait(object obj) { return default(bool); }
         public static bool Wait(object obj, int millisecondsTimeout) { return default(bool); }
+        public static bool Wait(object obj, int millisecondsTimeout, bool exitContext) { return default(bool); }
         public static bool Wait(object obj, System.TimeSpan timeout) { return default(bool); }
+        public static bool Wait(object obj, System.TimeSpan timeout, bool exitContext) { return default(bool); }
     }
     public sealed partial class Mutex : System.Threading.WaitHandle
     {
@@ -257,6 +262,7 @@ namespace System.Threading
         public SemaphoreFullException() { }
         public SemaphoreFullException(string message) { }
         public SemaphoreFullException(string message, System.Exception innerException) { }
+        protected SemaphoreFullException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public partial class SemaphoreSlim : System.IDisposable
     {
@@ -324,6 +330,7 @@ namespace System.Threading
         public SynchronizationLockException() { }
         public SynchronizationLockException(string message) { }
         public SynchronizationLockException(string message, System.Exception innerException) { }
+        protected SynchronizationLockException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public partial class ThreadLocal<T> : System.IDisposable
     {
@@ -385,5 +392,6 @@ namespace System.Threading
         public WaitHandleCannotBeOpenedException() { }
         public WaitHandleCannotBeOpenedException(string message) { }
         public WaitHandleCannotBeOpenedException(string message, System.Exception innerException) { }
+        protected WaitHandleCannotBeOpenedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
 }

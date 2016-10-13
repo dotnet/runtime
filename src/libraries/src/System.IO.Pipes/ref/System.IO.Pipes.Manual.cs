@@ -6,13 +6,6 @@
 // ------------------------------------------------------------------------------
 
 
-namespace Microsoft.Win32.SafeHandles
-{
-    public partial class SafePipeHandle : System.Runtime.InteropServices.SafeHandle
-    {
-        public override bool IsInvalid { get { return default(bool); } }
-    }
-}
 namespace System.IO.Pipes
 {
     // It needs to be defined manually because we cannot rely on Stream's implementation due to lack of APM virtual methods

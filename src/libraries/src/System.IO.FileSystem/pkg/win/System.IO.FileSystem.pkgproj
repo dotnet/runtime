@@ -11,14 +11,6 @@
     <ProjectReference Include="..\..\src\System.IO.FileSystem.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </ProjectReference>
-    <ProjectReference Include="..\..\src\System.IO.FileSystem.csproj">
-      <OSGroup>Windows_NT</OSGroup>
-      <TargetGroup>netstandard1.3</TargetGroup>
-    </ProjectReference>
-    <ProjectReference Include="..\..\src\System.IO.FileSystem.csproj">
-      <OSGroup>Windows_NT</OSGroup>
-      <TargetGroup>netcore50</TargetGroup>
-    </ProjectReference>
 
     <!-- No implementation on platforms where our P-Invokes are not allowed -->
     <NotSupportedOnTargetFramework Include="win8" />

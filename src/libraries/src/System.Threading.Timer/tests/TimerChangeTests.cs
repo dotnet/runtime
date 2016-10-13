@@ -6,7 +6,7 @@ using System;
 using System.Threading;
 using Xunit;
 
-public class TimerChangeTests
+public partial class TimerChangeTests
 {
     private void EmptyTimerTarget(object o) { }
 
