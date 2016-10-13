@@ -4641,6 +4641,24 @@ void CodeGen::genCallInstruction(GenTreePtr node)
     // all virtuals should have been expanded into a control expression
     assert(!call->IsVirtual() || call->gtControlExpr || call->gtCallAddr);
 
+    // Insert a GS check if necessary
+    if (call->IsTailCallViaHelper())
+    {
+        if (compiler->getNeedsGSSecurityCookie())
+        {
+#if FEATURE_FIXED_OUT_ARGS
+            // If either of the conditions below is true, we will need a temporary register in order to perform the GS
+            // cookie check. When FEATURE_FIXED_OUT_ARGS is disabled, we save and restore the temporary register using
+            // push/pop. When FEATURE_FIXED_OUT_ARGS is enabled, however, we need an alternative solution. For now,
+            // though, the tail prefix is ignored on all platforms that use fixed out args, so we should never hit this
+            // case.
+            assert(compiler->gsGlobalSecurityCookieAddr == nullptr);
+            assert((int)compiler->gsGlobalSecurityCookieVal == (ssize_t)compiler->gsGlobalSecurityCookieVal);
+#endif
+            genEmitGSCookieCheck(true);
+        }
+    }
+
     // Consume all the arg regs
     for (GenTreePtr list = call->gtCallLateArgs; list; list = list->MoveNext())
     {
@@ -4871,14 +4889,6 @@ void CodeGen::genCallInstruction(GenTreePtr node)
     }
 
 #endif // defined(_TARGET_X86_)
-
-    if (call->IsTailCallViaHelper())
-    {
-        if (compiler->getNeedsGSSecurityCookie())
-        {
-            genEmitGSCookieCheck(true);
-        }
-    }
 
     if (target != nullptr)
     {
