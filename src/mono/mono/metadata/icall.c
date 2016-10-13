@@ -8083,7 +8083,7 @@ ves_icall_Microsoft_Win32_NativeMethods_SetPriorityClass (gpointer handle, gint3
 }
 
 ICALL_EXPORT MonoBoolean
-ves_icall_Mono_Btls_Provider_IsSupported (void)
+ves_icall_Mono_TlsProviderFactory_IsBtlsSupported (void)
 {
 #if HAVE_BTLS
 	return TRUE;
