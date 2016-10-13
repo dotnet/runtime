@@ -141,8 +141,9 @@ mono_locks_lock_released (RuntimeLocks kind, gpointer lock)
 	add_record (RECORD_LOCK_RELEASED, kind, lock);
 }
 #else
-	#ifdef _MSC_VER
-		// Quiet Visual Studio linker warning, LNK4221, in cases when this source file intentional ends up empty.
-		void __mono_win32_lock_tracer_quiet_lnk4221(void) {}
-	#endif
+
+#ifdef _MSC_VER
+// Quiet Visual Studio linker warning, LNK4221, in cases when this source file intentional ends up empty.
+void __mono_win32_lock_tracer_quiet_lnk4221(void) {}
+#endif
 #endif /* LOCK_TRACER */

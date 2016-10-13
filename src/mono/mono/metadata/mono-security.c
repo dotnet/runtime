@@ -22,17 +22,7 @@
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/strenc.h>
 
-#ifdef HOST_WIN32
-
-#include <aclapi.h>
-#include <accctrl.h>
-
-#ifndef PROTECTED_DACL_SECURITY_INFORMATION
-#define PROTECTED_DACL_SECURITY_INFORMATION	0x80000000L
-#endif
-
-#else
-
+#ifndef HOST_WIN32
 #include <config.h>
 #ifdef HAVE_GRP_H
 #include <grp.h>
@@ -63,63 +53,12 @@
 #endif
 
 #endif /* defined(__GNUC__) */
-
-#endif /* not HOST_WIN32 */
-
+#endif /* !HOST_WIN32 */
 
 /* internal functions - reuse driven */
 
-#ifdef HOST_WIN32
-
 /* ask a server to translate a SID into a textual representation */
-static gunichar2*
-GetSidName (gunichar2 *server, PSID sid, gint32 *size) 
-{
-	gunichar2 *uniname = NULL;
-	DWORD cchName = 0;
-	DWORD cchDomain = 0;
-	SID_NAME_USE peUse; /* out */
-
-	LookupAccountSid (server, sid, NULL, &cchName, NULL, 
-		&cchDomain, &peUse); 
-	
-	if ((cchName > 0) && (cchDomain > 0)) {
-		gunichar2 *user = g_malloc0 ((cchName + 1) * 2);
-		gunichar2 *domain = g_malloc0 ((cchDomain + 1) * 2);
-
-		LookupAccountSid (server, sid, user, &cchName, domain,
-			&cchDomain, &peUse);
-
-		if (cchName > 0) {
-			if (cchDomain > 0) {
-				/* domain/machine name included (+ sepearator) */
-				*size = cchName + cchDomain + 1;
-				uniname = g_malloc0 ((*size + 1) * 2);
-				memcpy (uniname, domain, cchDomain * 2);
-				*(uniname + cchDomain) = '\\';
-				memcpy (uniname + cchDomain + 1, user, cchName * 2);
-				g_free (user);
-			}
-			else {
-				/* no domain / machine */
-				*size = cchName;
-				uniname = user;
-			}
-		}
-		else {
-			/* nothing -> return NULL */
-			g_free (user);
-		}
-
-		g_free (domain);
-	}
-
-	return uniname;
-}
-
-
-#else /* not HOST_WIN32 */
-
+#ifndef HOST_WIN32
 #define MONO_SYSCONF_DEFAULT_SIZE	((size_t) 1024)
 
 /*
@@ -132,7 +71,6 @@ static size_t mono_sysconf (int name)
 	/* default value */
 	return (size == -1) ? MONO_SYSCONF_DEFAULT_SIZE : size;
 }
-
 
 static gchar*
 GetTokenName (uid_t uid)
@@ -174,7 +112,6 @@ GetTokenName (uid_t uid)
 	return uname;
 }
 
-
 static gboolean
 IsMemberInList (uid_t user, struct group *g) 
 {
@@ -200,7 +137,6 @@ IsMemberInList (uid_t user, struct group *g)
 	g_free (utf8_username);
 	return result;
 }
-
 
 static gboolean
 IsDefaultGroup (uid_t user, gid_t group)
@@ -241,7 +177,6 @@ IsDefaultGroup (uid_t user, gid_t group)
 	return result;
 }
 
-
 static gboolean
 IsMemberOf (gid_t user, struct group *g) 
 {
@@ -255,37 +190,34 @@ IsMemberOf (gid_t user, struct group *g)
 	/* is the user in the group list */
 	return IsMemberInList (user, g);
 }
-
-#endif
-
+#endif /* !HOST_WIN32 */
 
 /* ICALLS */
 
-
 /* System.Security.Principal.WindowsIdentity */
 
-
+#ifndef HOST_WIN32
 gpointer
 ves_icall_System_Security_Principal_WindowsIdentity_GetCurrentToken (void)
 {
-	gpointer token = NULL;
-
-#ifdef HOST_WIN32
-	/* Note: This isn't a copy of the Token - we must not close it!!!
-	 * http://www.develop.com/kbrown/book/html/whatis_windowsprincipal.html
-	 */
-
-	/* thread may be impersonating somebody */
-	if (OpenThreadToken (GetCurrentThread (), MAXIMUM_ALLOWED, 1, &token) == 0) {
-		/* if not take the process identity */
-		OpenProcessToken (GetCurrentProcess (), MAXIMUM_ALLOWED, &token);
-	}
-#else
-	token = GINT_TO_POINTER (geteuid ());
-#endif
-	return token;
+	return GINT_TO_POINTER (geteuid ());
 }
 
+static gint32
+internal_get_token_name (gpointer token, gunichar2 ** uniname)
+{
+	gint32 size = 0;
+
+	gchar *uname = GetTokenName ((uid_t) GPOINTER_TO_INT (token));
+
+	if (uname) {
+		size = strlen (uname);
+		*uniname = g_utf8_to_utf16 (uname, size, NULL, NULL, NULL);
+		g_free (uname);
+	}
+
+	return size;
+}
 
 MonoString*
 ves_icall_System_Security_Principal_WindowsIdentity_GetTokenName (gpointer token)
@@ -296,24 +228,8 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetTokenName (gpointer token
 	gint32 size = 0;
 
 	mono_error_init (&error);
-#ifdef HOST_WIN32
-	GetTokenInformation (token, TokenUser, NULL, size, (PDWORD)&size);
-	if (size > 0) {
-		TOKEN_USER *tu = g_malloc0 (size);
-		if (GetTokenInformation (token, TokenUser, tu, size, (PDWORD)&size)) {
-			uniname = GetSidName (NULL, tu->User.Sid, &size);
-		}
-		g_free (tu);
-	}
-#else 
-	gchar *uname = GetTokenName ((uid_t) GPOINTER_TO_INT (token));
 
-	if (uname) {
-		size = strlen (uname);
-		uniname = g_utf8_to_utf16 (uname, size, NULL, NULL, NULL);
-		g_free (uname);
-	}
-#endif /* HOST_WIN32 */
+	size = internal_get_token_name (token, &uniname);
 
 	if (size > 0) {
 		result = mono_string_new_utf16_checked (mono_domain_get (), uniname, size, &error);
@@ -327,22 +243,12 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetTokenName (gpointer token
 	mono_error_set_pending_exception (&error);
 	return result;
 }
+#endif  /* !HOST_WIN32 */
 
-
+#ifndef HOST_WIN32
 gpointer
 ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken (MonoString *username)
 {
-#ifdef HOST_WIN32
-	gpointer token = NULL;
-
-	/* TODO: MS has something like this working in Windows 2003 (client and
-	 * server) but works only for domain accounts (so it's quite limiting).
-	 * http://www.develop.com/kbrown/book/html/howto_logonuser.html
-	 */
-	g_warning ("Unsupported on Win32 (anyway requires W2K3 minimum)");
-
-#else /* HOST_WIN32*/
-
 #ifdef HAVE_GETPWNAM_R
 	struct passwd pwd;
 	size_t fbufsize;
@@ -380,59 +286,26 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken (MonoString *us
 	g_free (fbuf);
 #endif
 	g_free (utf8_name);
-#endif
+
 	return token;
 }
-
+#endif /* HOST_WIN32 */
 
 /* http://www.dotnet247.com/247reference/msgs/39/195403.aspx
 // internal static string[] WindowsIdentity._GetRoles (IntPtr token)
 */
+
+#ifndef HOST_WIN32
 MonoArray*
-ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token) 
+ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token)
 {
 	MonoError error;
 	MonoArray *array = NULL;
-	MonoDomain *domain = mono_domain_get (); 
-#ifdef HOST_WIN32
-	gint32 size = 0;
+	MonoDomain *domain = mono_domain_get ();
 
-	GetTokenInformation (token, TokenGroups, NULL, size, (PDWORD)&size);
-	if (size > 0) {
-		TOKEN_GROUPS *tg = g_malloc0 (size);
-		if (GetTokenInformation (token, TokenGroups, tg, size, (PDWORD)&size)) {
-			int i=0;
-			int num = tg->GroupCount;
-
-			array = mono_array_new_checked (domain, mono_get_string_class (), num, &error);
-			if (mono_error_set_pending_exception (&error)) {
-				g_free (tg);
-				return NULL;
-			}
-
-			for (i=0; i < num; i++) {
-				gint32 size = 0;
-				gunichar2 *uniname = GetSidName (NULL, tg->Groups [i].Sid, &size);
-
-				if (uniname) {
-					MonoString *str = mono_string_new_utf16_checked (domain, uniname, size, &error);
-					if (!is_ok (&error)) {
-						g_free (uniname);
-						g_free (tg);
-						mono_error_set_pending_exception (&error);
-						return NULL;
-					}
-					mono_array_setref (array, i, str);
-					g_free (uniname);
-				}
-			}
-		}
-		g_free (tg);
-	}
-#else
 	/* POSIX-compliant systems should use IsMemberOfGroupId or IsMemberOfGroupName */
 	g_warning ("WindowsIdentity._GetRoles should never be called on POSIX");
-#endif
+
 	if (!array) {
 		/* return empty array of string, i.e. string [0] */
 		array = mono_array_new_checked (domain, mono_get_string_class (), 0, &error);
@@ -440,39 +313,27 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token)
 	}
 	return array;
 }
-
+#endif /* !HOST_WIN32 */
 
 /* System.Security.Principal.WindowsImpersonationContext */
 
-
+#ifndef HOST_WIN32
 gboolean
 ves_icall_System_Security_Principal_WindowsImpersonationContext_CloseToken (gpointer token)
 {
-	gboolean result = TRUE;
-
-#ifdef HOST_WIN32
-	result = (CloseHandle (token) != 0);
-#endif
-	return result;
+	return TRUE;
 }
+#endif /* !HOST_WIN32 */
 
-
+#ifndef HOST_WIN32
 gpointer
 ves_icall_System_Security_Principal_WindowsImpersonationContext_DuplicateToken (gpointer token)
 {
-	gpointer dupe = NULL;
-
-#ifdef HOST_WIN32
-	if (DuplicateToken (token, SecurityImpersonation, &dupe) == 0) {
-		dupe = NULL;
-	}
-#else
-	dupe = token;
-#endif
-	return dupe;
+	return token;
 }
+#endif /* !HOST_WIN32 */
 
-
+#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 gboolean
 ves_icall_System_Security_Principal_WindowsImpersonationContext_SetCurrentToken (gpointer token)
 {
@@ -480,27 +341,21 @@ ves_icall_System_Security_Principal_WindowsImpersonationContext_SetCurrentToken 
 	return (ImpersonateLoggedOnUser (token) != 0);
 }
 
-
 gboolean
 ves_icall_System_Security_Principal_WindowsImpersonationContext_RevertToSelf (void)
 {
 	/* Posix version implemented in /mono/mono/io-layer/security.c */
 	return (RevertToSelf () != 0);
 }
-
+#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
 
 /* System.Security.Principal.WindowsPrincipal */
 
+#ifndef HOST_WIN32
 gboolean
 ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupId (gpointer user, gpointer group)
 {
 	gboolean result = FALSE;
-
-#ifdef HOST_WIN32
-	/* The convertion from an ID to a string is done in managed code for Windows */
-	g_warning ("IsMemberOfGroupId should never be called on Win32");
-
-#else /* HOST_WIN32 */
 
 #ifdef HAVE_GETGRGID_R
 	struct group grp;
@@ -533,22 +388,13 @@ ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupId (gpointer
 	g_free (fbuf);
 #endif
 
-#endif /* HOST_WIN32 */
-
 	return result;
 }
-
 
 gboolean
 ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupName (gpointer user, MonoString *group)
 {
 	gboolean result = FALSE;
-
-#ifdef HOST_WIN32
-	/* Windows version use a cache built using WindowsIdentity._GetRoles */
-	g_warning ("IsMemberOfGroupName should never be called on Win32");
-
-#else /* HOST_WIN32 */
 	gchar *utf8_groupname;
 
 	utf8_groupname = mono_unicode_to_external (mono_string_chars (group));
@@ -581,232 +427,15 @@ ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupName (gpoint
 #endif
 		g_free (utf8_groupname);
 	}
-#endif /* HOST_WIN32 */
 
 	return result;
 }
-
+#endif /* !HOST_WIN32 */
 
 /* Mono.Security.Cryptography IO related internal calls */
 
-#ifdef HOST_WIN32
-
-static PSID
-GetAdministratorsSid (void) 
-{
-	SID_IDENTIFIER_AUTHORITY admins = SECURITY_NT_AUTHORITY;
-	PSID pSid = NULL;
-	if (!AllocateAndInitializeSid (&admins, 2, SECURITY_BUILTIN_DOMAIN_RID, 
-		DOMAIN_ALIAS_RID_ADMINS, 0, 0, 0, 0, 0, 0, &pSid)) 
-		return NULL;
-	/* Note: this SID must be freed with FreeSid () */
-	return pSid;
-}
-
-
-static PSID
-GetEveryoneSid (void)
-{
-	SID_IDENTIFIER_AUTHORITY everyone = SECURITY_WORLD_SID_AUTHORITY;
-	PSID pSid = NULL;
-	if (!AllocateAndInitializeSid (&everyone, 1, SECURITY_WORLD_RID, 0, 0, 0, 0, 0, 0, 0, &pSid))
-		return NULL;
-	/* Note: this SID must be freed with FreeSid () */
-	return pSid;
-}
-
-
-static PSID
-GetCurrentUserSid (void) 
-{
-	PSID sid = NULL;
-	guint32 size = 0;
-	gpointer token = ves_icall_System_Security_Principal_WindowsIdentity_GetCurrentToken ();
-
-	GetTokenInformation (token, TokenUser, NULL, size, (PDWORD)&size);
-	if (size > 0) {
-		TOKEN_USER *tu = g_malloc0 (size);
-		if (GetTokenInformation (token, TokenUser, tu, size, (PDWORD)&size)) {
-			DWORD length = GetLengthSid (tu->User.Sid);
-			sid = (PSID) g_malloc0 (length);
-			if (!CopySid (length, sid, tu->User.Sid)) {
-				g_free (sid);
-				sid = NULL;
-			}
-		}
-		g_free (tu);
-	}
-	/* Note: this SID must be freed with g_free () */
-	return sid;
-}
-
-
-static ACCESS_MASK
-GetRightsFromSid (PSID sid, PACL acl) 
-{
-	ACCESS_MASK rights = 0;
-	TRUSTEE trustee;
-
-	BuildTrusteeWithSidW (&trustee, sid);
-	if (GetEffectiveRightsFromAcl (acl, &trustee, &rights) != ERROR_SUCCESS)
-		return 0;
-
-	return rights;
-}
-
-
-static gboolean 
-IsMachineProtected (gunichar2 *path)
-{
-	gboolean success = FALSE;
-	PACL pDACL = NULL;
-	PSECURITY_DESCRIPTOR pSD = NULL;
-	PSID pEveryoneSid = NULL;
-
-	DWORD dwRes = GetNamedSecurityInfoW (path, SE_FILE_OBJECT, DACL_SECURITY_INFORMATION, NULL, NULL, &pDACL, NULL, &pSD);
-	if (dwRes != ERROR_SUCCESS)
-		return FALSE;
-
-	/* We check that Everyone is still limited to READ-ONLY -
-	but not if new entries have been added by an Administrator */
-
-	pEveryoneSid = GetEveryoneSid ();
-	if (pEveryoneSid) {
-		ACCESS_MASK rights = GetRightsFromSid (pEveryoneSid, pDACL);
-		/* http://msdn.microsoft.com/library/en-us/security/security/generic_access_rights.asp?frame=true */
-		success = (rights == (READ_CONTROL | SYNCHRONIZE | FILE_READ_DATA | FILE_READ_EA | FILE_READ_ATTRIBUTES));
-		FreeSid (pEveryoneSid);
-	}
-	/* Note: we don't need to check our own access - 
-	we'll know soon enough when reading the file */
-
-	if (pSD)
-		LocalFree (pSD);
-
-	return success;
-}
-
-
-static gboolean 
-IsUserProtected (gunichar2 *path)
-{
-	gboolean success = FALSE;
-	PACL pDACL = NULL;
-	PSID pEveryoneSid = NULL;
-	PSECURITY_DESCRIPTOR pSecurityDescriptor = NULL;
-
-	DWORD dwRes = GetNamedSecurityInfoW (path, SE_FILE_OBJECT, 
-		DACL_SECURITY_INFORMATION, NULL, NULL, &pDACL, NULL, &pSecurityDescriptor);
-	if (dwRes != ERROR_SUCCESS)
-		return FALSE;
-
-	/* We check that our original entries in the ACL are in place -
-	but not if new entries have been added by the user */
-
-	/* Everyone should be denied */
-	pEveryoneSid = GetEveryoneSid ();
-	if (pEveryoneSid) {
-		ACCESS_MASK rights = GetRightsFromSid (pEveryoneSid, pDACL);
-		success = (rights == 0);
-		FreeSid (pEveryoneSid);
-	}
-	/* Note: we don't need to check our own access - 
-	we'll know soon enough when reading the file */
-
-	if (pSecurityDescriptor)
-		LocalFree (pSecurityDescriptor);
-
-	return success;
-}
-
-
-static gboolean 
-ProtectMachine (gunichar2 *path)
-{
-	PSID pEveryoneSid = GetEveryoneSid ();
-	PSID pAdminsSid = GetAdministratorsSid ();
-	DWORD retval = -1;
-
-	if (pEveryoneSid && pAdminsSid) {
-		PACL pDACL = NULL;
-		EXPLICIT_ACCESS ea [2];
-		ZeroMemory (&ea, 2 * sizeof (EXPLICIT_ACCESS));
-
-		/* grant all access to the BUILTIN\Administrators group */
-		BuildTrusteeWithSidW (&ea [0].Trustee, pAdminsSid);
-		ea [0].grfAccessPermissions = GENERIC_ALL;
-		ea [0].grfAccessMode = SET_ACCESS;
-		ea [0].grfInheritance = SUB_CONTAINERS_AND_OBJECTS_INHERIT;
-		ea [0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
-		ea [0].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
-
-		/* read-only access everyone */
-		BuildTrusteeWithSidW (&ea [1].Trustee, pEveryoneSid);
-		ea [1].grfAccessPermissions = GENERIC_READ;
-		ea [1].grfAccessMode = SET_ACCESS;
-		ea [1].grfInheritance = SUB_CONTAINERS_AND_OBJECTS_INHERIT;
-		ea [1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
-		ea [1].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
-
-		retval = SetEntriesInAcl (2, ea, NULL, &pDACL);
-		if (retval == ERROR_SUCCESS) {
-			/* with PROTECTED_DACL_SECURITY_INFORMATION we */
-			/* remove any existing ACL (like inherited ones) */
-			retval = SetNamedSecurityInfo (path, SE_FILE_OBJECT, 
-				DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION,
-				NULL, NULL, pDACL, NULL);
-		}
-		if (pDACL)
-			LocalFree (pDACL);
-	}
-
-	if (pEveryoneSid)
-		FreeSid (pEveryoneSid);
-	if (pAdminsSid)
-		FreeSid (pAdminsSid);
-	return (retval == ERROR_SUCCESS);
-}
-
-
-static gboolean 
-ProtectUser (gunichar2 *path)
-{
-	DWORD retval = -1;
-
-	PSID pCurrentSid = GetCurrentUserSid ();
-	if (pCurrentSid) {
-		PACL pDACL = NULL;
-		EXPLICIT_ACCESS ea;
-		ZeroMemory (&ea, sizeof (EXPLICIT_ACCESS));
-
-		/* grant exclusive access to the current user */
-		BuildTrusteeWithSidW (&ea.Trustee, pCurrentSid);
-		ea.grfAccessPermissions = GENERIC_ALL;
-		ea.grfAccessMode = SET_ACCESS;
-		ea.grfInheritance = SUB_CONTAINERS_AND_OBJECTS_INHERIT;
-		ea.Trustee.TrusteeForm = TRUSTEE_IS_SID;
-		ea.Trustee.TrusteeType = TRUSTEE_IS_USER;
-
-		retval = SetEntriesInAcl (1, &ea, NULL, &pDACL);
-		if (retval == ERROR_SUCCESS) {
-			/* with PROTECTED_DACL_SECURITY_INFORMATION we
-			   remove any existing ACL (like inherited ones) */
-			retval = SetNamedSecurityInfo (path, SE_FILE_OBJECT, 
-				DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION,
-				NULL, NULL, pDACL, NULL);
-		}
-
-		if (pDACL)
-			LocalFree (pDACL);
-		g_free (pCurrentSid); /* g_malloc0 */
-	}
-
-	return (retval == ERROR_SUCCESS);
-}
-
-#else
-
-static gboolean 
+#ifndef HOST_WIN32
+static gboolean
 IsProtected (MonoString *path, gint32 protection) 
 {
 	gboolean result = FALSE;
@@ -822,7 +451,7 @@ IsProtected (MonoString *path, gint32 protection)
 }
 
 
-static gboolean 
+static gboolean
 Protect (MonoString *path, gint32 file_mode, gint32 add_dir_mode)
 {
 	gboolean result = FALSE;
@@ -840,25 +469,12 @@ Protect (MonoString *path, gint32 file_mode, gint32 add_dir_mode)
 	return result;
 }
 
-#endif /* not HOST_WIN32 */
-
-
 MonoBoolean
 ves_icall_Mono_Security_Cryptography_KeyPairPersistence_CanSecure (MonoString *root)
 {
-#if HOST_WIN32
-	gint32 flags;
-
-	/* ACL are nice... unless you have FAT or other uncivilized filesystem */
-	if (!GetVolumeInformation (mono_string_chars (root), NULL, 0, NULL, NULL, (LPDWORD)&flags, NULL, 0))
-		return FALSE;
-	return ((flags & FS_PERSISTENT_ACLS) == FS_PERSISTENT_ACLS);
-#else
 	/* we assume some kind of security is applicable outside Windows */
 	return TRUE;
-#endif
 }
-
 
 MonoBoolean
 ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsMachineProtected (MonoString *path)
@@ -866,14 +482,9 @@ ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsMachineProtected (Mono
 	gboolean ret = FALSE;
 
 	/* no one, but the owner, should have write access to the directory */
-#ifdef HOST_WIN32
-	ret = IsMachineProtected (mono_string_chars (path));
-#else
 	ret = IsProtected (path, (S_IWGRP | S_IWOTH));
-#endif
-	return ret;
+	return (MonoBoolean)ret;
 }
-
 
 MonoBoolean
 ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsUserProtected (MonoString *path)
@@ -881,14 +492,9 @@ ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsUserProtected (MonoStr
 	gboolean ret = FALSE;
 
 	/* no one, but the user, should have access to the directory */
-#ifdef HOST_WIN32
-	ret = IsUserProtected (mono_string_chars (path));
-#else
 	ret = IsProtected (path, (S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH));
-#endif
-	return ret;
+	return (MonoBoolean)ret;
 }
-
 
 MonoBoolean
 ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectMachine (MonoString *path)
@@ -896,14 +502,9 @@ ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectMachine (MonoStri
 	gboolean ret = FALSE;
 
 	/* read/write to owner, read to everyone else */
-#ifdef HOST_WIN32
-	ret = ProtectMachine (mono_string_chars (path));
-#else
 	ret = Protect (path, (S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH), (S_IXUSR | S_IXGRP | S_IXOTH));
-#endif
-	return ret;
+	return (MonoBoolean)ret;
 }
-
 
 MonoBoolean
 ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectUser (MonoString *path)
@@ -911,14 +512,10 @@ ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectUser (MonoString 
 	gboolean ret = FALSE;
 	
 	/* read/write to user, no access to everyone else */
-#ifdef HOST_WIN32
-	ret = ProtectUser (mono_string_chars (path));
-#else
 	ret = Protect (path, (S_IRUSR | S_IWUSR), S_IXUSR);
-#endif
-	return ret;
+	return (MonoBoolean)ret;
 }
-
+#endif /* !HOST_WIN32 */
 
 /*
  * Returns TRUE if there is "something" where the Authenticode signature is 
@@ -930,7 +527,7 @@ MonoBoolean
 ves_icall_System_Security_Policy_Evidence_IsAuthenticodePresent (MonoReflectionAssembly *refass)
 {
 	if (refass && refass->assembly && refass->assembly->image) {
-		return mono_image_has_authenticode_entry (refass->assembly->image);
+		return (MonoBoolean)mono_image_has_authenticode_entry (refass->assembly->image);
 	}
 	return FALSE;
 }
