@@ -314,13 +314,14 @@ dllmap_start (gpointer user_data,
 			else if (strcmp (attribute_names [i], "target") == 0){
 				char *p = strstr (attribute_values [i], "$mono_libdir");
 				if (p != NULL){
-					const char *libdir = mono_assembly_getrootdir ();
+					const char *libdir = mono_native_getrootdir ();
 					size_t libdir_len = strlen (libdir);
 					char *result;
 					
 					result = (char *)g_malloc (libdir_len-strlen("$mono_libdir")+strlen(attribute_values[i])+1);
 					strncpy (result, attribute_values[i], p-attribute_values[i]);
 					strcpy (result+(p-attribute_values[i]), libdir);
+					g_free (libdir);
 					strcat (result, p+strlen("$mono_libdir"));
 					info->target = result;
 				} else 
