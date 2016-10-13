@@ -19,6 +19,9 @@ int alertable_WSARecv (SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWOR
 int alertable_send (SOCKET s, char *buf, int len, int flags, gboolean blocking);
 int alertable_sendto (SOCKET s, const char *buf, int len, int flags, const struct sockaddr *to, int tolen, gboolean blocking);
 int alertable_WSASend (SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWORD lpNumberOfBytesRecvd, DWORD lpFlags, LPWSAOVERLAPPED lpOverlapped, LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine, gboolean blocking);
+
+#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT)
 BOOL alertable_TransmitFile (SOCKET hSocket, HANDLE hFile, DWORD nNumberOfBytesToWrite, DWORD nNumberOfBytesPerSend, LPOVERLAPPED lpOverlapped, LPTRANSMIT_FILE_BUFFERS lpTransmitBuffers, DWORD dwReserved, gboolean blocking);
+#endif
 
 #endif // __MONO_METADATA_SOCKET_IO_WINDOWS_INTERNALS_H__

@@ -93,6 +93,10 @@
 #include <ifaddrs.h>
 #endif
 
+#if defined(_MSC_VER) && G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT)
+#include <MSWSock.h>
+#endif
+
 #include "mono/io-layer/socket-wrappers.h"
 #ifdef HOST_WIN32
 #include "mono/metadata/socket-io-windows-internals.h"
@@ -1297,6 +1301,7 @@ ves_icall_System_Net_Sockets_Socket_Connect_internal (SOCKET sock, MonoObject *s
 	g_free (sa);
 }
 
+#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT)
 /* These #defines from mswsock.h from wine.  Defining them here allows
  * us to build this file on a mingw box that doesn't know the magic
  * numbers, but still run on a newer windows box that does.
@@ -1387,6 +1392,7 @@ ves_icall_System_Net_Sockets_Socket_Disconnect_internal (SOCKET sock, MonoBoolea
 	if (interrupted)
 		*werror = WSAEINTR;
 }
+#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT) */
 
 gint32
 ves_icall_System_Net_Sockets_Socket_Receive_internal (SOCKET sock, MonoArray *buffer, gint32 offset, gint32 count, gint32 flags, gint32 *werror, gboolean blocking)
@@ -2708,6 +2714,7 @@ ves_icall_System_Net_Dns_GetHostName_internal (MonoString **h_name)
 	return TRUE;
 }
 
+#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT)
 gboolean
 ves_icall_System_Net_Sockets_Socket_SendFile_internal (SOCKET sock, MonoString *filename, MonoArray *pre_buffer, MonoArray *post_buffer, gint flags, gint32 *werror, gboolean blocking)
 {
@@ -2776,6 +2783,7 @@ ves_icall_System_Net_Sockets_Socket_SendFile_internal (SOCKET sock, MonoString *
 
 	return ret;
 }
+#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT) */
 
 gboolean
 ves_icall_System_Net_Sockets_Socket_SupportPortReuse (MonoProtocolType proto)

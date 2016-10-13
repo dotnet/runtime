@@ -1415,7 +1415,12 @@ shadow_copy_sibling (gchar *src, gint srclen, const char *extension, gchar *targ
 	dest = g_utf8_to_utf16 (target, strlen (target), NULL, NULL, NULL);
 	
 	DeleteFile (dest);
+
+#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 	copy_result = CopyFile (orig, dest, FALSE);
+#else
+	copy_result = SUCCEEDED (CopyFile2 (orig, dest, NULL));
+#endif
 
 	/* Fix for bug #556884 - make sure the files have the correct mode so that they can be
 	 * overwritten when updated in their original locations. */
@@ -1743,7 +1748,11 @@ mono_make_shadow_copy (const char *filename, MonoError *oerror)
 		return (char *)filename;
 	}
 
+#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 	copy_result = CopyFile (orig, dest, FALSE);
+#else
+	copy_result = SUCCEEDED (CopyFile2 (orig, dest, NULL));
+#endif
 
 	/* Fix for bug #556884 - make sure the files have the correct mode so that they can be
 	 * overwritten when updated in their original locations. */
