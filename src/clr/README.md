@@ -29,6 +29,7 @@ related to .NET Core including:
  * Need to **log a issue** or Provide Feedback?   See then [Issues and Feedback Page](Documentation/workflow/IssuesFeedbackEngagement.md) page.
  * Want to **chat** with other members of the CoreCLR community?  See the [Chat Section](Documentation/workflow/IssuesFeedbackEngagement.md#Chat-with-the-CoreCLR-community) page.
  * Need a **current build** or **test results** of the CoreCLR repository?   See the [Official and Daily Builds](Documentation/workflow/OfficalAndDailyBuilds.md) page.
+ * If you want powerful search of the source code for both CoreClr and CoreFx see [.NET Source Code Index](https://source.dot.net)
 
 ## What Can you Make from this Repository?
 
@@ -170,6 +171,15 @@ There are two basic techniques for using your new runtime.
  all the tests in the repo use, and is useful for quick local 'edit-compile-debug' loop (e.g. preliminary unit testsing).
  See [Executing .NET Core Apps with CoreRun.exe](Documentation/workflow/UsingCoreRun.md) for details on using 
  this technique.  
+
+## Editing and Debugging
+
+Typically users run through the build and use instructions first with an unmodified build, just to familiarize
+themselves with the procedures and to confirm that the instructions work.   After that you will want to actually
+make modifications and debug any issues those modifications might cause.   See the following links for more.   
+
+ * [Editing and Debugging](Documentation/workflow/EditingAndDebugging.md) and
+ * [Documentation on the .NET Core Runtime](Documentation/README.md)
 
 ## Running Tests 
 

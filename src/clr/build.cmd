@@ -1,6 +1,7 @@
 @if not defined _echo @echo off
 setlocal EnableDelayedExpansion EnableExtensions
 
+echo Starting Build at %TIME%
 set __ThisScriptFull="%~f0"
 set __VSToolsRoot=%VS140COMNTOOLS%
 :: Note that the msbuild project files (specifically, dir.proj) will use the following variables, if set:
@@ -448,7 +449,7 @@ REM === All builds complete!
 REM ===
 REM =========================================================================================
 
-echo %__MsgPrefix%Repo successfully built.
+echo %__MsgPrefix%Repo successfully built.  Finished at %TIME%
 echo %__MsgPrefix%Product binaries are available at !__BinDir!
 if %__BuildTests% EQU 1 (
     echo %__MsgPrefix%Test binaries are available at !__TestBinDir!
