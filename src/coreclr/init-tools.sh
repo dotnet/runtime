@@ -136,6 +136,8 @@ if [ ! -e $__PROJECT_JSON_FILE ]; then
     # On ubuntu 14.04, /bin/sh (symbolic link) calls /bin/dash by default.
     $__BUILD_TOOLS_PATH/init-tools.sh $__scriptpath $__DOTNET_CMD $__TOOLRUNTIME_DIR
 
+    cp $__TOOLRUNTIME_DIR/NuGet.Frameworks.dll $__TOOLRUNTIME_DIR/dotnetcli/sdk/$__DOTNET_TOOLS_VERSION
+
 else
     echo "$__PROJECT_JSON_FILE found. Skipping .NET CLI installation."   
 fi

@@ -3,7 +3,7 @@
     "Microsoft.DotNet.CoreCLR.TestDependencies": "1.0.0-prerelease",
   },
   "frameworks": {
-    "netcoreapp1.0": {
+    "netcoreapp1.1": {
       "imports": [
         "dnxcore50",  
         "portable-net45+win8"
