@@ -898,7 +898,7 @@ namespace System.Text.RegularExpressions
             RegexRunner runner = null;
 
             if (startat < 0 || startat > input.Length)
-                throw new ArgumentOutOfRangeException("start", SR.BeginIndexNotNegative);
+                throw new ArgumentOutOfRangeException(nameof(startat), SR.BeginIndexNotNegative);
 
             if (length < 0 || length > input.Length)
                 throw new ArgumentOutOfRangeException(nameof(length), SR.LengthNotNegative);
