@@ -725,8 +725,8 @@
     <Compile Include="System\Xml\Xsl\Xslt\XsltLoader.cs" />
     <Compile Include="System\Xml\Xsl\Xslt\XsltQilFactory.cs" />
     <Compile Include="System\Xml\Xsl\Xslt\XslVisitor.cs" />
-    <Compile Include="$(CommonPath)\System\AppContextSwitches.cs" />
-    <Compile Include="System\Xml\Core\XmlAppContextSwitches.cs" />
+    <Compile Include="$(CommonPath)\System\LocalAppContext.cs" />
+    <Compile Include="System\Xml\Core\LocalAppContextSwitches.cs" />
     <Compile Include="Misc\ThisAssembly.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

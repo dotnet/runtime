@@ -6,9 +6,9 @@ using System.Runtime.CompilerServices;
 
 namespace System
 {
-    internal partial class AppContextSwitches
+    internal partial class LocalAppContext
     {
-        static AppContextSwitches()
+        static LocalAppContext()
         {
             bool isEnabled;
             if (AppContext.TryGetSwitch(@"TestSwitch.LocalAppContext.DisableCaching", out isEnabled))

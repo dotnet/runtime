@@ -1351,7 +1351,7 @@ namespace System.Xml
                 {
                     int lowChar = pSrc[1];
                     if (lowChar >= XmlCharType.SurLowStart &&
-                        (XmlAppContextSwitches.DontThrowOnInvalidSurrogatePairs || lowChar <= XmlCharType.SurLowEnd))
+                        (LocalAppContextSwitches.DontThrowOnInvalidSurrogatePairs || lowChar <= XmlCharType.SurLowEnd))
                     {
                         // Calculate Unicode scalar value for easier manipulations (see section 3.7 in Unicode spec)
                         // The scalar value repositions surrogate values to start at 0x10000.

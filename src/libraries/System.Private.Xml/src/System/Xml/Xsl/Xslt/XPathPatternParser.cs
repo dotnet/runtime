@@ -164,7 +164,7 @@ namespace System.Xml.Xsl.Xslt
         {
             if (++_parseRelativePath > MaxParseRelativePathDepth)
             {
-                if (XmlAppContextSwitches.LimitXPathComplexity)
+                if (LocalAppContextSwitches.LimitXPathComplexity)
                 {
                     throw _scanner.CreateException(SR.Xslt_InputTooComplex);
                 }

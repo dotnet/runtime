@@ -1510,7 +1510,7 @@ namespace System.Xml.Xsl.Xslt
         {
             if (++_loadInstructionsDepth > MAX_LOADINSTRUCTIONS_DEPTH)
             {
-                if (XmlAppContextSwitches.LimitXPathComplexity)
+                if (LocalAppContextSwitches.LimitXPathComplexity)
                 {
                     throw XslLoadException.Create(SR.Xslt_InputTooComplex);
                 }
