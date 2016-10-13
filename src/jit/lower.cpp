@@ -2742,6 +2742,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
 
         comp->fgMorphTree(helperCall);
         BlockRange().InsertBefore(insertBefore, LIR::SeqTree(comp, helperCall));
+        LowerNode(helperCall); // helper call is inserted before current node and should be lowered here.
         return;
     }
 #endif
