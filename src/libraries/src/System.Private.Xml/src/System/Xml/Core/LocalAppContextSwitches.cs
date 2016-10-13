@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 namespace System
 {
-    internal partial class XmlAppContextSwitches
+    internal partial class LocalAppContextSwitches
     {
         private const string DontThrowOnInvalidSurrogatePairsName = "DontThrowOnInvalidSurrogatePairs";
         private static int s_dontThrowOnInvalidSurrogatePairs;
@@ -16,7 +16,7 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                return AppContextSwitches.GetCachedSwitchValue(DontThrowOnInvalidSurrogatePairsName, ref s_dontThrowOnInvalidSurrogatePairs);
+                return LocalAppContext.GetCachedSwitchValue(DontThrowOnInvalidSurrogatePairsName, ref s_dontThrowOnInvalidSurrogatePairs);
             }
         }
 
@@ -28,7 +28,7 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                return AppContextSwitches.GetCachedSwitchValue(IgnoreEmptyKeySequencesName, ref s_ignoreEmptyKeySequences);
+                return LocalAppContext.GetCachedSwitchValue(IgnoreEmptyKeySequencesName, ref s_ignoreEmptyKeySequences);
             }
         }
 
@@ -40,7 +40,7 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                return AppContextSwitches.GetCachedSwitchValue(IgnoreKindInUtcTimeSerializationName, ref s_ignoreKindInUtcTimeSerialization);
+                return LocalAppContext.GetCachedSwitchValue(IgnoreKindInUtcTimeSerializationName, ref s_ignoreKindInUtcTimeSerialization);
             }
         }
 
@@ -52,7 +52,7 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                return AppContextSwitches.GetCachedSwitchValue(LimitXPathComplexityName, ref s_limitXPathComplexity);
+                return LocalAppContext.GetCachedSwitchValue(LimitXPathComplexityName, ref s_limitXPathComplexity);
             }
         }
     }

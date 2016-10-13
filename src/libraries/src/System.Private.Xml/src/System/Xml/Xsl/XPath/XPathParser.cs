@@ -120,7 +120,7 @@ namespace System.Xml.Xsl.XPath
         {
             if (++_parseRelativePath > MaxParseRelativePathDepth)
             {
-                if (XmlAppContextSwitches.LimitXPathComplexity)
+                if (LocalAppContextSwitches.LimitXPathComplexity)
                 {
                     throw _scanner.CreateException(SR.Xslt_InputTooComplex);
                 }
@@ -348,7 +348,7 @@ namespace System.Xml.Xsl.XPath
         {
             if (++_parseSubExprDepth > MaxParseSubExprDepth)
             {
-                if (XmlAppContextSwitches.LimitXPathComplexity)
+                if (LocalAppContextSwitches.LimitXPathComplexity)
                 {
                     throw _scanner.CreateException(SR.Xslt_InputTooComplex);
                 }

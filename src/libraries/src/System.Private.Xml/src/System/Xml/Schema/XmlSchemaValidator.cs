@@ -2373,7 +2373,7 @@ namespace System.Xml.Schema
                             else
                             {
                                 // for element, Reader.Value = "";
-                                if (XmlAppContextSwitches.IgnoreEmptyKeySequences)
+                                if (LocalAppContextSwitches.IgnoreEmptyKeySequences)
                                 {
                                     if (typedValue != null && stringValue.Length != 0)
                                     {
