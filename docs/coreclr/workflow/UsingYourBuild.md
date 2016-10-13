@@ -198,25 +198,38 @@ windows (on Linux substitute ~/ for %HOMEPATH%) you could delete
 ```bat
      %HOMEPATH%\.nuget\packages\Microsoft.NETCore.Runtime.CoreCLR\1.2.0-beta-24521-02
 ```
-which should mke things work (but is fragile, confirm wile file timestamps that you are getting the version you expect)
+which should make things work (but is fragile, confirm wile file timestamps that you are getting the version you expect)
 
 
-## Step 8.1 Quick updates in place.  
+## Step 8.1 (Optional) Quick updates in place.  
 
 The 'dotnet publish' step in step 6 above creates a directory that has all the files necessary to run your app
 including the CoreCLR and the parts of CoreFX that were needed.    You can use this fact to skip some steps if
 you wish to update the DLLs.   For example typically when you update CoreCLR you end up updating one of two DLLs
 
-* Coreclr.dll - Most modifications (with the exception of the JIT compiler and tools) that are C++ code update
+* coreclr.dll - Most modifications (with the exception of the JIT compiler and tools) that are C++ code update
   this DLL. 
 * System.Private.CoreLib.dll - If you modified C# it will end up here.  
 * System.Private.CoreLib.ni.dll - the native image (code) for System.Private.Corelib.   If you modify C# code
-you will want to update both of these together in the target installation.  
+you will want to update both of these together in the target installation.   
 
 Thus after making a change and building, you can simply copy the updated binary from the `bin\Product\<OS>.<arch>.<flavor>`
 directory to your publication directory (e.g. `helloWorld\bin\Debug\netcoreapp1.0\win7-x64\publish`) to quickly
-deploy your new bits.   
-
+deploy your new bits.   You can build just the .NET Library part of the build by doing (debug, for release add 'release qualifier)
+(on Linux / OSX us ./build.sh)
+```bat
+    .\build skiptests skipnative 
+```
+Which builds System.Private.CoreLib.dll AND System.Private.CoreLib.ni.dll (you will always want both) if you modify
+C# code.   If you wish to only compile the coreclr.dll you can do
+ ```bat
+    .\build skiptests skipmscorlib
+```
+Note that this technique does not work on .NET Apps that have not been published (that is you have not created
+a directory with all DLLs needed to run the all)  That is because the runtime is either fetched from the system-wide
+location that dotnet.exe installed, OR it is fetched from the local nuget package cache (which is where your
+build was put when you did a 'dotnet restore' and had a dependency on your particular runtime).    In theory you
+could update these locations in place, but that is not recommended since they are shared more widely.  
 
 ### Using your Runtime For Real.  
 

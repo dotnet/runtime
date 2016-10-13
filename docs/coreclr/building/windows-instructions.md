@@ -33,7 +33,7 @@ The CoreCLR repo build has been validated using CMake 3.5.2.
 
 ##Python
 
-Python is used in the build system. We are currently using python 2.7.9, althoughw
+Python is used in the build system. We are currently using python 2.7.9, although
 any recent (2.4+) version of Python should work, including Python 3.
 - Install [Python](https://www.python.org/downloads/) for Windows.
 - Add its location (e.g. C:\Python*\) to the PATH environment variable.  
