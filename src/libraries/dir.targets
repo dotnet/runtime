@@ -28,6 +28,24 @@
       </ProjectReference>
     </ItemGroup>
   </Target>
+  
+  <PropertyGroup>
+    <CommonTestProjectJson>$(MSBuildThisFileDirectory)src/Common/test-runtime/project.json</CommonTestProjectJson>
+    <CommonTestProjectLockJson>$(MSBuildThisFileDirectory)src/Common/test-runtime/project.lock.json</CommonTestProjectLockJson>
+    <CommonOutputTestProjectJson>$(GeneratedProjectJsonDir)/project.json</CommonOutputTestProjectJson>
+    <SkipGenerateTestProjectJson Condition="$([System.IO.File]::Exists('$(MSBuildProjectDirectory)/project.json'))" >false</SkipGenerateTestProjectJson>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
+    <ProjectJson Condition="'$(ProjectJson)'=='' and $([System.IO.File]::Exists('$(MSBuildProjectDirectory)/project.json'))">$(MSBuildProjectDirectory)/project.json</ProjectJson>
+    <ProjectJson Condition="'$(ProjectJson)'=='' ">$(CommonTestProjectJson)</ProjectJson>
+    <!-- <ProjectLockJson Condition="'$(ProjectLockJson)'=='' and Exists('$(MSBuildProjectDirectory)/project.json')">$(MSBuildProjectDirectory)/project.lock.json</ProjectLockJson> -->
+    <ProjectLockJson Condition="'$(ProjectLockJson)'=='' ">$(CommonTestProjectLockJson)</ProjectLockJson>
+    
+    <!-- Duplicating this path from packageresolve.targets in buildtools till a proper hook is established for the derived properties below -->
+    <RestorePackages Condition="'$(RestorePackages)'!='false' and Exists('$(ProjectJson)') and '$(DesignTimeBuild)' != 'true'">true</RestorePackages>
+    <PrereleaseResolveNuGetPackages Condition="'$(PrereleaseResolveNuGetPackages)'!='false' and Exists('$(ProjectJson)')">true</PrereleaseResolveNuGetPackages>
+  </PropertyGroup>
 
   <Import Project="$(ToolsDir)/Build.Common.targets" Condition="Exists('$(ToolsDir)/Build.Common.targets')" />
 
@@ -57,19 +75,6 @@
       <DestinationDir>test-runtime/</DestinationDir>
     </SupplementalTestData>
   </ItemGroup>
-  
-  <PropertyGroup>
-    <CommonTestProjectJson>$(MSBuildThisFileDirectory)src/Common/test-runtime/project.json</CommonTestProjectJson>
-    <CommonTestProjectLockJson>$(MSBuildThisFileDirectory)src/Common/test-runtime/project.lock.json</CommonTestProjectLockJson>
-    <CommonOutputTestProjectJson>$(GeneratedProjectJsonDir)/project.json</CommonOutputTestProjectJson>
-    <UsesCommonTestProjectJson Condition="'$(IsTestProject)' == 'true' and '$(ProjectJson)'=='' ">true</UsesCommonTestProjectJson>
-    <SkipGenerateTestProjectJson Condition="'$(UsesCommonTestProjectJson)'==''">false</SkipGenerateTestProjectJson>
-    <ProjectJson Condition="'$(IsTestProject)' == 'true' and '$(ProjectJson)'=='' ">$(CommonTestProjectJson)</ProjectJson>
-    <ProjectLockJson Condition="'$(IsTestProject)' == 'true' and '$(ProjectLockJson)'=='' ">$(CommonTestProjectLockJson)</ProjectLockJson>
-    <!-- Duplicating this path from packageresolve.targets in buildtools till a proper hook is established for the derived properties below -->
-    <RestorePackages Condition="'$(RestorePackages)'!='false' and Exists('$(ProjectJson)') and '$(DesignTimeBuild)' != 'true'">true</RestorePackages>
-    <PrereleaseResolveNuGetPackages Condition="'$(PrereleaseResolveNuGetPackages)'!='false' and Exists('$(ProjectJson)')">true</PrereleaseResolveNuGetPackages>
-  </PropertyGroup>
 
   <ItemGroup Condition="'$(NuGetTargetMoniker)'=='.NETStandard,Version=v1.7'">
     <!-- Temporarily suppress the message until we get a nuget version that knows about the mapping between netstandard1.7 and uap10.1 -->

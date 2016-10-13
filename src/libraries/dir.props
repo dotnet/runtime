@@ -98,7 +98,10 @@
   <PropertyGroup Condition="'$(BuildTestsAgainstPackages)' == 'true'">
     <BuildTestsAgainstPackagesIdentityRegex>$(CoreFxVersionsIdentityRegex)</BuildTestsAgainstPackagesIdentityRegex>
     <SkipVerifyPackageVersions>true</SkipVerifyPackageVersions>
-    <!-- By default we should skip generate test project json because test projects will use the generated global test project.json -->
+  </PropertyGroup>
+  
+  <!-- By default we should skip generate test project json because test projects will use the generated global test project.json -->
+  <PropertyGroup>
     <SkipGenerateTestProjectJson>true</SkipGenerateTestProjectJson>
   </PropertyGroup>
 
