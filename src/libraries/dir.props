@@ -98,6 +98,8 @@
   <PropertyGroup Condition="'$(BuildTestsAgainstPackages)' == 'true'">
     <BuildTestsAgainstPackagesIdentityRegex>$(CoreFxVersionsIdentityRegex)</BuildTestsAgainstPackagesIdentityRegex>
     <SkipVerifyPackageVersions>true</SkipVerifyPackageVersions>
+    <!-- By default we should skip generate test project json because test projects will use the generated global test project.json -->
+    <SkipGenerateTestProjectJson>true</SkipGenerateTestProjectJson>
   </PropertyGroup>
 
   <!-- list of directories to perform batch restore -->

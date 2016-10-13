@@ -63,6 +63,7 @@
     <CommonTestProjectLockJson>$(MSBuildThisFileDirectory)src/Common/test-runtime/project.lock.json</CommonTestProjectLockJson>
     <CommonOutputTestProjectJson>$(GeneratedProjectJsonDir)/project.json</CommonOutputTestProjectJson>
     <UsesCommonTestProjectJson Condition="'$(IsTestProject)' == 'true' and '$(ProjectJson)'=='' ">true</UsesCommonTestProjectJson>
+    <SkipGenerateTestProjectJson Condition="'$(UsesCommonTestProjectJson)'==''">false</SkipGenerateTestProjectJson>
     <ProjectJson Condition="'$(IsTestProject)' == 'true' and '$(ProjectJson)'=='' ">$(CommonTestProjectJson)</ProjectJson>
     <ProjectLockJson Condition="'$(IsTestProject)' == 'true' and '$(ProjectLockJson)'=='' ">$(CommonTestProjectLockJson)</ProjectLockJson>
     <!-- Duplicating this path from packageresolve.targets in buildtools till a proper hook is established for the derived properties below -->
