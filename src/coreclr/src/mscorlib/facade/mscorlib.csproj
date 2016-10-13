@@ -103,24 +103,6 @@
     <SeedTypePreference Include="System.IO.SeekOrigin">
       <Assembly>System.IO</Assembly>
     </SeedTypePreference>
-    <SeedTypePreference Include="System.IO.TextReader">
-      <Assembly>System.IO</Assembly>
-    </SeedTypePreference>
-    <SeedTypePreference Include="System.IO.TextWriter">
-      <Assembly>System.IO</Assembly>
-    </SeedTypePreference>
-    <SeedTypePreference Include="System.IO.StreamReader">
-      <Assembly>System.IO</Assembly>
-    </SeedTypePreference>
-    <SeedTypePreference Include="System.IO.StreamWriter">
-      <Assembly>System.IO</Assembly>
-    </SeedTypePreference>
-    <SeedTypePreference Include="System.IO.StringReader">
-      <Assembly>System.IO</Assembly>
-    </SeedTypePreference>
-    <SeedTypePreference Include="System.IO.StringWriter">
-      <Assembly>System.IO</Assembly>
-    </SeedTypePreference>
     <SeedTypePreference Include="System.IO.Stream">
       <Assembly>System.IO</Assembly>
     </SeedTypePreference>
