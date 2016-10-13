@@ -12359,6 +12359,26 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // The lookup of the code pointer will be handled by CALL in this case
                     if (clsFlags & CORINFO_FLG_VALUECLASS)
                     {
+                        if (compIsForInlining())
+                        {
+                            if (impInlineInfo->iciBlock->isRunRarely())
+                            {
+                                // If value class has GC fields, inform
+                                // the inliner. It may choose to bail out
+                                // on the inline, if the call site is
+                                // rare.
+                                DWORD typeFlags = info.compCompHnd->getClassAttribs(resolvedToken.hClass);
+                                if ((typeFlags & CORINFO_FLG_CONTAINS_GC_PTR) != 0)
+                                {
+                                    compInlineResult->Note(InlineObservation::CALLSITE_RARE_GC_STRUCT);
+                                    if (compInlineResult->IsFailure())
+                                    {
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+
                         CorInfoType jitTyp = info.compCompHnd->asCorInfoType(resolvedToken.hClass);
                         unsigned    size   = info.compCompHnd->getClassSize(resolvedToken.hClass);
 
@@ -17248,6 +17268,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
         var_types sigType = (var_types)eeGetArgType(argLst, &methInfo->args);
 
         lclVarInfo[i].lclVerTypeInfo = verParseArgSigToTypeInfo(&methInfo->args, argLst);
+
 #ifdef FEATURE_SIMD
         if ((!foundSIMDType || (sigType == TYP_STRUCT)) && isSIMDClass(&(lclVarInfo[i].lclVerTypeInfo)))
         {
@@ -17383,6 +17404,26 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
         }
 
         lclVarInfo[i + argCnt].lclVerTypeInfo = verParseArgSigToTypeInfo(&methInfo->locals, localsSig);
+
+        // If this local is a struct type with GC fields, inform the
+        // inliner. It may choose to bail out on the inline, if the call
+        // site is rare.
+        if (pInlineInfo->iciBlock->isRunRarely())
+        {
+            if (type == TYP_STRUCT)
+            {
+                CORINFO_CLASS_HANDLE lclHandle = lclVarInfo[i + argCnt].lclVerTypeInfo.GetClassHandle();
+                DWORD                typeFlags = info.compCompHnd->getClassAttribs(lclHandle);
+                if ((typeFlags & CORINFO_FLG_CONTAINS_GC_PTR) != 0)
+                {
+                    inlineResult->Note(InlineObservation::CALLSITE_RARE_GC_STRUCT);
+                    if (inlineResult->IsFailure())
+                    {
+                        return;
+                    }
+                }
+            }
+        }
 
         localsSig = info.compCompHnd->getArgNext(localsSig);
 
