@@ -67,7 +67,7 @@
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj">
       <TargetGroup>uap101aot</TargetGroup>
     </ProjectReference>
-    <ProjectReference Include="..\..\System.Resources.ResourceManager\ref\System.Resources.ResourceManager.csproj">
+    <ProjectReference Include="..\..\System.Resources.ResourceManager\src\System.Resources.ResourceManager.csproj">
       <TargetGroup>uap101aot</TargetGroup>
     </ProjectReference>
   </ItemGroup>

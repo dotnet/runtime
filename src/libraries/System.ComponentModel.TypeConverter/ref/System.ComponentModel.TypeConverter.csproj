@@ -8,6 +8,10 @@
   <ItemGroup>
     <Compile Include="System.ComponentModel.cs" />
     <Compile Include="System.ComponentModel.TypeConverter.cs" />
+    <!-- TODO: Replace this reference with package reference -->
+    <ProjectReference Include="$(SourceDir)System.Resources.ResourceManager/ref/System.Resources.ResourceManager.csproj"/>
+    <!-- TODO: Replace this reference with package reference -->
+    <ProjectReference Include="$(SourceDir)System.Resources.Writer/ref/System.Resources.Writer.csproj"/>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

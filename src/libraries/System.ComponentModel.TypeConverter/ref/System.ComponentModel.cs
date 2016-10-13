@@ -161,8 +161,7 @@ namespace System.ComponentModel
     }
     public partial class ComponentResourceManager : System.Resources.ResourceManager
     {
-        //public ComponentResourceManager() { }
-        //TODO NETSTANDARD2.0: I had to update the ctor to call the base ctor for this type
+        public ComponentResourceManager() { }
         public ComponentResourceManager(System.Type t) : base(t) { }
         public void ApplyResources(object value, string objectName) { }
         public virtual void ApplyResources(object value, string objectName, System.Globalization.CultureInfo culture) { }
@@ -1495,22 +1494,5 @@ namespace System.ComponentModel.Design.Serialization
         protected virtual void Dispose(bool disposing) { }
         public abstract void Save(System.IO.Stream stream);
         void System.IDisposable.Dispose() { }
-    }
-}
-
-namespace System.Resources
-{
-    public partial interface IResourceReader : System.Collections.IEnumerable, System.IDisposable
-    {
-        void Close();
-        new System.Collections.IDictionaryEnumerator GetEnumerator();
-    }
-    public partial interface IResourceWriter : System.IDisposable
-    {
-        void AddResource(string name, byte[] value);
-        void AddResource(string name, object value);
-        void AddResource(string name, string value);
-        void Close();
-        void Generate();
     }
 }

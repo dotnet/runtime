@@ -9,7 +9,7 @@ using System.Collections.Generic;
 
 namespace System.Resources.Tests
 {
-    public static class ResourceManagerTests
+    public static partial class ResourceManagerTests
     {
         public static IEnumerable<object[]> EnglishResourceData()
         {

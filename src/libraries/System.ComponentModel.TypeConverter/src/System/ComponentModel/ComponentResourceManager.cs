@@ -22,9 +22,8 @@ namespace System.ComponentModel
         private Hashtable _resourceSets;
         private CultureInfo _neutralResourcesCulture;
 
-        //TODO: NETSTANDARD2.0 
-        // public ComponentResourceManager() : base() {
-        // }
+        public ComponentResourceManager() : base() {
+        }
 
         public ComponentResourceManager(Type t) : base(t)
         {

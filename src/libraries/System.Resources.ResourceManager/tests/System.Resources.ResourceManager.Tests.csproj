@@ -6,7 +6,7 @@
     <AssemblyName>System.Resources.ResourceManager.Tests</AssemblyName>
     <RootNamespace>System.Resources.Tests</RootNamespace>
     <ProjectGuid>{1D51A16C-B6D8-4E8F-98DE-21AD9A7062A1}</ProjectGuid>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker Condition=" '$(TargetGroup)' == '' ">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -24,6 +24,33 @@
       <DependentUpon>TestResx.resx</DependentUpon>
     </Compile>
     <Compile Include="SatelliteContractVersionAttributeTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetGroup)' == '' ">
+    <Compile Include="$(CommonTestPath)/System/Runtime/Serialization/Formatters/BinaryFormatterHelpers.cs">
+      <Link>System/Runtime/Serialization/Formatters/BinaryFormatterHelpers.cs</Link>
+    </Compile>
+    <Compile Include="MissingManifestResourceExceptionTests.netstandard17.cs"/>
+    <Compile Include="MissingSatelliteAssemblyException.cs"/>
+    <Compile Include="ResourceManagerTests.netstandard17.cs" />
+    <Compile Include="ResourceSetTests.cs" />
+    <EmbeddedResource Include="Resources\TestResx.netstandard17.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>TestResx.netstandard17.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <Compile Include="Resources\TestResx.netstandard17.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>TestResx.netstandard17.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../pkg/System.Resources.ResourceManager.pkgproj"/>
+    <!-- TODO: Remove this when package update happens -->
+    <ProjectReference Include="../../System.Runtime.InteropServices/pkg/System.Runtime.InteropServices.pkgproj"/>
+    <!-- TODO: Remove this when package update happens -->
+    <ProjectReference Include="../../System.IO.UnmanagedMemoryStream/pkg/System.IO.UnmanagedMemoryStream.pkgproj"/>
+    <!-- TODO: Remove this when package update happens -->
+    <ProjectReference Include="../../System.Resources.Writer/pkg/System.Resources.Writer.pkgproj"/>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\TestResx.resx">

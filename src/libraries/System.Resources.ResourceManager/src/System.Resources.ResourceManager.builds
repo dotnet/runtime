@@ -3,6 +3,9 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="System.Resources.ResourceManager.csproj" />
+    <Project Include="System.Resources.ResourceManager.csproj">
+      <TargetGroup>net463</TargetGroup>
+    </Project>
     <Project Include="System.Resources.ResourceManager.csproj" >
       <TargetGroup>uap101aot</TargetGroup>
     </Project>

@@ -10,12 +10,12 @@ using System.Diagnostics;
 namespace System.Resources
 {
     //internal sealed class FastResourceComparer : IComparer, IEqualityComparer, IComparer<String>, IEqualityComparer<String>
-    internal sealed class FastResourceComparer :IComparer<String>, IEqualityComparer<String>
+    internal sealed class FastResourceComparer :IComparer<string>, IEqualityComparer<string>
     {
         internal static readonly FastResourceComparer Default = new FastResourceComparer();
 
 
-        public int GetHashCode(String key)
+        public int GetHashCode(string key)
         {
             return FastResourceComparer.HashFunction(key);
         }
@@ -23,7 +23,7 @@ namespace System.Resources
         // This hash function MUST be publicly documented with the resource
         // file format, AND we may NEVER change this hash function's return 
         // value (without changing the file format).
-        internal static int HashFunction(String key)
+        internal static int HashFunction(string key)
         {
             // Never change this hash function.  We must standardize it so that 
             // others can read & write our .resources files.  Additionally, we
@@ -34,14 +34,14 @@ namespace System.Resources
             return (int)hash;
         }
 
-        public int Compare(String a, String b)
+        public int Compare(string a, string b)
         {
-            return String.CompareOrdinal(a, b);
+            return string.CompareOrdinal(a, b);
         }
 
-        public bool Equals(String a, String b)
+        public bool Equals(string a, string b)
         {
-            return String.Equals(a, b);
+            return string.Equals(a, b);
         }
 
      

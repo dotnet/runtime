@@ -389,6 +389,7 @@ MembersMustExist : Member 'System.Globalization.TextInfo.ToTitleCase(System.Stri
 MembersMustExist : Member 'System.Globalization.ThaiBuddhistCalendar.AlgorithmType.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Globalization.UmAlQuraCalendar.AlgorithmType.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.IO.DirectoryNotFoundException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.IO.FileAccess' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.IO.FileLoadException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.IO.FileLoadException.FusionLog.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.IO.FileNotFoundException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
