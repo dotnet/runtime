@@ -402,8 +402,11 @@ sgen_alloc_obj (GCVTable vtable, size_t size)
 		int current_alloc = InterlockedIncrement (&alloc_count);
 
 		if (verify_before_allocs) {
-			if ((current_alloc % verify_before_allocs) == 0)
+			if ((current_alloc % verify_before_allocs) == 0) {
+				LOCK_GC;
 				sgen_check_whole_heap_stw ();
+				UNLOCK_GC;
+			}
 		}
 		if (collect_before_allocs) {
 			if (((current_alloc % collect_before_allocs) == 0) && nursery_section) {
