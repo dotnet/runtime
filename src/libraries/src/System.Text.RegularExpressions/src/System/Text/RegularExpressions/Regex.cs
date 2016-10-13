@@ -400,9 +400,11 @@ namespace System.Text.RegularExpressions
             {
                 result = new int[caps.Count];
 
-                foreach (DictionaryEntry kvp in caps)
+                // Manual use of IDictionaryEnumerator instead of foreach to avoid DictionaryEntry box allocations.
+                IDictionaryEnumerator de = caps.GetEnumerator();
+                while (de.MoveNext())
                 {
-                    result[(int) kvp.Value] = (int) kvp.Key;
+                    result[(int)de.Value] = (int)de.Key;
                 }
             }
 
