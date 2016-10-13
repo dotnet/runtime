@@ -12,26 +12,26 @@ namespace System.Diagnostics
     {
         internal StackFrame() { }
         public const int OFFSET_UNKNOWN = -1;
-        public int GetFileColumnNumber() { return default(int); }
-        public int GetFileLineNumber() { return default(int); }
-        public string GetFileName() { return default(string); }
-        public int GetILOffset() { return default(int); }
-        public System.Reflection.MethodBase GetMethod() { return default(System.Reflection.MethodBase); }
-        public override string ToString() { return default(string); }
+        public int GetFileColumnNumber() { throw null; }
+        public int GetFileLineNumber() { throw null; }
+        public string GetFileName() { throw null; }
+        public int GetILOffset() { throw null; }
+        public System.Reflection.MethodBase GetMethod() { throw null; }
+        public override string ToString() { throw null; }
     }
     public static partial class StackFrameExtensions
     {
-        public static System.IntPtr GetNativeImageBase(this System.Diagnostics.StackFrame stackFrame) { return default(System.IntPtr); }
-        public static System.IntPtr GetNativeIP(this System.Diagnostics.StackFrame stackFrame) { return default(System.IntPtr); }
-        public static bool HasILOffset(this System.Diagnostics.StackFrame stackFrame) { return default(bool); }
-        public static bool HasMethod(this System.Diagnostics.StackFrame stackFrame) { return default(bool); }
-        public static bool HasNativeImage(this System.Diagnostics.StackFrame stackFrame) { return default(bool); }
-        public static bool HasSource(this System.Diagnostics.StackFrame stackFrame) { return default(bool); }
+        public static System.IntPtr GetNativeImageBase(this System.Diagnostics.StackFrame stackFrame) { throw null; }
+        public static System.IntPtr GetNativeIP(this System.Diagnostics.StackFrame stackFrame) { throw null; }
+        public static bool HasILOffset(this System.Diagnostics.StackFrame stackFrame) { throw null; }
+        public static bool HasMethod(this System.Diagnostics.StackFrame stackFrame) { throw null; }
+        public static bool HasNativeImage(this System.Diagnostics.StackFrame stackFrame) { throw null; }
+        public static bool HasSource(this System.Diagnostics.StackFrame stackFrame) { throw null; }
     }
     public sealed partial class StackTrace
     {
         public StackTrace(System.Exception exception, bool needFileInfo) { }
-        public System.Diagnostics.StackFrame[] GetFrames() { return default(System.Diagnostics.StackFrame[]); }
-        public override string ToString() { return default(string); }
+        public System.Diagnostics.StackFrame[] GetFrames() { throw null; }
+        public override string ToString() { throw null; }
     }
 }

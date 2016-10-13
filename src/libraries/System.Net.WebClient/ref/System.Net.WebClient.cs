@@ -210,7 +210,7 @@ namespace System.Net
         public WriteStreamClosedEventArgs() { }
         [System.Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        public System.Exception Error { get { return null; } }
+        public System.Exception Error { get { throw null; } }
     }
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public delegate void WriteStreamClosedEventHandler(object sender, System.Net.WriteStreamClosedEventArgs e);

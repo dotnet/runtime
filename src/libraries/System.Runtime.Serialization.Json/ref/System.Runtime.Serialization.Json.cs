@@ -12,9 +12,9 @@ namespace System.Runtime.Serialization
     {
         public DateTimeFormat(string formatString) { }
         public DateTimeFormat(string formatString, System.IFormatProvider formatProvider) { }
-        public System.Globalization.DateTimeStyles DateTimeStyles { get { return default(System.Globalization.DateTimeStyles); } set { } }
-        public System.IFormatProvider FormatProvider { get { return default(System.IFormatProvider); } }
-        public string FormatString { get { return default(string); } }
+        public System.Globalization.DateTimeStyles DateTimeStyles { get { throw null; } set { } }
+        public System.IFormatProvider FormatProvider { get { throw null; } }
+        public string FormatString { get { throw null; } }
     }
     public enum EmitTypeInformation
     {
@@ -30,23 +30,23 @@ namespace System.Runtime.Serialization.Json
         public DataContractJsonSerializer(System.Type type) { }
         public DataContractJsonSerializer(System.Type type, System.Collections.Generic.IEnumerable<System.Type> knownTypes) { }
         public DataContractJsonSerializer(System.Type type, System.Runtime.Serialization.Json.DataContractJsonSerializerSettings settings) { }
-        public System.Runtime.Serialization.DateTimeFormat DateTimeFormat { get { return default(System.Runtime.Serialization.DateTimeFormat); } }
-        public System.Runtime.Serialization.EmitTypeInformation EmitTypeInformation { get { return default(System.Runtime.Serialization.EmitTypeInformation); } }
-        public System.Collections.ObjectModel.ReadOnlyCollection<System.Type> KnownTypes { get { return default(System.Collections.ObjectModel.ReadOnlyCollection<System.Type>); } }
-        public bool SerializeReadOnlyTypes { get { return default(bool); } }
-        public bool UseSimpleDictionaryFormat { get { return default(bool); } }
-        public object ReadObject(System.IO.Stream stream) { return default(object); }
+        public System.Runtime.Serialization.DateTimeFormat DateTimeFormat { get { throw null; } }
+        public System.Runtime.Serialization.EmitTypeInformation EmitTypeInformation { get { throw null; } }
+        public System.Collections.ObjectModel.ReadOnlyCollection<System.Type> KnownTypes { get { throw null; } }
+        public bool SerializeReadOnlyTypes { get { throw null; } }
+        public bool UseSimpleDictionaryFormat { get { throw null; } }
+        public object ReadObject(System.IO.Stream stream) { throw null; }
         public void WriteObject(System.IO.Stream stream, object graph) { }
     }
     public partial class DataContractJsonSerializerSettings
     {
         public DataContractJsonSerializerSettings() { }
-        public System.Runtime.Serialization.DateTimeFormat DateTimeFormat { get { return default(System.Runtime.Serialization.DateTimeFormat); } set { } }
-        public System.Runtime.Serialization.EmitTypeInformation EmitTypeInformation { get { return default(System.Runtime.Serialization.EmitTypeInformation); } set { } }
-        public System.Collections.Generic.IEnumerable<System.Type> KnownTypes { get { return default(System.Collections.Generic.IEnumerable<System.Type>); } set { } }
-        public int MaxItemsInObjectGraph { get { return default(int); } set { } }
-        public string RootName { get { return default(string); } set { } }
-        public bool SerializeReadOnlyTypes { get { return default(bool); } set { } }
-        public bool UseSimpleDictionaryFormat { get { return default(bool); } set { } }
+        public System.Runtime.Serialization.DateTimeFormat DateTimeFormat { get { throw null; } set { } }
+        public System.Runtime.Serialization.EmitTypeInformation EmitTypeInformation { get { throw null; } set { } }
+        public System.Collections.Generic.IEnumerable<System.Type> KnownTypes { get { throw null; } set { } }
+        public int MaxItemsInObjectGraph { get { throw null; } set { } }
+        public string RootName { get { throw null; } set { } }
+        public bool SerializeReadOnlyTypes { get { throw null; } set { } }
+        public bool UseSimpleDictionaryFormat { get { throw null; } set { } }
     }
 }

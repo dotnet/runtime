@@ -12,7 +12,7 @@ namespace System.Diagnostics
     {
         public BooleanSwitch(string displayName, string description) : base(default(string), default(string)) { }
         public BooleanSwitch(string displayName, string description, string defaultSwitchValue) : base(default(string), default(string)) { }
-        public bool Enabled { get { return default(bool); } set { } }
+        public bool Enabled { get { throw null; } set { } }
         protected override void OnValueChanged() { }
     }
     public partial class DefaultTraceListener : System.Diagnostics.TraceListener
@@ -26,14 +26,14 @@ namespace System.Diagnostics
     public partial class EventTypeFilter : System.Diagnostics.TraceFilter
     {
         public EventTypeFilter(System.Diagnostics.SourceLevels level) { }
-        public System.Diagnostics.SourceLevels EventType { get { return default(System.Diagnostics.SourceLevels); } set { } }
-        public override bool ShouldTrace(System.Diagnostics.TraceEventCache cache, string source, System.Diagnostics.TraceEventType eventType, int id, string formatOrMessage, object[] args, object data1, object[] data) { return default(bool); }
+        public System.Diagnostics.SourceLevels EventType { get { throw null; } set { } }
+        public override bool ShouldTrace(System.Diagnostics.TraceEventCache cache, string source, System.Diagnostics.TraceEventType eventType, int id, string formatOrMessage, object[] args, object data1, object[] data) { throw null; }
     }
     public partial class SourceFilter : System.Diagnostics.TraceFilter
     {
         public SourceFilter(string source) { }
-        public string Source { get { return default(string); } set { } }
-        public override bool ShouldTrace(System.Diagnostics.TraceEventCache cache, string source, System.Diagnostics.TraceEventType eventType, int id, string formatOrMessage, object[] args, object data1, object[] data) { return default(bool); }
+        public string Source { get { throw null; } set { } }
+        public override bool ShouldTrace(System.Diagnostics.TraceEventCache cache, string source, System.Diagnostics.TraceEventType eventType, int id, string formatOrMessage, object[] args, object data1, object[] data) { throw null; }
     }
     [System.FlagsAttribute]
     public enum SourceLevels
@@ -50,29 +50,29 @@ namespace System.Diagnostics
     {
         public SourceSwitch(string name) : base(default(string), default(string)) { }
         public SourceSwitch(string displayName, string defaultSwitchValue) : base(default(string), default(string)) { }
-        public System.Diagnostics.SourceLevels Level { get { return default(System.Diagnostics.SourceLevels); } set { } }
+        public System.Diagnostics.SourceLevels Level { get { throw null; } set { } }
         protected override void OnValueChanged() { }
-        public bool ShouldTrace(System.Diagnostics.TraceEventType eventType) { return default(bool); }
+        public bool ShouldTrace(System.Diagnostics.TraceEventType eventType) { throw null; }
     }
     public abstract partial class Switch
     {
         protected Switch(string displayName, string description) { }
         protected Switch(string displayName, string description, string defaultSwitchValue) { }
-        public string Description { get { return default(string); } }
-        public string DisplayName { get { return default(string); } }
-        protected int SwitchSetting { get { return default(int); } set { } }
-        protected string Value { get { return default(string); } set { } }
+        public string Description { get { throw null; } }
+        public string DisplayName { get { throw null; } }
+        protected int SwitchSetting { get { throw null; } set { } }
+        protected string Value { get { throw null; } set { } }
         protected virtual void OnSwitchSettingChanged() { }
         protected virtual void OnValueChanged() { }
     }
     public sealed partial class Trace
     {
         internal Trace() { }
-        public static bool AutoFlush { get { return default(bool); } set { } }
-        public static int IndentLevel { get { return default(int); } set { } }
-        public static int IndentSize { get { return default(int); } set { } }
-        public static System.Diagnostics.TraceListenerCollection Listeners { get { return default(System.Diagnostics.TraceListenerCollection); } }
-        public static bool UseGlobalLock { get { return default(bool); } set { } }
+        public static bool AutoFlush { get { throw null; } set { } }
+        public static int IndentLevel { get { throw null; } set { } }
+        public static int IndentSize { get { throw null; } set { } }
+        public static System.Diagnostics.TraceListenerCollection Listeners { get { throw null; } }
+        public static bool UseGlobalLock { get { throw null; } set { } }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
         public static void Assert(bool condition) { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
@@ -140,10 +140,10 @@ namespace System.Diagnostics
     public partial class TraceEventCache
     {
         public TraceEventCache() { }
-        public System.DateTime DateTime { get { return default(System.DateTime); } }
-        public int ProcessId { get { return default(int); } }
-        public string ThreadId { get { return default(string); } }
-        public long Timestamp { get { return default(long); } }
+        public System.DateTime DateTime { get { throw null; } }
+        public int ProcessId { get { throw null; } }
+        public string ThreadId { get { throw null; } }
+        public long Timestamp { get { throw null; } }
     }
     public enum TraceEventType
     {
@@ -170,13 +170,13 @@ namespace System.Diagnostics
     {
         protected TraceListener() { }
         protected TraceListener(string name) { }
-        public System.Diagnostics.TraceFilter Filter { get { return default(System.Diagnostics.TraceFilter); } set { } }
-        public int IndentLevel { get { return default(int); } set { } }
-        public int IndentSize { get { return default(int); } set { } }
-        public virtual bool IsThreadSafe { get { return default(bool); } }
-        public virtual string Name { get { return default(string); } set { } }
-        protected bool NeedIndent { get { return default(bool); } set { } }
-        public System.Diagnostics.TraceOptions TraceOutputOptions { get { return default(System.Diagnostics.TraceOptions); } set { } }
+        public System.Diagnostics.TraceFilter Filter { get { throw null; } set { } }
+        public int IndentLevel { get { throw null; } set { } }
+        public int IndentSize { get { throw null; } set { } }
+        public virtual bool IsThreadSafe { get { throw null; } }
+        public virtual string Name { get { throw null; } set { } }
+        protected bool NeedIndent { get { throw null; } set { } }
+        public System.Diagnostics.TraceOptions TraceOutputOptions { get { throw null; } set { } }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public virtual void Fail(string message) { }
@@ -200,30 +200,30 @@ namespace System.Diagnostics
     public partial class TraceListenerCollection : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
     {
         internal TraceListenerCollection() { }
-        public int Count { get { return default(int); } }
-        public System.Diagnostics.TraceListener this[int i] { get { return default(System.Diagnostics.TraceListener); } set { } }
-        public System.Diagnostics.TraceListener this[string name] { get { return default(System.Diagnostics.TraceListener); } }
-        bool System.Collections.ICollection.IsSynchronized { get { return default(bool); } }
-        object System.Collections.ICollection.SyncRoot { get { return default(object); } }
-        bool System.Collections.IList.IsFixedSize { get { return default(bool); } }
-        bool System.Collections.IList.IsReadOnly { get { return default(bool); } }
-        object System.Collections.IList.this[int index] { get { return default(object); } set { } }
-        public int Add(System.Diagnostics.TraceListener listener) { return default(int); }
+        public int Count { get { throw null; } }
+        public System.Diagnostics.TraceListener this[int i] { get { throw null; } set { } }
+        public System.Diagnostics.TraceListener this[string name] { get { throw null; } }
+        bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
+        object System.Collections.ICollection.SyncRoot { get { throw null; } }
+        bool System.Collections.IList.IsFixedSize { get { throw null; } }
+        bool System.Collections.IList.IsReadOnly { get { throw null; } }
+        object System.Collections.IList.this[int index] { get { throw null; } set { } }
+        public int Add(System.Diagnostics.TraceListener listener) { throw null; }
         public void AddRange(System.Diagnostics.TraceListener[] value) { }
         public void AddRange(System.Diagnostics.TraceListenerCollection value) { }
         public void Clear() { }
-        public bool Contains(System.Diagnostics.TraceListener listener) { return default(bool); }
+        public bool Contains(System.Diagnostics.TraceListener listener) { throw null; }
         public void CopyTo(System.Diagnostics.TraceListener[] listeners, int index) { }
-        public System.Collections.IEnumerator GetEnumerator() { return default(System.Collections.IEnumerator); }
-        public int IndexOf(System.Diagnostics.TraceListener listener) { return default(int); }
+        public System.Collections.IEnumerator GetEnumerator() { throw null; }
+        public int IndexOf(System.Diagnostics.TraceListener listener) { throw null; }
         public void Insert(int index, System.Diagnostics.TraceListener listener) { }
         public void Remove(System.Diagnostics.TraceListener listener) { }
         public void Remove(string name) { }
         public void RemoveAt(int index) { }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-        int System.Collections.IList.Add(object value) { return default(int); }
-        bool System.Collections.IList.Contains(object value) { return default(bool); }
-        int System.Collections.IList.IndexOf(object value) { return default(int); }
+        int System.Collections.IList.Add(object value) { throw null; }
+        bool System.Collections.IList.Contains(object value) { throw null; }
+        int System.Collections.IList.IndexOf(object value) { throw null; }
         void System.Collections.IList.Insert(int index, object value) { }
         void System.Collections.IList.Remove(object value) { }
     }
@@ -240,9 +240,9 @@ namespace System.Diagnostics
     {
         public TraceSource(string name) { }
         public TraceSource(string name, System.Diagnostics.SourceLevels defaultLevel) { }
-        public System.Diagnostics.TraceListenerCollection Listeners { get { return default(System.Diagnostics.TraceListenerCollection); } }
-        public string Name { get { return default(string); } }
-        public System.Diagnostics.SourceSwitch Switch { get { return default(System.Diagnostics.SourceSwitch); } set { } }
+        public System.Diagnostics.TraceListenerCollection Listeners { get { throw null; } }
+        public string Name { get { throw null; } }
+        public System.Diagnostics.SourceSwitch Switch { get { throw null; } set { } }
         public void Close() { }
         public void Flush() { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
@@ -264,11 +264,11 @@ namespace System.Diagnostics
     {
         public TraceSwitch(string displayName, string description) : base(default(string), default(string)) { }
         public TraceSwitch(string displayName, string description, string defaultSwitchValue) : base(default(string), default(string)) { }
-        public System.Diagnostics.TraceLevel Level { get { return default(System.Diagnostics.TraceLevel); } set { } }
-        public bool TraceError { get { return default(bool); } }
-        public bool TraceInfo { get { return default(bool); } }
-        public bool TraceVerbose { get { return default(bool); } }
-        public bool TraceWarning { get { return default(bool); } }
+        public System.Diagnostics.TraceLevel Level { get { throw null; } set { } }
+        public bool TraceError { get { throw null; } }
+        public bool TraceInfo { get { throw null; } }
+        public bool TraceVerbose { get { throw null; } }
+        public bool TraceWarning { get { throw null; } }
         protected override void OnSwitchSettingChanged() { }
         protected override void OnValueChanged() { }
     }

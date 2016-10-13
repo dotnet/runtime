@@ -12,22 +12,22 @@ namespace System.Security
         public SecureString() { }
         [System.CLSCompliantAttribute(false)]
         public unsafe SecureString(char* value, int length) { }
-        public int Length { get { return default(int); } }
+        public int Length { get { throw null; } }
         public void AppendChar(char c) { }
         public void Clear() { }
-        public System.Security.SecureString Copy() { return default(System.Security.SecureString); }
+        public System.Security.SecureString Copy() { throw null; }
         public void Dispose() { }
         public void InsertAt(int index, char c) { }
-        public bool IsReadOnly() { return default(bool); }
+        public bool IsReadOnly() { throw null; }
         public void MakeReadOnly() { }
         public void RemoveAt(int index) { }
         public void SetAt(int index, char c) { }
     }
     public static partial class SecureStringMarshal
     {
-        public static System.IntPtr SecureStringToCoTaskMemAnsi(System.Security.SecureString s) { return default(System.IntPtr); }
-        public static System.IntPtr SecureStringToCoTaskMemUnicode(System.Security.SecureString s) { return default(System.IntPtr); }
-        public static System.IntPtr SecureStringToGlobalAllocAnsi(System.Security.SecureString s) { return default(System.IntPtr); }
-        public static System.IntPtr SecureStringToGlobalAllocUnicode(System.Security.SecureString s) { return default(System.IntPtr); }
+        public static System.IntPtr SecureStringToCoTaskMemAnsi(System.Security.SecureString s) { throw null; }
+        public static System.IntPtr SecureStringToCoTaskMemUnicode(System.Security.SecureString s) { throw null; }
+        public static System.IntPtr SecureStringToGlobalAllocAnsi(System.Security.SecureString s) { throw null; }
+        public static System.IntPtr SecureStringToGlobalAllocUnicode(System.Security.SecureString s) { throw null; }
     }
 }

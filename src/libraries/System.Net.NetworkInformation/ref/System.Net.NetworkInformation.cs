@@ -24,16 +24,16 @@ namespace System.Net.NetworkInformation
     public partial class GatewayIPAddressInformationCollection : System.Collections.Generic.ICollection<System.Net.NetworkInformation.GatewayIPAddressInformation>, System.Collections.Generic.IEnumerable<System.Net.NetworkInformation.GatewayIPAddressInformation>, System.Collections.IEnumerable
     {
         protected internal GatewayIPAddressInformationCollection() { }
-        public virtual int Count { get { return default(int); } }
-        public virtual bool IsReadOnly { get { return default(bool); } }
-        public virtual System.Net.NetworkInformation.GatewayIPAddressInformation this[int index] { get { return default(System.Net.NetworkInformation.GatewayIPAddressInformation); } }
+        public virtual int Count { get { throw null; } }
+        public virtual bool IsReadOnly { get { throw null; } }
+        public virtual System.Net.NetworkInformation.GatewayIPAddressInformation this[int index] { get { throw null; } }
         public virtual void Add(System.Net.NetworkInformation.GatewayIPAddressInformation address) { }
         public virtual void Clear() { }
-        public virtual bool Contains(System.Net.NetworkInformation.GatewayIPAddressInformation address) { return default(bool); }
+        public virtual bool Contains(System.Net.NetworkInformation.GatewayIPAddressInformation address) { throw null; }
         public virtual void CopyTo(System.Net.NetworkInformation.GatewayIPAddressInformation[] array, int offset) { }
-        public virtual System.Collections.Generic.IEnumerator<System.Net.NetworkInformation.GatewayIPAddressInformation> GetEnumerator() { return default(System.Collections.Generic.IEnumerator<System.Net.NetworkInformation.GatewayIPAddressInformation>); }
-        public virtual bool Remove(System.Net.NetworkInformation.GatewayIPAddressInformation address) { return default(bool); }
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { return default(System.Collections.IEnumerator); }
+        public virtual System.Collections.Generic.IEnumerator<System.Net.NetworkInformation.GatewayIPAddressInformation> GetEnumerator() { throw null; }
+        public virtual bool Remove(System.Net.NetworkInformation.GatewayIPAddressInformation address) { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
     }
     public abstract partial class IcmpV4Statistics
     {
@@ -111,16 +111,16 @@ namespace System.Net.NetworkInformation
     public partial class IPAddressInformationCollection : System.Collections.Generic.ICollection<System.Net.NetworkInformation.IPAddressInformation>, System.Collections.Generic.IEnumerable<System.Net.NetworkInformation.IPAddressInformation>, System.Collections.IEnumerable
     {
         internal IPAddressInformationCollection() { }
-        public virtual int Count { get { return default(int); } }
-        public virtual bool IsReadOnly { get { return default(bool); } }
-        public virtual System.Net.NetworkInformation.IPAddressInformation this[int index] { get { return default(System.Net.NetworkInformation.IPAddressInformation); } }
+        public virtual int Count { get { throw null; } }
+        public virtual bool IsReadOnly { get { throw null; } }
+        public virtual System.Net.NetworkInformation.IPAddressInformation this[int index] { get { throw null; } }
         public virtual void Add(System.Net.NetworkInformation.IPAddressInformation address) { }
         public virtual void Clear() { }
-        public virtual bool Contains(System.Net.NetworkInformation.IPAddressInformation address) { return default(bool); }
+        public virtual bool Contains(System.Net.NetworkInformation.IPAddressInformation address) { throw null; }
         public virtual void CopyTo(System.Net.NetworkInformation.IPAddressInformation[] array, int offset) { }
-        public virtual System.Collections.Generic.IEnumerator<System.Net.NetworkInformation.IPAddressInformation> GetEnumerator() { return default(System.Collections.Generic.IEnumerator<System.Net.NetworkInformation.IPAddressInformation>); }
-        public virtual bool Remove(System.Net.NetworkInformation.IPAddressInformation address) { return default(bool); }
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { return default(System.Collections.IEnumerator); }
+        public virtual System.Collections.Generic.IEnumerator<System.Net.NetworkInformation.IPAddressInformation> GetEnumerator() { throw null; }
+        public virtual bool Remove(System.Net.NetworkInformation.IPAddressInformation address) { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
     }
     public abstract partial class IPGlobalProperties
     {
@@ -137,7 +137,7 @@ namespace System.Net.NetworkInformation
         public abstract System.Net.IPEndPoint[] GetActiveUdpListeners();
         public abstract System.Net.NetworkInformation.IcmpV4Statistics GetIcmpV4Statistics();
         public abstract System.Net.NetworkInformation.IcmpV6Statistics GetIcmpV6Statistics();
-        public static System.Net.NetworkInformation.IPGlobalProperties GetIPGlobalProperties() { return default(System.Net.NetworkInformation.IPGlobalProperties); }
+        public static System.Net.NetworkInformation.IPGlobalProperties GetIPGlobalProperties() { throw null; }
         public abstract System.Net.NetworkInformation.IPGlobalStatistics GetIPv4GlobalStatistics();
         public abstract System.Net.NetworkInformation.IPGlobalStatistics GetIPv6GlobalStatistics();
         public abstract System.Net.NetworkInformation.TcpStatistics GetTcpIPv4Statistics();
@@ -145,7 +145,7 @@ namespace System.Net.NetworkInformation
         public abstract System.Net.NetworkInformation.UdpStatistics GetUdpIPv4Statistics();
         public abstract System.Net.NetworkInformation.UdpStatistics GetUdpIPv6Statistics();
         public virtual System.Net.NetworkInformation.UnicastIPAddressInformationCollection GetUnicastAddresses() { throw null; }
-        public virtual System.Threading.Tasks.Task<System.Net.NetworkInformation.UnicastIPAddressInformationCollection> GetUnicastAddressesAsync() { return default(System.Threading.Tasks.Task<System.Net.NetworkInformation.UnicastIPAddressInformationCollection>); }
+        public virtual System.Threading.Tasks.Task<System.Net.NetworkInformation.UnicastIPAddressInformationCollection> GetUnicastAddressesAsync() { throw null; }
     }
     public abstract partial class IPGlobalStatistics
     {
@@ -237,7 +237,7 @@ namespace System.Net.NetworkInformation
         protected IPv6InterfaceProperties() { }
         public abstract int Index { get; }
         public abstract int Mtu { get; }
-        public virtual long GetScopeId(System.Net.NetworkInformation.ScopeLevel scopeLevel) { return default(long); }
+        public virtual long GetScopeId(System.Net.NetworkInformation.ScopeLevel scopeLevel) { throw null; }
     }
     public abstract partial class MulticastIPAddressInformation : System.Net.NetworkInformation.IPAddressInformation
     {
@@ -252,16 +252,16 @@ namespace System.Net.NetworkInformation
     public partial class MulticastIPAddressInformationCollection : System.Collections.Generic.ICollection<System.Net.NetworkInformation.MulticastIPAddressInformation>, System.Collections.Generic.IEnumerable<System.Net.NetworkInformation.MulticastIPAddressInformation>, System.Collections.IEnumerable
     {
         protected internal MulticastIPAddressInformationCollection() { }
-        public virtual int Count { get { return default(int); } }
-        public virtual bool IsReadOnly { get { return default(bool); } }
-        public virtual System.Net.NetworkInformation.MulticastIPAddressInformation this[int index] { get { return default(System.Net.NetworkInformation.MulticastIPAddressInformation); } }
+        public virtual int Count { get { throw null; } }
+        public virtual bool IsReadOnly { get { throw null; } }
+        public virtual System.Net.NetworkInformation.MulticastIPAddressInformation this[int index] { get { throw null; } }
         public virtual void Add(System.Net.NetworkInformation.MulticastIPAddressInformation address) { }
         public virtual void Clear() { }
-        public virtual bool Contains(System.Net.NetworkInformation.MulticastIPAddressInformation address) { return default(bool); }
+        public virtual bool Contains(System.Net.NetworkInformation.MulticastIPAddressInformation address) { throw null; }
         public virtual void CopyTo(System.Net.NetworkInformation.MulticastIPAddressInformation[] array, int offset) { }
-        public virtual System.Collections.Generic.IEnumerator<System.Net.NetworkInformation.MulticastIPAddressInformation> GetEnumerator() { return default(System.Collections.Generic.IEnumerator<System.Net.NetworkInformation.MulticastIPAddressInformation>); }
-        public virtual bool Remove(System.Net.NetworkInformation.MulticastIPAddressInformation address) { return default(bool); }
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { return default(System.Collections.IEnumerator); }
+        public virtual System.Collections.Generic.IEnumerator<System.Net.NetworkInformation.MulticastIPAddressInformation> GetEnumerator() { throw null; }
+        public virtual bool Remove(System.Net.NetworkInformation.MulticastIPAddressInformation address) { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
     }
     public enum NetBiosNodeType
     {
@@ -297,23 +297,23 @@ namespace System.Net.NetworkInformation
     public abstract partial class NetworkInterface
     {
         protected NetworkInterface() { }
-        public virtual string Description { get { return default(string); } }
-        public virtual string Id { get { return default(string); } }
-        public static int IPv6LoopbackInterfaceIndex { get { return default(int); } }
-        public virtual bool IsReceiveOnly { get { return default(bool); } }
-        public static int LoopbackInterfaceIndex { get { return default(int); } }
-        public virtual string Name { get { return default(string); } }
-        public virtual System.Net.NetworkInformation.NetworkInterfaceType NetworkInterfaceType { get { return default(System.Net.NetworkInformation.NetworkInterfaceType); } }
-        public virtual System.Net.NetworkInformation.OperationalStatus OperationalStatus { get { return default(System.Net.NetworkInformation.OperationalStatus); } }
-        public virtual long Speed { get { return default(long); } }
-        public virtual bool SupportsMulticast { get { return default(bool); } }
-        public static System.Net.NetworkInformation.NetworkInterface[] GetAllNetworkInterfaces() { return default(System.Net.NetworkInformation.NetworkInterface[]); }
-        public virtual System.Net.NetworkInformation.IPInterfaceProperties GetIPProperties() { return default(System.Net.NetworkInformation.IPInterfaceProperties); }
-        public virtual System.Net.NetworkInformation.IPInterfaceStatistics GetIPStatistics() { return default(System.Net.NetworkInformation.IPInterfaceStatistics); }
+        public virtual string Description { get { throw null; } }
+        public virtual string Id { get { throw null; } }
+        public static int IPv6LoopbackInterfaceIndex { get { throw null; } }
+        public virtual bool IsReceiveOnly { get { throw null; } }
+        public static int LoopbackInterfaceIndex { get { throw null; } }
+        public virtual string Name { get { throw null; } }
+        public virtual System.Net.NetworkInformation.NetworkInterfaceType NetworkInterfaceType { get { throw null; } }
+        public virtual System.Net.NetworkInformation.OperationalStatus OperationalStatus { get { throw null; } }
+        public virtual long Speed { get { throw null; } }
+        public virtual bool SupportsMulticast { get { throw null; } }
+        public static System.Net.NetworkInformation.NetworkInterface[] GetAllNetworkInterfaces() { throw null; }
+        public virtual System.Net.NetworkInformation.IPInterfaceProperties GetIPProperties() { throw null; }
+        public virtual System.Net.NetworkInformation.IPInterfaceStatistics GetIPStatistics() { throw null; }
         public virtual System.Net.NetworkInformation.IPv4InterfaceStatistics GetIPv4Statistics() { throw null; }
-        public static bool GetIsNetworkAvailable() { return default(bool); }
-        public virtual System.Net.NetworkInformation.PhysicalAddress GetPhysicalAddress() { return default(System.Net.NetworkInformation.PhysicalAddress); }
-        public virtual bool Supports(System.Net.NetworkInformation.NetworkInterfaceComponent networkInterfaceComponent) { return default(bool); }
+        public static bool GetIsNetworkAvailable() { throw null; }
+        public virtual System.Net.NetworkInformation.PhysicalAddress GetPhysicalAddress() { throw null; }
+        public virtual bool Supports(System.Net.NetworkInformation.NetworkInterfaceComponent networkInterfaceComponent) { throw null; }
     }
     public enum NetworkInterfaceComponent
     {
@@ -365,11 +365,11 @@ namespace System.Net.NetworkInformation
     {
         public static readonly System.Net.NetworkInformation.PhysicalAddress None;
         public PhysicalAddress(byte[] address) { }
-        public override bool Equals(object comparand) { return default(bool); }
-        public byte[] GetAddressBytes() { return default(byte[]); }
-        public override int GetHashCode() { return default(int); }
-        public static System.Net.NetworkInformation.PhysicalAddress Parse(string address) { return default(System.Net.NetworkInformation.PhysicalAddress); }
-        public override string ToString() { return default(string); }
+        public override bool Equals(object comparand) { throw null; }
+        public byte[] GetAddressBytes() { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static System.Net.NetworkInformation.PhysicalAddress Parse(string address) { throw null; }
+        public override string ToString() { throw null; }
     }
     public enum PrefixOrigin
     {
@@ -457,22 +457,22 @@ namespace System.Net.NetworkInformation
         public abstract long DhcpLeaseLifetime { get; }
         public abstract System.Net.NetworkInformation.DuplicateAddressDetectionState DuplicateAddressDetectionState { get; }
         public abstract System.Net.IPAddress IPv4Mask { get; }
-        public virtual int PrefixLength { get { return default(int); } }
+        public virtual int PrefixLength { get { throw null; } }
         public abstract System.Net.NetworkInformation.PrefixOrigin PrefixOrigin { get; }
         public abstract System.Net.NetworkInformation.SuffixOrigin SuffixOrigin { get; }
     }
     public partial class UnicastIPAddressInformationCollection : System.Collections.Generic.ICollection<System.Net.NetworkInformation.UnicastIPAddressInformation>, System.Collections.Generic.IEnumerable<System.Net.NetworkInformation.UnicastIPAddressInformation>, System.Collections.IEnumerable
     {
         protected internal UnicastIPAddressInformationCollection() { }
-        public virtual int Count { get { return default(int); } }
-        public virtual bool IsReadOnly { get { return default(bool); } }
-        public virtual System.Net.NetworkInformation.UnicastIPAddressInformation this[int index] { get { return default(System.Net.NetworkInformation.UnicastIPAddressInformation); } }
+        public virtual int Count { get { throw null; } }
+        public virtual bool IsReadOnly { get { throw null; } }
+        public virtual System.Net.NetworkInformation.UnicastIPAddressInformation this[int index] { get { throw null; } }
         public virtual void Add(System.Net.NetworkInformation.UnicastIPAddressInformation address) { }
         public virtual void Clear() { }
-        public virtual bool Contains(System.Net.NetworkInformation.UnicastIPAddressInformation address) { return default(bool); }
+        public virtual bool Contains(System.Net.NetworkInformation.UnicastIPAddressInformation address) { throw null; }
         public virtual void CopyTo(System.Net.NetworkInformation.UnicastIPAddressInformation[] array, int offset) { }
-        public virtual System.Collections.Generic.IEnumerator<System.Net.NetworkInformation.UnicastIPAddressInformation> GetEnumerator() { return default(System.Collections.Generic.IEnumerator<System.Net.NetworkInformation.UnicastIPAddressInformation>); }
-        public virtual bool Remove(System.Net.NetworkInformation.UnicastIPAddressInformation address) { return default(bool); }
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { return default(System.Collections.IEnumerator); }
+        public virtual System.Collections.Generic.IEnumerator<System.Net.NetworkInformation.UnicastIPAddressInformation> GetEnumerator() { throw null; }
+        public virtual bool Remove(System.Net.NetworkInformation.UnicastIPAddressInformation address) { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
     }
 }

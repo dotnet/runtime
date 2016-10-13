@@ -12,11 +12,11 @@ namespace System.Transactions
         public CommittableTransaction() { }
         public CommittableTransaction(System.TimeSpan timeout) { }
         public CommittableTransaction(System.Transactions.TransactionOptions options) { }
-        object System.IAsyncResult.AsyncState { get { return default(object); } }
-        System.Threading.WaitHandle System.IAsyncResult.AsyncWaitHandle { get { return default(System.Threading.WaitHandle); } }
-        bool System.IAsyncResult.CompletedSynchronously { get { return default(bool); } }
-        bool System.IAsyncResult.IsCompleted { get { return default(bool); } }
-        public System.IAsyncResult BeginCommit(System.AsyncCallback asyncCallback, object asyncState) { return default(System.IAsyncResult); }
+        object System.IAsyncResult.AsyncState { get { throw null; } }
+        System.Threading.WaitHandle System.IAsyncResult.AsyncWaitHandle { get { throw null; } }
+        bool System.IAsyncResult.CompletedSynchronously { get { throw null; } }
+        bool System.IAsyncResult.IsCompleted { get { throw null; } }
+        public System.IAsyncResult BeginCommit(System.AsyncCallback asyncCallback, object asyncState) { throw null; }
         public void Commit() { }
         public void EndCommit(System.IAsyncResult ar) { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
@@ -98,7 +98,7 @@ namespace System.Transactions
         public void ForceRollback() { }
         public void ForceRollback(System.Exception e) { }
         public void Prepared() { }
-        public byte[] RecoveryInformation() { return default(byte[]); }
+        public byte[] RecoveryInformation() { throw null; }
     }
     public partial class SinglePhaseEnlistment : System.Transactions.Enlistment
     {
@@ -116,26 +116,26 @@ namespace System.Transactions
     public partial class Transaction : System.IDisposable, System.Runtime.Serialization.ISerializable
     {
         internal Transaction() { }
-        public static System.Transactions.Transaction Current { get { return default(System.Transactions.Transaction); } set { } }
-        public System.Transactions.IsolationLevel IsolationLevel { get { return default(System.Transactions.IsolationLevel); } }
+        public static System.Transactions.Transaction Current { get { throw null; } set { } }
+        public System.Transactions.IsolationLevel IsolationLevel { get { throw null; } }
         public System.Guid PromoterType { get; }
-        public System.Transactions.TransactionInformation TransactionInformation { get { return default(System.Transactions.TransactionInformation); } }
+        public System.Transactions.TransactionInformation TransactionInformation { get { throw null; } }
         public event System.Transactions.TransactionCompletedEventHandler TransactionCompleted { add { } remove { } }
-        public System.Transactions.Transaction Clone() { return default(System.Transactions.Transaction); }
-        public System.Transactions.DependentTransaction DependentClone(System.Transactions.DependentCloneOption cloneOption) { return default(System.Transactions.DependentTransaction); }
+        public System.Transactions.Transaction Clone() { throw null; }
+        public System.Transactions.DependentTransaction DependentClone(System.Transactions.DependentCloneOption cloneOption) { throw null; }
         public void Dispose() { }
-        public System.Transactions.Enlistment EnlistDurable(System.Guid resourceManagerIdentifier, System.Transactions.IEnlistmentNotification enlistmentNotification, System.Transactions.EnlistmentOptions enlistmentOptions) { return default(System.Transactions.Enlistment); }
-        public System.Transactions.Enlistment EnlistDurable(System.Guid resourceManagerIdentifier, System.Transactions.ISinglePhaseNotification singlePhaseNotification, System.Transactions.EnlistmentOptions enlistmentOptions) { return default(System.Transactions.Enlistment); }
-        public bool EnlistPromotableSinglePhase(System.Transactions.IPromotableSinglePhaseNotification promotableSinglePhaseNotification) { return default(bool); }
-        public bool EnlistPromotableSinglePhase(System.Transactions.IPromotableSinglePhaseNotification promotableSinglePhaseNotification, System.Guid promoterType) { return default(bool); }
-        public System.Transactions.Enlistment EnlistVolatile(System.Transactions.IEnlistmentNotification enlistmentNotification, System.Transactions.EnlistmentOptions enlistmentOptions) { return default(System.Transactions.Enlistment); }
-        public System.Transactions.Enlistment EnlistVolatile(System.Transactions.ISinglePhaseNotification singlePhaseNotification, System.Transactions.EnlistmentOptions enlistmentOptions) { return default(System.Transactions.Enlistment); }
-        public override bool Equals(object obj) { return default(bool); }
-        public override int GetHashCode() { return default(int); }
-        public byte[] GetPromotedToken() { return default(byte[]); }
-        public static bool operator ==(System.Transactions.Transaction x, System.Transactions.Transaction y) { return default(bool); }
-        public static bool operator !=(System.Transactions.Transaction x, System.Transactions.Transaction y) { return default(bool); }
-        public System.Transactions.Enlistment PromoteAndEnlistDurable(System.Guid resourceManagerIdentifier, System.Transactions.IPromotableSinglePhaseNotification promotableNotification, System.Transactions.ISinglePhaseNotification enlistmentNotification, System.Transactions.EnlistmentOptions enlistmentOptions) { return default(System.Transactions.Enlistment); }
+        public System.Transactions.Enlistment EnlistDurable(System.Guid resourceManagerIdentifier, System.Transactions.IEnlistmentNotification enlistmentNotification, System.Transactions.EnlistmentOptions enlistmentOptions) { throw null; }
+        public System.Transactions.Enlistment EnlistDurable(System.Guid resourceManagerIdentifier, System.Transactions.ISinglePhaseNotification singlePhaseNotification, System.Transactions.EnlistmentOptions enlistmentOptions) { throw null; }
+        public bool EnlistPromotableSinglePhase(System.Transactions.IPromotableSinglePhaseNotification promotableSinglePhaseNotification) { throw null; }
+        public bool EnlistPromotableSinglePhase(System.Transactions.IPromotableSinglePhaseNotification promotableSinglePhaseNotification, System.Guid promoterType) { throw null; }
+        public System.Transactions.Enlistment EnlistVolatile(System.Transactions.IEnlistmentNotification enlistmentNotification, System.Transactions.EnlistmentOptions enlistmentOptions) { throw null; }
+        public System.Transactions.Enlistment EnlistVolatile(System.Transactions.ISinglePhaseNotification singlePhaseNotification, System.Transactions.EnlistmentOptions enlistmentOptions) { throw null; }
+        public override bool Equals(object obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public byte[] GetPromotedToken() { throw null; }
+        public static bool operator ==(System.Transactions.Transaction x, System.Transactions.Transaction y) { throw null; }
+        public static bool operator !=(System.Transactions.Transaction x, System.Transactions.Transaction y) { throw null; }
+        public System.Transactions.Enlistment PromoteAndEnlistDurable(System.Guid resourceManagerIdentifier, System.Transactions.IPromotableSinglePhaseNotification promotableNotification, System.Transactions.ISinglePhaseNotification enlistmentNotification, System.Transactions.EnlistmentOptions enlistmentOptions) { throw null; }
         public void Rollback() { }
         public void Rollback(System.Exception e) { }
         public void SetDistributedTransactionIdentifier(System.Transactions.IPromotableSinglePhaseNotification promotableNotification, System.Guid distributedTransactionIdentifier) { }
@@ -152,7 +152,7 @@ namespace System.Transactions
     public partial class TransactionEventArgs : System.EventArgs
     {
         public TransactionEventArgs() { }
-        public System.Transactions.Transaction Transaction { get { return default(System.Transactions.Transaction); } }
+        public System.Transactions.Transaction Transaction { get { throw null; } }
     }
     public partial class TransactionException : System.Exception //System.SystemException  // TODO: Put back when available
     {
@@ -171,30 +171,30 @@ namespace System.Transactions
     public partial class TransactionInformation
     {
         internal TransactionInformation() { }
-        public System.DateTime CreationTime { get { return default(System.DateTime); } }
-        public System.Guid DistributedIdentifier { get { return default(System.Guid); } }
-        public string LocalIdentifier { get { return default(string); } }
-        public System.Transactions.TransactionStatus Status { get { return default(System.Transactions.TransactionStatus); } }
+        public System.DateTime CreationTime { get { throw null; } }
+        public System.Guid DistributedIdentifier { get { throw null; } }
+        public string LocalIdentifier { get { throw null; } }
+        public System.Transactions.TransactionStatus Status { get { throw null; } }
     }
     public static partial class TransactionInterop
     {
         public static readonly System.Guid PromoterTypeDtc;
-        public static System.Transactions.IDtcTransaction GetDtcTransaction(System.Transactions.Transaction transaction) { return default(System.Transactions.IDtcTransaction); }
-        public static byte[] GetExportCookie(System.Transactions.Transaction transaction, byte[] whereabouts) { return default(byte[]); }
-        public static System.Transactions.Transaction GetTransactionFromDtcTransaction(System.Transactions.IDtcTransaction transactionNative) { return default(System.Transactions.Transaction); }
-        public static System.Transactions.Transaction GetTransactionFromExportCookie(byte[] cookie) { return default(System.Transactions.Transaction); }
-        public static System.Transactions.Transaction GetTransactionFromTransmitterPropagationToken(byte[] propagationToken) { return default(System.Transactions.Transaction); }
-        public static byte[] GetTransmitterPropagationToken(System.Transactions.Transaction transaction) { return default(byte[]); }
-        public static byte[] GetWhereabouts() { return default(byte[]); }
+        public static System.Transactions.IDtcTransaction GetDtcTransaction(System.Transactions.Transaction transaction) { throw null; }
+        public static byte[] GetExportCookie(System.Transactions.Transaction transaction, byte[] whereabouts) { throw null; }
+        public static System.Transactions.Transaction GetTransactionFromDtcTransaction(System.Transactions.IDtcTransaction transactionNative) { throw null; }
+        public static System.Transactions.Transaction GetTransactionFromExportCookie(byte[] cookie) { throw null; }
+        public static System.Transactions.Transaction GetTransactionFromTransmitterPropagationToken(byte[] propagationToken) { throw null; }
+        public static byte[] GetTransmitterPropagationToken(System.Transactions.Transaction transaction) { throw null; }
+        public static byte[] GetWhereabouts() { throw null; }
     }
     public static partial class TransactionManager
     {
-        public static System.TimeSpan DefaultTimeout { get { return default(System.TimeSpan); } }
-        public static System.Transactions.HostCurrentTransactionCallback HostCurrentCallback { get { return default(System.Transactions.HostCurrentTransactionCallback); } set { } }
-        public static System.TimeSpan MaximumTimeout { get { return default(System.TimeSpan); } }
+        public static System.TimeSpan DefaultTimeout { get { throw null; } }
+        public static System.Transactions.HostCurrentTransactionCallback HostCurrentCallback { get { throw null; } set { } }
+        public static System.TimeSpan MaximumTimeout { get { throw null; } }
         public static event System.Transactions.TransactionStartedEventHandler DistributedTransactionStarted { add { } remove { } }
         public static void RecoveryComplete(System.Guid resourceManagerIdentifier) { }
-        public static System.Transactions.Enlistment Reenlist(System.Guid resourceManagerIdentifier, byte[] recoveryInformation, System.Transactions.IEnlistmentNotification enlistmentNotification) { return default(System.Transactions.Enlistment); }
+        public static System.Transactions.Enlistment Reenlist(System.Guid resourceManagerIdentifier, byte[] recoveryInformation, System.Transactions.IEnlistmentNotification enlistmentNotification) { throw null; }
     }
     public partial class TransactionManagerCommunicationException : System.Transactions.TransactionException
     {
@@ -206,12 +206,12 @@ namespace System.Transactions
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct TransactionOptions
     {
-        public System.Transactions.IsolationLevel IsolationLevel { get { return default(System.Transactions.IsolationLevel); } set { } }
-        public System.TimeSpan Timeout { get { return default(System.TimeSpan); } set { } }
-        public override bool Equals(object obj) { return default(bool); }
-        public override int GetHashCode() { return default(int); }
-        public static bool operator ==(System.Transactions.TransactionOptions o1, System.Transactions.TransactionOptions o2) { return default(bool); }
-        public static bool operator !=(System.Transactions.TransactionOptions o1, System.Transactions.TransactionOptions o2) { return default(bool); }
+        public System.Transactions.IsolationLevel IsolationLevel { get { throw null; } set { } }
+        public System.TimeSpan Timeout { get { throw null; } set { } }
+        public override bool Equals(object obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static bool operator ==(System.Transactions.TransactionOptions o1, System.Transactions.TransactionOptions o2) { throw null; }
+        public static bool operator !=(System.Transactions.TransactionOptions o1, System.Transactions.TransactionOptions o2) { throw null; }
     }
     public partial class TransactionPromotionException : System.Transactions.TransactionException
     {

@@ -16,12 +16,12 @@ namespace System.Threading
         public Timer(System.Threading.TimerCallback callback, object state, System.TimeSpan dueTime, System.TimeSpan period) { }
         [System.CLSCompliantAttribute(false)]
         public Timer(System.Threading.TimerCallback callback, object state, uint dueTime, uint period) { }
-        public bool Change(int dueTime, int period) { return default(bool); }
-        public bool Change(long dueTime, long period) { return default(bool); }
-        public bool Change(System.TimeSpan dueTime, System.TimeSpan period) { return default(bool); }
+        public bool Change(int dueTime, int period) { throw null; }
+        public bool Change(long dueTime, long period) { throw null; }
+        public bool Change(System.TimeSpan dueTime, System.TimeSpan period) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public bool Change(uint dueTime, uint period) { return default(bool); }
+        public bool Change(uint dueTime, uint period) { throw null; }
         public void Dispose() { }
-        public bool Dispose(System.Threading.WaitHandle notifyObject) { return default(bool); }
+        public bool Dispose(System.Threading.WaitHandle notifyObject) { throw null; }
     }
 }
