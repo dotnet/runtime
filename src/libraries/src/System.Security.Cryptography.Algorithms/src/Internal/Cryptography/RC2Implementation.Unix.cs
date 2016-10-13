@@ -3,16 +3,18 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.Security.Cryptography;
 
 namespace Internal.Cryptography
 {
-    partial class TripleDesImplementation
+    partial class RC2Implementation
     {
         private static ICryptoTransform CreateTransformCore(
             CipherMode cipherMode,
             PaddingMode paddingMode,
             byte[] key,
+            int effectiveKeyLength,
             byte[] iv,
             int blockSize,
             bool encrypting)
@@ -22,21 +24,17 @@ namespace Internal.Cryptography
             switch (cipherMode)
             {
                 case CipherMode.CBC:
-                    algorithm = Interop.Crypto.EvpDes3Cbc();
+                    algorithm = Interop.Crypto.EvpRC2Cbc();
                     break;
                 case CipherMode.ECB:
-                    algorithm = Interop.Crypto.EvpDes3Ecb();
+                    algorithm = Interop.Crypto.EvpRC2Ecb();
                     break;
                 default:
                     throw new NotSupportedException();
             }
 
-            BasicSymmetricCipher cipher = new OpenSslCipher(algorithm, cipherMode, blockSize, key, 0, iv, encrypting);
+            BasicSymmetricCipher cipher = new OpenSslCipher(algorithm, cipherMode, blockSize, key, effectiveKeyLength, iv, encrypting);
             return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
         }
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------    
     }
 }

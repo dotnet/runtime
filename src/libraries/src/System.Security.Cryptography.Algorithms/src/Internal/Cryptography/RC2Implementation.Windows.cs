@@ -7,24 +7,21 @@ using Internal.NativeCrypto;
 
 namespace Internal.Cryptography
 {
-    internal partial class AesImplementation
+    partial class RC2Implementation
     {
         private static ICryptoTransform CreateTransformCore(
             CipherMode cipherMode,
             PaddingMode paddingMode,
             byte[] key,
+            int effectiveKeyLength,
             byte[] iv,
             int blockSize,
             bool encrypting)
         {
-            SafeAlgorithmHandle algorithm = AesBCryptModes.GetSharedHandle(cipherMode);
+            SafeAlgorithmHandle algorithm = RC2BCryptModes.GetSharedHandle(cipherMode);
 
-            BasicSymmetricCipher cipher = new BasicSymmetricCipherBCrypt(algorithm, cipherMode, blockSize, key, 0, iv, encrypting);
+            BasicSymmetricCipher cipher = new BasicSymmetricCipherBCrypt(algorithm, cipherMode, blockSize, key, effectiveKeyLength, iv, encrypting);
             return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
         }
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
     }
 }

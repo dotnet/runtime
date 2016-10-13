@@ -18,6 +18,8 @@ Returns new EVP_CIPHER_CTX on success, nullptr on failure.
 extern "C" EVP_CIPHER_CTX*
 CryptoNative_EvpCipherCreate(const EVP_CIPHER* type, uint8_t* key, unsigned char* iv, int32_t enc);
 
+extern "C" EVP_CIPHER_CTX*
+CryptoNative_EvpCipherCreate2(const EVP_CIPHER* type, uint8_t* key, int32_t keyLength, int32_t effectiveKeyLength, unsigned char* iv, int32_t enc);
 /*
 Cleans up and deletes an EVP_CIPHER_CTX instance created by EvpCipherCreate.
 
@@ -127,3 +129,35 @@ EvpDes3Cbc
 Direct shim to EVP_des_ede3_cbc.
 */
 extern "C" const EVP_CIPHER* CryptoNative_EvpDes3Cbc();
+
+/*
+Function:
+EvpDesEcb
+
+Direct shim to EVP_des_ecb.
+*/
+extern "C" const EVP_CIPHER* CryptoNative_EvpDesEcb();
+
+/*
+Function:
+EvpDesCbc
+
+Direct shim to EVP_des_ede_cbc.
+*/
+extern "C" const EVP_CIPHER* CryptoNative_EvpDesCbc();
+
+/*
+Function:
+EvpRC2Ecb
+
+Direct shim to EVP_rc2_ecb.
+*/
+extern "C" const EVP_CIPHER* CryptoNative_EvpRC2Ecb();
+
+/*
+Function:
+EvpRC2Cbc
+
+Direct shim to EVP_des_rc2_cbc.
+*/
+extern "C" const EVP_CIPHER* CryptoNative_EvpRC2Cbc();

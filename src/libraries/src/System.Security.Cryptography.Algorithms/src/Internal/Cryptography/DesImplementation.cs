@@ -8,20 +8,10 @@ using System.Security.Cryptography;
 namespace Internal.Cryptography
 {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350")]
-    internal sealed partial class TripleDesImplementation : TripleDES
+    internal sealed partial class DesImplementation : DES
     {
         private const int BitsPerByte = 8;
         private static readonly RandomNumberGenerator s_rng = RandomNumberGenerator.Create();
-
-        public override KeySizes[] LegalKeySizes
-        {
-            get
-            {
-                // CNG does not support 128-bit keys.
-                // Only support 192-bit keys on all platforms for simplicity.
-                return new KeySizes[] { new KeySizes(minSize: 3 * 64, maxSize: 3 * 64, skipSize: 0) };
-            }
-        }
 
         public override ICryptoTransform CreateDecryptor()
         {
@@ -54,7 +44,12 @@ namespace Internal.Cryptography
         {
             byte[] key = new byte[KeySize / BitsPerByte];
             s_rng.GetBytes(key);
-            Key = key;
+            // Never hand back a weak or semi-weak key
+            while (IsWeakKey(key) || IsSemiWeakKey(key))
+            {
+                s_rng.GetBytes(key);
+            }
+            KeyValue = key;
         }
 
         private ICryptoTransform CreateTransform(byte[] rgbKey, byte[] rgbIV, bool encrypting)
@@ -67,6 +62,11 @@ namespace Internal.Cryptography
             long keySize = rgbKey.Length * (long)BitsPerByte;
             if (keySize > int.MaxValue || !((int)keySize).IsLegalSize(LegalKeySizes))
                 throw new ArgumentException(SR.Cryptography_InvalidKeySize, nameof(rgbKey));
+
+            if (IsWeakKey(rgbKey))
+                throw new CryptographicException(SR.Cryptography_InvalidKey_Weak, "DES");
+            if (IsSemiWeakKey(rgbKey))
+                throw new CryptographicException(SR.Cryptography_InvalidKey_SemiWeak, "DES");
 
             if (rgbIV != null)
             {

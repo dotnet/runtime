@@ -20,7 +20,7 @@ namespace Internal.Cryptography
             // The algorithm pointer is a static pointer, so not having any cleanup code is correct.
             IntPtr algorithm = GetAlgorithm(key.Length * 8, cipherMode);
 
-            BasicSymmetricCipher cipher = new OpenSslCipher(algorithm, cipherMode, blockSize, key, iv, encrypting);
+            BasicSymmetricCipher cipher = new OpenSslCipher(algorithm, cipherMode, blockSize, key, 0, iv, encrypting);
             return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
         }
 
