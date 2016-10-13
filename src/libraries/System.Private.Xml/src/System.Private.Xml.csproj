@@ -12,10 +12,6 @@
     <!--<DefineConstants Condition="'$(TargetGroup)' == 'uap101aot'">$(DefineConstants);NET_NATIVE</DefineConstants> TODO: Bring this back when uap101aot support is added -->
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
-  <ItemGroup>
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.CodeDom\ref\System.CodeDom.csproj" />
-  </ItemGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />

@@ -9,50 +9,50 @@ namespace System
     internal partial class XmlAppContextSwitches
     {
         private const string DontThrowOnInvalidSurrogatePairsName = "DontThrowOnInvalidSurrogatePairs";
-        private static int _dontThrowOnInvalidSurrogatePairs;
+        private static int s_dontThrowOnInvalidSurrogatePairs;
 
         public static bool DontThrowOnInvalidSurrogatePairs
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                return AppContextSwitches.GetCachedSwitchValue(DontThrowOnInvalidSurrogatePairsName, ref _dontThrowOnInvalidSurrogatePairs);
+                return AppContextSwitches.GetCachedSwitchValue(DontThrowOnInvalidSurrogatePairsName, ref s_dontThrowOnInvalidSurrogatePairs);
             }
         }
 
         private const string IgnoreEmptyKeySequencesName = "IgnoreEmptyKeySequencess";
-        private static int _ignoreEmptyKeySequences;
+        private static int s_ignoreEmptyKeySequences;
 
         public static bool IgnoreEmptyKeySequences
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                return AppContextSwitches.GetCachedSwitchValue(IgnoreEmptyKeySequencesName, ref _ignoreEmptyKeySequences);
+                return AppContextSwitches.GetCachedSwitchValue(IgnoreEmptyKeySequencesName, ref s_ignoreEmptyKeySequences);
             }
         }
 
         private const string IgnoreKindInUtcTimeSerializationName = "IgnoreKindInUtcTimeSerialization";
-        private static int _ignoreKindInUtcTimeSerialization;
+        private static int s_ignoreKindInUtcTimeSerialization;
 
         public static bool IgnoreKindInUtcTimeSerialization
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                return AppContextSwitches.GetCachedSwitchValue(IgnoreKindInUtcTimeSerializationName, ref _ignoreKindInUtcTimeSerialization);
+                return AppContextSwitches.GetCachedSwitchValue(IgnoreKindInUtcTimeSerializationName, ref s_ignoreKindInUtcTimeSerialization);
             }
         }
 
         private const string LimitXPathComplexityName = "LimitXPathComplexity";
-        private static int _limitXPathComplexity;
+        private static int s_limitXPathComplexity;
 
         public static bool LimitXPathComplexity
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                return AppContextSwitches.GetCachedSwitchValue(LimitXPathComplexityName, ref _limitXPathComplexity);
+                return AppContextSwitches.GetCachedSwitchValue(LimitXPathComplexityName, ref s_limitXPathComplexity);
             }
         }
     }
