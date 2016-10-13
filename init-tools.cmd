@@ -39,11 +39,11 @@ if NOT exist "%PROJECT_JSON_PATH%" mkdir "%PROJECT_JSON_PATH%"
 echo %PROJECT_JSON_CONTENTS% > "%PROJECT_JSON_FILE%"
 echo Running %0 > "%INIT_TOOLS_LOG%"
 
+set /p DOTNET_VERSION=< "%~dp0DotnetCLIVersion.txt"
 if exist "%DOTNET_CMD%" goto :afterdotnetrestore
 
 echo Installing dotnet cli...
 if NOT exist "%DOTNET_PATH%" mkdir "%DOTNET_PATH%"
-set /p DOTNET_VERSION=< "%~dp0DotnetCLIVersion.txt"
 if [%PROCESSOR_ARCHITECTURE%]==[x86] (set DOTNET_ZIP_NAME=dotnet-dev-win-x86.%DOTNET_VERSION%.zip) else (set DOTNET_ZIP_NAME=dotnet-dev-win-x64.%DOTNET_VERSION%.zip)
 set DOTNET_REMOTE_PATH=https://dotnetcli.blob.core.windows.net/dotnet/Sdk/%DOTNET_VERSION%/%DOTNET_ZIP_NAME%
 set DOTNET_LOCAL_PATH=%DOTNET_PATH%%DOTNET_ZIP_NAME%
@@ -72,6 +72,14 @@ if NOT exist "%BUILD_TOOLS_PATH%init-tools.cmd" (
 echo Initializing BuildTools ...
 echo Running: "%BUILD_TOOLS_PATH%init-tools.cmd" "%~dp0" "%DOTNET_CMD%" "%TOOLRUNTIME_DIR%" >> "%INIT_TOOLS_LOG%"
 call "%BUILD_TOOLS_PATH%init-tools.cmd" "%~dp0" "%DOTNET_CMD%" "%TOOLRUNTIME_DIR%" >> "%INIT_TOOLS_LOG%"
+
+echo Updating CLI NuGet Frameworks map...
+robocopy "%TOOLRUNTIME_DIR%" "%TOOLRUNTIME_DIR%\dotnetcli\sdk\%DOTNET_VERSION%" NuGet.Frameworks.dll /XO >> "%INIT_TOOLS_LOG%"
+set UPDATE_CLI_ERRORLEVEL=%ERRORLEVEL%
+if %UPDATE_CLI_ERRORLEVEL% GTR 1 (
+  echo ERROR: Failed to update Nuget for CLI {Error level %UPDATE_CLI_ERRORLEVEL%}. Please check '%INIT_TOOLS_LOG%' for more details. 1>&2
+  exit /b %UPDATE_CLI_ERRORLEVEL%
+)
 
 :: Create sempahore file
 echo Done initializing tools.
