@@ -10,18 +10,18 @@ namespace System.Security.Cryptography
     public sealed partial class CspKeyContainerInfo
     {
         public CspKeyContainerInfo(System.Security.Cryptography.CspParameters parameters) { }
-        public bool Accessible { get { return default(bool); } }
-        public bool Exportable { get { return default(bool); } }
-        public bool HardwareDevice { get { return default(bool); } }
-        public string KeyContainerName { get { return default(string); } }
-        public System.Security.Cryptography.KeyNumber KeyNumber { get { return default(System.Security.Cryptography.KeyNumber); } }
-        public bool MachineKeyStore { get { return default(bool); } }
-        public bool Protected { get { return default(bool); } }
-        public string ProviderName { get { return default(string); } }
-        public int ProviderType { get { return default(int); } }
-        public bool RandomlyGenerated { get { return default(bool); } }
-        public bool Removable { get { return default(bool); } }
-        public string UniqueKeyContainerName { get { return default(string); } }
+        public bool Accessible { get { throw null; } }
+        public bool Exportable { get { throw null; } }
+        public bool HardwareDevice { get { throw null; } }
+        public string KeyContainerName { get { throw null; } }
+        public System.Security.Cryptography.KeyNumber KeyNumber { get { throw null; } }
+        public bool MachineKeyStore { get { throw null; } }
+        public bool Protected { get { throw null; } }
+        public string ProviderName { get { throw null; } }
+        public int ProviderType { get { throw null; } }
+        public bool RandomlyGenerated { get { throw null; } }
+        public bool Removable { get { throw null; } }
+        public string UniqueKeyContainerName { get { throw null; } }
     }
     public sealed partial class CspParameters
     {
@@ -33,8 +33,8 @@ namespace System.Security.Cryptography
         public CspParameters(int dwTypeIn) { }
         public CspParameters(int dwTypeIn, string strProviderNameIn) { }
         public CspParameters(int dwTypeIn, string strProviderNameIn, string strContainerNameIn) { }
-        public System.Security.Cryptography.CspProviderFlags Flags { get { return default(System.Security.Cryptography.CspProviderFlags); } set { } }
-        public System.IntPtr ParentWindowHandle { get { return default(System.IntPtr); } set { } }
+        public System.Security.Cryptography.CspProviderFlags Flags { get { throw null; } set { } }
+        public System.IntPtr ParentWindowHandle { get { throw null; } set { } }
     }
     [System.FlagsAttribute]
     public enum CspProviderFlags
@@ -55,27 +55,27 @@ namespace System.Security.Cryptography
         public DSACryptoServiceProvider(int dwKeySize) { }
         public DSACryptoServiceProvider(int dwKeySize, System.Security.Cryptography.CspParameters parameters) { }
         public DSACryptoServiceProvider(System.Security.Cryptography.CspParameters parameters) { }
-        public System.Security.Cryptography.CspKeyContainerInfo CspKeyContainerInfo { get { return default(System.Security.Cryptography.CspKeyContainerInfo); } }
-        public override int KeySize { get { return default(int); } }
-        public override System.Security.Cryptography.KeySizes[] LegalKeySizes { get { return default(System.Security.Cryptography.KeySizes[]); } }
-        public bool PersistKeyInCsp { get { return default(bool); } set { } }
-        public bool PublicOnly { get { return default(bool); } }
-        public static bool UseMachineKeyStore { get { return default(bool); } set { } }
-        public override byte[] CreateSignature(byte[] rgbHash) { return default(byte[]); }
+        public System.Security.Cryptography.CspKeyContainerInfo CspKeyContainerInfo { get { throw null; } }
+        public override int KeySize { get { throw null; } }
+        public override System.Security.Cryptography.KeySizes[] LegalKeySizes { get { throw null; } }
+        public bool PersistKeyInCsp { get { throw null; } set { } }
+        public bool PublicOnly { get { throw null; } }
+        public static bool UseMachineKeyStore { get { throw null; } set { } }
+        public override byte[] CreateSignature(byte[] rgbHash) { throw null; }
         protected override void Dispose(bool disposing) { }
-        public byte[] ExportCspBlob(bool includePrivateParameters) { return default(byte[]); }
-        public override System.Security.Cryptography.DSAParameters ExportParameters(bool includePrivateParameters) { return default(System.Security.Cryptography.DSAParameters); }
-        protected override byte[] HashData(byte[] data, int offset, int count, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { return default(byte[]); }
-        protected override byte[] HashData(System.IO.Stream data, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { return default(byte[]); }
+        public byte[] ExportCspBlob(bool includePrivateParameters) { throw null; }
+        public override System.Security.Cryptography.DSAParameters ExportParameters(bool includePrivateParameters) { throw null; }
+        protected override byte[] HashData(byte[] data, int offset, int count, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
+        protected override byte[] HashData(System.IO.Stream data, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
         public void ImportCspBlob(byte[] keyBlob) { }
         public override void ImportParameters(System.Security.Cryptography.DSAParameters parameters) { }
-        public byte[] SignData(byte[] buffer) { return default(byte[]); }
-        public byte[] SignData(byte[] buffer, int offset, int count) { return default(byte[]); }
-        public byte[] SignData(System.IO.Stream inputStream) { return default(byte[]); }
-        public byte[] SignHash(byte[] rgbHash, string str) { return default(byte[]); }
-        public bool VerifyData(byte[] rgbData, byte[] rgbSignature) { return default(bool); }
-        public bool VerifyHash(byte[] rgbHash, string str, byte[] rgbSignature) { return default(bool); }
-        public override bool VerifySignature(byte[] rgbHash, byte[] rgbSignature) { return default(bool); }
+        public byte[] SignData(byte[] buffer) { throw null; }
+        public byte[] SignData(byte[] buffer, int offset, int count) { throw null; }
+        public byte[] SignData(System.IO.Stream inputStream) { throw null; }
+        public byte[] SignHash(byte[] rgbHash, string str) { throw null; }
+        public bool VerifyData(byte[] rgbData, byte[] rgbSignature) { throw null; }
+        public bool VerifyHash(byte[] rgbHash, string str, byte[] rgbSignature) { throw null; }
+        public override bool VerifySignature(byte[] rgbHash, byte[] rgbSignature) { throw null; }
     }
     public partial interface ICspAsymmetricAlgorithm
     {
@@ -94,30 +94,30 @@ namespace System.Security.Cryptography
         public RSACryptoServiceProvider(int dwKeySize) { }
         public RSACryptoServiceProvider(int dwKeySize, System.Security.Cryptography.CspParameters parameters) { }
         public RSACryptoServiceProvider(System.Security.Cryptography.CspParameters parameters) { }
-        public System.Security.Cryptography.CspKeyContainerInfo CspKeyContainerInfo { get { return default(System.Security.Cryptography.CspKeyContainerInfo); } }
-        public override int KeySize { get { return default(int); } }
-        public override System.Security.Cryptography.KeySizes[] LegalKeySizes { get { return default(System.Security.Cryptography.KeySizes[]); } }
-        public bool PersistKeyInCsp { get { return default(bool); } set { } }
-        public bool PublicOnly { get { return default(bool); } }
-        public static bool UseMachineKeyStore { get { return default(bool); } set { } }
-        public byte[] Decrypt(byte[] rgb, bool fOAEP) { return default(byte[]); }
-        public override byte[] Decrypt(byte[] data, System.Security.Cryptography.RSAEncryptionPadding padding) { return default(byte[]); }
+        public System.Security.Cryptography.CspKeyContainerInfo CspKeyContainerInfo { get { throw null; } }
+        public override int KeySize { get { throw null; } }
+        public override System.Security.Cryptography.KeySizes[] LegalKeySizes { get { throw null; } }
+        public bool PersistKeyInCsp { get { throw null; } set { } }
+        public bool PublicOnly { get { throw null; } }
+        public static bool UseMachineKeyStore { get { throw null; } set { } }
+        public byte[] Decrypt(byte[] rgb, bool fOAEP) { throw null; }
+        public override byte[] Decrypt(byte[] data, System.Security.Cryptography.RSAEncryptionPadding padding) { throw null; }
         protected override void Dispose(bool disposing) { }
-        public byte[] Encrypt(byte[] rgb, bool fOAEP) { return default(byte[]); }
-        public override byte[] Encrypt(byte[] data, System.Security.Cryptography.RSAEncryptionPadding padding) { return default(byte[]); }
-        public byte[] ExportCspBlob(bool includePrivateParameters) { return default(byte[]); }
-        public override System.Security.Cryptography.RSAParameters ExportParameters(bool includePrivateParameters) { return default(System.Security.Cryptography.RSAParameters); }
-        protected override byte[] HashData(byte[] data, int offset, int count, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { return default(byte[]); }
-        protected override byte[] HashData(System.IO.Stream data, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { return default(byte[]); }
+        public byte[] Encrypt(byte[] rgb, bool fOAEP) { throw null; }
+        public override byte[] Encrypt(byte[] data, System.Security.Cryptography.RSAEncryptionPadding padding) { throw null; }
+        public byte[] ExportCspBlob(bool includePrivateParameters) { throw null; }
+        public override System.Security.Cryptography.RSAParameters ExportParameters(bool includePrivateParameters) { throw null; }
+        protected override byte[] HashData(byte[] data, int offset, int count, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
+        protected override byte[] HashData(System.IO.Stream data, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
         public void ImportCspBlob(byte[] keyBlob) { }
         public override void ImportParameters(System.Security.Cryptography.RSAParameters parameters) { }
-        public byte[] SignData(byte[] buffer, int offset, int count, object halg) { return default(byte[]); }
-        public byte[] SignData(byte[] buffer, object halg) { return default(byte[]); }
-        public byte[] SignData(System.IO.Stream inputStream, object halg) { return default(byte[]); }
-        public override byte[] SignHash(byte[] hash, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.RSASignaturePadding padding) { return default(byte[]); }
-        public byte[] SignHash(byte[] rgbHash, string str) { return default(byte[]); }
-        public bool VerifyData(byte[] buffer, object halg, byte[] signature) { return default(bool); }
-        public override bool VerifyHash(byte[] hash, byte[] signature, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.RSASignaturePadding padding) { return default(bool); }
-        public bool VerifyHash(byte[] rgbHash, string str, byte[] rgbSignature) { return default(bool); }
+        public byte[] SignData(byte[] buffer, int offset, int count, object halg) { throw null; }
+        public byte[] SignData(byte[] buffer, object halg) { throw null; }
+        public byte[] SignData(System.IO.Stream inputStream, object halg) { throw null; }
+        public override byte[] SignHash(byte[] hash, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.RSASignaturePadding padding) { throw null; }
+        public byte[] SignHash(byte[] rgbHash, string str) { throw null; }
+        public bool VerifyData(byte[] buffer, object halg, byte[] signature) { throw null; }
+        public override bool VerifyHash(byte[] hash, byte[] signature, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.RSASignaturePadding padding) { throw null; }
+        public bool VerifyHash(byte[] rgbHash, string str, byte[] rgbSignature) { throw null; }
     }
 }

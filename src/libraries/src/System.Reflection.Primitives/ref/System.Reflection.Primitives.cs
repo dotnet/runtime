@@ -32,20 +32,20 @@ namespace System.Reflection.Emit
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct OpCode
     {
-        public System.Reflection.Emit.FlowControl FlowControl { get { return default(System.Reflection.Emit.FlowControl); } }
-        public string Name { get { return default(string); } }
-        public System.Reflection.Emit.OpCodeType OpCodeType { get { return default(System.Reflection.Emit.OpCodeType); } }
-        public System.Reflection.Emit.OperandType OperandType { get { return default(System.Reflection.Emit.OperandType); } }
-        public int Size { get { return default(int); } }
-        public System.Reflection.Emit.StackBehaviour StackBehaviourPop { get { return default(System.Reflection.Emit.StackBehaviour); } }
-        public System.Reflection.Emit.StackBehaviour StackBehaviourPush { get { return default(System.Reflection.Emit.StackBehaviour); } }
-        public short Value { get { return default(short); } }
-        public override bool Equals(object obj) { return default(bool); }
-        public bool Equals(System.Reflection.Emit.OpCode obj) { return default(bool); }
-        public override int GetHashCode() { return default(int); }
-        public static bool operator ==(System.Reflection.Emit.OpCode a, System.Reflection.Emit.OpCode b) { return default(bool); }
-        public static bool operator !=(System.Reflection.Emit.OpCode a, System.Reflection.Emit.OpCode b) { return default(bool); }
-        public override string ToString() { return default(string); }
+        public System.Reflection.Emit.FlowControl FlowControl { get { throw null; } }
+        public string Name { get { throw null; } }
+        public System.Reflection.Emit.OpCodeType OpCodeType { get { throw null; } }
+        public System.Reflection.Emit.OperandType OperandType { get { throw null; } }
+        public int Size { get { throw null; } }
+        public System.Reflection.Emit.StackBehaviour StackBehaviourPop { get { throw null; } }
+        public System.Reflection.Emit.StackBehaviour StackBehaviourPush { get { throw null; } }
+        public short Value { get { throw null; } }
+        public override bool Equals(object obj) { throw null; }
+        public bool Equals(System.Reflection.Emit.OpCode obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static bool operator ==(System.Reflection.Emit.OpCode a, System.Reflection.Emit.OpCode b) { throw null; }
+        public static bool operator !=(System.Reflection.Emit.OpCode a, System.Reflection.Emit.OpCode b) { throw null; }
+        public override string ToString() { throw null; }
     }
     public partial class OpCodes
     {
@@ -276,7 +276,7 @@ namespace System.Reflection.Emit
         public static readonly System.Reflection.Emit.OpCode Unbox_Any;
         public static readonly System.Reflection.Emit.OpCode Volatile;
         public static readonly System.Reflection.Emit.OpCode Xor;
-        public static bool TakesSingleByteArgument(System.Reflection.Emit.OpCode inst) { return default(bool); }
+        public static bool TakesSingleByteArgument(System.Reflection.Emit.OpCode inst) { throw null; }
     }
     public enum OpCodeType
     {

@@ -9,8 +9,8 @@ namespace System.Net
 {
     public partial class WebHeaderCollection : System.Collections.IEnumerable
     {
-        public string this[string name] { get { return default(string); } set { } }
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { return default(System.Collections.IEnumerator); }
+        public string this[string name] { get { throw null; } set { } }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         public void Remove(string name) { }
     }
 }

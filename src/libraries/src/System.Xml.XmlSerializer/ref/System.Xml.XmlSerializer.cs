@@ -475,13 +475,13 @@ namespace System.Xml.Serialization
         protected bool ReadNull() { throw null; }
         protected System.Xml.XmlQualifiedName ReadNullableQualifiedName() { throw null; }
         protected string ReadNullableString() { throw null; }
-        protected bool ReadReference(out string fixupReference) { fixupReference = default(string); throw null; }
+        protected bool ReadReference(out string fixupReference) { throw null; }
         protected object ReadReferencedElement() { throw null; }
         protected object ReadReferencedElement(string name, string ns) { throw null; }
         protected void ReadReferencedElements() { }
-        protected object ReadReferencingElement(string name, string ns, bool elementCanBeType, out string fixupReference) { fixupReference = default(string); throw null; }
-        protected object ReadReferencingElement(string name, string ns, out string fixupReference) { fixupReference = default(string); throw null; }
-        protected object ReadReferencingElement(out string fixupReference) { fixupReference = default(string); throw null; }
+        protected object ReadReferencingElement(string name, string ns, bool elementCanBeType, out string fixupReference) { throw null; }
+        protected object ReadReferencingElement(string name, string ns, out string fixupReference) { throw null; }
+        protected object ReadReferencingElement(out string fixupReference) { throw null; }
         protected System.Xml.Serialization.IXmlSerializable ReadSerializable(System.Xml.Serialization.IXmlSerializable serializable) { throw null; }
         protected System.Xml.Serialization.IXmlSerializable ReadSerializable(System.Xml.Serialization.IXmlSerializable serializable, bool wrappedAny) { throw null; }
         protected string ReadString(string value) { throw null; }

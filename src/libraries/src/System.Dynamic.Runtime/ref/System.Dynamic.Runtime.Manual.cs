@@ -12,6 +12,6 @@ namespace System.Linq.Expressions
     public partial class DynamicExpressionVisitor
     {
         // Member is excluded in the base so it is automatically excluded for this type without any way to override that behavior
-        protected virtual Expression VisitDynamic(DynamicExpression node) { return default(Expression); }
+        protected virtual Expression VisitDynamic(DynamicExpression node) { throw null; }
     }
 }

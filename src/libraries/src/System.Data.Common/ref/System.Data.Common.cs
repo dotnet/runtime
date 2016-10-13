@@ -69,13 +69,7 @@ namespace System.Data
         internal ConstraintCollection() { }
         public System.Data.Constraint this[int index] { get { throw null; } }
         public System.Data.Constraint this[string name] { get { throw null; } }
-        protected override System.Collections.ArrayList List
-        {
-            get
-            {
-                throw null;
-            }
-        }
+        protected override System.Collections.ArrayList List { get { throw null; } }
         public event System.ComponentModel.CollectionChangeEventHandler CollectionChanged { add { } remove { } }
         public void Add(System.Data.Constraint constraint) { }
         public System.Data.Constraint Add(string name, System.Data.DataColumn column, bool primaryKey) { throw null; }
@@ -1876,7 +1870,7 @@ namespace System.Data.Common
         System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties(System.Attribute[] attributes) { throw null; }
         object System.ComponentModel.ICustomTypeDescriptor.GetPropertyOwner(System.ComponentModel.PropertyDescriptor pd) { throw null; }
         public override string ToString() { throw null; }
-        public virtual bool TryGetValue(string keyword, out object value) { value = default(object); throw null; }
+        public virtual bool TryGetValue(string keyword, out object value) { throw null; }
     }
     public abstract partial class DbDataAdapter : System.Data.Common.DataAdapter, System.Data.IDataAdapter, System.Data.IDbDataAdapter, System.ICloneable
     {
@@ -1922,7 +1916,7 @@ namespace System.Data.Common
         public System.Data.DataTable FillSchema(System.Data.DataTable dataTable, System.Data.SchemaType schemaType) { throw null; }
         protected virtual System.Data.DataTable FillSchema(System.Data.DataTable dataTable, System.Data.SchemaType schemaType, System.Data.IDbCommand command, System.Data.CommandBehavior behavior) { throw null; }
         protected virtual System.Data.IDataParameter GetBatchedParameter(int commandIdentifier, int parameterIndex) { throw null; }
-        protected virtual bool GetBatchedRecordsAffected(int commandIdentifier, out int recordsAffected, out System.Exception error) { recordsAffected = default(int); error = default(System.Exception); throw null; }
+        protected virtual bool GetBatchedRecordsAffected(int commandIdentifier, out int recordsAffected, out System.Exception error) { throw null; }
         [System.ComponentModel.EditorBrowsable((System.ComponentModel.EditorBrowsableState)2)]
         public override System.Data.IDataParameter[] GetFillParameters() { throw null; }
         protected virtual void InitializeBatching() { }
@@ -1985,10 +1979,7 @@ namespace System.Data.Common
         public virtual System.Data.DataTable GetSchemaTable() { throw null; }
         public virtual System.IO.Stream GetStream(int ordinal) { throw null; }
         public abstract string GetString(int ordinal);
-        public virtual System.IO.TextReader GetTextReader(int ordinal)
-        {
-            throw null;
-        }
+        public virtual System.IO.TextReader GetTextReader(int ordinal) { throw null; }
         public abstract object GetValue(int ordinal);
         public abstract int GetValues(object[] values);
         public abstract bool IsDBNull(int ordinal);

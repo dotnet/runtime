@@ -11,34 +11,34 @@ namespace System.Diagnostics
     public sealed partial class FileVersionInfo
     {
         internal FileVersionInfo() { }
-        public string Comments { get { return default(string); } }
-        public string CompanyName { get { return default(string); } }
-        public int FileBuildPart { get { return default(int); } }
-        public string FileDescription { get { return default(string); } }
-        public int FileMajorPart { get { return default(int); } }
-        public int FileMinorPart { get { return default(int); } }
-        public string FileName { get { return default(string); } }
-        public int FilePrivatePart { get { return default(int); } }
-        public string FileVersion { get { return default(string); } }
-        public string InternalName { get { return default(string); } }
-        public bool IsDebug { get { return default(bool); } }
-        public bool IsPatched { get { return default(bool); } }
-        public bool IsPreRelease { get { return default(bool); } }
-        public bool IsPrivateBuild { get { return default(bool); } }
-        public bool IsSpecialBuild { get { return default(bool); } }
-        public string Language { get { return default(string); } }
-        public string LegalCopyright { get { return default(string); } }
-        public string LegalTrademarks { get { return default(string); } }
-        public string OriginalFilename { get { return default(string); } }
-        public string PrivateBuild { get { return default(string); } }
-        public int ProductBuildPart { get { return default(int); } }
-        public int ProductMajorPart { get { return default(int); } }
-        public int ProductMinorPart { get { return default(int); } }
-        public string ProductName { get { return default(string); } }
-        public int ProductPrivatePart { get { return default(int); } }
-        public string ProductVersion { get { return default(string); } }
-        public string SpecialBuild { get { return default(string); } }
-        public static System.Diagnostics.FileVersionInfo GetVersionInfo(string fileName) { return default(System.Diagnostics.FileVersionInfo); }
-        public override string ToString() { return default(string); }
+        public string Comments { get { throw null; } }
+        public string CompanyName { get { throw null; } }
+        public int FileBuildPart { get { throw null; } }
+        public string FileDescription { get { throw null; } }
+        public int FileMajorPart { get { throw null; } }
+        public int FileMinorPart { get { throw null; } }
+        public string FileName { get { throw null; } }
+        public int FilePrivatePart { get { throw null; } }
+        public string FileVersion { get { throw null; } }
+        public string InternalName { get { throw null; } }
+        public bool IsDebug { get { throw null; } }
+        public bool IsPatched { get { throw null; } }
+        public bool IsPreRelease { get { throw null; } }
+        public bool IsPrivateBuild { get { throw null; } }
+        public bool IsSpecialBuild { get { throw null; } }
+        public string Language { get { throw null; } }
+        public string LegalCopyright { get { throw null; } }
+        public string LegalTrademarks { get { throw null; } }
+        public string OriginalFilename { get { throw null; } }
+        public string PrivateBuild { get { throw null; } }
+        public int ProductBuildPart { get { throw null; } }
+        public int ProductMajorPart { get { throw null; } }
+        public int ProductMinorPart { get { throw null; } }
+        public string ProductName { get { throw null; } }
+        public int ProductPrivatePart { get { throw null; } }
+        public string ProductVersion { get { throw null; } }
+        public string SpecialBuild { get { throw null; } }
+        public static System.Diagnostics.FileVersionInfo GetVersionInfo(string fileName) { throw null; }
+        public override string ToString() { throw null; }
     }
 }

@@ -11,10 +11,10 @@ namespace System.Security.AccessControl
     // base type and replaced it with this.
     public sealed partial class AuthorizationRuleCollection : System.Collections.ICollection, System.Collections.IEnumerable
     {
-        public int Count { get { return default(int); } }
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { return default(System.Collections.IEnumerator); }
-        bool System.Collections.ICollection.IsSynchronized { get { return default(bool); } }
-        object System.Collections.ICollection.SyncRoot { get { return default(object); } }
+        public int Count { get { throw null; } }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
+        object System.Collections.ICollection.SyncRoot { get { throw null; } }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
     }
 }

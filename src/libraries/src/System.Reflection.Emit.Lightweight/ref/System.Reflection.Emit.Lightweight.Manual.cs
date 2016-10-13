@@ -10,6 +10,6 @@ namespace System.Reflection.Emit
 {
     public partial class DynamicMethod : System.Reflection.MethodInfo
     {
-        public override MethodImplAttributes MethodImplementationFlags { get { return default(MethodImplAttributes); } }
+        public override MethodImplAttributes MethodImplementationFlags { get { throw null; } }
     }
 }
