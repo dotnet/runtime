@@ -4762,6 +4762,21 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
     {
         compInlineResult->Note(InlineObservation::CALLEE_END_OPCODE_SCAN);
 
+        if (!compInlineResult->UsesLegacyPolicy())
+        {
+            // If there are no return blocks we know it does not return, however if there
+            // return blocks we don't know it returns as it may be counting unreachable code.
+            // However we will still make the CALLEE_DOES_NOT_RETURN observation.
+
+            compInlineResult->NoteBool(InlineObservation::CALLEE_DOES_NOT_RETURN, retBlocks == 0);
+
+            if (retBlocks == 0 && isInlining)
+            {
+                // Mark the call node as "no return" as it can impact caller's code quality.
+                impInlineInfo->iciCall->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
+            }
+        }
+
         // If the inline is viable and discretionary, do the
         // profitability screening.
         if (compInlineResult->IsDiscretionaryCandidate())
@@ -4776,19 +4791,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
 
             if (isInlining)
             {
-                if (retBlocks == 0)
-                {
-                    // If there are no return blocks we know it does not return, however if there
-                    // return blocks we don't know it returns as it may be counting unreachable code.
-                    // So only make the CALLEE_DOES_NOT_RETURN observations if no returns.
-
-                    if (!compInlineResult->UsesLegacyPolicy())
-                    {
-                        // Mark the call node as "no return" as it can impact caller's code quality.
-                        impInlineInfo->iciCall->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
-                    }
-                }
-
                 // Assess profitability...
                 CORINFO_METHOD_INFO* methodInfo = &impInlineInfo->inlineCandidateInfo->methInfo;
                 compInlineResult->DetermineProfitability(methodInfo);
@@ -5753,26 +5755,10 @@ void Compiler::fgFindBasicBlocks()
 
     if (compIsForInlining())
     {
-        if (compInlineResult->IsFailure())
-        {
-            return;
-        }
-
         // If fgFindJumpTargets marked this as "no return"  there really should be no BBJ_RETURN blocks in the method
-        assert(retBlocks == 0 || ((impInlineInfo->iciCall->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) == 0));
-
-        if (retBlocks == 0 && !compInlineResult->UsesLegacyPolicy())
-        {
-            //
-            // Mark the call node as "no return". The inliner might ignore CALLEE_DOES_NOT_RETURN and
-            // fail inline for a different reasons. In that case we still want to make the "no return"
-            // information available to the caller as it can impact caller's code quality.
-            //
-
-            impInlineInfo->iciCall->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
-        }
-
-        compInlineResult->NoteBool(InlineObservation::CALLEE_DOES_NOT_RETURN, retBlocks == 0);
+        assert((retBlocks == 0 && ((impInlineInfo->iciCall->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) ==
+                                   GTF_CALL_M_DOES_NOT_RETURN)) ||
+               (retBlocks >= 1 && ((impInlineInfo->iciCall->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) == 0)));
 
         if (compInlineResult->IsFailure())
         {
