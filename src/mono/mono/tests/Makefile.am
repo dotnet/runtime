@@ -1137,31 +1137,31 @@ SGEN_REGULAR_TESTS= \
 endif
 
 sgen-regular-tests: $(SGEN_REGULAR_TESTS)
-	$(MAKE) sgen-regular-tests-plain
+	$(MAKE) sgen-regular-tests-ms
 	$(MAKE) sgen-regular-tests-ms-conc
 	$(MAKE) sgen-regular-tests-ms-conc-split
 	$(MAKE) sgen-regular-tests-ms-split
-	$(MAKE) sgen-regular-tests-ms-split-95
-	$(MAKE) sgen-regular-tests-plain-clear-at-gc
+	$(MAKE) sgen-regular-tests-ms-conc-split-95
+	$(MAKE) sgen-regular-tests-ms-clear-at-gc
 	$(MAKE) sgen-regular-tests-ms-conc-clear-at-gc
-	$(MAKE) sgen-regular-tests-ms-split-clear-at-gc
+	$(MAKE) sgen-regular-tests-ms-conc-split-clear-at-gc
 
-sgen-regular-tests-plain: $(SGEN_REGULAR_TESTS) test-runner.exe
-	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="" MONO_GC_PARAMS="" $(RUNTIME) $(TEST_RUNNER) $(TEST_RUNNER_ARGS) --testsuite-name $@ --timeout 900 $(SGEN_REGULAR_TESTS)
+sgen-regular-tests-ms: $(SGEN_REGULAR_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="" MONO_GC_PARAMS="major=marksweep" $(RUNTIME) $(TEST_RUNNER) $(TEST_RUNNER_ARGS) --testsuite-name $@ --timeout 900 $(SGEN_REGULAR_TESTS)
 sgen-regular-tests-ms-conc: $(SGEN_REGULAR_TESTS) test-runner.exe
 	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="" MONO_GC_PARAMS="major=marksweep-conc" $(RUNTIME) $(TEST_RUNNER) $(TEST_RUNNER_ARGS) --testsuite-name $@ --timeout 900 $(SGEN_REGULAR_TESTS)
 sgen-regular-tests-ms-conc-split: $(SGEN_REGULAR_TESTS) test-runner.exe
 	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="" MONO_GC_PARAMS="major=marksweep-conc,minor=split" $(RUNTIME) $(TEST_RUNNER) $(TEST_RUNNER_ARGS) --testsuite-name $@ --timeout 900 $(SGEN_REGULAR_TESTS)
 sgen-regular-tests-ms-split: $(SGEN_REGULAR_TESTS) test-runner.exe
-	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="" MONO_GC_PARAMS="minor=split" $(RUNTIME) $(TEST_RUNNER) $(TEST_RUNNER_ARGS) --testsuite-name $@ --timeout 900 $(SGEN_REGULAR_TESTS)
-sgen-regular-tests-ms-split-95: $(SGEN_REGULAR_TESTS) test-runner.exe
-	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="" MONO_GC_PARAMS="minor=split,alloc-ratio=95" $(RUNTIME) $(TEST_RUNNER) $(TEST_RUNNER_ARGS) --testsuite-name $@ --timeout 900 $(SGEN_REGULAR_TESTS)
-sgen-regular-tests-plain-clear-at-gc: $(SGEN_REGULAR_TESTS) test-runner.exe
-	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="clear-at-gc" MONO_GC_PARAMS="" $(RUNTIME) $(TEST_RUNNER) $(TEST_RUNNER_ARGS) --testsuite-name $@ --timeout 900 $(SGEN_REGULAR_TESTS)
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="" MONO_GC_PARAMS="major=marksweep,minor=split" $(RUNTIME) $(TEST_RUNNER) $(TEST_RUNNER_ARGS) --testsuite-name $@ --timeout 900 $(SGEN_REGULAR_TESTS)
+sgen-regular-tests-ms-conc-split-95: $(SGEN_REGULAR_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="" MONO_GC_PARAMS="major=marksweep-conc,minor=split,alloc-ratio=95" $(RUNTIME) $(TEST_RUNNER) $(TEST_RUNNER_ARGS) --testsuite-name $@ --timeout 900 $(SGEN_REGULAR_TESTS)
+sgen-regular-tests-ms-clear-at-gc: $(SGEN_REGULAR_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="clear-at-gc" MONO_GC_PARAMS="major=marksweep" $(RUNTIME) $(TEST_RUNNER) $(TEST_RUNNER_ARGS) --testsuite-name $@ --timeout 900 $(SGEN_REGULAR_TESTS)
 sgen-regular-tests-ms-conc-clear-at-gc: $(SGEN_REGULAR_TESTS) test-runner.exe
 	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="clear-at-gc" MONO_GC_PARAMS="major=marksweep-conc" $(RUNTIME) $(TEST_RUNNER) $(TEST_RUNNER_ARGS) --testsuite-name $@ --timeout 900 $(SGEN_REGULAR_TESTS)
-sgen-regular-tests-ms-split-clear-at-gc: $(SGEN_REGULAR_TESTS) test-runner.exe
-	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="clear-at-gc" MONO_GC_PARAMS="minor=split" $(RUNTIME) $(TEST_RUNNER) $(TEST_RUNNER_ARGS) --testsuite-name $@ --timeout 900 $(SGEN_REGULAR_TESTS)
+sgen-regular-tests-ms-conc-split-clear-at-gc: $(SGEN_REGULAR_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="clear-at-gc" MONO_GC_PARAMS="major=marksweep-conc,minor=split" $(RUNTIME) $(TEST_RUNNER) $(TEST_RUNNER_ARGS) --testsuite-name $@ --timeout 900 $(SGEN_REGULAR_TESTS)
 
 SGEN_TOGGLEREF_TESTS=	\
 	sgen-toggleref.exe

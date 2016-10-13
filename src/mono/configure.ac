@@ -117,6 +117,7 @@ case "$host" in
 		libgc_threads=win32
 		with_sigaltstack=no
 		with_tls=pthread
+		with_sgen_default_concurrent=yes
 		LN_S=cp
 		# This forces libgc to use the DllMain based thread registration code on win32
 		libgc_configure_args="$libgc_configure_args --enable-win32-dllmain=yes"
@@ -132,6 +133,7 @@ case "$host" in
 		libgc_threads=pthreads
 		with_sigaltstack=no
 		use_sigposix=yes
+		with_sgen_default_concurrent=yes
 		;;
 	*-*-kfreebsd*-gnu)
 		CPPFLAGS="$CPPFLAGS -DGC_FREEBSD_THREADS -D_GNU_SOURCE -D_REENTRANT -DUSE_MMAP -DUSE_MUNMAP -DTHREAD_LOCAL_ALLOC -pthread"
@@ -142,6 +144,7 @@ case "$host" in
 		need_link_unlink=yes
 		with_sigaltstack=no
 		use_sigposix=yes
+		with_sgen_default_concurrent=yes
 		;;
 	*-*-*freebsd*)
 		if test "x$PTHREAD_CFLAGS" = "x"; then
@@ -165,6 +168,7 @@ case "$host" in
 		libgc_threads=pthreads
 		use_sigposix=yes
 		has_dtrace=yes
+		with_sgen_default_concurrent=yes
 		;;
 	*-*-*openbsd*)
 		CPPFLAGS="$CPPFLAGS -D_THREAD_SAFE -DGC_OPENBSD_THREADS -DPLATFORM_BSD -D_REENTRANT -DUSE_MMAP"
@@ -179,6 +183,7 @@ case "$host" in
 		libgc_threads=pthreads
 		with_sigaltstack=no
 		use_sigposix=yes
+		with_sgen_default_concurrent=yes
 		;;
 	*-*-linux-android*)
 		platform_android=yes
@@ -242,6 +247,7 @@ case "$host" in
 			disable_munmap=yes
 			;;
 		esac
+		with_sgen_default_concurrent=yes
 		;;
 	*-*-nacl*)
 		CPPFLAGS="$CPPFLAGS -DGC_LINUX_THREADS -D_GNU_SOURCE -D_REENTRANT -DUSE_MMAP"
@@ -314,8 +320,10 @@ case "$host" in
 				CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC $BROKEN_DARWIN_FLAGS"
 				CPPFLAGS_FOR_EGLIB="$CPPFLAGS_FOR_EGLIB $BROKEN_DARWIN_CPPFLAGS"
 				CFLAGS_FOR_EGLIB="$CFLAGS_FOR_EGLIB $BROKEN_DARWIN_FLAGS"
+				with_sgen_default_concurrent=yes
 				;;
 			x*64-*-darwin*)
+				with_sgen_default_concurrent=yes
 				;;
 			arm*-darwin*)
 				has_dtrace=no
