@@ -117,13 +117,7 @@ namespace System.Linq.Expressions.Interpreter
             private void AddHandlerExit(int index)
             {
                 int count;
-                if (!_handlerExit.TryGetValue(index, out count))
-                {
-                    _handlerExit.Add(index, 1);
-                    return;
-                }
-
-                _handlerExit[index] = count + 1;
+                _handlerExit[index] = _handlerExit.TryGetValue(index, out count) ? count + 1 : 1;
             }
 
             private void Indent()
@@ -141,12 +135,12 @@ namespace System.Linq.Expressions.Interpreter
                 var sb = new StringBuilder();
 
                 string name = _interpreter.Name ?? "lambda_method";
-                sb.AppendLine("object " + name + "(object[])");
+                sb.Append("object ").Append(name).AppendLine("(object[])");
                 sb.AppendLine("{");
 
-                sb.AppendLine("  .locals " + _interpreter.LocalCount);
-                sb.AppendLine("  .maxstack " + _interpreter.Instructions.MaxStackDepth);
-                sb.AppendLine("  .maxcontinuation " + _interpreter.Instructions.MaxContinuationDepth);
+                sb.Append("  .locals ").Append(_interpreter.LocalCount).AppendLine();
+                sb.Append("  .maxstack ").Append(_interpreter.Instructions.MaxStackDepth).AppendLine();
+                sb.Append("  .maxcontinuation ").Append(_interpreter.Instructions.MaxContinuationDepth).AppendLine();
                 sb.AppendLine();
 
                 Instruction[] instructions = _interpreter.Instructions.Instructions;
@@ -162,8 +156,8 @@ namespace System.Linq.Expressions.Interpreter
                     {
                         for (int j = 0; j < startCount; j++)
                         {
-                            sb.AppendLine(_indent + ".try");
-                            sb.AppendLine(_indent + "{");
+                            sb.Append(_indent).AppendLine(".try");
+                            sb.Append(_indent).AppendLine("{");
                             Indent();
                         }
                     }
@@ -171,15 +165,15 @@ namespace System.Linq.Expressions.Interpreter
                     string handler;
                     if (_handlerEnter.TryGetValue(i, out handler))
                     {
-                        sb.AppendLine(_indent + handler);
-                        sb.AppendLine(_indent + "{");
+                        sb.Append(_indent).AppendLine(handler);
+                        sb.Append(_indent).AppendLine("{");
                         Indent();
                     }
 
                     Instruction instruction = instructions[i];
                     InstructionList.DebugView.InstructionView instructionView = instructionViews[i];
 
-                    sb.AppendLine(_indent + string.Format(CultureInfo.InvariantCulture, "IP_{0}: {1}", i.ToString().PadLeft(4, '0'), instructionView.GetValue()));
+                    sb.AppendFormat(string.Format(CultureInfo.InvariantCulture, "{0}IP_{1}: {2}", _indent, i.ToString().PadLeft(4, '0'), instructionView.GetValue())).AppendLine();
                 }
 
                 EmitExits(sb, instructions.Length);
@@ -197,7 +191,7 @@ namespace System.Linq.Expressions.Interpreter
                     for (int j = 0; j < exitCount; j++)
                     {
                         Dedent();
-                        sb.AppendLine(_indent + "}");
+                        sb.Append(_indent).AppendLine("}");
                     }
                 }
             }
