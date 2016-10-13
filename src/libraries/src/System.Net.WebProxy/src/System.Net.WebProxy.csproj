@@ -13,6 +13,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
+    <Compile Include="System\Net\IWebProxyScript.cs" />
     <Compile Include="System\Net\WebProxy.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
