@@ -29,19 +29,12 @@
     </ItemGroup>
   </Target>
   
-  <PropertyGroup>
-    <CommonTestProjectJson>$(MSBuildThisFileDirectory)src/Common/test-runtime/project.json</CommonTestProjectJson>
-    <CommonTestProjectLockJson>$(MSBuildThisFileDirectory)src/Common/test-runtime/project.lock.json</CommonTestProjectLockJson>
-    <CommonOutputTestProjectJson>$(GeneratedProjectJsonDir)/project.json</CommonOutputTestProjectJson>
-    <SkipGenerateTestProjectJson Condition="$([System.IO.File]::Exists('$(MSBuildProjectDirectory)/project.json'))" >false</SkipGenerateTestProjectJson>
-  </PropertyGroup>
-  
   <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
-    <ProjectJson Condition="'$(ProjectJson)'=='' and $([System.IO.File]::Exists('$(MSBuildProjectDirectory)/project.json'))">$(MSBuildProjectDirectory)/project.json</ProjectJson>
-    <ProjectJson Condition="'$(ProjectJson)'=='' ">$(CommonTestProjectJson)</ProjectJson>
-    <!-- <ProjectLockJson Condition="'$(ProjectLockJson)'=='' and Exists('$(MSBuildProjectDirectory)/project.json')">$(MSBuildProjectDirectory)/project.lock.json</ProjectLockJson> -->
-    <ProjectLockJson Condition="'$(ProjectLockJson)'=='' ">$(CommonTestProjectLockJson)</ProjectLockJson>
-    
+    <ProjectJson Condition="'$(ProjectJson)'=='' and Exists('$(MSBuildProjectDirectory)/project.json')">$(MSBuildProjectDirectory)/project.json</ProjectJson>
+    <!-- If project specific project.json exists then don't skip generating test project.json files -->
+    <SkipGenerateTestProjectJson Condition="'$(ProjectJson)'==''" >true</SkipGenerateTestProjectJson>
+    <ProjectJson Condition="'$(ProjectJson)'==''">$(CommonTestProjectJson)</ProjectJson>
+    <ProjectLockJson Condition="'$(ProjectJson)'=='$(CommonTestProjectJson)'">$(CommonTestProjectLockJson)</ProjectLockJson>
     <!-- Duplicating this path from packageresolve.targets in buildtools till a proper hook is established for the derived properties below -->
     <RestorePackages Condition="'$(RestorePackages)'!='false' and Exists('$(ProjectJson)') and '$(DesignTimeBuild)' != 'true'">true</RestorePackages>
     <PrereleaseResolveNuGetPackages Condition="'$(PrereleaseResolveNuGetPackages)'!='false' and Exists('$(ProjectJson)')">true</PrereleaseResolveNuGetPackages>

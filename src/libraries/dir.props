@@ -99,11 +99,6 @@
     <BuildTestsAgainstPackagesIdentityRegex>$(CoreFxVersionsIdentityRegex)</BuildTestsAgainstPackagesIdentityRegex>
     <SkipVerifyPackageVersions>true</SkipVerifyPackageVersions>
   </PropertyGroup>
-  
-  <!-- By default we should skip generate test project json because test projects will use the generated global test project.json -->
-  <PropertyGroup>
-    <SkipGenerateTestProjectJson>true</SkipGenerateTestProjectJson>
-  </PropertyGroup>
 
   <!-- list of directories to perform batch restore -->
   <ItemGroup>
