@@ -678,6 +678,12 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
 
   #define RBM_ARG_REGS            (RBM_ARG_0|RBM_ARG_1)
 
+  // The registers trashed by profiler enter/leave/tailcall hook
+  // See vm\i386\asmhelpers.asm for more details.
+  #define RBM_PROFILER_ENTER_TRASH     RBM_NONE
+  #define RBM_PROFILER_LEAVE_TRASH     RBM_NONE
+  #define RBM_PROFILER_TAILCALL_TRASH  (RBM_ALLINT & ~RBM_ARG_REGS)
+
   // What sort of reloc do we use for [disp32] address mode
   #define IMAGE_REL_BASED_DISP32   IMAGE_REL_BASED_HIGHLOW
 
@@ -1119,9 +1125,10 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
 #endif // !UNIX_AMD64_ABI
 
   // The registers trashed by profiler enter/leave/tailcall hook
-  // See vm\amd64\amshelpers.asm for more details.
-  #define RBM_PROFILER_ENTER_TRASH  RBM_CALLEE_TRASH
-  #define RBM_PROFILER_LEAVE_TRASH  (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET))
+  // See vm\amd64\asmhelpers.asm for more details.
+  #define RBM_PROFILER_ENTER_TRASH     RBM_CALLEE_TRASH
+  #define RBM_PROFILER_LEAVE_TRASH     (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET))
+  #define RBM_PROFILER_TAILCALL_TRASH  RBM_PROFILER_LEAVE_TRASH
 
   // The registers trashed by the CORINFO_HELP_STOP_FOR_GC helper.
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
