@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include "unicode/locid.h"
+#include "unicode/ucurr.h"
 
 /*
 Function:

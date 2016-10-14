@@ -10,12 +10,12 @@ namespace System.Globalization
 {
     internal enum LocaleDataParts
     {
-        Lcid = 0, 
-        AnsiCodePage = 1, 
-        OemCodePage = 2, 
-        MacCodePage = 3, 
+        Lcid = 0,
+        AnsiCodePage = 1,
+        OemCodePage = 2,
+        MacCodePage = 3,
         EbcdicCodePage = 4,
-        GeoId = 5    
+        GeoId = 5
     }
     
     internal partial class LocaleData
