@@ -2821,11 +2821,6 @@ void Compiler::optUnrollLoops()
     }
 #endif
 
-    if (optCanCloneLoops())
-    {
-        return;
-    }
-
 #ifdef DEBUG
     if (verbose)
     {
@@ -2885,10 +2880,10 @@ void Compiler::optUnrollLoops()
 #endif
 
         static const int UNROLL_LIMIT_SZ[COUNT_OPT_CODE + 1] = {
-            30, // BLENDED_CODE
-            0,  // SMALL_CODE
-            60, // FAST_CODE
-            0   // COUNT_OPT_CODE
+            300, // BLENDED_CODE
+            0,   // SMALL_CODE
+            600, // FAST_CODE
+            0    // COUNT_OPT_CODE
         };
 
         noway_assert(UNROLL_LIMIT_SZ[SMALL_CODE] == 0);
@@ -2896,15 +2891,23 @@ void Compiler::optUnrollLoops()
 
         int unrollLimitSz = (unsigned)UNROLL_LIMIT_SZ[compCodeOpt()];
 
+        loopFlags = optLoopTable[lnum].lpFlags;
+        // Check for required flags:
+        // LPFLG_DO_WHILE - required because this transform only handles loops of this form
+        // LPFLG_CONST - required because this transform only handles full unrolls
+        // LPFLG_SIMD_LIMIT - included here as a heuristic, not for correctness/structural reasons
+        requiredFlags = LPFLG_DO_WHILE | LPFLG_CONST | LPFLG_SIMD_LIMIT;
+
 #ifdef DEBUG
         if (compStressCompile(STRESS_UNROLL_LOOPS, 50))
         {
-            unrollLimitSz *= 10;
+            // In stress mode, quadruple the size limit, and drop
+            // the restriction that loop limit must be Vector<T>.Count.
+
+            unrollLimitSz *= 4;
+            requiredFlags &= ~LPFLG_SIMD_LIMIT;
         }
 #endif
-
-        loopFlags     = optLoopTable[lnum].lpFlags;
-        requiredFlags = LPFLG_DO_WHILE | LPFLG_CONST;
 
         /* Ignore the loop if we don't have a do-while
         that has a constant number of iterations */
@@ -2916,7 +2919,7 @@ void Compiler::optUnrollLoops()
 
         /* ignore if removed or marked as not unrollable */
 
-        if (optLoopTable[lnum].lpFlags & (LPFLG_DONT_UNROLL | LPFLG_REMOVED))
+        if (loopFlags & (LPFLG_DONT_UNROLL | LPFLG_REMOVED))
         {
             continue;
         }
@@ -4693,6 +4696,12 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
         optUpdateLoopHead(loopInd, optLoopTable[loopInd].lpHead, condLast);
     }
     assert(foundIt && e2 != nullptr);
+
+    // Don't unroll loops that we've cloned -- the unroller expects any loop it should unroll to
+    // initialize the loop counter immediately before entering the loop, but we've left a shared
+    // initialization of the loop counter up above the test that determines which version of the
+    // loop to take.
+    optLoopTable[loopInd].lpFlags |= LPFLG_DONT_UNROLL;
 
     fgUpdateChangedFlowGraph();
 }
