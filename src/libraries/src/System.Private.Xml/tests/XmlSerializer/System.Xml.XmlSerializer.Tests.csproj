@@ -29,10 +29,7 @@
     <Compile Include="XmlSerializerTests.Internal.cs" Condition="'$(UseContractReferences)' == ''" />
   </ItemGroup>
   <ItemGroup>
-    <!-- ToDo: Remove these P2P references once packages are updated -->
-    <ProjectReference Include="..\..\..\System.Xml.XmlDocument\pkg\System.Xml.XmlDocument.pkgproj" />
     <ProjectReference Include="..\..\..\System.Xml.XmlSerializer\pkg\System.Xml.XmlSerializer.pkgproj" />
-    <ProjectReference Include="..\..\..\System.Xml.ReaderWriter\pkg\System.Xml.ReaderWriter.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

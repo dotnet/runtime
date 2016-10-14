@@ -147,8 +147,7 @@
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
       <Name>RemoteExecutorConsoleApp</Name>
     </ProjectReference>
-    <!-- ToDo: Remove this reference to the live package of System.Globalization once prerelease gets updated again -->
-    <ProjectReference Include="..\pkg\System.Globalization.pkgproj">
+	<ProjectReference Include="..\pkg\System.Globalization.pkgproj">
       <Name>System.Globalization</Name>
     </ProjectReference>
   </ItemGroup>
