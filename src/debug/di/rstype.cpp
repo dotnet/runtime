@@ -276,6 +276,8 @@ HRESULT CordbType::QueryInterface(REFIID id, void **pInterface)
 {
     if (id == IID_ICorDebugType)
         *pInterface = static_cast<ICorDebugType*>(this);
+    else if (id == IID_ICorDebugType2)
+        *pInterface = static_cast<ICorDebugType2*>(this);
     else if (id == IID_IUnknown)
         *pInterface = static_cast<IUnknown*>(static_cast<ICorDebugType*>(this));
     else
@@ -2280,6 +2282,126 @@ HRESULT CordbType::GetBase(ICorDebugType ** ppType)
     return hr;
 }
 
+//-----------------------------------------------------------------------------
+// CordbType::GetTypeID
+// Method to get the COR_TYPEID corresponding to this CordbType.
+//
+// Parameters:
+//   pId - OUT: gives the COR_TYPEID for this CordbType
+//
+// Returns:
+//   S_OK if succeeded.
+//   CORDBG_E_CLASS_NOT_LOADED if the type which this CordbType represents has
+//       not been loaded in the runtime.
+//  E_POINTER if pId is NULL
+//  CORDBG_E_UNSUPPORTED for unsupported types.
+//
+HRESULT CordbType::GetTypeID(COR_TYPEID *pId)
+{
+    LOG((LF_CORDB, LL_INFO1000, "GetTypeID\n"));
+    if (pId == NULL)
+        return E_POINTER;
+    
+    HRESULT hr = S_OK;
+
+    PUBLIC_API_ENTRY(this);
+    RSLockHolder stopGoLock(GetProcess()->GetStopGoLock());
+    RSLockHolder procLock(GetProcess()->GetProcessLock());
+
+    EX_TRY
+    {
+        hr = Init(FALSE);
+        IfFailThrow(hr);
+
+        VMPTR_TypeHandle vmTypeHandle;
+            
+        CorElementType et = GetElementType();
+        switch (et)
+        {
+        case ELEMENT_TYPE_OBJECT:
+        case ELEMENT_TYPE_VOID:
+        case ELEMENT_TYPE_BOOLEAN:
+        case ELEMENT_TYPE_CHAR:
+        case ELEMENT_TYPE_I1:
+        case ELEMENT_TYPE_U1:
+        case ELEMENT_TYPE_I2:
+        case ELEMENT_TYPE_U2:
+        case ELEMENT_TYPE_I4:
+        case ELEMENT_TYPE_U4:
+        case ELEMENT_TYPE_I8:
+        case ELEMENT_TYPE_U8:
+        case ELEMENT_TYPE_R4:
+        case ELEMENT_TYPE_R8:
+        case ELEMENT_TYPE_STRING:
+        case ELEMENT_TYPE_TYPEDBYREF:
+        case ELEMENT_TYPE_I:
+        case ELEMENT_TYPE_U:
+            {
+                mdTypeDef mdToken;
+                VMPTR_Module vmModule = VMPTR_Module::NullPtr();
+                VMPTR_DomainFile vmDomainFile = VMPTR_DomainFile::NullPtr();
+
+                // get module and token of the simple type
+                GetProcess()->GetDAC()->GetSimpleType(GetAppDomain()->GetADToken(),
+                                                      et,
+                                                      &mdToken,
+                                                      &vmModule,
+                                                      &vmDomainFile);
+                
+                vmTypeHandle = GetProcess()->GetDAC()->GetTypeHandle(vmModule, mdToken);
+            }
+            break;
+        case ELEMENT_TYPE_ARRAY:
+        case ELEMENT_TYPE_SZARRAY:
+            {
+                LOG((LF_CORDB, LL_INFO1000, "GetTypeID: parameterized type\n"));
+                if (m_typeHandleExact.IsNull())
+                {
+                    hr = InitInstantiationTypeHandle(FALSE);
+                    IfFailThrow(hr);
+                }
+                vmTypeHandle = m_typeHandleExact;
+            }
+            break;
+        case ELEMENT_TYPE_CLASS:
+            {
+                ICorDebugClass *pICDClass = NULL;
+                hr = GetClass(&pICDClass);
+                IfFailThrow(hr);
+                CordbClass *pClass = (CordbClass*)pICDClass;
+                _ASSERTE(pClass != NULL);
+                
+                if (pClass->HasTypeParams())
+                {
+                    vmTypeHandle = m_typeHandleExact;
+                }
+                else
+                {
+                    mdTypeDef mdToken;
+                    hr = pClass->GetToken(&mdToken);
+                    IfFailThrow(hr);
+                    
+                    VMPTR_Module vmModule = GetModule();
+                    vmTypeHandle = GetProcess()->GetDAC()->GetTypeHandle(vmModule, mdToken);
+                }
+            }
+            break;
+        case ELEMENT_TYPE_PTR:
+        case ELEMENT_TYPE_BYREF:
+        case ELEMENT_TYPE_FNPTR:
+            IfFailThrow(CORDBG_E_UNSUPPORTED);
+        default:
+            _ASSERTE(!"unexpected element type!");
+            IfFailThrow(CORDBG_E_UNSUPPORTED);
+            break;
+        }
+
+        GetProcess()->GetDAC()->GetTypeIDForType(vmTypeHandle, pId);
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
+}
 
 //-----------------------------------------------------------------------------
 // Get rich field information given a token.

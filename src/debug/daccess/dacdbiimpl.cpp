@@ -2364,10 +2364,12 @@ TypeHandle DacDbiInterfaceImpl::FindLoadedFnptrType(DWORD numTypeArgs, TypeHandl
     // Lookup operations run the class loader in non-load mode.
     ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 
-    // @dbgtodo : Do we need to worry about calling convention here? 
-    return  ClassLoader::LoadFnptrTypeThrowing(0, 
-                                               numTypeArgs, 
-                                               pInst, 
+    // @dbgtodo : Do we need to worry about calling convention here?
+    // LoadFnptrTypeThrowing expects the count of arguments, not
+    // including return value, so we subtract 1 from numTypeArgs.
+    return  ClassLoader::LoadFnptrTypeThrowing(0,
+                                               numTypeArgs - 1,
+                                               pInst,
                                                ClassLoader::DontLoadTypes);
 } // DacDbiInterfaceImpl::FindLoadedFnptrType
 
@@ -6985,6 +6987,21 @@ HRESULT DacDbiInterfaceImpl::GetTypeID(CORDB_ADDRESS dbgObj, COR_TYPEID *pID)
     pID->token2 = 0;
 
     return hr;
+}
+
+HRESULT DacDbiInterfaceImpl::GetTypeIDForType(VMPTR_TypeHandle vmTypeHandle, COR_TYPEID *pID)
+{
+    DD_ENTER_MAY_THROW;
+
+    _ASSERTE(pID != NULL);
+    _ASSERTE(!vmTypeHandle.IsNull());
+
+    TypeHandle th = TypeHandle::FromPtr(vmTypeHandle.GetDacPtr());
+    PTR_MethodTable pMT = th.GetMethodTable();
+    pID->token1 = pMT.GetAddr();
+    _ASSERTE(pID->token1 != 0);
+    pID->token2 = 0;
+    return S_OK;
 }
 
 HRESULT DacDbiInterfaceImpl::GetObjectFields(COR_TYPEID id, ULONG32 celt, COR_FIELD *layout, ULONG32 *pceltFetched)
