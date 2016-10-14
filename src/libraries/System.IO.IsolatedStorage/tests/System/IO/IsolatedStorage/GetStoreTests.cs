@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
 using System.Reflection;
 using Xunit;
 
@@ -17,7 +18,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Theory
-            MemberData("ValidScopes")
+            MemberData(nameof(ValidScopes))
             ]
         public void InitStore_ValidScopes(IsolatedStorageScope scope)
         {
@@ -82,6 +83,25 @@ namespace System.IO.IsolatedStorage
             Assert.Throws<PlatformNotSupportedException>(() => IsolatedStorageFile.GetStore(IsolatedStorageScope.User, typeof(object), typeof(object)));
             Assert.Throws<PlatformNotSupportedException>(() => IsolatedStorageFile.GetStore(IsolatedStorageScope.User, new object()));
             Assert.Throws<PlatformNotSupportedException>(() => IsolatedStorageFile.GetStore(IsolatedStorageScope.User, new object(), new object()));
+        }
+
+        [Fact]
+        public void GetEnumerator_NoOp()
+        {
+            IEnumerator e = IsolatedStorageFile.GetEnumerator(IsolatedStorageScope.Assembly);
+            Assert.False(e.MoveNext(), "should have no items");
+
+            // Reset shouldn't throw
+            e.Reset();
+        }
+
+        [Fact]
+        public void GetEnumerator_ThrowsForCurrent()
+        {
+            IEnumerator e = IsolatedStorageFile.GetEnumerator(IsolatedStorageScope.Assembly);
+            Assert.Throws<InvalidOperationException>(() => e.Current);
+            e.MoveNext();
+            Assert.Throws<InvalidOperationException>(() => e.Current);
         }
     }
 }

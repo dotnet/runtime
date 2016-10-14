@@ -80,8 +80,8 @@ Global
 		{BF4F9507-8FBD-45EA-81C9-3ED89C052C91}.Unix_Debug|Any CPU.Build.0 = Unix_Debug|Any CPU
 		{BF4F9507-8FBD-45EA-81C9-3ED89C052C91}.Unix_Release|Any CPU.ActiveCfg = Unix_Release|Any CPU
 		{BF4F9507-8FBD-45EA-81C9-3ED89C052C91}.Unix_Release|Any CPU.Build.0 = Unix_Release|Any CPU
-		{BF4F9507-8FBD-45EA-81C9-3ED89C052C91}.Windows_Debug|Any CPU.ActiveCfg = Windows_Debug|Any CPU
-		{BF4F9507-8FBD-45EA-81C9-3ED89C052C91}.Windows_Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
+		{BF4F9507-8FBD-45EA-81C9-3ED89C052C91}.Windows_Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BF4F9507-8FBD-45EA-81C9-3ED89C052C91}.Windows_Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BF4F9507-8FBD-45EA-81C9-3ED89C052C91}.Windows_Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
 		{BF4F9507-8FBD-45EA-81C9-3ED89C052C91}.Windows_Release|Any CPU.Build.0 = Windows_Release|Any CPU
 	EndGlobalSection
