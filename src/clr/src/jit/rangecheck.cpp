@@ -208,7 +208,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, GenTreePtr stmt, GenTreeP
 
     // If we are not looking at array bounds check, bail.
     GenTreePtr tree = treeParent->gtOp.gtOp1;
-    if (tree->gtOper != GT_ARR_BOUNDS_CHECK)
+    if (!tree->OperIsBoundsCheck())
     {
         return;
     }
@@ -233,6 +233,9 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, GenTreePtr stmt, GenTreeP
         }
     }
     else
+#ifdef FEATURE_SIMD
+        if (tree->gtOper != GT_SIMD_CHK)
+#endif // FEATURE_SIMD
     {
         arrSize = GetArrLength(arrLenVn);
     }
