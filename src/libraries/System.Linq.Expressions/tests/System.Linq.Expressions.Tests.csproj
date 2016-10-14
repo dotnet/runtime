@@ -110,6 +110,7 @@
     <Compile Include="IndexExpression\IndexExpressionVisitorTests.cs" />
     <Compile Include="IndexExpression\SampleClassWithProperties.cs" />
     <Compile Include="IndexExpression\IndexExpressionTests.cs" />
+    <Compile Include="InterpreterTests.cs" />
     <Compile Include="Invoke\InvocationTests.cs" />
     <Compile Include="Invoke\InvokeFactoryTests.cs" />
     <Compile Include="Label\LabelTargetTests.cs" />

@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Dynamic.Utils;
+using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
@@ -31,6 +32,169 @@ namespace System.Linq.Expressions.Interpreter
             _delegateCreator = delegateCreator;
             _closure = closure;
             _interpreter = delegateCreator.Interpreter;
+        }
+
+        internal string DebugView => new DebugViewPrinter(_interpreter).ToString();
+
+        class DebugViewPrinter
+        {
+            private readonly Interpreter _interpreter;
+            private readonly Dictionary<int, int> _tryStart = new Dictionary<int, int>();
+            private readonly Dictionary<int, string> _handlerEnter = new Dictionary<int, string>();
+            private readonly Dictionary<int, int> _handlerExit = new Dictionary<int, int>();
+            private string _indent = "  ";
+
+            public DebugViewPrinter(Interpreter interpreter)
+            {
+                _interpreter = interpreter;
+
+                Analyze();
+            }
+
+            private void Analyze()
+            {
+                Instruction[] instructions = _interpreter.Instructions.Instructions;
+
+                foreach (Instruction instruction in instructions)
+                {
+                    var enterTryCatchFinally = instruction as EnterTryCatchFinallyInstruction;
+                    if (enterTryCatchFinally != null)
+                    {
+                        TryCatchFinallyHandler handler = enterTryCatchFinally.Handler;
+
+                        AddTryStart(handler.TryStartIndex);
+                        AddHandlerExit(handler.TryEndIndex + 1 /* include Goto instruction that acts as a "leave" */);
+
+                        if (handler.IsFinallyBlockExist)
+                        {
+                            _handlerEnter.Add(handler.FinallyStartIndex, "finally");
+                            AddHandlerExit(handler.FinallyEndIndex);
+                        }
+
+                        if (handler.IsCatchBlockExist)
+                        {
+                            foreach (ExceptionHandler catchHandler in handler.Handlers)
+                            {
+                                _handlerEnter.Add(catchHandler.HandlerStartIndex - 1 /* include EnterExceptionHandler instruction */, catchHandler.ToString());
+                                AddHandlerExit(catchHandler.HandlerEndIndex);
+
+                                ExceptionFilter filter = catchHandler.Filter;
+                                if (filter != null)
+                                {
+                                    _handlerEnter.Add(filter.StartIndex - 1 /* include EnterExceptionFilter instruction */, "filter");
+                                    AddHandlerExit(filter.EndIndex);
+                                }
+                            }
+                        }
+                    }
+
+                    var enterTryFault = instruction as EnterTryFaultInstruction;
+                    if (enterTryFault != null)
+                    {
+                        TryFaultHandler handler = enterTryFault.Handler;
+
+                        AddTryStart(handler.TryStartIndex);
+                        AddHandlerExit(handler.TryEndIndex + 1 /* include Goto instruction that acts as a "leave" */);
+
+                        _handlerEnter.Add(handler.FinallyStartIndex, "fault");
+                        AddHandlerExit(handler.FinallyEndIndex);
+                    }
+                }
+            }
+
+            private void AddTryStart(int index)
+            {
+                int count;
+                if (!_tryStart.TryGetValue(index, out count))
+                {
+                    _tryStart.Add(index, 1);
+                    return;
+                }
+
+                _tryStart[index] = count + 1;
+            }
+
+            private void AddHandlerExit(int index)
+            {
+                int count;
+                _handlerExit[index] = _handlerExit.TryGetValue(index, out count) ? count + 1 : 1;
+            }
+
+            private void Indent()
+            {
+                _indent = new string(' ', _indent.Length + 2);
+            }
+
+            private void Dedent()
+            {
+                _indent = new string(' ', _indent.Length - 2);
+            }
+
+            public override string ToString()
+            {
+                var sb = new StringBuilder();
+
+                string name = _interpreter.Name ?? "lambda_method";
+                sb.Append("object ").Append(name).AppendLine("(object[])");
+                sb.AppendLine("{");
+
+                sb.Append("  .locals ").Append(_interpreter.LocalCount).AppendLine();
+                sb.Append("  .maxstack ").Append(_interpreter.Instructions.MaxStackDepth).AppendLine();
+                sb.Append("  .maxcontinuation ").Append(_interpreter.Instructions.MaxContinuationDepth).AppendLine();
+                sb.AppendLine();
+
+                Instruction[] instructions = _interpreter.Instructions.Instructions;
+                InstructionArray.DebugView debugView = new InstructionArray.DebugView(_interpreter.Instructions);
+                InstructionList.DebugView.InstructionView[] instructionViews = debugView.GetInstructionViews(includeDebugCookies: false);
+
+                for (int i = 0; i < instructions.Length; i++)
+                {
+                    EmitExits(sb, i);
+
+                    int startCount;
+                    if (_tryStart.TryGetValue(i, out startCount))
+                    {
+                        for (int j = 0; j < startCount; j++)
+                        {
+                            sb.Append(_indent).AppendLine(".try");
+                            sb.Append(_indent).AppendLine("{");
+                            Indent();
+                        }
+                    }
+
+                    string handler;
+                    if (_handlerEnter.TryGetValue(i, out handler))
+                    {
+                        sb.Append(_indent).AppendLine(handler);
+                        sb.Append(_indent).AppendLine("{");
+                        Indent();
+                    }
+
+                    Instruction instruction = instructions[i];
+                    InstructionList.DebugView.InstructionView instructionView = instructionViews[i];
+
+                    sb.AppendFormat(string.Format(CultureInfo.InvariantCulture, "{0}IP_{1}: {2}", _indent, i.ToString().PadLeft(4, '0'), instructionView.GetValue())).AppendLine();
+                }
+
+                EmitExits(sb, instructions.Length);
+
+                sb.AppendLine("}");
+
+                return sb.ToString();
+            }
+
+            private void EmitExits(StringBuilder sb, int index)
+            {
+                int exitCount;
+                if (_handlerExit.TryGetValue(index, out exitCount))
+                {
+                    for (int j = 0; j < exitCount; j++)
+                    {
+                        Dedent();
+                        sb.Append(_indent).AppendLine("}");
+                    }
+                }
+            }
         }
 
 #if NO_FEATURE_STATIC_DELEGATE

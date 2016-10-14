@@ -395,6 +395,8 @@ namespace System.Linq.Expressions.Interpreter
                 return Array.Empty<object>();
             }
         }
+
+        public override string ToString() => "Call(" + _target + ")";
     }
 
     internal class ByRefMethodInfoCallInstruction : MethodInfoCallInstruction
