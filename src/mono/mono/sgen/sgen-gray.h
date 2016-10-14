@@ -41,9 +41,9 @@
 
 /* SGEN_GRAY_QUEUE_HEADER_SIZE is number of machine words */
 #ifdef SGEN_CHECK_GRAY_OBJECT_SECTIONS
-#define SGEN_GRAY_QUEUE_HEADER_SIZE	4
+#define SGEN_GRAY_QUEUE_HEADER_SIZE	5
 #else
-#define SGEN_GRAY_QUEUE_HEADER_SIZE	2
+#define SGEN_GRAY_QUEUE_HEADER_SIZE	3
 #endif
 
 #define SGEN_GRAY_QUEUE_SECTION_SIZE	(128 - SGEN_GRAY_QUEUE_HEADER_SIZE)
@@ -80,7 +80,7 @@ struct _GrayQueueSection {
 	GrayQueueSectionState state;
 #endif
 	int size;
-	GrayQueueSection *next;
+	GrayQueueSection *next, *prev;
 	GrayQueueEntry entries [SGEN_GRAY_QUEUE_SECTION_SIZE];
 };
 
@@ -91,8 +91,10 @@ typedef void (*GrayQueueEnqueueCheckFunc) (GCObject*);
 
 struct _SgenGrayQueue {
 	GrayQueueEntry *cursor;
-	GrayQueueSection *first;
+	GrayQueueSection *first, *last;
 	GrayQueueSection *free_list;
+	mono_mutex_t steal_mutex;
+	gint32 num_sections;
 #ifdef SGEN_CHECK_GRAY_OBJECT_ENQUEUE
 	GrayQueueEnqueueCheckFunc enqueue_check_func;
 #endif
@@ -126,6 +128,7 @@ void sgen_init_gray_queues (void);
 void sgen_gray_object_enqueue (SgenGrayQueue *queue, GCObject *obj, SgenDescriptor desc);
 GrayQueueEntry sgen_gray_object_dequeue (SgenGrayQueue *queue);
 GrayQueueSection* sgen_gray_object_dequeue_section (SgenGrayQueue *queue);
+GrayQueueSection* sgen_gray_object_steal_section (SgenGrayQueue *queue);
 void sgen_gray_object_enqueue_section (SgenGrayQueue *queue, GrayQueueSection *section);
 void sgen_gray_object_queue_trim_free_list (SgenGrayQueue *queue);
 void sgen_gray_object_queue_init (SgenGrayQueue *queue, GrayQueueEnqueueCheckFunc enqueue_check_func, gboolean reuse_free_list);

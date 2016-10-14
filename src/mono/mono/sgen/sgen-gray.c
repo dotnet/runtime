@@ -69,8 +69,23 @@ sgen_gray_object_alloc_queue_section (SgenGrayQueue *queue)
 
 	/* Link it with the others */
 	section->next = queue->first;
+	section->prev = NULL;
+	if (queue->first)
+		queue->first->prev = section;
+	else
+		queue->last = section;
 	queue->first = section;
 	queue->cursor = section->entries - 1;
+
+	mono_memory_write_barrier ();
+	/*
+	 * FIXME
+	 * we could probably optimize the code to only rely on the write barrier
+	 * for synchronization with the stealer thread. Additionally we could also
+	 * do a write barrier once every other gray queue change, and request
+	 * to have a minimum of sections before stealing, to keep consistency.
+	 */
+	InterlockedIncrement (&queue->num_sections);
 }
 
 void
@@ -146,14 +161,33 @@ sgen_gray_object_dequeue (SgenGrayQueue *queue)
 #endif
 
 	if (G_UNLIKELY (queue->cursor < GRAY_FIRST_CURSOR_POSITION (queue->first))) {
-		GrayQueueSection *section = queue->first;
+		GrayQueueSection *section;
+		gint32 old_num_sections;
+
+		old_num_sections = InterlockedDecrement (&queue->num_sections);
+
+		if (old_num_sections <= 0) {
+			mono_os_mutex_lock (&queue->steal_mutex);
+		}
+
+		section = queue->first;
 		queue->first = section->next;
+		if (queue->first) {
+			queue->first->prev = NULL;
+		} else {
+			queue->last = NULL;
+			SGEN_ASSERT (0, !old_num_sections, "Why do we have an inconsistent number of sections ?");
+		}
 		section->next = queue->free_list;
 
 		STATE_TRANSITION (section, GRAY_QUEUE_SECTION_STATE_ENQUEUED, GRAY_QUEUE_SECTION_STATE_FREE_LIST);
 
 		queue->free_list = section;
 		queue->cursor = queue->first ? queue->first->entries + queue->first->size - 1 : NULL;
+
+		if (old_num_sections <= 0) {
+			mono_os_mutex_unlock (&queue->steal_mutex);
+		}
 	}
 
 	return entry;
@@ -167,8 +201,15 @@ sgen_gray_object_dequeue_section (SgenGrayQueue *queue)
 	if (!queue->first)
 		return NULL;
 
+	/* We never steal from this queue */
+	queue->num_sections--;
+
 	section = queue->first;
 	queue->first = section->next;
+	if (queue->first)
+		queue->first->prev = NULL;
+	else
+		queue->last = NULL;
 
 	section->next = NULL;
 	section->size = queue->cursor - section->entries + 1;
@@ -177,6 +218,55 @@ sgen_gray_object_dequeue_section (SgenGrayQueue *queue)
 
 	STATE_TRANSITION (section, GRAY_QUEUE_SECTION_STATE_ENQUEUED, GRAY_QUEUE_SECTION_STATE_FLOATING);
 
+	return section;
+}
+
+GrayQueueSection*
+sgen_gray_object_steal_section (SgenGrayQueue *queue)
+{
+	gint32 sections_remaining;
+	GrayQueueSection *section = NULL;
+
+	/*
+	 * With each push/pop into the queue we increment the number of sections.
+	 * There is only one thread accessing the top (the owner) and potentially
+	 * multiple workers trying to steal sections from the bottom, so we need
+	 * to lock. A num sections decrement from the owner means that the first
+	 * section is reserved, while a decrement by the stealer means that the
+	 * last section is reserved. If after we decrement the num sections, we
+	 * have at least one more section present, it means we can't race with
+	 * the other thread. If this is not the case the steal end abandons the
+	 * pop, setting back the num_sections, while the owner end will take a
+	 * lock to make sure we are not racing with the stealer (since the stealer
+	 * might have popped an entry and be in the process of updating the entry
+	 * that the owner is trying to pop.
+	 */
+
+	if (queue->num_sections <= 1)
+		return NULL;
+
+	/* Give up if there is contention on the last section */
+	if (mono_os_mutex_trylock (&queue->steal_mutex) != 0)
+		return NULL;
+
+	sections_remaining = InterlockedDecrement (&queue->num_sections);
+	if (sections_remaining <= 0) {
+		/* The section that we tried to steal might be the head of the queue. */
+		InterlockedIncrement (&queue->num_sections);
+	} else {
+		/* We have reserved for us the tail section of the queue */
+		section = queue->last;
+		SGEN_ASSERT (0, section, "Why we don't have any sections to steal?");
+		SGEN_ASSERT (0, !section->next, "Why aren't we stealing the tail?");
+		queue->last = section->prev;
+		section->prev = NULL;
+		SGEN_ASSERT (0, queue->last, "Why are we stealing the last section?");
+		queue->last->next = NULL;
+
+		STATE_TRANSITION (section, GRAY_QUEUE_SECTION_STATE_ENQUEUED, GRAY_QUEUE_SECTION_STATE_FLOATING);
+	}
+
+	mono_os_mutex_unlock (&queue->steal_mutex);
 	return section;
 }
 
@@ -189,6 +279,11 @@ sgen_gray_object_enqueue_section (SgenGrayQueue *queue, GrayQueueSection *sectio
 		queue->first->size = queue->cursor - queue->first->entries + 1;
 
 	section->next = queue->first;
+	section->prev = NULL;
+	if (queue->first)
+		queue->first->prev = section;
+	else
+		queue->last = section;
 	queue->first = section;
 	queue->cursor = queue->first->entries + queue->first->size - 1;
 #ifdef SGEN_CHECK_GRAY_OBJECT_ENQUEUE
@@ -198,6 +293,8 @@ sgen_gray_object_enqueue_section (SgenGrayQueue *queue, GrayQueueSection *sectio
 			queue->enqueue_check_func (section->entries [i].obj);
 	}
 #endif
+	mono_memory_write_barrier ();
+	InterlockedIncrement (&queue->num_sections);
 }
 
 void
@@ -227,6 +324,8 @@ sgen_gray_object_queue_init (SgenGrayQueue *queue, GrayQueueEnqueueCheckFunc enq
 #ifdef SGEN_CHECK_GRAY_OBJECT_ENQUEUE
 	queue->enqueue_check_func = enqueue_check_func;
 #endif
+
+	mono_os_mutex_init (&queue->steal_mutex);
 
 	if (reuse_free_list) {
 		queue->free_list = last_gray_queue_free_list;

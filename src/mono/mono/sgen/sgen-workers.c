@@ -216,6 +216,37 @@ workers_get_work (WorkerData *data)
 	return FALSE;
 }
 
+static gboolean
+workers_steal_work (WorkerData *data)
+{
+	SgenMajorCollector *major = sgen_get_major_collector ();
+	GrayQueueSection *section = NULL;
+	int i, current_worker;
+
+	if (!major->is_parallel)
+		return FALSE;
+
+	/* If we're parallel, steal from other workers' private gray queues  */
+	g_assert (sgen_gray_object_queue_is_empty (&data->private_gray_queue));
+
+	current_worker = (int) (data - workers_data);
+
+	for (i = 1; i < workers_num && !section; i++) {
+		int steal_worker = (current_worker + i) % workers_num;
+		if (state_is_working_or_enqueued (workers_data [steal_worker].state))
+			section = sgen_gray_object_steal_section (&workers_data [steal_worker].private_gray_queue);
+	}
+
+	if (section) {
+		sgen_gray_object_enqueue_section (&data->private_gray_queue, section);
+		return TRUE;
+	}
+
+	/* Nobody to steal from */
+	g_assert (sgen_gray_object_queue_is_empty (&data->private_gray_queue));
+	return FALSE;
+}
+
 static void
 concurrent_enqueue_check (GCObject *obj)
 {
@@ -274,7 +305,7 @@ marker_idle_func (void *data_untyped)
 		SGEN_ASSERT (0, data->state != STATE_NOT_WORKING, "How did we get from WORK ENQUEUED to NOT WORKING?");
 	}
 
-	if (!forced_stop && (!sgen_gray_object_queue_is_empty (&data->private_gray_queue) || workers_get_work (data))) {
+	if (!forced_stop && (!sgen_gray_object_queue_is_empty (&data->private_gray_queue) || workers_get_work (data) || workers_steal_work (data))) {
 		ScanCopyContext ctx = CONTEXT_FROM_OBJECT_OPERATIONS (idle_func_object_ops, &data->private_gray_queue);
 
 		SGEN_ASSERT (0, !sgen_gray_object_queue_is_empty (&data->private_gray_queue), "How is our gray queue empty if we just got work?");
