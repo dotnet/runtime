@@ -4648,7 +4648,11 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
         BasicBlock* newBlk = fgNewBBafter(blk->bbJumpKind, newPred,
                                           /*extendRegion*/ true);
 
-        BasicBlock::CloneBlockState(this, newBlk, blk);
+        // Call CloneBlockState to make a copy of the block's statements (and attributes), and assert that it
+        // has a return value indicating success, because optCanOptimizeByLoopCloningVisitor has already
+        // checked them to guarantee they are clonable.
+        bool cloneOk = BasicBlock::CloneBlockState(this, newBlk, blk);
+        noway_assert(cloneOk);
         // TODO-Cleanup: The above clones the bbNatLoopNum, which is incorrect.  Eventually, we should probably insert
         // the cloned loop in the loop table.  For now, however, we'll just make these blocks be part of the surrounding
         // loop, if one exists -- the parent of the loop we're cloning.
