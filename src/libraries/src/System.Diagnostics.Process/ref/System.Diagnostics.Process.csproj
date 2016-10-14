@@ -9,6 +9,9 @@
   <ItemGroup>
     <Compile Include="System.Diagnostics.Process.cs" />
     <Compile Include="System.Diagnostics.Process.Manual.cs" />
+
+    <!-- TODO: Replace this reference with package reference -->
+    <ProjectReference Include="..\..\System.ComponentModel.Primitives\ref\System.ComponentModel.Primitives.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

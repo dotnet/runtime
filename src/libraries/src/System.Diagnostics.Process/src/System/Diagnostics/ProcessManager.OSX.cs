@@ -72,7 +72,7 @@ namespace System.Diagnostics
             int sessionId = Interop.Sys.GetSid(pid);
             if (sessionId != -1)
                 procInfo.SessionId = sessionId;
-            
+
             // Create a threadinfo for each thread in the process
             List<KeyValuePair<ulong, Interop.libproc.proc_threadinfo?>> lstThreads = Interop.libproc.GetAllThreadsInProcess(pid);
             foreach (KeyValuePair<ulong, Interop.libproc.proc_threadinfo?> t in lstThreads)
@@ -159,5 +159,5 @@ namespace System.Diagnostics
             else
                 return System.Diagnostics.ThreadWaitReason.Unknown; // There isn't a good mapping for anything else
         }
-    }
+    }    
 }
