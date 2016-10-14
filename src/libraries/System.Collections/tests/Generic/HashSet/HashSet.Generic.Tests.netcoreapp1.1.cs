@@ -17,6 +17,19 @@ namespace System.Collections.Tests
             Assert.Equal(0, set.Count);
         }
 
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void HashSet_Generic_Constructor_int_AddUpToAndBeyondCapacity(int capacity)
+        {
+            HashSet<T> set = new HashSet<T>(capacity);
+
+            AddToCollection(set, capacity);
+            Assert.Equal(capacity, set.Count);
+
+            AddToCollection(set, capacity + 1);
+            Assert.Equal(capacity + 1, set.Count);
+        }
+
         [Fact]
         public void HashSet_Generic_Constructor_int_Negative_ThrowsArgumentOutOfRangeException()
         {
@@ -35,6 +48,20 @@ namespace System.Collections.Tests
                 Assert.Equal(EqualityComparer<T>.Default, set.Comparer);
             else
                 Assert.Equal(comparer, set.Comparer);
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void HashSet_Generic_Constructor_int_IEqualityComparer_AddUpToAndBeyondCapacity(int capacity)
+        {
+            IEqualityComparer<T> comparer = GetIEqualityComparer();
+            HashSet<T> set = new HashSet<T>(capacity, comparer);
+
+            AddToCollection(set, capacity);
+            Assert.Equal(capacity, set.Count);
+
+            AddToCollection(set, capacity + 1);
+            Assert.Equal(capacity + 1, set.Count);
         }
 
         [Fact]
