@@ -45,12 +45,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../pkg/System.Resources.ResourceManager.pkgproj"/>
-    <!-- TODO: Remove this when package update happens -->
-    <ProjectReference Include="../../System.Runtime.InteropServices/pkg/System.Runtime.InteropServices.pkgproj"/>
-    <!-- TODO: Remove this when package update happens -->
-    <ProjectReference Include="../../System.IO.UnmanagedMemoryStream/pkg/System.IO.UnmanagedMemoryStream.pkgproj"/>
-    <!-- TODO: Remove this when package update happens -->
-    <ProjectReference Include="../../System.Resources.Writer/pkg/System.Resources.Writer.pkgproj"/>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\TestResx.resx">

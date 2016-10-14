@@ -11,9 +11,5 @@
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
-  <ItemGroup>
-    <!-- TODO: Remove this once a package update happens -->
-    <ProjectReference Include="../../System.Resources.ResourceManager/ref/System.Resources.ResourceManager.csproj"/>
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -10,10 +10,6 @@
     <Compile Include="System.IO.UnmanagedMemoryStream.cs" />
   </ItemGroup>
   <ItemGroup>
-    <!-- TODO: Remove this when package update happens -->
-    <ProjectReference Include="../../System.Runtime.InteropServices/ref/System.Runtime.InteropServices.csproj"/>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
