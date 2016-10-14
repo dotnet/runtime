@@ -23,7 +23,7 @@
 
     <!-- This will use the overridden PrereleaseResolveNuGetPackageAssets, which outputs copy local items
          for the xunit wrapper projects -->
-    <PrereleaseResolveNuGetPackageAssets AllowFallbackOnTargetSelection="true"
+    <PrereleaseResolveNuGetPackageAssets AllowFallbackOnTargetSelection="false"
                                          IncludeFrameworkReferences="false"
                                          NuGetPackagesDirectory="$(PackagesDir)"
                                          RuntimeIdentifier="$(TestNugetRuntimeId)"
