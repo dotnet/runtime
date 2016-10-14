@@ -443,7 +443,7 @@ namespace System
         long System.IConvertible.ToInt64(System.IFormatProvider provider) { throw null; }
         sbyte System.IConvertible.ToSByte(System.IFormatProvider provider) { throw null; }
         float System.IConvertible.ToSingle(System.IFormatProvider provider) { throw null; }
-        string System.IConvertible.ToString(System.IFormatProvider provider) { throw null; }
+        public string ToString(System.IFormatProvider provider) { throw null; }
         object System.IConvertible.ToType(System.Type type, System.IFormatProvider provider) { throw null; }
         ushort System.IConvertible.ToUInt16(System.IFormatProvider provider) { throw null; }
         uint System.IConvertible.ToUInt32(System.IFormatProvider provider) { throw null; }
@@ -561,7 +561,7 @@ namespace System
         long System.IConvertible.ToInt64(System.IFormatProvider provider) { throw null; }
         sbyte System.IConvertible.ToSByte(System.IFormatProvider provider) { throw null; }
         float System.IConvertible.ToSingle(System.IFormatProvider provider) { throw null; }
-        string System.IConvertible.ToString(System.IFormatProvider provider) { throw null; }
+        public string ToString(System.IFormatProvider provider) { throw null; }
         object System.IConvertible.ToType(System.Type type, System.IFormatProvider provider) { throw null; }
         ushort System.IConvertible.ToUInt16(System.IFormatProvider provider) { throw null; }
         uint System.IConvertible.ToUInt32(System.IFormatProvider provider) { throw null; }
@@ -2021,8 +2021,8 @@ namespace System
         public string Substring(int startIndex, int length) { throw null; }
         System.Collections.Generic.IEnumerator<char> System.Collections.Generic.IEnumerable<System.Char>.GetEnumerator() { throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
-        int System.IComparable.CompareTo(object value) { throw null; }
-        System.TypeCode System.IConvertible.GetTypeCode() { throw null; }
+        public int CompareTo(object value) { throw null; }
+        public System.TypeCode GetTypeCode() { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
         byte System.IConvertible.ToByte(System.IFormatProvider provider) { throw null; }
         char System.IConvertible.ToChar(System.IFormatProvider provider) { throw null; }
@@ -2034,7 +2034,7 @@ namespace System
         long System.IConvertible.ToInt64(System.IFormatProvider provider) { throw null; }
         sbyte System.IConvertible.ToSByte(System.IFormatProvider provider) { throw null; }
         float System.IConvertible.ToSingle(System.IFormatProvider provider) { throw null; }
-        string System.IConvertible.ToString(System.IFormatProvider provider) { throw null; }
+        public string ToString(System.IFormatProvider provider) { throw null; }
         object System.IConvertible.ToType(System.Type type, System.IFormatProvider provider) { throw null; }
         ushort System.IConvertible.ToUInt16(System.IFormatProvider provider) { throw null; }
         uint System.IConvertible.ToUInt32(System.IFormatProvider provider) { throw null; }
