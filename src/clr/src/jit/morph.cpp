@@ -16076,13 +16076,11 @@ void Compiler::fgSetOptions()
     }
 #endif
 
-#ifdef DEBUGGING_SUPPORT
     if (opts.compDbgCode)
     {
         assert(!codeGen->isGCTypeFixed());
         genInterruptible = true; // debugging is easier this way ...
     }
-#endif
 
     /* Assume we won't need an explicit stack frame if this is allowed */
 

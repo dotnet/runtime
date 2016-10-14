@@ -6837,7 +6837,6 @@ GenTreeCall* Compiler::gtNewCallNode(
     node->gtCall.gtRawILOffset       = BAD_IL_OFFSET;
 #endif
 
-#ifdef DEBUGGING_SUPPORT
     // Spec: Managed Retval sequence points needs to be generated while generating debug info for debuggable code.
     //
     // Implementation note: if not generating MRV info genCallSite2ILOffsetMap will be NULL and
@@ -6865,7 +6864,6 @@ GenTreeCall* Compiler::gtNewCallNode(
         assert(!genCallSite2ILOffsetMap->Lookup(node, &value));
         genCallSite2ILOffsetMap->Set(node, ilOffset);
     }
-#endif
 
     // Initialize gtOtherRegs
     node->ClearOtherRegs();

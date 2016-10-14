@@ -66,14 +66,12 @@ void CodeGen::genCodeForBBlist()
 
     regSet.rsSpillBeg();
 
-#ifdef DEBUGGING_SUPPORT
     /* Initialize the line# tracking logic */
 
     if (compiler->opts.compScopeInfo)
     {
         siInit();
     }
-#endif
 
     // The current implementation of switch tables requires the first block to have a label so it
     // can generate offsets to the switch label targets.
@@ -303,7 +301,6 @@ void CodeGen::genCodeForBBlist()
 
         compiler->compCurBB = block;
 
-#ifdef DEBUGGING_SUPPORT
         siBeginBlock(block);
 
         // BBF_INTERNAL blocks don't correspond to any single IL instruction.
@@ -315,7 +312,6 @@ void CodeGen::genCodeForBBlist()
         }
 
         bool firstMapping = true;
-#endif // DEBUGGING_SUPPORT
 
         /*---------------------------------------------------------------------
          *
@@ -339,12 +335,9 @@ void CodeGen::genCodeForBBlist()
         // as we encounter it.
         CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef DEBUGGING_SUPPORT
         IL_OFFSETX currentILOffset = BAD_IL_OFFSET;
-#endif
         for (GenTree* node : LIR::AsRange(block).NonPhiNodes())
         {
-#ifdef DEBUGGING_SUPPORT
             // Do we have a new IL offset?
             if (node->OperGet() == GT_IL_OFFSET)
             {
@@ -353,7 +346,6 @@ void CodeGen::genCodeForBBlist()
                 genIPmappingAdd(currentILOffset, firstMapping);
                 firstMapping = false;
             }
-#endif // DEBUGGING_SUPPORT
 
 #ifdef DEBUG
             if (node->OperGet() == GT_IL_OFFSET)
@@ -443,7 +435,6 @@ void CodeGen::genCodeForBBlist()
         }
 #endif // defined(DEBUG)
 
-#ifdef DEBUGGING_SUPPORT
         // It is possible to reach the end of the block without generating code for the current IL offset.
         // For example, if the following IR ends the current block, no code will have been generated for
         // offset 21:
@@ -480,8 +471,6 @@ void CodeGen::genCodeForBBlist()
                 siCloseAllOpenScopes();
             }
         }
-
-#endif // DEBUGGING_SUPPORT
 
         genStackLevel -= savedStkLvl;
 
@@ -1721,8 +1710,6 @@ void CodeGen::genEmitCall(int                   callType,
                                indir->Index() ? indir->Index()->gtRegNum : REG_NA, indir->Scale(), indir->Offset());
 }
 
-/*****************************************************************************/
-#ifdef DEBUGGING_SUPPORT
 /*****************************************************************************
  *                          genSetScopeInfo
  *
@@ -1783,6 +1770,5 @@ void CodeGen::genSetScopeInfo(unsigned            which,
 
     compiler->eeSetLVinfo(which, startOffs, length, ilVarNum, LVnum, name, avail, varLoc);
 }
-#endif // DEBUGGING_SUPPORT
 
 #endif // !LEGACY_BACKEND

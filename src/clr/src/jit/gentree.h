@@ -4317,10 +4317,7 @@ struct GenTreeStmt : public GenTree
     GenTreePtr     gtStmtExpr;      // root of the expression tree
     GenTreePtr     gtStmtList;      // first node (for forward walks)
     InlineContext* gtInlineContext; // The inline context for this statement.
-
-#if defined(DEBUGGING_SUPPORT) || defined(DEBUG)
-    IL_OFFSETX gtStmtILoffsx; // instr offset (if available)
-#endif
+    IL_OFFSETX     gtStmtILoffsx;   // instr offset (if available)
 
 #ifdef DEBUG
     IL_OFFSET gtStmtLastILoffs; // instr offset at end of stmt
@@ -4359,9 +4356,7 @@ struct GenTreeStmt : public GenTree
         , gtStmtExpr(expr)
         , gtStmtList(nullptr)
         , gtInlineContext(nullptr)
-#if defined(DEBUGGING_SUPPORT) || defined(DEBUG)
         , gtStmtILoffsx(offset)
-#endif
 #ifdef DEBUG
         , gtStmtLastILoffs(BAD_IL_OFFSET)
 #endif

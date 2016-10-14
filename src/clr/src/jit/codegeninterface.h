@@ -426,10 +426,8 @@ public:
 private:
     bool m_cgFullPtrRegMap;
 
-#ifdef DEBUGGING_SUPPORT
 public:
     virtual void siUpdate() = 0;
-#endif // DEBUGGING_SUPPORT
 
 #ifdef LATE_DISASM
 public:

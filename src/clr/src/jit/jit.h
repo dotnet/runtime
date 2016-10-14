@@ -386,17 +386,6 @@ typedef ptrdiff_t ssize_t;
 
 /*****************************************************************************/
 
-// Debugging support is ON by default. Can be turned OFF by
-// adding /DDEBUGGING_SUPPORT=0 on the command line.
-
-#ifndef DEBUGGING_SUPPORT
-#define DEBUGGING_SUPPORT
-#elif !DEBUGGING_SUPPORT
-#undef DEBUGGING_SUPPORT
-#endif
-
-/*****************************************************************************/
-
 // Late disassembly is OFF by default. Can be turned ON by
 // adding /DLATE_DISASM=1 on the command line.
 // Always OFF in the non-debug version
