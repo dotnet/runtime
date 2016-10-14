@@ -4269,6 +4269,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
     const bool  isForceInline          = (info.compFlags & CORINFO_FLG_FORCEINLINE) != 0;
     const bool  makeInlineObservations = (compInlineResult != nullptr);
     const bool  isInlining             = compIsForInlining();
+    unsigned    retBlocks              = 0;
 
     if (makeInlineObservations)
     {
@@ -4638,6 +4639,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
             break;
 
             case CEE_JMP:
+                retBlocks++;
 
 #if !defined(_TARGET_X86_) && !defined(_TARGET_ARM_)
                 if (!isInlining)
@@ -4730,6 +4732,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
                     fgObserveInlineConstants(opcode, pushedStack, isInlining);
                 }
                 break;
+            case CEE_RET:
+                retBlocks++;
 
             default:
                 break;
@@ -4757,6 +4761,21 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
     if (makeInlineObservations)
     {
         compInlineResult->Note(InlineObservation::CALLEE_END_OPCODE_SCAN);
+
+        if (!compInlineResult->UsesLegacyPolicy())
+        {
+            // If there are no return blocks we know it does not return, however if there
+            // return blocks we don't know it returns as it may be counting unreachable code.
+            // However we will still make the CALLEE_DOES_NOT_RETURN observation.
+
+            compInlineResult->NoteBool(InlineObservation::CALLEE_DOES_NOT_RETURN, retBlocks == 0);
+
+            if (retBlocks == 0 && isInlining)
+            {
+                // Mark the call node as "no return" as it can impact caller's code quality.
+                impInlineInfo->iciCall->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
+            }
+        }
 
         // If the inline is viable and discretionary, do the
         // profitability screening.
@@ -5062,17 +5081,19 @@ void Compiler::fgLinkBasicBlocks()
 
 /*****************************************************************************
  *
- *  Walk the instrs to create the basic blocks.
+ *  Walk the instrs to create the basic blocks. Returns the number of BBJ_RETURN in method
  */
 
-void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE* jumpTarget)
+unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE* jumpTarget)
 {
+    unsigned    retBlocks;
     const BYTE* codeBegp = codeAddr;
     const BYTE* codeEndp = codeAddr + codeSize;
     bool        tailCall = false;
     unsigned    curBBoffs;
     BasicBlock* curBBdesc;
 
+    retBlocks = 0;
     /* Clear the beginning offset for the first BB */
 
     curBBoffs = 0;
@@ -5278,7 +5299,8 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
                     // TODO-CQ: We can inline some callees with explicit tail calls if we can guarantee that the calls
                     // can be dispatched as tail calls from the caller.
                     compInlineResult->NoteFatal(InlineObservation::CALLEE_EXPLICIT_TAIL_PREFIX);
-                    return;
+                    retBlocks++;
+                    return retBlocks;
                 }
 
                 __fallthrough;
@@ -5389,6 +5411,7 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
                But instead of directly returning to the caller we jump and
                execute something else in between */
             case CEE_RET:
+                retBlocks++;
                 jmpKind = BBJ_RETURN;
                 break;
 
@@ -5574,6 +5597,8 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
     /* Finally link up the bbJumpDest of the blocks together */
 
     fgLinkBasicBlocks();
+
+    return retBlocks;
 }
 
 /*****************************************************************************
@@ -5719,44 +5744,14 @@ void Compiler::fgFindBasicBlocks()
 
     /* Now create the basic blocks */
 
-    fgMakeBasicBlocks(info.compCode, info.compILCodeSize, jumpTarget);
+    unsigned retBlocks = fgMakeBasicBlocks(info.compCode, info.compILCodeSize, jumpTarget);
 
     if (compIsForInlining())
     {
-        if (compInlineResult->IsFailure())
-        {
-            return;
-        }
-
-        bool hasReturnBlocks           = false;
-        bool hasMoreThanOneReturnBlock = false;
-
-        for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
-        {
-            if (block->bbJumpKind == BBJ_RETURN)
-            {
-                if (hasReturnBlocks)
-                {
-                    hasMoreThanOneReturnBlock = true;
-                    break;
-                }
-
-                hasReturnBlocks = true;
-            }
-        }
-
-        if (!hasReturnBlocks && !compInlineResult->UsesLegacyPolicy())
-        {
-            //
-            // Mark the call node as "no return". The inliner might ignore CALLEE_DOES_NOT_RETURN and
-            // fail inline for a different reasons. In that case we still want to make the "no return"
-            // information available to the caller as it can impact caller's code quality.
-            //
-
-            impInlineInfo->iciCall->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
-        }
-
-        compInlineResult->NoteBool(InlineObservation::CALLEE_DOES_NOT_RETURN, !hasReturnBlocks);
+        // If fgFindJumpTargets marked this as "no return"  there really should be no BBJ_RETURN blocks in the method
+        assert((retBlocks == 0 && ((impInlineInfo->iciCall->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) ==
+                                   GTF_CALL_M_DOES_NOT_RETURN)) ||
+               (retBlocks >= 1 && ((impInlineInfo->iciCall->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) == 0)));
 
         if (compInlineResult->IsFailure())
         {
@@ -5770,7 +5765,7 @@ void Compiler::fgFindBasicBlocks()
         compHndBBtabCount    = impInlineInfo->InlinerCompiler->compHndBBtabCount;
         info.compXcptnsCount = impInlineInfo->InlinerCompiler->info.compXcptnsCount;
 
-        if (info.compRetNativeType != TYP_VOID && hasMoreThanOneReturnBlock)
+        if (info.compRetNativeType != TYP_VOID && retBlocks > 1)
         {
             // The lifetime of this var might expand multiple BBs. So it is a long lifetime compiler temp.
             lvaInlineeReturnSpillTemp = lvaGrabTemp(false DEBUGARG("Inline candidate multiple BBJ_RETURN spill temp"));

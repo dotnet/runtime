@@ -315,8 +315,8 @@ namespace System
             {
                 get
                 {
-                    if (_current < _start) ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_EnumNotStarted);
-                    if (_current >= _end) ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_EnumEnded);
+                    if (_current < _start) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumNotStarted();
+                    if (_current >= _end) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumEnded();
                     return _array[_current];
                 }
             }

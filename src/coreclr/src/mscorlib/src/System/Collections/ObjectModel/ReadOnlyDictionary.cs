@@ -240,7 +240,7 @@ namespace System.Collections.ObjectModel
             }
 
             if (index < 0 || index > array.Length) {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+                ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
             }
 
             if (array.Length - index < Count) {
@@ -261,7 +261,7 @@ namespace System.Collections.ObjectModel
                 else {
                     object[] objects = array as object[];
                     if (objects == null) {
-                        ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidArrayType);
+                        ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
                     }
 
                     try {
@@ -270,7 +270,7 @@ namespace System.Collections.ObjectModel
                         }
                     }
                     catch (ArrayTypeMismatchException) {
-                        ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidArrayType);
+                        ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
                     }
                 }
             }
@@ -596,7 +596,7 @@ namespace System.Collections.ObjectModel
                 Type targetType = array.GetType().GetElementType();
                 Type sourceType = typeof(T);
                 if (!(targetType.IsAssignableFrom(sourceType) || sourceType.IsAssignableFrom(targetType))) {
-                    ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidArrayType);
+                    ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
                 }
 
                 //
@@ -605,7 +605,7 @@ namespace System.Collections.ObjectModel
                 //
                 object[] objects = array as object[];
                 if (objects == null) {
-                    ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidArrayType);
+                    ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
                 }
 
                 try {
@@ -614,7 +614,7 @@ namespace System.Collections.ObjectModel
                     }
                 }
                 catch (ArrayTypeMismatchException) {
-                    ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidArrayType);
+                    ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
                 }
             }
         }
