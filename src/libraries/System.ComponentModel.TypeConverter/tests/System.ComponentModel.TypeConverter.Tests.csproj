@@ -88,8 +88,10 @@
     <Compile Include="InstanceDescriptorTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\pkg\System.ComponentModel.TypeConverter.pkgproj">
-    </ProjectReference>
+    <ProjectReference Include="..\pkg\System.ComponentModel.TypeConverter.pkgproj"/>
+    
+    <!-- TODO: Replace this with package reference -->
+    <ProjectReference Include="..\..\System.ComponentModel.Primitives\pkg\System.ComponentModel.Primitives.pkgproj"/>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
