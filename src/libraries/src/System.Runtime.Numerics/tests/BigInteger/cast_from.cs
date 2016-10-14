@@ -579,7 +579,7 @@ namespace System.Numerics.Tests
         [OuterLoop]
         public static void RunDoubleExplicitCastFromLargeBigIntegerTests()
         {
-            DoubleExplicitCastFromLargeBigIntegerTests(0, 5, 64, 4);
+            DoubleExplicitCastFromLargeBigIntegerTests(0, 4, 64, 3);
         }
 
         [Fact]
