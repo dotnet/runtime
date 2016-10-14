@@ -860,9 +860,7 @@ struct BasicBlock : private LIR::Range
     unsigned bbHeapSsaNumIn;            // The SSA # of "Heap" on entry to the block.
     unsigned bbHeapSsaNumOut;           // The SSA # of "Heap" on exit from the block.
 
-#ifdef DEBUGGING_SUPPORT
     VARSET_TP bbScope; // variables in scope over the block
-#endif
 
     void InitVarSets(class Compiler* comp);
 

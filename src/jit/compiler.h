@@ -694,9 +694,7 @@ public:
         return (unsigned)(roundUp(lvExactSize, TARGET_POINTER_SIZE));
     }
 
-#if defined(DEBUGGING_SUPPORT) || defined(DEBUG)
     unsigned lvSlotNum; // original slot # (if remapped)
-#endif
 
     typeInfo lvVerTypeInfo; // type info needed for verification
 
@@ -4602,7 +4600,6 @@ private:
 
     void fgMarkUseDef(GenTreeLclVarCommon* tree, GenTree* asgdLclVar = nullptr);
 
-#ifdef DEBUGGING_SUPPORT
     void fgBeginScopeLife(VARSET_TP* inScope, VarScopeDsc* var);
     void fgEndScopeLife(VARSET_TP* inScope, VarScopeDsc* var);
 
@@ -4615,8 +4612,6 @@ private:
 #ifdef DEBUG
     void fgDispDebugScopes();
 #endif // DEBUG
-
-#endif // DEBUGGING_SUPPORT
 
     //-------------------------------------------------------------------------
     //
@@ -6560,8 +6555,6 @@ private:
 public:
     CodeGenInterface* codeGen;
 
-#ifdef DEBUGGING_SUPPORT
-
     //  The following holds information about instr offsets in terms of generated code.
 
     struct IPmappingDsc
@@ -6591,7 +6584,6 @@ public:
     typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, IL_OFFSETX, JitSimplerHashBehavior>
                            CallSiteILOffsetTable;
     CallSiteILOffsetTable* genCallSite2ILOffsetMap;
-#endif // DEBUGGING_SUPPORT
 
     unsigned    genReturnLocal; // Local number for the return value when applicable.
     BasicBlock* genReturnBB;    // jumped to when not optimizing for speed.
@@ -7561,14 +7553,10 @@ public:
 #endif
         }
 
-#ifdef DEBUGGING_SUPPORT
         bool compScopeInfo; // Generate the LocalVar info ?
         bool compDbgCode;   // Generate debugger-friendly code?
         bool compDbgInfo;   // Gather debugging info?
         bool compDbgEnC;
-#else
-        static const bool compDbgCode;
-#endif
 
 #ifdef PROFILING_SUPPORTED
         bool compNoPInvokeInlineCB;
@@ -7897,8 +7885,6 @@ public:
                             // and the VM expects that, or the JIT is a "self-host" compiler
                             // (e.g., x86 hosted targeting x86) and the VM expects that.
 
-#if defined(DEBUGGING_SUPPORT) || defined(DEBUG)
-
         /*  The following holds IL scope information about local variables.
          */
 
@@ -7912,8 +7898,6 @@ public:
         IL_OFFSET*                   compStmtOffsets; // sorted
         unsigned                     compStmtOffsetsCount;
         ICorDebugInfo::BoundaryTypes compStmtOffsetsImplicit;
-
-#endif // DEBUGGING_SUPPORT || DEBUG
 
 #define CPU_X86 0x0100 // The generic X86 CPU
 #define CPU_X86_PENTIUM_4 0x0110
@@ -8005,7 +7989,7 @@ public:
 
     void compDispLocalVars();
 
-#endif // DEBUGGING_SUPPORT || DEBUG
+#endif // DEBUG
 
 //-------------------------- Global Compiler Data ------------------------------------
 
@@ -8243,9 +8227,8 @@ public:
     void compDspSrcLinesByLineNum(unsigned line, bool seek = false);
 #endif // DEBUG
 
-//-------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
-#ifdef DEBUGGING_SUPPORT
     typedef ListNode<VarScopeDsc*> VarScopeListNode;
 
     struct VarScopeMapInfo
@@ -8302,8 +8285,6 @@ public:
 #ifdef DEBUG
     void compDispScopeLists();
 #endif // DEBUG
-
-#endif // DEBUGGING_SUPPORT
 
     bool compIsProfilerHookNeeded();
 

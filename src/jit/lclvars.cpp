@@ -3400,8 +3400,6 @@ void Compiler::lvaMarkLocalVars()
 
     BasicBlock* block;
 
-#if defined(DEBUGGING_SUPPORT) || defined(DEBUG)
-
 #ifndef DEBUG
     // Assign slot numbers to all variables.
     // If compiler generated local variables, slot numbers will be
@@ -3423,8 +3421,6 @@ void Compiler::lvaMarkLocalVars()
             varDsc->lvSlotNum = lclNum;
         }
     }
-
-#endif // defined(DEBUGGING_SUPPORT) || defined(DEBUG)
 
     /* Mark all local variable references */
 

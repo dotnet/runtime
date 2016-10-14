@@ -6647,8 +6647,6 @@ void Compiler::raMarkStkVars()
 
 #endif // FEATURE_FIXED_OUT_ARGS
 
-#ifdef DEBUGGING_SUPPORT
-
 #ifdef DEBUG
             /* For debugging, note that we have to reserve space even for
                unused variables if they are ever in scope. However, this is not
@@ -6683,7 +6681,6 @@ void Compiler::raMarkStkVars()
                     varDsc->lvMustInit = true;
                 }
             }
-#endif // DEBUGGING_SUPPORT
 
 #ifndef LEGACY_BACKEND
             varDsc->lvOnFrame = needSlot;
