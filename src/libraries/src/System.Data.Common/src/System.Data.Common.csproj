@@ -19,9 +19,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == ''">
     <Compile Include="System.Data.Common.TypeForwards.cs" />
-    
     <Compile Include="System\HResults.cs" />
-
     <Compile Include="System\Xml\TreeIterator.cs" />
     <Compile Include="System\Xml\XmlBoundElement.cs" />
     <Compile Include="System\Xml\XmlDataDocument.cs" />
@@ -33,7 +31,6 @@
     <Compile Include="System\Xml\DataSetMappper.cs" />
     <Compile Include="System\Xml\IXmlDataVirtualNode.cs" />
     <Compile Include="System\Xml\RegionIterator.cs" />
-
     <Compile Include="System\Data\updatestatus.cs" />
     <Compile Include="System\Data\XDRSchema.cs" />
     <Compile Include="System\Data\XmlContent.cs" />
@@ -134,8 +131,8 @@
     <Compile Include="System\Data\Range.cs" />
     <Compile Include="System\Data\RbTree.cs" />
     <Compile Include="System\Data\RecordManager.cs" />
-    <Compile Include="System\Data\RecordsAffectedEventArgs.cs" />
-    <Compile Include="System\Data\RecordsAffectedEventHandler.cs" />
+    <Compile Include="System\Data\StatementCompletedEventArgs.cs" />
+    <Compile Include="System\Data\StatementCompletedEventHandler.cs" />
     <Compile Include="System\Data\RelatedView.cs" />
     <Compile Include="System\Data\RelationshipConverter.cs" />
     <Compile Include="System\Data\Rule.cs" />
@@ -151,7 +148,6 @@
     <Compile Include="System\Data\StrongTypingException.cs" />
     <Compile Include="System\Data\UniqueConstraint.cs" />
     <Compile Include="System\Data\UpdateRowSource.cs" />
-
     <Compile Include="System\Data\Common\UInt64Storage.cs" />
     <Compile Include="System\Data\Common\AdapterSwitches.cs" />
     <Compile Include="System\Data\Common\AdapterUtil.cs" />
@@ -217,7 +213,6 @@
     <Compile Include="System\Data\Common\TimeSpanStorage.cs" />
     <Compile Include="System\Data\Common\UInt16Storage.cs" />
     <Compile Include="System\Data\Common\UInt32Storage.cs" />
-
     <Compile Include="System\Data\Common\SQLTypes\SQLCharsStorage.cs" />
     <Compile Include="System\Data\Common\SQLTypes\SQLDateTimeStorage.cs" />
     <Compile Include="System\Data\Common\SQLTypes\SQLDecimalStorage.cs" />
@@ -233,7 +228,6 @@
     <Compile Include="System\Data\Common\SQLTypes\SQlBooleanStorage.cs" />
     <Compile Include="System\Data\Common\SQLTypes\SQLBytesStorage.cs" />
     <Compile Include="System\Data\Common\SQLTypes\SQLByteStorage.cs" />
-
     <Compile Include="System\Data\Filter\DataExpression.cs" />
     <Compile Include="System\Data\Filter\ExpressionNode.cs" />
     <Compile Include="System\Data\Filter\ExpressionParser.cs" />
@@ -248,7 +242,6 @@
     <Compile Include="System\Data\Filter\AggregateNode.cs" />
     <Compile Include="System\Data\Filter\BinaryNode.cs" />
     <Compile Include="System\Data\Filter\ConstNode.cs" />
-
     <Compile Include="System\Data\SQLTypes\SQLChars.cs" />
     <Compile Include="System\Data\SQLTypes\SqlCharStream.cs" />
     <Compile Include="System\Data\SQLTypes\SQLDateTime.cs" />
@@ -269,10 +262,8 @@
     <Compile Include="System\Data\SQLTypes\SQLBoolean.cs" />
     <Compile Include="System\Data\SQLTypes\SQLByte.cs" />
     <Compile Include="System\Data\SQLTypes\SQLBytes.cs" />
-
     <Compile Include="System\Data\ProviderBase\DataReaderContainer.cs" />
     <Compile Include="System\Data\ProviderBase\SchemaMapping.cs" />
-
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="mscorlib" />
