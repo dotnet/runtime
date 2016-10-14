@@ -9,7 +9,7 @@
 @rem    of the enlistment(repo).  It also requires that CoreCLR has been built, 
 @rem    and that all CoreCLR tests have been built.
 @rem    
-@rem    The preformance harness "RunBencchmarks.exe" is built as a test case
+@rem    The preformance harness "RunBenchmarks.exe" is built as a test case
 @rem    as are all the performance tests it runs.
 @rem    
 @rem    For the ByteMark tests, it must copy the command scripts to the 
