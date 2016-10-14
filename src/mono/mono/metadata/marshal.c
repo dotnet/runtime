@@ -107,8 +107,10 @@ mono_marshal_string_to_utf16 (MonoString *s);
 static void *
 mono_marshal_string_to_utf16_copy (MonoString *s);
 
+#ifndef HOST_WIN32
 static gpointer
-mono_string_to_utf8str (MonoString *string_obj);
+mono_string_to_lpstr (MonoString *string_obj);
+#endif
 
 static MonoStringBuilder *
 mono_string_utf8_to_builder2 (char *text);
@@ -304,7 +306,7 @@ mono_marshal_init (void)
 		register_icall (mono_string_new_wrapper, "mono_string_new_wrapper", "obj ptr", FALSE);
 		register_icall (mono_string_new_len_wrapper, "mono_string_new_len_wrapper", "obj ptr int", FALSE);
 		register_icall (ves_icall_mono_string_to_utf8, "ves_icall_mono_string_to_utf8", "ptr obj", FALSE);
-		register_icall (mono_string_to_utf8str, "mono_string_to_utf8str", "ptr obj", FALSE);
+		register_icall (mono_string_to_lpstr, "mono_string_to_lpstr", "ptr obj", FALSE);
 		register_icall (mono_string_to_ansibstr, "mono_string_to_ansibstr", "ptr object", FALSE);
 		register_icall (mono_string_builder_to_utf8, "mono_string_builder_to_utf8", "ptr object", FALSE);
 		register_icall (mono_string_builder_to_utf16, "mono_string_builder_to_utf16", "ptr object", FALSE);
@@ -920,13 +922,13 @@ mono_string_utf8_to_builder (MonoStringBuilder *sb, char *text)
 	if (!sb || !text)
 		return;
 
+	int len = strlen (text);
+	if (len > mono_string_builder_capacity (sb))
+		len = mono_string_builder_capacity (sb);
+
 	GError *error = NULL;
 	glong copied;
-	gunichar2* ut = g_utf8_to_utf16 (text, strlen (text), NULL, &copied, &error);
-	int capacity = mono_string_builder_capacity (sb);
-	
-	if (copied > capacity)
-		copied = capacity;
+	gunichar2* ut = g_utf8_to_utf16 (text, len, NULL, &copied, &error);
 
 	if (!error) {
 		MONO_OBJECT_SETREF (sb, chunkPrevious, NULL);
@@ -949,6 +951,7 @@ mono_string_utf8_to_builder2 (char *text)
 
 	return sb;
 }
+
 
 void
 mono_string_utf16_to_builder (MonoStringBuilder *sb, gunichar2 *text)
@@ -982,8 +985,7 @@ mono_string_builder_to_utf8 (MonoStringBuilder *sb)
 {
 	MonoError error;
 	GError *gerror = NULL;
-	glong byte_count;
-	
+
 	if (!sb)
 		return NULL;
 
@@ -991,7 +993,7 @@ mono_string_builder_to_utf8 (MonoStringBuilder *sb)
 
 	guint str_len = mono_string_builder_string_length (sb);
 
-	gchar *tmp = g_utf16_to_utf8 (str_utf16, str_len, NULL, &byte_count, &gerror);
+	gchar *tmp = g_utf16_to_utf8 (str_utf16, str_len, NULL, NULL, &gerror);
 
 	if (gerror) {
 		g_error_free (gerror);
@@ -999,7 +1001,8 @@ mono_string_builder_to_utf8 (MonoStringBuilder *sb)
 		mono_set_pending_exception (mono_get_exception_execution_engine ("Failed to convert StringBuilder from utf16 to utf8"));
 		return NULL;
 	} else {
-		gchar *res = (gchar *)mono_marshal_alloc (byte_count+1, &error);
+		guint len = mono_string_builder_capacity (sb) + 1;
+		gchar *res = (gchar *)mono_marshal_alloc (len * sizeof (gchar), &error);
 		if (!mono_error_ok (&error)) {
 			mono_marshal_free (str_utf16);
 			g_free (tmp);
@@ -1007,8 +1010,9 @@ mono_string_builder_to_utf8 (MonoStringBuilder *sb)
 			return NULL;
 		}
 
-		memcpy (res, tmp, byte_count);
-		res[byte_count] = '\0';
+		g_assert (str_len < len);
+		memcpy (res, tmp, str_len * sizeof (gchar));
+		res[str_len] = '\0';
 
 		mono_marshal_free (str_utf16);
 		g_free (tmp);
@@ -1077,7 +1081,7 @@ mono_string_builder_to_utf16 (MonoStringBuilder *sb)
 /* This is a JIT icall, it sets the pending exception and returns NULL on error. */
 #ifndef HOST_WIN32
 static gpointer
-mono_string_to_utf8str (MonoString *s)
+mono_string_to_lpstr (MonoString *s)
 {
 	MonoError error;
 	char *result = mono_string_to_utf8_checked (s, &error);
@@ -1472,10 +1476,7 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 #endif
 		mono_mb_emit_byte (mb, CEE_STIND_REF);	
 		break;
-
-		// In Mono historically LPSTR was treated as a UTF8STR
 	case MONO_MARSHAL_CONV_STR_LPSTR:
-	case MONO_MARSHAL_CONV_STR_UTF8STR:
 		mono_mb_emit_ldloc (mb, 1);
 		mono_mb_emit_ldloc (mb, 0);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
@@ -1603,7 +1604,6 @@ conv_to_icall (MonoMarshalConv conv, int *ind_store_type)
 	case MONO_MARSHAL_CONV_LPTSTR_STR:
 		*ind_store_type = CEE_STIND_REF;
 		return mono_string_new_wrapper;
-	case MONO_MARSHAL_CONV_UTF8STR_STR:
 	case MONO_MARSHAL_CONV_LPSTR_STR:
 		*ind_store_type = CEE_STIND_REF;
 		return mono_string_new_wrapper;
@@ -1611,12 +1611,10 @@ conv_to_icall (MonoMarshalConv conv, int *ind_store_type)
 #ifdef TARGET_WIN32
 		return mono_marshal_string_to_utf16;
 #else
-		return mono_string_to_utf8str;
+		return mono_string_to_lpstr;
 #endif
-		// In Mono historically LPSTR was treated as a UTF8STR
-	case MONO_MARSHAL_CONV_STR_UTF8STR:
 	case MONO_MARSHAL_CONV_STR_LPSTR:
-		return mono_string_to_utf8str;
+		return mono_string_to_lpstr;
 	case MONO_MARSHAL_CONV_STR_BSTR:
 		return mono_string_to_bstr;
 	case MONO_MARSHAL_CONV_BSTR_STR:
@@ -1625,7 +1623,6 @@ conv_to_icall (MonoMarshalConv conv, int *ind_store_type)
 	case MONO_MARSHAL_CONV_STR_TBSTR:
 	case MONO_MARSHAL_CONV_STR_ANSIBSTR:
 		return mono_string_to_ansibstr;
-	case MONO_MARSHAL_CONV_SB_UTF8STR:
 	case MONO_MARSHAL_CONV_SB_LPSTR:
 		return mono_string_builder_to_utf8;
 	case MONO_MARSHAL_CONV_SB_LPTSTR:
@@ -1647,7 +1644,6 @@ conv_to_icall (MonoMarshalConv conv, int *ind_store_type)
 	case MONO_MARSHAL_CONV_FTN_DEL:
 		*ind_store_type = CEE_STIND_REF;
 		return mono_ftnptr_to_delegate;
-	case MONO_MARSHAL_CONV_UTF8STR_SB:
 	case MONO_MARSHAL_CONV_LPSTR_SB:
 		*ind_store_type = CEE_STIND_REF;
 		return mono_string_utf8_to_builder;
@@ -1694,8 +1690,6 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		mono_mb_emit_byte (mb, CEE_NEG);
 		mono_mb_emit_byte (mb, CEE_STIND_I2);
 		break;
-	// In Mono historically LPSTR was treated as a UTF8STR
-	case MONO_MARSHAL_CONV_STR_UTF8STR:
 	case MONO_MARSHAL_CONV_STR_LPWSTR:
 	case MONO_MARSHAL_CONV_STR_LPSTR:
 	case MONO_MARSHAL_CONV_STR_LPTSTR:
@@ -2424,8 +2418,6 @@ mono_marshal_get_string_to_ptr_conv (MonoMethodPInvoke *piinfo, MonoMarshalSpec 
 		return MONO_MARSHAL_CONV_STR_LPTSTR;
 	case MONO_NATIVE_BSTR:
 		return MONO_MARSHAL_CONV_STR_BSTR;
-	case MONO_NATIVE_UTF8STR:
-		return MONO_MARSHAL_CONV_STR_UTF8STR;
 	default:
 		return MONO_MARSHAL_CONV_INVALID;
 	}
@@ -2439,12 +2431,13 @@ mono_marshal_get_stringbuilder_to_ptr_conv (MonoMethodPInvoke *piinfo, MonoMarsh
 	switch (encoding) {
 	case MONO_NATIVE_LPWSTR:
 		return MONO_MARSHAL_CONV_SB_LPWSTR;
+		break;
 	case MONO_NATIVE_LPSTR:
 		return MONO_MARSHAL_CONV_SB_LPSTR;
-	case MONO_NATIVE_UTF8STR:
-		return MONO_MARSHAL_CONV_SB_UTF8STR;
+		break;
 	case MONO_NATIVE_LPTSTR:
 		return MONO_MARSHAL_CONV_SB_LPTSTR;
+		break;
 	default:
 		return MONO_MARSHAL_CONV_INVALID;
 	}
@@ -2461,8 +2454,6 @@ mono_marshal_get_ptr_to_string_conv (MonoMethodPInvoke *piinfo, MonoMarshalSpec 
 	case MONO_NATIVE_LPWSTR:
 		*need_free = FALSE;
 		return MONO_MARSHAL_CONV_LPWSTR_STR;
-	case MONO_NATIVE_UTF8STR:
-		return MONO_MARSHAL_CONV_UTF8STR_STR;
 	case MONO_NATIVE_LPSTR:
 	case MONO_NATIVE_VBBYREFSTR:
 		return MONO_MARSHAL_CONV_LPSTR_STR;
@@ -2490,8 +2481,6 @@ mono_marshal_get_ptr_to_stringbuilder_conv (MonoMethodPInvoke *piinfo, MonoMarsh
 		 */
 		*need_free = FALSE;
 		return MONO_MARSHAL_CONV_LPWSTR_SB;
-	case MONO_NATIVE_UTF8STR:
-		return MONO_MARSHAL_CONV_UTF8STR_SB;
 	case MONO_NATIVE_LPSTR:
 		return MONO_MARSHAL_CONV_LPSTR_SB;
 		break;
@@ -5740,9 +5729,6 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 				case MONO_NATIVE_LPSTR:
 					mono_mb_emit_icall (mb, mono_string_utf8_to_builder2);
 					break;
-				case MONO_NATIVE_UTF8STR:
-					mono_mb_emit_icall (mb, mono_string_utf8_to_builder2);
-					break;
 				default:
 					g_assert_not_reached ();
 				}
@@ -5853,8 +5839,6 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_ldloc (mb, 0);
 			mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_FTN_DEL, NULL));
 			mono_mb_emit_stloc (mb, 3);
-		} else if (klass == mono_defaults.stringbuilder_class){
-			// FIXME: implement
 		} else {
 			/* set src */
 			mono_mb_emit_stloc (mb, 0);
@@ -5914,7 +5898,7 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 			encoding = mono_marshal_get_string_encoding (m->piinfo, spec);
 
 			// FIXME:
-			g_assert (encoding == MONO_NATIVE_LPSTR || encoding == MONO_NATIVE_UTF8STR);
+			g_assert (encoding == MONO_NATIVE_LPSTR);
 
 			g_assert (!t->byref);
 			g_assert (encoding != -1);
@@ -11030,7 +11014,6 @@ mono_struct_delete_old (MonoClass *klass, char *ptr)
 		case MONO_MARSHAL_CONV_STR_BSTR:
 		case MONO_MARSHAL_CONV_STR_ANSIBSTR:
 		case MONO_MARSHAL_CONV_STR_TBSTR:
-		case MONO_MARSHAL_CONV_STR_UTF8STR:
 			mono_marshal_free (*(gpointer *)cpos);
 			break;
 
@@ -11134,27 +11117,6 @@ ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMem (int size)
 {
 	void *res = mono_marshal_alloc_co_task_mem (size);
 
-	if (!res) {
-		mono_set_pending_exception (mono_domain_get ()->out_of_memory_ex);
-		return NULL;
-	}
-	return res;
-}
-
-void*
-ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMemSize (gulong size)
-{
-	void *res;
-
-#ifdef HOST_WIN32
-	res = CoTaskMemAlloc (size);
-#else
-	if (size == 0)
-		/* This returns a valid pointer for size 0 on MS.NET */
-		size = 4;
-
-	res = g_try_malloc (size);
-#endif
 	if (!res) {
 		mono_set_pending_exception (mono_domain_get ()->out_of_memory_ex);
 		return NULL;
@@ -11541,7 +11503,6 @@ mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, guint32 *align,
 	case MONO_NATIVE_BSTR:
 	case MONO_NATIVE_ANSIBSTR:
 	case MONO_NATIVE_TBSTR:
-	case MONO_NATIVE_UTF8STR:
 	case MONO_NATIVE_LPARRAY:
 	case MONO_NATIVE_SAFEARRAY:
 	case MONO_NATIVE_IUNKNOWN:
@@ -11625,10 +11586,10 @@ mono_marshal_asany (MonoObject *o, MonoMarshalNative string_encoding, int param_
 		switch (string_encoding) {
 		case MONO_NATIVE_LPWSTR:
 			return mono_marshal_string_to_utf16_copy ((MonoString*)o);
+			break;
 		case MONO_NATIVE_LPSTR:
-		case MONO_NATIVE_UTF8STR:
-			// Same code path, because in Mono, we treated strings as Utf8
-			return mono_string_to_utf8str ((MonoString*)o);
+			return mono_string_to_lpstr ((MonoString*)o);
+			break;
 		default:
 			g_warning ("marshaling conversion %d not implemented", string_encoding);
 			g_assert_not_reached ();
@@ -11696,7 +11657,6 @@ mono_marshal_free_asany (MonoObject *o, gpointer ptr, MonoMarshalNative string_e
 		switch (string_encoding) {
 		case MONO_NATIVE_LPWSTR:
 		case MONO_NATIVE_LPSTR:
-		case MONO_NATIVE_UTF8STR:
 			mono_marshal_free (ptr);
 			break;
 		default:

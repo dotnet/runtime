@@ -834,7 +834,6 @@ mono_string_to_utf16
 mono_string_to_utf32
 mono_string_to_utf8
 mono_string_to_utf8_checked
-mono_string_to_utf8str
 mono_stringify_assembly_name
 mono_table_info_get_rows
 mono_thread_attach
