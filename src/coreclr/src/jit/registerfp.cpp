@@ -326,10 +326,8 @@ void CodeGen::genFloatAssign(GenTree* tree)
     bool      unaligned  = false; // Is this an unaligned store
     regNumber op2reg     = REG_NA;
 
-#ifdef DEBUGGING_SUPPORT
     unsigned lclVarNum = compiler->lvaCount;
     unsigned lclILoffs = DUMMY_INIT(0);
-#endif
 
     noway_assert(tree->OperGet() == GT_ASG);
 
@@ -358,7 +356,6 @@ void CodeGen::genFloatAssign(GenTree* tree)
             noway_assert(varNum < compiler->lvaCount);
             varDsc = compiler->lvaTable + varNum;
 
-#ifdef DEBUGGING_SUPPORT
             // For non-debuggable code, every definition of a lcl-var has
             // to be checked to see if we need to open a new scope for it.
             // Remember the local var info to call siCheckVarScope
@@ -369,7 +366,6 @@ void CodeGen::genFloatAssign(GenTree* tree)
                 lclVarNum = varNum;
                 lclILoffs = op1->gtLclVar.gtLclILoffs;
             }
-#endif
 
             // Dead Store assert (with min opts we may have dead stores)
             //
@@ -607,13 +603,11 @@ DONE_ASG:
 
     genUpdateLife(tree);
 
-#ifdef DEBUGGING_SUPPORT
     /* For non-debuggable code, every definition of a lcl-var has
      * to be checked to see if we need to open a new scope for it.
      */
     if (lclVarNum < compiler->lvaCount)
         siCheckVarScope(lclVarNum, lclILoffs);
-#endif
 }
 
 void CodeGen::genCodeForTreeFloat(GenTreePtr tree, RegSet::RegisterPreference* pref)

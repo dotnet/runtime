@@ -699,10 +699,6 @@ void Compiler::fgPerBlockLocalVarLiveness()
     }
 }
 
-/*****************************************************************************/
-#ifdef DEBUGGING_SUPPORT
-/*****************************************************************************/
-
 // Helper functions to mark variables live over their entire scope
 
 void Compiler::fgBeginScopeLife(VARSET_TP* inScope, VarScopeDsc* var)
@@ -1184,10 +1180,6 @@ void Compiler::fgExtendDbgLifetimes()
     }
 #endif // DEBUG
 }
-
-/*****************************************************************************/
-#endif // DEBUGGING_SUPPORT
-/*****************************************************************************/
 
 VARSET_VALRET_TP Compiler::fgGetHandlerLiveVars(BasicBlock* block)
 {
@@ -1906,9 +1898,7 @@ VARSET_VALRET_TP Compiler::fgComputeLife(VARSET_VALARG_TP lifeArg,
     VARSET_TP VARSET_INIT(this, life, lifeArg); // lifeArg is const ref; copy to allow modification.
 
     VARSET_TP VARSET_INIT(this, keepAliveVars, volatileVars);
-#ifdef DEBUGGING_SUPPORT
     VarSetOps::UnionD(this, keepAliveVars, compCurBB->bbScope); // Don't kill vars in scope
-#endif
 
     noway_assert(VarSetOps::Equal(this, VarSetOps::Intersection(this, keepAliveVars, life), keepAliveVars));
     noway_assert(compCurStmt->gtOper == GT_STMT);
@@ -1956,9 +1946,7 @@ VARSET_VALRET_TP Compiler::fgComputeLifeLIR(VARSET_VALARG_TP lifeArg, BasicBlock
     VARSET_TP VARSET_INIT(this, life, lifeArg); // lifeArg is const ref; copy to allow modification.
 
     VARSET_TP VARSET_INIT(this, keepAliveVars, volatileVars);
-#ifdef DEBUGGING_SUPPORT
     VarSetOps::UnionD(this, keepAliveVars, block->bbScope); // Don't kill vars in scope
-#endif
 
     noway_assert(VarSetOps::Equal(this, VarSetOps::Intersection(this, keepAliveVars, life), keepAliveVars));
 
@@ -2019,9 +2007,8 @@ VARSET_VALRET_TP Compiler::fgComputeLife(VARSET_VALARG_TP lifeArg,
     GenTreePtr gtColon = NULL;
 
     VARSET_TP VARSET_INIT(this, keepAliveVars, volatileVars);
-#ifdef DEBUGGING_SUPPORT
     VarSetOps::UnionD(this, keepAliveVars, compCurBB->bbScope); /* Dont kill vars in scope */
-#endif
+
     noway_assert(VarSetOps::Equal(this, VarSetOps::Intersection(this, keepAliveVars, life), keepAliveVars));
     noway_assert(compCurStmt->gtOper == GT_STMT);
     noway_assert(endNode || (startNode == compCurStmt->gtStmt.gtStmtExpr));
@@ -2855,10 +2842,6 @@ void Compiler::fgInterBlockLocalVarLiveness()
 
     fgLiveVarAnalysis();
 
-//-------------------------------------------------------------------------
-
-#ifdef DEBUGGING_SUPPORT
-
     /* For debuggable code, we mark vars as live over their entire
      * reported scope, so that it will be visible over the entire scope
      */
@@ -2867,8 +2850,6 @@ void Compiler::fgInterBlockLocalVarLiveness()
     {
         fgExtendDbgLifetimes();
     }
-
-#endif // DEBUGGING_SUPPORT
 
     /*-------------------------------------------------------------------------
      * Variables involved in exception-handlers and finally blocks need

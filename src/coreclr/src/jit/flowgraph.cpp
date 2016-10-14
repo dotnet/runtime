@@ -5077,7 +5077,6 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
 
     curBBoffs = 0;
 
-#ifdef DEBUGGING_SUPPORT
     if (opts.compDbgCode && (info.compVarScopesCount > 0))
     {
         compResetScopeLists();
@@ -5090,7 +5089,6 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
         { /* do nothing */
         }
     }
-#endif
 
     BBjumpKinds jmpKind;
 
@@ -5473,8 +5471,6 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
 
         nxtBBoffs = (IL_OFFSET)(codeAddr - codeBegp);
 
-#ifdef DEBUGGING_SUPPORT
-
         bool foundScope = false;
 
         if (opts.compDbgCode && (info.compVarScopesCount > 0))
@@ -5488,7 +5484,6 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
                 foundScope = true;
             }
         }
-#endif
 
         /* Do we have a jump? */
 
@@ -5505,7 +5500,6 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
 
             bool makeBlock = (jumpTarget[nxtBBoffs] != JT_NONE);
 
-#ifdef DEBUGGING_SUPPORT
             if (!makeBlock && foundScope)
             {
                 makeBlock = true;
@@ -5516,7 +5510,6 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
                 }
 #endif // DEBUG
             }
-#endif // DEBUGGING_SUPPORT
 
             if (!makeBlock)
             {
@@ -8589,17 +8582,12 @@ GenTreeStmt* Compiler::fgNewStmtFromTree(GenTreePtr tree, IL_OFFSETX offs)
 //      The first good IL offset of a statement in the block, or BAD_IL_OFFSET if such an IL offset
 //      cannot be found.
 //
-//      If we are not built with DEBUGGING_SUPPORT or DEBUG, then always report BAD_IL_OFFSET,
-//      since in that case statements don't contain an IL offset. The effect will be that split
-//      blocks will lose their IL offset information.
-
 IL_OFFSET Compiler::fgFindBlockILOffset(BasicBlock* block)
 {
     // This function searches for IL offsets in statement nodes, so it can't be used in LIR. We
     // could have a similar function for LIR that searches for GT_IL_OFFSET nodes.
     assert(!block->IsLIR());
 
-#if defined(DEBUGGING_SUPPORT) || defined(DEBUG)
     for (GenTree* stmt = block->bbTreeList; stmt != nullptr; stmt = stmt->gtNext)
     {
         assert(stmt->IsStatement());
@@ -8608,7 +8596,6 @@ IL_OFFSET Compiler::fgFindBlockILOffset(BasicBlock* block)
             return jitGetILoffs(stmt->gtStmt.gtStmtILoffsx);
         }
     }
-#endif // defined(DEBUGGING_SUPPORT) || defined(DEBUG)
 
     return BAD_IL_OFFSET;
 }

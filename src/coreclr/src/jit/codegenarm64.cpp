@@ -4317,7 +4317,6 @@ void CodeGen::genCallInstruction(GenTreePtr node)
         }
     }
 
-#ifdef DEBUGGING_SUPPORT
     // We need to propagate the IL offset information to the call instruction, so we can emit
     // an IL to native mapping record for the call, to support managed return value debugging.
     // We don't want tail call helper calls that were converted from normal calls to get a record,
@@ -4326,7 +4325,6 @@ void CodeGen::genCallInstruction(GenTreePtr node)
     {
         (void)compiler->genCallSite2ILOffsetMap->Lookup(call, &ilOffset);
     }
-#endif // DEBUGGING_SUPPORT
 
     if (target != nullptr)
     {
@@ -6019,7 +6017,6 @@ void CodeGen::genCreateAndStoreGCInfoX64(unsigned codeSize, unsigned prologSize 
     // Now we can actually use those slot ID's to declare live ranges.
     gcInfo.gcMakeRegPtrTable(gcInfoEncoder, codeSize, prologSize, GCInfo::MAKE_REG_PTR_MODE_DO_WORK);
 
-#if defined(DEBUGGING_SUPPORT)
     if (compiler->opts.compDbgEnC)
     {
         // what we have to preserve is called the "frame header" (see comments in VM\eetwain.cpp)
@@ -6043,7 +6040,6 @@ void CodeGen::genCreateAndStoreGCInfoX64(unsigned codeSize, unsigned prologSize 
         // frame
         gcInfoEncoder->SetSizeOfEditAndContinuePreservedArea(preservedAreaSize);
     }
-#endif
 
     gcInfoEncoder->Build();
 

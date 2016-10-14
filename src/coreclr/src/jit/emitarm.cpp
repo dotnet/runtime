@@ -4464,13 +4464,11 @@ void emitter::emitIns_Call(EmitCallType          callType,
     assert(argSize % (int)sizeof(void*) == 0);
     argCnt = argSize / (int)sizeof(void*);
 
-#ifdef DEBUGGING_SUPPORT
     /* Managed RetVal: emit sequence point for the call */
     if (emitComp->opts.compDbgInfo && ilOffset != BAD_IL_OFFSET)
     {
         codeGen->genIPmappingAdd(ilOffset, false);
     }
-#endif
 
     /*
         We need to allocate the appropriate instruction descriptor based
