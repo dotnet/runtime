@@ -15,8 +15,6 @@ from glob import glob
 class MonoReleaseProfile(DarwinProfile):
 
     packages = [
-        'autoconf',
-        'automake',
         'gettext',
         'pkg-config',
 
