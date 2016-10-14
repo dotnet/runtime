@@ -15,7 +15,6 @@ namespace System.Xml.Xsl
     using System.Xml.Xsl.XsltOld.Debugger;
     using System.Security.Policy;
     using System.Runtime.Versioning;
-    using System.Xml.XmlConfiguration;
 
     [Obsolete("This class has been deprecated. Please use System.Xml.Xsl.XslCompiledTransform instead. http://go.microsoft.com/fwlink/?linkid=14202")]
     public sealed class XslTransform
@@ -29,7 +28,7 @@ namespace System.Xml.Xsl
                 if (_isDocumentResolverSet)
                     return _documentResolver;
                 else
-                    return XsltConfigSection.CreateDefaultResolver();
+                    return XmlNullResolver.Singleton;
             }
         }
 
@@ -56,7 +55,7 @@ namespace System.Xml.Xsl
 
         public void Load(XmlReader stylesheet)
         {
-            Load(stylesheet, XsltConfigSection.CreateDefaultResolver());
+            Load(stylesheet, XmlNullResolver.Singleton);
         }
         public void Load(XmlReader stylesheet, XmlResolver resolver)
         {
@@ -69,7 +68,7 @@ namespace System.Xml.Xsl
 
         public void Load(IXPathNavigable stylesheet)
         {
-            Load(stylesheet, XsltConfigSection.CreateDefaultResolver());
+            Load(stylesheet, XmlNullResolver.Singleton);
         }
         public void Load(IXPathNavigable stylesheet, XmlResolver resolver)
         {
@@ -86,7 +85,7 @@ namespace System.Xml.Xsl
             {
                 throw new ArgumentNullException(nameof(stylesheet));
             }
-            Load(stylesheet, XsltConfigSection.CreateDefaultResolver());
+            Load(stylesheet, XmlNullResolver.Singleton);
         }
 
         public void Load(XPathNavigator stylesheet, XmlResolver resolver)
@@ -101,7 +100,7 @@ namespace System.Xml.Xsl
         public void Load(string url)
         {
             XmlTextReaderImpl tr = new XmlTextReaderImpl(url);
-            Compile(Compiler.LoadDocument(tr).CreateNavigator(), XsltConfigSection.CreateDefaultResolver());
+            Compile(Compiler.LoadDocument(tr).CreateNavigator(), XmlNullResolver.Singleton);
         }
 
         public void Load(string url, XmlResolver resolver)

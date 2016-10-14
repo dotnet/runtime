@@ -12,13 +12,6 @@
     <!--<DefineConstants Condition="'$(TargetGroup)' == 'uap101aot'">$(DefineConstants);NET_NATIVE</DefineConstants> TODO: Bring this back when uap101aot support is added -->
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
-  <ItemGroup>
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.Net.Requests\ref\System.Net.Requests.csproj">
-    </ProjectReference>
-    <!-- ToDo: Remove this P2P reference once new packages are produced and updated -->
-    <ProjectReference Include="..\..\System.CodeDom\ref\System.CodeDom.csproj" />
-  </ItemGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
@@ -116,7 +109,6 @@
     <Compile Include="System\Xml\Core\XmlCharCheckingReaderAsync.cs" />
     <Compile Include="System\Xml\Core\XmlCharCheckingWriter.cs" />
     <Compile Include="System\Xml\Core\XmlCharCheckingWriterAsync.cs" />
-    <Compile Include="System\Xml\Core\XmlConfiguration.cs" />
     <Compile Include="System\Xml\Core\XmlEncodedRawTextWriter.cs" />
     <Compile Include="System\Xml\Core\XmlEncodedRawTextWriterAsync.cs" />
     <Compile Include="System\Xml\Core\XmlEventCache.cs" />
@@ -733,8 +725,9 @@
     <Compile Include="System\Xml\Xsl\Xslt\XsltLoader.cs" />
     <Compile Include="System\Xml\Xsl\Xslt\XsltQilFactory.cs" />
     <Compile Include="System\Xml\Xsl\Xslt\XslVisitor.cs" />
-    <Compile Include="Workarounds\LocalAppContextSwitches.cs" />
-    <Compile Include="Workarounds\ThisAssembly.cs" />
+    <Compile Include="$(CommonPath)\System\LocalAppContext.cs" />
+    <Compile Include="System\Xml\Core\LocalAppContextSwitches.cs" />
+    <Compile Include="Misc\ThisAssembly.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

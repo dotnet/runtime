@@ -13,7 +13,6 @@ using System.Text;
 using System.IO;
 using System.Xml.XPath;
 using System.Xml.Xsl.Qil;
-using System.Runtime.Versioning;
 
 namespace System.Xml.Xsl.Xslt
 {
