@@ -42,7 +42,7 @@ namespace System.Text.RegularExpressions
         private const int CATEGORYLENGTH = 2;
         private const int SETSTART = 3;
 
-        private const String NullCharString = "\0";
+        private const string NullCharString = "\0";
 
         private const char NullChar = '\0';
         private const char LastChar = '\uFFFF';
@@ -57,39 +57,39 @@ namespace System.Text.RegularExpressions
         private const char ZeroWidthNonJoiner = '\u200C';
 
 
-        private static readonly String s_internalRegexIgnoreCase = "__InternalRegexIgnoreCase__";
-        private static readonly String s_space = "\x64";
-        private static readonly String s_notSpace = "\uFF9C";
-        private static readonly String s_word = "\u0000\u0002\u0004\u0005\u0003\u0001\u0006\u0009\u0013\u0000";
-        private static readonly String s_notWord = "\u0000\uFFFE\uFFFC\uFFFB\uFFFD\uFFFF\uFFFA\uFFF7\uFFED\u0000";
+        private static readonly string s_internalRegexIgnoreCase = "__InternalRegexIgnoreCase__";
+        private static readonly string s_space = "\x64";
+        private static readonly string s_notSpace = "\uFF9C";
+        private static readonly string s_word = "\u0000\u0002\u0004\u0005\u0003\u0001\u0006\u0009\u0013\u0000";
+        private static readonly string s_notWord = "\u0000\uFFFE\uFFFC\uFFFB\uFFFD\uFFFF\uFFFA\uFFF7\uFFED\u0000";
 
-        internal static readonly String SpaceClass = "\u0000\u0000\u0001\u0064";
-        internal static readonly String NotSpaceClass = "\u0001\u0000\u0001\u0064";
-        internal static readonly String WordClass = "\u0000\u0000\u000A\u0000\u0002\u0004\u0005\u0003\u0001\u0006\u0009\u0013\u0000";
-        internal static readonly String NotWordClass = "\u0001\u0000\u000A\u0000\u0002\u0004\u0005\u0003\u0001\u0006\u0009\u0013\u0000";
-        internal static readonly String DigitClass = "\u0000\u0000\u0001\u0009";
-        internal static readonly String NotDigitClass = "\u0000\u0000\u0001\uFFF7";
+        internal static readonly string SpaceClass = "\u0000\u0000\u0001\u0064";
+        internal static readonly string NotSpaceClass = "\u0001\u0000\u0001\u0064";
+        internal static readonly string WordClass = "\u0000\u0000\u000A\u0000\u0002\u0004\u0005\u0003\u0001\u0006\u0009\u0013\u0000";
+        internal static readonly string NotWordClass = "\u0001\u0000\u000A\u0000\u0002\u0004\u0005\u0003\u0001\u0006\u0009\u0013\u0000";
+        internal static readonly string DigitClass = "\u0000\u0000\u0001\u0009";
+        internal static readonly string NotDigitClass = "\u0000\u0000\u0001\uFFF7";
 
-        private const String ECMASpaceSet = "\u0009\u000E\u0020\u0021";
-        private const String NotECMASpaceSet = "\0\u0009\u000E\u0020\u0021";
-        private const String ECMAWordSet = "\u0030\u003A\u0041\u005B\u005F\u0060\u0061\u007B\u0130\u0131";
-        private const String NotECMAWordSet = "\0\u0030\u003A\u0041\u005B\u005F\u0060\u0061\u007B\u0130\u0131";
-        private const String ECMADigitSet = "\u0030\u003A";
-        private const String NotECMADigitSet = "\0\u0030\u003A";
+        private const string ECMASpaceSet = "\u0009\u000E\u0020\u0021";
+        private const string NotECMASpaceSet = "\0\u0009\u000E\u0020\u0021";
+        private const string ECMAWordSet = "\u0030\u003A\u0041\u005B\u005F\u0060\u0061\u007B\u0130\u0131";
+        private const string NotECMAWordSet = "\0\u0030\u003A\u0041\u005B\u005F\u0060\u0061\u007B\u0130\u0131";
+        private const string ECMADigitSet = "\u0030\u003A";
+        private const string NotECMADigitSet = "\0\u0030\u003A";
 
-        internal const String ECMASpaceClass = "\x00\x04\x00" + ECMASpaceSet;
-        internal const String NotECMASpaceClass = "\x01\x04\x00" + ECMASpaceSet;
-        internal const String ECMAWordClass = "\x00\x0A\x00" + ECMAWordSet;
-        internal const String NotECMAWordClass = "\x01\x0A\x00" + ECMAWordSet;
-        internal const String ECMADigitClass = "\x00\x02\x00" + ECMADigitSet;
-        internal const String NotECMADigitClass = "\x01\x02\x00" + ECMADigitSet;
+        internal const string ECMASpaceClass = "\x00\x04\x00" + ECMASpaceSet;
+        internal const string NotECMASpaceClass = "\x01\x04\x00" + ECMASpaceSet;
+        internal const string ECMAWordClass = "\x00\x0A\x00" + ECMAWordSet;
+        internal const string NotECMAWordClass = "\x01\x0A\x00" + ECMAWordSet;
+        internal const string ECMADigitClass = "\x00\x02\x00" + ECMADigitSet;
+        internal const string NotECMADigitClass = "\x01\x02\x00" + ECMADigitSet;
 
-        internal const String AnyClass = "\x00\x01\x00\x00";
-        internal const String EmptyClass = "\x00\x00\x00";
+        internal const string AnyClass = "\x00\x01\x00\x00";
+        internal const string EmptyClass = "\x00\x00\x00";
 
         // UnicodeCategory is zero based, so we add one to each value and subtract it off later
         private const int DefinedCategoriesCapacity = 38;
-        private static readonly Dictionary<String, String> s_definedCategories = new Dictionary<String, String>(DefinedCategoriesCapacity)
+        private static readonly Dictionary<string, string> s_definedCategories = new Dictionary<string, string>(DefinedCategoriesCapacity)
         {
             // Others
             { "Cc", "\u000F" }, // UnicodeCategory.Control + 1
@@ -155,7 +155,7 @@ namespace System.Text.RegularExpressions
          *
         **/
         // Has to be sorted by the first column
-        private static readonly String[][] s_propTable = {
+        private static readonly string[][] s_propTable = {
             new [] {"IsAlphabeticPresentationForms",       "\uFB00\uFB50"},
             new [] {"IsArabic",                            "\u0600\u0700"},
             new [] {"IsArabicPresentationForms-A",         "\uFB50\uFE00"},
@@ -425,7 +425,7 @@ namespace System.Text.RegularExpressions
             // Make sure the s_propTable is correctly ordered
             int len = s_propTable.Length;
             for (int i = 0; i < len - 1; i++)
-                Debug.Assert(String.Compare(s_propTable[i][0], s_propTable[i + 1][0], StringComparison.Ordinal) < 0, "RegexCharClass s_propTable is out of order at (" + s_propTable[i][0] + ", " + s_propTable[i + 1][0] + ")");
+                Debug.Assert(string.Compare(s_propTable[i][0], s_propTable[i + 1][0], StringComparison.Ordinal) < 0, "RegexCharClass s_propTable is out of order at (" + s_propTable[i][0] + ", " + s_propTable[i + 1][0] + ")");
         }
 #endif
 
@@ -473,7 +473,7 @@ namespace System.Text.RegularExpressions
         {
             int i;
 
-            Debug.Assert(cc.CanMerge && this.CanMerge, "Both character classes added together must be able to merge");
+            Debug.Assert(cc.CanMerge && CanMerge, "Both character classes added together must be able to merge");
 
             if (!cc._canonical)
             {
@@ -494,7 +494,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Adds a set (specified by its string representation) to the class.
         /// </summary>
-        private void AddSet(String set)
+        private void AddSet(string set)
         {
             int i;
 
@@ -642,16 +642,16 @@ namespace System.Text.RegularExpressions
             if (negate)
             {
                 if (ecma)
-                    AddSet(RegexCharClass.NotECMAWordSet);
+                    AddSet(NotECMAWordSet);
                 else
-                    AddCategory(RegexCharClass.s_notWord);
+                    AddCategory(s_notWord);
             }
             else
             {
                 if (ecma)
-                    AddSet(RegexCharClass.ECMAWordSet);
+                    AddSet(ECMAWordSet);
                 else
-                    AddCategory(RegexCharClass.s_word);
+                    AddCategory(s_word);
             }
         }
 
@@ -660,16 +660,16 @@ namespace System.Text.RegularExpressions
             if (negate)
             {
                 if (ecma)
-                    AddSet(RegexCharClass.NotECMASpaceSet);
+                    AddSet(NotECMASpaceSet);
                 else
-                    AddCategory(RegexCharClass.s_notSpace);
+                    AddCategory(s_notSpace);
             }
             else
             {
                 if (ecma)
-                    AddSet(RegexCharClass.ECMASpaceSet);
+                    AddSet(ECMASpaceSet);
                 else
-                    AddCategory(RegexCharClass.s_space);
+                    AddCategory(s_space);
             }
         }
 
@@ -678,9 +678,9 @@ namespace System.Text.RegularExpressions
             if (ecma)
             {
                 if (negate)
-                    AddSet(RegexCharClass.NotECMADigitSet);
+                    AddSet(NotECMADigitSet);
                 else
-                    AddSet(RegexCharClass.ECMADigitSet);
+                    AddSet(ECMADigitSet);
             }
             else
                 AddCategoryFromName("Nd", negate, false, pattern);
@@ -712,7 +712,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Returns the char
         /// </summary>
-        internal static char SingletonChar(String set)
+        internal static char SingletonChar(string set)
         {
             Debug.Assert(IsSingleton(set) || IsSingletonInverse(set), "Tried to get the singleton char out of a non singleton character class");
             return set[SETSTART];
@@ -723,7 +723,7 @@ namespace System.Text.RegularExpressions
             return (!IsNegated(charClass) && !IsSubtraction(charClass));
         }
 
-        internal static bool IsEmpty(String charClass)
+        internal static bool IsEmpty(string charClass)
         {
             if (charClass[CATEGORYLENGTH] == 0 && charClass[FLAGS] == 0 && charClass[SETLENGTH] == 0 && !IsSubtraction(charClass))
                 return true;
@@ -734,7 +734,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// <c>true</c> if the set contains a single character only
         /// </summary>
-        internal static bool IsSingleton(String set)
+        internal static bool IsSingleton(string set)
         {
             if (set[FLAGS] == 0 && set[CATEGORYLENGTH] == 0 && set[SETLENGTH] == 2 && !IsSubtraction(set) &&
                 (set[SETSTART] == LastChar || set[SETSTART] + 1 == set[SETSTART + 1]))
@@ -743,7 +743,7 @@ namespace System.Text.RegularExpressions
                 return false;
         }
 
-        internal static bool IsSingletonInverse(String set)
+        internal static bool IsSingletonInverse(string set)
         {
             if (set[FLAGS] == 1 && set[CATEGORYLENGTH] == 0 && set[SETLENGTH] == 2 && !IsSubtraction(set) &&
                 (set[SETSTART] == LastChar || set[SETSTART] + 1 == set[SETSTART + 1]))
@@ -781,13 +781,13 @@ namespace System.Text.RegularExpressions
             return CharInClass(ch, WordClass) || ch == ZeroWidthJoiner || ch == ZeroWidthNonJoiner;
         }
 
-        internal static bool CharInClass(char ch, String set)
+        internal static bool CharInClass(char ch, string set)
         {
             return CharInClassRecursive(ch, set, 0);
         }
 
 
-        internal static bool CharInClassRecursive(char ch, String set, int start)
+        internal static bool CharInClassRecursive(char ch, string set, int start)
         {
             int mySetLength = set[start + SETLENGTH];
             int myCategoryLength = set[start + CATEGORYLENGTH];
@@ -871,7 +871,7 @@ namespace System.Text.RegularExpressions
 
                     if (curcat == SpaceConst)
                     {
-                        if (Char.IsWhiteSpace(ch))
+                        if (char.IsWhiteSpace(ch))
                             return true;
                         else
                         {
@@ -889,7 +889,7 @@ namespace System.Text.RegularExpressions
                     // less than zero is a negative case
                     if (curcat == NotSpaceConst)
                     {
-                        if (!Char.IsWhiteSpace(ch))
+                        if (!char.IsWhiteSpace(ch))
                             return true;
                         else
                         {
@@ -1020,7 +1020,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Constructs the string representation of the class.
         /// </summary>
-        internal String ToStringClass()
+        internal string ToStringClass()
         {
             if (!_canonical)
                 Canonicalize();
@@ -1121,22 +1121,22 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        private static String SetFromProperty(String capname, bool invert, string pattern)
+        private static string SetFromProperty(string capname, bool invert, string pattern)
         {
             int min = 0;
             int max = s_propTable.Length;
             while (min != max)
             {
                 int mid = (min + max) / 2;
-                int res = String.Compare(capname, s_propTable[mid][0], StringComparison.Ordinal);
+                int res = string.Compare(capname, s_propTable[mid][0], StringComparison.Ordinal);
                 if (res < 0)
                     max = mid;
                 else if (res > 0)
                     min = mid + 1;
                 else
                 {
-                    String set = s_propTable[mid][1];
-                    Debug.Assert(!String.IsNullOrEmpty(set), "Found a null/empty element in RegexCharClass prop table");
+                    string set = s_propTable[mid][1];
+                    Debug.Assert(!string.IsNullOrEmpty(set), "Found a null/empty element in RegexCharClass prop table");
                     if (invert)
                     {
                         if (set[0] == NullChar)
@@ -1159,7 +1159,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Produces a human-readable description for a set string.
         /// </summary>
-        internal static String SetDescription(String set)
+        internal static string SetDescription(string set)
         {
             int mySetLength = set[SETLENGTH];
             int myCategoryLength = set[CATEGORYLENGTH];
@@ -1266,7 +1266,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Produces a human-readable description for a single character.
         /// </summary>
-        internal static String CharDescription(char ch)
+        internal static string CharDescription(char ch)
         {
             if (ch == '\\')
                 return "\\\\";
@@ -1299,7 +1299,7 @@ namespace System.Text.RegularExpressions
             return sb.ToString();
         }
 
-        private static String CategoryDescription(char ch)
+        private static string CategoryDescription(char ch)
         {
             if (ch == SpaceConst)
                 return "\\s";

@@ -25,42 +25,42 @@ namespace System.Text.RegularExpressions
         protected internal int runtextend;         // end of text to search
         protected internal int runtextstart;       // starting point for search
 
-        protected internal String runtext;         // text to search
+        protected internal string runtext;         // text to search
         protected internal int runtextpos;         // current position in text
 
-        protected internal int[] runtrack;         // The backtracking stack.  Opcodes use this to store data regarding 
-        protected internal int runtrackpos;        // what they have matched and where to backtrack to.  Each "frame" on 
-                                           // the stack takes the form of [CodePosition Data1 Data2...], where 
-                                           // CodePosition is the position of the current opcode and 
+        protected internal int[] runtrack;         // The backtracking stack.  Opcodes use this to store data regarding
+        protected internal int runtrackpos;        // what they have matched and where to backtrack to.  Each "frame" on
+                                           // the stack takes the form of [CodePosition Data1 Data2...], where
+                                           // CodePosition is the position of the current opcode and
                                            // the data values are all optional.  The CodePosition can be negative, and
                                            // these values (also called "back2") are used by the BranchMark family of opcodes
                                            // to indicate whether they are backtracking after a successful or failed
-                                           // match.  
+                                           // match.
                                            // When we backtrack, we pop the CodePosition off the stack, set the current
-                                           // instruction pointer to that code position, and mark the opcode 
-                                           // with a backtracking flag ("Back").  Each opcode then knows how to 
-                                           // handle its own data. 
+                                           // instruction pointer to that code position, and mark the opcode
+                                           // with a backtracking flag ("Back").  Each opcode then knows how to
+                                           // handle its own data.
 
-        protected internal int[] runstack;         // This stack is used to track text positions across different opcodes. 
-        protected internal int runstackpos;        // For example, in /(a*b)+/, the parentheses result in a SetMark/CaptureMark 
+        protected internal int[] runstack;         // This stack is used to track text positions across different opcodes.
+        protected internal int runstackpos;        // For example, in /(a*b)+/, the parentheses result in a SetMark/CaptureMark
                                            // pair. SetMark records the text position before we match a*b.  Then
                                            // CaptureMark uses that position to figure out where the capture starts.
                                            // Opcodes which push onto this stack are always paired with other opcodes
                                            // which will pop the value from it later.  A successful match should mean
-                                           // that this stack is empty. 
+                                           // that this stack is empty.
 
-        protected internal int[] runcrawl;         // The crawl stack is used to keep track of captures.  Every time a group 
-        protected internal int runcrawlpos;        // has a capture, we push its group number onto the runcrawl stack.  In 
-                                           // the case of a balanced match, we push BOTH groups onto the stack. 
+        protected internal int[] runcrawl;         // The crawl stack is used to keep track of captures.  Every time a group
+        protected internal int runcrawlpos;        // has a capture, we push its group number onto the runcrawl stack.  In
+                                           // the case of a balanced match, we push BOTH groups onto the stack.
 
         protected internal int runtrackcount;      // count of states that may do backtracking
 
         protected internal Match runmatch;         // result object
         protected internal Regex runregex;         // regex object
 
-        private Int32 _timeout;            // timeout in milliseconds (needed for actual)        
+        private int _timeout;              // timeout in milliseconds (needed for actual)
         private bool _ignoreTimeout;
-        private Int32 _timeoutOccursAt;
+        private int _timeoutOccursAt;
 
 
         // We have determined this value in a series of experiments where x86 retail
@@ -84,12 +84,12 @@ namespace System.Text.RegularExpressions
         /// and we could use a separate method Skip() that will quickly scan past
         /// any characters that we know can't match.
         /// </summary>
-        protected internal Match Scan(Regex regex, String text, int textbeg, int textend, int textstart, int prevlen, bool quick)
+        protected internal Match Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick)
         {
             return Scan(regex, text, textbeg, textend, textstart, prevlen, quick, regex.MatchTimeout);
         }
 
-        protected internal Match Scan(Regex regex, String text, int textbeg, int textend, int textstart, int prevlen, bool quick, TimeSpan timeout)
+        protected internal Match Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick, TimeSpan timeout)
         {
             int bump;
             int stoppos;
@@ -101,8 +101,8 @@ namespace System.Text.RegularExpressions
 
             _ignoreTimeout = (Regex.InfiniteMatchTimeout == timeout);
             _timeout = _ignoreTimeout
-                                    ? (Int32)Regex.InfiniteMatchTimeout.TotalMilliseconds
-                                    : (Int32)(timeout.TotalMilliseconds + 0.5); // Round
+                                    ? (int)Regex.InfiniteMatchTimeout.TotalMilliseconds
+                                    : (int)(timeout.TotalMilliseconds + 0.5); // Round
 
             runregex = regex;
             runtext = text;
@@ -367,13 +367,13 @@ namespace System.Text.RegularExpressions
                    (index < endpos && RegexCharClass.IsECMAWordChar(runtext[index]));
         }
 
-        protected static bool CharInSet(char ch, String set, String category)
+        protected static bool CharInSet(char ch, string set, string category)
         {
             string charClass = RegexCharClass.ConvertOldStringsToClass(set, category);
             return RegexCharClass.CharInClass(ch, charClass);
         }
 
-        protected static bool CharInClass(char ch, String charClass)
+        protected static bool CharInClass(char ch, string charClass)
         {
             return RegexCharClass.CharInClass(ch, charClass);
         }
@@ -388,7 +388,7 @@ namespace System.Text.RegularExpressions
 
             newtrack = new int[runtrack.Length * 2];
 
-            System.Array.Copy(runtrack, 0, newtrack, runtrack.Length, runtrack.Length);
+            Array.Copy(runtrack, 0, newtrack, runtrack.Length, runtrack.Length);
             runtrackpos += runtrack.Length;
             runtrack = newtrack;
         }
@@ -403,7 +403,7 @@ namespace System.Text.RegularExpressions
 
             newstack = new int[runstack.Length * 2];
 
-            System.Array.Copy(runstack, 0, newstack, runstack.Length, runstack.Length);
+            Array.Copy(runstack, 0, newstack, runstack.Length, runstack.Length);
             runstackpos += runstack.Length;
             runstack = newstack;
         }
@@ -417,7 +417,7 @@ namespace System.Text.RegularExpressions
 
             newcrawl = new int[runcrawl.Length * 2];
 
-            System.Array.Copy(runcrawl, 0, newcrawl, runcrawl.Length, runcrawl.Length);
+            Array.Copy(runcrawl, 0, newcrawl, runcrawl.Length, runcrawl.Length);
             runcrawlpos += runcrawl.Length;
             runcrawl = newcrawl;
         }
@@ -566,7 +566,7 @@ namespace System.Text.RegularExpressions
             Debug.WriteLine("Stack: " + StackDescription(runstack, runstackpos));
         }
 
-        internal static String StackDescription(int[] a, int index)
+        internal static string StackDescription(int[] a, int index)
         {
             var sb = new StringBuilder();
 
@@ -591,7 +591,7 @@ namespace System.Text.RegularExpressions
             return sb.ToString();
         }
 
-        internal virtual String TextposDescription()
+        internal virtual string TextposDescription()
         {
             var sb = new StringBuilder();
             int remaining;
