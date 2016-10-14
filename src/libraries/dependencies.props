@@ -1,10 +1,19 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!-- Source of truth for dependency tooling: the commit hash of the dotnet/versions master branch as of the last auto-upgrade. -->
+
+  <!-- There are situations where the live .Net Native targeting pack wouldn't be suitable to pick up.
+       These are usually temporary, but requires 'freezing' the .net native targeting pack on CoreFX.
+       Use the property below to control this behavior
+  -->
+  <PropertyGroup>
+    <DisableProjectNTfsAutoUpgrade Condition="'$(DisableProjectNTfsAutoUpgrade)'==''">true</DisableProjectNTfsAutoUpgrade>
+  </PropertyGroup>
+
   <PropertyGroup>
     <CoreFxCurrentRef>9e2edcd278c2dfbe29428dbad0a8e3dbf424f8ee</CoreFxCurrentRef>
     <CoreClrCurrentRef>9e2edcd278c2dfbe29428dbad0a8e3dbf424f8ee</CoreClrCurrentRef>
     <ExternalCurrentRef>9e2edcd278c2dfbe29428dbad0a8e3dbf424f8ee</ExternalCurrentRef>
-    <ProjectNTfsCurrentRef>1270b41004b96ba37f34415e730e766e5965da00</ProjectNTfsCurrentRef>
+    <ProjectNTfsCurrentRef>f981c5e06d00accf1063a87ba2e9791752a4f6b1</ProjectNTfsCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
@@ -12,7 +21,7 @@
     <CoreFxExpectedPrerelease>beta-24613-01</CoreFxExpectedPrerelease>
     <CoreClrExpectedPrerelease>beta-24613-02</CoreClrExpectedPrerelease>
     <ExternalExpectedPrerelease>beta-24613-00</ExternalExpectedPrerelease>
-    <ProjectNTfsExpectedPrerelease>beta-24604-01</ProjectNTfsExpectedPrerelease>
+    <ProjectNTfsExpectedPrerelease>beta-24607-01</ProjectNTfsExpectedPrerelease>
   </PropertyGroup>
 
   <!-- Full package version strings that are used in other parts of the build. -->
@@ -41,12 +50,10 @@
       <BuildInfoPath>$(BaseDotNetBuildInfo)projectk-tfs/$(DependencyBranch)</BuildInfoPath>
       <CurrentRef>$(ExternalCurrentRef)</CurrentRef>
     </RemoteDependencyBuildInfo>
-    <!--
-    <RemoteDependencyBuildInfo Include="ProjectNTfs">
+    <RemoteDependencyBuildInfo Condition="'$(DisableProjectNTfsAutoUpgrade)' != 'true'" Include="ProjectNTfs">
       <BuildInfoPath>$(BaseDotNetBuildInfo)projectn-tfs/$(DependencyBranch)</BuildInfoPath>
       <CurrentRef>$(ProjectNTfsCurrentRef)</CurrentRef>
     </RemoteDependencyBuildInfo>
-    -->
 
     <DependencyBuildInfo Include="@(RemoteDependencyBuildInfo)">
       <RawVersionsBaseUrl>https://raw.githubusercontent.com/dotnet/versions</RawVersionsBaseUrl>
@@ -67,13 +74,11 @@
       <ElementName>ExternalExpectedPrerelease</ElementName>
       <BuildInfoName>External</BuildInfoName>
     </XmlUpdateStep>
-    <!--
-    <XmlUpdateStep Include="ProjectNTfs">
+    <XmlUpdateStep Condition="'$(DisableProjectNTfsAutoUpgrade)' != 'true'" Include="ProjectNTfs">
       <Path>$(MSBuildThisFileFullPath)</Path>
       <ElementName>ProjectNTfsExpectedPrerelease</ElementName>
       <BuildInfoName>ProjectNTfs</BuildInfoName>
     </XmlUpdateStep>
-    -->
   </ItemGroup>
 
   <!-- Set up dependencies on packages that aren't found in a BuildInfo. -->
