@@ -185,6 +185,7 @@
     <Compile Include="System\HandleTests.netstandard1.7.cs" />
     <Compile Include="System\AppContext\AppContext.Switch.cs" />
     <Compile Include="System\AppContext\AppContext.Switch.Validation.cs" />
+    <Compile Include="System\Reflection\StrongNameKeyPairTests.netstandard1.7.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
