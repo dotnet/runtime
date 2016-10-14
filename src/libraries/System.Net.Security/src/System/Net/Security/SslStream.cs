@@ -490,22 +490,22 @@ namespace System.Net.Security
             _sslState.SecureStream.Write(buffer, offset, count);
         }
 
-        private IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState)
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState)
         {
             return _sslState.SecureStream.BeginRead(buffer, offset, count, asyncCallback, asyncState);
         }
 
-        private int EndRead(IAsyncResult asyncResult)
+        public override int EndRead(IAsyncResult asyncResult)
         {
             return _sslState.SecureStream.EndRead(asyncResult);
         }
 
-        private IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState)
         {
             return _sslState.SecureStream.BeginWrite(buffer, offset, count, asyncCallback, asyncState);
         }
 
-        private void EndWrite(IAsyncResult asyncResult)
+        public override void EndWrite(IAsyncResult asyncResult)
         {
             _sslState.SecureStream.EndWrite(asyncResult);
         }

@@ -14,9 +14,12 @@ using Xunit;
 
 namespace System.Net.Security.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     public class SslStreamAlertsTest
     {
         private const uint SEC_E_ILLEGAL_MESSAGE = 0x80090326;
+        private const uint SEC_E_CERT_UNKNOWN = 0x80090327;
 
         [Fact]
         [ActiveIssue(12319, TestPlatforms.AnyUnix)]
@@ -44,7 +47,7 @@ namespace System.Net.Security.Tests
 
                 // The Schannel HResults for each alert are documented here: 
                 // https://msdn.microsoft.com/en-us/library/windows/desktop/dd721886(v=vs.85).aspx
-                Assert.Equal(SEC_E_ILLEGAL_MESSAGE, (uint)win32ex.NativeErrorCode);
+                Assert.Equal(SEC_E_CERT_UNKNOWN, (uint)win32ex.NativeErrorCode);
 
                 await Assert.ThrowsAsync<AuthenticationException>(() => serverAuth);
 

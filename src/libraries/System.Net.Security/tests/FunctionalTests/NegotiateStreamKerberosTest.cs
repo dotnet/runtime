@@ -14,6 +14,8 @@ using Xunit;
 
 namespace System.Net.Security.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     public class NegotiateStreamKerberosTest
     {
         public static bool IsServerAndDomainAvailable => 

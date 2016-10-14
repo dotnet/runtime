@@ -47,10 +47,12 @@ namespace System.Net.Security
         {
             switch (protocolVersion)
             {
+#pragma warning disable 0618 // Ssl2, Ssl3 are deprecated.                
                 case "SSLv2":
                     return SslProtocols.Ssl2;
                 case "SSLv3":
                     return SslProtocols.Ssl3;
+#pragma warning restore                    
                 case "TLSv1":
                     return SslProtocols.Tls;
                 case "TLSv1.1":
