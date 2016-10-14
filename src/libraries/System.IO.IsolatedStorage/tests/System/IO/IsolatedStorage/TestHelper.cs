@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.IO.IsolatedStorage
@@ -31,9 +32,11 @@ namespace System.IO.IsolatedStorage
             // Application scope doesn't go under a random dir
             s_roots.Add(Path.Combine(userRoot, hash));
 
-            // https://github.com/dotnet/corefx/issues/11124
-            // Need to implement ACLing for machine scope first
-            // Helper.GetDataDirectory(IsolatedStorageScope.Machine);
+            // https://github.com/dotnet/corefx/issues/12628
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                s_roots.Add(Helper.GetDataDirectory(IsolatedStorageScope.Machine));
+            }
 
             // We don't expose Roaming yet
             // Helper.GetDataDirectory(IsolatedStorageScope.Roaming);
