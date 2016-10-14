@@ -490,6 +490,9 @@ ves_icall_System_Runtime_InteropServices_Marshal_DestroyStructure (gpointer src,
 void*
 ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMem (int size);
 
+void*
+ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMemSize (gulong size);
+
 void
 ves_icall_System_Runtime_InteropServices_Marshal_FreeCoTaskMem (void *ptr);
 
