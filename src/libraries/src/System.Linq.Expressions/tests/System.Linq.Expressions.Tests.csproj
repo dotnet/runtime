@@ -33,16 +33,13 @@
     <Compile Include="Array\ArrayArrayIndexTests.cs" />
     <Compile Include="Array\ArrayArrayLengthTests.cs" />
     <Compile Include="Array\ArrayBoundsOneOffTests.cs" />
-    <Compile Include="Array\ArrayBoundsTests.cs" />
     <Compile Include="Array\ArrayIndexTests.cs" />
     <Compile Include="Array\ArrayLengthTests.cs" />
+    <Compile Include="Array\NewArrayBoundsTests.cs" />
     <Compile Include="Array\NewArrayListTests.cs" />
-    <Compile Include="Array\NullableArrayBoundsTests.cs" />
     <Compile Include="Array\NullableArrayIndexTests.cs" />
     <Compile Include="Array\NullableArrayLengthTests.cs" />
     <Compile Include="Array\NullableNewArrayListTests.cs" />
-    <Compile Include="Array\ObjectArrayBoundsTests.cs" />
-    <Compile Include="Array\ObjectNullableArrayBoundsTests.cs" />
     <Compile Include="BinaryOperators\Arithmetic\BinaryShiftTests.cs" />
     <Compile Include="BinaryOperators\Arithmetic\BinaryAddTests.cs" />
     <Compile Include="BinaryOperators\Arithmetic\BinaryDivideTests.cs" />
