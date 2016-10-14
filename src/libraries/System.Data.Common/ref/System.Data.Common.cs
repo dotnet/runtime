@@ -56,7 +56,7 @@ namespace System.Data
         protected virtual System.Data.DataSet _DataSet { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute("")]
         public virtual string ConstraintName { get { throw null; } set { } }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public System.Data.PropertyCollection ExtendedProperties { get { throw null; } }
         public abstract System.Data.DataTable Table { get; }
         protected void CheckStateForProperty() { }
@@ -101,13 +101,13 @@ namespace System.Data
     {
         public DataColumn() { }
         public DataColumn(string columnName) { }
-        public DataColumn(string columnName, Type dataType) { }
-        public DataColumn(string columnName, Type dataType, string expr) { }
-        public DataColumn(string columnName, Type dataType, string expr, System.Data.MappingType type) { }
+        public DataColumn(string columnName, System.Type dataType) { }
+        public DataColumn(string columnName, System.Type dataType, string expr) { }
+        public DataColumn(string columnName, System.Type dataType, string expr, System.Data.MappingType type) { }
         [System.ComponentModel.DefaultValueAttribute(true)]
         public bool AllowDBNull { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(false)]
-        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)1)]
+        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)(1))]
         public bool AutoIncrement { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute((long)0)]
         public long AutoIncrementSeed { get { throw null; } set { } }
@@ -117,35 +117,35 @@ namespace System.Data
         [System.ComponentModel.DefaultValueAttribute((System.Data.MappingType)(1))]
         public virtual System.Data.MappingType ColumnMapping { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
-        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)1)]
+        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)(1))]
         public string ColumnName { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(typeof(string))]
-        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)1)]
-        public Type DataType { get { throw null; } set { } }
+        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)(1))]
+        public System.Type DataType { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute((System.Data.DataSetDateTime)(3))]
-        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)1)]
+        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)(1))]
         public System.Data.DataSetDateTime DateTimeMode { get { throw null; } set { } }
         public object DefaultValue { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
-        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)1)]
+        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)(1))]
         public string Expression { get { throw null; } set { } }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public System.Data.PropertyCollection ExtendedProperties { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute(-1)]
         public int MaxLength { get { throw null; } set { } }
         public string Namespace { get { throw null; } set { } }
-        [System.ComponentModel.Browsable(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)0)]
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
         public int Ordinal { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute("")]
         public string Prefix { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(false)]
         public bool ReadOnly { get { throw null; } set { } }
-        [System.ComponentModel.Browsable(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)0)]
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
         public System.Data.DataTable Table { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)0)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
         public bool Unique { get { throw null; } set { } }
         protected internal void CheckNotAllowNull() { }
         protected void CheckUnique() { }
@@ -154,7 +154,7 @@ namespace System.Data
         public void SetOrdinal(int ordinal) { }
         public override string ToString() { throw null; }
     }
-    public partial class DataColumnChangeEventArgs : EventArgs
+    public partial class DataColumnChangeEventArgs : System.EventArgs
     {
         public DataColumnChangeEventArgs(System.Data.DataRow row, System.Data.DataColumn column, object value) { }
         public System.Data.DataColumn Column { get { throw null; } }
@@ -173,8 +173,8 @@ namespace System.Data
         public System.Data.DataColumn Add() { throw null; }
         public void Add(System.Data.DataColumn column) { }
         public System.Data.DataColumn Add(string columnName) { throw null; }
-        public System.Data.DataColumn Add(string columnName, Type type) { throw null; }
-        public System.Data.DataColumn Add(string columnName, Type type, string expression) { throw null; }
+        public System.Data.DataColumn Add(string columnName, System.Type type) { throw null; }
+        public System.Data.DataColumn Add(string columnName, System.Type type, string expression) { throw null; }
         public void AddRange(System.Data.DataColumn[] columns) { }
         public bool CanRemove(System.Data.DataColumn column) { throw null; }
         public void Clear() { }
@@ -200,17 +200,17 @@ namespace System.Data
         public DataRelation(string relationName, System.Data.DataColumn parentColumn, System.Data.DataColumn childColumn, bool createConstraints) { }
         public DataRelation(string relationName, System.Data.DataColumn[] parentColumns, System.Data.DataColumn[] childColumns) { }
         public DataRelation(string relationName, System.Data.DataColumn[] parentColumns, System.Data.DataColumn[] childColumns, bool createConstraints) { }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public DataRelation(string relationName, string parentTableName, string parentTableNamespace, string childTableName, string childTableNamespace, string[] parentColumnNames, string[] childColumnNames, bool nested) { }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public DataRelation(string relationName, string parentTableName, string childTableName, string[] parentColumnNames, string[] childColumnNames, bool nested) { }
         public virtual System.Data.DataColumn[] ChildColumns { get { throw null; } }
         public virtual System.Data.ForeignKeyConstraint ChildKeyConstraint { get { throw null; } }
         public virtual System.Data.DataTable ChildTable { get { throw null; } }
-        [System.ComponentModel.Browsable(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)0)]
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
         public virtual System.Data.DataSet DataSet { get { throw null; } }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public System.Data.PropertyCollection ExtendedProperties { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute(false)]
         public virtual bool Nested { get { throw null; } set { } }
@@ -270,13 +270,13 @@ namespace System.Data
         public System.Data.DataRowState RowState { get { throw null; } }
         public System.Data.DataTable Table { get { throw null; } }
         public void AcceptChanges() { }
-        [System.ComponentModel.EditorBrowsable((System.ComponentModel.EditorBrowsableState)2)]
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(2))]
         public void BeginEdit() { }
-        [System.ComponentModel.EditorBrowsable((System.ComponentModel.EditorBrowsableState)2)]
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(2))]
         public void CancelEdit() { }
         public void ClearErrors() { }
         public void Delete() { }
-        [System.ComponentModel.EditorBrowsable((System.ComponentModel.EditorBrowsableState)2)]
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(2))]
         public void EndEdit() { }
         public System.Data.DataRow[] GetChildRows(System.Data.DataRelation relation) { throw null; }
         public System.Data.DataRow[] GetChildRows(System.Data.DataRelation relation, System.Data.DataRowVersion version) { throw null; }
@@ -325,7 +325,7 @@ namespace System.Data
     {
         internal DataRowBuilder() { }
     }
-    public partial class DataRowChangeEventArgs : EventArgs
+    public partial class DataRowChangeEventArgs : System.EventArgs
     {
         public DataRowChangeEventArgs(System.Data.DataRow row, System.Data.DataRowAction action) { }
         public System.Data.DataRowAction Action { get { throw null; } }
@@ -368,7 +368,7 @@ namespace System.Data
         Original = 256,
         Proposed = 1024,
     }
-    public partial class DataRowView : System.ComponentModel.IDataErrorInfo, System.ComponentModel.ICustomTypeDescriptor
+    public partial class DataRowView : System.ComponentModel.ICustomTypeDescriptor, System.ComponentModel.IDataErrorInfo, System.ComponentModel.IEditableObject, System.ComponentModel.INotifyPropertyChanged
     {
         internal DataRowView() { }
         public System.Data.DataView DataView { get { throw null; } }
@@ -397,7 +397,7 @@ namespace System.Data
         System.ComponentModel.TypeConverter System.ComponentModel.ICustomTypeDescriptor.GetConverter() { throw null; }
         System.ComponentModel.EventDescriptor System.ComponentModel.ICustomTypeDescriptor.GetDefaultEvent() { throw null; }
         System.ComponentModel.PropertyDescriptor System.ComponentModel.ICustomTypeDescriptor.GetDefaultProperty() { throw null; }
-        object System.ComponentModel.ICustomTypeDescriptor.GetEditor(Type editorBaseType) { throw null; }
+        object System.ComponentModel.ICustomTypeDescriptor.GetEditor(System.Type editorBaseType) { throw null; }
         System.ComponentModel.EventDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetEvents() { throw null; }
         System.ComponentModel.EventDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetEvents(System.Attribute[] attributes) { throw null; }
         System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties() { throw null; }
@@ -417,35 +417,35 @@ namespace System.Data
         public bool CaseSensitive { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
         public string DataSetName { get { throw null; } set { } }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public System.Data.DataViewManager DefaultViewManager { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute(true)]
         public bool EnforceConstraints { get { throw null; } set { } }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public System.Data.PropertyCollection ExtendedProperties { get { throw null; } }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public bool HasErrors { get { throw null; } }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public bool IsInitialized { get { throw null; } }
         public System.Globalization.CultureInfo Locale { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
         public string Namespace { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
         public string Prefix { get { throw null; } set { } }
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)2)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(2))]
         public System.Data.DataRelationCollection Relations { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute((System.Data.SerializationFormat)(0))]
         public System.Data.SerializationFormat RemotingFormat { get { throw null; } set { } }
-        [System.ComponentModel.Browsable(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)0)]
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
         public virtual System.Data.SchemaSerializationMode SchemaSerializationMode { get { throw null; } set { } }
-        [System.ComponentModel.Browsable(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)0)]
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
         public override System.ComponentModel.ISite Site { get { throw null; } set { } }
         bool System.ComponentModel.IListSource.ContainsListCollection { get { throw null; } }
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)2)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(2))]
         public System.Data.DataTableCollection Tables { get { throw null; } }
-        public event EventHandler Initialized { add { } remove { } }
+        public event System.EventHandler Initialized { add { } remove { } }
         public event System.Data.MergeFailedEventHandler MergeFailed { add { } remove { } }
         public void AcceptChanges() { }
         public void BeginInit() { }
@@ -532,7 +532,7 @@ namespace System.Data
         UnspecifiedLocal = 3,
         Utc = 4,
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)32767)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(32767))]
     [System.ObsoleteAttribute("DataSysDescriptionAttribute has been deprecated.  http://go.microsoft.com/fwlink/?linkid=14202", false)]
     public partial class DataSysDescriptionAttribute : System.ComponentModel.DescriptionAttribute
     {
@@ -553,50 +553,50 @@ namespace System.Data
         public DataTable(string tableName) { }
         public DataTable(string tableName, string tableNamespace) { }
         public bool CaseSensitive { get { throw null; } set { } }
-        [System.ComponentModel.Browsable(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)0)]
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
         public System.Data.DataRelationCollection ChildRelations { get { throw null; } }
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)2)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(2))]
         public System.Data.DataColumnCollection Columns { get { throw null; } }
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)2)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(2))]
         public System.Data.ConstraintCollection Constraints { get { throw null; } }
-        [System.ComponentModel.Browsable(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)0)]
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
         public System.Data.DataSet DataSet { get { throw null; } }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public System.Data.DataView DefaultView { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute("")]
         public string DisplayExpression { get { throw null; } set { } }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public System.Data.PropertyCollection ExtendedProperties { get { throw null; } }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public bool HasErrors { get { throw null; } }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public bool IsInitialized { get { throw null; } }
         public System.Globalization.CultureInfo Locale { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(50)]
         public int MinimumCapacity { get { throw null; } set { } }
         public string Namespace { get { throw null; } set { } }
-        [System.ComponentModel.Browsable(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)0)]
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
         public System.Data.DataRelationCollection ParentRelations { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute("")]
         public string Prefix { get { throw null; } set { } }
         public System.Data.DataColumn[] PrimaryKey { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute((System.Data.SerializationFormat)(0))]
         public System.Data.SerializationFormat RemotingFormat { get { throw null; } set { } }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public System.Data.DataRowCollection Rows { get { throw null; } }
-        [System.ComponentModel.Browsable(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)0)]
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
         public override System.ComponentModel.ISite Site { get { throw null; } set { } }
         bool System.ComponentModel.IListSource.ContainsListCollection { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute("")]
-        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)1)]
+        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)(1))]
         public string TableName { get { throw null; } set { } }
         public event System.Data.DataColumnChangeEventHandler ColumnChanged { add { } remove { } }
         public event System.Data.DataColumnChangeEventHandler ColumnChanging { add { } remove { } }
-        public event EventHandler Initialized { add { } remove { } }
+        public event System.EventHandler Initialized { add { } remove { } }
         public event System.Data.DataRowChangeEventHandler RowChanged { add { } remove { } }
         public event System.Data.DataRowChangeEventHandler RowChanging { add { } remove { } }
         public event System.Data.DataRowChangeEventHandler RowDeleted { add { } remove { } }
@@ -619,9 +619,8 @@ namespace System.Data
         public System.Data.DataTable GetChanges(System.Data.DataRowState rowStates) { throw null; }
         public static System.Xml.Schema.XmlSchemaComplexType GetDataTableSchema(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
         public System.Data.DataRow[] GetErrors() { throw null; }
-
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        protected virtual Type GetRowType() { throw null; }
+        protected virtual System.Type GetRowType() { throw null; }
         protected virtual System.Xml.Schema.XmlSchema GetSchema() { throw null; }
         public void ImportRow(System.Data.DataRow row) { }
         public void Load(System.Data.IDataReader reader) { }
@@ -691,7 +690,7 @@ namespace System.Data
         public void WriteXmlSchema(System.Xml.XmlWriter writer) { }
         public void WriteXmlSchema(System.Xml.XmlWriter writer, bool writeHierarchy) { }
     }
-    public sealed partial class DataTableClearEventArgs : EventArgs
+    public sealed partial class DataTableClearEventArgs : System.EventArgs
     {
         public DataTableClearEventArgs(System.Data.DataTable dataTable) { }
         public System.Data.DataTable Table { get { throw null; } }
@@ -728,7 +727,7 @@ namespace System.Data
         public void Remove(string name, string tableNamespace) { }
         public void RemoveAt(int index) { }
     }
-    public sealed partial class DataTableNewRowEventArgs : EventArgs
+    public sealed partial class DataTableNewRowEventArgs : System.EventArgs
     {
         public DataTableNewRowEventArgs(System.Data.DataRow dataRow) { }
         public System.Data.DataRow Row { get { throw null; } }
@@ -756,7 +755,7 @@ namespace System.Data
         public override decimal GetDecimal(int ordinal) { throw null; }
         public override double GetDouble(int ordinal) { throw null; }
         public override System.Collections.IEnumerator GetEnumerator() { throw null; }
-        public override Type GetFieldType(int ordinal) { throw null; }
+        public override System.Type GetFieldType(int ordinal) { throw null; }
         public override float GetFloat(int ordinal) { throw null; }
         public override System.Guid GetGuid(int ordinal) { throw null; }
         public override short GetInt16(int ordinal) { throw null; }
@@ -764,7 +763,7 @@ namespace System.Data
         public override long GetInt64(int ordinal) { throw null; }
         public override string GetName(int ordinal) { throw null; }
         public override int GetOrdinal(string name) { throw null; }
-        public override Type GetProviderSpecificFieldType(int ordinal) { throw null; }
+        public override System.Type GetProviderSpecificFieldType(int ordinal) { throw null; }
         public override object GetProviderSpecificValue(int ordinal) { throw null; }
         public override int GetProviderSpecificValues(object[] values) { throw null; }
         public override System.Data.DataTable GetSchemaTable() { throw null; }
@@ -789,15 +788,15 @@ namespace System.Data
         [System.ComponentModel.DefaultValueAttribute(true)]
         public bool AllowNew { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(false)]
-        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)1)]
+        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)(1))]
         public bool ApplyDefaultSort { get { throw null; } set { } }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public int Count { get { throw null; } }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public System.Data.DataViewManager DataViewManager { get { throw null; } }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public bool IsInitialized { get { throw null; } }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         protected bool IsOpen { get { throw null; } }
         public System.Data.DataRowView this[int recordIndex] { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute("")]
@@ -825,9 +824,9 @@ namespace System.Data
         bool System.ComponentModel.IBindingListView.SupportsAdvancedSorting { get { throw null; } }
         bool System.ComponentModel.IBindingListView.SupportsFiltering { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute(null)]
-        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)1)]
+        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)(1))]
         public System.Data.DataTable Table { get { throw null; } set { } }
-        public event EventHandler Initialized { add { } remove { } }
+        public event System.EventHandler Initialized { add { } remove { } }
         public event System.ComponentModel.ListChangedEventHandler ListChanged { add { } remove { } }
         public virtual System.Data.DataRowView AddNew() { throw null; }
         public void BeginInit() { }
@@ -878,7 +877,7 @@ namespace System.Data
         [System.ComponentModel.DefaultValueAttribute(null)]
         public System.Data.DataSet DataSet { get { throw null; } set { } }
         public string DataViewSettingCollectionString { get { throw null; } set { } }
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)2)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(2))]
         public System.Data.DataViewSettingCollection DataViewSettings { get { throw null; } }
         int System.Collections.ICollection.Count { get { throw null; } }
         bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
@@ -934,27 +933,27 @@ namespace System.Data
     {
         internal DataViewSetting() { }
         public bool ApplyDefaultSort { get { throw null; } set { } }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public System.Data.DataViewManager DataViewManager { get { throw null; } }
         public string RowFilter { get { throw null; } set { } }
         public System.Data.DataViewRowState RowStateFilter { get { throw null; } set { } }
         public string Sort { get { throw null; } set { } }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public System.Data.DataTable Table { get { throw null; } }
     }
     public partial class DataViewSettingCollection : System.Collections.ICollection, System.Collections.IEnumerable
     {
         internal DataViewSettingCollection() { }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public virtual int Count { get { throw null; } }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public bool IsReadOnly { get { throw null; } }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public bool IsSynchronized { get { throw null; } }
         public virtual System.Data.DataViewSetting this[System.Data.DataTable table] { get { throw null; } set { } }
         public virtual System.Data.DataViewSetting this[int index] { get { throw null; } set { } }
         public virtual System.Data.DataViewSetting this[string tableName] { get { throw null; } }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public object SyncRoot { get { throw null; } }
         public void CopyTo(System.Array ar, int index) { }
         public void CopyTo(System.Data.DataViewSetting[] ar, int index) { }
@@ -970,7 +969,6 @@ namespace System.Data
         public int RowCount { get { throw null; } }
         public void CopyToRows(System.Data.DataRow[] array) { }
         public void CopyToRows(System.Data.DataRow[] array, int arrayIndex) { }
-
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo si, System.Runtime.Serialization.StreamingContext context) { }
     }
     public enum DbType
@@ -1024,7 +1022,7 @@ namespace System.Data
         public EvaluateException(string s) { }
         public EvaluateException(string message, System.Exception innerException) { }
     }
-    public partial class FillErrorEventArgs : EventArgs
+    public partial class FillErrorEventArgs : System.EventArgs
     {
         public FillErrorEventArgs(System.Data.DataTable dataTable, object[] values) { }
         public bool Continue { get { throw null; } set { } }
@@ -1040,9 +1038,9 @@ namespace System.Data
         public ForeignKeyConstraint(System.Data.DataColumn[] parentColumns, System.Data.DataColumn[] childColumns) { }
         public ForeignKeyConstraint(string constraintName, System.Data.DataColumn parentColumn, System.Data.DataColumn childColumn) { }
         public ForeignKeyConstraint(string constraintName, System.Data.DataColumn[] parentColumns, System.Data.DataColumn[] childColumns) { }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public ForeignKeyConstraint(string constraintName, string parentTableName, string parentTableNamespace, string[] parentColumnNames, string[] childColumnNames, System.Data.AcceptRejectRule acceptRejectRule, System.Data.Rule deleteRule, System.Data.Rule updateRule) { }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public ForeignKeyConstraint(string constraintName, string parentTableName, string[] parentColumnNames, string[] childColumnNames, System.Data.AcceptRejectRule acceptRejectRule, System.Data.Rule deleteRule, System.Data.Rule updateRule) { }
         [System.ComponentModel.DefaultValueAttribute((System.Data.AcceptRejectRule)(0))]
         public virtual System.Data.AcceptRejectRule AcceptRejectRule { get { throw null; } set { } }
@@ -1127,7 +1125,7 @@ namespace System.Data
         System.DateTime GetDateTime(int i);
         decimal GetDecimal(int i);
         double GetDouble(int i);
-        Type GetFieldType(int i);
+        System.Type GetFieldType(int i);
         float GetFloat(int i);
         System.Guid GetGuid(int i);
         short GetInt16(int i);
@@ -1200,14 +1198,14 @@ namespace System.Data
     public partial class InternalDataCollectionBase : System.Collections.ICollection, System.Collections.IEnumerable
     {
         public InternalDataCollectionBase() { }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public virtual int Count { get { throw null; } }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public bool IsReadOnly { get { throw null; } }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public bool IsSynchronized { get { throw null; } }
         protected virtual System.Collections.ArrayList List { get { throw null; } }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public object SyncRoot { get { throw null; } }
         public virtual void CopyTo(System.Array ar, int index) { }
         public virtual System.Collections.IEnumerator GetEnumerator() { throw null; }
@@ -1269,7 +1267,7 @@ namespace System.Data
         Hidden = 4,
         SimpleContent = 3,
     }
-    public partial class MergeFailedEventArgs : EventArgs
+    public partial class MergeFailedEventArgs : System.EventArgs
     {
         public MergeFailedEventArgs(System.Data.DataTable table, string conflict) { }
         public string Conflict { get { throw null; } }
@@ -1386,14 +1384,14 @@ namespace System.Data
         Variant = 23,
         Xml = 25,
     }
-    public sealed partial class StateChangeEventArgs : EventArgs
+    public sealed partial class StateChangeEventArgs : System.EventArgs
     {
         public StateChangeEventArgs(System.Data.ConnectionState originalState, System.Data.ConnectionState currentState) { }
         public System.Data.ConnectionState CurrentState { get { throw null; } }
         public System.Data.ConnectionState OriginalState { get { throw null; } }
     }
     public delegate void StateChangeEventHandler(object sender, System.Data.StateChangeEventArgs e);
-    public sealed partial class StatementCompletedEventArgs : EventArgs
+    public sealed partial class StatementCompletedEventArgs : System.EventArgs
     {
         public StatementCompletedEventArgs(int recordCount) { }
         public int RecordCount { get { throw null; } }
@@ -1432,7 +1430,7 @@ namespace System.Data
         public UniqueConstraint(string name, System.Data.DataColumn column, bool isPrimaryKey) { }
         public UniqueConstraint(string name, System.Data.DataColumn[] columns) { }
         public UniqueConstraint(string name, System.Data.DataColumn[] columns, bool isPrimaryKey) { }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public UniqueConstraint(string name, string[] columnNames, bool isPrimaryKey) { }
         [System.ComponentModel.ReadOnlyAttribute(true)]
         public virtual System.Data.DataColumn[] Columns { get { throw null; } }
@@ -1497,7 +1495,7 @@ namespace System.Data.Common
         public bool AcceptChangesDuringUpdate { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(false)]
         public bool ContinueUpdateOnError { get { throw null; } set { } }
-        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)1)]
+        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)(1))]
         public System.Data.LoadOption FillLoadOption { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute((System.Data.MissingMappingAction)(1))]
         public System.Data.MissingMappingAction MissingMappingAction { get { throw null; } set { } }
@@ -1506,7 +1504,7 @@ namespace System.Data.Common
         [System.ComponentModel.DefaultValueAttribute(false)]
         public virtual bool ReturnProviderSpecificTypes { get { throw null; } set { } }
         System.Data.ITableMappingCollection System.Data.IDataAdapter.TableMappings { get { throw null; } }
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)2)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(2))]
         public System.Data.Common.DataTableMappingCollection TableMappings { get { throw null; } }
         public event System.Data.FillErrorEventHandler FillError { add { } remove { } }
         [System.ObsoleteAttribute("CloneInternals() has been deprecated.  Use the DataAdapter(DataAdapter from) constructor.  http://go.microsoft.com/fwlink/?linkid=14202")]
@@ -1520,20 +1518,20 @@ namespace System.Data.Common
         public virtual System.Data.DataTable[] FillSchema(System.Data.DataSet dataSet, System.Data.SchemaType schemaType) { throw null; }
         protected virtual System.Data.DataTable[] FillSchema(System.Data.DataSet dataSet, System.Data.SchemaType schemaType, string srcTable, System.Data.IDataReader dataReader) { throw null; }
         protected virtual System.Data.DataTable FillSchema(System.Data.DataTable dataTable, System.Data.SchemaType schemaType, System.Data.IDataReader dataReader) { throw null; }
-        [System.ComponentModel.EditorBrowsable((System.ComponentModel.EditorBrowsableState)2)]
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(2))]
         public virtual System.Data.IDataParameter[] GetFillParameters() { throw null; }
         protected bool HasTableMappings() { throw null; }
         protected virtual void OnFillError(System.Data.FillErrorEventArgs value) { }
-        [System.ComponentModel.EditorBrowsable((System.ComponentModel.EditorBrowsableState)1)]
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
         public void ResetFillLoadOption() { }
-        [System.ComponentModel.EditorBrowsable((System.ComponentModel.EditorBrowsableState)1)]
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
         public virtual bool ShouldSerializeAcceptChangesDuringFill() { throw null; }
-        [System.ComponentModel.EditorBrowsable((System.ComponentModel.EditorBrowsableState)1)]
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
         public virtual bool ShouldSerializeFillLoadOption() { throw null; }
         protected virtual bool ShouldSerializeTableMappings() { throw null; }
         public virtual int Update(System.Data.DataSet dataSet) { throw null; }
     }
-    public sealed partial class DataColumnMapping : System.Data.IColumnMapping, System.ICloneable
+    public sealed partial class DataColumnMapping : System.MarshalByRefObject, System.Data.IColumnMapping, System.ICloneable
     {
         public DataColumnMapping() { }
         public DataColumnMapping(string sourceColumn, string dataSetColumn) { }
@@ -1541,24 +1539,24 @@ namespace System.Data.Common
         public string DataSetColumn { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
         public string SourceColumn { get { throw null; } set { } }
-        [System.ComponentModel.EditorBrowsable((System.ComponentModel.EditorBrowsableState)2)]
-        public System.Data.DataColumn GetDataColumnBySchemaAction(System.Data.DataTable dataTable, Type dataType, System.Data.MissingSchemaAction schemaAction) { throw null; }
-        [System.ComponentModel.EditorBrowsable((System.ComponentModel.EditorBrowsableState)2)]
-        public static System.Data.DataColumn GetDataColumnBySchemaAction(string sourceColumn, string dataSetColumn, System.Data.DataTable dataTable, Type dataType, System.Data.MissingSchemaAction schemaAction) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(2))]
+        public System.Data.DataColumn GetDataColumnBySchemaAction(System.Data.DataTable dataTable, System.Type dataType, System.Data.MissingSchemaAction schemaAction) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(2))]
+        public static System.Data.DataColumn GetDataColumnBySchemaAction(string sourceColumn, string dataSetColumn, System.Data.DataTable dataTable, System.Type dataType, System.Data.MissingSchemaAction schemaAction) { throw null; }
         object System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
     }
-    public sealed partial class DataColumnMappingCollection : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.Data.IColumnMappingCollection
+    public sealed partial class DataColumnMappingCollection : System.MarshalByRefObject, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.Data.IColumnMappingCollection
     {
         public DataColumnMappingCollection() { }
-        [System.ComponentModel.Browsable(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)0)]
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
         public int Count { get { throw null; } }
-        [System.ComponentModel.Browsable(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)0)]
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
         public System.Data.Common.DataColumnMapping this[int index] { get { throw null; } set { } }
-        [System.ComponentModel.Browsable(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)0)]
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
         public System.Data.Common.DataColumnMapping this[string sourceColumn] { get { throw null; } set { } }
         bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
         object System.Collections.ICollection.SyncRoot { get { throw null; } }
@@ -1576,10 +1574,10 @@ namespace System.Data.Common
         public void CopyTo(System.Array array, int index) { }
         public void CopyTo(System.Data.Common.DataColumnMapping[] array, int index) { }
         public System.Data.Common.DataColumnMapping GetByDataSetColumn(string value) { throw null; }
-        [System.ComponentModel.EditorBrowsable((System.ComponentModel.EditorBrowsableState)2)]
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(2))]
         public static System.Data.Common.DataColumnMapping GetColumnMappingBySchemaAction(System.Data.Common.DataColumnMappingCollection columnMappings, string sourceColumn, System.Data.MissingMappingAction mappingAction) { throw null; }
-        [System.ComponentModel.EditorBrowsable((System.ComponentModel.EditorBrowsableState)2)]
-        public static System.Data.DataColumn GetDataColumn(System.Data.Common.DataColumnMappingCollection columnMappings, string sourceColumn, Type dataType, System.Data.DataTable dataTable, System.Data.MissingMappingAction mappingAction, System.Data.MissingSchemaAction schemaAction) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(2))]
+        public static System.Data.DataColumn GetDataColumn(System.Data.Common.DataColumnMappingCollection columnMappings, string sourceColumn, System.Type dataType, System.Data.DataTable dataTable, System.Data.MissingMappingAction mappingAction, System.Data.MissingSchemaAction schemaAction) { throw null; }
         public System.Collections.IEnumerator GetEnumerator() { throw null; }
         public int IndexOf(object value) { throw null; }
         public int IndexOf(string sourceColumn) { throw null; }
@@ -1593,39 +1591,39 @@ namespace System.Data.Common
         System.Data.IColumnMapping System.Data.IColumnMappingCollection.Add(string sourceColumnName, string dataSetColumnName) { throw null; }
         System.Data.IColumnMapping System.Data.IColumnMappingCollection.GetByDataSetColumn(string dataSetColumnName) { throw null; }
     }
-    public sealed partial class DataTableMapping : System.Data.ITableMapping, System.ICloneable
+    public sealed partial class DataTableMapping : System.MarshalByRefObject, System.Data.ITableMapping, System.ICloneable
     {
         public DataTableMapping() { }
         public DataTableMapping(string sourceTable, string dataSetTable) { }
         public DataTableMapping(string sourceTable, string dataSetTable, System.Data.Common.DataColumnMapping[] columnMappings) { }
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)2)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(2))]
         public System.Data.Common.DataColumnMappingCollection ColumnMappings { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute("")]
         public string DataSetTable { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
         public string SourceTable { get { throw null; } set { } }
         System.Data.IColumnMappingCollection System.Data.ITableMapping.ColumnMappings { get { throw null; } }
-        [System.ComponentModel.EditorBrowsable((System.ComponentModel.EditorBrowsableState)2)]
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(2))]
         public System.Data.Common.DataColumnMapping GetColumnMappingBySchemaAction(string sourceColumn, System.Data.MissingMappingAction mappingAction) { throw null; }
-        [System.ComponentModel.EditorBrowsable((System.ComponentModel.EditorBrowsableState)2)]
-        public System.Data.DataColumn GetDataColumn(string sourceColumn, Type dataType, System.Data.DataTable dataTable, System.Data.MissingMappingAction mappingAction, System.Data.MissingSchemaAction schemaAction) { throw null; }
-        [System.ComponentModel.EditorBrowsable((System.ComponentModel.EditorBrowsableState)2)]
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(2))]
+        public System.Data.DataColumn GetDataColumn(string sourceColumn, System.Type dataType, System.Data.DataTable dataTable, System.Data.MissingMappingAction mappingAction, System.Data.MissingSchemaAction schemaAction) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(2))]
         public System.Data.DataTable GetDataTableBySchemaAction(System.Data.DataSet dataSet, System.Data.MissingSchemaAction schemaAction) { throw null; }
         object System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
     }
     [System.ComponentModel.ListBindableAttribute(false)]
-    public sealed partial class DataTableMappingCollection : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.Data.ITableMappingCollection
+    public sealed partial class DataTableMappingCollection : System.MarshalByRefObject, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.Data.ITableMappingCollection
     {
         public DataTableMappingCollection() { }
-        [System.ComponentModel.Browsable(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)0)]
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
         public int Count { get { throw null; } }
-        [System.ComponentModel.Browsable(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)0)]
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
         public System.Data.Common.DataTableMapping this[int index] { get { throw null; } set { } }
-        [System.ComponentModel.Browsable(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)0)]
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
         public System.Data.Common.DataTableMapping this[string sourceTable] { get { throw null; } set { } }
         bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
         object System.Collections.ICollection.SyncRoot { get { throw null; } }
@@ -1644,7 +1642,7 @@ namespace System.Data.Common
         public void CopyTo(System.Data.Common.DataTableMapping[] array, int index) { }
         public System.Data.Common.DataTableMapping GetByDataSetTable(string dataSetTable) { throw null; }
         public System.Collections.IEnumerator GetEnumerator() { throw null; }
-        [System.ComponentModel.EditorBrowsable((System.ComponentModel.EditorBrowsableState)2)]
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(2))]
         public static System.Data.Common.DataTableMapping GetTableMappingBySchemaAction(System.Data.Common.DataTableMappingCollection tableMappings, string sourceTable, string dataSetTable, System.Data.MissingMappingAction mappingAction) { throw null; }
         public int IndexOf(object value) { throw null; }
         public int IndexOf(string sourceTable) { throw null; }
@@ -1681,7 +1679,7 @@ namespace System.Data.Common
         public int? NumericPrecision { get { throw null; } protected set { } }
         public int? NumericScale { get { throw null; } protected set { } }
         public string UdtAssemblyQualifiedName { get { throw null; } protected set { } }
-        public Type DataType { get { throw null; } protected set { } }
+        public System.Type DataType { get { throw null; } protected set { } }
         public string DataTypeName { get { throw null; } protected set { } }
         public virtual object this[string property] { get { throw null; } }
     }
@@ -1689,33 +1687,33 @@ namespace System.Data.Common
     {
         protected DbCommand() { }
         [System.ComponentModel.DefaultValueAttribute("")]
-        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)1)]
+        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)(1))]
         public abstract string CommandText { get; set; }
         public abstract int CommandTimeout { get; set; }
         [System.ComponentModel.DefaultValueAttribute((System.Data.CommandType)(1))]
-        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)1)]
+        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)(1))]
         public abstract System.Data.CommandType CommandType { get; set; }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DefaultValueAttribute(null)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)0)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
         public System.Data.Common.DbConnection Connection { get { throw null; } set { } }
         protected abstract System.Data.Common.DbConnection DbConnection { get; set; }
         protected abstract System.Data.Common.DbParameterCollection DbParameterCollection { get; }
         protected abstract System.Data.Common.DbTransaction DbTransaction { get; set; }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DefaultValueAttribute(true)]
         [System.ComponentModel.DesignOnlyAttribute(true)]
-        [System.ComponentModel.EditorBrowsable((System.ComponentModel.EditorBrowsableState)1)]
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
         public abstract bool DesignTimeVisible { get; set; }
-        [System.ComponentModel.Browsable(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)0)]
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
         public System.Data.Common.DbParameterCollection Parameters { get { throw null; } }
         System.Data.IDbConnection System.Data.IDbCommand.Connection { get { throw null; } set { } }
         System.Data.IDataParameterCollection System.Data.IDbCommand.Parameters { get { throw null; } }
         System.Data.IDbTransaction System.Data.IDbCommand.Transaction { get { throw null; } set { } }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DefaultValueAttribute(null)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)0)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
         public System.Data.Common.DbTransaction Transaction { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute((System.Data.UpdateRowSource)(3))]
         public abstract System.Data.UpdateRowSource UpdatedRowSource { get; set; }
@@ -1750,8 +1748,8 @@ namespace System.Data.Common
         public virtual string CatalogSeparator { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute((System.Data.ConflictOption)(1))]
         public virtual System.Data.ConflictOption ConflictOption { get { throw null; } set { } }
-        [System.ComponentModel.Browsable(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)0)]
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
         public System.Data.Common.DbDataAdapter DataAdapter { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
         public virtual string QuotePrefix { get { throw null; } set { } }
@@ -1784,16 +1782,19 @@ namespace System.Data.Common
     {
         protected DbConnection() { }
         [System.ComponentModel.DefaultValueAttribute("")]
-        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)1)]
+#pragma warning disable 0618
+        [System.ComponentModel.RecommendedAsConfigurableAttribute(true)]
+#pragma warning restore 0618
+        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)(1))]
         [System.ComponentModel.SettingsBindableAttribute(true)]
         public abstract string ConnectionString { get; set; }
         public virtual int ConnectionTimeout { get { throw null; } }
         public abstract string Database { get; }
         public abstract string DataSource { get; }
         protected virtual System.Data.Common.DbProviderFactory DbProviderFactory { get { throw null; } }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public abstract string ServerVersion { get; }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public abstract System.Data.ConnectionState State { get; }
         public virtual event System.Data.StateChangeEventHandler StateChange { add { } remove { } }
         protected abstract System.Data.Common.DbTransaction BeginDbTransaction(System.Data.IsolationLevel isolationLevel);
@@ -1819,27 +1820,27 @@ namespace System.Data.Common
     {
         public DbConnectionStringBuilder() { }
         public DbConnectionStringBuilder(bool useOdbcRules) { }
-        [System.ComponentModel.Browsable(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)0)]
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
         [System.ComponentModel.DesignOnlyAttribute(true)]
-        [System.ComponentModel.EditorBrowsable((System.ComponentModel.EditorBrowsableState)1)]
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
         public bool BrowsableConnectionString { get { throw null; } set { } }
-        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)1)]
+        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)(1))]
         public string ConnectionString { get { throw null; } set { } }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public virtual int Count { get { throw null; } }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public virtual bool IsFixedSize { get { throw null; } }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public bool IsReadOnly { get { throw null; } }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public virtual object this[string keyword] { get { throw null; } set { } }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public virtual System.Collections.ICollection Keys { get { throw null; } }
         bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
         object System.Collections.ICollection.SyncRoot { get { throw null; } }
         object System.Collections.IDictionary.this[object keyword] { get { throw null; } set { } }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         public virtual System.Collections.ICollection Values { get { throw null; } }
         public void Add(string keyword, object value) { }
         public static void AppendKeyValuePair(System.Text.StringBuilder builder, string keyword, string value) { }
@@ -1863,7 +1864,7 @@ namespace System.Data.Common
         System.ComponentModel.TypeConverter System.ComponentModel.ICustomTypeDescriptor.GetConverter() { throw null; }
         System.ComponentModel.EventDescriptor System.ComponentModel.ICustomTypeDescriptor.GetDefaultEvent() { throw null; }
         System.ComponentModel.PropertyDescriptor System.ComponentModel.ICustomTypeDescriptor.GetDefaultProperty() { throw null; }
-        object System.ComponentModel.ICustomTypeDescriptor.GetEditor(Type editorBaseType) { throw null; }
+        object System.ComponentModel.ICustomTypeDescriptor.GetEditor(System.Type editorBaseType) { throw null; }
         System.ComponentModel.EventDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetEvents() { throw null; }
         System.ComponentModel.EventDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetEvents(System.Attribute[] attributes) { throw null; }
         System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties() { throw null; }
@@ -1877,15 +1878,15 @@ namespace System.Data.Common
         public const string DefaultSourceTableName = "Table";
         protected DbDataAdapter() { }
         protected DbDataAdapter(System.Data.Common.DbDataAdapter adapter) { }
-        [System.ComponentModel.Browsable(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)0)]
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
         public System.Data.Common.DbCommand DeleteCommand { get { throw null; } set { } }
         protected internal System.Data.CommandBehavior FillCommandBehavior { get { throw null; } set { } }
-        [System.ComponentModel.Browsable(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)0)]
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
         public System.Data.Common.DbCommand InsertCommand { get { throw null; } set { } }
-        [System.ComponentModel.Browsable(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)0)]
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
         public System.Data.Common.DbCommand SelectCommand { get { throw null; } set { } }
         System.Data.IDbCommand System.Data.IDbDataAdapter.DeleteCommand { get { throw null; } set { } }
         System.Data.IDbCommand System.Data.IDbDataAdapter.InsertCommand { get { throw null; } set { } }
@@ -1893,8 +1894,8 @@ namespace System.Data.Common
         System.Data.IDbCommand System.Data.IDbDataAdapter.UpdateCommand { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(1)]
         public virtual int UpdateBatchSize { get { throw null; } set { } }
-        [System.ComponentModel.Browsable(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)0)]
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
         public System.Data.Common.DbCommand UpdateCommand { get { throw null; } set { } }
         protected virtual int AddToBatch(System.Data.IDbCommand command) { throw null; }
         protected virtual void ClearBatch() { }
@@ -1917,7 +1918,7 @@ namespace System.Data.Common
         protected virtual System.Data.DataTable FillSchema(System.Data.DataTable dataTable, System.Data.SchemaType schemaType, System.Data.IDbCommand command, System.Data.CommandBehavior behavior) { throw null; }
         protected virtual System.Data.IDataParameter GetBatchedParameter(int commandIdentifier, int parameterIndex) { throw null; }
         protected virtual bool GetBatchedRecordsAffected(int commandIdentifier, out int recordsAffected, out System.Exception error) { throw null; }
-        [System.ComponentModel.EditorBrowsable((System.ComponentModel.EditorBrowsableState)2)]
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(2))]
         public override System.Data.IDataParameter[] GetFillParameters() { throw null; }
         protected virtual void InitializeBatching() { }
         protected virtual void OnRowUpdated(System.Data.Common.RowUpdatedEventArgs value) { }
@@ -1930,7 +1931,7 @@ namespace System.Data.Common
         public int Update(System.Data.DataSet dataSet, string srcTable) { throw null; }
         public int Update(System.Data.DataTable dataTable) { throw null; }
     }
-    public abstract partial class DbDataReader : System.Collections.IEnumerable, System.Data.IDataReader, System.Data.IDataRecord, System.IDisposable
+    public abstract partial class DbDataReader : System.MarshalByRefObject, System.Collections.IEnumerable, System.Data.IDataReader, System.Data.IDataRecord, System.IDisposable
     {
         protected DbDataReader() { }
         public abstract int Depth { get; }
@@ -1942,7 +1943,7 @@ namespace System.Data.Common
         public abstract int RecordsAffected { get; }
         public virtual int VisibleFieldCount { get { throw null; } }
         public virtual void Close() { }
-        [System.ComponentModel.EditorBrowsable((System.ComponentModel.EditorBrowsableState)1)]
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public abstract bool GetBoolean(int ordinal);
@@ -1950,16 +1951,16 @@ namespace System.Data.Common
         public abstract long GetBytes(int ordinal, long dataOffset, byte[] buffer, int bufferOffset, int length);
         public abstract char GetChar(int ordinal);
         public abstract long GetChars(int ordinal, long dataOffset, char[] buffer, int bufferOffset, int length);
-        [System.ComponentModel.EditorBrowsable((System.ComponentModel.EditorBrowsableState)1)]
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
         public System.Data.Common.DbDataReader GetData(int ordinal) { throw null; }
         public abstract string GetDataTypeName(int ordinal);
         public abstract System.DateTime GetDateTime(int ordinal);
         protected virtual System.Data.Common.DbDataReader GetDbDataReader(int ordinal) { throw null; }
         public abstract decimal GetDecimal(int ordinal);
         public abstract double GetDouble(int ordinal);
-        [System.ComponentModel.EditorBrowsable((System.ComponentModel.EditorBrowsableState)1)]
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
         public abstract System.Collections.IEnumerator GetEnumerator();
-        public abstract Type GetFieldType(int ordinal);
+        public abstract System.Type GetFieldType(int ordinal);
         public virtual T GetFieldValue<T>(int ordinal) { throw null; }
         public System.Threading.Tasks.Task<T> GetFieldValueAsync<T>(int ordinal) { throw null; }
         public virtual System.Threading.Tasks.Task<T> GetFieldValueAsync<T>(int ordinal, System.Threading.CancellationToken cancellationToken) { throw null; }
@@ -1970,11 +1971,11 @@ namespace System.Data.Common
         public abstract long GetInt64(int ordinal);
         public abstract string GetName(int ordinal);
         public abstract int GetOrdinal(string name);
-        [System.ComponentModel.EditorBrowsable((System.ComponentModel.EditorBrowsableState)1)]
-        public virtual Type GetProviderSpecificFieldType(int ordinal) { throw null; }
-        [System.ComponentModel.EditorBrowsable((System.ComponentModel.EditorBrowsableState)1)]
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+        public virtual System.Type GetProviderSpecificFieldType(int ordinal) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
         public virtual object GetProviderSpecificValue(int ordinal) { throw null; }
-        [System.ComponentModel.EditorBrowsable((System.ComponentModel.EditorBrowsableState)1)]
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
         public virtual int GetProviderSpecificValues(object[] values) { throw null; }
         public virtual System.Data.DataTable GetSchemaTable() { throw null; }
         public virtual System.IO.Stream GetStream(int ordinal) { throw null; }
@@ -2015,7 +2016,7 @@ namespace System.Data.Common
         protected virtual System.Data.Common.DbDataReader GetDbDataReader(int i) { throw null; }
         public abstract decimal GetDecimal(int i);
         public abstract double GetDouble(int i);
-        public abstract Type GetFieldType(int i);
+        public abstract System.Type GetFieldType(int i);
         public abstract float GetFloat(int i);
         public abstract System.Guid GetGuid(int i);
         public abstract short GetInt16(int i);
@@ -2033,7 +2034,7 @@ namespace System.Data.Common
         System.ComponentModel.TypeConverter System.ComponentModel.ICustomTypeDescriptor.GetConverter() { throw null; }
         System.ComponentModel.EventDescriptor System.ComponentModel.ICustomTypeDescriptor.GetDefaultEvent() { throw null; }
         System.ComponentModel.PropertyDescriptor System.ComponentModel.ICustomTypeDescriptor.GetDefaultProperty() { throw null; }
-        object System.ComponentModel.ICustomTypeDescriptor.GetEditor(Type editorBaseType) { throw null; }
+        object System.ComponentModel.ICustomTypeDescriptor.GetEditor(System.Type editorBaseType) { throw null; }
         System.ComponentModel.EventDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetEvents() { throw null; }
         System.ComponentModel.EventDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetEvents(System.Attribute[] attributes) { throw null; }
         System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties() { throw null; }
@@ -2053,7 +2054,7 @@ namespace System.Data.Common
         public DbEnumerator(System.Data.IDataReader reader, bool closeReader) { }
         public object Current { get { throw null; } }
         public bool MoveNext() { throw null; }
-        [System.ComponentModel.EditorBrowsable((System.ComponentModel.EditorBrowsableState)1)]
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
         public void Reset() { }
     }
     public abstract partial class DbException : System.Runtime.InteropServices.ExternalException
@@ -2118,19 +2119,19 @@ namespace System.Data.Common
         public static readonly string SupportedJoinOperators;
         public static readonly string TypeName;
     }
-    public abstract partial class DbParameter : System.Data.IDataParameter, System.Data.IDbDataParameter
+    public abstract partial class DbParameter : System.MarshalByRefObject, System.Data.IDataParameter, System.Data.IDbDataParameter
     {
         protected DbParameter() { }
-        [System.ComponentModel.Browsable(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)0)]
-        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)1)]
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
+        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)(1))]
         public abstract System.Data.DbType DbType { get; set; }
         [System.ComponentModel.DefaultValueAttribute((System.Data.ParameterDirection)(1))]
-        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)1)]
+        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)(1))]
         public abstract System.Data.ParameterDirection Direction { get; set; }
-        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DesignOnlyAttribute(true)]
-        [System.ComponentModel.EditorBrowsable((System.ComponentModel.EditorBrowsableState)1)]
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
         public abstract bool IsNullable { get; set; }
         [System.ComponentModel.DefaultValueAttribute("")]
         public abstract string ParameterName { get; set; }
@@ -2140,42 +2141,42 @@ namespace System.Data.Common
         [System.ComponentModel.DefaultValueAttribute("")]
         public abstract string SourceColumn { get; set; }
         [System.ComponentModel.DefaultValueAttribute(false)]
-        [System.ComponentModel.EditorBrowsable((System.ComponentModel.EditorBrowsableState)2)]
-        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)1)]
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(2))]
+        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)(1))]
         public abstract bool SourceColumnNullMapping { get; set; }
         [System.ComponentModel.DefaultValueAttribute((System.Data.DataRowVersion)(512))]
         public virtual System.Data.DataRowVersion SourceVersion { get { throw null; } set { } }
         byte System.Data.IDbDataParameter.Precision { get { throw null; } set { } }
         byte System.Data.IDbDataParameter.Scale { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(null)]
-        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)1)]
+        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)(1))]
         public abstract object Value { get; set; }
-        [System.ComponentModel.EditorBrowsable((System.ComponentModel.EditorBrowsableState)2)]
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(2))]
         public abstract void ResetDbType();
     }
-    public abstract partial class DbParameterCollection : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.Data.IDataParameterCollection
+    public abstract partial class DbParameterCollection : System.MarshalByRefObject, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.Data.IDataParameterCollection
     {
         protected DbParameterCollection() { }
-        [System.ComponentModel.Browsable(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)0)]
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
         public abstract int Count { get; }
-        [System.ComponentModel.Browsable(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)0)]
-        [System.ComponentModel.EditorBrowsable((System.ComponentModel.EditorBrowsableState)1)]
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
         public virtual bool IsFixedSize { get { throw null; } }
-        [System.ComponentModel.Browsable(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)0)]
-        [System.ComponentModel.EditorBrowsable((System.ComponentModel.EditorBrowsableState)1)]
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
         public virtual bool IsReadOnly { get { throw null; } }
-        [System.ComponentModel.Browsable(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)0)]
-        [System.ComponentModel.EditorBrowsable((System.ComponentModel.EditorBrowsableState)1)]
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
         public virtual bool IsSynchronized { get { throw null; } }
         public System.Data.Common.DbParameter this[int index] { get { throw null; } set { } }
         public System.Data.Common.DbParameter this[string parameterName] { get { throw null; } set { } }
-        [System.ComponentModel.Browsable(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)0)]
-        [System.ComponentModel.EditorBrowsable((System.ComponentModel.EditorBrowsableState)1)]
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
         public abstract object SyncRoot { get; }
         object System.Collections.IList.this[int index] { get { throw null; } set { } }
         object System.Data.IDataParameterCollection.this[string parameterName] { get { throw null; } set { } }
@@ -2185,7 +2186,7 @@ namespace System.Data.Common
         public abstract bool Contains(object value);
         public abstract bool Contains(string value);
         public abstract void CopyTo(System.Array array, int index);
-        [System.ComponentModel.EditorBrowsable((System.ComponentModel.EditorBrowsableState)1)]
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
         public abstract System.Collections.IEnumerator GetEnumerator();
         protected abstract System.Data.Common.DbParameter GetParameter(int index);
         protected abstract System.Data.Common.DbParameter GetParameter(string parameterName);
@@ -2210,13 +2211,13 @@ namespace System.Data.Common
         public virtual System.Data.Common.DbDataSourceEnumerator CreateDataSourceEnumerator() { throw null; }
         public virtual System.Data.Common.DbParameter CreateParameter() { throw null; }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)128, AllowMultiple = false, Inherited = true)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(128), AllowMultiple = false, Inherited = true)]
     public sealed partial class DbProviderSpecificTypePropertyAttribute : System.Attribute
     {
         public DbProviderSpecificTypePropertyAttribute(bool isProviderSpecificTypeProperty) { }
         public bool IsProviderSpecificTypeProperty { get { throw null; } }
     }
-    public abstract partial class DbTransaction : System.Data.IDbTransaction, System.IDisposable
+    public abstract partial class DbTransaction : System.MarshalByRefObject, System.Data.IDbTransaction, System.IDisposable
     {
         protected DbTransaction() { }
         public System.Data.Common.DbConnection Connection { get { throw null; } }
@@ -2246,7 +2247,7 @@ namespace System.Data.Common
         Sensitive = 2,
         Unknown = 0,
     }
-    public partial class RowUpdatedEventArgs : EventArgs
+    public partial class RowUpdatedEventArgs : System.EventArgs
     {
         public RowUpdatedEventArgs(System.Data.DataRow dataRow, System.Data.IDbCommand command, System.Data.StatementType statementType, System.Data.Common.DataTableMapping tableMapping) { }
         public System.Data.IDbCommand Command { get { throw null; } }
@@ -2260,7 +2261,7 @@ namespace System.Data.Common
         public void CopyToRows(System.Data.DataRow[] array) { }
         public void CopyToRows(System.Data.DataRow[] array, int arrayIndex) { }
     }
-    public partial class RowUpdatingEventArgs : EventArgs
+    public partial class RowUpdatingEventArgs : System.EventArgs
     {
         public RowUpdatingEventArgs(System.Data.DataRow dataRow, System.Data.IDbCommand command, System.Data.StatementType statementType, System.Data.Common.DataTableMapping tableMapping) { }
         protected virtual System.Data.IDbCommand BaseCommand { get { throw null; } set { } }
@@ -3300,26 +3301,5 @@ namespace System.Data.SqlTypes
         Buffer = 0,
         Stream = 1,
         UnmanagedBuffer = 2,
-    }
-}
-namespace System.Xml
-{
-    public class XmlDataDocument : System.Xml.XmlDocument
-    {
-        public XmlDataDocument() : base((System.Xml.XmlImplementation)null) { }
-        public XmlDataDocument(System.Data.DataSet dataset) : base((System.Xml.XmlImplementation)null) { }
-        public override System.Xml.XmlElement CreateElement(string prefix, string localName, string namespaceURI) { throw null; }
-        public override System.Xml.XmlEntityReference CreateEntityReference(string name) { throw null; }
-        public System.Data.DataSet DataSet { get { throw null; } }
-        public System.Data.DataRow GetRowFromElement(System.Xml.XmlElement e) { throw null; }
-        public System.Xml.XmlElement GetElementFromRow(System.Data.DataRow r) { throw null; }
-        public override System.Xml.XmlNode CloneNode(bool deep) { throw null; }
-        public override void Load(string filename) { throw null; }
-        public override void Load(System.IO.Stream inStream) { throw null; }
-        public override void Load(System.IO.TextReader txtReader) { throw null; }
-        public override void Load(System.Xml.XmlReader reader) { throw null; }
-        protected override System.Xml.XPath.XPathNavigator CreateNavigator(System.Xml.XmlNode node) { throw null; }
-        public override System.Xml.XmlElement GetElementById(string elemId) { throw null; }
-        public override System.Xml.XmlNodeList GetElementsByTagName(string name) { throw null; }
     }
 }

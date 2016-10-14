@@ -17,7 +17,7 @@ namespace System.Xml
     /// data or relational data (DataSet).
     /// </summary>
     [Obsolete("XmlDataDocument class will be removed in a future release.")]
-    public class XmlDataDocument : XmlDocument
+    internal class XmlDataDocument : XmlDocument
     {
         private DataSet _dataSet;
 
