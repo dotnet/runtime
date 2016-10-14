@@ -2861,7 +2861,7 @@ void Compiler::optUnrollLoops()
             int        llim;         // limit value for iterator
             unsigned   lvar;         // iterator lclVar #
             int        iterInc;      // value to increment the iterator
-            genTreeOps iterOper;     // type of iterator increment (i.e. ASG_ADD, ASG_SUB, etc.)
+            genTreeOps iterOper;     // type of iterator increment (i.e. ADD, SUB, etc.)
             var_types  iterOperType; // type result of the oper (for overflow instrs)
             genTreeOps testOper;     // type of loop test (i.e. GT_LE, GT_GE, etc.)
             bool       unsTest;      // Is the comparison u/int
@@ -2965,7 +2965,7 @@ void Compiler::optUnrollLoops()
                 - limit constant
                 - iterator
                 - iterator increment
-                - increment operation type (i.e. ASG_ADD, ASG_SUB, etc...)
+                - increment operation type (i.e. ADD, SUB, etc...)
                 - loop test type (i.e. GT_GE, GT_LT, etc...)
              */
 
@@ -3040,19 +3040,20 @@ void Compiler::optUnrollLoops()
             incr = incr->gtStmt.gtStmtExpr;
 
             // Don't unroll loops we don't understand.
-            if (incr->gtOper == GT_ASG)
+            if (incr->gtOper != GT_ASG)
             {
                 continue;
             }
+            incr = incr->gtOp.gtOp2;
 
             /* Make sure everything looks ok */
             if ((init->gtOper != GT_ASG) || (init->gtOp.gtOp1->gtOper != GT_LCL_VAR) ||
                 (init->gtOp.gtOp1->gtLclVarCommon.gtLclNum != lvar) || (init->gtOp.gtOp2->gtOper != GT_CNS_INT) ||
                 (init->gtOp.gtOp2->gtIntCon.gtIconVal != lbeg) ||
 
-                !((incr->gtOper == GT_ASG_ADD) || (incr->gtOper == GT_ASG_SUB)) ||
-                (incr->gtOp.gtOp1->gtOper != GT_LCL_VAR) || (incr->gtOp.gtOp1->gtLclVarCommon.gtLclNum != lvar) ||
-                (incr->gtOp.gtOp2->gtOper != GT_CNS_INT) || (incr->gtOp.gtOp2->gtIntCon.gtIconVal != iterInc) ||
+                !((incr->gtOper == GT_ADD) || (incr->gtOper == GT_SUB)) || (incr->gtOp.gtOp1->gtOper != GT_LCL_VAR) ||
+                (incr->gtOp.gtOp1->gtLclVarCommon.gtLclNum != lvar) || (incr->gtOp.gtOp2->gtOper != GT_CNS_INT) ||
+                (incr->gtOp.gtOp2->gtIntCon.gtIconVal != iterInc) ||
 
                 (test->gtOper != GT_JTRUE))
             {
@@ -3183,16 +3184,16 @@ void Compiler::optUnrollLoops()
 
                 switch (iterOper)
                 {
-                    case GT_ASG_ADD:
+                    case GT_ADD:
                         lval += iterInc;
                         break;
 
-                    case GT_ASG_SUB:
+                    case GT_SUB:
                         lval -= iterInc;
                         break;
 
-                    case GT_ASG_RSH:
-                    case GT_ASG_LSH:
+                    case GT_RSH:
+                    case GT_LSH:
                         noway_assert(!"Unrolling not implemented for this loop iterator");
                         goto DONE_LOOP;
 
