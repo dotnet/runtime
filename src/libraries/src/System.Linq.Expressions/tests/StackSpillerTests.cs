@@ -6,6 +6,7 @@
 
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -447,6 +448,356 @@ namespace System.Linq.Expressions.Tests
             var b = Expression.Block(new[] { x }, Expression.New(ctor, x, Spill(v)), x);
 
             NotSupported(b);
+        }
+
+        [Fact]
+        public static void Spill_Optimizations_Constant()
+        {
+            var xs = Expression.Parameter(typeof(int[]));
+            var i = Expression.Constant(0);
+            var v = Spill(Expression.Constant(1));
+
+            var e =
+                Expression.Lambda<Action<int[]>>(
+                    Expression.Assign(Expression.ArrayAccess(xs, i), v),
+                    xs
+                );
+            
+            e.VerifyIL(@"
+                .method void ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure,int32[])
+                {
+                  .maxstack 4
+                  .locals init (
+                    [0] int32[],
+                    [1] int32,
+                    [2] int32
+                  )
+
+                  // Save instance (`xs`) into V_0
+                  IL_0000: ldarg.1    
+                  IL_0001: stloc.0    
+
+                  // Save rhs (`try { 1 } finally {}`) into V_1
+                  .try
+                  {
+                    IL_0002: ldc.i4.1   
+                    IL_0003: stloc.2    
+                    IL_0004: leave      IL_000a
+                  }
+                  finally
+                  {
+                    IL_0009: endfinally 
+                  }
+                  IL_000a: ldloc.2    
+                  IL_000b: stloc.1    
+
+                  // Load instance from V_0
+                  IL_000c: ldloc.0    
+
+                  // <OPTIMIZATION> Evaluate index (`0`) </OPTIMIZATION>
+                  IL_000d: ldc.i4.0   
+
+                  // Load rhs from V_1
+                  IL_000e: ldloc.1    
+
+                  // Evaluate `instance[index] = rhs` index assignment
+                  IL_000f: stelem.i4  
+
+                  IL_0010: ret        
+                }"
+            );
+        }
+
+        [Fact]
+        public static void Spill_Optimizations_Default()
+        {
+            var xs = Expression.Parameter(typeof(int[]));
+            var i = Expression.Default(typeof(int));
+            var v = Spill(Expression.Constant(1));
+
+            var e =
+                Expression.Lambda<Action<int[]>>(
+                    Expression.Assign(Expression.ArrayAccess(xs, i), v),
+                    xs
+                );
+
+            e.VerifyIL(@"
+                .method void ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure,int32[])
+                {
+                  .maxstack 4
+                  .locals init (
+                    [0] int32[],
+                    [1] int32,
+                    [2] int32
+                  )
+
+                  // Save instance (`xs`) into V_0
+                  IL_0000: ldarg.1    
+                  IL_0001: stloc.0    
+
+                  // Save rhs (`try { 1 } finally {}`) into V_1
+                  .try
+                  {
+                    IL_0002: ldc.i4.1   
+                    IL_0003: stloc.2    
+                    IL_0004: leave      IL_000a
+                  }
+                  finally
+                  {
+                    IL_0009: endfinally 
+                  }
+                  IL_000a: ldloc.2    
+                  IL_000b: stloc.1  
+
+                  // Load instance from V_0  
+                  IL_000c: ldloc.0    
+
+                  // <OPTIMIZATION> Evaluate index (`0`) </OPTIMIZATION>
+                  IL_000d: ldc.i4.0   
+
+                  // Load rhs from V_1
+                  IL_000e: ldloc.1    
+
+                  // Evaluate `instance[index] = rhs` index assignment
+                  IL_000f: stelem.i4  
+
+                  IL_0010: ret        
+                }"
+            );
+        }
+
+        [Fact]
+        public static void Spill_Optimizations_LiteralField()
+        {
+            var e =
+                Expression.Lambda<Func<double>>(
+                    Expression.Add(
+                        Expression.Field(null, typeof(Math).GetField(nameof(Math.PI))),
+                        Spill(Expression.Constant(0.0))
+                    )
+                );
+
+            e.VerifyIL(@"
+                .method float64 ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure)
+                {
+                  .maxstack 3
+                  .locals init (
+                    [0] float64,
+                    [1] float64
+                  )
+
+                  // Save rhs (`try { 0.0 } finally {}`) into V_0
+                  .try
+                  {
+                    IL_0000: ldc.r8     0
+                    IL_0009: stloc.1    
+                    IL_000a: leave      IL_0010
+                  }
+                  finally
+                  {
+                    IL_000f: endfinally 
+                  }
+                  IL_0010: ldloc.1    
+                  IL_0011: stloc.0    
+
+                  // <OPTIMIZATION> Evaluate lhs (`Math.PI` gets inlined) </OPTIMIZATION>
+                  IL_0012: ldc.r8     3.14159265358979
+
+                  // Load rhs from V_0  
+                  IL_001b: ldloc.0    
+
+                  // Evaluate `lhs + rhs`
+                  IL_001c: add        
+
+                  IL_001d: ret        
+                }"
+            );
+        }
+
+        [Fact]
+        public static void Spill_Optimizations_StaticReadOnlyField()
+        {
+            var e =
+                Expression.Lambda<Func<string>>(
+                    Expression.Call(
+                        typeof(string).GetMethod(nameof(string.Concat), new[] { typeof(string), typeof(string) }),
+                        Expression.Field(null, typeof(bool).GetField(nameof(bool.TrueString))),
+                        Spill(Expression.Constant("!"))
+                    )
+                );
+
+            e.VerifyIL(@"
+                .method string ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure)
+                {
+                  .maxstack 3
+                  .locals init (
+                    [0] string,
+                    [1] string
+                  )
+
+                  // Save arg1 (`try { ""!"" } finally {}`) into V_0
+                  .try
+                  {
+                    IL_0000: ldstr      ""!""
+                    IL_0005: stloc.1
+                    IL_0006: leave      IL_000c
+                  }
+                  finally
+                  {
+                    IL_000b: endfinally
+                  }
+                  IL_000c: ldloc.1    
+                  IL_000d: stloc.0    
+
+                  // <OPTIMIZATION> Evaluate arg0 (`bool::TrueString`) </OPTIMIZATION>
+                  IL_000e: ldsfld     bool::TrueString
+
+                  // Load arg1 from V_0
+                  IL_0013: ldloc.0    
+
+                  // Evaluate `string.Concat(arg0, arg1)` call
+                  IL_0014: call       string string::Concat(string,string)
+
+                  IL_0019: ret
+                }"
+            );
+        }
+
+        [Fact]
+        public static void Spill_Optimizations_RuntimeVariables1()
+        {
+            var f = Expression.Parameter(typeof(Action<IRuntimeVariables, int>));
+            var e =
+                Expression.Lambda<Action<Action<IRuntimeVariables, int>>>(
+                    Expression.Invoke(
+                        f,
+                        Expression.RuntimeVariables(),
+                        Spill(Expression.Constant(2))
+                    ),
+                    f
+                );
+
+            e.VerifyIL(@"
+                .method void ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure,class [System.Private.CoreLib]System.Action`2<class [System.Linq.Expressions]System.Runtime.CompilerServices.IRuntimeVariables,int32>)
+                {
+                  .maxstack 4
+                  .locals init (
+                    [0] class [System.Private.CoreLib]System.Action`2<class [System.Linq.Expressions]System.Runtime.CompilerServices.IRuntimeVariables,int32>,
+                    [1] int32,
+                    [2] int32
+                  )
+
+                  // Save target (`f`) into V_0
+                  IL_0000: ldarg.1    
+                  IL_0001: stloc.0    
+
+                  // Save arg1 (`try { 2 } finally {}`) into V_1
+                  .try
+                  {
+                    IL_0002: ldc.i4.2   
+                    IL_0003: stloc.2    
+                    IL_0004: leave      IL_000a
+                  }
+                  finally
+                  {
+                    IL_0009: endfinally 
+                  }
+                  IL_000a: ldloc.2    
+                  IL_000b: stloc.1   
+
+                  // Load target from V_0
+                  IL_000c: ldloc.0    
+
+                  // <OPTIMIZATION> Load arg0 (`RuntimeVariables`) by calling RuntimeOps.CreateRuntimeVariables </OPTIMIZATION>
+                  IL_000d: call       class [System.Linq.Expressions]System.Runtime.CompilerServices.IRuntimeVariables class [System.Linq.Expressions]System.Runtime.CompilerServices.RuntimeOps::CreateRuntimeVariables()
+
+                  // Load arg1 from V_1
+                  IL_0012: ldloc.1    
+
+                  // Evaluate `target(arg0, arg1)` delegate invocation
+                  IL_0013: callvirt   instance void class [System.Private.CoreLib]System.Action`2<class [System.Linq.Expressions]System.Runtime.CompilerServices.IRuntimeVariables,int32>::Invoke(class [System.Linq.Expressions]System.Runtime.CompilerServices.IRuntimeVariables,int32)
+
+                  IL_0018: ret        
+                }"
+            );
+        }
+
+        [Fact]
+        public static void Spill_Optimizations_RuntimeVariables2()
+        {
+            var f = Expression.Parameter(typeof(Action<IRuntimeVariables, int>));
+            var x = Expression.Parameter(typeof(int));
+            var e =
+                Expression.Lambda<Action<Action<IRuntimeVariables, int>, int>>(
+                    Expression.Invoke(
+                        f,
+                        Expression.RuntimeVariables(x),
+                        Spill(Expression.Constant(2))
+                    ),
+                    f,
+                    x
+                );
+
+            e.VerifyIL(@"
+                .method void ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure,class [System.Private.CoreLib]System.Action`2<class [System.Linq.Expressions]System.Runtime.CompilerServices.IRuntimeVariables,int32>,int32)
+                {
+                  .maxstack 10
+                  .locals init (
+                    [0] object[],
+                    [1] class [System.Private.CoreLib]System.Action`2<class [System.Linq.Expressions]System.Runtime.CompilerServices.IRuntimeVariables,int32>,
+                    [2] int32,
+                    [3] int32
+                  )
+
+                  // Hoist `x` to a closure in V_0
+                  IL_0000: ldc.i4.1   
+                  IL_0001: newarr     object
+                  IL_0006: dup        
+                  IL_0007: ldc.i4.0   
+                  IL_0008: ldarg.2    
+                  IL_0009: newobj     instance void class [System.Runtime]System.Runtime.CompilerServices.StrongBox`1<int32>::.ctor(int32)
+                  IL_000e: stelem.ref 
+                  IL_000f: stloc.0    
+
+                  // Save target (`f`) into V_1
+                  IL_0010: ldarg.1    
+                  IL_0011: stloc.1    
+
+                  // Save arg1 (`try { 2 } finally {}`) into V_2
+                  .try
+                  {
+                    IL_0012: ldc.i4.2   
+                    IL_0013: stloc.3    
+                    IL_0014: leave      IL_001a
+                  }
+                  finally
+                  {
+                    IL_0019: endfinally 
+                  }
+                  IL_001a: ldloc.3    
+                  IL_001b: stloc.2   
+
+                  // Load target from V_1 
+                  IL_001c: ldloc.1    
+
+                  // <OPTIMIZATION> Load arg0 (`RuntimeVariables`) by calling RuntimeOps.CreateRuntimeVariables </OPTIMIZATION>
+                  IL_001d: ldloc.0    
+                  IL_001e: ldarg.0    
+                  IL_001f: ldfld      class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure::Constants
+                  IL_0024: ldc.i4.0   
+                  IL_0025: ldelem.ref 
+                  IL_0026: castclass  int64[]
+                  IL_002b: call       class [System.Linq.Expressions]System.Runtime.CompilerServices.IRuntimeVariables class [System.Linq.Expressions]System.Runtime.CompilerServices.RuntimeOps::CreateRuntimeVariables(object[],int64[])
+
+                  // Load arg1 from V_2
+                  IL_0030: ldloc.2    
+
+                  // Evaluate `target(arg0, arg1)` delegate invocation
+                  IL_0031: callvirt   instance void class [System.Private.CoreLib]System.Action`2<class [System.Linq.Expressions]System.Runtime.CompilerServices.IRuntimeVariables,int32>::Invoke(class [System.Linq.Expressions]System.Runtime.CompilerServices.IRuntimeVariables,int32)
+
+                  IL_0036: ret        
+                }"
+            );
         }
 
         private static void NotSupported(Expression expression)
