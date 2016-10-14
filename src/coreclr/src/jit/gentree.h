@@ -933,6 +933,8 @@ public:
 
 #define GTF_ICON_FIELD_OFF 0x08000000 // GT_CNS_INT -- constant is a field offset
 
+#define GTF_ICON_SIMD_COUNT 0x04000000 // GT_CNS_INT -- constant is Vector<T>.Count
+
 #define GTF_BLK_VOLATILE 0x40000000  // GT_ASG, GT_STORE_BLK, GT_STORE_OBJ, GT_STORE_DYNBLK
                                      // -- is a volatile block operation
 #define GTF_BLK_UNALIGNED 0x02000000 // GT_ASG, GT_STORE_BLK, GT_STORE_OBJ, GT_STORE_DYNBLK
