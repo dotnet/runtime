@@ -118,7 +118,7 @@ namespace Microsoft.DotNet.Host.Build
             var hostNugetVersion = hostVersion.LockedHostVersion.ToString();
             var inputDir = c.BuildContext.Get<string>("SharedHostPublishRoot");
             var wixObjRoot = Path.Combine(Dirs.Output, "obj", "wix", "sharedhost");
-            var sharedHostBrandName = $"'{Monikers.SharedHostBrandName}'";
+            var sharedHostBrandName = $"'{Monikers.GetSharedHostBrandName(c)}'";
 
             if (Directory.Exists(wixObjRoot))
             {
@@ -143,7 +143,7 @@ namespace Microsoft.DotNet.Host.Build
             var hostFxrNugetVersion = hostVersion.LockedHostFxrVersion.ToString();
             var inputDir = c.BuildContext.Get<string>("HostFxrPublishRoot");
             var wixObjRoot = Path.Combine(Dirs.Output, "obj", "wix", "hostfxr");
-            var hostFxrBrandName = $"'{Monikers.HostFxrBrandName}'";
+            var hostFxrBrandName = $"'{Monikers.GetHostFxrBrandName(c)}'";
 
             if (Directory.Exists(wixObjRoot))
             {
@@ -169,7 +169,7 @@ namespace Microsoft.DotNet.Host.Build
             var msiVerison = sharedFrameworkNuGetVersion.Split('-')[0];
             var upgradeCode = Utils.GenerateGuidFromName(SharedFrameworkMsi).ToString().ToUpper();
             var wixObjRoot = Path.Combine(Dirs.Output, "obj", "wix", "sharedframework");
-            var sharedFxBrandName = $"'{Monikers.SharedFxBrandName}'";
+            var sharedFxBrandName = $"'{Monikers.GetSharedFxBrandName(c)}'";
 
             if (Directory.Exists(wixObjRoot))
             {
@@ -192,7 +192,7 @@ namespace Microsoft.DotNet.Host.Build
             var sharedFrameworkNuGetName = Monikers.SharedFrameworkName;
             var sharedFrameworkNuGetVersion = c.BuildContext.Get<string>("SharedFrameworkNugetVersion");
             var upgradeCode = Utils.GenerateGuidFromName(SharedFrameworkBundle).ToString().ToUpper();
-            var sharedFxBrandName = $"'{Monikers.SharedFxBrandName}'";
+            var sharedFxBrandName = $"'{Monikers.GetSharedFxBrandName(c)}'";
 
             Cmd("powershell", "-NoProfile", "-NoLogo",
                 Path.Combine(Dirs.RepoRoot, "packaging", "windows", "sharedframework", "generatebundle.ps1"),

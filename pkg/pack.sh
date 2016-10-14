@@ -47,7 +47,7 @@ else
     init_distro_name
 fi
 
-__common_parameters="/p:$__targets_param /p:DistroRid=$__distro_rid /verbosity:minimal"
+__common_parameters="/p:$__targets_param /p:DistroRid=$__distro_rid /p:NetCoreAppVersion=$1 /verbosity:minimal"
 
 $__msbuild $__project_dir/projects/packages.builds $__common_parameters || exit 1
 
