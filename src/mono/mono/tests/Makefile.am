@@ -194,7 +194,6 @@ BASE_TEST_CS_SRC_UNIVERSAL=		\
 	typeof-ptr.cs		\
 	static-constructor.cs	\
 	pinvoke.cs		\
-	pinvoke-utf8.cs		\
 	pinvoke3.cs		\
 	pinvoke11.cs		\
 	pinvoke13.cs		\
