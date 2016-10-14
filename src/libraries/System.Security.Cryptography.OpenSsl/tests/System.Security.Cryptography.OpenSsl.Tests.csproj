@@ -117,14 +117,6 @@
       <Project>{78452f3e-ba91-47e7-bb0f-02e8a5c116c4}</Project>
       <Name>System.Security.Cryptography.OpenSsl</Name>
     </ProjectReference>
-    <!-- ToDo: Remove once prerelease gets updated again -->
-    <ProjectReference Include="..\..\System.Security.Cryptography.Algorithms\pkg\System.Security.Cryptography.Algorithms.pkgproj">
-      <Name>System.Security.Cryptography.Algorithms</Name>
-    </ProjectReference>
-    <!-- ToDo: Remove once prerelease gets updated again -->
-    <ProjectReference Include="..\..\System.Security.Cryptography.Primitives\pkg\System.Security.Cryptography.Primitives.pkgproj">
-      <Name>System.Security.Cryptography.Primitives</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

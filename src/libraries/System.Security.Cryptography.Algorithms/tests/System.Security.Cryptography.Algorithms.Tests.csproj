@@ -171,12 +171,6 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
-    <!-- ToDo: Remove this reference to the live package of System.Security.Cryptography.Primitives once prerelease gets updated again -->
-    <ProjectReference Include="..\..\System.Security.Cryptography.Primitives\pkg\System.Security.Cryptography.Primitives.pkgproj">
-      <Name>System.Security.Cryptography.Primitives</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <Folder Include="Common\Interop\Unix\" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

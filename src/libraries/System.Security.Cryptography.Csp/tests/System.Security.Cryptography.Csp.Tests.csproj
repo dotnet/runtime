@@ -86,15 +86,5 @@
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
-  <ItemGroup>
-    <!-- ToDo: Remove once prerelease gets updated again -->
-    <ProjectReference Include="..\..\System.Security.Cryptography.Primitives\pkg\System.Security.Cryptography.Primitives.pkgproj">
-      <Name>System.Security.Cryptography.Primitives</Name>
-    </ProjectReference>
-    <!-- ToDo: Remove once prerelease gets updated again -->
-    <ProjectReference Include="..\..\System.Security.Cryptography.Algorithms\pkg\System.Security.Cryptography.Algorithms.pkgproj">
-      <Name>System.Security.Cryptography.Algorithms</Name>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
