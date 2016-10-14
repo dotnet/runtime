@@ -343,8 +343,11 @@ namespace Microsoft.DotNet.Host.Build
             var pkgDir = Path.Combine(c.BuildContext.BuildDirectory, "pkg");
             var packCmd = "pack." + (CurrentPlatform.IsWindows ? "cmd" : "sh");
             string rid = HostPackageSupportedRids[c.BuildContext.Get<string>("TargetRID")];
+            var buildVersion = c.BuildContext.Get<BuildVersion>("BuildVersion");
             File.WriteAllText(Path.Combine(pkgDir, "version.txt"), content);
-            Exec(Path.Combine(pkgDir, packCmd));
+
+            // Pass the Major.Minor.Patch version to be used when generating packages
+            Exec(Path.Combine(pkgDir, packCmd), buildVersion.ProductionVersion);
 
             foreach (var file in Directory.GetFiles(Path.Combine(pkgDir, "bin", "packages"), "*.nupkg"))
             {
@@ -353,14 +356,22 @@ namespace Microsoft.DotNet.Host.Build
 
                 Console.WriteLine($"Copying package {fileName} to artifacts directory {Dirs.CorehostLocalPackages}.");
             }
-            foreach (var item in hostVersion.LatestHostPackages)
+
+            bool fValidateHostPackages = c.BuildContext.Get<bool>("ValidateHostPackages");
+
+            // Validate the generated host packages only if we are building them.
+            if (fValidateHostPackages)
             {
-                var fileFilter = $"runtime.{rid}.{item.Key}.{item.Value.ToString()}.nupkg";
-                if (Directory.GetFiles(Dirs.CorehostLocalPackages, fileFilter).Length == 0)
+                foreach (var item in hostVersion.LatestHostPackages)
                 {
-                    throw new BuildFailureException($"Nupkg for {fileFilter} was not created.");
+                    var fileFilter = $"runtime.{rid}.{item.Key}.{item.Value.ToString()}.nupkg";
+                    if (Directory.GetFiles(Dirs.CorehostLocalPackages, fileFilter).Length == 0)
+                    {
+                        throw new BuildFailureException($"Nupkg for {fileFilter} was not created.");
+                    }
                 }
             }
+
             return c.Success();
         }
 

@@ -71,9 +71,9 @@ namespace Microsoft.DotNet.Host.Build
                 .Replace("{HostFxrComponentId}", HostFxrComponentId)
                 .Replace("{SharedFrameworkNugetName}", Monikers.SharedFrameworkName)
                 .Replace("{SharedFrameworkNugetVersion}", SharedFrameworkNugetVersion)
-                .Replace("{SharedFxBrandName}", Monikers.SharedFxBrandName)
-                .Replace("{SharedHostBrandName}", Monikers.SharedHostBrandName)
-                .Replace("{HostFxrBrandName}", Monikers.HostFxrBrandName);
+                .Replace("{SharedFxBrandName}", Monikers.GetSharedFxBrandName(c))
+                .Replace("{SharedHostBrandName}", Monikers.GetSharedHostBrandName(c))
+                .Replace("{HostFxrBrandName}", Monikers.GetHostFxrBrandName(c));
             File.WriteAllText(distributionPath, formattedDistContents);
 
             Cmd("productbuild",
