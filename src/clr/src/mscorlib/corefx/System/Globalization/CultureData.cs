@@ -84,6 +84,8 @@ namespace System.Globalization
         private String _sEnglishCountry; // english country name (RegionInfo)
         private String _sNativeCountry; // native country name
         private String _sISO3166CountryName; // ISO 3166 (RegionInfo), ie: US
+        private String _sISO3166CountryName2; // 3 char ISO 3166 country name 2 2(RegionInfo) ex: USA (ISO)
+        private int    _iGeoId = undef; // GeoId
 
         // Numbers
         private String _sPositiveSign; // (user can override) positive sign
@@ -108,6 +110,8 @@ namespace System.Globalization
         // Currency
         private String _sCurrency; // (user can override) local monetary symbol
         private String _sIntlMonetarySymbol; // international monetary symbol (RegionInfo)
+        private String _sEnglishCurrency; // English name for this currency
+        private String _sNativeCurrency; // Native name for this currency
         // (nfi populates these 4, don't have to be = undef)
         private int _iCurrencyDigits; // (user can override) # local monetary fractional digits
         private int _iCurrency; // (user can override) positive currency format
@@ -432,10 +436,12 @@ namespace System.Globalization
                     invariant._sNativeLanguage = "Invariant Language";   // Native name of this language
 
                     // Region
-                    invariant._sRegionName = "IV";                   // (RegionInfo)
-                    invariant._sEnglishCountry = "Invariant Country";    // english country name (RegionInfo)
-                    invariant._sNativeCountry = "Invariant Country";    // native country name (Windows Only)
-                    invariant._sISO3166CountryName = "IV";                   // (RegionInfo), ie: US
+                    invariant._sRegionName = "IV";                    // (RegionInfo)
+                    invariant._sEnglishCountry = "Invariant Country"; // english country name (RegionInfo)
+                    invariant._sNativeCountry = "Invariant Country";  // native country name (Windows Only)
+                    invariant._sISO3166CountryName = "IV";            // (RegionInfo), ie: US
+		            invariant._sISO3166CountryName2 = "ivc";          // 3 char ISO 3166 country name 2 2(RegionInfo)
+		            invariant._iGeoId = 244;                          // GeoId (Windows Only)
 
                     // Numbers
                     invariant._sPositiveSign = "+";                    // positive sign
@@ -459,6 +465,8 @@ namespace System.Globalization
                     // Currency
                     invariant._sCurrency = "\x00a4";                // local monetary symbol: for international monetary symbol
                     invariant._sIntlMonetarySymbol = "XDR";                  // international monetary symbol (RegionInfo)
+		            invariant._sEnglishCurrency = "International Monetary Fund"; // English name for this currency (Windows Only)
+		            invariant._sNativeCurrency = "International Monetary Fund"; // Native name for this currency (Windows Only)
                     invariant._iCurrencyDigits = 2;                      // # local monetary fractional digits
                     invariant._iCurrency = 0;                      // positive currency format
                     invariant._iNegativeCurrency = 0;                      // negative currency format
@@ -492,7 +500,7 @@ namespace System.Globalization
 
                     // These are desktop only, not coreclr
 
-                    invariant._iLanguage = 0x007f;                 // locale ID (0409) - NO sort information
+                    invariant._iLanguage = CultureInfo.LOCALE_INVARIANT;   // locale ID (0409) - NO sort information
                     invariant._iDefaultAnsiCodePage = 1252;         // default ansi code page ID (ACP)
                     invariant._iDefaultOemCodePage = 437;           // default oem code page ID (OCP or OEM)
                     invariant._iDefaultMacCodePage = 10000;         // default macintosh code page
@@ -620,7 +628,7 @@ namespace System.Globalization
             string localeName = null;
             CultureData retVal = null;
 
-            if (culture == 0x007f)
+            if (culture == CultureInfo.LOCALE_INVARIANT)
                 return Invariant;
 
             // Convert the lcid to a name, then use that
@@ -958,6 +966,17 @@ namespace System.Globalization
             }
         }
 
+        internal int IGEOID
+        {
+            get
+            {
+                if (_iGeoId == undef)
+                {
+                    _iGeoId = GetGeoId(_sRealName);
+                }
+                return _iGeoId;
+            }
+        }
 
         // localized name for the country
         internal string SLOCALIZEDCOUNTRY
@@ -1020,6 +1039,19 @@ namespace System.Globalization
                     _sISO3166CountryName = GetLocaleInfo(LocaleStringData.Iso3166CountryName);
                 }
                 return _sISO3166CountryName;
+            }
+        }
+
+        // 3 letter ISO 3166 country code
+        internal String SISO3166CTRYNAME2
+        {
+            get
+            {
+                if (_sISO3166CountryName2 == null)
+                {
+                    _sISO3166CountryName2 = GetLocaleInfo(LocaleStringData.Iso3166CountryName2);
+                }
+                return _sISO3166CountryName2;
             }
         }
 
@@ -1177,6 +1209,32 @@ namespace System.Globalization
                     _sIntlMonetarySymbol = GetLocaleInfo(LocaleStringData.Iso4217MonetarySymbol);
                 }
                 return _sIntlMonetarySymbol;
+            }
+        }
+
+        // English name for this currency (RegionInfo), eg: US Dollar
+        internal String SENGLISHCURRENCY
+        {
+            get
+            {
+                if (_sEnglishCurrency == null)
+                {
+                    _sEnglishCurrency = GetLocaleInfo(LocaleStringData.CurrencyEnglishName);
+                }
+                return _sEnglishCurrency;
+            }
+        }
+
+        // Native name for this currency (RegionInfo), eg: Schweiz Frank
+        internal String SNATIVECURRENCY
+        {
+            get
+            {
+                if (_sNativeCurrency == null)
+                {
+                    _sNativeCurrency = GetLocaleInfo(LocaleStringData.CurrencyNativeName);
+                }
+                return _sNativeCurrency;
             }
         }
 
@@ -2192,6 +2250,10 @@ namespace System.Globalization
             Digits = 0x00000013,
             /// <summary>local monetary symbol (coresponds to LOCALE_SCURRENCY)</summary>
             MonetarySymbol = 0x00000014,
+            /// <summary>English currency name (coresponds to LOCALE_SENGCURRNAME)</summary>
+            CurrencyEnglishName = 0x00001007,
+            /// <summary>Native currency name (coresponds to LOCALE_SNATIVECURRNAME)</summary>
+            CurrencyNativeName = 0x00001008,
             /// <summary>uintl monetary symbol (coresponds to LOCALE_SINTLSYMBOL)</summary>
             Iso4217MonetarySymbol = 0x00000015,
             /// <summary>monetary decimal separator (coresponds to LOCALE_SMONDECIMALSEP)</summary>
@@ -2210,6 +2272,8 @@ namespace System.Globalization
             Iso639LanguageName = 0x00000059,
             /// <summary>ISO abbreviated country name (coresponds to LOCALE_SISO3166CTRYNAME)</summary>
             Iso3166CountryName = 0x0000005A,
+            /// <summary>3 letter ISO country code (coresponds to LOCALE_SISO3166CTRYNAME2)</summary>
+            Iso3166CountryName2 = 0x00000068,   // 3 character ISO country name
             /// <summary>Not a Number (coresponds to LOCALE_SNAN)</summary>
             NaNSymbol = 0x00000069,
             /// <summary>+ Infinity (coresponds to LOCALE_SPOSINFINITY)</summary>

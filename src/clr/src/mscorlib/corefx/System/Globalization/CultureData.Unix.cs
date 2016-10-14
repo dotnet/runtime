@@ -333,5 +333,11 @@ namespace System.Globalization
             int ebcdicCodePage = LocaleData.GetLocaleDataNumericPart(cultureName, LocaleDataParts.EbcdicCodePage);
             return ebcdicCodePage == -1 ? CultureData.Invariant.IDEFAULTEBCDICCODEPAGE : ebcdicCodePage; 
         }
+
+        private static int GetGeoId(string cultureName)
+        {
+            int geoId = LocaleData.GetLocaleDataNumericPart(cultureName, LocaleDataParts.GeoId);
+            return geoId == -1 ? CultureData.Invariant.IGEOID : geoId; 
+        }
     }
 }

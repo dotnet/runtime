@@ -298,7 +298,7 @@ UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t options,
 // Returns TRUE if all the collation elements in str are completely ignorable
 bool CanIgnoreAllCollationElements(const UCollator* pColl, const UChar* lpStr, int32_t length)
 {
-    bool result = FALSE;
+    bool result = false;
     UErrorCode err = U_ZERO_ERROR;
     UCollationElements* pCollElem = ucol_openElements(pColl, lpStr, length, &err);
 
@@ -306,20 +306,20 @@ bool CanIgnoreAllCollationElements(const UCollator* pColl, const UChar* lpStr, i
     {
         int32_t curCollElem = UCOL_NULLORDER;
 
-        result = TRUE;
+        result = true;
 
         while ((curCollElem = ucol_next(pCollElem, &err)) != UCOL_NULLORDER)
         {
             if (curCollElem != 0)
             {
-                result = FALSE;
+                result = false;
                 break;
             }
         }
 
         if (U_FAILURE(err))
         {
-            result = FALSE;
+            result = false;
         }
 
         ucol_closeElements(pCollElem);
