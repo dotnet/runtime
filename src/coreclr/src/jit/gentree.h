@@ -1457,6 +1457,26 @@ public:
         return (gtOper == GT_JTRUE) || (gtOper == GT_JCC);
     }
 
+    static bool OperIsBoundsCheck(genTreeOps op)
+    {
+        if (op == GT_ARR_BOUNDS_CHECK)
+        {
+            return true;
+        }
+#ifdef FEATURE_SIMD
+        if (op == GT_SIMD_CHK)
+        {
+            return true;
+        }
+#endif // FEATURE_SIMD
+        return false;
+    }
+
+    bool OperIsBoundsCheck() const
+    {
+        return OperIsBoundsCheck(OperGet());
+    }
+
     // Requires that "op" is an op= operator.  Returns
     // the corresponding "op".
     static genTreeOps OpAsgToOper(genTreeOps op);
