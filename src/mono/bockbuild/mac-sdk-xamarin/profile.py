@@ -1,5 +1,3 @@
-#!/usr/bin/python -u -OO
-
 import itertools
 import os
 import re
@@ -10,11 +8,6 @@ import tempfile
 import traceback
 
 from glob import glob
-
-if __name__ == "__main__":
-    sys.path.append(os.path.realpath('../..'))
-    sys.path.append(os.path.realpath('../../packages'))
-    sys.path.append(os.path.realpath('../mono-mac'))
 
 from MonoReleaseProfile import MonoReleaseProfile
 from bockbuild.util.util import *
@@ -94,14 +87,3 @@ class MonoXamarinPackageProfile(MonoReleaseProfile):
                 error("%s IS NOT SIGNED:" % pkg)
         finally:
             os.chdir(oldcwd)
-
-if __name__ == "__main__":
-    try:
-        MonoXamarinPackageProfile().build()
-    except Exception as e:
-        exc_type, exc_value, exc_traceback = sys.exc_info()
-        error('%s (%s)' % (e, exc_type.__name__), more_output=True)
-        error(('%s:%s @%s\t\t"%s"' % p for p in traceback.extract_tb(
-            exc_traceback)[-3:]), more_output=True)
-    except KeyboardInterrupt:
-        error('Interrupted.')
