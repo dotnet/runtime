@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
+using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -1025,6 +1028,63 @@ namespace System.Net.Sockets
                 this);
         }
 
+        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+        {
+            // Validate arguments as would the base CopyToAsync
+            StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+
+            // And bail early if cancellation has already been requested
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+
+            // Then do additional checks as ReadAsync would.
+
+            if (_cleanedUp)
+            {
+                throw new ObjectDisposedException(this.GetType().FullName);
+            }
+
+            Socket streamSocket = _streamSocket;
+            if (streamSocket == null)
+            {
+                throw new IOException(SR.Format(SR.net_io_readfailure, SR.net_io_connectionclosed));
+            }
+
+            // Do the copy.  We get a copy buffer from the shared pool, and we pass both it and the
+            // socket into the copy as part of the event args so as to avoid additional fields in
+            // the async method's state machine.
+            return CopyToAsyncCore(
+                destination,
+                new AwaitableSocketAsyncEventArgs(streamSocket, ArrayPool<byte>.Shared.Rent(bufferSize)),
+                cancellationToken);
+        }
+
+        private static async Task CopyToAsyncCore(Stream destination, AwaitableSocketAsyncEventArgs ea, CancellationToken cancellationToken)
+        {
+            try
+            {
+                while (true)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    int bytesRead = await ea.ReceiveAsync();
+                    if (bytesRead == 0)
+                    {
+                        break;
+                    }
+
+                    await destination.WriteAsync(ea.Buffer, 0, bytesRead, cancellationToken).ConfigureAwait(false);
+                }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(ea.Buffer, clearArray: true);
+                ea.Dispose();
+            }
+        }
+
         // Flushes data from the stream.  This is meaningless for us, so it does nothing.
         public override void Flush()
         {
@@ -1090,6 +1150,115 @@ namespace System.Net.Sockets
                 }
 
                 _streamSocket.DebugMembers();
+            }
+        }
+
+        /// <summary>A SocketAsyncEventArgs that can be awaited to get the result of an operation.</summary>
+        internal sealed class AwaitableSocketAsyncEventArgs : SocketAsyncEventArgs, ICriticalNotifyCompletion
+        {
+            /// <summary>Sentinal object used to indicate that the operation has completed prior to OnCompleted being called.</summary>
+            private static readonly Action s_completedSentinel = () => { };
+            /// <summary>
+            /// null if the operation has not completed, <see cref="s_completedSentinel"/> if it has, and another object
+            /// if OnCompleted was called before the operation could complete, in which case it's the delegate to invoke
+            /// when the operation does complete.
+            /// </summary>
+            private Action _continuation;
+
+            /// <summary>Initializes the event args.</summary>
+            /// <param name="socket">The associated socket.</param>
+            /// <param name="buffer">The buffer to use for all operations.</param>
+            public AwaitableSocketAsyncEventArgs(Socket socket, byte[] buffer)
+            {
+                Debug.Assert(socket != null);
+                Debug.Assert(buffer != null && buffer.Length > 0);
+
+                // Store the socket into the base's UserToken.  This avoids the need for an extra field, at the expense
+                // of an object=>Socket cast when we need to access it, which is only once per operation.
+                UserToken = socket;
+
+                // Store the buffer for use by all operations with this instance.
+                SetBuffer(buffer, 0, buffer.Length);
+
+                // Hook up the completed event.
+                Completed += delegate
+                {
+                    // When the operation completes, see if OnCompleted was already called to hook up a continuation.
+                    // If it was, invoke the continuation.
+                    Action c = _continuation;
+                    if (c != null)
+                    {
+                        c();
+                    }
+                    else
+                    {
+                        // We may be racing with OnCompleted, so check with synchronization, trying to swap in our
+                        // completion sentinel.  If we lose the race and OnCompleted did hook up a continuation,
+                        // invoke it.  Otherwise, there's nothing more to be done.
+                        Interlocked.CompareExchange(ref _continuation, s_completedSentinel, null)?.Invoke();
+                    }
+                };
+            }
+
+            /// <summary>Initiates a receive operation on the associated socket.</summary>
+            /// <returns>This instance.</returns>
+            public AwaitableSocketAsyncEventArgs ReceiveAsync()
+            {
+                if (!Socket.ReceiveAsync(this))
+                {
+                    _continuation = s_completedSentinel;
+                }
+                return this;
+            }
+
+            /// <summary>Gets this instance.</summary>
+            public AwaitableSocketAsyncEventArgs GetAwaiter() => this;
+
+            /// <summary>Gets whether the operation has already completed.</summary>
+            /// <remarks>
+            /// This is not a generically usable IsCompleted operation that suggests the whole operation has completed.
+            /// Rather, it's specifically used as part of the await pattern, and is only usable to determine whether the
+            /// operation has completed by the time the instance is awaited.
+            /// </remarks>
+            public bool IsCompleted => _continuation != null;
+
+            /// <summary>Same as <see cref="OnCompleted(Action)"/> </summary>
+            public void UnsafeOnCompleted(Action continuation) => OnCompleted(continuation);
+
+            /// <summary>Queues the provided continuation to be executed once the operation has completed.</summary>
+            public void OnCompleted(Action continuation)
+            {
+                if (_continuation == s_completedSentinel || Interlocked.CompareExchange(ref _continuation, continuation, null) == s_completedSentinel)
+                {
+                    Task.Run(continuation);
+                }
+            }
+
+            /// <summary>Gets the result of the completion operation.</summary>
+            /// <returns>Number of bytes transferred.</returns>
+            /// <remarks>
+            /// Unlike Task's awaiter's GetResult, this does not block until the operation completes: it must only
+            /// be used once the operation has completed.  This is handled implicitly by await.
+            /// </remarks>
+            public int GetResult()
+            {
+                _continuation = null;
+                if (SocketError != SocketError.Success)
+                {
+                    ThrowIOSocketException();
+                }
+                return BytesTransferred;
+            }
+
+            /// <summary>Gets the associated socket.</summary>
+            internal Socket Socket => (Socket)UserToken; // stored in the base's UserToken to avoid an extra field in the object
+
+            /// <summary>Throws an IOException wrapping a SocketException using the current <see cref="SocketError"/>.</summary>
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            private void ThrowIOSocketException()
+            {
+                var se = new SocketException((int)SocketError);
+                throw new IOException(SR.Format(SR.net_io_readfailure, se.Message), se);
             }
         }
     }
