@@ -44,7 +44,7 @@ namespace Microsoft.DotNet.Host.Build
 
             var debianConfigVariables = new Dictionary<string, string>()
             {
-                { "SHARED_HOST_BRAND_NAME", Monikers.SharedHostBrandName }
+                { "SHARED_HOST_BRAND_NAME", Monikers.GetSharedHostBrandName(c) }
             };
 
             var debCreator = new DebPackageCreator(
@@ -86,7 +86,7 @@ namespace Microsoft.DotNet.Host.Build
 
             var debianConfigVariables = new Dictionary<string, string>()
             {
-                { "HOSTFXR_BRAND_NAME", Monikers.HostFxrBrandName },
+                { "HOSTFXR_BRAND_NAME", Monikers.GetHostFxrBrandName(c) },
                 { "SHARED_HOST_DEBIAN_VERSION", sharedHostVersion },
                 { "HOSTFXR_NUGET_VERSION", hostFxrVersion },
                 { "HOSTFXR_DEBIAN_PACKAGE_NAME", packageName }
@@ -139,7 +139,7 @@ namespace Microsoft.DotNet.Host.Build
                 { "SHARED_FRAMEWORK_DEBIAN_PACKAGE_NAME", packageName },
                 { "SHARED_FRAMEWORK_NUGET_NAME", Monikers.SharedFrameworkName },
                 { "SHARED_FRAMEWORK_NUGET_VERSION",  c.BuildContext.Get<string>("SharedFrameworkNugetVersion")},
-                { "SHARED_FRAMEWORK_BRAND_NAME", Monikers.SharedFxBrandName }
+                { "SHARED_FRAMEWORK_BRAND_NAME", Monikers.GetSharedFxBrandName(c) }
             };
 
             var debCreator = new DebPackageCreator(

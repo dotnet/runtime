@@ -118,25 +118,45 @@ namespace Microsoft.DotNet.Host.Build
 
             var branchInfo = new BranchInfo(Dirs.RepoRoot);
 
+            // Read details from branchinfo.txt for our build configuration
+            int iMajor = int.Parse(branchInfo.Entries["MAJOR_VERSION"]);
+            int iMinor = int.Parse(branchInfo.Entries["MINOR_VERSION"]);
+            int iPatch = int.Parse(branchInfo.Entries["PATCH_VERSION"]);
+            string sReleaseSuffix = branchInfo.Entries["RELEASE_SUFFIX"];
+            bool fStabilizePackageVersion = bool.Parse(branchInfo.Entries["STABILIZE_PACKAGE_VERSION"]);
+            bool fValidateHostPackages = bool.Parse(branchInfo.Entries["VALIDATE_HOST_PACKAGES"]);
+            bool fLockHostVersion = bool.Parse(branchInfo.Entries["LOCK_HOST_VERSION"]);
+
             var hostVersion = new HostVersion()
             {
-                ReleaseSuffix = branchInfo.Entries["RELEASE_SUFFIX"],
+                Major = iMajor,
+                Minor = iMinor,
+                Patch = iPatch,
+                ReleaseSuffix = sReleaseSuffix,
+                EnsureStableVersion = fStabilizePackageVersion,
+                IsLocked = fLockHostVersion,
                 CommitCount = commitCount
             };
 
             var buildVersion = new BuildVersion()
             {
-                Major = int.Parse(branchInfo.Entries["MAJOR_VERSION"]),
-                Minor = int.Parse(branchInfo.Entries["MINOR_VERSION"]),
-                Patch = int.Parse(branchInfo.Entries["PATCH_VERSION"]),
-                ReleaseSuffix = branchInfo.Entries["RELEASE_SUFFIX"],
+                Major = iMajor,
+                Minor = iMinor,
+                Patch = iPatch,
+                ReleaseSuffix = sReleaseSuffix,
                 CommitCount = commitCount
             };
 
+            c.BuildContext["ValidateHostPackages"] = fValidateHostPackages;
             c.BuildContext["BuildVersion"] = buildVersion;
             c.BuildContext["HostVersion"] = hostVersion;
             c.BuildContext["CommitHash"] = commitHash;
-            c.BuildContext["SharedFrameworkNugetVersion"] = buildVersion.NetCoreAppVersion;
+
+            // Define the version string to be used based upon whether we are stabilizing the versions or not.
+            if (!fStabilizePackageVersion)
+                c.BuildContext["SharedFrameworkNugetVersion"] = buildVersion.NetCoreAppVersion;
+            else
+                c.BuildContext["SharedFrameworkNugetVersion"] = buildVersion.ProductionVersion;
 
             c.Info($"Building Version: {hostVersion.LatestHostVersion.WithoutSuffix} (NuGet Packages: {hostVersion.LatestHostVersion})");
             c.Info($"From Commit: {commitHash}");
