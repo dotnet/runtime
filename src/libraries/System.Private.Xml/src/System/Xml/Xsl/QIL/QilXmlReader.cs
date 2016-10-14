@@ -368,8 +368,7 @@ namespace System.Xml.Xsl.Qil
                         MethodInfo mi = null;
                         QilName name = (QilName)list[0];
 
-                        //TODO: Bring this commented-out piece back when AppDomain.GetAssemblies() becomes available
-                        /*foreach (Assembly asm in AppDomain.CurrentDomain.GetAssemblies())
+                        foreach (Assembly asm in AppDomain.CurrentDomain.GetAssemblies())
                         {
                             Type t = asm.GetType(ann.ClrNamespace);
                             if (t != null)
@@ -377,7 +376,7 @@ namespace System.Xml.Xsl.Qil
                                 mi = t.GetMethod(name.LocalName);
                                 break;
                             }
-                        }*/
+                        }
 
                         Debug.Assert(mi != null, "Cannot find method " + ann.ClrNamespace + "." + name.ToString());
 
