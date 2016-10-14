@@ -15,6 +15,15 @@ namespace System.Diagnostics
         public bool Enabled { get { throw null; } set { } }
         protected override void OnValueChanged() { }
     }
+    public partial class CorrelationManager
+    {
+        internal CorrelationManager() { }
+        public System.Guid ActivityId { get { throw null; } set { } }
+        public System.Collections.Stack LogicalOperationStack { get { throw null; } }
+        public void StartLogicalOperation() { }
+        public void StartLogicalOperation(object operationId) { }
+        public void StopLogicalOperation() { }
+    }
     public partial class DefaultTraceListener : System.Diagnostics.TraceListener
     {
         public DefaultTraceListener() { }
@@ -49,7 +58,7 @@ namespace System.Diagnostics
     public partial class SourceSwitch : System.Diagnostics.Switch
     {
         public SourceSwitch(string name) : base(default(string), default(string)) { }
-        public SourceSwitch(string displayName, string defaultSwitchValue) : base(default(string), default(string)) { }
+        public SourceSwitch(string displayName, string defaultSwitchValue) : base(default(string), default(string)) { } 
         public System.Diagnostics.SourceLevels Level { get { throw null; } set { } }
         protected override void OnValueChanged() { }
         public bool ShouldTrace(System.Diagnostics.TraceEventType eventType) { throw null; }
@@ -67,6 +76,7 @@ namespace System.Diagnostics
     }
     public sealed partial class Trace
     {
+        public static CorrelationManager CorrelationManager { get { throw null; } }
         internal Trace() { }
         public static bool AutoFlush { get { throw null; } set { } }
         public static int IndentLevel { get { throw null; } set { } }
@@ -166,7 +176,7 @@ namespace System.Diagnostics
         Verbose = 4,
         Warning = 2,
     }
-    public abstract partial class TraceListener : System.IDisposable
+    public abstract partial class TraceListener : System.MarshalByRefObject, System.IDisposable
     {
         protected TraceListener() { }
         protected TraceListener(string name) { }
@@ -196,6 +206,10 @@ namespace System.Diagnostics
         public virtual void WriteLine(object o, string category) { }
         public abstract void WriteLine(string message);
         public virtual void WriteLine(string message, string category) { }
+        public System.Collections.Specialized.StringDictionary Attributes { get { throw null; } }
+        public virtual void Close() { }
+        protected internal virtual string[] GetSupportedAttributes() { throw null; }
+        public virtual void TraceTransfer(TraceEventCache eventCache, string source, int id, string message, Guid relatedActivityId) { throw null; }
     }
     public partial class TraceListenerCollection : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
     {
@@ -271,5 +285,18 @@ namespace System.Diagnostics
         public bool TraceWarning { get { throw null; } }
         protected override void OnSwitchSettingChanged() { }
         protected override void OnValueChanged() { }
+    }
+    public sealed class SwitchAttribute : System.Attribute 
+    {
+        public SwitchAttribute(string switchName, Type switchType) { throw null; }
+        public string SwitchDescription { get { throw null; } set { } }
+        public string SwitchName { get { throw null; } set { } }
+        public System.Type SwitchType { get { throw null; } set { } }
+        public static SwitchAttribute[] GetAll(System.Reflection.Assembly assembly) { throw null; }
+    }
+    public sealed class SwitchLevelAttribute : System.Attribute 
+    {
+        public SwitchLevelAttribute(Type switchLevelType) { throw null; }
+        public  System.Type SwitchLevelType { get { throw null; } set { } }
     }
 }

@@ -10,10 +10,8 @@ namespace System.Diagnostics
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
-    public class ProcessModuleCollection : ICollection
+    public class ProcessModuleCollection : ReadOnlyCollectionBase
     {
-        private List<ProcessModule> _list;
-
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -35,41 +33,6 @@ namespace System.Diagnostics
         public ProcessModule this[int index]
         {
             get { return (ProcessModule)InnerList[index]; }
-        }
-
-        protected List<ProcessModule> InnerList
-        {
-            get
-            {
-                if (_list == null)
-                    _list = new List<ProcessModule>();
-                return _list;
-            }
-        }
-
-        public virtual int Count
-        {
-            get { return InnerList.Count; }
-        }
-
-        bool ICollection.IsSynchronized
-        {
-            get { return ((ICollection)InnerList).IsSynchronized; }
-        }
-
-        object ICollection.SyncRoot
-        {
-            get { return ((ICollection)InnerList).SyncRoot; }
-        }
-
-        void ICollection.CopyTo(Array array, int index)
-        {
-            ((ICollection)InnerList).CopyTo(array, index);
-        }
-
-        public virtual IEnumerator GetEnumerator()
-        {
-            return InnerList.GetEnumerator();
         }
 
         /// <devdoc>

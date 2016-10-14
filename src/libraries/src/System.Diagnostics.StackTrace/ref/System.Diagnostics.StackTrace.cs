@@ -8,16 +8,22 @@
 
 namespace System.Diagnostics
 {
-    public sealed partial class StackFrame
+    public partial class StackFrame
     {
-        internal StackFrame() { }
+        public StackFrame() { }
+        public StackFrame(bool fNeedFileInfo) { }
+        public StackFrame(int skipFrames) { }
+        public StackFrame(int skipFrames, bool fNeedFileInfo) { }
+        public StackFrame(string fileName, int lineNumber) { }
+        public StackFrame(string fileName, int lineNumber, int colNumber) { }
         public const int OFFSET_UNKNOWN = -1;
-        public int GetFileColumnNumber() { throw null; }
-        public int GetFileLineNumber() { throw null; }
-        public string GetFileName() { throw null; }
-        public int GetILOffset() { throw null; }
-        public System.Reflection.MethodBase GetMethod() { throw null; }
+        public virtual int GetFileColumnNumber() { throw null; }
+        public virtual int GetFileLineNumber() { throw null; }
+        public virtual string GetFileName() { throw null; }
+        public virtual int GetILOffset() { throw null; }
+        public virtual System.Reflection.MethodBase GetMethod() { throw null; }
         public override string ToString() { throw null; }
+        public virtual int GetNativeOffset() { throw null; }
     }
     public static partial class StackFrameExtensions
     {
@@ -28,10 +34,20 @@ namespace System.Diagnostics
         public static bool HasNativeImage(this System.Diagnostics.StackFrame stackFrame) { throw null; }
         public static bool HasSource(this System.Diagnostics.StackFrame stackFrame) { throw null; }
     }
-    public sealed partial class StackTrace
+    public partial class StackTrace
     {
+        public const int METHODS_TO_SKIP = 0;
+        public StackTrace() { }
+        public StackTrace(bool fNeedFileInfo) { }
+        public StackTrace(StackFrame frame) { }
+        public StackTrace(System.Exception exception) { }
         public StackTrace(System.Exception exception, bool needFileInfo) { }
-        public System.Diagnostics.StackFrame[] GetFrames() { throw null; }
         public override string ToString() { throw null; }
+        public StackTrace(System.Exception exception, int skipFrames) { }
+        public StackTrace(System.Exception exception, int skipFrames, bool fNeedFileInfo) { }
+        public StackTrace(int skipFrames) { }
+        public StackTrace(int skipFrames, bool fNeedFileInfo) { }
+        public virtual int FrameCount { get { throw null; } }
+        public virtual System.Diagnostics.StackFrame[] GetFrames() { return default(System.Diagnostics.StackFrame[]); }
     }
 }

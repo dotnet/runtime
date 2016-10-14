@@ -13,7 +13,8 @@ namespace System.Diagnostics
         Error = 0x02,
         Warning = 0x04,
         Information = 0x08,
-        Verbose = 0x10
+        Verbose = 0x10,
+        Transfer = 0x1000
     }
 }
 
