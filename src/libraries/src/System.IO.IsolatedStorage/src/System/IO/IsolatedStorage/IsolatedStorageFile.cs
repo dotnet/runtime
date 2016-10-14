@@ -478,7 +478,30 @@ namespace System.IO.IsolatedStorage
             // (say, for a particular StrongName). You could iterate any store opened at least once by NetFX on
             // NetFX as it would create the needed identity file. You wouldn't be able to iterate if it was only
             // ever opened by CoreFX, as the needed file isn't there yet.
-            throw new PlatformNotSupportedException();
+            return new IsolatedStorageFileEnumerator();
+        }
+
+        internal sealed class IsolatedStorageFileEnumerator : IEnumerator
+        {
+            public object Current
+            {
+                get
+                {
+                    // Getting current throws on NetFX if there is no current item.
+                    throw new InvalidOperationException();
+                }
+            }
+
+            public bool MoveNext()
+            {
+                // Nothing to return
+                return false;
+            }
+
+            public void Reset()
+            {
+                // Do nothing
+            }
         }
 
         public static IsolatedStorageFile GetUserStoreForApplication()
