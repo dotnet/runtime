@@ -738,10 +738,14 @@ function finish_test {
     local testRunningTime=
     local header=
 
+    if ((verbose == 1)); then
+        header=$(printf "[%4d]" $countTotalTests)
+    fi
+
     if [ "$showTime" == "ON" ]; then
         testEndTime=$(date +%s)
-        testRunningTime=$(echo "$testEndTime - ${testStartTimes[$nextProcessIndex]}" | bc)
-        header=$(printf "[%03d:%4.0fs] " "$countTotalTests" "$testRunningTime")
+        testRunningTime=$(( $testEndTime - ${testStartTimes[$nextProcessIndex]} ))
+        header=$header$(printf "[%4ds]" $testRunningTime)
     fi
 
     local xunitTestResult
