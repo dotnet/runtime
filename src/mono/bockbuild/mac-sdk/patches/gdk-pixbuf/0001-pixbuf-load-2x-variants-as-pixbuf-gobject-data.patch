@@ -1,0 +1,99 @@
+>From de5d91aa15cc98795a68c8e553eb4baadaa0e501 Mon Sep 17 00:00:00 2001
+From: Carlos Garnacho <carlosg@gnome.org>
+Date: Fri, 17 May 2013 15:56:28 +0200
+Subject: [PATCH] pixbuf: load "@2x" variants as pixbuf gobject data
+
+if a variant of the filename is found that has a "@2x" appended
+to the file name (before the extension), such file is loaded
+and added as GObject data to the pixbuf
+---
+ gdk-pixbuf/gdk-pixbuf-io.c | 55 ++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 55 insertions(+)
+
+diff --git a/gdk-pixbuf/gdk-pixbuf-io.c b/gdk-pixbuf/gdk-pixbuf-io.c
+index dac21b8..ed98cd3 100644
+--- a/gdk-pixbuf/gdk-pixbuf-io.c
++++ b/gdk-pixbuf/gdk-pixbuf-io.c
+@@ -1025,6 +1025,40 @@ _gdk_pixbuf_generic_image_load (GdkPixbufModule *module,
+         return pixbuf;
+ }
+
++static gboolean
++_gdk_pixbuf_file_is_scaled (const gchar *filename)
++{
++	gchar *basename, *ext;
++
++	basename = g_path_get_basename (filename);
++	ext = strrchr (basename, '.');
++
++	if (!ext)
++		ext = &basename[strlen(basename)];
++
++	if (ext > basename + 3 && strncmp (ext - 3, "@2x", 3) == 0)
++		return TRUE;
++
++	return FALSE;
++}
++
++static gchar *
++_gdk_pixbuf_compose_scaled_filename (const gchar *filename)
++{
++	gchar *ext, *first, *composed;
++
++	ext = strrchr (filename, '.');
++
++	if (!ext)
++		return NULL;
++
++	first = g_strndup (filename, ext - filename);
++	composed = g_strdup_printf ("%s@2x%s", first, ext);
++	g_free (first);
++
++	return composed;
++}
++
+ /**
+  * gdk_pixbuf_new_from_file:
+  * @filename: Name of file to load, in the GLib file name encoding
+@@ -1049,11 +1083,13 @@ gdk_pixbuf_new_from_file (const char *filename,
+         guchar buffer[SNIFF_BUFFER_SIZE];
+         GdkPixbufModule *image_module;
+         gchar *display_name;
++	gboolean filename_is_scaled;
+
+         g_return_val_if_fail (filename != NULL, NULL);
+         g_return_val_if_fail (error == NULL || *error == NULL, NULL);
+
+         display_name = g_filename_display_name (filename);
++	filename_is_scaled = _gdk_pixbuf_file_is_scaled (filename);
+
+         f = g_fopen (filename, "rb");
+         if (!f) {
+@@ -1097,6 +1133,25 @@ gdk_pixbuf_new_from_file (const char *filename,
+         pixbuf = _gdk_pixbuf_generic_image_load (image_module, f, error);
+         fclose (f);
+
++	if (pixbuf && !filename_is_scaled) {
++		GdkPixbuf *scaled_pixbuf = NULL;
++		gchar *scaled_filename;
++
++		scaled_filename = _gdk_pixbuf_compose_scaled_filename (filename);
++
++		if (scaled_filename) {
++			scaled_pixbuf = gdk_pixbuf_new_from_file (scaled_filename, NULL);
++			g_free (scaled_filename);
++		}
++
++		if (scaled_pixbuf) {
++			g_object_set_data_full (G_OBJECT (pixbuf),
++                                                "gdk-pixbuf-2x-variant",
++                                                scaled_pixbuf,
++                                                (GDestroyNotify) g_object_unref);
++		}
++	}
++
+         if (pixbuf == NULL && error != NULL && *error == NULL) {
+
+                 /* I don't trust these crufty longjmp()'ing image libs
+--
+1.8.3.rc1
