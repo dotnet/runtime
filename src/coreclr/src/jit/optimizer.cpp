@@ -3639,12 +3639,10 @@ void Compiler::fgOptWhileLoop(BasicBlock* block)
 
     copyOfCondStmt->gtFlags |= GTF_STMT_CMPADD;
 
-#ifdef DEBUGGING_SUPPORT
     if (opts.compDbgInfo)
     {
         copyOfCondStmt->gtStmt.gtStmtILoffsx = condStmt->gtStmt.gtStmtILoffsx;
     }
-#endif
 
     // Flag the block that received the copy as potentially having an array/vtable
     // reference if the block copied from did; this is a conservative guess.

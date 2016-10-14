@@ -201,8 +201,6 @@ void Compiler::compDspSrcLinesByLineNum(unsigned line, bool seek)
 
 void Compiler::compDspSrcLinesByNativeIP(UNATIVE_OFFSET curIP)
 {
-#ifdef DEBUGGING_SUPPORT
-
     static IPmappingDsc* nextMappingDsc;
     static unsigned      lastLine;
 
@@ -257,8 +255,6 @@ void Compiler::compDspSrcLinesByNativeIP(UNATIVE_OFFSET curIP)
             nextMappingDsc = nextMappingDsc->ipmdNext;
         }
     }
-
-#endif
 }
 
 /*****************************************************************************/
@@ -1171,11 +1167,6 @@ unsigned Compiler::s_compMethodsCount = 0; // to produce unique label names
 bool Compiler::s_dspMemStats = false;
 #endif
 
-#ifndef DEBUGGING_SUPPORT
-/* static */
-const bool Compiler::Options::compDbgCode = false;
-#endif
-
 #ifndef PROFILING_SUPPORTED
 const bool Compiler::Options::compNoPInvokeInlineCB = false;
 #endif
@@ -1656,12 +1647,8 @@ void Compiler::compDisplayStaticSizes(FILE* fout)
             sizeof(bbDummy->bbHeapSsaNumIn));
     fprintf(fout, "Offset / size of bbHeapSsaNumOut       = %3u / %3u\n", offsetof(BasicBlock, bbHeapSsaNumOut),
             sizeof(bbDummy->bbHeapSsaNumOut));
-
-#ifdef DEBUGGING_SUPPORT
     fprintf(fout, "Offset / size of bbScope               = %3u / %3u\n", offsetof(BasicBlock, bbScope),
             sizeof(bbDummy->bbScope));
-#endif // DEBUGGING_SUPPORT
-
     fprintf(fout, "Offset / size of bbCseGen              = %3u / %3u\n", offsetof(BasicBlock, bbCseGen),
             sizeof(bbDummy->bbCseGen));
     fprintf(fout, "Offset / size of bbCseIn               = %3u / %3u\n", offsetof(BasicBlock, bbCseIn),
@@ -2465,9 +2452,8 @@ void Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
         assert((opts.eeFlags & CORJIT_FLG_SIZE_OPT) == 0);
     }
 
-//-------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
-#ifdef DEBUGGING_SUPPORT
     opts.compDbgCode = (opts.eeFlags & CORJIT_FLG_DEBUG_CODE) != 0;
     opts.compDbgInfo = (opts.eeFlags & CORJIT_FLG_DEBUG_INFO) != 0;
     opts.compDbgEnC  = (opts.eeFlags & CORJIT_FLG_DEBUG_EnC) != 0;
@@ -2476,7 +2462,6 @@ void Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
     opts.compDbgCode = false;
     opts.compDbgInfo = false;
     opts.compDbgEnC  = false;
-#endif
 #endif
 
     compSetProcessor();
@@ -3184,7 +3169,6 @@ void Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
 
 //-------------------------------------------------------------------------
 
-#ifdef DEBUGGING_SUPPORT
 #ifdef DEBUG
     assert(!codeGen->isGCTypeFixed());
     opts.compGcChecks = (JitConfig.JitGCChecks() != 0) || compStressCompile(STRESS_GENERIC_VARN, 5);
@@ -3265,7 +3249,6 @@ void Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
     opts.compMustInlinePInvokeCalli = (opts.eeFlags & CORJIT_FLG_IL_STUB) ? true : false;
 
     opts.compScopeInfo = opts.compDbgInfo;
-#endif // DEBUGGING_SUPPORT
 
 #ifdef LATE_DISASM
     codeGen->getDisAssembler().disOpenForLateDisAsm(info.compMethodName, info.compClassName,
@@ -3604,14 +3587,11 @@ void Compiler::compInitDebuggingInfo()
 
     info.compVarScopesCount = 0;
 
-#ifdef DEBUGGING_SUPPORT
     if (opts.compScopeInfo)
-#endif
     {
         eeGetVars();
     }
 
-#ifdef DEBUGGING_SUPPORT
     compInitVarScopeMap();
 
     if (opts.compScopeInfo || opts.compDbgCode)
@@ -3634,7 +3614,6 @@ void Compiler::compInitDebuggingInfo()
         JITDUMP("Debuggable code - Add new BB%02u to perform initialization of variables [%08X]\n", fgFirstBB->bbNum,
                 dspPtr(fgFirstBB));
     }
-#endif // DEBUGGING_SUPPORT
 
     /*-------------------------------------------------------------------------
      *
@@ -3653,9 +3632,7 @@ void Compiler::compInitDebuggingInfo()
 
     info.compStmtOffsetsCount = 0;
 
-#ifdef DEBUGGING_SUPPORT
     if (opts.compDbgInfo)
-#endif
     {
         /* Get hold of the line# records, if there are any */
 
@@ -5695,10 +5672,6 @@ _Next:
     return CORJIT_OK;
 }
 
-/*****************************************************************************/
-#ifdef DEBUGGING_SUPPORT
-/*****************************************************************************/
-
 //------------------------------------------------------------------------
 // compFindLocalVarLinear: Linear search for variable's scope containing offset.
 //
@@ -6043,11 +6016,7 @@ void Compiler::compProcessScopesUntil(unsigned   offset,
     } while (foundExit || foundEnter);
 }
 
-/*****************************************************************************/
-#endif // DEBUGGING_SUPPORT
-/*****************************************************************************/
-
-#if defined(DEBUGGING_SUPPORT) && defined(DEBUG)
+#if defined(DEBUG)
 
 void Compiler::compDispScopeLists()
 {
@@ -6095,10 +6064,6 @@ void Compiler::compDispScopeLists()
     }
 }
 
-#endif
-
-#if defined(DEBUG)
-
 void Compiler::compDispLocalVars()
 {
     printf("info.compVarScopesCount = %d\n", info.compVarScopesCount);
@@ -6117,7 +6082,7 @@ void Compiler::compDispLocalVars()
     }
 }
 
-#endif
+#endif // DEBUG
 
 /*****************************************************************************/
 

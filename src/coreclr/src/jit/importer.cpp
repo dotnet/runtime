@@ -673,8 +673,6 @@ inline void Compiler::impAppendStmt(GenTreePtr stmt, unsigned chkLevel)
     impMarkContiguousSIMDFieldAssignments(stmt);
 #endif
 
-#ifdef DEBUGGING_SUPPORT
-
     /* Once we set impCurStmtOffs in an appended tree, we are ready to
        report the following offsets. So reset impCurStmtOffs */
 
@@ -682,8 +680,6 @@ inline void Compiler::impAppendStmt(GenTreePtr stmt, unsigned chkLevel)
     {
         impCurStmtOffsSet(BAD_IL_OFFSET);
     }
-
-#endif
 
 #ifdef DEBUG
     if (impLastILoffsStmt == nullptr)
@@ -2678,7 +2674,6 @@ static inline bool impOpcodeIsCallOpcode(OPCODE opcode)
 }
 
 /*****************************************************************************/
-#ifdef DEBUGGING_SUPPORT
 
 static inline bool impOpcodeIsCallSiteBoundary(OPCODE opcode)
 {
@@ -2696,8 +2691,6 @@ static inline bool impOpcodeIsCallSiteBoundary(OPCODE opcode)
             return false;
     }
 }
-
-#endif // DEBUGGING_SUPPORT
 
 /*****************************************************************************/
 
@@ -9313,8 +9306,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
         opcodeOffs = (IL_OFFSET)(codeAddr - info.compCode);
 
-#if defined(DEBUGGING_SUPPORT) || defined(DEBUG)
-
 #ifndef DEBUG
         if (opts.compDbgInfo)
 #endif
@@ -9425,8 +9416,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                        jitGetILoffs(impCurStmtOffs) <= nxtStmtOffs);
             }
         }
-
-#endif // defined(DEBUGGING_SUPPORT) || defined(DEBUG)
 
         CORINFO_CLASS_HANDLE clsHnd       = DUMMY_INIT(NULL);
         CORINFO_CLASS_HANDLE ldelemClsHnd = DUMMY_INIT(NULL);

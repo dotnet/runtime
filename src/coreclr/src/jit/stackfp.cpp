@@ -1406,8 +1406,6 @@ void CodeGen::genCodeForTreeStackFP_Asg(GenTreePtr tree)
         assert(!varDsc->lvTracked || compiler->opts.MinOpts() || !(op1NonCom->gtFlags & GTF_VAR_DEATH));
 #endif
 
-#ifdef DEBUGGING_SUPPORT
-
         /* For non-debuggable code, every definition of a lcl-var has
          * to be checked to see if we need to open a new scope for it.
          */
@@ -1416,7 +1414,6 @@ void CodeGen::genCodeForTreeStackFP_Asg(GenTreePtr tree)
         {
             siCheckVarScope(op1NonCom->gtLclVarCommon.gtLclNum, op1NonCom->gtLclVar.gtLclILoffs);
         }
-#endif
     }
 
     assert(op2);

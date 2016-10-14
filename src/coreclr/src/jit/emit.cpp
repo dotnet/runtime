@@ -1670,13 +1670,9 @@ void emitter::emitCreatePlaceholderIG(insGroupPlaceholderType igType,
     emitCurIGsize += MAX_PLACEHOLDER_IG_SIZE;
     emitCurCodeOffset += emitCurIGsize;
 
-#ifdef DEBUGGING_SUPPORT
-
 #if FEATURE_EH_FUNCLETS
     // Add the appropriate IP mapping debugging record for this placeholder
-    // group.
-
-    // genExitCode() adds the mapping for main function epilogs
+    // group. genExitCode() adds the mapping for main function epilogs.
     if (emitComp->opts.compDbgInfo)
     {
         if (igType == IGPT_FUNCLET_PROLOG)
@@ -1689,8 +1685,6 @@ void emitter::emitCreatePlaceholderIG(insGroupPlaceholderType igType,
         }
     }
 #endif // FEATURE_EH_FUNCLETS
-
-#endif // DEBUGGING_SUPPORT
 
     /* Start a new IG if more code follows */
 
@@ -3414,8 +3408,6 @@ size_t emitter::emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp)
 
 #endif
 
-#if defined(DEBUGGING_SUPPORT) || defined(DEBUG)
-
     /* Did the size of the instruction match our expectations? */
 
     UNATIVE_OFFSET csz = (UNATIVE_OFFSET)(*dp - curInsAdr);
@@ -3446,8 +3438,6 @@ size_t emitter::emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp)
         IMPL_LIMITATION("Over-estimated instruction size");
 #endif
     }
-
-#endif
 
 #ifdef DEBUG
     /* Make sure the instruction descriptor size also matches our expectations */
