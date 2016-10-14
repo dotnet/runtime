@@ -356,6 +356,7 @@ namespace System.Net.Security
                 SslProtocols proto = (SslProtocols)info.Protocol;
                 SslProtocols ret = SslProtocols.None;
 
+#pragma warning disable 0618 // Ssl2, Ssl3 are deprecated.
                 // Restore client/server bits so the result maps exactly on published constants.
                 if ((proto & SslProtocols.Ssl2) != 0)
                 {
@@ -366,6 +367,7 @@ namespace System.Net.Security
                 {
                     ret |= SslProtocols.Ssl3;
                 }
+#pragma warning restore
 
                 if ((proto & SslProtocols.Tls) != 0)
                 {
