@@ -7,6 +7,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
+using System.Reflection;
 
 namespace System.Linq.Expressions.Compiler
 {
@@ -192,10 +193,11 @@ namespace System.Linq.Expressions.Compiler
                         List<Expression> comma = new List<Expression>(count + 1);
                         for (int i = 0; i < count; i++)
                         {
-                            if (clone[i] != null)
+                            Expression current = clone[i];
+                            if (ShouldSaveToTemp(current))
                             {
                                 Expression temp;
-                                clone[i] = _self.ToTemp(clone[i], out temp);
+                                clone[i] = _self.ToTemp(current, out temp);
                                 comma.Add(temp);
                             }
                         }
@@ -203,6 +205,66 @@ namespace System.Linq.Expressions.Compiler
                         _comma = comma;
                     }
                 }
+            }
+
+            private static bool ShouldSaveToTemp(Expression expression)
+            {
+                if (expression == null)
+                    return false;
+
+                // Some expressions have no side-effects and don't have to be
+                // stored into temporaries, e.g.
+                //
+                //     xs[0] = try { ... }
+                //           |
+                //           v
+                //        t0 = xs
+                //        t1 = 0            // <-- this is redundant
+                //        t2 = try { ... }
+                //    t0[t1] = t2
+                //           |
+                //           v
+                //        t0 = xs
+                //        t1 = try { ... }
+                //     t0[0] = t1
+
+                switch (expression.NodeType)
+                {
+                    // Emits ldnull, ldc, initobj, closure constant access, etc.
+                    case ExpressionType.Constant:
+                    case ExpressionType.Default:
+                        return false;
+
+                    // Emits calls to pure RuntimeOps methods with immutable arguments
+                    case ExpressionType.RuntimeVariables:
+                        return false;
+
+                    case ExpressionType.MemberAccess:
+                        var member = (MemberExpression)expression;
+                        var field = member.Member as FieldInfo;
+                        if (field != null)
+                        {
+                            // Emits ldc for the raw value of the field
+                            if (field.IsLiteral)
+                                return false;
+
+                            // For read-only fields we could save the receiver, but
+                            // that's more involved, so we'll just handle static fields
+                            if (field.IsInitOnly && field.IsStatic)
+                                return false;
+                        }
+                        break;
+                }
+
+                // NB: We omit Lambda because it may interfere with the Invoke/Lambda
+                //     inlining optimizations. Parameter is out too because we don't
+                //     have any sophisticated load/store analysis.
+
+                // NB: We omit Quote because the emitted call to RuntimeOps.Quote will
+                //     trigger reduction of extension nodes which can cause the timing
+                //     of exceptions thrown from Reduce methods to change.
+
+                return true;
             }
 
             internal bool Rewrite
