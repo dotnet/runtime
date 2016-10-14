@@ -7266,7 +7266,7 @@ void Compiler::optRemoveRangeCheck(
 
     noway_assert(stmt->gtOper == GT_STMT);
     noway_assert(tree->gtOper == GT_COMMA);
-    noway_assert(tree->gtOp.gtOp1->gtOper == GT_ARR_BOUNDS_CHECK);
+    noway_assert(tree->gtOp.gtOp1->OperIsBoundsCheck());
     noway_assert(forceRemove || optIsRangeCheckRemovable(tree->gtOp.gtOp1));
 
     GenTreeBoundsChk* bndsChk = tree->gtOp.gtOp1->AsBoundsChk();
