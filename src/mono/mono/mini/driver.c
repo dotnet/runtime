@@ -1980,12 +1980,6 @@ mono_main (int argc, char* argv[])
 	/* Set rootdir before loading config */
 	mono_set_rootdir ();
 
-	/*
-	 * We only set the native name of the thread since MS.NET leaves the
-	 * managed thread name for the main thread as null.
-	 */
-	mono_native_thread_set_name (mono_native_thread_id_get (), "Main");
-
 	if (enable_profile) {
 		mono_profiler_load (profile_options);
 		mono_profiler_thread_name (MONO_NATIVE_THREAD_ID_TO_UINT (mono_native_thread_id_get ()), "Main");
