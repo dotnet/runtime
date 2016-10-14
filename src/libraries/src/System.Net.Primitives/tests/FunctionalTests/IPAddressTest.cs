@@ -185,7 +185,7 @@ namespace System.Net.Primitives.Functional.Tests
             int i2 = (int)0x50130000;
 
             short s1 = (short)0x1350;
-            short s2 = (short) 0x5013;
+            short s2 = (short)0x5013;
 
             Assert.Equal(l2, IPAddress.HostToNetworkOrder(l1));
             Assert.Equal(i2, IPAddress.HostToNetworkOrder(i1));
@@ -279,5 +279,26 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.True(ip4.GetHashCode().Equals(ip5.GetHashCode()));
             Assert.False(ip4.GetHashCode().Equals(ip6.GetHashCode()));
         }
+
+#if NetStandard17
+#pragma warning disable 618
+         [Fact]
+         public static void Address_Property_Failure()
+         {
+             IPAddress ip1 = IPAddress.Parse("fe80::200:f8ff:fe21:67cf");
+             Assert.Throws<SocketException>(() => ip1.Address);
+         }
+ 
+         [Fact]
+         public static void Address_Property_Success()
+         {
+             IPAddress ip1 = IPAddress.Parse("192.168.0.9");
+             //192.168.0.10
+             long newIp4Address = 192 << 24 | 168 << 16 | 0 << 8 | 10;
+             ip1.Address = newIp4Address;
+             Assert.Equal("10.0.168.192" , ip1.ToString());
+         }
+#pragma warning restore 618
+#endif //NetStandard17
     }
 }
