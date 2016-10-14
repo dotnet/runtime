@@ -5,6 +5,7 @@
     "System.Collections.Specialized": "4.4.0-beta-24615-03",
     "System.Diagnostics.Debug": "4.4.0-beta-24615-03",
     "System.Globalization": "4.4.0-beta-24615-03",
+    "System.Globalization.Extensions": "4.4.0-beta-24615-03",
     "System.ObjectModel": "4.4.0-beta-24615-03",
     "System.Reflection.TypeExtensions": "4.4.0-beta-24615-03",
     "System.Runtime": "4.4.0-beta-24615-03",
@@ -18,6 +19,7 @@
     "System.Reflection.Extensions": "4.4.0-beta-24615-03",
     "System.Threading.Tasks": "4.4.0-beta-24615-03",
     "System.Text.Encoding": "4.4.0-beta-24615-03",
+    "System.Security.Permissions": "4.4.0-beta-24615-03",
     "test-runtime": {
       "target": "project",
       "exclude": "compile"

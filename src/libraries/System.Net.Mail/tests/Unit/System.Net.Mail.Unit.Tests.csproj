@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -6,6 +6,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <NugetTargetMoniker>.NETStandard,Version=v1.7</NugetTargetMoniker>
+    <DefineConstants>NETSTANDARD1_7</DefineConstants>
     <ProjectGuid>{2525E37E-0EC1-4374-92FD-D2752BEED978}</ProjectGuid>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.7_Debug|AnyCPU' " />
@@ -15,7 +16,15 @@
     <Compile Include="ByteEncodingTest.cs" />
     <Compile Include="EightBitStreamTest.cs" />
     <Compile Include="EncodedStreamFactoryTest.cs" />
+    <Compile Include="MailAddressTests\MailAddressDisplayNameTest.cs" />
+    <Compile Include="MailAddressTests\MailAddressEncodeTest.cs" />
+    <Compile Include="MailAddressTests\MailAddressParserTest.cs" />
+    <Compile Include="MailAddressTests\MailAddressParsingTest.cs" />
+    <Compile Include="MessageTests\MessageEncodeHeadersTest.cs" />
+    <Compile Include="MessageTests\MessageHeaderBehaviorTest.cs" />
+    <Compile Include="MessageTests\ReplyToListTest.cs" />
     <Compile Include="QuotedPrintableStreamTest.cs" />
+    <Compile Include="SmtpConnectionTests\EhloParseExtensionsTest.cs" />
     <Compile Include="SmtpDateTimeTest.cs" />
     <Compile Include="WriteStateInfoTest.cs" />
   </ItemGroup>
@@ -23,8 +32,32 @@
     <Compile Include="..\..\src\System\Net\Base64Stream.cs">
       <Link>ProductionCode\Base64Stream.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\System\Net\Mail\SmtpException.cs">
+      <Link>ProductionCode\SmtpException.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mail\SmtpStatusCode.cs">
+      <Link>ProductionCode\SmtpStatusCode.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\System\Net\DelegatedStream.cs">
       <Link>ProductionCode\DelegatedStream.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mail\MailAddress.cs">
+      <Link>ProductionCode\MailAddress.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mail\SmtpConnection.Auth.cs">
+      <Link>ProductionCode\SmtpConnection.Auth.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mail\ISmtpAuthenticationModule.cs">
+      <Link>ProductionCode\ISmtpAuthenticationModule.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mail\SmtpLoginAuthenticationModule.cs">
+      <Link>ProductionCode\SmtpLoginAuthenticationModule.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mail\MailAddressCollection.cs">
+      <Link>ProductionCode\MailAddressCollection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Mail\MailPriority.cs">
+      <Link>ProductionCode\MailPriority.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\Mime\MimePart.cs">
       <Link>ProductionCode\MimePart.cs</Link>
@@ -98,6 +131,9 @@
     <Compile Include="..\..\src\System\Net\BufferBuilder.cs">
       <Link>ProductionCode\BufferBuilder.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\StringExtensions.cs">
+      <Link>ProductionCode\Common\System\StringExtensions.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
       <Link>ProductionCode\Common\System\Net\InternalException.cs</Link>
     </Compile>
@@ -113,8 +149,32 @@
     <Compile Include="$(CommonPath)\System\Net\Logging\GlobalLog.cs">
       <Link>ProductionCode\Common\System\Net\Logging\GlobalLog.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Logging\WebEventSource.cs">
+      <Link>ProductionCode\Common\System\Net\Logging\WebEventSource.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.cs">
+      <Link>ProductionCode\Common\System\Net\Logging\NetEventSource.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\Logging\EventSourceLogging.cs">
       <Link>ProductionCode\Common\System\Net\Logging\EventSourceLogging.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Mail\DomainLiteralReader.cs">
+      <Link>ProductionCode\Common\System\Net\Mail\DomainLiteralReader.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Mail\WhitespaceReader.cs">
+      <Link>ProductionCode\Common\System\Net\Mail\WhitespaceReader.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Mail\MailAddressParser.cs">
+      <Link>ProductionCode\Common\System\Net\Mail\MailAddressParser.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Mail\DotAtomReader.cs">
+      <Link>ProductionCode\Common\System\Net\Mail\DotAtomReader.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Mail\QuotedPairReader.cs">
+      <Link>ProductionCode\Common\System\Net\Mail\QuotedPairReader.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Mail\QuotedStringFormatReader.cs">
+      <Link>ProductionCode\Common\System\Net\Mail\QuotedStringFormatReader.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

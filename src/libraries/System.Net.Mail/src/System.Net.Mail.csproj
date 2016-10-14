@@ -63,6 +63,7 @@
     <Compile Include="System\Net\Mail\SmtpClient.cs" />
     <Compile Include="System\Net\Mail\SmtpCommands.cs" />
     <Compile Include="System\Net\Mail\SmtpConnection.cs" />
+    <Compile Include="System\Net\Mail\SmtpConnection.Auth.cs" />
     <Compile Include="System\Net\Mail\SmtpException.cs" />
     <Compile Include="System\Net\Mail\SmtpFailedRecipientException.cs" />
     <Compile Include="System\Net\Mail\SmtpFailedRecipientsException.cs" />
@@ -140,9 +141,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="System\Net\Mail\SmtpConnection.Auth.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
