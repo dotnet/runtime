@@ -177,6 +177,7 @@ interface ICorDebugTypeEnum;
 interface ICorDebugCodeEnum;
 interface ICorDebugFrameEnum;
 interface ICorDebugValueEnum;
+interface ICorDebugVariableHomeEnum;
 interface ICorDebugAppDomainEnum;
 interface ICorDebugAssemblyEnum;
 interface ICorDebugBlockingObjectEnum;
@@ -5594,6 +5595,23 @@ interface ICorDebugCode3 : IUnknown
                                      [out, size_is(bufferSize), length_is(*pFetched)] ULONG32 pOffsets[]);
 };
 
+[
+    object,
+    local,
+    uuid(18221fa4-20cb-40fa-b19d-9f91c4fa8c14),
+    pointer_default(unique)
+]
+interface ICorDebugCode4 : IUnknown
+{
+    /*
+     * EnumerateVariableHomes - gives an enum for local variables and arguments
+     * in the function.
+     * This may include multiple ICorDebugVariableHomes for the same slot or
+     * argument index if they have different homes at different points in the
+     * function.
+     */
+    HRESULT EnumerateVariableHomes([out] ICorDebugVariableHomeEnum **ppEnum);
+}
 
 [
     object,
@@ -6488,8 +6506,79 @@ interface ICorDebugArrayValue : ICorDebugHeapValue
                                  [out] ICorDebugValue **ppValue);
 };
 
+[
+    object,
+    local,
+    uuid(50847b8d-f43f-41b0-924c-6383a5f2278b),
+    pointer_default(unique)
+]
+interface ICorDebugVariableHome : IUnknown
+{
+    /*
+     * GetCode - gives the ICorDebugCode instance containing this
+     * ICorDebugVariableHome.
+     */
+    HRESULT GetCode([out] ICorDebugCode **ppCode);
+    /*
+     * GetSlotIndex - gives the managed slot-index of a local variable.
+     * The slot-index can be used to retrieve the metadata for this local.
+     * Returns E_FAIL if the variable is a function argument.
+     */
+    HRESULT GetSlotIndex([out] ULONG32 *pSlotIndex);
+    
+    /*
+     * GetArgumentIndex - gives the argument index of a function argument.
+     * The argument index can be used to retrieve the metadata for this
+     * argument.
+     * Returns E_FAIL if the variable is a local variable.
+     */
+    HRESULT GetArgumentIndex([out] ULONG32* pArgumentIndex);
 
-/*
+    /*
+     * GetLiveRange - gives the native range over which this variable is live.
+     * pStartOffset is the logical offset at which the variable is first live.
+     * pEndOffset is the logical offset immediately after that at which the
+     * variable is last live.
+     */
+    HRESULT GetLiveRange([out] ULONG32* pStartOffset,
+                         [out] ULONG32 *pEndOffset);
+
+    typedef enum VariableLocationType
+    {
+        VLT_REGISTER,             // variable is in a register
+        VLT_REGISTER_RELATIVE,    // variable is in a register-relative memory
+                                  // location
+        VLT_INVALID
+    } VariableLocationType;
+    
+    /*
+     * GetLocationType - gives the type of native location. See
+     * VariableLocationType.
+     * Returns VLT_INVALID if the variable is not stored in a register or in a
+     * register-relative memory location.
+     */
+    HRESULT GetLocationType([out] VariableLocationType *pLocationType);
+
+    /*
+     * GetRegister - gives the register containing the variables with location
+     * type VLT_REGISTER, and the base register for variables with location
+     * type VLT_REGISTER_RELATIVE.
+     * Returns E_FAIL if the variable is not in a register or in a
+     * register-relative location.
+     */
+    HRESULT GetRegister([out] CorDebugRegister *pRegister);
+    
+    /*
+     * GetOffset - gives the offset from the base register for a variable.
+     * Returns E_FAIL if the variable is not in a register-relative memory
+     * location.
+     */
+    HRESULT GetOffset([out] LONG *pOffset);
+}
+
+
+
+/* 
  * ICorDebugHandleValue represents a reference value that the debugger has
  * explicitly created a GC handle to. It does not represent GC Handles in the debuggee process,
 
@@ -6802,6 +6891,28 @@ interface ICorDebugValueEnum : ICorDebugEnum
 [
     object,
     local,
+    uuid(e76b7a57-4f7a-4309-85a7-5d918c3deaf7),
+    pointer_default(unique)
+]
+interface ICorDebugVariableHomeEnum : ICorDebugEnum
+{
+    /*
+     * Next - gives the specified number of ICorDebugVariableHome instances from
+     * the enumeration, starting at the current position.
+     * celt is the number of requested instances.
+     * pceltFetched is the number of instances retrieved.
+     * returns S_FALSE if the actual number of instances retrieved is smaller
+     * than the number of instances requested.
+     */
+    HRESULT Next([in] ULONG celt,
+                 [out, size_is(celt), length_is(*pceltFetched)]
+                     ICorDebugVariableHome *homes[],
+                 [out] ULONG *pceltFetched);
+};
+    
+[
+    object,
+    local,
     uuid(55E96461-9645-45e4-A2FF-0367877ABCDE),
     pointer_default(unique)
 ]
@@ -6948,6 +7059,28 @@ interface ICorDebugType : IUnknown
 
     HRESULT GetRank([out] ULONG32 *pnRank);
 
+};
+
+
+[
+    object,
+    local,
+    uuid(e6e91d79-693d-48bc-b417-8284b4f10fb5),
+    pointer_default(unique)
+]
+interface ICorDebugType2 : IUnknown
+{
+    /*
+     * GetTypeID - gives a COR_TYPEID for the ICorDebugType. This
+     * provides a mapping from the ICorDebugType, which represents a
+     * type that may or may not have been loaded into the runtime, to
+     * a COR_TYPEID, which serves as an opaque handle identifying a
+     * type loaded into the runtime. When the type that the
+     * ICorDebugType represents has not yet been loaded, this returns
+     * CORDBG_E_CLASS_NOT_LOADED. Returns CORDBG_E_UNSUPPORTED for
+     * unsupported types.
+     */
+    HRESULT GetTypeID([out] COR_TYPEID *id);
 };
 
 

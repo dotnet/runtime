@@ -99,8 +99,8 @@ CordbEnumerator<ElemType,
                                                 ElemType **items,
                                                 DWORD countItems) :
 CordbBase(pProcess, 0, enumCordbEnumerator),
-m_nextIndex(0),
-m_countItems(countItems)
+m_countItems(countItems),
+m_nextIndex(0)
 {
     _ASSERTE(items != NULL);
     m_items = *items;
@@ -108,7 +108,7 @@ m_countItems(countItems)
 }
 
 // Destructor
-template< typename ElemType, 
+template< typename ElemType,
           typename ElemPublicType,
           typename EnumInterfaceType,
           ElemPublicType (*GetPublicType)(ElemType)>
