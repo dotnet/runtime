@@ -244,6 +244,10 @@
 
     <!-- Random pieces of code required to build  -->
     <Compile Include="System\misc.cs" />
+
+    <!-- TODO: Replace this reference with package reference -->
+    <ProjectReference Include="$(SourceDir)System.Resources.ResourceManager/pkg/System.Resources.ResourceManager.pkgproj"/>
+
   </ItemGroup>
 
   <ItemGroup>
