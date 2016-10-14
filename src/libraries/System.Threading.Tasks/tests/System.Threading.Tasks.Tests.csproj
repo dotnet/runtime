@@ -13,11 +13,6 @@
   <ItemGroup>
     <!-- Compile tests against the System.Runtime contract, but copy our local-built implementation for testing -->
     <ProjectReference Include="..\pkg\System.Threading.Tasks.pkgproj" />
-    <!-- ToDo: Remove this reference once prerelease gets updated again -->
-    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
-    <!-- ToDo: Remove this reference once prerelease gets updated again -->
-    <ProjectReference Include="..\..\System.Reflection\pkg\System.Reflection.pkgproj" />
-    <ProjectReference Include="..\..\System.Diagnostics.Debug\pkg\System.Diagnostics.Debug.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="XunitAssemblyAttributes.cs" />

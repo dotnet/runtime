@@ -90,10 +90,6 @@
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.ComponentModel.TypeConverter.pkgproj">
     </ProjectReference>
-    <!-- TODO: Replace this reference with package reference -->
-    <ProjectReference Include="$(SourceDir)System.Resources.ResourceManager/pkg/System.Resources.ResourceManager.pkgproj"/>
-    <!-- TODO: Replace this reference with package reference -->
-    <ProjectReference Include="$(SourceDir)System.Resources.Writer/pkg/System.Resources.Writer.pkgproj"/>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

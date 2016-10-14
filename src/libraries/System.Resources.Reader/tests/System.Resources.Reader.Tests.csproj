@@ -24,8 +24,6 @@
     <ProjectReference Include="..\pkg\System.Resources.Reader.pkgproj">
       <Name>System.Resources.Reader</Name>
     </ProjectReference>
-    <!-- TODO: Remove this once a package update happens -->
-    <ProjectReference Include="..\..\System.Resources.ResourceManager\pkg\System.Resources.ResourceManager.pkgproj"/>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
