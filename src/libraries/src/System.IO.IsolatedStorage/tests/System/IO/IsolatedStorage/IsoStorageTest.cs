@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.IO.IsolatedStorage
@@ -36,10 +37,9 @@ namespace System.IO.IsolatedStorage
             UserStoreForApplication,
             UserStoreForAssembly,
             UserStoreForDomain,
-            // https://github.com/dotnet/corefx/issues/11124
-            // MachineStoreForAssembly,
-            // MachineStoreForApplication,
-            // MachineStoreForDomain
+            MachineStoreForAssembly,
+            MachineStoreForApplication,
+            MachineStoreForDomain
         }
 
         public static IsolatedStorageFile GetPresetScope(PresetScopes scope)
@@ -52,6 +52,12 @@ namespace System.IO.IsolatedStorage
                     return IsolatedStorageFile.GetUserStoreForAssembly();
                 case PresetScopes.UserStoreForDomain:
                     return IsolatedStorageFile.GetUserStoreForDomain();
+                case PresetScopes.MachineStoreForApplication:
+                    return IsolatedStorageFile.GetMachineStoreForApplication();
+                case PresetScopes.MachineStoreForAssembly:
+                    return IsolatedStorageFile.GetMachineStoreForAssembly();
+                case PresetScopes.MachineStoreForDomain:
+                    return IsolatedStorageFile.GetMachineStoreForDomain();
                 default:
                     throw new InvalidOperationException("Unknown preset scope");
             }
@@ -65,12 +71,22 @@ namespace System.IO.IsolatedStorage
                 // as the collection will be enumerated completely before the first invocation of a [Theory].
                 // Avoiding TheoryData and disabling DiscoveryEnumeration is not enough.
 
-                return new TheoryData<PresetScopes>
+                TheoryData<PresetScopes> validScopes = new TheoryData<PresetScopes>
                 {
                     PresetScopes.UserStoreForApplication,
                     PresetScopes.UserStoreForAssembly,
-                    PresetScopes.UserStoreForDomain
+                    PresetScopes.UserStoreForDomain,
                 };
+
+                // https://github.com/dotnet/corefx/issues/12628
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    validScopes.Add(PresetScopes.MachineStoreForApplication);
+                    validScopes.Add(PresetScopes.MachineStoreForAssembly);
+                    validScopes.Add(PresetScopes.MachineStoreForDomain);
+                }
+
+                return validScopes;
             }
         }
 
