@@ -4652,6 +4652,7 @@ namespace System.Reflection
         public System.Reflection.AssemblyNameFlags Flags { get { throw null; } set { } }
         public string FullName { get { throw null; } }
         public System.Configuration.Assemblies.AssemblyHashAlgorithm HashAlgorithm { get { throw null; } set { } }
+        public System.Reflection.StrongNameKeyPair KeyPair { get { throw null; } set { } }
         public System.Configuration.Assemblies.AssemblyVersionCompatibility VersionCompatibility { get { throw null; } set { } }
         public string Name { get { throw null; } set { } }
         public System.Reflection.ProcessorArchitecture ProcessorArchitecture { get { throw null; } set { } }
@@ -5574,6 +5575,15 @@ namespace System.Reflection
         public virtual bool IsAssignableFrom(System.Reflection.TypeInfo typeInfo) { throw null; }
         System.Reflection.TypeInfo System.Reflection.IReflectableType.GetTypeInfo() { throw null; }
     }
+    public partial class StrongNameKeyPair : System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
+    {
+        public StrongNameKeyPair(byte[] keyPairArray) { }
+        protected StrongNameKeyPair(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public StrongNameKeyPair(string keyPairContainer) { }
+        public byte[] PublicKey { [System.Security.SecuritySafeCriticalAttribute]get { return default(byte[]); } }
+        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+    }
 }
 namespace System.Runtime
 {
@@ -5891,6 +5901,8 @@ namespace System.Runtime.InteropServices
     public enum CharSet
     {
         Ansi = 2,
+        Auto = 4,
+        None = 1,
         Unicode = 3,
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(5597), Inherited = false)]
@@ -5922,6 +5934,7 @@ namespace System.Runtime.InteropServices
         public System.Runtime.InteropServices.CharSet CharSet;
         public int Pack;
         public int Size;
+        public StructLayoutAttribute(short layoutKind) { }
         public StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind layoutKind) { }
         public System.Runtime.InteropServices.LayoutKind Value { get { throw null; } }
     }
