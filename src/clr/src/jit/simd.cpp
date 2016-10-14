@@ -1812,6 +1812,8 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                opcode,
             int            length       = getSIMDVectorLength(clsHnd);
             GenTreeIntCon* intConstTree = new (this, GT_CNS_INT) GenTreeIntCon(TYP_INT, length);
             retVal                      = intConstTree;
+
+            intConstTree->gtFlags |= GTF_ICON_SIMD_COUNT;
         }
         break;
 
