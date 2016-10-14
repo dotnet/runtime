@@ -79,7 +79,9 @@
     </ProjectFile>
     <ProjectFile Include="urtui\dirs.proj"/>
     <ProjectFile Include="winmdexp\dirs.proj" />
+<!--
     <ProjectFile Include="winverify\dirs.proj" />
+-->
     <ProjectFile Include="wpf\wpf.proj" Condition="'$(BuildArchitecture)' == 'i386' or '$(BuildArchitecture)' == 'amd64'" />
     <ProjectFile Include="PdbTypeMatch\PdbTypeMatch.nativeproj" Condition="'$(BuildArchitecture)' == 'i386' and '$(_BuildType)' == 'ret'" >
         <ProductGroups>PK</ProductGroups>
