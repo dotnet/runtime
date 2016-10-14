@@ -155,9 +155,21 @@ namespace System.Net.Sockets
                         "). Returned = " + ((IntPtr)overlapped).ToString("x"));
                 }
             }
-
             Debug.Assert(overlapped != null, "NativeOverlapped is null.");
-            _ptrNativeOverlapped = new SafeNativeOverlapped(_currentSocket.SafeHandle, overlapped);
+
+            // If we already have a SafeNativeOverlapped SafeHandle and it's associated with the same
+            // socket (due to the last operation that used this SocketAsyncEventArgs using the same socket),
+            // then we can reuse the same SafeHandle object.  Otherwise, this is either the first operation
+            // or the last operation was with a different socket, so create a new SafeHandle.
+            if (_ptrNativeOverlapped?.SocketHandle == _currentSocket.SafeHandle)
+            {
+                _ptrNativeOverlapped.ReplaceHandle(overlapped);
+            }
+            else
+            {
+                _ptrNativeOverlapped?.Dispose();
+                _ptrNativeOverlapped = new SafeNativeOverlapped(_currentSocket.SafeHandle, overlapped);
+            }
         }
 
         private void CompleteIOCPOperation()
@@ -169,12 +181,10 @@ namespace System.Net.Sockets
             // it is guaranteed that the IOCP operation will be completed in the callback even if Socket.Success was 
             // returned by the Win32 API.
 
-            // Required to allow another IOCP operation for the same handle.
-            if (_ptrNativeOverlapped != null)
-            {
-                _ptrNativeOverlapped.Dispose();
-                _ptrNativeOverlapped = null;
-            }
+            // Required to allow another IOCP operation for the same handle.  We release the native overlapped
+            // in the safe handle, but keep the safe handle object around so as to be able to reuse it
+            // for other operations.
+            _ptrNativeOverlapped?.FreeNativeOverlapped();
         }
 
         private void InnerStartOperationAccept(bool userSuppliedBuffer)

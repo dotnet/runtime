@@ -39,6 +39,7 @@
     <Compile Include="TcpClientTest.cs" />
     <Compile Include="Shutdown.cs" />
     <Compile Include="SocketAPMExtensions.cs" />
+    <Compile Include="SocketAsyncEventArgsTest.cs" />
     <Compile Include="SocketAsyncExtensions.cs" />
     <Compile Include="SocketOptionNameTest.cs" />
     <Compile Include="UdpClientTest.cs" />
