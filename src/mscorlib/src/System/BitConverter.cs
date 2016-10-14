@@ -156,7 +156,7 @@ namespace System {
             }
 
             if ((uint)startIndex >= value.Length) {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index();
             }
 
             if (startIndex > value.Length - 2) {
@@ -175,7 +175,7 @@ namespace System {
             }
             
             if ((uint) startIndex >= value.Length) {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index();
             }
         
             if (startIndex > value.Length -2) {
@@ -207,7 +207,7 @@ namespace System {
             }
         
             if ((uint) startIndex >= value.Length) {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index();
             }
         
             if (startIndex > value.Length -4) {
@@ -238,7 +238,7 @@ namespace System {
             }
         
             if ((uint) startIndex >= value.Length) {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index();
             }
         
             if (startIndex > value.Length -8) {
@@ -274,7 +274,7 @@ namespace System {
             if (value == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             if ((uint)startIndex >= value.Length)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index();
             if (startIndex > value.Length - 2)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
             Contract.EndContractBlock();
@@ -290,7 +290,7 @@ namespace System {
             if (value == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             if ((uint)startIndex >= value.Length)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index();
             if (startIndex > value.Length - 4)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
             Contract.EndContractBlock();
@@ -306,7 +306,7 @@ namespace System {
             if (value == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             if ((uint)startIndex >= value.Length)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index();
             if (startIndex > value.Length - 8)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
             Contract.EndContractBlock();
@@ -321,7 +321,7 @@ namespace System {
             if (value == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             if ((uint)startIndex >= value.Length)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index();
             if (startIndex > value.Length - 4)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
             Contract.EndContractBlock();
@@ -337,7 +337,7 @@ namespace System {
             if (value == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             if ((uint)startIndex >= value.Length)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index();
             if (startIndex > value.Length - 8)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
             Contract.EndContractBlock();
