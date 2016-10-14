@@ -201,14 +201,14 @@ namespace System.Collections.Tests
 
         public static void PerformActionOnCustomCulture(Action action, CultureInfo customCulture = null)
         {
-            CultureInfo currentCulture = CultureInfo.DefaultThreadCurrentCulture;
+            CultureInfo currentCulture = CultureInfo.CurrentCulture;
             try
             {
                 if (customCulture == null)
                 {
                     customCulture = new CultureInfo("de-DE");
                 }
-                CultureInfo.DefaultThreadCurrentCulture = customCulture;
+                CultureInfo.CurrentCulture = customCulture;
                 action();
             }
             catch (CultureNotFoundException)
@@ -216,7 +216,7 @@ namespace System.Collections.Tests
             }
             finally
             {
-                CultureInfo.DefaultThreadCurrentCulture = currentCulture;
+                CultureInfo.CurrentCulture = currentCulture;
             }
         }
     }
