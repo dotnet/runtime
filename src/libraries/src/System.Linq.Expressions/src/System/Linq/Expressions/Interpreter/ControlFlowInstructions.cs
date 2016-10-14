@@ -312,6 +312,8 @@ namespace System.Linq.Expressions.Interpreter
             _tryHandler = tryHandler;
         }
 
+        internal TryCatchFinallyHandler Handler => _tryHandler;
+
         public override int ProducedContinuations => _hasFinally ? 1 : 0;
 
         private EnterTryCatchFinallyInstruction(int targetIndex, bool hasFinally)
@@ -448,6 +450,8 @@ namespace System.Linq.Expressions.Interpreter
             Debug.Assert(_tryHandler == null, "the tryHandler can be set only once");
             _tryHandler = tryHandler;
         }
+
+        internal TryFaultHandler Handler => _tryHandler;
 
         public override int ProducedContinuations => 1;
 

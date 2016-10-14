@@ -50,17 +50,16 @@ namespace System.Linq.Expressions.Interpreter
             }
 
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public InstructionList.DebugView.InstructionView[]/*!*/ A0
+            public InstructionList.DebugView.InstructionView[]/*!*/ A0 => GetInstructionViews(includeDebugCookies: true);
+
+            public InstructionList.DebugView.InstructionView[] GetInstructionViews(bool includeDebugCookies = false)
             {
-                get
-                {
-                    return InstructionList.DebugView.GetInstructionViews(
-                        _array.Instructions,
-                        _array.Objects,
-                        (index) => _array.Labels[index].Index,
-                        _array.DebugCookies
-                    );
-                }
+                return InstructionList.DebugView.GetInstructionViews(
+                    _array.Instructions,
+                    _array.Objects,
+                    (index) => _array.Labels[index].Index,
+                    includeDebugCookies ? _array.DebugCookies : null
+                );
             }
         }
         #endregion
@@ -95,17 +94,16 @@ namespace System.Linq.Expressions.Interpreter
             }
 
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public InstructionView[]/*!*/ A0
+            public InstructionView[]/*!*/ A0 => GetInstructionViews(includeDebugCookies: true);
+
+            public InstructionView[] GetInstructionViews(bool includeDebugCookies = false)
             {
-                get
-                {
-                    return GetInstructionViews(
+                return GetInstructionViews(
                         _list._instructions,
                         _list._objects,
                         (index) => _list._labels[index].TargetIndex,
-                        _list._debugCookies
+                        includeDebugCookies ? _list._debugCookies : null
                     );
-                }
             }
 
             internal static InstructionView[] GetInstructionViews(IList<Instruction> instructions, IList<object> objects,
@@ -116,7 +114,7 @@ namespace System.Linq.Expressions.Interpreter
                 int stackDepth = 0;
                 int continuationsDepth = 0;
 
-                var cookieEnumerator = (debugCookies != null ? debugCookies : new KeyValuePair<int, object>[0]).GetEnumerator();
+                var cookieEnumerator = (debugCookies ?? Array.Empty<KeyValuePair<int, object>>()).GetEnumerator();
                 var hasCookie = cookieEnumerator.MoveNext();
 
                 for (int i = 0, n = instructions.Count; i < n; i++)
