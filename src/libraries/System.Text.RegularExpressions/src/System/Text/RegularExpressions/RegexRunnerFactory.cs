@@ -11,6 +11,4 @@ namespace System.Text.RegularExpressions
         protected RegexRunnerFactory() { }
         protected internal abstract RegexRunner CreateInstance();
     }
-
 }
-

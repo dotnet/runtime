@@ -720,12 +720,12 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Throws<ArgumentNullException>("pattern", () => Regex.Match("input", null));
             Assert.Throws<ArgumentNullException>("pattern", () => Regex.Match("input", null, RegexOptions.None));
             Assert.Throws<ArgumentNullException>("pattern", () => Regex.Match("input", null, RegexOptions.None, TimeSpan.FromSeconds(1)));
-            
+
             // Start is invalid
-            Assert.Throws<ArgumentOutOfRangeException>("start", () => new Regex("pattern").Match("input", -1));
-            Assert.Throws<ArgumentOutOfRangeException>("start", () => new Regex("pattern").Match("input", -1, 0));
-            Assert.Throws<ArgumentOutOfRangeException>("start", () => new Regex("pattern").Match("input", 6));
-            Assert.Throws<ArgumentOutOfRangeException>("start", () => new Regex("pattern").Match("input", 6, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Regex("pattern").Match("input", -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Regex("pattern").Match("input", -1, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Regex("pattern").Match("input", 6));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Regex("pattern").Match("input", 6, 0));
 
             // Length is invalid
             Assert.Throws<ArgumentOutOfRangeException>("length", () => new Regex("pattern").Match("input", 0, -1));
@@ -767,8 +767,8 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Throws<ArgumentNullException>("pattern", () => Regex.IsMatch("input", null, RegexOptions.None, TimeSpan.FromSeconds(1)));
 
             // Start is invalid
-            Assert.Throws<ArgumentOutOfRangeException>("start", () => new Regex("pattern").IsMatch("input", -1));
-            Assert.Throws<ArgumentOutOfRangeException>("start", () => new Regex("pattern").IsMatch("input", 6));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Regex("pattern").IsMatch("input", -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Regex("pattern").IsMatch("input", 6));
         }
     }
 }
