@@ -2508,17 +2508,20 @@ public:
     virtual
     HRESULT GetTypeID(CORDB_ADDRESS obj, COR_TYPEID * pType) = 0;
 
-	virtual
-	HRESULT GetObjectFields(COR_TYPEID id, ULONG32 celt, OUT COR_FIELD * layout, OUT ULONG32 * pceltFetched) = 0;
-
-	virtual
-	HRESULT GetTypeLayout(COR_TYPEID id, COR_TYPE_LAYOUT * pLayout) = 0;
-	
-	virtual
-	HRESULT GetArrayLayout(COR_TYPEID id, COR_ARRAY_LAYOUT * pLayout) = 0;
-	
-	virtual
-	void GetGCHeapInformation(OUT COR_HEAPINFO * pHeapInfo) = 0;
+    virtual
+    HRESULT GetTypeIDForType(VMPTR_TypeHandle vmTypeHandle, COR_TYPEID *pId) = 0;
+    
+    virtual
+    HRESULT GetObjectFields(COR_TYPEID id, ULONG32 celt, OUT COR_FIELD * layout, OUT ULONG32 * pceltFetched) = 0;
+    
+    virtual
+    HRESULT GetTypeLayout(COR_TYPEID id, COR_TYPE_LAYOUT * pLayout) = 0;
+    
+    virtual
+    HRESULT GetArrayLayout(COR_TYPEID id, COR_ARRAY_LAYOUT * pLayout) = 0;
+    
+    virtual
+    void GetGCHeapInformation(OUT COR_HEAPINFO * pHeapInfo) = 0;
 
     // If a PEFile has an RW capable IMDInternalImport, this returns the address of the MDInternalRW
     // object which implements it.
