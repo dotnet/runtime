@@ -587,5 +587,10 @@ namespace System.Globalization
         {
             throw new NotImplementedException();
         }
+
+        private static int GetGeoId(string cultureName)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
