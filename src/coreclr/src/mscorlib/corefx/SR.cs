@@ -144,6 +144,11 @@ namespace System.Globalization
             get { return Environment.GetResourceString("Argument_CultureNotSupported"); }
         }
 
+        public static string Argument_CultureIsNeutral
+        {
+            get { return Environment.GetResourceString("Argument_CultureIsNeutral"); }
+        }
+
         public static string Argument_CustomCultureCannotBePassedByNumber
         {
             get { return Environment.GetResourceString("Argument_CustomCultureCannotBePassedByNumber"); }
