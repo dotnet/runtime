@@ -129,14 +129,24 @@ pal::string_t get_filename(const pal::string_t& path)
 
 pal::string_t get_directory(const pal::string_t& path)
 {
-    // Find the last dir separator
-    auto path_sep = path.find_last_of(DIR_SEPARATOR);
-    if (path_sep == pal::string_t::npos)
+    pal::string_t ret = path;
+    while (!ret.empty() && ret.back() == DIR_SEPARATOR)
     {
-        return pal::string_t(path);
+        ret.pop_back();
     }
 
-    return path.substr(0, path_sep);
+    // Find the last dir separator
+    auto path_sep = ret.find_last_of(DIR_SEPARATOR);
+    if (path_sep == pal::string_t::npos)
+    {
+        return ret + DIR_SEPARATOR;
+    }
+
+    while (path_sep >= 0 && ret[path_sep] == DIR_SEPARATOR)
+    {
+        path_sep--;
+    }
+    return ret.substr(0, path_sep + 1) + DIR_SEPARATOR;
 }
 
 void replace_char(pal::string_t* path, pal::char_t match, pal::char_t repl)
