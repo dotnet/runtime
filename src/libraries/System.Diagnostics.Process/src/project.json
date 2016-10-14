@@ -10,6 +10,7 @@
         "System.ComponentModel.Primitives": "4.4.0-beta-24613-01",
         "System.IO.FileSystem": "4.4.0-beta-24613-01",
         "System.Text.Encoding": "4.4.0-beta-24613-01",
+        "System.Diagnostics.FileVersionInfo": "4.4.0-beta-24613-01",
         "System.Text.Encoding.Extensions": "4.4.0-beta-24613-01",
         "System.Threading": "4.4.0-beta-24613-01",
         "System.Threading.Tasks": "4.4.0-beta-24613-01",
