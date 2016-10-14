@@ -55,6 +55,7 @@ namespace System.Resources
     {
         public static readonly int HeaderVersionNumber;
         public static readonly int MagicNumber;
+        protected System.Reflection.Assembly MainAssembly;
         protected ResourceManager() { }
         public ResourceManager(string baseName, System.Reflection.Assembly assembly) { }
         public ResourceManager(string baseName, System.Reflection.Assembly assembly, System.Type usingResourceSet) { }
@@ -75,8 +76,7 @@ namespace System.Resources
         protected virtual ResourceSet InternalGetResourceSet(System.Globalization.CultureInfo culture, bool createIfNotExists, bool tryParents) { throw null; }
         public virtual void ReleaseAllResources() { }
         protected UltimateResourceFallbackLocation FallbackLocation { get { throw null; } set { } }
-        public static ResourceManager CreateFileBasedResourceManager(string baseName, string resourceDir, System.Type usingResourceSet) { throw null; }
-        
+        public static ResourceManager CreateFileBasedResourceManager(string baseName, string resourceDir, System.Type usingResourceSet) { throw null; }    
     }
     [System.Serializable]
     public class ResourceSet : System.IDisposable, System.Collections.IEnumerable

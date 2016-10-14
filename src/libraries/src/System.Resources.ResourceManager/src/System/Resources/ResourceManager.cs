@@ -16,6 +16,7 @@ namespace System.Resources
         private readonly object _resourceMap;
         private readonly string _resourcesSubtree;
         private readonly string _neutralResourcesCultureName;
+        protected Assembly MainAssembly; 
 
         public ResourceManager(Type resourceSource)
         {
@@ -40,6 +41,7 @@ namespace System.Resources
                 throw new ArgumentNullException(nameof(assembly));
             }
 
+            MainAssembly = assembly;
             _resourcesSubtree = baseName;
             _resourceMap = GetResourceMap(_resourcesSubtree);
             _neutralResourcesCultureName = GetNeutralLanguageForAssembly(assembly);
@@ -54,6 +56,12 @@ namespace System.Resources
         public string GetString(string name)
         {
             return GetString(name, null);
+        }
+
+        protected static CultureInfo GetNeutralResourcesLanguage(Assembly a)
+        {
+            string lang = GetNeutralLanguageForAssembly(a);
+            return lang == null ? CultureInfo.InvariantCulture : new CultureInfo(lang);
         }
 
         // Looks up a resource value for a particular name.  Looks in the 

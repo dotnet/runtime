@@ -102,8 +102,7 @@ namespace System.ComponentModel.Design
                     // try everything!
                     // 
 
-                    //TODO: NETSTANDARD2.0 -  AppDomain.CurrentDomain.GetAssemblies()
-                    foreach (Assembly asm in System.Stub.AppDomain_CurrentDomain_GetAssemblies())
+                    foreach (Assembly asm in AppDomain.CurrentDomain.GetAssemblies())
                     {
                         // Though, I could not repro this, we seem to be hitting an AssemblyBuilder
                         // when walking through all the assemblies in the current app domain. This throws an 
