@@ -375,10 +375,7 @@ namespace System.Collections
                     }
 
                     // clear remaining int values
-                    if (last + 1 < m_array.Length)
-                    {
-                        Array.Clear(m_array, last + 1, m_array.Length - last - 1);
-                    }
+                    Array.Clear(m_array, last + 1, newints - last - 1);
                 }
 
                 m_length = value;
