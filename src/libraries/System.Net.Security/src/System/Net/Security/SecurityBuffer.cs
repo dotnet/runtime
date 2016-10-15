@@ -71,7 +71,7 @@ namespace System.Net.Security
         public SecurityBuffer(ChannelBinding binding)
         {
             this.size = (binding == null ? 0 : binding.Size);
-            this.type = SecurityBufferType.ChannelBindings;
+            this.type = SecurityBufferType.SECBUFFER_CHANNEL_BINDINGS;
             this.unmanagedToken = binding;
         }
     }

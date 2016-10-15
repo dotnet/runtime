@@ -7,17 +7,17 @@ using System.Runtime.InteropServices;
 
 namespace System.Net
 {
-    // _SecPkgContext_StreamSizes in sspi.h.
+    // sspi.h
     [StructLayout(LayoutKind.Sequential)]
-    internal class StreamSizes
+    internal class SecPkgContext_StreamSizes
     {
-        public int header;
-        public int trailer;
-        public int maximumMessage;
-        public int buffersCount;
-        public int blockSize;
+        public int cbHeader;
+        public int cbTrailer;
+        public int cbMaximumMessage;
+        public int cBuffers;
+        public int cbBlockSize;
 
-        internal unsafe StreamSizes(byte[] memory)
+        internal unsafe SecPkgContext_StreamSizes(byte[] memory)
         {
             fixed (void* voidPtr = memory)
             {
@@ -25,11 +25,11 @@ namespace System.Net
                 try
                 {
                     // TODO (Issue #3114): replace with Marshal.PtrToStructure.
-                    header = (int)checked((uint)Marshal.ReadInt32(unmanagedAddress));
-                    trailer = (int)checked((uint)Marshal.ReadInt32(unmanagedAddress, 4));
-                    maximumMessage = (int)checked((uint)Marshal.ReadInt32(unmanagedAddress, 8));
-                    buffersCount = (int)checked((uint)Marshal.ReadInt32(unmanagedAddress, 12));
-                    blockSize = (int)checked((uint)Marshal.ReadInt32(unmanagedAddress, 16));
+                    cbHeader = (int)checked((uint)Marshal.ReadInt32(unmanagedAddress));
+                    cbTrailer = (int)checked((uint)Marshal.ReadInt32(unmanagedAddress, 4));
+                    cbMaximumMessage = (int)checked((uint)Marshal.ReadInt32(unmanagedAddress, 8));
+                    cBuffers = (int)checked((uint)Marshal.ReadInt32(unmanagedAddress, 12));
+                    cbBlockSize = (int)checked((uint)Marshal.ReadInt32(unmanagedAddress, 16));
                 }
                 catch (OverflowException)
                 {
@@ -44,6 +44,6 @@ namespace System.Net
             }
         }
 
-        public static readonly int SizeOf = Marshal.SizeOf<StreamSizes>();
+        public static readonly int SizeOf = Marshal.SizeOf<SecPkgContext_StreamSizes>();
     }
 }

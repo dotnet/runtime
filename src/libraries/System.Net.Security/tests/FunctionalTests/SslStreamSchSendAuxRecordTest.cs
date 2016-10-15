@@ -13,6 +13,8 @@ using Xunit.Abstractions;
 
 namespace System.Net.Security.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     public class SchSendAuxRecordTest
     {
         readonly ITestOutputHelper _output;

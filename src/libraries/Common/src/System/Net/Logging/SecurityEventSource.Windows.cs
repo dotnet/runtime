@@ -119,7 +119,7 @@ namespace System.Net
 
         [Event(OperationReturnedSomethingId, Keywords = Keywords.Default,
             Level = EventLevel.Informational)]
-        internal void OperationReturnedSomething(string operation, Interop.SecurityStatus errorCode)
+        internal void OperationReturnedSomething(string operation, Interop.SECURITY_STATUS errorCode)
         {
             if (!s_log.IsEnabled())
             {
@@ -131,7 +131,7 @@ namespace System.Net
 
         [Event(SecurityContextInputBufferId, Keywords = Keywords.Default,
             Level = EventLevel.Informational)]
-        internal unsafe void SecurityContextInputBuffer(string context, int inputBufferSize, int outputBufferSize, Interop.SecurityStatus errorCode)
+        internal unsafe void SecurityContextInputBuffer(string context, int inputBufferSize, int outputBufferSize, Interop.SECURITY_STATUS errorCode)
         {
             if (!s_log.IsEnabled())
             {
@@ -157,7 +157,7 @@ namespace System.Net
 
         [Event(SecurityContextInputBuffersId, Keywords = Keywords.Default,
             Level = EventLevel.Informational)]
-        internal unsafe void SecurityContextInputBuffers(string context, int inputBuffersSize, int outputBufferSize, Interop.SecurityStatus errorCode)
+        internal unsafe void SecurityContextInputBuffers(string context, int inputBuffersSize, int outputBufferSize, Interop.SECURITY_STATUS errorCode)
         {
             if (!s_log.IsEnabled())
             {

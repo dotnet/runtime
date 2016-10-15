@@ -6,11 +6,11 @@ using System.Runtime.InteropServices;
 
 namespace System.Net
 {
+    // sspi.h
     [StructLayout(LayoutKind.Sequential)]
-    internal struct Bindings
+    internal struct SecPkgContext_Bindings
     {
-        // SecPkgContext_Bindings in sspi.h.
         internal int BindingsLength;
-        internal IntPtr pBindings;
+        internal IntPtr Bindings;
     }
 }

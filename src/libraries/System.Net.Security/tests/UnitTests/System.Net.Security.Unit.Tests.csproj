@@ -10,13 +10,21 @@
     <ProjectGuid>{0D174EA9-9E61-4519-8D31-7BD2331A1982}</ProjectGuid>
     <OutputType>Library</OutputType>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker>.NETStandard,Version=v1.7</NugetTargetMoniker>
+    <!-- 
+      UnitTests compile production source-code in order to test internal units such as individual methods and classes. 
+      Dependencies are broken via Fakes. Since we are referencing netstandard, the real types can conflict with the ones 
+      imported. We are disabling the "Type conflicts with the imported type CS0436 warning" for these types of projects.
+    -->
+    <NoWarn>436</NoWarn>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="SslStreamAllowedProtocolsTest.cs" />
+    <Compile Include="TlsAlertsMatchWindowsInterop.cs" />
+
     <!-- Fakes -->
     <Compile Include="Fakes\FakeSslState.cs" />
     <Compile Include="Fakes\FakeAuthenticatedStream.cs" />
@@ -32,14 +40,23 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Production code references -->
-    <Compile Include="..\..\src\System\Net\SecureProtocols\SslStream.cs">
-      <Link>ProductionCode\System\Net\SecureProtocols\SslStream.cs</Link>
+    <Compile Include="..\..\src\System\Net\Security\SslStream.cs">
+      <Link>ProductionCode\System\Net\Security\SslStream.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\System\Net\SecureProtocols\SslStreamContext.cs">
-      <Link>ProductionCode\System\Net\SecureProtocols\SslStreamContext.cs</Link>
+    <Compile Include="..\..\src\System\Net\SslStreamContext.cs">
+      <Link>ProductionCode\System\Net\SslStreamContext.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\SecurityProtocol.cs">
       <Link>ProductionCode\Common\System\Net\SecurityProtocol.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Security\TlsAlertType.cs">
+      <Link>ProductionCode\Common\System\Net\TlsAlertType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Security\TlsAlertMessage.cs">
+      <Link>ProductionCode\Common\System\Net\TlsAlertMessage.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\SChannel\Interop.Alerts.cs">
+      <Link>Common\Interop\Windows\SChannel\Interop.Alerts.cs</Link>
     </Compile>
     
     <!-- Logging -->

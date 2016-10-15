@@ -35,6 +35,8 @@ namespace System.Net.Security
 
         private bool _handshakeCompleted;
         private bool _certValidationFailed;
+        private bool _shutdown;
+
         private SecurityStatusPal _securityStatus;
         private ExceptionDispatchInfo _exception;
 
@@ -236,6 +238,14 @@ namespace System.Net.Security
             }
         }
 
+        internal bool IsShutdown
+        {
+            get
+            {
+                return _shutdown;
+            }
+        }
+
         internal bool DataAvailable
         {
             get
@@ -346,6 +356,7 @@ namespace System.Net.Security
                 SslProtocols proto = (SslProtocols)info.Protocol;
                 SslProtocols ret = SslProtocols.None;
 
+#pragma warning disable 0618 // Ssl2, Ssl3 are deprecated.
                 // Restore client/server bits so the result maps exactly on published constants.
                 if ((proto & SslProtocols.Ssl2) != 0)
                 {
@@ -356,6 +367,7 @@ namespace System.Net.Security
                 {
                     ret |= SslProtocols.Ssl3;
                 }
+#pragma warning restore
 
                 if ((proto & SslProtocols.Tls) != 0)
                 {
@@ -447,16 +459,21 @@ namespace System.Net.Security
             }
         }
 
-        internal void CheckThrow(bool authSucessCheck)
+        internal void CheckThrow(bool authSuccessCheck, bool shutdownCheck = false)
         {
             if (_exception != null)
             {
                 _exception.Throw();
             }
 
-            if (authSucessCheck && !IsAuthenticated)
+            if (authSuccessCheck && !IsAuthenticated)
             {
                 throw new InvalidOperationException(SR.net_auth_noauth);
+            }
+
+            if (shutdownCheck && _shutdown)
+            {
+                throw new InvalidOperationException(SR.net_ssl_io_already_shutdown);
             }
         }
 
@@ -800,9 +817,11 @@ namespace System.Net.Security
             }
             else if (message.Done && !_pendingReHandshake)
             {
-                if (!CompleteHandshake())
+                ProtocolToken alertToken = null;
+
+                if (!CompleteHandshake(ref alertToken))
                 {
-                    StartSendAuthResetSignal(null, asyncRequest, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_ssl_io_cert_validation, null)));
+                    StartSendAuthResetSignal(alertToken, asyncRequest, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_ssl_io_cert_validation, null)));
                     return;
                 }
 
@@ -951,6 +970,7 @@ namespace System.Net.Security
                     Buffer.BlockCopy(buffer, offset, buffer, 0, count);
                 }
             }
+
             StartSendBlob(buffer, count, asyncRequest);
         }
 
@@ -994,7 +1014,7 @@ namespace System.Net.Security
         //
         // - Returns false if failed to verify the Remote Cert
         //
-        private bool CompleteHandshake()
+        private bool CompleteHandshake(ref ProtocolToken alertToken)
         {
             if (GlobalLog.IsEnabled)
             {
@@ -1003,23 +1023,27 @@ namespace System.Net.Security
 
             Context.ProcessHandshakeSuccess();
 
-            if (!Context.VerifyRemoteCertificate(_certValidationDelegate))
+            if (!Context.VerifyRemoteCertificate(_certValidationDelegate, ref alertToken))
             {
                 _handshakeCompleted = false;
                 _certValidationFailed = true;
+
                 if (GlobalLog.IsEnabled)
                 {
                     GlobalLog.Leave("CompleteHandshake", false);
                 }
+
                 return false;
             }
 
             _certValidationFailed = false;
             _handshakeCompleted = true;
+
             if (GlobalLog.IsEnabled)
             {
                 GlobalLog.Leave("CompleteHandshake", true);
             }
+
             return true;
         }
 
@@ -1851,6 +1875,22 @@ namespace System.Net.Security
 
                 FinishHandshake(exception, null);
             }
+        }
+
+        internal IAsyncResult BeginShutdown(AsyncCallback asyncCallback, object asyncState)
+        {
+            CheckThrow(authSuccessCheck:true, shutdownCheck:true);
+
+            ProtocolToken message = Context.CreateShutdownToken();
+            return InnerStream.BeginWrite(message.Payload, 0, message.Payload.Length, asyncCallback, asyncState);
+        }
+
+        internal void EndShutdown(IAsyncResult result)
+        {
+            CheckThrow(authSuccessCheck: true, shutdownCheck:true);
+
+            InnerStream.EndWrite(result);
+            _shutdown = true;
         }
     }
 }

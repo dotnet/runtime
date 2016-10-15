@@ -8,10 +8,11 @@ using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
-using Xunit;
 
 namespace System.Net.Security.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     // Callback method that is called when the server receives data from a connected client.  
     // The callback method should return a byte array and the number of bytes to send from that array.
     public delegate void DummyTcpServerReceiveCallback(byte[] bufferReceived, int bytesReceived, Stream stream);
