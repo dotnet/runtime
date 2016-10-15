@@ -1089,6 +1089,9 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                         Utilities.addGithubPRTriggerForBranch(job, branch, "Linux ARM Emulator Cross ${configuration} Build")
                     }
                     break
+                case 'Windows_NT':
+                    Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build")
+                    break
                 default:
                     println("NYI os: ${os}");
                     assert false
@@ -1504,8 +1507,7 @@ combinedScenarios.each { scenario ->
                             }
                             break
                         case 'arm':
-                            // Only Ubuntu cross implemented
-                            if (os != 'Ubuntu') {
+                            if ((os != 'Ubuntu') && (os != 'Windows_NT')) {
                                 return
                             }
                             break
@@ -1900,6 +1902,17 @@ combinedScenarios.each { scenario ->
                                         }
                                     }
                                     
+                                    break
+                                case 'arm':
+                                    assert (scenario == 'default')
+                                    
+                                    // Set time out
+                                    setTestJobTimeOut(newJob, scenario)
+
+                                    buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture}"
+                                    
+                                    // Add archival.
+                                    Utilities.addArchival(newJob, "bin/Product/**")
                                     break
                                 case 'arm64':
                                     assert (scenario == 'default') || (scenario == 'pri1r2r') || (scenario == 'gcstress0x3') || (scenario == 'gcstress0xc')
