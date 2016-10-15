@@ -49,7 +49,7 @@ namespace System.Reflection.Tests
         {
             Module module = typeof(ModuleTest).GetTypeInfo().Module;
 
-            CustomAttributeData attribute = module.CustomAttributes.SingleOrDefault(a => a.AttributeType.Equals(attrType));
+            CustomAttributeData attribute = module.CustomAttributes.Single(a => a.AttributeType.Equals(attrType));
             Assert.Equal(1, attribute.ConstructorArguments.Count);
             Assert.Equal(1, attribute.NamedArguments.Count);
                         
