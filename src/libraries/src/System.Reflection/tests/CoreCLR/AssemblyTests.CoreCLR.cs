@@ -15,7 +15,7 @@ namespace System.Reflection.Tests
         public void CurrentLocation_HasLocaton()
         {
             string location = GetExecutingAssembly().Location;
-            Assert.False(string.IsNullOrEmpty(location));
+            Assert.NotEmpty(location);
             string expectedDir = AppContext.BaseDirectory;
             string actualDir = Path.GetDirectoryName(location);
 
