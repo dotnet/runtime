@@ -325,6 +325,14 @@ namespace System.Collections.Tests
             BitArray lengthLong2 = new BitArray(2 * BitsPerInt32, true);
             lengthLong2.Length = BitsPerInt32 + 3;
             yield return new object[] { "Length-Long > 32", lengthLong2 };
+            // alligned test cases
+            yield return new object[] { "Aligned-Constructor", new BitArray(BitsPerInt32, true) };
+            yield return new object[] { "Aligned-Not", new BitArray(BitsPerInt32, false).Not() };
+            BitArray alignedSetAll = new BitArray(BitsPerInt32, false);
+            alignedSetAll.SetAll(true);
+            yield return new object[] { "Aligned-SetAll", alignedSetAll };
+            BitArray alignedLengthLong = new BitArray(2 * BitsPerInt32, true);
+            yield return new object[] { "Aligned-Length-Long", alignedLengthLong };
         }
 
         [Theory]
@@ -343,7 +351,10 @@ namespace System.Collections.Tests
                 Assert.Equal(maxValue, data[i]);
             }
 
-            Assert.Equal((int)Math.Pow(2, remainder) - 1, data[fullInts]);
+            if (remainder > 0)
+            {
+                Assert.Equal((int)Math.Pow(2, remainder) - 1, data[fullInts]);
+            }
         }
 
         [Theory]
@@ -363,7 +374,10 @@ namespace System.Collections.Tests
                 Assert.Equal(maxValue, data[i]);
             }
 
-            Assert.Equal((int)Math.Pow(2, remainder) - 1, data[fullBytes]);
+            if (remainder > 0)
+            {
+                Assert.Equal((int)Math.Pow(2, remainder) - 1, data[fullBytes]);
+            }
         }
     }
 }
