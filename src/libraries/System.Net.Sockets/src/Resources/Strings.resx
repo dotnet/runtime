@@ -291,4 +291,16 @@
   <data name="net_sockets_disconnect_notsupported" xml:space="preserve">
     <value>This platform does not support disconnecting a Socket.  Instead, close the Socket and create a new one.</value>
   </data>
+  <data name="NotSupported_UnreadableStream" xml:space="preserve">
+    <value>Stream does not support reading.</value>
+  </data>
+  <data name="NotSupported_UnwritableStream" xml:space="preserve">
+    <value>Stream does not support writing.</value>
+  </data>
+  <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
+    <value>Can not access a closed Stream.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
+    <value>Positive number required.</value>
+  </data>
 </root>
