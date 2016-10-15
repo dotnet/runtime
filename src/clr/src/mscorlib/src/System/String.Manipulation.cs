@@ -1001,9 +1001,7 @@ namespace System
         [System.Security.SecuritySafeCritical]
         private unsafe String[] SplitInternal(char separator, int count, StringSplitOptions options)
         {
-            char* pSeparators = stackalloc char[1];
-            pSeparators[0] = separator;
-            return SplitInternal(pSeparators, /*separatorsLength*/ 1, count, options);
+            return SplitInternal(&separator, 1, count, options);
         }
 
         [System.Security.SecuritySafeCritical]
