@@ -396,7 +396,8 @@ namespace System.Collections
 
             Contract.EndContractBlock();
 
-            if (array is int[])
+            int[] intArray = array as int[];
+            if (intArray != null)
             {
                 int last = GetArrayLength(m_length, BitsPerInt32) - 1;
                 int bits = m_length % BitsPerInt32;
@@ -404,15 +405,15 @@ namespace System.Collections
                 if (bits == 0)
                 {
                     // we have perfect bit alignment, no need to sanitize, just copy
-                    Array.Copy(m_array, 0, array, index, GetArrayLength(m_length, BitsPerInt32));
+                    Array.Copy(m_array, 0, intArray, index, GetArrayLength(m_length, BitsPerInt32));
                 }
                 else
                 {
                     // do not copy the last int, as it is not completely used
-                    Array.Copy(m_array, 0, array, index, GetArrayLength(m_length, BitsPerInt32) - 1);
+                    Array.Copy(m_array, 0, intArray, index, GetArrayLength(m_length, BitsPerInt32) - 1);
 
                     // the last int needs to be masked
-                    ((int[])array)[last] = m_array[last] & (1 << bits) - 1;
+                    intArray[last] = m_array[last] & ((1 << bits) - 1);
                 }
             }
             else if (array is byte[])
