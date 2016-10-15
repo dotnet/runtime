@@ -126,12 +126,16 @@
   <UsingTask TaskName="AddDependenciesToProjectJson" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
   <Target Name="UpdateVersionsOnTestProjectJson" >
   
+  <!-- Duplicate properties to be removed in future -->
     <PropertyGroup>
         <PackageNameRegex Condition="'$(PackageNameRegex)' == ''">(?%3Cname%3E.*)\.(?%3Cversion%3E\d+\.\d+\.\d+)(-(?%3Cprerelease%3E.*)?)?</PackageNameRegex>
     </PropertyGroup>
+    <ItemGroup>
+      <_PackagesDropsForCommonProjectJson Include="$(PackagesDrops)" />
+    </ItemGroup>
   
     <AddDependenciesToProjectJson AdditionalDependencies="@(ExternalDependencies)"
-                                  PackagesDrops="@(_PackagesDrops)"
+                                  PackagesDrops="@(_PackagesDropsForCommonProjectJson)"
                                   PackageNameRegex="$(PackageNameRegex)"
                                   VersionsFiles="@(_VersionsFiles)"
                                   ProjectJson="$(CommonTestProjectJson)"
