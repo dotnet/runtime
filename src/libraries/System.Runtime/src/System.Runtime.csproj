@@ -10,8 +10,6 @@
     <PackageTargetFramework Condition="'$(TargetGroup)'==''">netstandard1.7;uap10.1</PackageTargetFramework>
     <GenFacadesArgs Condition="'$(TargetGroup)' == 'uap101aot'">$(GenFacadesArgs) -ignoreMissingTypes</GenFacadesArgs>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
-    <!-- 436 is thrown because some types conflict with existing types in mscorlib -->
-    <NoWarn>0436</NoWarn>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
