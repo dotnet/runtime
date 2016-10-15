@@ -158,8 +158,8 @@ namespace System.Linq.Expressions.Compiler
 
         private static Type[] GetParameterTypes(LambdaExpression lambda, Type firstType)
         {
-            var parameters = lambda.Parameters;
-            var count = parameters.Count;
+            Collections.ObjectModel.ReadOnlyCollection<ParameterExpression> parameters = lambda.Parameters;
+            int count = parameters.Count;
 
             Type[] result;
             int i;
@@ -178,7 +178,7 @@ namespace System.Linq.Expressions.Compiler
 
             for (var j = 0; j < count; j++, i++)
             {
-                var p = parameters[j];
+                ParameterExpression p = parameters[j];
                 result[i] = p.IsByRef ? p.Type.MakeByRefType() : p.Type;
             }
 

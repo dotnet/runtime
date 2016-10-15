@@ -77,7 +77,7 @@ namespace System.Linq.Expressions.Interpreter
             var lengths = new int[_rank];
             for (int i = _rank - 1; i >= 0; i--)
             {
-                var length = ConvertHelper.ToInt32NoNull(frame.Pop());
+                int length = ConvertHelper.ToInt32NoNull(frame.Pop());
 
                 if (length < 0)
                 {
@@ -87,7 +87,7 @@ namespace System.Linq.Expressions.Interpreter
 
                 lengths[i] = length;
             }
-            var array = Array.CreateInstance(_elementType, lengths);
+            Array array = Array.CreateInstance(_elementType, lengths);
             frame.Push(array);
             return +1;
         }

@@ -14,7 +14,7 @@ namespace System.Dynamic.Utils
         internal static ParameterInfo[] GetParametersCached(this MethodBase method)
         {
             ParameterInfo[] pis;
-            var pic = s_paramInfoCache;
+            CacheDict<MethodBase, ParameterInfo[]> pic = s_paramInfoCache;
             if (!pic.TryGetValue(method, out pis))
             {
                 pis = method.GetParameters();

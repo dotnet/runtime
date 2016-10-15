@@ -189,7 +189,7 @@ namespace System.Linq.Expressions
                 throw Error.ArgumentMustBeArray(nameof(array));
             }
 
-            var indexList = indexes.ToReadOnly();
+            ReadOnlyCollection<Expression> indexList = indexes.ToReadOnly();
             if (arrayType.GetArrayRank() != indexList.Count)
             {
                 throw Error.IncorrectNumberOfIndexes();
@@ -354,7 +354,7 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="IndexExpression"/>.</returns>
         public static IndexExpression Property(Expression instance, PropertyInfo indexer, IEnumerable<Expression> arguments)
         {
-            var argList = arguments.ToReadOnly();
+            ReadOnlyCollection<Expression> argList = arguments.ToReadOnly();
             ValidateIndexedProperty(instance, indexer, ref argList);
             return new IndexExpression(instance, indexer, argList);
         }

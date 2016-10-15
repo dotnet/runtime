@@ -499,7 +499,7 @@ namespace System.Linq.Expressions
             Out("new ");
             Out(node.Type.Name);
             Out('(');
-            var members = node.Members;
+            Collections.ObjectModel.ReadOnlyCollection<MemberInfo> members = node.Members;
             for (int i = 0; i < node.ArgumentCount; i++)
             {
                 if (i > 0)
@@ -718,7 +718,7 @@ namespace System.Linq.Expressions
         protected internal override Expression VisitExtension(Expression node)
         {
             // Prefer an overridden ToString, if available.
-            var toString = node.GetType().GetMethod("ToString", Type.EmptyTypes);
+            MethodInfo toString = node.GetType().GetMethod("ToString", Type.EmptyTypes);
             if (toString.DeclaringType != typeof(Expression) && !toString.IsStatic)
             {
                 Out(node.ToString());

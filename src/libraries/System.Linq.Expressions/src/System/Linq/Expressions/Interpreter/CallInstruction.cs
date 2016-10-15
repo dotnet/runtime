@@ -326,7 +326,7 @@ namespace System.Linq.Expressions.Interpreter
             object ret;
             if (_target.IsStatic)
             {
-                var args = GetArgs(frame, first, 0);
+                object[] args = GetArgs(frame, first, 0);
                 try
                 {
                     ret = _target.Invoke(null, args);
@@ -338,10 +338,10 @@ namespace System.Linq.Expressions.Interpreter
             }
             else
             {
-                var instance = frame.Data[first];
+                object instance = frame.Data[first];
                 NullCheck(instance);
 
-                var args = GetArgs(frame, first, 1);
+                object[] args = GetArgs(frame, first, 1);
 
                 LightLambda targetLambda;
                 if (TryGetLightLambdaTarget(instance, out targetLambda))
@@ -377,7 +377,7 @@ namespace System.Linq.Expressions.Interpreter
 
         protected object[] GetArgs(InterpretedFrame frame, int first, int skip)
         {
-            var count = _argumentCount - skip;
+            int count = _argumentCount - skip;
 
             if (count > 0)
             {

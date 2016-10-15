@@ -35,7 +35,7 @@ namespace System.Linq.Expressions.Compiler
         private static CompilationFlags UpdateEmitAsTailCallFlag(CompilationFlags flags, CompilationFlags newValue)
         {
             Debug.Assert(newValue == CompilationFlags.EmitAsTail || newValue == CompilationFlags.EmitAsMiddle || newValue == CompilationFlags.EmitAsNoTail);
-            var oldValue = flags & CompilationFlags.EmitAsTailCallMask;
+            CompilationFlags oldValue = flags & CompilationFlags.EmitAsTailCallMask;
             return flags ^ oldValue | newValue;
         }
 
@@ -45,7 +45,7 @@ namespace System.Linq.Expressions.Compiler
         private static CompilationFlags UpdateEmitExpressionStartFlag(CompilationFlags flags, CompilationFlags newValue)
         {
             Debug.Assert(newValue == CompilationFlags.EmitExpressionStart || newValue == CompilationFlags.EmitNoExpressionStart);
-            var oldValue = flags & CompilationFlags.EmitExpressionStartMask;
+            CompilationFlags oldValue = flags & CompilationFlags.EmitExpressionStartMask;
             return flags ^ oldValue | newValue;
         }
 
@@ -55,7 +55,7 @@ namespace System.Linq.Expressions.Compiler
         private static CompilationFlags UpdateEmitAsTypeFlag(CompilationFlags flags, CompilationFlags newValue)
         {
             Debug.Assert(newValue == CompilationFlags.EmitAsDefaultType || newValue == CompilationFlags.EmitAsVoidType);
-            var oldValue = flags & CompilationFlags.EmitAsTypeMask;
+            CompilationFlags oldValue = flags & CompilationFlags.EmitAsTypeMask;
             return flags ^ oldValue | newValue;
         }
 
@@ -192,7 +192,7 @@ namespace System.Linq.Expressions.Compiler
 
         private void EmitInlinedInvoke(InvocationExpression invoke, CompilationFlags flags)
         {
-            var lambda = invoke.LambdaOperand;
+            LambdaExpression lambda = invoke.LambdaOperand;
 
             // This is tricky: we need to emit the arguments outside of the
             // scope, but set them inside the scope. Fortunately, using the IL
@@ -237,7 +237,7 @@ namespace System.Linq.Expressions.Compiler
             // about write-backs or EmitAddress
             for (int i = 0, n = node.ArgumentCount; i < n; i++)
             {
-                var arg = node.GetArgument(i);
+                Expression arg = node.GetArgument(i);
                 EmitExpression(arg);
             }
 
@@ -248,7 +248,7 @@ namespace System.Linq.Expressions.Compiler
         {
             var index = (IndexExpression)node.Left;
 
-            var emitAs = flags & CompilationFlags.EmitAsTypeMask;
+            CompilationFlags emitAs = flags & CompilationFlags.EmitAsTypeMask;
 
             // Emit instance, if calling an instance method
             Type objectType = null;
@@ -261,7 +261,7 @@ namespace System.Linq.Expressions.Compiler
             // about write-backs or EmitAddress
             for (int i = 0, n = index.ArgumentCount; i < n; i++)
             {
-                var arg = index.GetArgument(i);
+                Expression arg = index.GetArgument(i);
                 EmitExpression(arg);
             }
 
@@ -291,7 +291,7 @@ namespace System.Linq.Expressions.Compiler
             if (node.Indexer != null)
             {
                 // For indexed properties, just call the getter
-                var method = node.Indexer.GetGetMethod(true);
+                MethodInfo method = node.Indexer.GetGetMethod(true);
                 EmitCall(objectType, method);
             }
             else
@@ -319,7 +319,7 @@ namespace System.Linq.Expressions.Compiler
             if (node.Indexer != null)
             {
                 // For indexed properties, just call the setter
-                var method = node.Indexer.GetSetMethod(true);
+                MethodInfo method = node.Indexer.GetSetMethod(true);
                 EmitCall(objectType, method);
             }
             else
@@ -586,17 +586,17 @@ namespace System.Linq.Expressions.Compiler
 
             var node = (IDynamicExpression)expr;
 
-            var site = node.CreateCallSite();
+            object site = node.CreateCallSite();
             Type siteType = site.GetType();
 
-            var invoke = node.DelegateType.GetMethod("Invoke");
+            MethodInfo invoke = node.DelegateType.GetMethod("Invoke");
 
             // site.Target.Invoke(site, args)
             EmitConstant(site, siteType);
 
             // Emit the temp as type CallSite so we get more reuse
             _ilg.Emit(OpCodes.Dup);
-            var siteTemp = GetLocal(siteType);
+            LocalBuilder siteTemp = GetLocal(siteType);
             _ilg.Emit(OpCodes.Stloc, siteTemp);
             _ilg.Emit(OpCodes.Ldfld, siteType.GetField("Target"));
             _ilg.Emit(OpCodes.Ldloc, siteTemp);
@@ -693,7 +693,7 @@ namespace System.Linq.Expressions.Compiler
         private void EmitVariableAssignment(BinaryExpression node, CompilationFlags flags)
         {
             var variable = (ParameterExpression)node.Left;
-            var emitAs = flags & CompilationFlags.EmitAsTypeMask;
+            CompilationFlags emitAs = flags & CompilationFlags.EmitAsTypeMask;
 
             EmitExpression(node.Right);
             if (emitAs != CompilationFlags.EmitAsVoidType)
@@ -782,7 +782,7 @@ namespace System.Linq.Expressions.Compiler
             EmitExpression(node.Right);
 
             LocalBuilder temp = null;
-            var emitAs = flags & CompilationFlags.EmitAsTypeMask;
+            CompilationFlags emitAs = flags & CompilationFlags.EmitAsTypeMask;
             if (emitAs != CompilationFlags.EmitAsVoidType)
             {
                 // save the value so we can return it

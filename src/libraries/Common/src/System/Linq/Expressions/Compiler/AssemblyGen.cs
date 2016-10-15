@@ -36,7 +36,7 @@ namespace System.Linq.Expressions.Compiler
             var name = new AssemblyName("Snippets");
 
             // mark the assembly transparent so that it works in partial trust:
-            var attributes = new[] {
+            CustomAttributeBuilder[] attributes = new[] {
                 new CustomAttributeBuilder(typeof(SecurityTransparentAttribute).GetConstructor(Type.EmptyTypes), Array.Empty<object>())
             };
 

@@ -183,7 +183,7 @@ namespace System.Linq.Expressions
         {
             if (!CanReduce) throw Error.MustBeReducible();
 
-            var newNode = Reduce();
+            Expression newNode = Reduce();
 
             // 1. Reduction must return a new, non-null node
             // 2. Reduction must return a new node whose result type can be assigned to the type of the original node
@@ -199,7 +199,7 @@ namespace System.Linq.Expressions
         /// <returns>The reduced expression.</returns>
         public Expression ReduceExtensions()
         {
-            var node = this;
+            Expression node = this;
             while (node.NodeType == ExpressionType.Extension)
             {
                 node = node.ReduceAndCheck();

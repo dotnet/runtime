@@ -166,7 +166,7 @@ namespace System.Linq.Expressions
             ContractUtils.RequiresNotNull(constructor.DeclaringType, nameof(constructor) + "." + nameof(constructor.DeclaringType));
             TypeUtils.ValidateType(constructor.DeclaringType, nameof(constructor));
             ValidateConstructor(constructor, nameof(constructor));
-            var argList = arguments.ToReadOnly();
+            ReadOnlyCollection<Expression> argList = arguments.ToReadOnly();
             ValidateArgumentTypes(constructor, ExpressionType.New, ref argList, nameof(constructor));
 
             return new NewExpression(constructor, argList, null);
@@ -186,8 +186,8 @@ namespace System.Linq.Expressions
             ContractUtils.RequiresNotNull(constructor.DeclaringType, nameof(constructor) + "." + nameof(constructor.DeclaringType));
             TypeUtils.ValidateType(constructor.DeclaringType, nameof(constructor));
             ValidateConstructor(constructor, nameof(constructor));
-            var memberList = members.ToReadOnly();
-            var argList = arguments.ToReadOnly();
+            ReadOnlyCollection<MemberInfo> memberList = members.ToReadOnly();
+            ReadOnlyCollection<Expression> argList = arguments.ToReadOnly();
             ValidateNewArgs(constructor, ref argList, ref memberList);
             return new NewExpression(constructor, argList, memberList);
         }

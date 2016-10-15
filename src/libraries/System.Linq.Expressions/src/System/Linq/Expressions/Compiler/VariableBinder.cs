@@ -156,7 +156,7 @@ namespace System.Linq.Expressions.Compiler
                 body = ((BlockExpression)node).Expressions;
             }
 
-            var currentScope = _scopes.Peek();
+            CompilerScope currentScope = _scopes.Peek();
 
             // A block body is mergeable if the body only contains one single block node containing variables,
             // and the child block has the same type as the parent block.

@@ -214,7 +214,7 @@ namespace System.Linq.Expressions
         protected internal virtual Expression VisitBlock(BlockExpression node)
         {
             Expression[] nodes = ExpressionVisitorUtils.VisitBlockExpressions(this, node);
-            var v = VisitAndConvert(node.Variables, "VisitBlock");
+            ReadOnlyCollection<ParameterExpression> v = VisitAndConvert(node.Variables, "VisitBlock");
 
             if (v == node.Variables && nodes == null)
             {

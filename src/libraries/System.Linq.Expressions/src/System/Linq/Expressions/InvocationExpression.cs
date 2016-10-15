@@ -482,9 +482,9 @@ namespace System.Linq.Expressions
 
             RequiresCanRead(expression, nameof(expression));
 
-            var method = GetInvokeMethod(expression);
+            MethodInfo method = GetInvokeMethod(expression);
 
-            var pis = GetParametersForValidation(method, ExpressionType.Invoke);
+            ParameterInfo[] pis = GetParametersForValidation(method, ExpressionType.Invoke);
 
             ValidateArgumentCount(method, ExpressionType.Invoke, 0, pis);
 
@@ -518,9 +518,9 @@ namespace System.Linq.Expressions
 
             RequiresCanRead(expression, nameof(expression));
 
-            var method = GetInvokeMethod(expression);
+            MethodInfo method = GetInvokeMethod(expression);
 
-            var pis = GetParametersForValidation(method, ExpressionType.Invoke);
+            ParameterInfo[] pis = GetParametersForValidation(method, ExpressionType.Invoke);
 
             ValidateArgumentCount(method, ExpressionType.Invoke, 1, pis);
 
@@ -558,9 +558,9 @@ namespace System.Linq.Expressions
             // NB: This method is marked as non-public to avoid public API additions at this point.
             RequiresCanRead(expression, nameof(expression));
 
-            var method = GetInvokeMethod(expression);
+            MethodInfo method = GetInvokeMethod(expression);
 
-            var pis = GetParametersForValidation(method, ExpressionType.Invoke);
+            ParameterInfo[] pis = GetParametersForValidation(method, ExpressionType.Invoke);
 
             ValidateArgumentCount(method, ExpressionType.Invoke, 2, pis);
 
@@ -603,9 +603,9 @@ namespace System.Linq.Expressions
 
             RequiresCanRead(expression, nameof(expression));
 
-            var method = GetInvokeMethod(expression);
+            MethodInfo method = GetInvokeMethod(expression);
 
-            var pis = GetParametersForValidation(method, ExpressionType.Invoke);
+            ParameterInfo[] pis = GetParametersForValidation(method, ExpressionType.Invoke);
 
             ValidateArgumentCount(method, ExpressionType.Invoke, 3, pis);
 
@@ -652,9 +652,9 @@ namespace System.Linq.Expressions
 
             RequiresCanRead(expression, nameof(expression));
 
-            var method = GetInvokeMethod(expression);
+            MethodInfo method = GetInvokeMethod(expression);
 
-            var pis = GetParametersForValidation(method, ExpressionType.Invoke);
+            ParameterInfo[] pis = GetParametersForValidation(method, ExpressionType.Invoke);
 
             ValidateArgumentCount(method, ExpressionType.Invoke, 4, pis);
 
@@ -705,9 +705,9 @@ namespace System.Linq.Expressions
 
             RequiresCanRead(expression, nameof(expression));
 
-            var method = GetInvokeMethod(expression);
+            MethodInfo method = GetInvokeMethod(expression);
 
-            var pis = GetParametersForValidation(method, ExpressionType.Invoke);
+            ParameterInfo[] pis = GetParametersForValidation(method, ExpressionType.Invoke);
 
             ValidateArgumentCount(method, ExpressionType.Invoke, 5, pis);
 
@@ -771,7 +771,7 @@ namespace System.Linq.Expressions
         ///<paramref name="arguments" /> does not contain the same number of elements as the list of parameters for the delegate represented by <paramref name="expression" />.</exception>
         public static InvocationExpression Invoke(Expression expression, IEnumerable<Expression> arguments)
         {
-            var argumentList = arguments as IReadOnlyList<Expression> ?? arguments.ToReadOnly();
+            IReadOnlyList<Expression> argumentList = arguments as IReadOnlyList<Expression> ?? arguments.ToReadOnly();
 
             switch (argumentList.Count)
             {
@@ -791,8 +791,8 @@ namespace System.Linq.Expressions
 
             RequiresCanRead(expression, nameof(expression));
 
-            var args = argumentList.ToReadOnly(); // Ensure is TrueReadOnlyCollection when count > 5. Returns fast if it already is.
-            var mi = GetInvokeMethod(expression);
+            ReadOnlyCollection<Expression> args = argumentList.ToReadOnly(); // Ensure is TrueReadOnlyCollection when count > 5. Returns fast if it already is.
+            MethodInfo mi = GetInvokeMethod(expression);
             ValidateArgumentTypes(mi, ExpressionType.Invoke, ref args, nameof(expression));
             return new InvocationExpressionN(expression, args, mi.ReturnType);
         }
