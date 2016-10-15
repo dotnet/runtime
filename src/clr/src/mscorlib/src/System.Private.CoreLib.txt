@@ -1405,6 +1405,7 @@ NotSupported_SignalAndWaitSTAThread = SignalAndWait on a STA thread is not suppo
 NotSupported_CreateInstanceWithTypeBuilder = CreateInstance cannot be used with an object of type TypeBuilder.
 NotSupported_NonUrlAttrOnMBR = UrlAttribute is the only attribute supported for MarshalByRefObject.
 NotSupported_ActivAttrOnNonMBR = Activation Attributes are not supported for types not deriving from MarshalByRefObject.
+NotSupported_ActivAttr = Activation Attributes are not supported. 
 NotSupported_ActivForCom = Activation Attributes not supported for COM Objects.
 NotSupported_NoCodepageData = No data is available for encoding {0}. For information on defining a custom encoding, see the documentation for the Encoding.RegisterProvider method.
 NotSupported_CodePage50229 = The ISO-2022-CN Encoding (Code page 50229) is not supported.
