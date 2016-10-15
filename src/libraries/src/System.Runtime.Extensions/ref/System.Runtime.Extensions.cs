@@ -831,7 +831,7 @@ namespace System
         public abstract bool Equals(string x, string y);
         public int GetHashCode(object obj) { throw null; }
         public abstract int GetHashCode(string obj);
-        int System.Collections.IComparer.Compare(object x, object y) { throw null; }
+        public int Compare(object x, object y) { throw null; }
         bool System.Collections.IEqualityComparer.Equals(object x, object y) { throw null; }
         int System.Collections.IEqualityComparer.GetHashCode(object obj) { throw null; }
     }
