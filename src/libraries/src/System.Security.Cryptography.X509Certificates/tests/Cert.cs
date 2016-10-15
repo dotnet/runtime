@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using Xunit;
-
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
     //
@@ -16,6 +11,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
     //
     internal static class Cert
     {
+        internal const X509KeyStorageFlags EphemeralIfPossible =
+#if netcoreapp11
+            X509KeyStorageFlags.EphemeralKeySet;
+#else
+            X509KeyStorageFlags.DefaultKeySet;
+#endif
         //
         // The Import() methods have an overload for each X509Certificate2Collection.Import() overload.
         //

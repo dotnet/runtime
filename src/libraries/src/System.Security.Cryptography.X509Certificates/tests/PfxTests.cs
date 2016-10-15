@@ -24,12 +24,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
-        public static void TestConstructor()
+        [Theory]
+        [MemberData(nameof(StorageFlags))]
+        public static void TestConstructor(X509KeyStorageFlags keyStorageFlags)
         {
             byte[] expectedThumbprint = "71cb4e2b02738ad44f8b382c93bd17ba665f9914".HexToByteArray();
 
-            using (var c = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
+            using (var c = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, keyStorageFlags))
             {
                 string subject = c.Subject;
                 Assert.Equal("CN=MyName", subject);
@@ -38,10 +39,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
-        public static void EnsurePrivateKeyPreferred()
+        [Theory]
+        [MemberData(nameof(StorageFlags))]
+        public static void EnsurePrivateKeyPreferred(X509KeyStorageFlags keyStorageFlags)
         {
-            using (var cert = new X509Certificate2(TestData.ChainPfxBytes, TestData.ChainPfxPassword))
+            using (var cert = new X509Certificate2(TestData.ChainPfxBytes, TestData.ChainPfxPassword, keyStorageFlags))
             {
                 // While checking cert.HasPrivateKey first is most matching of the test description, asserting
                 // on the certificate's simple name will provide a more diagnosable failure.
@@ -50,8 +52,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
-        public static void TestRawData()
+        [Theory]
+        [MemberData(nameof(StorageFlags))]
+        public static void TestRawData(X509KeyStorageFlags keyStorageFlags)
         {
             byte[] expectedRawData = (
                 "308201e530820152a0030201020210d5b5bc1c458a558845" +
@@ -76,17 +79,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 "fc24de6b2bd9a26b192b957304b89531e902ffc91b54b237" +
                 "bb228be8afcda26476").HexToByteArray();
 
-            using (var c = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
+            using (var c = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, keyStorageFlags))
             {
                 byte[] rawData = c.RawData;
                 Assert.Equal(expectedRawData, rawData);
             }
         }
 
-        [Fact]
-        public static void TestPrivateKey()
+        [Theory]
+        [MemberData(nameof(StorageFlags))]
+        public static void TestPrivateKey(X509KeyStorageFlags keyStorageFlags)
         {
-            using (var c = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
+            using (var c = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, keyStorageFlags))
             {
                 bool hasPrivateKey = c.HasPrivateKey;
                 Assert.True(hasPrivateKey);
@@ -100,16 +104,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
-        public static void ExportWithPrivateKey()
+        [Theory]
+        [MemberData(nameof(StorageFlags))]
+        public static void ExportWithPrivateKey(X509KeyStorageFlags keyStorageFlags)
         {
-            using (var cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.Exportable))
+            using (var cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.Exportable | keyStorageFlags))
             {
                 const string password = "NotVerySecret";
 
                 byte[] pkcs12 = cert.Export(X509ContentType.Pkcs12, password);
 
-                using (var certFromPfx = new X509Certificate2(pkcs12, password))
+                using (var certFromPfx = new X509Certificate2(pkcs12, password, keyStorageFlags))
                 {
                     Assert.True(certFromPfx.HasPrivateKey);
                     Assert.Equal(cert, certFromPfx);
@@ -117,10 +122,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
-        public static void ReadECDsaPrivateKey_WindowsPfx()
+        [Theory]
+        [MemberData(nameof(StorageFlags))]
+        public static void ReadECDsaPrivateKey_WindowsPfx(X509KeyStorageFlags keyStorageFlags)
         {
-            using (var cert = new X509Certificate2(TestData.ECDsaP256_DigitalSignature_Pfx_Windows, "Test"))
+            using (var cert = new X509Certificate2(TestData.ECDsaP256_DigitalSignature_Pfx_Windows, "Test", keyStorageFlags))
             using (ECDsa ecdsa = cert.GetECDsaPrivateKey())
             {
                 Assert.NotNull(ecdsa);
@@ -162,10 +168,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
-        public static void ReadECDsaPrivateKey_OpenSslPfx()
+        [Theory]
+        [MemberData(nameof(StorageFlags))]
+        public static void ReadECDsaPrivateKey_OpenSslPfx(X509KeyStorageFlags keyStorageFlags)
         {
-            using (var cert = new X509Certificate2(TestData.ECDsaP256_DigitalSignature_Pfx_OpenSsl, "Test"))
+            using (var cert = new X509Certificate2(TestData.ECDsaP256_DigitalSignature_Pfx_OpenSsl, "Test", keyStorageFlags))
             using (ECDsa ecdsa = cert.GetECDsaPrivateKey())
             {
                 Assert.NotNull(ecdsa);
@@ -188,6 +195,104 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+#if netcoreapp11
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void EphemeralImport_HasNoKeyName()
+        {
+            using (var cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.EphemeralKeySet))
+            using (RSA rsa = cert.GetRSAPrivateKey())
+            {
+                Assert.NotNull(rsa);
+
+                // While RSACng is not a guaranteed answer, it's currently the answer and we'd have to
+                // rewrite the rest of this test if it changed.
+                RSACng rsaCng = rsa as RSACng;
+                Assert.NotNull(rsaCng);
+
+                CngKey key = rsaCng.Key;
+                Assert.NotNull(key);
+
+                Assert.True(key.IsEphemeral, "key.IsEphemeral");
+                Assert.Null(key.KeyName);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void CollectionEphemeralImport_HasNoKeyName()
+        {
+            using (var importedCollection = Cert.Import(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.EphemeralKeySet))
+            {
+                X509Certificate2 cert = importedCollection.Collection[0];
+
+                using (RSA rsa = cert.GetRSAPrivateKey())
+                {
+                    Assert.NotNull(rsa);
+
+                    // While RSACng is not a guaranteed answer, it's currently the answer and we'd have to
+                    // rewrite the rest of this test if it changed.
+                    RSACng rsaCng = rsa as RSACng;
+                    Assert.NotNull(rsaCng);
+
+                    CngKey key = rsaCng.Key;
+                    Assert.NotNull(key);
+
+                    Assert.True(key.IsEphemeral, "key.IsEphemeral");
+                    Assert.Null(key.KeyName);
+                }
+            }
+        }
+#endif
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void PerphemeralImport_HasKeyName()
+        {
+            using (var cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.DefaultKeySet))
+            using (RSA rsa = cert.GetRSAPrivateKey())
+            {
+                Assert.NotNull(rsa);
+
+                // While RSACng is not a guaranteed answer, it's currently the answer and we'd have to
+                // rewrite the rest of this test if it changed.
+                RSACng rsaCng = rsa as RSACng;
+                Assert.NotNull(rsaCng);
+
+                CngKey key = rsaCng.Key;
+                Assert.NotNull(key);
+
+                Assert.False(key.IsEphemeral, "key.IsEphemeral");
+                Assert.NotNull(key.KeyName);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void CollectionPerphemeralImport_HasKeyName()
+        {
+            using (var importedCollection = Cert.Import(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.DefaultKeySet))
+            {
+                X509Certificate2 cert = importedCollection.Collection[0];
+
+                using (RSA rsa = cert.GetRSAPrivateKey())
+                {
+                    Assert.NotNull(rsa);
+
+                    // While RSACng is not a guaranteed answer, it's currently the answer and we'd have to
+                    // rewrite the rest of this test if it changed.
+                    RSACng rsaCng = rsa as RSACng;
+                    Assert.NotNull(rsaCng);
+
+                    CngKey key = rsaCng.Key;
+                    Assert.NotNull(key);
+
+                    Assert.False(key.IsEphemeral, "key.IsEphemeral");
+                    Assert.NotNull(key.KeyName);
+                }
+            }
+        }
+
         // Keep the ECDsaCng-ness contained within this helper method so that it doesn't trigger a
         // FileNotFoundException on Unix.
         private static void AssertEccAlgorithm(ECDsa ecdsa, string algorithmId)
@@ -197,6 +302,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             if (cng != null)
             {
                 Assert.Equal(algorithmId, cng.Key.Algorithm.Algorithm);
+            }
+        }
+
+        public static IEnumerable<object[]> StorageFlags
+        {
+            get
+            {
+                yield return new object[] { X509KeyStorageFlags.DefaultKeySet };
+
+#if netcoreapp11
+                yield return new object[] { X509KeyStorageFlags.EphemeralKeySet };
+#endif
             }
         }
 

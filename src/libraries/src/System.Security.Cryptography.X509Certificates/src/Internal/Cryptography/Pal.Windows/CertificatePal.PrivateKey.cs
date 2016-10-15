@@ -60,10 +60,11 @@ namespace Internal.Cryptography.Pal
 
         private T GetPrivateKey<T>(Func<CspParameters, T> createCsp, Func<CngKey, T> createCng) where T : AsymmetricAlgorithm
         {
-            SafeNCryptKeyHandle ncryptKey = TryAcquireCngPrivateKey(CertContext);
+            CngKeyHandleOpenOptions cngHandleOptions;
+            SafeNCryptKeyHandle ncryptKey = TryAcquireCngPrivateKey(CertContext, out cngHandleOptions);
             if (ncryptKey != null)
             {
-                CngKey cngKey = CngKey.Open(ncryptKey, CngKeyHandleOpenOptions.None);
+                CngKey cngKey = CngKey.Open(ncryptKey, cngHandleOptions);
                 return createCng(cngKey);
             }
  
@@ -98,46 +99,81 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        private static SafeNCryptKeyHandle TryAcquireCngPrivateKey(SafeCertContextHandle certificateContext)
+        private static SafeNCryptKeyHandle TryAcquireCngPrivateKey(
+            SafeCertContextHandle certificateContext,
+            out CngKeyHandleOpenOptions handleOptions)
         {
             Debug.Assert(certificateContext != null, "certificateContext != null");
             Debug.Assert(!certificateContext.IsClosed && !certificateContext.IsInvalid,
                          "!certificateContext.IsClosed && !certificateContext.IsInvalid");
 
+            IntPtr privateKeyPtr;
+
+            // If the certificate has a key handle instead of a key prov info, return the
+            // ephemeral key
+            {
+                int cbData = IntPtr.Size;
+
+                if (Interop.crypt32.CertGetCertificateContextProperty(
+                    certificateContext,
+                    CertContextPropId.CERT_NCRYPT_KEY_HANDLE_PROP_ID,
+                    out privateKeyPtr,
+                    ref cbData))
+                {
+                    handleOptions = CngKeyHandleOpenOptions.EphemeralKey;
+                    return new SafeNCryptKeyHandle(privateKeyPtr, certificateContext);
+                }
+            }
+
             bool freeKey = true;
             SafeNCryptKeyHandle privateKey = null;
+            handleOptions = CngKeyHandleOpenOptions.None;
             try
             {
                 int keySpec = 0;
                 if (!Interop.crypt32.CryptAcquireCertificatePrivateKey(
-                        certificateContext,
-                        CryptAcquireFlags.CRYPT_ACQUIRE_ONLY_NCRYPT_KEY_FLAG,
-                        IntPtr.Zero,
-                        out privateKey,
-                        out keySpec,
-                        out freeKey))
+                    certificateContext,
+                    CryptAcquireFlags.CRYPT_ACQUIRE_ONLY_NCRYPT_KEY_FLAG,
+                    IntPtr.Zero,
+                    out privateKey,
+                    out keySpec,
+                    out freeKey))
                 {
                     int dwErrorCode = Marshal.GetLastWin32Error();
+
+                    // The documentation for CryptAcquireCertificatePrivateKey says that freeKey
+                    // should already be false if "key acquisition fails", and it can be presumed
+                    // that privateKey was set to 0.  But, just in case:
+                    freeKey = false;
+                    privateKey?.SetHandleAsInvalid();
                     return null;
+                }
+
+                // It is very unlikely that Windows will tell us !freeKey other than when reporting failure,
+                // because we set neither CRYPT_ACQUIRE_CACHE_FLAG nor CRYPT_ACQUIRE_USE_PROV_INFO_FLAG, which are
+                // currently the only two success situations documented. However, any !freeKey response means the
+                // key's lifetime is tied to that of the certificate, so re-register the handle as a child handle
+                // of the certificate.
+                if (!freeKey && privateKey != null && !privateKey.IsInvalid)
+                {
+                    var newKeyHandle = new SafeNCryptKeyHandle(privateKey.DangerousGetHandle(), certificateContext);
+                    privateKey.SetHandleAsInvalid();
+                    privateKey = newKeyHandle;
+                    freeKey = true;
                 }
 
                 return privateKey;
             }
-            finally
+            catch
             {
-                // If we're not supposed to release the key handle, then we need to bump the reference count
-                // on the safe handle to correspond to the reference that Windows is holding on to.  This will
-                // prevent the CLR from freeing the object handle.
-                // 
-                // This is certainly not the ideal way to solve this problem - it would be better for
-                // SafeNCryptKeyHandle to maintain an internal bool field that we could toggle here and
-                // have that suppress the release when the CLR calls the ReleaseHandle override.  However, that
-                // field does not currently exist, so we'll use this hack instead.
+                // If we aren't supposed to free the key, and we're not returning it,
+                // just tell the SafeHandle to not free itself.
                 if (privateKey != null && !freeKey)
                 {
-                    bool addedRef = false;
-                    privateKey.DangerousAddRef(ref addedRef);
+                    privateKey.SetHandleAsInvalid();
                 }
+
+                throw;
             }
         }
 
