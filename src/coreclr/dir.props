@@ -155,11 +155,12 @@
     <!-- Central place to set the versions of all nuget packages produced in the repo -->
     <PackageVersion Condition="'$(PackageVersion)' == ''">1.2.0</PackageVersion>
     <WindowsAPISetPackageVersion>1.0.1</WindowsAPISetPackageVersion>
-    <Win8ArmPackageVersion>$(PackageVersion)</Win8ArmPackageVersion>
+    <Win8ArmPackageVersion>$(PackageVersion)-$(ExternalExpectedPrerelease)</Win8ArmPackageVersion>
 
     <!-- Set the boolean below to true to generate packages with stabilized versions -->
     <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
     <StableVersion Condition="'$(StabilizePackageVersion)' == 'true' and '$(StableVersion)' == ''">$(PackageVersion)</StableVersion>
+    <Win8ArmPackageVersion Condition="'$(StabilizePackageVersion)' == 'true'">$(StableVersion)</Win8ArmPackageVersion>
 
     <!-- On Windows, MSbuild still runs against Desktop FX while it runs on .NET Core on non-Windows. this requires
          pulling in different packaging dependencies.
