@@ -9,6 +9,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.7_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.7_Release|AnyCPU' " />
   <ItemGroup>
+    <Compile Include="CodeCollections\TempFileCollectionTests.cs" />
     <Compile Include="CodeExpressions\CodeObjectCreateExpressionTests.cs" />
     <Compile Include="CodeExpressions\CodeParameterDeclarationExpressionTests.cs" />
     <Compile Include="CodeExpressions\CodeMethodReferenceExpressionTests.cs" />
@@ -75,6 +76,18 @@
     <Compile Include="CSharpCodeGenerationTests.cs" />
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
       <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IList.NonGeneric.Tests.cs">
+      <Link>Common\System\Collections\IList.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\ICollection.NonGeneric.Tests.cs">
+      <Link>Common\System\Collections\ICollection.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.NonGeneric.Tests.cs">
+      <Link>Common\System\Collections\IEnumerable.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\TestBase.NonGeneric.cs">
+      <Link>Common\System\Collections\TestBase.NonGeneric.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
