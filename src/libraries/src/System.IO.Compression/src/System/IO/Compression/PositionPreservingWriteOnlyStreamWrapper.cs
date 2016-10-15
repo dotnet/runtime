@@ -37,7 +37,7 @@ namespace System.IO.Compression
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
         {
-            _position += offset;
+            _position += count;
             return _stream.BeginWrite(buffer, offset, count, callback, state);
         }
 
@@ -51,7 +51,7 @@ namespace System.IO.Compression
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            _position += offset;
+            _position += count;
             return _stream.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
