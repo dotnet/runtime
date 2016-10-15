@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace System.Xml
 {
-    internal interface IXmlTextWriterInitializer
+    public interface IXmlTextWriterInitializer
     {
         void SetOutput(Stream stream, Encoding encoding, bool ownsStream);
     }

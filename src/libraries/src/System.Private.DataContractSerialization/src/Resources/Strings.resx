@@ -1101,4 +1101,52 @@
   <data name="TypeNotSerializableViaReflection" xml:space="preserve">
     <value>Cannot serialize type {0} via reflection. Required type metadata was missing.</value>
   </data> 
+  <data name="DupContractInDataContractSet" xml:space="preserve">
+    <value>DataContract with name '{0}' and namespace '{1}' cannot be added to DataContractSet since another contract with the same data contract name is already present and the contracts are not equivalent.</value>
+  </data>
+  <data name="DupTypeContractInDataContractSet" xml:space="preserve">
+    <value>DataContract for type '{0}' cannot be added to DataContractSet since type '{1}' with the same data contract name '{2}' in namespace '{3}' is already present and the contracts are not equivalent.</value>
+  </data>
+  <data name="ReferencedTypesCannotContainNull" xml:space="preserve">
+    <value>ReferencedTypes specified via ImportOptions must contain valid types. Cannot contain null.</value>
+  </data>
+  <data name="ReferencedCollectionTypesCannotContainNull" xml:space="preserve">
+    <value>ReferencedCollectionTypes specified via ImportOptions must contain valid types. Cannot contain null.</value>
+  </data>
+  <data name="ReferencedTypeMatchingMessage" xml:space="preserve">
+    <value>(matching)</value>
+  </data>
+  <data name="ReferencedTypeNotMatchingMessage" xml:space="preserve">
+    <value>(not matching)</value>
+  </data>
+  <data name="AmbiguousReferencedTypes1" xml:space="preserve">
+    <value>List of referenced types contains more than one type with same data contract name. Need to exclude all but one of the following types. Only matching types can be valid references: {0}</value>
+  </data>
+  <data name="AmbiguousReferencedTypes3" xml:space="preserve">
+    <value>List of referenced types contains more than one type with data contract name '{0}' in namespace '{1}'. Need to exclude all but one of the following types. Only matching types can be valid references: {2}</value>
+  </data>
+  <data name="AmbiguousReferencedCollectionTypes1" xml:space="preserve">
+    <value>List of referenced collection types contains more than one type with same data contract name. Include only one of the following types. Only matching types can be valid references: {0}</value>
+  </data>
+  <data name="AmbiguousReferencedCollectionTypes3" xml:space="preserve">
+    <value>List of referenced collection types contains more than one type with data contract name '{0}' in namespace '{1}'. Include only one of the following types. Only matching types can be valid references: {2}</value>
+  </data>
+  <data name="GenericTypeNotExportable" xml:space="preserve">
+    <value>Type '{0}' cannot be exported as a schema type because it is an open generic type. You can only export a generic type if all its generic parameter types are actual types.</value>
+  </data>
+  <data name="CannotExportNullAssembly" xml:space="preserve">
+    <value>Cannot export null assembly provided via '{0}' parameter.</value>
+  </data>
+  <data name="CannotExportNullKnownType" xml:space="preserve">
+    <value>Cannot export null type provided via KnownTypesCollection.</value>
+  </data>
+  <data name="CannotExportNullType" xml:space="preserve">
+    <value>Cannot export null type provided via '{0}' parameter.</value>
+  </data>
+  <data name="QueryGeneratorPathToMemberNotFound" xml:space="preserve">
+    <value>Cannot find a path to the member when generating the XPath query.</value>
+  </data>
+  <data name="XmlInvalidStream" xml:space="preserve">
+    <value>Stream returned by IStreamProvider cannot be null.</value>
+  </data>
 </root>

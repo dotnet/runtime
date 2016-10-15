@@ -20,7 +20,7 @@ namespace System.Xml
     {
         internal const int MaxInitialArrayLength = 65535;
 
-        static public XmlDictionaryReader CreateDictionaryReader(XmlReader reader)
+        public static XmlDictionaryReader CreateDictionaryReader(XmlReader reader)
         {
             if (reader == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("reader");
@@ -54,11 +54,19 @@ namespace System.Xml
 
         public static XmlDictionaryReader CreateBinaryReader(byte[] buffer, int offset, int count, IXmlDictionary dictionary, XmlDictionaryReaderQuotas quotas, XmlBinaryReaderSession session)
         {
-            XmlBinaryReader reader = new XmlBinaryReader();
-            reader.SetInput(buffer, offset, count, dictionary, quotas, session);
-            return reader;
+            return CreateBinaryReader(buffer, offset, count, dictionary, quotas, session, onClose: null);
         }
 
+        public static XmlDictionaryReader CreateBinaryReader(byte[] buffer, int offset, int count,
+                                                             IXmlDictionary dictionary,
+                                                             XmlDictionaryReaderQuotas quotas,
+                                                             XmlBinaryReaderSession session,
+                                                             OnXmlDictionaryReaderClose onClose)
+        {
+            XmlBinaryReader reader = new XmlBinaryReader();
+            reader.SetInput(buffer, offset, count, dictionary, quotas, session, onClose);
+            return reader;
+        }
 
         public static XmlDictionaryReader CreateBinaryReader(Stream stream, XmlDictionaryReaderQuotas quotas)
         {
@@ -72,36 +80,105 @@ namespace System.Xml
 
         public static XmlDictionaryReader CreateBinaryReader(Stream stream, IXmlDictionary dictionary, XmlDictionaryReaderQuotas quotas, XmlBinaryReaderSession session)
         {
+            return CreateBinaryReader(stream, dictionary, quotas, session, onClose: null);
+        }
+
+        public static XmlDictionaryReader CreateBinaryReader(Stream stream,
+                                                             IXmlDictionary dictionary,
+                                                             XmlDictionaryReaderQuotas quotas,
+                                                             XmlBinaryReaderSession session,
+                                                             OnXmlDictionaryReaderClose onClose)
+        {
             XmlBinaryReader reader = new XmlBinaryReader();
-            reader.SetInput(stream, dictionary, quotas, session);
+            reader.SetInput(stream, dictionary, quotas, session, onClose);
             return reader;
         }
 
-        static public XmlDictionaryReader CreateTextReader(byte[] buffer, XmlDictionaryReaderQuotas quotas)
+        public static XmlDictionaryReader CreateTextReader(byte[] buffer, XmlDictionaryReaderQuotas quotas)
         {
             if (buffer == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("buffer");
             return CreateTextReader(buffer, 0, buffer.Length, quotas);
         }
 
-        static public XmlDictionaryReader CreateTextReader(byte[] buffer, int offset, int count, XmlDictionaryReaderQuotas quotas)
+        public static XmlDictionaryReader CreateTextReader(byte[] buffer, int offset, int count, XmlDictionaryReaderQuotas quotas)
         {
-            MemoryStream ms = new MemoryStream(buffer, offset, count);
-            return CreateTextReader(ms, quotas);
+            return CreateTextReader(buffer, offset, count, null, quotas, null);
         }
 
+        public static XmlDictionaryReader CreateTextReader(byte[] buffer, int offset, int count,
+                                                           Encoding encoding,
+                                                           XmlDictionaryReaderQuotas quotas,
+                                                           OnXmlDictionaryReaderClose onClose)
+        {
+            XmlUTF8TextReader reader = new XmlUTF8TextReader();
+            reader.SetInput(buffer, offset, count, encoding, quotas, onClose);
+            return reader;
+        }
 
-        static public XmlDictionaryReader CreateTextReader(Stream stream, XmlDictionaryReaderQuotas quotas)
+        public static XmlDictionaryReader CreateTextReader(Stream stream, XmlDictionaryReaderQuotas quotas)
         {
             return CreateTextReader(stream, null, quotas, null);
         }
 
-        static public XmlDictionaryReader CreateTextReader(Stream stream, Encoding encoding,
+        public static XmlDictionaryReader CreateTextReader(Stream stream, Encoding encoding,
                                                            XmlDictionaryReaderQuotas quotas,
                                                            OnXmlDictionaryReaderClose onClose)
         {
             XmlUTF8TextReader reader = new XmlUTF8TextReader();
             reader.SetInput(stream, encoding, quotas, onClose);
+            return reader;
+        }
+
+        public static XmlDictionaryReader CreateMtomReader(Stream stream, Encoding encoding, XmlDictionaryReaderQuotas quotas)
+        {
+            if (encoding == null)
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("encoding");
+
+            return CreateMtomReader(stream, new Encoding[1] { encoding }, quotas);
+        }
+
+        public static XmlDictionaryReader CreateMtomReader(Stream stream, Encoding[] encodings, XmlDictionaryReaderQuotas quotas)
+        {
+            return CreateMtomReader(stream, encodings, null, quotas);
+        }
+
+        public static XmlDictionaryReader CreateMtomReader(Stream stream, Encoding[] encodings, string contentType, XmlDictionaryReaderQuotas quotas)
+        {
+            return CreateMtomReader(stream, encodings, contentType, quotas, int.MaxValue, null);
+        }
+
+        public static XmlDictionaryReader CreateMtomReader(Stream stream, Encoding[] encodings, string contentType,
+            XmlDictionaryReaderQuotas quotas, int maxBufferSize, OnXmlDictionaryReaderClose onClose)
+        {
+            XmlMtomReader reader = new XmlMtomReader();
+            reader.SetInput(stream, encodings, contentType, quotas, maxBufferSize, onClose);
+            return reader;
+        }
+
+        public static XmlDictionaryReader CreateMtomReader(byte[] buffer, int offset, int count, Encoding encoding, XmlDictionaryReaderQuotas quotas)
+        {
+            if (encoding == null)
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("encoding");
+
+            return CreateMtomReader(buffer, offset, count, new Encoding[1] { encoding }, quotas);
+        }
+
+        public static XmlDictionaryReader CreateMtomReader(byte[] buffer, int offset, int count, Encoding[] encodings, XmlDictionaryReaderQuotas quotas)
+        {
+            return CreateMtomReader(buffer, offset, count, encodings, null, quotas);
+        }
+
+        public static XmlDictionaryReader CreateMtomReader(byte[] buffer, int offset, int count, Encoding[] encodings, string contentType, XmlDictionaryReaderQuotas quotas)
+        {
+            return CreateMtomReader(buffer, offset, count, encodings, contentType, quotas, int.MaxValue, null);
+        }
+
+        public static XmlDictionaryReader CreateMtomReader(byte[] buffer, int offset, int count, Encoding[] encodings, string contentType,
+            XmlDictionaryReaderQuotas quotas, int maxBufferSize, OnXmlDictionaryReaderClose onClose)
+        {
+            XmlMtomReader reader = new XmlMtomReader();
+            reader.SetInput(buffer, offset, count, encodings, contentType, quotas, maxBufferSize, onClose);
             return reader;
         }
 
@@ -384,6 +461,52 @@ namespace System.Xml
             return result;
         }
 
+        public override string ReadString()
+        {
+            return ReadString(Quotas.MaxStringContentLength);
+        }
+
+        protected string ReadString(int maxStringContentLength)
+        {
+            if (this.ReadState != ReadState.Interactive)
+                return string.Empty;
+            if (this.NodeType != XmlNodeType.Element)
+                MoveToElement();
+            if (this.NodeType == XmlNodeType.Element)
+            {
+                if (this.IsEmptyElement)
+                    return string.Empty;
+                if (!Read())
+                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.XmlInvalidOperation)));
+                if (this.NodeType == XmlNodeType.EndElement)
+                    return string.Empty;
+            }
+            StringBuilder sb = null;
+            string result = string.Empty;
+            while (IsTextNode(this.NodeType))
+            {
+                string value = this.Value;
+                if (result.Length == 0)
+                {
+                    result = value;
+                }
+                else
+                {
+                    if (sb == null)
+                        sb = new StringBuilder(result);
+                    if (sb.Length > maxStringContentLength - value.Length)
+                        XmlExceptionHelper.ThrowMaxStringContentLengthExceeded(this, maxStringContentLength);
+                    sb.Append(value);
+                }
+                if (!Read())
+                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.XmlInvalidOperation)));
+            }
+            if (sb != null)
+                result = sb.ToString();
+            if (result.Length > maxStringContentLength)
+                XmlExceptionHelper.ThrowMaxStringContentLengthExceeded(this, maxStringContentLength);
+            return result;
+        }
 
         public virtual byte[] ReadContentAsBinHex()
         {
@@ -713,7 +836,7 @@ namespace System.Xml
             return value;
         }
 
-        public virtual DateTime ReadElementContentAsDateTime()
+        public override DateTime ReadElementContentAsDateTime()
         {
             bool isEmptyElement = IsStartElement() && IsEmptyElement;
             DateTime value;
@@ -868,6 +991,12 @@ namespace System.Xml
             }
 
             return buffer;
+        }
+
+        public virtual void GetNonAtomizedNames(out string localName, out string namespaceUri)
+        {
+            localName = LocalName;
+            namespaceUri = NamespaceURI;
         }
 
         public virtual bool TryGetLocalNameAsDictionaryString(out XmlDictionaryString localName)
@@ -1197,7 +1326,7 @@ namespace System.Xml
             return ReadArray(XmlDictionaryString.GetString(localName), XmlDictionaryString.GetString(namespaceUri), array, offset, count);
         }
 
-        public virtual void Close()
+        public override void Close()
         {
             base.Dispose();
         }
@@ -1540,7 +1669,7 @@ namespace System.Xml
                 }
             }
 
-            public DateTime ReadContentAsDateTime()
+            public override DateTime ReadContentAsDateTime()
             {
                 try
                 {

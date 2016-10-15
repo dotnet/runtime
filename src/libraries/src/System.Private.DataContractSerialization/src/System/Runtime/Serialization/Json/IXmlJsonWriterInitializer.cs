@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Serialization.Json
 {
-    internal interface IXmlJsonWriterInitializer
+    public interface IXmlJsonWriterInitializer
     {
         void SetOutput(Stream stream, Encoding encoding, bool ownsStream);
     }

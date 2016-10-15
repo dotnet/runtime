@@ -1,6 +1,6 @@
 {
   "frameworks": {
-    "netstandard1.3": {
+    "netstandard1.7": {
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.2.0-beta-24613-01",
         "System.Runtime": "4.4.0-beta-24613-01",
@@ -21,10 +21,10 @@
         "System.Threading.Tasks.Extensions": "4.4.0-beta-24613-01"
       },
       "imports": [
-        "dotnet5.4"
+        "dotnet5.8"
       ]
     },
-    "net46": {
+    "net463": {
       "dependencies": {
         "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1",
         "System.Runtime.Serialization.Primitives": "4.4.0-beta-24613-01"

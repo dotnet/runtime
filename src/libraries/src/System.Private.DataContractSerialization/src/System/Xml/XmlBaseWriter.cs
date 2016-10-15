@@ -139,7 +139,7 @@ namespace System.Xml
                 ThrowClosed();
 
             if (ns == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("ns");
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(ns));
 
             if (_writeState != WriteState.Element)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.XmlInvalidWriteState, "WriteXmlnsAttribute", WriteState.ToString())));
@@ -164,7 +164,7 @@ namespace System.Xml
                 ThrowClosed();
 
             if (ns == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("ns");
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(ns));
 
             if (_writeState != WriteState.Element)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.XmlInvalidWriteState, "WriteXmlnsAttribute", WriteState.ToString())));
@@ -983,7 +983,7 @@ namespace System.Xml
                 ThrowClosed();
 
             if (whitespace == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("whitespace");
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(whitespace));
 
             for (int i = 0; i < whitespace.Length; ++i)
             {
@@ -1028,7 +1028,7 @@ namespace System.Xml
                 ThrowClosed();
 
             if (value == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("value");
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(value));
 
             if (value.Value.Length > 0)
             {
@@ -1402,7 +1402,7 @@ namespace System.Xml
             WriteString(value);
         }
 
-        public void WriteValue(DateTime value)
+        public override void WriteValue(DateTime value)
         {
             if (IsClosed)
                 ThrowClosed();
@@ -1425,7 +1425,7 @@ namespace System.Xml
                 ThrowClosed();
 
             if (value == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("value");
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(value));
 
             FlushBase64();
             if (_attributeValue != null)
