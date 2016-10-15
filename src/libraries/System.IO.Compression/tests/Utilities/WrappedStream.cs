@@ -83,7 +83,12 @@ internal class WrappedStream : Stream
 
     public override long Position
     {
-        get { return _baseStream.Position; }
+        get
+        {
+            if (CanSeek)
+                return _baseStream.Position;
+            throw new NotSupportedException("This stream does not support seeking");
+        }
         set
         {
             if (CanSeek)
