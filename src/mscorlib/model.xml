@@ -2178,6 +2178,7 @@
       <Member Name="Collect(System.Int32,System.GCCollectionMode,System.Boolean)" />
       <Member Name="Collect(System.Int32,System.GCCollectionMode,System.Boolean,System.Boolean)" />
       <Member Name="CollectionCount(System.Int32)" />
+      <Member Name="EndNoGCRegion" />
       <Member Name="GetAllocatedBytesForCurrentThread" />
       <Member Name="GetGeneration(System.Object)" />
       <Member Name="GetGeneration(System.WeakReference)" />
@@ -2188,6 +2189,10 @@
       <Member Name="RemoveMemoryPressure(System.Int64)" />
       <Member Name="ReRegisterForFinalize(System.Object)" />
       <Member Name="SuppressFinalize(System.Object)" />
+      <Member Name="TryStartNoGCRegion(System.Int64)" />
+      <Member Name="TryStartNoGCRegion(System.Int64,System.Boolean)" />
+      <Member Name="TryStartNoGCRegion(System.Int64,System.Int64)" />
+      <Member Name="TryStartNoGCRegion(System.Int64,System.Int64,System.Boolean)" />
       <Member Name="WaitForFullGCApproach" />
       <Member Name="WaitForFullGCApproach(System.Int32)" />
       <Member Name="WaitForFullGCComplete" />
