@@ -139,7 +139,7 @@ namespace System.Linq.Expressions
             ContractUtils.RequiresNotNull(newExpression, nameof(newExpression));
             ContractUtils.RequiresNotNull(initializers, nameof(initializers));
 
-            var initializerlist = initializers.ToReadOnly();
+            ReadOnlyCollection<Expression> initializerlist = initializers.ToReadOnly();
             if (initializerlist.Count == 0)
             {
                 return new ListInitExpression(newExpression, EmptyReadOnlyCollection<ElementInit>.Instance);
@@ -177,7 +177,7 @@ namespace System.Linq.Expressions
             ContractUtils.RequiresNotNull(newExpression, nameof(newExpression));
             ContractUtils.RequiresNotNull(initializers, nameof(initializers));
 
-            var initializerlist = initializers.ToReadOnly();
+            ReadOnlyCollection<Expression> initializerlist = initializers.ToReadOnly();
             ElementInit[] initList = new ElementInit[initializerlist.Count];
             for (int i = 0; i < initializerlist.Count; i++)
             {
@@ -218,7 +218,7 @@ namespace System.Linq.Expressions
         {
             ContractUtils.RequiresNotNull(newExpression, nameof(newExpression));
             ContractUtils.RequiresNotNull(initializers, nameof(initializers));
-            var initializerlist = initializers.ToReadOnly();
+            ReadOnlyCollection<ElementInit> initializerlist = initializers.ToReadOnly();
             ValidateListInitArgs(newExpression.Type, initializerlist, nameof(newExpression));
             return new ListInitExpression(newExpression, initializerlist);
         }

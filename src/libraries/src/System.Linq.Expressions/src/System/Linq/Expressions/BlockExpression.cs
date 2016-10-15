@@ -866,18 +866,18 @@ namespace System.Linq.Expressions
         public static BlockExpression Block(IEnumerable<ParameterExpression> variables, IEnumerable<Expression> expressions)
         {
             ContractUtils.RequiresNotNull(expressions, nameof(expressions));
-            var variableList = variables.ToReadOnly();
+            ReadOnlyCollection<ParameterExpression> variableList = variables.ToReadOnly();
 
             if (variableList.Count == 0)
             {
-                var expressionList = expressions as IReadOnlyList<Expression> ?? expressions.ToReadOnly();
+                IReadOnlyList<Expression> expressionList = expressions as IReadOnlyList<Expression> ?? expressions.ToReadOnly();
                 RequiresCanRead(expressionList, nameof(expressions));
 
                 return GetOptimizedBlockExpression(expressionList);
             }
             else
             {
-                var expressionList = expressions.ToReadOnly();
+                ReadOnlyCollection<Expression> expressionList = expressions.ToReadOnly();
                 RequiresCanRead(expressionList, nameof(expressions));
 
                 return BlockCore(null, variableList, expressionList);
@@ -896,18 +896,18 @@ namespace System.Linq.Expressions
             ContractUtils.RequiresNotNull(type, nameof(type));
             ContractUtils.RequiresNotNull(expressions, nameof(expressions));
 
-            var expressionList = expressions.ToReadOnly();
+            ReadOnlyCollection<Expression> expressionList = expressions.ToReadOnly();
             RequiresCanRead(expressionList, nameof(expressions));
 
-            var variableList = variables.ToReadOnly();
+            ReadOnlyCollection<ParameterExpression> variableList = variables.ToReadOnly();
 
             if (variableList.Count == 0 && expressionList.Count != 0)
             {
-                var expressionCount = expressionList.Count;
+                int expressionCount = expressionList.Count;
 
                 if (expressionCount != 0)
                 {
-                    var lastExpression = expressionList[expressionCount - 1];
+                    Expression lastExpression = expressionList[expressionCount - 1];
 
                     if (lastExpression.Type == type)
                     {

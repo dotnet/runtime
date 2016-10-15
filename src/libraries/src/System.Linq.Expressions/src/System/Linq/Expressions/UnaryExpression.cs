@@ -186,7 +186,7 @@ namespace System.Linq.Expressions
             // temp = var
             // var = op(var)
             // temp
-            var temp = Parameter(_operand.Type, null);
+            ParameterExpression temp = Parameter(_operand.Type, null);
             return Block(
                 new[] { temp },
                 Assign(temp, _operand),
@@ -205,8 +205,8 @@ namespace System.Linq.Expressions
             }
             else
             {
-                var temp1 = Parameter(member.Expression.Type, null);
-                var initTemp1 = Assign(temp1, member.Expression);
+                ParameterExpression temp1 = Parameter(member.Expression.Type, null);
+                BinaryExpression initTemp1 = Assign(temp1, member.Expression);
                 member = MakeMemberAccess(temp1, member.Member);
 
                 if (IsPrefix)
@@ -228,7 +228,7 @@ namespace System.Linq.Expressions
                 // temp2 = temp1.member
                 // temp1.member = op(temp2)
                 // temp2
-                var temp2 = Parameter(member.Type, null);
+                ParameterExpression temp2 = Parameter(member.Type, null);
                 return Block(
                     new[] { temp1, temp2 },
                     initTemp1,
@@ -266,7 +266,7 @@ namespace System.Linq.Expressions
             i++;
             while (i <= count)
             {
-                var arg = index.GetArgument(i - 1);
+                Expression arg = index.GetArgument(i - 1);
                 args[i - 1] = temps[i] = Parameter(arg.Type, null);
                 block[i] = Assign(temps[i], arg);
                 i++;
@@ -274,7 +274,7 @@ namespace System.Linq.Expressions
             index = MakeIndex(temps[0], index.Indexer, new TrueReadOnlyCollection<Expression>(args));
             if (!prefix)
             {
-                var lastTemp = temps[i] = Parameter(index.Type, null);
+                ParameterExpression lastTemp = temps[i] = Parameter(index.Type, null);
                 block[i] = Assign(temps[i], index);
                 i++;
                 Debug.Assert(i == temps.Length);

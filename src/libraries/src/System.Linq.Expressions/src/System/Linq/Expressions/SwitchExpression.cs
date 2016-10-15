@@ -202,7 +202,7 @@ namespace System.Linq.Expressions
             RequiresCanRead(switchValue, nameof(switchValue));
             if (switchValue.Type == typeof(void)) throw Error.ArgumentCannotBeOfTypeVoid(nameof(switchValue));
 
-            var caseList = cases.ToReadOnly();
+            ReadOnlyCollection<SwitchCase> caseList = cases.ToReadOnly();
             ContractUtils.RequiresNotNullItems(caseList, nameof(cases));
 
             // Type of the result. Either provided, or it is type of the branches.
@@ -219,14 +219,14 @@ namespace System.Linq.Expressions
 
             if (comparison != null)
             {
-                var pms = comparison.GetParametersCached();
+                ParameterInfo[] pms = comparison.GetParametersCached();
                 if (pms.Length != 2)
                 {
                     throw Error.IncorrectNumberOfMethodCallArguments(comparison, nameof(comparison));
                 }
                 // Validate that the switch value's type matches the comparison method's 
                 // left hand side parameter type.
-                var leftParam = pms[0];
+                ParameterInfo leftParam = pms[0];
                 bool liftedCall = false;
                 if (!ParameterIsAssignable(leftParam, switchValue.Type))
                 {
@@ -237,7 +237,7 @@ namespace System.Linq.Expressions
                     }
                 }
 
-                var rightParam = pms[1];
+                ParameterInfo rightParam = pms[1];
                 foreach (var c in caseList)
                 {
                     ContractUtils.RequiresNotNull(c, nameof(cases));
@@ -272,7 +272,7 @@ namespace System.Linq.Expressions
             {
                 // When comparison method is not present, all the test values must have
                 // the same type. Use the first test value's type as the baseline.
-                var firstTestValue = caseList[0].TestValues[0];
+                Expression firstTestValue = caseList[0].TestValues[0];
                 foreach (var c in caseList)
                 {
                     ContractUtils.RequiresNotNull(c, nameof(cases));
@@ -290,7 +290,7 @@ namespace System.Linq.Expressions
                 // Now we need to validate that switchValue.Type and testValueType
                 // make sense in an Equal node. Fortunately, Equal throws a
                 // reasonable error, so just call it.
-                var equal = Equal(switchValue, firstTestValue, false, comparison);
+                BinaryExpression equal = Equal(switchValue, firstTestValue, false, comparison);
 
                 // Get the comparison function from equals node.
                 comparison = equal.Method;

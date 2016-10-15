@@ -129,7 +129,7 @@ namespace System.Linq.Expressions
             // if TypeOperand is an interface.
             if (_typeOperand.GetTypeInfo().IsInterface)
             {
-                var temp = Expression.Parameter(typeof(Type));
+                ParameterExpression temp = Expression.Parameter(typeof(Type));
                 getType = Expression.Block(new[] { temp }, Expression.Assign(temp, getType), temp);
             }
 

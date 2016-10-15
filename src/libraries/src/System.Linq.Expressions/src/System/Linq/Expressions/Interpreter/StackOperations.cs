@@ -84,7 +84,7 @@ namespace System.Linq.Expressions.Interpreter
         
         public override int Run(InterpretedFrame frame)
         {
-            var value = frame.Peek();
+            object value = frame.Peek();
             frame.Data[frame.StackIndex++] = value;
             return +1;
         }

@@ -104,7 +104,7 @@ namespace System.Linq.Expressions
             ContractUtils.RequiresNotNull(addMethod, nameof(addMethod));
             ContractUtils.RequiresNotNull(arguments, nameof(arguments));
 
-            var argumentsRO = arguments.ToReadOnly();
+            ReadOnlyCollection<Expression> argumentsRO = arguments.ToReadOnly();
 
             RequiresCanRead(argumentsRO, nameof(arguments));
             ValidateElementInitAddMethodInfo(addMethod, nameof(addMethod));

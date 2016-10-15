@@ -364,7 +364,7 @@ namespace System.Linq.Expressions.Interpreter
         internal Delegate MakeDelegate(Type delegateType)
         {
 #if !NO_FEATURE_STATIC_DELEGATE
-            var method = delegateType.GetMethod("Invoke");
+            MethodInfo method = delegateType.GetMethod("Invoke");
             if (method.ReturnType == typeof(void))
             {
                 return System.Dynamic.Utils.DelegateHelpers.CreateObjectArrayDelegate(delegateType, RunVoid);
@@ -416,12 +416,12 @@ namespace System.Linq.Expressions.Interpreter
 
         public object Run(params object[] arguments)
         {
-            var frame = MakeFrame();
+            InterpretedFrame frame = MakeFrame();
             for (int i = 0; i < arguments.Length; i++)
             {
                 frame.Data[i] = arguments[i];
             }
-            var currentFrame = frame.Enter();
+            InterpretedFrame currentFrame = frame.Enter();
             try
             {
                 _interpreter.Run(frame);
@@ -440,12 +440,12 @@ namespace System.Linq.Expressions.Interpreter
 
         public object RunVoid(params object[] arguments)
         {
-            var frame = MakeFrame();
+            InterpretedFrame frame = MakeFrame();
             for (int i = 0; i < arguments.Length; i++)
             {
                 frame.Data[i] = arguments[i];
             }
-            var currentFrame = frame.Enter();
+            InterpretedFrame currentFrame = frame.Enter();
             try
             {
                 _interpreter.Run(frame);
