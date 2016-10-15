@@ -441,8 +441,8 @@ namespace System.Collections
                 if (bits > 0)
                 {
                     // mask the final byte
-                    var i = arrayLength;
-                    b[index + i] = (byte)((m_array[i / 4] >> ((i % 4) * 8)) & 0x000000FF & ((1 << bits) - 1));
+                    int i = arrayLength;
+                    b[index + i] = (byte)((m_array[i / 4] >> ((i % 4) * 8)) & ((1 << bits) - 1));
                 }
             }
             else if (array is bool[])
