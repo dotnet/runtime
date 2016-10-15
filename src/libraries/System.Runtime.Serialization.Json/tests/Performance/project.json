@@ -14,6 +14,9 @@
     "System.ObjectModel": "4.4.0-beta-24613-01",
     "System.Runtime": "4.4.0-beta-24613-01",
     "System.Runtime.Extensions": "4.4.0-beta-24613-01",
+    "System.Runtime.Serialization.Primitives": "4.4.0-beta-24613-01",
+    "System.Runtime.Serialization.Json": "4.4.0-beta-24613-01",
+    "System.Runtime.Serialization.Xml": "4.4.0-beta-24613-01",
     "System.Threading.Tasks": "4.4.0-beta-24613-01",
     "System.Xml.ReaderWriter": "4.4.0-beta-24613-01",
     "System.Xml.XDocument": "4.4.0-beta-24613-01",
@@ -29,14 +32,9 @@
     "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0040"
   },
   "frameworks": {
-    "netstandard1.3": {}
+    "netstandard1.7": {}
   },
   "supports": {
-    "coreFx.Test.netcore50": {},
-    "coreFx.Test.netcoreapp1.0": {},
-    "coreFx.Test.net46": {},
-    "coreFx.Test.net461": {},
-    "coreFx.Test.net462": {},
-    "coreFx.Test.net463": {}
+    "coreFx.Test.netcoreapp1.1": {}
   }
 }

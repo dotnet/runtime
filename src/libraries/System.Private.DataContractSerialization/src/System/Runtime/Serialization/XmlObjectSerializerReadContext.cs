@@ -13,9 +13,6 @@ namespace System.Runtime.Serialization
     using System.Xml.Serialization;
     using System.Security;
     using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, DataContract>;
-#if !NET_NATIVE
-    using ExtensionDataObject = System.Object;
-#endif
 
 #if USE_REFEMIT || NET_NATIVE
     public class XmlObjectSerializerReadContext : XmlObjectSerializerContext

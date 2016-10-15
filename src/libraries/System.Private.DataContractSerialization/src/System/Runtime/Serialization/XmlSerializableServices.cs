@@ -62,5 +62,15 @@ namespace System.Runtime.Serialization
                     if (nodes[i] != null)
                         nodes[i].WriteTo(xmlWriter);
         }
+
+        internal static string AddDefaultSchemaMethodName = "AddDefaultSchema";
+        public static void AddDefaultSchema(XmlSchemaSet schemas, XmlQualifiedName typeQName)
+        {
+            if (schemas == null)
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(schemas));
+            if (typeQName == null)
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(typeQName));
+            SchemaExporter.AddDefaultXmlType(schemas, typeQName.Name, typeQName.Namespace);
+        }
     }
 }

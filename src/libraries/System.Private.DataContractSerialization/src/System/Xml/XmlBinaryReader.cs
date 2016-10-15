@@ -16,7 +16,21 @@ using System.Runtime.Serialization;
 
 namespace System.Xml
 {
-    internal class XmlBinaryReader : XmlBaseReader
+    public interface IXmlBinaryReaderInitializer
+    {
+        void SetInput(byte[] buffer, int offset, int count,
+                            IXmlDictionary dictionary,
+                            XmlDictionaryReaderQuotas quotas,
+                            XmlBinaryReaderSession session,
+                            OnXmlDictionaryReaderClose onClose);
+        void SetInput(Stream stream,
+                             IXmlDictionary dictionary,
+                             XmlDictionaryReaderQuotas quotas,
+                             XmlBinaryReaderSession session,
+                             OnXmlDictionaryReaderClose onClose);
+    }
+
+    internal class XmlBinaryReader : XmlBaseReader, IXmlBinaryReaderInitializer
     {
         private bool _isTextWithEndElement;
         private bool _buffered;
@@ -32,10 +46,11 @@ namespace System.Xml
         public void SetInput(byte[] buffer, int offset, int count,
                             IXmlDictionary dictionary,
                             XmlDictionaryReaderQuotas quotas,
-                            XmlBinaryReaderSession session)
+                            XmlBinaryReaderSession session,
+                            OnXmlDictionaryReaderClose onClose)
         {
             if (buffer == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("buffer");
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(buffer));
             if (offset < 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.ValueMustBeNonNegative)));
             if (offset > buffer.Length)
@@ -52,10 +67,11 @@ namespace System.Xml
         public void SetInput(Stream stream,
                              IXmlDictionary dictionary,
                             XmlDictionaryReaderQuotas quotas,
-                            XmlBinaryReaderSession session)
+                            XmlBinaryReaderSession session,
+                            OnXmlDictionaryReaderClose onClose)
         {
             if (stream == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("stream");
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(stream));
             MoveToInitial(quotas, session, null);
             BufferReader.SetBuffer(stream, dictionary, session);
             _buffered = false;

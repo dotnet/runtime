@@ -12,10 +12,10 @@ namespace System.Runtime.Serialization
     using System.Xml;
     using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, DataContract>;
     using System.Security;
-    using XmlSchemaType = System.Object;
     using System.Text.RegularExpressions;
     using System.Runtime.CompilerServices;
     using System.Linq;
+    using Xml.Schema;
 
 #if USE_REFEMIT || NET_NATIVE
     public abstract class DataContract

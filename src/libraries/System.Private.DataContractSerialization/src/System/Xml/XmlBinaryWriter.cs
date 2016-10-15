@@ -18,6 +18,11 @@ using System.Security;
 
 namespace System.Xml
 {
+    public interface IXmlBinaryWriterInitializer
+    {
+        void SetOutput(Stream stream, IXmlDictionary dictionary, XmlBinaryWriterSession session, bool ownsStream);
+    }
+
     internal class XmlBinaryNodeWriter : XmlStreamNodeWriter
     {
         private IXmlDictionary _dictionary;
@@ -1116,7 +1121,7 @@ namespace System.Xml
         }
     }
 
-    internal class XmlBinaryWriter : XmlBaseWriter
+    internal class XmlBinaryWriter : XmlBaseWriter, IXmlBinaryWriterInitializer
     {
         private XmlBinaryNodeWriter _writer;
         private char[] _chars;

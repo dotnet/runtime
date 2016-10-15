@@ -1089,7 +1089,7 @@ namespace System.Runtime.Serialization.Json
             _nodeWriter.WriteGuidText(value);
         }
 
-        public virtual void WriteValue(DateTime value)
+        public override void WriteValue(DateTime value)
         {
             StartText();
             _nodeWriter.WriteDateTimeText(value);
