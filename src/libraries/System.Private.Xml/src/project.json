@@ -17,7 +17,6 @@
         "System.Collections.Specialized": "4.4.0-beta-24613-01",
         "System.Console": "4.4.0-beta-24613-01",
         "System.ComponentModel.TypeConverter": "4.4.0-beta-24613-01",
-        "System.Data.Common": "4.4.0-beta-24613-01",
         "System.Diagnostics.Contracts": "4.4.0-beta-24613-01",
         "System.Diagnostics.Debug": "4.4.0-beta-24613-01",
         "System.Diagnostics.Tools": "4.4.0-beta-24613-01",
