@@ -409,7 +409,6 @@ namespace Internal.Cryptography.Pal
 
         public void AppendPrivateKeyInfo(StringBuilder sb)
         {
-#if NETNATIVE
             if (HasPrivateKey)
             {
                 // Similar to the Unix implementation, in UWP merely acknowledge that there -is- a private key.
@@ -417,6 +416,9 @@ namespace Internal.Cryptography.Pal
                 sb.AppendLine();
                 sb.AppendLine("[Private Key]");
             }
+
+#if NETNATIVE
+            // Similar to the Unix implementation, in UWP merely acknowledge that there -is- a private key.
 #else
             CspKeyContainerInfo cspKeyContainerInfo = null;
             try
@@ -430,10 +432,10 @@ namespace Internal.Cryptography.Pal
             // We could not access the key container. Just return.
             catch (CryptographicException) { }
 
+            // Ephemeral keys will not have container information.
             if (cspKeyContainerInfo == null)
                 return;
 
-            sb.Append(Environment.NewLine + Environment.NewLine + "[Private Key]");
             sb.Append(Environment.NewLine + "  Key Store: ");
             sb.Append(cspKeyContainerInfo.MachineKeyStore ? "Machine" : "User");
             sb.Append(Environment.NewLine + "  Provider Name: ");
