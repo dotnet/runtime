@@ -10,7 +10,7 @@ using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
 
-namespace System.Net
+namespace System.Net.Security
 {
     internal static class SslStreamPal
     {
@@ -159,6 +159,18 @@ namespace System.Net
             {
                 return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, ex);
             }
+        }
+
+        public static SecurityStatusPal ApplyAlertToken(ref SafeFreeCredentials credentialsHandle, SafeDeleteContext securityContext, TlsAlertType alertType, TlsAlertMessage alertMessage)
+        {
+            // TODO (#12319): Not implemented.
+            return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
+        }
+
+        public static SecurityStatusPal ApplyShutdownToken(ref SafeFreeCredentials credentialsHandle, SafeDeleteContext securityContext)
+        {
+            // TODO (#12319): Not implemented.
+            return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
         }
     }
 }

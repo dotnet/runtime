@@ -532,7 +532,7 @@ namespace System.Net.Security
 #endif
         }
 
-        private IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState)
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState)
         {
 #if DEBUG
             using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
@@ -554,7 +554,7 @@ namespace System.Net.Security
 #endif
         }
 
-        private int EndRead(IAsyncResult asyncResult)
+        public override int EndRead(IAsyncResult asyncResult)
         {
 #if DEBUG
             using (GlobalLog.SetThreadKind(ThreadKinds.User))
@@ -604,7 +604,7 @@ namespace System.Net.Security
         }
         //
         //
-        private IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState)
         {
 #if DEBUG
             using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
@@ -627,7 +627,7 @@ namespace System.Net.Security
 #endif
         }
 
-        private void EndWrite(IAsyncResult asyncResult)
+        public override void EndWrite(IAsyncResult asyncResult)
         {
 #if DEBUG
             using (GlobalLog.SetThreadKind(ThreadKinds.User))

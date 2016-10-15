@@ -11,6 +11,8 @@ using Xunit;
 
 namespace System.Net.Security.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     public class CertificateValidationClientServer : IDisposable
     {
         private readonly X509Certificate2 _clientCertificate;

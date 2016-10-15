@@ -47,7 +47,6 @@ namespace System.Net.Security
 
         private bool _refreshCredentialNeeded;
 
-
         internal SecureChannel(string hostname, bool serverMode, SslProtocols sslProtocols, X509Certificate serverCertificate, X509CertificateCollection clientCertificates, bool remoteCertRequired, bool checkCertName,
                                                   bool checkCertRevocationStatus, EncryptionPolicy encryptionPolicy, LocalCertSelectionCallback certSelectionDelegate)
         {
@@ -87,6 +86,7 @@ namespace System.Net.Security
             _certSelectionDelegate = certSelectionDelegate;
             _refreshCredentialNeeded = true;
             _encryptionPolicy = encryptionPolicy;
+            
             if (GlobalLog.IsEnabled)
             {
                 GlobalLog.Leave("SecureChannel#" + LoggingHash.HashString(this) + "::.ctor");
@@ -872,15 +872,15 @@ namespace System.Net.Security
 
             if (input != null)
             {
-                incomingSecurity = new SecurityBuffer(input, offset, count, SecurityBufferType.Token);
+                incomingSecurity = new SecurityBuffer(input, offset, count, SecurityBufferType.SECBUFFER_TOKEN);
                 incomingSecurityBuffers = new SecurityBuffer[]
                 {
                     incomingSecurity,
-                    new SecurityBuffer(null, 0, 0, SecurityBufferType.Empty)
+                    new SecurityBuffer(null, 0, 0, SecurityBufferType.SECBUFFER_EMPTY)
                 };
             }
 
-            SecurityBuffer outgoingSecurity = new SecurityBuffer(null, SecurityBufferType.Token);
+            SecurityBuffer outgoingSecurity = new SecurityBuffer(null, SecurityBufferType.SECBUFFER_TOKEN);
 
             SecurityStatusPal status = default(SecurityStatusPal);
 
@@ -993,9 +993,9 @@ namespace System.Net.Security
             {
                 try
                 {
-                    _headerSize = streamSizes.header;
-                    _trailerSize = streamSizes.trailer;
-                    _maxDataSize = checked(streamSizes.maximumMessage - (_headerSize + _trailerSize));
+                    _headerSize = streamSizes.Header;
+                    _trailerSize = streamSizes.Trailer;
+                    _maxDataSize = checked(streamSizes.MaximumMessage - (_headerSize + _trailerSize));
                 }
                 catch (Exception e)
                 {
@@ -1148,7 +1148,7 @@ namespace System.Net.Security
         //SECURITY: The scenario is allowed in semitrust StorePermission is asserted for Chain.Build
         //          A user callback has unique signature so it is safe to call it under permission assert.
         //
-        internal bool VerifyRemoteCertificate(RemoteCertValidationCallback remoteCertValidationCallback)
+        internal bool VerifyRemoteCertificate(RemoteCertValidationCallback remoteCertValidationCallback, ref ProtocolToken alertToken)
         {
             if (GlobalLog.IsEnabled)
             {
@@ -1212,52 +1212,17 @@ namespace System.Net.Security
 
                 if (SecurityEventSource.Log.IsEnabled())
                 {
-                    if (sslPolicyErrors != SslPolicyErrors.None)
-                    {
-                        SecurityEventSource.Log.RemoteCertificateError(LoggingHash.HashInt(this), SR.net_log_remote_cert_has_errors);
-                        if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateNotAvailable) != 0)
-                        {
-                            SecurityEventSource.Log.RemoteCertificateError(LoggingHash.HashInt(this), SR.net_log_remote_cert_not_available);
-                        }
-
-                        if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateNameMismatch) != 0)
-                        {
-                            SecurityEventSource.Log.RemoteCertificateError(LoggingHash.HashInt(this), SR.net_log_remote_cert_name_mismatch);
-                        }
-
-                        if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateChainErrors) != 0)
-                        {
-                            string chainStatusString = "ChainStatus: ";
-                            foreach (X509ChainStatus chainStatus in chain.ChainStatus)
-                            {
-                                chainStatusString += "\t" + chainStatus.StatusInformation;
-                            }
-                            SecurityEventSource.Log.RemoteCertificateError(LoggingHash.HashInt(this), chainStatusString);
-                        }
-                    }
-                    if (success)
-                    {
-                        if (remoteCertValidationCallback != null)
-                        {
-                            SecurityEventSource.Log.RemoteCertDeclaredValid(LoggingHash.HashInt(this));
-                        }
-                        else
-                        {
-                            SecurityEventSource.Log.RemoteCertHasNoErrors(LoggingHash.HashInt(this));
-                        }
-                    }
-                    else
-                    {
-                        if (remoteCertValidationCallback != null)
-                        {
-                            SecurityEventSource.Log.RemoteCertUserDeclaredInvalid(LoggingHash.HashInt(this));
-                        }
-                    }
+                    LogCertificateValidation(remoteCertValidationCallback, sslPolicyErrors, success, chain);
                 }
 
                 if (GlobalLog.IsEnabled)
                 {
                     GlobalLog.Print("Cert Validation, remote cert = " + (remoteCertificateEx == null ? "<null>" : remoteCertificateEx.ToString(true)));
+                }
+
+                if (!success)
+                {
+                    alertToken = CreateFatalHandshakeAlertToken(sslPolicyErrors, chain);
                 }
             }
             finally
@@ -1279,7 +1244,207 @@ namespace System.Net.Security
             {
                 GlobalLog.Leave("SecureChannel#" + LoggingHash.HashString(this) + "::VerifyRemoteCertificate", success.ToString());
             }
+
             return success;
+        }
+
+        public ProtocolToken CreateFatalHandshakeAlertToken(SslPolicyErrors sslPolicyErrors, X509Chain chain)
+        {
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Enter("SecureChannel#" + LoggingHash.HashString(this) + "::CreateFatalHandshakeAlertToken");
+            }
+
+            TlsAlertMessage alertMessage;
+
+            switch (sslPolicyErrors)
+            {
+                case SslPolicyErrors.RemoteCertificateChainErrors:
+                    alertMessage = GetAlertMessageFromChain(chain);
+                    break;
+                case SslPolicyErrors.RemoteCertificateNameMismatch:
+                    alertMessage = TlsAlertMessage.BadCertificate;
+                    break;
+                case SslPolicyErrors.RemoteCertificateNotAvailable:
+                default:
+                    alertMessage = TlsAlertMessage.CertificateUnknown;
+                    break;
+            }
+
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Print("SecureChannel#" + LoggingHash.HashString(this) + "::CreateFatalHandshakeAlertToken() alertMessage: " + alertMessage.ToString());
+            }
+
+            SecurityStatusPal status;
+            status = SslStreamPal.ApplyAlertToken(ref _credentialsHandle, _securityContext, TlsAlertType.Fatal, alertMessage);
+
+            if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
+            {
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Print("SecureChannel#" + LoggingHash.HashString(this) + "::ApplyAlertToken() returned " + status.ErrorCode);
+                }
+
+                if (status.Exception != null)
+                {
+                    throw status.Exception;
+                }
+
+                return null;
+            }
+
+            ProtocolToken token = GenerateAlertToken();
+
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Leave("SecureChannel#" + LoggingHash.HashString(this) + "::CreateFatalHandshakeAlertToken", token.ToString());
+            }
+
+            return token;
+        }
+
+        public ProtocolToken CreateShutdownToken()
+        {
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Enter("SecureChannel#" + LoggingHash.HashString(this) + "::CreateShutdownToken");
+            }
+
+            SecurityStatusPal status;
+            status = SslStreamPal.ApplyShutdownToken(ref _credentialsHandle, _securityContext);
+
+            if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
+            {
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Print("SecureChannel#" + LoggingHash.HashString(this) + "::ApplyAlertToken() returned " + status.ErrorCode);
+                }
+
+                if (status.Exception != null)
+                {
+                    throw status.Exception;
+                }
+
+                return null;
+            }
+
+            ProtocolToken token = GenerateAlertToken();
+
+            if (GlobalLog.IsEnabled)
+            {
+                GlobalLog.Leave("SecureChannel#" + LoggingHash.HashString(this) + "::CreateShutdownToken", token.ToString());
+            }
+
+            return token;
+        }
+
+        private ProtocolToken GenerateAlertToken()
+        {
+            byte[] nextmsg = null;
+
+            SecurityStatusPal status;
+            status = GenerateToken(null, 0, 0, ref nextmsg);
+
+            ProtocolToken token = new ProtocolToken(nextmsg, status);
+
+            return token;
+        }
+        
+        private static TlsAlertMessage GetAlertMessageFromChain(X509Chain chain)
+        {
+            foreach (X509ChainStatus chainStatus in chain.ChainStatus)
+            {
+                if (chainStatus.Status == X509ChainStatusFlags.NoError)
+                {
+                    continue;
+                }
+
+                if ((chainStatus.Status &
+                    (X509ChainStatusFlags.UntrustedRoot | X509ChainStatusFlags.PartialChain |
+                     X509ChainStatusFlags.Cyclic)) != 0)
+                {
+                    return TlsAlertMessage.UnknownCA;
+                }
+
+                if ((chainStatus.Status &
+                    (X509ChainStatusFlags.Revoked | X509ChainStatusFlags.OfflineRevocation )) != 0)
+                {
+                    return TlsAlertMessage.CertificateRevoked;
+                }
+
+                if ((chainStatus.Status &
+                    (X509ChainStatusFlags.CtlNotTimeValid | X509ChainStatusFlags.NotTimeNested |
+                     X509ChainStatusFlags.NotTimeValid)) != 0)
+                {
+                    return TlsAlertMessage.CertificateExpired;
+                }
+
+                if ((chainStatus.Status & X509ChainStatusFlags.CtlNotValidForUsage) != 0)
+                {
+                    return TlsAlertMessage.UnsupportedCert; 
+                }
+
+                if ((chainStatus.Status &
+                    (X509ChainStatusFlags.CtlNotSignatureValid | X509ChainStatusFlags.InvalidExtension |
+                     X509ChainStatusFlags.NotSignatureValid | X509ChainStatusFlags.InvalidPolicyConstraints) |
+                     X509ChainStatusFlags.NoIssuanceChainPolicy | X509ChainStatusFlags.NotValidForUsage) != 0)
+                {
+                    return TlsAlertMessage.BadCertificate;
+                }
+
+                // All other errors:
+                return TlsAlertMessage.CertificateUnknown;
+            }
+
+            Debug.Fail("GetAlertMessageFromChain was called but none of the chain elements had errors.");
+            return TlsAlertMessage.BadCertificate;
+        }
+
+        private void LogCertificateValidation(RemoteCertValidationCallback remoteCertValidationCallback, SslPolicyErrors sslPolicyErrors, bool success, X509Chain chain)
+        {
+            if (sslPolicyErrors != SslPolicyErrors.None)
+            {
+                SecurityEventSource.Log.RemoteCertificateError(LoggingHash.HashInt(this), SR.net_log_remote_cert_has_errors);
+                if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateNotAvailable) != 0)
+                {
+                    SecurityEventSource.Log.RemoteCertificateError(LoggingHash.HashInt(this), SR.net_log_remote_cert_not_available);
+                }
+
+                if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateNameMismatch) != 0)
+                {
+                    SecurityEventSource.Log.RemoteCertificateError(LoggingHash.HashInt(this), SR.net_log_remote_cert_name_mismatch);
+                }
+
+                if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateChainErrors) != 0)
+                {
+                    string chainStatusString = "ChainStatus: ";
+                    foreach (X509ChainStatus chainStatus in chain.ChainStatus)
+                    {
+                        chainStatusString += "\t" + chainStatus.StatusInformation;
+                    }
+                    SecurityEventSource.Log.RemoteCertificateError(LoggingHash.HashInt(this), chainStatusString);
+                }
+            }
+
+            if (success)
+            {
+                if (remoteCertValidationCallback != null)
+                {
+                    SecurityEventSource.Log.RemoteCertDeclaredValid(LoggingHash.HashInt(this));
+                }
+                else
+                {
+                    SecurityEventSource.Log.RemoteCertHasNoErrors(LoggingHash.HashInt(this));
+                }
+            }
+            else
+            {
+                if (remoteCertValidationCallback != null)
+                {
+                    SecurityEventSource.Log.RemoteCertUserDeclaredInvalid(LoggingHash.HashInt(this));
+                }
+            }
         }
     }
 

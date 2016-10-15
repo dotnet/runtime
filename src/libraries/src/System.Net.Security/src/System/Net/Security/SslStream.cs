@@ -154,6 +154,16 @@ namespace System.Net.Security
             _sslState.EndProcessAuthentication(asyncResult);
         }
 
+        internal virtual IAsyncResult BeginShutdown(AsyncCallback asyncCallback, object asyncState)
+        {
+            return _sslState.BeginShutdown(asyncCallback, asyncState);
+        }
+
+        internal virtual void EndShutdown(IAsyncResult asyncResult)
+        {
+            _sslState.EndShutdown(asyncResult);
+        }
+
         public TransportContext TransportContext
         {
             get
@@ -213,6 +223,14 @@ namespace System.Net.Security
         {
 
             return Task.Factory.FromAsync((callback, state) => BeginAuthenticateAsServer(serverCertificate, clientCertificateRequired, enabledSslProtocols, checkCertificateRevocation, callback, state), EndAuthenticateAsServer, null);
+        }
+
+        public virtual Task ShutdownAsync()
+        {
+            return Task.Factory.FromAsync(
+                (callback, state) => BeginShutdown(callback, state),
+                EndShutdown, 
+                null);
         }
         #endregion
 
@@ -377,7 +395,7 @@ namespace System.Net.Security
         {
             get
             {
-                return _sslState.IsAuthenticated && InnerStream.CanWrite;
+                return _sslState.IsAuthenticated && InnerStream.CanWrite && !_sslState.IsShutdown;
             }
         }
 
@@ -472,22 +490,22 @@ namespace System.Net.Security
             _sslState.SecureStream.Write(buffer, offset, count);
         }
 
-        private IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState)
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState)
         {
             return _sslState.SecureStream.BeginRead(buffer, offset, count, asyncCallback, asyncState);
         }
 
-        private int EndRead(IAsyncResult asyncResult)
+        public override int EndRead(IAsyncResult asyncResult)
         {
             return _sslState.SecureStream.EndRead(asyncResult);
         }
 
-        private IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState)
         {
             return _sslState.SecureStream.BeginWrite(buffer, offset, count, asyncCallback, asyncState);
         }
 
-        private void EndWrite(IAsyncResult asyncResult)
+        public override void EndWrite(IAsyncResult asyncResult)
         {
             _sslState.SecureStream.EndWrite(asyncResult);
         }
