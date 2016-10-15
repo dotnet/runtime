@@ -379,6 +379,14 @@ namespace System
         public static System.Attribute[] GetCustomAttributes(System.Reflection.ParameterInfo element, bool inherit) { throw null; }
         public static System.Attribute[] GetCustomAttributes(System.Reflection.ParameterInfo element, System.Type attributeType) { throw null; }
         public static System.Attribute[] GetCustomAttributes(System.Reflection.ParameterInfo element, System.Type attributeType, bool inherit) { throw null; }
+        public static bool IsDefined(System.Reflection.Assembly element, System.Type attributeType) { throw null; } 
+        public static bool IsDefined(System.Reflection.Assembly element, System.Type attributeType, bool inherit) { throw null; } 
+        public static bool IsDefined(System.Reflection.MemberInfo element, System.Type attributeType) { throw null; } 
+        public static bool IsDefined(System.Reflection.MemberInfo element, System.Type attributeType, bool inherit) { throw null; } 
+        public static bool IsDefined(System.Reflection.Module element, System.Type attributeType) { throw null; } 
+        public static bool IsDefined(System.Reflection.Module element, System.Type attributeType, bool inherit) { throw null; } 
+        public static bool IsDefined(System.Reflection.ParameterInfo element, System.Type attributeType) { throw null; } 
+        public static bool IsDefined(System.Reflection.ParameterInfo element, System.Type attributeType, bool inherit) { throw null; } 
     }
     [System.FlagsAttribute]
     public enum AttributeTargets
