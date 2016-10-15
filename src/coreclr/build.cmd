@@ -226,7 +226,7 @@ if %__BuildNative% EQU 1 (
         set __VCBuildArch=x86_arm
         
         REM Make CMake pick the highest installed version in the 10.0.* range
-        set __ExtraCmakeArgs="-DCMAKE_SYSTEM_VERSION=10.0"
+        set ___SDKVersion="-DCMAKE_SYSTEM_VERSION=10.0"
     )
 
     echo %__MsgPrefix%Using environment: "%__VSToolsRoot%\..\..\VC\vcvarsall.bat" !__VCBuildArch!
@@ -245,7 +245,7 @@ if %__BuildNative% EQU 1 (
     echo %__MsgPrefix%Regenerating the Visual Studio solution
 
     pushd "%__IntermediatesDir%"
-    set __ExtraCmakeArgs=%__ExtraCmakeArgs% "-DCLR_CMAKE_TARGET_OS=%__BuildOs%" "-DCLR_CMAKE_PACKAGES_DIR=%__PackagesDir%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%"
+    set __ExtraCmakeArgs=!___SDKVersion! "-DCLR_CMAKE_TARGET_OS=%__BuildOs%" "-DCLR_CMAKE_PACKAGES_DIR=%__PackagesDir%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%"
     call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectDir%" %__VSVersion% %__BuildArch% %__BuildJit32% !__ExtraCmakeArgs!
 	@if defined _echo @echo on
     popd
