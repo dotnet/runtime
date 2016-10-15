@@ -29,6 +29,9 @@
 namespace System.Threading
 {
     using System.Security;
+#if FEATURE_REMOTING
+    using System.Runtime.Remoting;
+#endif
     using System.Security.Permissions;
     using System;
     using Microsoft.Win32;
