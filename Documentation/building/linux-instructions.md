@@ -43,8 +43,8 @@ Then install the packages you need:
 
 You now have all the required components.
 
-For Fedora 23 you will need to install the following:
-`$ sudo dnf cmake install clang lldb-devel libunwind-devel lttng-ust-devel libuuid-devel`
+If you are using Fedora 23 or 24, then you will need to install the following packages:
+`$ sudo dnf install cmake clang lldb-devel libunwind-devel lttng-ust-devel libuuid-devel`
 
 Git Setup
 ---------
