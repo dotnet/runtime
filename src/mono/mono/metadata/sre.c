@@ -3170,6 +3170,7 @@ mono_reflection_get_dynamic_overrides (MonoClass *klass, MonoMethod ***overrides
 	*num_overrides = onum;
 }
 
+/* This initializes the same data as mono_class_setup_fields () */
 static void
 typebuilder_setup_fields (MonoClass *klass, MonoError *error)
 {
@@ -3178,8 +3179,16 @@ typebuilder_setup_fields (MonoClass *klass, MonoError *error)
 	MonoClassField *field;
 	MonoImage *image = klass->image;
 	const char *p, *p2;
-	int i;
-	guint32 len, idx, real_size = 0;
+	int i, instance_size, packing_size = 0;
+	guint32 len, idx;
+
+	if (klass->parent) {
+		if (!klass->parent->size_inited)
+			mono_class_init (klass->parent);
+		instance_size = klass->parent->instance_size;
+	} else {
+		instance_size = sizeof (MonoObject);
+	}
 
 	klass->field.count = tb->num_fields;
 	klass->field.first = 0;
@@ -3187,17 +3196,8 @@ typebuilder_setup_fields (MonoClass *klass, MonoError *error)
 	mono_error_init (error);
 
 	if (tb->class_size) {
-		if ((tb->packing_size & 0xffffff00) != 0) {
-			mono_class_set_type_load_failure (klass, "Could not load struct '%s' with packing size %d >= 256", klass->name, tb->packing_size);
-			return;
-		}
-		klass->packing_size = tb->packing_size;
-		real_size = klass->instance_size + tb->class_size;
-	}
-
-	if (!klass->field.count) {
-		klass->instance_size = MAX (klass->instance_size, real_size);
-		return;
+		packing_size = tb->packing_size;
+		instance_size += tb->class_size;
 	}
 	
 	klass->fields = image_g_new0 (image, MonoClassField, klass->field.count);
@@ -3242,9 +3242,6 @@ typebuilder_setup_fields (MonoClass *klass, MonoError *error)
 		fb->handle = field;
 		mono_save_custom_attrs (klass->image, field, fb->cattrs);
 
-		if (klass->enumtype && !(field->type->attrs & FIELD_ATTRIBUTE_STATIC)) {
-			klass->cast_class = klass->element_class = mono_class_from_mono_type (field->type);
-		}
 		if (fb->def_value) {
 			MonoDynamicImage *assembly = (MonoDynamicImage*)klass->image;
 			field->type->attrs |= FIELD_ATTRIBUTE_HAS_DEFAULT;
@@ -3258,8 +3255,7 @@ typebuilder_setup_fields (MonoClass *klass, MonoError *error)
 		}
 	}
 
-	klass->instance_size = MAX (klass->instance_size, real_size);
-	mono_class_layout_fields (klass, klass->instance_size);
+	mono_class_layout_fields (klass, instance_size, packing_size, TRUE);
 }
 
 static void
@@ -3464,23 +3460,6 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilder *tb)
 
 	klass->nested_classes_inited = TRUE;
 
-	/* fields and object layout */
-	if (klass->parent) {
-		if (!klass->parent->size_inited)
-			mono_class_init (klass->parent);
-		klass->instance_size = klass->parent->instance_size;
-		klass->sizes.class_size = 0;
-		klass->min_align = klass->parent->min_align;
-		/* if the type has no fields we won't call the field_setup
-		 * routine which sets up klass->has_references.
-		 */
-		klass->has_references |= klass->parent->has_references;
-	} else {
-		klass->instance_size = sizeof (MonoObject);
-		klass->min_align = 1;
-	}
-
-	/* FIXME: handle packing_size and instance_size */
 	typebuilder_setup_fields (klass, &error);
 	if (!mono_error_ok (&error))
 		goto failure;

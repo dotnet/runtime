@@ -108,6 +108,9 @@ static int record_gclass_instantiation;
 static GSList *gclass_recorded_list;
 typedef gboolean (*gclass_record_func) (MonoClass*, void*);
 
+/* This TLS variable points to a GSList of classes which have setup_fields () executing */
+static MonoNativeTlsKey setup_fields_tls_id;
+
 static inline void
 classes_lock (void)
 {
@@ -1425,13 +1428,17 @@ mono_class_alloc0 (MonoClass *klass, int size)
  * mono_class_setup_basic_field_info:
  * @class: The class to initialize
  *
- * Initializes the klass->fields.
- * LOCKING: Assumes the loader lock is held.
+ * Initializes the following fields in MonoClass:
+ * * klass->fields (only field->parent and field->name)
+ * * klass->field.count
+ * * klass->field.first
+ * LOCKING: Acquires the loader lock
  */
 static void
 mono_class_setup_basic_field_info (MonoClass *klass)
 {
 	MonoClassField *field;
+	MonoClassField *fields;
 	MonoClass *gtd;
 	MonoImage *image;
 	int i, top;
@@ -1441,7 +1448,6 @@ mono_class_setup_basic_field_info (MonoClass *klass)
 
 	gtd = klass->generic_class ? mono_class_get_generic_type_definition (klass) : NULL;
 	image = klass->image;
-	top = klass->field.count;
 
 	if (klass->generic_class && image_is_dynamic (klass->generic_class->container_class->image) && !klass->generic_class->container_class->wastypebuilder) {
 		/*
@@ -1456,18 +1462,21 @@ mono_class_setup_basic_field_info (MonoClass *klass)
 	if (gtd) {
 		mono_class_setup_basic_field_info (gtd);
 
-		top = gtd->field.count;
+		mono_loader_lock ();
 		klass->field.first = gtd->field.first;
 		klass->field.count = gtd->field.count;
+		mono_loader_unlock ();
 	}
 
-	klass->fields = (MonoClassField *)mono_class_alloc0 (klass, sizeof (MonoClassField) * top);
+	top = klass->field.count;
+
+	fields = (MonoClassField *)mono_class_alloc0 (klass, sizeof (MonoClassField) * top);
 
 	/*
 	 * Fetch all the field information.
 	 */
 	for (i = 0; i < top; i++){
-		field = &klass->fields [i];
+		field = &fields [i];
 		field->parent = klass;
 
 		if (gtd) {
@@ -1480,6 +1489,13 @@ mono_class_setup_basic_field_info (MonoClass *klass)
 			field->name = mono_metadata_string_heap (image, name_idx);
 		}
 	}
+
+	mono_memory_barrier ();
+
+	mono_loader_lock ();
+	if (!klass->fields)
+		klass->fields = fields;
+	mono_loader_unlock ();
 }
 
 /**
@@ -1511,74 +1527,40 @@ mono_class_set_type_load_failure_causedby_class (MonoClass *klass, const MonoCla
 
 /** 
  * mono_class_setup_fields:
- * @class: The class to initialize
+ * @klass: The class to initialize
  *
- * Initializes the klass->fields.
- * LOCKING: Assumes the loader lock is held.
+ * Initializes klass->fields, computes class layout and sizes.
+ * typebuilder_setup_fields () is the corresponding function for dynamic classes.
+ * Sets the following fields in @klass:
+ *  - packing_size
+ *  - min_align
+ *  - blittable
+ *  - has_references (if the class contains instance references firled or structs that contain references)
+ *  - has_static_refs (same, but for static fields)
+ *  - instance_size (size of the object in memory)
+ *  - class_size (size needed for the static fields)
+ *  - size_inited (flag set when the instance_size is set)
+ *  - element_class/cast_class (for enums)
+ *  - fields_inited
+ *
+ * LOCKING: Acquires the loader lock.
  */
-static void
+void
 mono_class_setup_fields (MonoClass *klass)
 {
 	MonoError error;
 	MonoImage *m = klass->image;
 	int top;
 	guint32 layout = klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK;
-	int i, blittable = TRUE;
+	int i;
 	guint32 real_size = 0;
 	guint32 packing_size = 0;
 	int instance_size;
 	gboolean explicit_size;
 	MonoClassField *field;
-	MonoGenericContainer *container = NULL;
-	MonoClass *gtd = klass->generic_class ? mono_class_get_generic_type_definition (klass) : NULL;
+	MonoClass *gtd;
 
-	/*
-	 * FIXME: We have a race condition here.  It's possible that this function returns
-	 * to its caller with `instance_size` set to `0` instead of the actual size.  This
-	 * is not a problem when the function is called recursively on the same class,
-	 * because the size will be initialized by the outer invocation.  What follows is a
-	 * description of how it can occur in other cases, too.  There it is a problem,
-	 * because it can lead to the GC being asked to allocate an object of size `0`,
-	 * which SGen chokes on.  The race condition is triggered infrequently by
-	 * `tests/sgen-suspend.cs`.
-	 *
-	 * This function is called for a class whenever one of its subclasses is inited.
-	 * For example, it's called for every subclass of Object.  What it does is this:
-	 *
-	 *     if (klass->setup_fields_called)
-	 *         return;
-	 *     ...
-	 *     klass->instance_size = 0;
-	 *     ...
-	 *     klass->setup_fields_called = 1;
-	 *     ... critical point
-	 *     klass->instance_size = actual_instance_size;
-	 *
-	 * The last two steps are sometimes reversed, but that only changes the way in which
-	 * the race condition works.
-	 *
-	 * Assume thread A goes through this function and makes it to the critical point.
-	 * Now thread B runs the function and, since `setup_fields_called` is set, returns
-	 * immediately, but `instance_size` is incorrect.
-	 *
-	 * The other case looks like this:
-	 *
-	 *     if (klass->setup_fields_called)
-	 *         return;
-	 *     ... critical point X
-	 *     klass->instance_size = 0;
-	 *     ... critical point Y
-	 *     klass->instance_size = actual_instance_size;
-	 *     ...
-	 *     klass->setup_fields_called = 1;
-	 *
-	 * Assume thread A goes through the function and makes it to critical point X.  Now
-	 * thread B runs through the whole of the function, returning, assuming
-	 * `instance_size` is set.  At that point thread A gets to run and makes it to
-	 * critical point Y, at which time `instance_size` is `0` again, invalidating thread
-	 * B's assumption.
-	 */
-	if (klass->setup_fields_called)
+	if (klass->fields_inited)
 		return;
 
 	if (klass->generic_class && image_is_dynamic (klass->generic_class->container_class->image) && !klass->generic_class->container_class->wastypebuilder) {
@@ -1594,6 +1576,7 @@ mono_class_setup_fields (MonoClass *klass)
 	mono_class_setup_basic_field_info (klass);
 	top = klass->field.count;
 
+	gtd = klass->generic_class ? mono_class_get_generic_type_definition (klass) : NULL;
 	if (gtd) {
 		mono_class_setup_fields (gtd);
 		if (mono_class_set_type_load_failure_causedby_class (klass, gtd, "Generic type definition failed"))
@@ -1601,89 +1584,45 @@ mono_class_setup_fields (MonoClass *klass)
 	}
 
 	instance_size = 0;
-	if (!klass->rank)
-		klass->sizes.class_size = 0;
-
 	if (klass->parent) {
 		/* For generic instances, klass->parent might not have been initialized */
 		mono_class_init (klass->parent);
-		if (!klass->parent->size_inited) {
-			mono_class_setup_fields (klass->parent);
-			if (mono_class_set_type_load_failure_causedby_class (klass, klass->parent, "Could not set up parent class"))
-				return;
-		}
-		instance_size += klass->parent->instance_size;
-		klass->min_align = klass->parent->min_align;
-		/* we use |= since it may have been set already */
-		klass->has_references |= klass->parent->has_references;
-		blittable = klass->parent->blittable;
+		mono_class_setup_fields (klass->parent);
+		if (mono_class_set_type_load_failure_causedby_class (klass, klass->parent, "Could not set up parent class"))
+			return;
+		instance_size = klass->parent->instance_size;
 	} else {
 		instance_size = sizeof (MonoObject);
-		klass->min_align = 1;
 	}
 
-	/* We can't really enable 16 bytes alignment until the GC supports it.
-	The whole layout/instance size code must be reviewed because we do alignment calculation in terms of the
-	boxed instance, which leads to unexplainable holes at the beginning of an object embedding a simd type.
-	Bug #506144 is an example of this issue.
-
-	 if (klass->simd_type)
-		klass->min_align = 16;
-	 */
 	/* Get the real size */
 	explicit_size = mono_metadata_packing_from_typedef (klass->image, klass->type_token, &packing_size, &real_size);
+	if (explicit_size)
+		instance_size += real_size;
 
-	if (explicit_size) {
-		if ((packing_size & 0xffffff00) != 0) {
-			mono_class_set_type_load_failure (klass, "Could not load struct '%s' with packing size %d >= 256", klass->name, packing_size);
-			return;
-		}
-		klass->packing_size = packing_size;
-		real_size += instance_size;
-	}
-
-	if (!top) {
-		if (explicit_size && real_size) {
-			instance_size = MAX (real_size, instance_size);
-		}
-		klass->blittable = blittable;
-		if (!klass->instance_size)
-			klass->instance_size = instance_size;
-		mono_memory_barrier ();
-		klass->size_inited = 1;
-		klass->fields_inited = 1;
-		klass->setup_fields_called = 1;
+	/*
+	 * This function can recursively call itself.
+	 * Prevent infinite recursion by using a list in TLS.
+	 */
+	GSList *init_list = (GSList *)mono_native_tls_get_value (setup_fields_tls_id);
+	if (g_slist_find (init_list, klass))
 		return;
-	}
-
-	if (layout == TYPE_ATTRIBUTE_AUTO_LAYOUT && !(mono_is_corlib_image (klass->image) && !strcmp (klass->name_space, "System") && !strcmp (klass->name, "ValueType")))
-		blittable = FALSE;
-
-	/* Prevent infinite loops if the class references itself */
-	klass->setup_fields_called = 1;
-
-	if (klass->generic_container) {
-		container = klass->generic_container;
-	} else if (gtd) {
-		container = gtd->generic_container;
-		g_assert (container);
-	}
+	init_list = g_slist_prepend (init_list, klass);
+	mono_native_tls_set_value (setup_fields_tls_id, init_list);
 
 	/*
 	 * Fetch all the field information.
 	 */
-	for (i = 0; i < top; i++){
+	for (i = 0; i < top; i++) {
 		int idx = klass->field.first + i;
 		field = &klass->fields [i];
-
-		field->parent = klass;
 
 		if (!field->type) {
 			mono_field_resolve_type (field, &error);
 			if (!mono_error_ok (&error)) {
 				/*mono_field_resolve_type already failed class*/
 				mono_error_cleanup (&error);
-				return;
+				break;
 			}
 			if (!field->type)
 				g_error ("could not resolve %s:%s\n", mono_type_get_full_name(klass), field->name);
@@ -1692,57 +1631,24 @@ mono_class_setup_fields (MonoClass *klass)
 
 		if (mono_field_is_deleted (field))
 			continue;
-		if (gtd) {
-			MonoClassField *gfield = &gtd->fields [i];
-			field->offset = gfield->offset;
-		} else {
-			if (layout == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) {
-				guint32 offset;
-				mono_metadata_field_info (m, idx, &offset, NULL, NULL);
-				field->offset = offset;
+		if (layout == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) {
+			guint32 uoffset;
+			mono_metadata_field_info (m, idx, &uoffset, NULL, NULL);
+			int offset = uoffset;
 
-				if (field->offset == (guint32)-1 && !(field->type->attrs & FIELD_ATTRIBUTE_STATIC)) {
-					mono_class_set_type_load_failure (klass, "Missing field layout info for %s", field->name);
-					break;
-				}
-				if (field->offset < -1) { /*-1 is used to encode special static fields */
-					mono_class_set_type_load_failure (klass, "Field '%s' has a negative offset %d", field->name, field->offset);
-					break;
-				}
-				if (klass->generic_container) {
-					mono_class_set_type_load_failure (klass, "Generic class cannot have explicit layout.");
-					break;
-				}
+			if (offset == (guint32)-1 && !(field->type->attrs & FIELD_ATTRIBUTE_STATIC)) {
+				mono_class_set_type_load_failure (klass, "Missing field layout info for %s", field->name);
+				break;
+			}
+			if (offset < -1) { /*-1 is used to encode special static fields */
+				mono_class_set_type_load_failure (klass, "Field '%s' has a negative offset %d", field->name, offset);
+				break;
+			}
+			if (klass->generic_container) {
+				mono_class_set_type_load_failure (klass, "Generic class cannot have explicit layout.");
+				break;
 			}
 		}
-
-		/* Only do these checks if we still think this type is blittable */
-		if (blittable && !(field->type->attrs & FIELD_ATTRIBUTE_STATIC)) {
-			if (field->type->byref || MONO_TYPE_IS_REFERENCE (field->type)) {
-				blittable = FALSE;
-			} else {
-				MonoClass *field_class = mono_class_from_mono_type (field->type);
-				if (field_class) {
-					mono_class_setup_fields (field_class);
-					if (mono_class_has_failure (field_class)) {
-						MonoError field_error;
-						mono_error_init (&field_error);
-						mono_error_set_for_class_failure (&field_error, field_class);
-						mono_class_set_type_load_failure (klass, "Could not set up field '%s' due to: %s", field->name, mono_error_get_message (&field_error));
-						mono_error_cleanup (&field_error);
-						break;
-					}
-				}
-				if (!field_class || !field_class->blittable)
-					blittable = FALSE;
-			}
-		}
-
-		if (klass->enumtype && !(field->type->attrs & FIELD_ATTRIBUTE_STATIC)) {
-			klass->cast_class = klass->element_class = mono_class_from_mono_type (field->type);
-			blittable = klass->element_class->blittable;
-		}
-
 		if (mono_type_has_exceptions (field->type)) {
 			char *class_name = mono_type_get_full_name (klass);
 			char *type_name = mono_type_full_name (field->type);
@@ -1756,47 +1662,11 @@ mono_class_setup_fields (MonoClass *klass)
 		/* The def_value of fields is compute lazily during vtable creation */
 	}
 
-	if (klass == mono_defaults.string_class)
-		blittable = FALSE;
+	if (!mono_class_has_failure (klass))
+		mono_class_layout_fields (klass, instance_size, packing_size, FALSE);
 
-	klass->blittable = blittable;
-
-	if (klass->enumtype && !mono_class_enum_basetype (klass)) {
-		mono_class_set_type_load_failure (klass, "The enumeration's base type is invalid.");
-		return;
-	}
-	if (explicit_size && real_size) {
-		instance_size = MAX (real_size, instance_size);
-	}
-
-	if (mono_class_has_failure (klass))
-		return;
-	mono_class_layout_fields (klass, instance_size);
-
-	/*valuetypes can't be neither bigger than 1Mb or empty. */
-	if (klass->valuetype && (klass->instance_size <= 0 || klass->instance_size > (0x100000 + sizeof (MonoObject))))
-		mono_class_set_type_load_failure (klass, "Value type instance size (%d) cannot be zero, negative, or bigger than 1Mb", klass->instance_size);
-
-	mono_memory_barrier ();
-	klass->fields_inited = 1;
-}
-
-/** 
- * mono_class_setup_fields_locking:
- * @class: The class to initialize
- *
- * Initializes the klass->fields array of fields.
- * Aquires the loader lock.
- */
-void
-mono_class_setup_fields_locking (MonoClass *klass)
-{
-	/* This can be checked without locks */
-	if (klass->fields_inited)
-		return;
-	mono_loader_lock ();
-	mono_class_setup_fields (klass);
-	mono_loader_unlock ();
+	init_list = g_slist_remove (init_list, klass);
+	mono_native_tls_set_value (setup_fields_tls_id, init_list);
 }
 
 /*
@@ -1852,20 +1722,17 @@ type_has_references (MonoClass *klass, MonoType *ftype)
 /*
  * mono_class_layout_fields:
  * @class: a class
- * @instance_size: base instance size
+ * @base_instance_size: base instance size
+ * @packing_size:
  *
- * Compute the placement of fields inside an object or struct, according to
- * the layout rules and set the following fields in @class:
- *  - has_references (if the class contains instance references firled or structs that contain references)
- *  - has_static_refs (same, but for static fields)
- *  - instance_size (size of the object in memory)
- *  - class_size (size needed for the static fields)
- *  - size_inited (flag set when the instance_size is set)
+ * This contains the common code for computing the layout of classes and sizes.
+ * This should only be called from mono_class_setup_fields () and
+ * typebuilder_setup_fields ().
  *
- * LOCKING: this is supposed to be called with the loader lock held.
+ * LOCKING: Acquires the loader lock
  */
 void
-mono_class_layout_fields (MonoClass *klass, int instance_size)
+mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_size, gboolean sre)
 {
 	int i;
 	const int top = klass->field.count;
@@ -1873,7 +1740,41 @@ mono_class_layout_fields (MonoClass *klass, int instance_size)
 	guint32 pass, passes, real_size;
 	gboolean gc_aware_layout = FALSE;
 	gboolean has_static_fields = FALSE;
+	gboolean has_references = FALSE;
+	gboolean has_static_refs = FALSE;
 	MonoClassField *field;
+	gboolean blittable;
+	int instance_size = base_instance_size;
+	int class_size, min_align;
+	int *field_offsets;
+
+	/*
+	 * We want to avoid doing complicated work inside locks, so we compute all the required
+	 * information and write it to @klass inside a lock.
+	 */
+	if (klass->fields_inited)
+		return;
+
+	if ((packing_size & 0xffffff00) != 0) {
+		mono_class_set_type_load_failure (klass, "Could not load struct '%s' with packing size %d >= 256", klass->name, packing_size);
+		return;
+	}
+
+	if (klass->parent) {
+		min_align = klass->parent->min_align;
+		/* we use | since it may have been set already */
+		has_references = klass->has_references | klass->parent->has_references;
+	} else {
+		min_align = 1;
+	}
+	/* We can't really enable 16 bytes alignment until the GC supports it.
+	The whole layout/instance size code must be reviewed because we do alignment calculation in terms of the
+	boxed instance, which leads to unexplainable holes at the beginning of an object embedding a simd type.
+	Bug #506144 is an example of this issue.
+
+	 if (klass->simd_type)
+		min_align = 16;
+	 */
 
 	/*
 	 * When we do generic sharing we need to have layout
@@ -1881,6 +1782,21 @@ mono_class_layout_fields (MonoClass *klass, int instance_size)
 	 * context containing type variables or with a generic
 	 * container), so we don't return in that case anymore.
 	 */
+
+	if (klass->enumtype) {
+		for (i = 0; i < top; i++) {
+			field = &klass->fields [i];
+			if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC)) {
+				klass->cast_class = klass->element_class = mono_class_from_mono_type (field->type);
+				break;
+			}
+		}
+
+		if (!mono_class_enum_basetype (klass)) {
+			mono_class_set_type_load_failure (klass, "The enumeration's base type is invalid.");
+			return;
+		}
+	}
 
 	/*
 	 * Enable GC aware auto layout: in this mode, reference
@@ -1897,6 +1813,47 @@ mono_class_layout_fields (MonoClass *klass, int instance_size)
 			gc_aware_layout = TRUE;
 	}
 
+	/* Compute klass->blittable */
+	blittable = TRUE;
+	if (klass->parent)
+		blittable = klass->parent->blittable;
+	if (layout == TYPE_ATTRIBUTE_AUTO_LAYOUT && !(mono_is_corlib_image (klass->image) && !strcmp (klass->name_space, "System") && !strcmp (klass->name, "ValueType")) && top)
+		blittable = FALSE;
+	for (i = 0; i < top; i++) {
+		field = &klass->fields [i];
+
+		if (mono_field_is_deleted (field))
+			continue;
+		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+			continue;
+		if (blittable) {
+			if (field->type->byref || MONO_TYPE_IS_REFERENCE (field->type)) {
+				blittable = FALSE;
+			} else {
+				MonoClass *field_class = mono_class_from_mono_type (field->type);
+				if (field_class) {
+					mono_class_setup_fields (field_class);
+					if (mono_class_has_failure (field_class)) {
+						MonoError field_error;
+						mono_error_init (&field_error);
+						mono_error_set_for_class_failure (&field_error, field_class);
+						mono_class_set_type_load_failure (klass, "Could not set up field '%s' due to: %s", field->name, mono_error_get_message (&field_error));
+						mono_error_cleanup (&field_error);
+						break;
+					}
+				}
+				if (!field_class || !field_class->blittable)
+					blittable = FALSE;
+			}
+		}
+		if (klass->enumtype)
+			blittable = klass->element_class->blittable;
+	}
+	if (mono_class_has_failure (klass))
+		return;
+	if (klass == mono_defaults.string_class)
+		blittable = FALSE;
+
 	/* Compute klass->has_references */
 	/* 
 	 * Process non-static fields first, since static fields might recursively
@@ -1911,45 +1868,17 @@ mono_class_layout_fields (MonoClass *klass, int instance_size)
 			ftype = mono_type_get_underlying_type (field->type);
 			ftype = mono_type_get_basic_type_from_generic (ftype);
 			if (type_has_references (klass, ftype))
-				klass->has_references = TRUE;
-		}
-	}
-
-	for (i = 0; i < top; i++) {
-		MonoType *ftype;
-
-		field = &klass->fields [i];
-
-		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC) {
-			ftype = mono_type_get_underlying_type (field->type);
-			ftype = mono_type_get_basic_type_from_generic (ftype);
-			if (type_has_references (klass, ftype))
-				klass->has_static_refs = TRUE;
-		}
-	}
-
-	for (i = 0; i < top; i++) {
-		MonoType *ftype;
-
-		field = &klass->fields [i];
-
-		ftype = mono_type_get_underlying_type (field->type);
-		ftype = mono_type_get_basic_type_from_generic (ftype);
-		if (type_has_references (klass, ftype)) {
-			if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
-				klass->has_static_refs = TRUE;
-			else
-				klass->has_references = TRUE;
+				has_references = TRUE;
 		}
 	}
 
 	/*
 	 * Compute field layout and total size (not considering static fields)
 	 */
+	field_offsets = g_new0 (int, top);
 	switch (layout) {
 	case TYPE_ATTRIBUTE_AUTO_LAYOUT:
 	case TYPE_ATTRIBUTE_SEQUENTIAL_LAYOUT:
-
 		if (gc_aware_layout)
 			passes = 2;
 		else
@@ -1992,7 +1921,7 @@ mono_class_layout_fields (MonoClass *klass, int instance_size)
 					}
 				}
 
-				if ((top == 1) && (klass->instance_size == sizeof (MonoObject)) &&
+				if ((top == 1) && (instance_size == sizeof (MonoObject)) &&
 					(strcmp (mono_field_get_name (field), "$PRIVATE$") == 0)) {
 					/* This field is a hack inserted by MCS to empty structures */
 					continue;
@@ -2001,29 +1930,29 @@ mono_class_layout_fields (MonoClass *klass, int instance_size)
 				size = mono_type_size (field->type, &align);
 			
 				/* FIXME (LAMESPEC): should we also change the min alignment according to pack? */
-				align = klass->packing_size ? MIN (klass->packing_size, align): align;
+				align = packing_size ? MIN (packing_size, align): align;
 				/* if the field has managed references, we need to force-align it
 				 * see bug #77788
 				 */
 				if (type_has_references (klass, ftype))
 					align = MAX (align, sizeof (gpointer));
 
-				klass->min_align = MAX (align, klass->min_align);
-				field->offset = real_size;
+				min_align = MAX (align, min_align);
+				field_offsets [i] = real_size;
 				if (align) {
-					field->offset += align - 1;
-					field->offset &= ~(align - 1);
+					field_offsets [i] += align - 1;
+					field_offsets [i] &= ~(align - 1);
 				}
 				/*TypeBuilders produce all sort of weird things*/
-				g_assert (image_is_dynamic (klass->image) || field->offset > 0);
-				real_size = field->offset + size;
+				g_assert (image_is_dynamic (klass->image) || field_offsets [i] > 0);
+				real_size = field_offsets [i] + size;
 			}
 
 			instance_size = MAX (real_size, instance_size);
        
-			if (instance_size & (klass->min_align - 1)) {
-				instance_size += klass->min_align - 1;
-				instance_size &= ~(klass->min_align - 1);
+			if (instance_size & (min_align - 1)) {
+				instance_size += min_align - 1;
+				instance_size &= ~(min_align - 1);
 			}
 		}
 		break;
@@ -2048,20 +1977,22 @@ mono_class_layout_fields (MonoClass *klass, int instance_size)
 				continue;
 
 			size = mono_type_size (field->type, &align);
-			align = klass->packing_size ? MIN (klass->packing_size, align): align;
-			klass->min_align = MAX (align, klass->min_align);
+			align = packing_size ? MIN (packing_size, align): align;
+			min_align = MAX (align, min_align);
 
-			/*
-			 * When we get here, field->offset is already set by the
-			 * loader (for either runtime fields or fields loaded from metadata).
-			 * The offset is from the start of the object: this works for both
-			 * classes and valuetypes.
-			 */
-			field->offset += sizeof (MonoObject);
+			if (sre) {
+				/* Already set by typebuilder_setup_fields () */
+				field_offsets [i] = field->offset + sizeof (MonoObject);
+			} else {
+				int idx = klass->field.first + i;
+				guint32 offset;
+				mono_metadata_field_info (klass->image, idx, &offset, NULL, NULL);
+				field_offsets [i] = offset + sizeof (MonoObject);
+			}
 			ftype = mono_type_get_underlying_type (field->type);
 			ftype = mono_type_get_basic_type_from_generic (ftype);
 			if (type_has_references (klass, ftype)) {
-				if (field->offset % sizeof (gpointer)) {
+				if (field_offsets [i] % sizeof (gpointer)) {
 					mono_class_set_type_load_failure (klass, "Reference typed field '%s' has explicit offset that is not pointer-size aligned.", field->name);
 				}
 			}
@@ -2069,7 +2000,7 @@ mono_class_layout_fields (MonoClass *klass, int instance_size)
 			/*
 			 * Calc max size.
 			 */
-			real_size = MAX (real_size, size + field->offset);
+			real_size = MAX (real_size, size + field_offsets [i]);
 		}
 
 		if (klass->has_references) {
@@ -2087,7 +2018,7 @@ mono_class_layout_fields (MonoClass *klass, int instance_size)
 					continue;
 				ftype = mono_type_get_underlying_type (field->type);
 				if (MONO_TYPE_IS_REFERENCE (ftype))
-					ref_bitmap [field->offset / sizeof (gpointer)] = 1;
+					ref_bitmap [field_offsets [i] / sizeof (gpointer)] = 1;
 			}
 			for (i = 0; i < top; i++) {
 				field = &klass->fields [i];
@@ -2099,8 +2030,8 @@ mono_class_layout_fields (MonoClass *klass, int instance_size)
 
 				// FIXME: Too much code does this
 #if 0
-				if (!MONO_TYPE_IS_REFERENCE (field->type) && ref_bitmap [field->offset / sizeof (gpointer)]) {
-					mono_class_set_type_load_failure (klass, "Could not load type '%s' because it contains an object field at offset %d that is incorrectly aligned or overlapped by a non-object field.", klass->name, field->offset);
+				if (!MONO_TYPE_IS_REFERENCE (field->type) && ref_bitmap [field_offsets [i] / sizeof (gpointer)]) {
+					mono_class_set_type_load_failure (klass, "Could not load type '%s' because it contains an object field at offset %d that is incorrectly aligned or overlapped by a non-object field.", klass->name, field_offsets [i]);
 				}
 #endif
 			}
@@ -2108,9 +2039,9 @@ mono_class_layout_fields (MonoClass *klass, int instance_size)
 		}
 
 		instance_size = MAX (real_size, instance_size);
-		if (instance_size & (klass->min_align - 1)) {
-			instance_size += klass->min_align - 1;
-			instance_size &= ~(klass->min_align - 1);
+		if (instance_size & (min_align - 1)) {
+			instance_size += min_align - 1;
+			instance_size &= ~(min_align - 1);
 		}
 		break;
 	}
@@ -2125,25 +2056,38 @@ mono_class_layout_fields (MonoClass *klass, int instance_size)
 		 * performance, and since the JIT memset/memcpy code assumes this and generates 
 		 * unaligned accesses otherwise. See #78990 for a testcase.
 		 */
-		if (mono_align_small_structs) {
+		if (mono_align_small_structs && top) {
 			if (instance_size <= sizeof (MonoObject) + sizeof (gpointer))
-				klass->min_align = MAX (klass->min_align, instance_size - sizeof (MonoObject));
+				min_align = MAX (min_align, instance_size - sizeof (MonoObject));
 		}
 	}
 
-	if (klass->instance_size && !klass->image->dynamic) {
+	/* Publish the data */
+	mono_loader_lock ();
+	if (klass->instance_size && !klass->image->dynamic && top) {
 		/* Might be already set using cached info */
 		g_assert (klass->instance_size == instance_size);
 	} else {
 		klass->instance_size = instance_size;
 	}
+	klass->blittable = blittable;
+	klass->has_references = has_references;
+	klass->packing_size = packing_size;
+	klass->min_align = min_align;
+	for (i = 0; i < top; ++i)
+		klass->fields [i].offset = field_offsets [i];
+
 	mono_memory_barrier ();
 	klass->size_inited = 1;
+	mono_loader_unlock ();
 
 	/*
 	 * Compute static field layout and size
+	 * Static fields can reference the class itself, so this has to be
+	 * done after instance_size etc. are initialized.
 	 */
-	for (i = 0; i < top; i++){
+	class_size = 0;
+	for (i = 0; i < top; i++) {
 		gint32 align;
 		guint32 size;
 
@@ -2162,16 +2106,53 @@ mono_class_layout_fields (MonoClass *klass, int instance_size)
 		has_static_fields = TRUE;
 
 		size = mono_type_size (field->type, &align);
-		field->offset = klass->sizes.class_size;
+		field_offsets [i] = class_size;
 		/*align is always non-zero here*/
-		field->offset += align - 1;
-		field->offset &= ~(align - 1);
-		klass->sizes.class_size = field->offset + size;
+		field_offsets [i] += align - 1;
+		field_offsets [i] &= ~(align - 1);
+		class_size = field_offsets [i] + size;
 	}
 
-	if (has_static_fields && klass->sizes.class_size == 0)
+	if (has_static_fields && class_size == 0)
 		/* Simplify code which depends on class_size != 0 if the class has static fields */
-		klass->sizes.class_size = 8;
+		class_size = 8;
+
+	/* Compute klass->has_static_refs */
+	has_static_refs = FALSE;
+	for (i = 0; i < top; i++) {
+		MonoType *ftype;
+
+		field = &klass->fields [i];
+
+		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC) {
+			ftype = mono_type_get_underlying_type (field->type);
+			ftype = mono_type_get_basic_type_from_generic (ftype);
+			if (type_has_references (klass, ftype))
+				has_static_refs = TRUE;
+		}
+	}
+
+	/*valuetypes can't be neither bigger than 1Mb or empty. */
+	if (klass->valuetype && (klass->instance_size <= 0 || klass->instance_size > (0x100000 + sizeof (MonoObject))))
+		mono_class_set_type_load_failure (klass, "Value type instance size (%d) cannot be zero, negative, or bigger than 1Mb", klass->instance_size);
+
+	/* Publish the data */
+	mono_loader_lock ();
+	if (!klass->rank)
+		klass->sizes.class_size = class_size;
+	klass->has_static_refs = has_static_refs;
+	for (i = 0; i < top; ++i) {
+		field = &klass->fields [i];
+
+		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+			field->offset = field_offsets [i];
+	}
+
+	mono_memory_barrier ();
+	klass->fields_inited = 1;
+	mono_loader_unlock ();
+
+	g_free (field_offsets);
 }
 
 static MonoMethod*
@@ -5371,11 +5352,7 @@ mono_class_has_finalizer (MonoClass *klass)
 gboolean
 mono_is_corlib_image (MonoImage *image)
 {
-	/* FIXME: allow the dynamic case for our compilers and with full trust */
-	if (image_is_dynamic (image))
-		return image->assembly && !strcmp (image->assembly->aname.name, "mscorlib");
-	else
-		return image == mono_defaults.corlib;
+	return image == mono_defaults.corlib;
 }
 
 /*
@@ -6188,7 +6165,6 @@ make_generic_param_class (MonoGenericParam *param, MonoGenericParamInfo *pinfo)
 	klass->instance_size = sizeof (MonoObject) + mono_type_stack_size_internal (&klass->byval_arg, NULL, TRUE);
 	mono_memory_barrier ();
 	klass->size_inited = 1;
-	klass->setup_fields_called = 1;
 
 	mono_class_setup_supertypes (klass);
 
@@ -6629,7 +6605,6 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	GSList *list, *rootlist = NULL;
 	int nsize;
 	char *name;
-	gboolean corlib_type = FALSE;
 
 	g_assert (rank <= 255);
 
@@ -6671,15 +6646,9 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 		}
 	}
 
-	/* for the building corlib use System.Array from it */
-	if (image->assembly && assembly_is_dynamic (image->assembly) && image->assembly_name && strcmp (image->assembly_name, "mscorlib") == 0) {
-		parent = mono_class_load_from_name (image, "System", "Array");
-		corlib_type = TRUE;
-	} else {
-		parent = mono_defaults.array_class;
-		if (!parent->inited)
-			mono_class_init (parent);
-	}
+	parent = mono_defaults.array_class;
+	if (!parent->inited)
+		mono_class_init (parent);
 
 	klass = (MonoClass *)mono_image_alloc0 (image, sizeof (MonoClass));
 
@@ -6783,9 +6752,6 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	}
 	klass->this_arg = klass->byval_arg;
 	klass->this_arg.byref = 1;
-	if (corlib_type) {
-		klass->inited = 1;
-	}
 
 	klass->generic_container = eclass->generic_container;
 
@@ -6900,7 +6866,7 @@ mono_class_data_size (MonoClass *klass)
 		mono_class_init (klass);
 	/* This can happen with dynamically created types */
 	if (!klass->fields_inited)
-		mono_class_setup_fields_locking (klass);
+		mono_class_setup_fields (klass);
 
 	/* in arrays, sizes.class_size is unioned with element_size
 	 * and arrays have no static fields
@@ -6918,7 +6884,7 @@ mono_class_data_size (MonoClass *klass)
 static MonoClassField *
 mono_class_get_field_idx (MonoClass *klass, int idx)
 {
-	mono_class_setup_fields_locking (klass);
+	mono_class_setup_fields (klass);
 	if (mono_class_has_failure (klass))
 		return NULL;
 
@@ -7000,7 +6966,7 @@ mono_class_get_field_from_name_full (MonoClass *klass, const char *name, MonoTyp
 {
 	int i;
 
-	mono_class_setup_fields_locking (klass);
+	mono_class_setup_fields (klass);
 	if (mono_class_has_failure (klass))
 		return NULL;
 
@@ -7038,7 +7004,7 @@ mono_class_get_field_token (MonoClassField *field)
 	MonoClass *klass = field->parent;
 	int i;
 
-	mono_class_setup_fields_locking (klass);
+	mono_class_setup_fields (klass);
 
 	while (klass) {
 		if (!klass->fields)
@@ -9118,7 +9084,7 @@ mono_class_get_fields (MonoClass* klass, gpointer *iter)
 	if (!iter)
 		return NULL;
 	if (!*iter) {
-		mono_class_setup_fields_locking (klass);
+		mono_class_setup_fields (klass);
 		if (mono_class_has_failure (klass))
 			return NULL;
 		/* start from the first */
@@ -9985,6 +9951,8 @@ mono_classes_init (void)
 {
 	mono_os_mutex_init (&classes_mutex);
 
+	mono_native_tls_alloc (&setup_fields_tls_id, NULL);
+
 	mono_counters_register ("Inflated methods size",
 							MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &inflated_methods_size);
 	mono_counters_register ("Inflated classes",
@@ -10005,6 +9973,8 @@ mono_classes_init (void)
 void
 mono_classes_cleanup (void)
 {
+	mono_native_tls_free (setup_fields_tls_id);
+
 	if (global_interface_bitset)
 		mono_bitset_free (global_interface_bitset);
 	global_interface_bitset = NULL;
@@ -10727,21 +10697,6 @@ mono_field_resolve_flags (MonoClassField *field)
 }
 
 /**
- * mono_class_setup_basic_field_info:
- * @class: The class to initialize
- *
- * Initializes the klass->fields array of fields.
- * Aquires the loader lock.
- */
-static void
-mono_class_setup_basic_field_info_locking (MonoClass *klass)
-{
-	mono_loader_lock ();
-	mono_class_setup_basic_field_info (klass);
-	mono_loader_unlock ();
-}
-
-/**
  * mono_class_get_fields_lazy:
  * @klass: the MonoClass to act on
  *
@@ -10762,7 +10717,7 @@ mono_class_get_fields_lazy (MonoClass* klass, gpointer *iter)
 	if (!iter)
 		return NULL;
 	if (!*iter) {
-		mono_class_setup_basic_field_info_locking (klass);
+		mono_class_setup_basic_field_info (klass);
 		if (!klass->fields)
 			return NULL;
 		/* start from the first */

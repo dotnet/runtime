@@ -322,8 +322,7 @@ struct _MonoClass {
 	guint is_generic : 1; /* class is a generic type definition */
 	guint is_inflated : 1; /* class is a generic instance */
 	guint has_finalize_inited    : 1; /* has_finalize is initialized */
-	guint fields_inited : 1; /* fields is initialized */
-	guint setup_fields_called : 1; /* to prevent infinite loops in setup_fields */
+	guint fields_inited : 1; /* setup_fields () has finished */
 	guint has_failure : 1; /* See MONO_CLASS_PROP_EXCEPTION_DATA for a MonoErrorBoxed with the details */
 
 	MonoClass  *parent;
@@ -707,7 +706,7 @@ void
 mono_class_setup_supertypes (MonoClass *klass);
 
 void
-mono_class_setup_fields_locking (MonoClass *klass);
+mono_class_setup_fields (MonoClass *klass);
 
 /* WARNING
  * Only call this function if you can ensure both @klass and @parent
@@ -911,7 +910,7 @@ void
 mono_classes_cleanup (void);
 
 void
-mono_class_layout_fields   (MonoClass *klass, int instance_size);
+mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_size, gboolean sre);
 
 void
 mono_class_setup_interface_offsets (MonoClass *klass);
