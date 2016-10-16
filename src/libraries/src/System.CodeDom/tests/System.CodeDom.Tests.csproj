@@ -9,6 +9,22 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.7_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.7_Release|AnyCPU' " />
   <ItemGroup>
+    <Compile Include="CodeCollections\CodeAttributeDeclarationCollectionTests.cs" />
+    <Compile Include="CodeCollections\CodeAttributeArgumentCollectionTests.cs" />
+    <Compile Include="CodeCollections\CodeCatchClauseCollectionTests.cs" />
+    <Compile Include="CodeCollections\CodeStatementCollectionTests.cs" />
+    <Compile Include="CodeCollections\CodeCollectionTestBase.cs" />
+    <Compile Include="CodeCollections\CodeCommentStatementCollectionTests.cs" />
+    <Compile Include="CodeCollections\CodeDirectiveCollectionTests.cs" />
+    <Compile Include="CodeCollections\CodeExpressionCollectionTests.cs" />
+    <Compile Include="CodeCollections\CodeNamespaceCollectionTests.cs" />
+    <Compile Include="CodeCollections\CodeNamespaceImportCollectionTests.cs" />
+    <Compile Include="CodeCollections\CodeParameterDeclarationExpressionCollectionTests.cs" />
+    <Compile Include="CodeCollections\CodeTypeDeclarationCollectionTests.cs" />
+    <Compile Include="CodeCollections\CodeTypeMemberCollectionTests.cs" />
+    <Compile Include="CodeCollections\CodeTypeParameterCollectionTests.cs" />
+    <Compile Include="CodeCollections\CodeTypeReferenceCollectionTests.cs" />
+    <Compile Include="CodeCollections\CompilerErrorCollectionTests.cs" />
     <Compile Include="CodeCollections\TempFileCollectionTests.cs" />
     <Compile Include="CodeExpressions\CodeObjectCreateExpressionTests.cs" />
     <Compile Include="CodeExpressions\CodeParameterDeclarationExpressionTests.cs" />
