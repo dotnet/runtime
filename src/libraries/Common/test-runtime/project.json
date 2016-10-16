@@ -1,8 +1,8 @@
 {
   "dependencies": {
     "NETStandard.Library": "1.6.2-beta-24615-03",
-    "Microsoft.NETCore.TestHost": "1.2.0-beta-24615-02",
-    "Microsoft.NETCore.Runtime.CoreCLR": "1.2.0-beta-24615-02",
+    "Microsoft.NETCore.TestHost": "1.2.0-beta-24616-03",
+    "Microsoft.NETCore.Runtime.CoreCLR": "1.2.0-beta-24616-03",
     "System.Diagnostics.Contracts": "4.4.0-beta-24615-03",
     "System.Diagnostics.StackTrace": "4.4.0-beta-24615-03",
     "System.Linq.Parallel": "4.4.0-beta-24615-03",
