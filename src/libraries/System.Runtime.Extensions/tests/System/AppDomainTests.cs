@@ -69,7 +69,7 @@ namespace System.Tests
             RemoteInvoke(() =>
             {
                 AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(MyHandler);
-                throw new Exception("****This Unhandled Exception is excepted***");
+                throw new Exception("****This Unhandled Exception is Expected****");
 #pragma warning disable 0162
                 return SuccessExitCode;
 #pragma warning restore 0162
