@@ -776,7 +776,7 @@ namespace System
         public static decimal Truncate(decimal d) { throw null; }
         public static double Truncate(double d) { throw null; }
     }
-    public sealed class OperatingSystem
+    public sealed class OperatingSystem : System.ICloneable, System.Runtime.Serialization.ISerializable
     {
         private OperatingSystem() { }
         public OperatingSystem(System.PlatformID platform, System.Version version) { }
@@ -786,6 +786,7 @@ namespace System
         public object Clone() { throw null; }
         public override string ToString() { throw null; }
         public string VersionString { get { throw null; } }
+        public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public enum PlatformID
     {
