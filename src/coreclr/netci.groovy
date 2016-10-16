@@ -1090,7 +1090,10 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     }
                     break
                 case 'Windows_NT':
-                    Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build")
+                    if (configuration == 'Debug' || configuration == 'Release')
+                    { 
+                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build")
+                    }
                     break
                 default:
                     println("NYI os: ${os}");
