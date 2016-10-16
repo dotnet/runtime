@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Linq;
+using System.Reflection;
+using System.Runtime.Serialization;
 using Xunit;
 
 namespace System.CodeDom.Tests
@@ -29,6 +31,17 @@ namespace System.CodeDom.Tests
 			Assert.Empty(codeNamespace.Imports);
 			Assert.Empty(codeNamespace.Comments);
 		}
+
+        [Fact]
+        public void Ctor_SerializationInfo_StreamingContext()
+        {
+            ConstructorInfo constructor = typeof(CodeNamespace).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[] { typeof(SerializationInfo), typeof(StreamingContext) }, null);
+            var codeNamespace = (CodeNamespace)constructor.Invoke(new object[] { default(SerializationInfo), default(StreamingContext) });
+            Assert.Empty(codeNamespace.Name);
+            Assert.Empty(codeNamespace.Types);
+            Assert.Empty(codeNamespace.Imports);
+            Assert.Empty(codeNamespace.Comments);
+        }
 
 		[Theory]
 		[MemberData(nameof(String_TestData))]
