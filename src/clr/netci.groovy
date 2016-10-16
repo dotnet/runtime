@@ -1483,6 +1483,14 @@ combinedScenarios.each { scenario ->
                         os = 'Windows_NT'
                     }
 
+                    // WinArm32 is only built for Debug and Release
+                    if (os == 'Windows_NT' && architecture == 'arm')
+                    {
+                        if (configuration == 'Checked')
+                        {
+                            return
+                        }
+                    }
                     // If the OS is LinuxARMEmulator and arch is arm, set the isLinuxEmulatorBuild
                     // flag to true and reset the os to Ubuntu
                     // The isLinuxEmulatorBuild flag will be used at a later time to execute the right
