@@ -58,6 +58,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Fact]
+        [ActiveIssue(12539, TestPlatforms.Linux)]
         [PlatformSpecific(TestPlatforms.FreeBSD | TestPlatforms.Linux | TestPlatforms.NetBSD)]
         public void GetCreationTime_GetsTime_Unix()
         {
