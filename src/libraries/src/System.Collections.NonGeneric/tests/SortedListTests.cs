@@ -1229,7 +1229,7 @@ namespace System.Collections.Tests
             CultureInfo currentCulture = CultureInfo.CurrentCulture;
             try
             {
-                    CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("en-US");
+                    CultureInfo.CurrentCulture = new CultureInfo("en-US");
                     var cultureNames = new string[]
                     {
                         "cs-CZ","da-DK","de-DE","el-GR","en-US",
