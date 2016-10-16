@@ -14,7 +14,6 @@ include(functions.cmake)
 if (WIN32)
   message(STATUS "VS_PLATFORM_TOOLSET is ${CMAKE_VS_PLATFORM_TOOLSET}")
   message(STATUS "VS_PLATFORM_NAME is ${CMAKE_VS_PLATFORM_NAME}")
-  message(STATUS "VS_WINDOWS_TARGET_PLATFORM_VERSION is ${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}")
 endif (WIN32)
 
 # Set commonly used directory names
@@ -40,11 +39,19 @@ endif()
 # Ensure other tools are present
 if (WIN32)
     if(CLR_CMAKE_HOST_ARCH STREQUAL arm)
+      
+      # Confirm that Windows SDK is present
+      if(NOT DEFINED CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION OR CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION STREQUAL "" )
+	      message(FATAL_ERROR "Windows SDK is required for the Arm32 build.")
+      else()
+	      message("Using Windows SDK version ${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}")
+      endif()
+
       # Explicitly specify the assembler to be used for Arm32 compile
       file(TO_CMAKE_PATH "$ENV{VCINSTALLDIR}\\bin\\x86_arm\\armasm.exe" CMAKE_ASM_COMPILER)
 
       set(CMAKE_ASM_MASM_COMPILER ${CMAKE_ASM_COMPILER})
-      message(CMAKE_ASM_MASM_COMPILER explicitly set to: ${CMAKE_ASM_MASM_COMPILER}) 
+      message("CMAKE_ASM_MASM_COMPILER explicitly set to: ${CMAKE_ASM_MASM_COMPILER}") 
       
       # Enable generic assembly compilation to avoid CMake generate VS proj files that explicitly
       # use ml[64].exe as the assembler.
