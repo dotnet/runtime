@@ -66,6 +66,10 @@ ellismg@linux:~$ sudo apt-get update
 ellismg@linux:~$ sudo apt-get install mono-devel
 ```
 
+On Fedora 23 or 24:
+
+`$ sudo dnf install mono-devel`
+
 Build the Runtime and Microsoft Core Library
 =============================================
 
