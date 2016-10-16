@@ -187,7 +187,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        // It could return either int, long or decimal, depending on the parsed value.
+        // It could return either int, long, ulong, decimal or double, depending on the parsed value.
         private object ReadNumericLiteral()
         {
             var sb = new StringBuilder();
