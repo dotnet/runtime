@@ -57,6 +57,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [ActiveIssue(12683, TestPlatforms.Windows)]
         [ActiveIssue(12319, TestPlatforms.AnyUnix)]
         public async Task SslStream_StreamToStream_ServerInitiatedCloseNotify_Ok()
         {
