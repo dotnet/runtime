@@ -1,3 +1,4 @@
+Compat issues with assembly System.Runtime:
 MembersMustExist : Member 'System.AppContext.GetData(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.AppContext.TargetFrameworkName.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Reflection.Pointer..ctor()' does not exist in the implementation but it does exist in the contract.
+Total Issues: 2
