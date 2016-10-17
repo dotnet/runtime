@@ -189,9 +189,6 @@
     <Compile Include="System\Reflection\StrongNameKeyPairTests.netstandard1.7.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
     <Reference Include="TestModule\System.Reflection.TestModule.dll">
     </Reference>
     <ProjectReference Include="..\pkg\System.Runtime.pkgproj">
