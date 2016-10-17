@@ -59,7 +59,7 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        [Theory MemberData("ValidStores")]
+        [Theory MemberData(nameof(ValidStores))]
         public void GetFileNames_GetsFileNames(PresetScopes scope)
         {
             TestHelper.WipeStores();
