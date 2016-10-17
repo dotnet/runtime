@@ -1477,6 +1477,7 @@ NotSupported_PIAInAppxProcess = A Primary Interop Assembly is not supported in A
 ; Not referring to "Windows Phone" in the messages, as FEATURE_WINDOWSPHONE is defined for .NET Core as well.
 NotSupported_WindowsPhone = {0} is not supported.
 NotSupported_AssemblyLoadCodeBase = Assembly.Load with a Codebase is not supported.
+NotSupported_AssemblyLoadFromHash = Assembly.LoadFrom with hashValue is not supported.
 #endif
 
 ; TypeLoadException
