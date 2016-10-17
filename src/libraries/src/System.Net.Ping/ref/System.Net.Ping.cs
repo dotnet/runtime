@@ -76,6 +76,7 @@ namespace System.Net.NetworkInformation
     {
         public PingException(string message) { }
         public PingException(string message, System.Exception innerException) { }
+        protected PingException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
     public partial class PingOptions
     {
