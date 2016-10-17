@@ -61,6 +61,9 @@
     <ProjectReference Include="ubuntu\16.10\Microsoft.NETCore.Runtime.CoreCLR.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
+    <ProjectReference Include="alpine\3.4.3\Microsoft.NETCore.Runtime.CoreCLR.pkgproj">
+      <Platform>amd64</Platform>
+    </ProjectReference>
     <ProjectReference Include="osx\Microsoft.NETCore.Runtime.CoreCLR.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
