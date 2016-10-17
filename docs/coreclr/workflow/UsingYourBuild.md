@@ -1,7 +1,7 @@
 
-# Using your .NET Core Build
+# Using your .NET Core Runtime Build
 
-We assume that you have successfully built .NET Core Repository and thus have file of the form  
+We assume that you have successfully built CoreCLR repository and thus have file of the form  
 ```
     bin\Product\<OS>.<arch>.<flavor>\.nuget\pkg\Microsoft.NETCore.Runtime.CoreCLR.<version>.nupkg
 ```
@@ -10,17 +10,18 @@ than / for directory separators and things like Windows_NT instead of Linux but 
 pretty obvious how to adapt these instructions for other operating systems.  
 
 To run your newly built .NET Core Runtime in addition to the application itself, you will need
-you need a 'host' program that will load the Runtime as well as all the other .NET Framework code
-that your application needs.   The easiest way to get all this other stuff is to simply use the 
-standard 'dotnet' host that installs with .NET Core SDK. 
+a 'host' program that will load the Runtime as well as all the other .NET Core Framework
+code that your application needs.   The easiest way to get all this other stuff is to simply use the 
+standard 'dotnet' host that installs with .NET Core SDK.
 
-Thus the first step is to confirm that you have the 'standard' .NET Core SDK installed.  If 
-you can type
+The released version of 'dotnet' tool may not be compatible with the live CoreCLR repository. The following steps
+assume use of unreleased version of 'dotnet' tool that is downloaded as part of the CoreCLR repository
+build at `Tools\dotnetcli`. [Add `Tools\dotnetcli` directory to your path](../building/windows-instructions.md#adding-to-the-default-path-variable)
+and type:
 
 * dotnet -?
 
-and it prints some help text, you are ready.  Otherwise 
-see [Installing the .Net Core SDK](https://www.microsoft.com/net/core) to install it.
+and it prints some help text, you are ready.
 
 ### Step 1: Create a App using the Default Runtime
 At this point you can create a new 'Hello World' program in the standard way. 
@@ -71,11 +72,13 @@ Nuget package for the runtime.
 ```
 3. Add the following line to the dependencies section.  This is where you need the version number 
 for your build of the runtime.
-This is the line that tells the tools that you want YOUR version of the CoreCLR runtime.    
+This is the line that tells the tools that you want YOUR version of the CoreCLR runtime.
 ```
        "Microsoft.NETCore.Runtime.CoreCLR": "1.2.0-beta-24528-0"
 ```
-4. Be sure to make sure you have all the commas you need when you add the lines to make it valid JSON.  
+4. Change `netcoreapp1.0` to `netcoreapp1.1`. This tells the tools that you want to use the latest .NET Core Framework.
+
+5. Make sure you have all the commas you need when you add the lines to make it valid JSON.
 
 You should end up with something that looks something like this.  
 
@@ -89,7 +92,7 @@ You should end up with something that looks something like this.
   "dependencies": {},
 
   "frameworks": {
-    "netcoreapp1.0": {
+    "netcoreapp1.1": {
       "dependencies": {
         "Microsoft.NETCore.App": {
           // REMOVED "type": "platform",
@@ -148,14 +151,14 @@ You can run your 'HelloWorld' applications by simply executing the following in 
 ```
      dotnet run 
 ```
-This will compile and run your app.   What the command is really doing is building files in helloWorld\bin\Debug\netcoreapp1.0\win7-x64\ 
-and the runing 'dotnet helloWorld\bin\Debug\netcoreapp1.0\win7-x64\HelloWorld.dll' to actually run the app. 
+This will compile and run your app.   What the command is really doing is building files in helloWorld\bin\Debug\netcoreapp1.1\win7-x64\ 
+and then running 'dotnet helloWorld\bin\Debug\netcoreapp1.1\win7-x64\HelloWorld.dll' to actually run the app. 
 
 ### Step 6: (Optional) Publish your application
 
-In Step 5 you will notice that the helloWorld\bin\Debug\netcoreapp1.0\win7-x64 does NOT actually contain your Runtime code.  
+In Step 5 you will notice that the helloWorld\bin\Debug\netcoreapp1.1\win7-x64 directory does NOT actually contain your Runtime code.  
 What is going on is that runtime is being loaded directly out of the local Nuget cache (on windows this is in %HOMEPATH%\.nuget\packages).
-The app can find this cache because of the HelloWorld.runtimeconfig.dev.json file which specifies that that this location shoudl be
+The app can find this cache because of the HelloWorld.runtimeconfig.dev.json file which specifies that that this location should be
 added to the list of places to look for dependencies.     
 
 This setup fine for development time, but is not a reasonable way of allowing end users to use your new runtime.   Instead what
@@ -165,7 +168,7 @@ you want all the necessary code to be gather up so that the app is self-containe
 ```
 After running this in the 'HelloWorld' directory you will see that the following path
 
-* helloWorld\bin\Debug\netcoreapp1.0\win7-x64\publish
+* helloWorld\bin\Debug\netcoreapp1.1\win7-x64\publish
 
 Has all the binaries needed, including the CoreCLR.dll and System.Private.CoreLib.dll that you build locally.  To
 run the application simple run the EXE that is in this publish directory (it is the name of the app, or specified
@@ -214,7 +217,7 @@ you wish to update the DLLs.   For example typically when you update CoreCLR you
 you will want to update both of these together in the target installation.   
 
 Thus after making a change and building, you can simply copy the updated binary from the `bin\Product\<OS>.<arch>.<flavor>`
-directory to your publication directory (e.g. `helloWorld\bin\Debug\netcoreapp1.0\win7-x64\publish`) to quickly
+directory to your publication directory (e.g. `helloWorld\bin\Debug\netcoreapp1.1\win7-x64\publish`) to quickly
 deploy your new bits.   You can build just the .NET Library part of the build by doing (debug, for release add 'release qualifier)
 (on Linux / OSX us ./build.sh)
 ```bat
