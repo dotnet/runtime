@@ -65,6 +65,11 @@ namespace System.Collections.Tests
         protected virtual bool SupportsSerialization => true;
 
         /// <summary>
+        /// Whether the enumerator of the collection can be cloned.
+        /// </summary>
+        protected virtual bool SupportsEnumeratorCloning => false;
+
+        /// <summary>
         /// Specifies whether this IEnumerable follows some sort of ordering pattern.
         /// </summary>
         protected virtual EnumerableOrder Order => EnumerableOrder.Sequential;
