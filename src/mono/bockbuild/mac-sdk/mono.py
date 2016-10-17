@@ -67,7 +67,7 @@ class MonoMasterPackage(Package):
             self.local_configure_flags = ['--build=i386-apple-darwin11.2.0']
 
         self.local_configure_flags.extend(
-            ['--cache-file=%s/%s-%s.cache' % (self.profile.build_root, self.name, arch)])
+            ['--cache-file=%s/%s-%s.cache' % (self.profile.bockbuild.build_root, self.name, arch)])
 
     def install(self):
         Package.install(self)
