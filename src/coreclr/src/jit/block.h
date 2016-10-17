@@ -30,16 +30,12 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "simplerhash.h"
 
 /*****************************************************************************/
-
+typedef BitVec EXPSET_TP;
 #if LARGE_EXPSET
-typedef unsigned __int64 EXPSET_TP;
 #define EXPSET_SZ 64
 #else
-typedef unsigned int EXPSET_TP;
 #define EXPSET_SZ 32
 #endif
-
-#define EXPSET_ALL ((EXPSET_TP)0 - 1)
 
 typedef BitVec          ASSERT_TP;
 typedef BitVec_ValArg_T ASSERT_VALARG_TP;

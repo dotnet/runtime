@@ -301,15 +301,15 @@ Compiler::fgWalkResult Compiler::optCSE_MaskHelper(GenTreePtr* pTree, fgWalkData
 
     if (IS_CSE_INDEX(tree->gtCSEnum))
     {
-        unsigned  cseIndex = GET_CSE_INDEX(tree->gtCSEnum);
-        EXPSET_TP cseBit   = genCSEnum2bit(cseIndex);
+        unsigned cseIndex = GET_CSE_INDEX(tree->gtCSEnum);
+        unsigned cseBit   = genCSEnum2bit(cseIndex);
         if (IS_CSE_DEF(tree->gtCSEnum))
         {
-            pUserData->CSE_defMask |= cseBit;
+            BitVecOps::AddElemD(comp->cseTraits, pUserData->CSE_defMask, cseBit);
         }
         else
         {
-            pUserData->CSE_useMask |= cseBit;
+            BitVecOps::AddElemD(comp->cseTraits, pUserData->CSE_useMask, cseBit);
         }
     }
 
@@ -321,8 +321,8 @@ Compiler::fgWalkResult Compiler::optCSE_MaskHelper(GenTreePtr* pTree, fgWalkData
 //
 void Compiler::optCSE_GetMaskData(GenTreePtr tree, optCSE_MaskData* pMaskData)
 {
-    pMaskData->CSE_defMask = 0;
-    pMaskData->CSE_useMask = 0;
+    pMaskData->CSE_defMask = BitVecOps::MakeCopy(cseTraits, cseEmpty);
+    pMaskData->CSE_useMask = BitVecOps::MakeCopy(cseTraits, cseEmpty);
     fgWalkTreePre(&tree, optCSE_MaskHelper, (void*)pMaskData);
 }
 
@@ -355,14 +355,14 @@ bool Compiler::optCSE_canSwap(GenTree* op1, GenTree* op2)
     optCSE_GetMaskData(op2, &op2MaskData);
 
     // We cannot swap if op1 contains a CSE def that is used by op2
-    if ((op1MaskData.CSE_defMask & op2MaskData.CSE_useMask) != 0)
+    if (!BitVecOps::IsEmptyIntersection(cseTraits, op1MaskData.CSE_defMask, op2MaskData.CSE_useMask))
     {
         canSwap = false;
     }
     else
     {
         // We also cannot swap if op2 contains a CSE def that is used by op1.
-        if ((op2MaskData.CSE_defMask & op1MaskData.CSE_useMask) != 0)
+        if (!BitVecOps::IsEmptyIntersection(cseTraits, op2MaskData.CSE_defMask, op1MaskData.CSE_useMask))
         {
             canSwap = false;
         }
@@ -494,6 +494,14 @@ void Compiler::optValnumCSE_Init()
 #ifdef DEBUG
     optCSEtab = nullptr;
 #endif
+
+    // Init traits and full/empty bitvectors.  This will be used to track the
+    // individual cse indexes.
+    cseTraits = new (getAllocator()) BitVecTraits(EXPSET_SZ, this);
+    cseFull   = BitVecOps::UninitVal();
+    cseEmpty  = BitVecOps::UninitVal();
+    BitVecOps::AssignNoCopy(cseTraits, cseFull, BitVecOps::MakeFull(cseTraits));
+    BitVecOps::AssignNoCopy(cseTraits, cseEmpty, BitVecOps::MakeEmpty(cseTraits));
 
     /* Allocate and clear the hash bucket table */
 
@@ -631,8 +639,8 @@ unsigned Compiler::optValnumCSE_Index(GenTreePtr tree, GenTreePtr stmt)
 
         C_ASSERT((signed char)MAX_CSE_CNT == MAX_CSE_CNT);
 
-        unsigned  CSEindex = ++optCSECandidateCount;
-        EXPSET_TP CSEmask  = genCSEnum2bit(CSEindex);
+        unsigned CSEindex = ++optCSECandidateCount;
+        // EXPSET_TP  CSEmask  = genCSEnum2bit(CSEindex);
 
         /* Record the new CSE index in the hashDsc */
         hashDsc->csdIndex = CSEindex;
@@ -649,10 +657,11 @@ unsigned Compiler::optValnumCSE_Index(GenTreePtr tree, GenTreePtr stmt)
 #ifdef DEBUG
         if (verbose)
         {
+            EXPSET_TP tempMask = BitVecOps::MakeSingleton(cseTraits, genCSEnum2bit(CSEindex));
             printf("\nCSE candidate #%02u, vn=", CSEindex);
             vnPrint(vnlib, 0);
-            printf(" cseMask=%s in BB%02u, [cost=%2u, size=%2u]: \n", genES2str(genCSEnum2bit(CSEindex)),
-                   compCurBB->bbNum, tree->gtCostEx, tree->gtCostSz);
+            printf(" cseMask=%s in BB%02u, [cost=%2u, size=%2u]: \n", genES2str(cseTraits, tempMask), compCurBB->bbNum,
+                   tree->gtCostEx, tree->gtCostSz);
             gtDispTree(tree);
         }
 #endif // DEBUG
@@ -773,19 +782,18 @@ void Compiler::optValnumCSE_InitDataFlow()
         if (init_to_zero)
         {
             /* Initialize to {ZERO} prior to dataflow */
-
-            block->bbCseIn = 0;
+            block->bbCseIn = BitVecOps::MakeCopy(cseTraits, cseEmpty);
         }
         else
         {
             /* Initialize to {ALL} prior to dataflow */
-
-            block->bbCseIn = EXPSET_ALL;
+            block->bbCseIn = BitVecOps::MakeCopy(cseTraits, cseFull);
         }
-        block->bbCseOut = EXPSET_ALL;
+
+        block->bbCseOut = BitVecOps::MakeCopy(cseTraits, cseFull);
 
         /* Initialize to {ZERO} prior to locating the CSE candidates */
-        block->bbCseGen = 0;
+        block->bbCseGen = BitVecOps::MakeCopy(cseTraits, cseEmpty);
     }
 
     // We walk the set of CSE candidates and set the bit corresponsing to the CSEindex
@@ -801,7 +809,7 @@ void Compiler::optValnumCSE_InitDataFlow()
         while (lst != nullptr)
         {
             BasicBlock* block = lst->tslBlock;
-            block->bbCseGen |= genCSEnum2bit(CSEindex);
+            BitVecOps::AddElemD(cseTraits, block->bbCseGen, genCSEnum2bit(CSEindex));
             lst = lst->tslNext;
         }
     }
@@ -814,7 +822,7 @@ void Compiler::optValnumCSE_InitDataFlow()
         bool headerPrinted = false;
         for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
         {
-            if (block->bbCseGen != 0)
+            if (block->bbCseGen != nullptr)
             {
                 if (!headerPrinted)
                 {
@@ -822,7 +830,7 @@ void Compiler::optValnumCSE_InitDataFlow()
                     headerPrinted = true;
                 }
                 printf("BB%02u", block->bbNum);
-                printf(" cseGen = %s\n", genES2str(block->bbCseGen));
+                printf(" cseGen = %s\n", genES2str(cseTraits, block->bbCseGen));
             }
         }
     }
@@ -857,21 +865,24 @@ public:
     // At the start of the merge function of the dataflow equations, initialize premerge state (to detect changes.)
     void StartMerge(BasicBlock* block)
     {
-        m_preMergeOut = block->bbCseOut;
+        m_preMergeOut = BitVecOps::MakeCopy(m_pCompiler->cseTraits, block->bbCseOut);
     }
 
     // During merge, perform the actual merging of the predecessor's (since this is a forward analysis) dataflow flags.
     void Merge(BasicBlock* block, BasicBlock* predBlock, flowList* preds)
     {
-        block->bbCseIn &= predBlock->bbCseOut;
+        BitVecOps::IntersectionD(m_pCompiler->cseTraits, block->bbCseIn, predBlock->bbCseOut);
     }
 
     // At the end of the merge store results of the dataflow equations, in a postmerge state.
     bool EndMerge(BasicBlock* block)
     {
-        EXPSET_TP mergeOut = block->bbCseOut & (block->bbCseIn | block->bbCseGen);
-        block->bbCseOut    = mergeOut;
-        return (mergeOut != m_preMergeOut);
+        BitVecTraits* traits   = m_pCompiler->cseTraits;
+        EXPSET_TP     mergeOut = BitVecOps::MakeCopy(traits, block->bbCseIn);
+        BitVecOps::UnionD(traits, mergeOut, block->bbCseGen);
+        BitVecOps::IntersectionD(traits, mergeOut, block->bbCseOut);
+        BitVecOps::Assign(traits, block->bbCseOut, mergeOut);
+        return (!BitVecOps::Equal(traits, mergeOut, m_preMergeOut));
     }
 };
 
@@ -905,8 +916,8 @@ void Compiler::optValnumCSE_DataFlow()
         for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
         {
             printf("BB%02u", block->bbNum);
-            printf(" cseIn  = %s", genES2str(block->bbCseIn));
-            printf(" cseOut = %s", genES2str(block->bbCseOut));
+            printf(" cseIn  = %s", genES2str(cseTraits, block->bbCseIn));
+            printf(" cseOut = %s", genES2str(cseTraits, block->bbCseOut));
             printf("\n");
         }
 
@@ -946,7 +957,7 @@ void Compiler::optValnumCSE_Availablity()
 
         compCurBB = block;
 
-        EXPSET_TP available_cses = block->bbCseIn;
+        EXPSET_TP available_cses = BitVecOps::MakeCopy(cseTraits, block->bbCseIn);
 
         optCSEweight = block->getBBWeight(this);
 
@@ -961,13 +972,13 @@ void Compiler::optValnumCSE_Availablity()
             {
                 if (IS_CSE_INDEX(tree->gtCSEnum))
                 {
-                    EXPSET_TP mask = genCSEnum2bit(tree->gtCSEnum);
-                    CSEdsc*   desc = optCSEfindDsc(tree->gtCSEnum);
-                    unsigned  stmw = block->getBBWeight(this);
+                    unsigned int cseBit = genCSEnum2bit(tree->gtCSEnum);
+                    CSEdsc*      desc   = optCSEfindDsc(tree->gtCSEnum);
+                    unsigned     stmw   = block->getBBWeight(this);
 
                     /* Is this expression available here? */
 
-                    if (available_cses & mask)
+                    if (BitVecOps::IsMember(cseTraits, available_cses, cseBit))
                     {
                         /* This is a CSE use */
 
@@ -993,8 +1004,7 @@ void Compiler::optValnumCSE_Availablity()
                         tree->gtCSEnum = TO_CSE_DEF(tree->gtCSEnum);
 
                         /* This CSE will be available after this def */
-
-                        available_cses |= mask;
+                        BitVecOps::AddElemD(cseTraits, available_cses, cseBit);
                     }
 #ifdef DEBUG
                     if (verbose && IS_CSE_INDEX(tree->gtCSEnum))
@@ -1236,6 +1246,7 @@ public:
         {
             printf("\nSorted CSE candidates:\n");
             /* Print out the CSE candidates */
+            EXPSET_TP tempMask;
             for (unsigned cnt = 0; cnt < m_pCompiler->optCSECandidateCount; cnt++)
             {
                 Compiler::CSEdsc* dsc  = sortTab[cnt];
@@ -1255,8 +1266,9 @@ public:
                     use = dsc->csdUseWtCnt; // weighted use count (excluding the implicit uses at defs)
                 }
 
+                tempMask = BitVecOps::MakeSingleton(m_pCompiler->cseTraits, genCSEnum2bit(dsc->csdIndex));
                 printf("CSE #%02u,cseMask=%s,useCnt=%d: [def=%3u, use=%3u", dsc->csdIndex,
-                       genES2str(genCSEnum2bit(dsc->csdIndex)), dsc->csdUseCount, def, use);
+                       genES2str(m_pCompiler->cseTraits, tempMask), dsc->csdUseCount, def, use);
                 printf("] :: ");
                 m_pCompiler->gtDispTree(expr, nullptr, nullptr, true);
             }
