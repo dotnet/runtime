@@ -40,6 +40,9 @@
     <ProjectReference Include="ubuntu\16.10\runtime.native.System.Net.Security.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
+    <ProjectReference Include="alpine\3.4.3\runtime.native.System.Net.Security.pkgproj">
+      <Platform>amd64</Platform>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
