@@ -21,6 +21,12 @@
   <ItemGroup>
     <Compile Include="Win32Exception.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
+    <Compile Include="Win32Exception.netstandard1.7.cs" />
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
+      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
+    </Compile>
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\pkg\Microsoft.Win32.Primitives.pkgproj">
       <Project>{8ffe99c0-22f8-4462-b839-970eac1b3472}</Project>
