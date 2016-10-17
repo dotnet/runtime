@@ -143,11 +143,6 @@ namespace System.Security {
     CurrentAppDomain = 0,
     CurrentAssembly = 1,
   }
-  [System.ObsoleteAttribute("SecurityCriticalScope is only used for .NET 2.0 transparency compatibility.")]
-  public enum SecurityCriticalScope {
-    Everything = 1,
-    Explicit = 0,
-  }
   public sealed partial class SecurityElement {
     public SecurityElement(string tag) { }
     public SecurityElement(string tag, string text) { }
