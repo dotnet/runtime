@@ -1128,7 +1128,7 @@ namespace System
     }
     public delegate void EventHandler(object sender, System.EventArgs e);
     public delegate void EventHandler<TEventArgs>(object sender, TEventArgs e);
-    public partial class Exception
+    public partial class Exception : System.Runtime.Serialization.ISerializable
     {
         public Exception() { }
         public Exception(string message) { }
@@ -1441,9 +1441,9 @@ namespace System
         public static bool TryParse(string s, out long result) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct IntPtr
+    public partial struct IntPtr : System.Runtime.Serialization.ISerializable
 #if netcoreapp11
-: IEquatable<IntPtr>
+, IEquatable<IntPtr>
 #endif
     {
         public static readonly System.IntPtr Zero;
@@ -1459,6 +1459,7 @@ namespace System
         bool IEquatable<IntPtr>.Equals(IntPtr other) { return default(bool); }
 #endif
         public override int GetHashCode() { throw null; }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static System.IntPtr operator +(System.IntPtr pointer, int offset) { throw null; }
         public static bool operator ==(System.IntPtr value1, System.IntPtr value2) { throw null; }
         public static explicit operator System.IntPtr(int value) { throw null; }
@@ -2737,9 +2738,9 @@ namespace System
     }
     [System.CLSCompliantAttribute(false)]
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct UIntPtr
+    public partial struct UIntPtr : System.Runtime.Serialization.ISerializable
 #if netcoreapp11
-: IEquatable<UIntPtr>    
+, IEquatable<UIntPtr>    
 #endif
     {
         public static readonly System.UIntPtr Zero;
@@ -2755,6 +2756,7 @@ namespace System
         bool IEquatable<UIntPtr>.Equals(UIntPtr other) { return default(bool); }
 #endif
         public override int GetHashCode() { throw null; }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static System.UIntPtr operator +(System.UIntPtr pointer, int offset) { throw null; }
         public static bool operator ==(System.UIntPtr value1, System.UIntPtr value2) { throw null; }
         public static explicit operator System.UIntPtr(uint value) { throw null; }
@@ -6165,7 +6167,7 @@ namespace System.Security
 }
 namespace System.Text
 {
-    public sealed partial class StringBuilder
+    public sealed partial class StringBuilder : System.Runtime.Serialization.ISerializable
     {
         public StringBuilder() { }
         public StringBuilder(int capacity) { }
@@ -6218,6 +6220,7 @@ namespace System.Text
         public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count) { }
         public int EnsureCapacity(int capacity) { throw null; }
         public bool Equals(System.Text.StringBuilder sb) { throw null; }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public System.Text.StringBuilder Insert(int index, bool value) { throw null; }
         public System.Text.StringBuilder Insert(int index, byte value) { throw null; }
         public System.Text.StringBuilder Insert(int index, char value) { throw null; }
