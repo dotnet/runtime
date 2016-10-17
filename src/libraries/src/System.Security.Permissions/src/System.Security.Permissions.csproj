@@ -103,7 +103,6 @@
     <Compile Include="System\Security\Policy\IMembershipCondition.cs" />
     <Compile Include="System\Security\Policy\NetCodeGroup.cs" />
     <Compile Include="System\Security\Policy\PermissionRequestEvidence.cs" />
-    <Compile Include="System\Security\SecurityCriticalScope.cs" />
     <Compile Include="System\Security\SecurityElement.cs" />
     <Compile Include="System\Security\SecurityManager.cs" />
     <Compile Include="System\Security\SecurityState.cs" />
@@ -127,6 +126,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
+  </ItemGroup>
+  <!-- ToDo: Remove this P2P reference once packages are updated -->
+  <ItemGroup Condition="'$(TargetGroup)'==''">
+    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
