@@ -278,10 +278,16 @@ To use the callout filter, instead of this:
 write this:
 
     BOOL OneShot = TRUE;
+    struct Param {
+        BSTR*  pBSTR;
+        int length;
+    };
+    struct Param param;
+    param.pBSTR = pBSTR;
 
-    PAL_TRY
+    PAL_TRY(Param*, pParam, &param)
     {
-      length = SysStringLen(pBSTR);
+      pParam->length = SysStringLen(pParam->pBSTR);
     }
     PAL_EXCEPT_FILTER(CallOutFilter, &OneShot)
     {
