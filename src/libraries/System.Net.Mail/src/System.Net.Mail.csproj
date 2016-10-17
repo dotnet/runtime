@@ -67,7 +67,7 @@
     <Compile Include="System\Net\Mail\SmtpException.cs" />
     <Compile Include="System\Net\Mail\SmtpFailedRecipientException.cs" />
     <Compile Include="System\Net\Mail\SmtpFailedRecipientsException.cs" />
-    <Compile Include="System\Net\Mail\SmtpPermission.cs" />
+    <Compile Include="System\Net\Mail\SmtpAccess.cs" />
     <Compile Include="System\Net\Mail\SmtpReplyReader.cs" />
     <Compile Include="System\Net\Mail\SmtpReplyReaderFactory.cs" />
     <Compile Include="System\Net\Mail\SmtpStatusCode.cs" />

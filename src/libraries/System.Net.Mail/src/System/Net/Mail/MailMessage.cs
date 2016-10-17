@@ -10,10 +10,6 @@ using System.Text;
 
 namespace System.Net.Mail
 {
-    /// <summary>
-    /// Summary description for MailMessage.
-    /// </summary>
-    //rfc3461
     [Flags]
     public enum DeliveryNotificationOptions
     {
