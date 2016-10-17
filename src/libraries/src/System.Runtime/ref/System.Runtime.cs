@@ -3014,7 +3014,7 @@ namespace System
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
     }
-    public sealed partial class Version : System.IComparable, System.IComparable<System.Version>, System.IEquatable<System.Version>
+    public sealed partial class Version : System.IComparable, System.IComparable<System.Version>, System.IEquatable<System.Version>, System.ICloneable
     {
         public Version(int major, int minor) { }
         public Version(int major, int minor, int build) { }
@@ -3027,6 +3027,7 @@ namespace System
         public int Minor { get { throw null; } }
         public short MinorRevision { get { throw null; } }
         public int Revision { get { throw null; } }
+        public object Clone() { throw null; }
         public int CompareTo(object version) { throw null; }
         public int CompareTo(System.Version value) { throw null; }
         public override bool Equals(object obj) { throw null; }
