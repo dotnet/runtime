@@ -10791,6 +10791,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutputWord(dst, code);
             dst += emitOutputByte(dst, emitGetInsSC(id));
             sz = emitSizeOfInsDsc(id);
+
+            // Update GC info.
+            assert(!id->idGCref());
+            emitGCregDeadUpd(id->idReg1(), dst);
             break;
 
         case IF_RRD_RRD:
