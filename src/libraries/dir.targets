@@ -33,9 +33,12 @@
     <CommonTestProjectJson>$(MSBuildThisFileDirectory)src/Common/test-runtime/project.json</CommonTestProjectJson>
     <CommonTestProjectLockJson>$(MSBuildThisFileDirectory)src/Common/test-runtime/project.lock.json</CommonTestProjectLockJson>
     <CommonOutputTestProjectJson>$(GeneratedProjectJsonDir)/project.json</CommonOutputTestProjectJson>
+    <CommonOutputTestProjectLockJson>$(GeneratedProjectJsonDir)/project.lock.json</CommonOutputTestProjectLockJson>
   </PropertyGroup>
   
   <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
+    <CommonTestProjectJson Condition="'$(BuildTestsAgainstPackages)'=='true'">$(CommonOutputTestProjectJson)</CommonTestProjectJson>
+    <CommonTestProjectLockJson Condition="'$(BuildTestsAgainstPackages)'=='true'">$(CommonOutputTestProjectLockJson)</CommonTestProjectLockJson>
     <ProjectJson Condition="'$(ProjectJson)'=='' and Exists('$(MSBuildProjectDirectory)/project.json')">$(MSBuildProjectDirectory)/project.json</ProjectJson>
     <!-- If project specific project.json exists then don't skip generating test project.json files -->
     <SkipGenerateTestProjectJson Condition="'$(ProjectJson)'==''" >true</SkipGenerateTestProjectJson>
