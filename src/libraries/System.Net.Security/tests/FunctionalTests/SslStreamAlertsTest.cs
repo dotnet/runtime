@@ -22,6 +22,7 @@ namespace System.Net.Security.Tests
         private const uint SEC_E_CERT_UNKNOWN = 0x80090327;
 
         [Fact]
+        [ActiveIssue(12706, TestPlatforms.Windows)]
         [ActiveIssue(12319, TestPlatforms.AnyUnix)]
         public async Task SslStream_StreamToStream_HandshakeAlert_Ok()
         {
@@ -124,6 +125,7 @@ namespace System.Net.Security.Tests
         }
         
         [Fact]
+        [ActiveIssue(12706, TestPlatforms.Windows)]
         [ActiveIssue(12319, TestPlatforms.AnyUnix)]
         public async Task SslStream_StreamToStream_DataAfterShutdown_Fail()
         {
