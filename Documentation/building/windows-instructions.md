@@ -28,7 +28,7 @@ The CoreCLR repo build has been validated using CMake 3.5.2.
 - Install [CMake](http://www.cmake.org/download) for Windows.
 - Add its location (e.g. C:\Program Files (x86)\CMake\bin) to the PATH environment variable.  
   The installation script has a check box to do this, but you can do it yourself after the fact 
-  following the instructions at [Adding to the Default PATH variable](#add-to-the-default-path-variable)
+  following the instructions at [Adding to the Default PATH variable](#adding-to-the-default-path-variable)
   
 
 ##Python
@@ -38,7 +38,7 @@ any recent (2.4+) version of Python should work, including Python 3.
 - Install [Python](https://www.python.org/downloads/) for Windows.
 - Add its location (e.g. C:\Python*\) to the PATH environment variable.  
   The installation script has a check box to do this, but you can do it yourself after the fact 
-  following the instructions at [Adding to the Default PATH variable](#add-to-the-default-path-variable)
+  following the instructions at [Adding to the Default PATH variable](#adding-to-the-default-path-variable)
 
 ##Git 
 
@@ -49,7 +49,7 @@ for these to work properly.   You can get it from
 - Install [Git For Windows](https://git-for-windows.github.io/)
 - Add its location (e.g. C:\Program Files\Git\cmd) to the PATH environment variable.  
   The installation script has a check box to do this, but you can do it yourself after the fact 
-  following the instructions at [Adding to the Default PATH variable](#add-to-the-default-path-variable)
+  following the instructions at [Adding to the Default PATH variable](#adding-to-the-default-path-variable)
 
 ##PowerShell
 PowerShell is used in the build system. Ensure that it is accessible via the PATH environment variable.
