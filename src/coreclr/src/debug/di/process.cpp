@@ -7334,6 +7334,7 @@ CordbUnmanagedThread *CordbProcess::HandleUnmanagedCreateThread(DWORD dwThreadId
         if (!SUCCEEDED(hr))
         {
             delete ut;
+            ut = NULL;
 
             LOG((LF_CORDB, LL_INFO10000, "Failed adding unmanaged thread to process!\n"));
             CORDBSetUnrecoverableError(this, hr, 0);
