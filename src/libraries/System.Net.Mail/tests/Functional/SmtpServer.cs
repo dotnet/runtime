@@ -9,7 +9,6 @@
 
 using System.Diagnostics;
 using System.IO;
-using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
@@ -17,12 +16,12 @@ namespace System.Net.Mail.Tests
 {
     public class SmtpServer
     {
-        private string _mailfrom, _mailto;
+        private string _mailfrom, _mailto, _subject, _body;
 
         public string MailFrom => _mailfrom;
         public string MailTo => _mailto;
-
-        public StringBuilder data;
+        public string Subject => _subject;
+        public string Body => _body;
 
         TcpListener server;
         public IPEndPoint EndPoint
@@ -32,7 +31,7 @@ namespace System.Net.Mail.Tests
 
         public SmtpServer()
         {
-            IPAddress address = Dns.GetHostEntry("localhost").AddressList[0];
+            IPAddress address = IPAddress.Parse("127.0.0.1");
             server = new TcpListener(address, 0);
             server.Start(1);
         }
@@ -68,7 +67,7 @@ namespace System.Net.Mail.Tests
             Trace("command", s);
             if (s.Length < 4)
             {
-                WriteNS(ns, "502 Huh\r\n");
+                WriteNS(ns, "502 Unrecognized\r\n");
                 return false;
             }
 
@@ -76,6 +75,10 @@ namespace System.Net.Mail.Tests
             switch (s.Substring(0, 4))
             {
                 case "HELO":
+                    break;
+                case "EHLO":
+                    WriteNS(ns, "250-localhost Hello" + s.Substring(5, s.Length - 5) + "\r\n");
+                    WriteNS(ns, "250-AUTH PLAIN\r\n");
                     break;
                 case "QUIT":
                     WriteNS(ns, "221 Quit\r\n");
@@ -88,18 +91,25 @@ namespace System.Net.Mail.Tests
                     break;
                 case "DATA":
                     WriteNS(ns, "354 Continue\r\n");
-                    data = new StringBuilder();
                     while ((s = r.ReadLine()) != null)
                     {
                         if (s == ".")
                             break;
-                        data.AppendLine(s);
+
+                        if (s.StartsWith("Subject:"))
+                        {
+                            _subject = s.Substring(9, s.Length - 9);
+                        }
+                        else if (s == "" && _body == null)
+                        {
+                            _body = r.ReadLine();
+                        }
                     }
                     Trace("end of data", s);
                     retval = (s != null);
                     break;
                 default:
-                    WriteNS(ns, "502 Huh\r\n");
+                    WriteNS(ns, "502 Unrecognized\r\n");
                     return true;
             }
 
