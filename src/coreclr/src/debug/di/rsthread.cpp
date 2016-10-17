@@ -4585,7 +4585,7 @@ void CordbUnmanagedThread::SaveRaiseExceptionEntryContext()
         LOG((LF_CORDB, LL_INFO1000, "CP::SREEC: failed to read exception information pointer.\n"));
         return;
     }
-#elif
+#else
     _ASSERTE(!"Implement this for your platform");
     return;
 #endif
