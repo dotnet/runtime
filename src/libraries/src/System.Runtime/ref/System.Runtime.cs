@@ -6129,41 +6129,99 @@ namespace System.Runtime.Versioning
 }
 namespace System.Security
 {
-    [System.AttributeUsageAttribute((System.AttributeTargets)(1), AllowMultiple = false, Inherited = false)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(1), AllowMultiple=false, Inherited=false)]
     public sealed partial class AllowPartiallyTrustedCallersAttribute : System.Attribute
     {
         public AllowPartiallyTrustedCallersAttribute() { }
+        public System.Security.PartialTrustVisibilityLevel PartialTrustVisibilityLevel { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(5501), AllowMultiple = false, Inherited = false)]
+    public enum PartialTrustVisibilityLevel
+    {
+        NotVisibleByDefault = 1,
+        VisibleToAllHosts = 0,
+    }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(5501), AllowMultiple=false, Inherited=false)]
     public sealed partial class SecurityCriticalAttribute : System.Attribute
     {
         public SecurityCriticalAttribute() { }
+#pragma warning disable 0618        
+        public SecurityCriticalAttribute(System.Security.SecurityCriticalScope scope) { }
+#pragma warning restore 0618
+        [System.ObsoleteAttribute("SecurityCriticalScope is only used for .NET 2.0 transparency compatibility.")]
+        public System.Security.SecurityCriticalScope Scope { get { throw null; } }
     }
-    public partial class SecurityException : System.Exception
+    [System.ObsoleteAttribute("SecurityCriticalScope is only used for .NET 2.0 transparency compatibility.")]
+    public enum SecurityCriticalScope
+    {
+        Everything = 1,
+        Explicit = 0,
+    }
+    public partial class SecurityException : System.SystemException
     {
         public SecurityException() { }
+        protected SecurityException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public SecurityException(string message) { }
         public SecurityException(string message, System.Exception inner) { }
-        protected SecurityException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+        public SecurityException(string message, System.Type type) { }
+        public SecurityException(string message, System.Type type, string state) { }
+        public object Demanded { get { throw null; } set { } }
+        public object DenySetInstance { get { throw null; } set { } }
+        public System.Reflection.AssemblyName FailedAssemblyInfo { get { throw null; } set { } }
+        public string GrantedSet { get { throw null; } set { } }
+        public System.Reflection.MethodInfo Method { get { throw null; } set { } }
+        public string PermissionState { get { throw null; } set { } }
+        public System.Type PermissionType { get { throw null; } set { } }
+        public object PermitOnlySetInstance { get { throw null; } set { } }
+        public string RefusedSet { get { throw null; } set { } }
+        public string Url { get { throw null; } set { } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(5500), AllowMultiple = false, Inherited = false)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(1), AllowMultiple=false)]
+    public sealed partial class SecurityRulesAttribute : System.Attribute
+    {
+        public SecurityRulesAttribute(System.Security.SecurityRuleSet ruleSet) { }
+        public System.Security.SecurityRuleSet RuleSet { get { throw null; } }
+        public bool SkipVerificationInFullTrust { get { throw null; } set { } }
+    }
+    public enum SecurityRuleSet : byte
+    {
+        Level1 = (byte)1,
+        Level2 = (byte)2,
+        None = (byte)0,
+    }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(5500), AllowMultiple=false, Inherited=false)]
     public sealed partial class SecuritySafeCriticalAttribute : System.Attribute
     {
         public SecuritySafeCriticalAttribute() { }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(1), AllowMultiple = false, Inherited = false)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(1), AllowMultiple=false, Inherited=false)]
     public sealed partial class SecurityTransparentAttribute : System.Attribute
     {
         public SecurityTransparentAttribute() { }
     }
-    public partial class VerificationException : System.Exception
+    [System.AttributeUsageAttribute((System.AttributeTargets)(5501), AllowMultiple=false, Inherited=false)]
+    [System.ObsoleteAttribute("SecurityTreatAsSafe is only used for .NET 2.0 transparency compatibility.  Please use the SecuritySafeCriticalAttribute instead.")]
+    public sealed partial class SecurityTreatAsSafeAttribute : System.Attribute
+    {
+        public SecurityTreatAsSafeAttribute() { }
+    }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(5188), AllowMultiple=true, Inherited=false)]
+    public sealed partial class SuppressUnmanagedCodeSecurityAttribute : System.Attribute
+    {
+        public SuppressUnmanagedCodeSecurityAttribute() { }
+    }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(2), AllowMultiple=true, Inherited=false)]
+    public sealed partial class UnverifiableCodeAttribute : System.Attribute
+    {
+        public UnverifiableCodeAttribute() { }
+    }
+    public partial class VerificationException : System.SystemException
     {
         public VerificationException() { }
+        protected VerificationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public VerificationException(string message) { }
         public VerificationException(string message, System.Exception innerException) { }
-        protected VerificationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
 }
 namespace System.Text

@@ -139,6 +139,7 @@
     <Compile Include="System\GuidTests.netstandard1.7.cs" />
     <Compile Include="System\MarshalByRefObjectTests.cs" />
     <Compile Include="System\NotFiniteNumberExceptionTests.cs" />
+    <Compile Include="System\Security\SecurityAttributeTests.cs" /> 
     <Compile Include="System\StackOverflowExceptionTests.cs" />
     <Compile Include="System\SystemExceptionTests.cs" />
     <Compile Include="System\StringTests.netstandard1.7.cs" />
