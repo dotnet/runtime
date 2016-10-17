@@ -7797,7 +7797,7 @@ namespace System.Reflection
         public static System.Reflection.TypeInfo GetTypeInfo(this System.Type type) { throw null; }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public partial class InvalidFilterCriteriaException : System.Exception
+    public partial class InvalidFilterCriteriaException : System.ApplicationException
     {
         public InvalidFilterCriteriaException() { }
         public InvalidFilterCriteriaException(string message) { }
@@ -8293,7 +8293,7 @@ namespace System.Reflection
         public static System.Reflection.PropertyInfo GetRuntimeProperty(this System.Type type, string name) { throw null; }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public partial class TargetException : System.Exception
+    public partial class TargetException : System.ApplicationException
     {
         public TargetException() { }
         public TargetException(string message) { }
@@ -8301,13 +8301,13 @@ namespace System.Reflection
         protected TargetException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public sealed partial class TargetInvocationException : System.Exception
+    public sealed partial class TargetInvocationException : System.ApplicationException
     {
         public TargetInvocationException(System.Exception inner) { }
         public TargetInvocationException(string message, System.Exception inner) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public sealed partial class TargetParameterCountException : System.Exception
+    public sealed partial class TargetParameterCountException : System.ApplicationException
     {
         public TargetParameterCountException() { }
         public TargetParameterCountException(string message) { }
@@ -13453,7 +13453,7 @@ namespace System.Threading
         public virtual bool WaitOne(System.TimeSpan timeout, bool exitContext) { return default(bool); }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-    public partial class WaitHandleCannotBeOpenedException : System.Exception
+    public partial class WaitHandleCannotBeOpenedException : System.ApplicationException
     {
         public WaitHandleCannotBeOpenedException() { }
         public WaitHandleCannotBeOpenedException(string message) { }

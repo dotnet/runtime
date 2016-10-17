@@ -19,11 +19,7 @@ namespace System.Reflection {
     using System.Runtime.Serialization;
     [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
-#if FEATURE_CORECLR
-    public sealed class TargetParameterCountException : Exception {
-#else
     public sealed class TargetParameterCountException : ApplicationException {
-#endif //FEATURE_CORECLR
         public TargetParameterCountException()
             : base(Environment.GetResourceString("Arg_TargetParameterCountException")) {
             SetErrorCode(__HResults.COR_E_TARGETPARAMCOUNT);
