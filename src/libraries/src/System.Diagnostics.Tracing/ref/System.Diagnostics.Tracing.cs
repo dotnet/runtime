@@ -231,6 +231,7 @@ namespace System.Diagnostics.Tracing
         public EventSourceException() { }
         public EventSourceException(string message) { }
         public EventSourceException(string message, System.Exception innerException) { }
+        protected EventSourceException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct EventSourceOptions
