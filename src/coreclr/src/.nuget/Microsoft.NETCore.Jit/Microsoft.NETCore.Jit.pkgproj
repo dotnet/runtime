@@ -48,6 +48,9 @@
     <ProjectReference Include="ubuntu\16.10\Microsoft.NETCore.Jit.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
+    <ProjectReference Include="alpine\3.4.3\Microsoft.NETCore.Jit.pkgproj">
+      <Platform>amd64</Platform>
+    </ProjectReference>
     <ProjectReference Include="osx\Microsoft.NETCore.Jit.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
