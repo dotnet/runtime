@@ -742,7 +742,7 @@ sgen_build_nursery_fragments (GCMemSection *nursery_section, SgenGrayQueue *unpi
 
 		if (addr0 < addr1) {
 			if (unpin_queue)
-				GRAY_OBJECT_ENQUEUE (unpin_queue, (GCObject*)addr0, sgen_obj_get_descriptor_safe ((GCObject*)addr0));
+				GRAY_OBJECT_ENQUEUE_SERIAL (unpin_queue, (GCObject*)addr0, sgen_obj_get_descriptor_safe ((GCObject*)addr0));
 			else
 				SGEN_UNPIN_OBJECT (addr0);
 			size = SGEN_ALIGN_UP (sgen_safe_object_get_size ((GCObject*)addr0));

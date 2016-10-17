@@ -65,6 +65,11 @@ struct _GrayQueueEntry {
 
 #define SGEN_GRAY_QUEUE_ENTRY(obj,desc)	{ (obj), (desc) }
 
+#define GRAY_OBJECT_ENQUEUE_SERIAL(queue, obj, desc) (GRAY_OBJECT_ENQUEUE (queue, obj, desc, FALSE))
+#define GRAY_OBJECT_ENQUEUE_PARALLEL(queue, obj, desc) (GRAY_OBJECT_ENQUEUE (queue, obj, desc, TRUE))
+#define GRAY_OBJECT_DEQUEUE_SERIAL(queue, obj, desc) (GRAY_OBJECT_DEQUEUE (queue, obj, desc, FALSE))
+#define GRAY_OBJECT_DEQUEUE_PARALLEL(queue, obj, desc) (GRAY_OBJECT_DEQUEUE (queue, obj, desc, TRUE))
+
 /*
  * This is a stack now instead of a queue, so the most recently added items are removed
  * first, improving cache locality, and keeping the stack size manageable.
@@ -125,17 +130,17 @@ extern guint64 stat_gray_queue_dequeue_slow_path;
 
 void sgen_init_gray_queues (void);
 
-void sgen_gray_object_enqueue (SgenGrayQueue *queue, GCObject *obj, SgenDescriptor desc);
-GrayQueueEntry sgen_gray_object_dequeue (SgenGrayQueue *queue);
+void sgen_gray_object_enqueue (SgenGrayQueue *queue, GCObject *obj, SgenDescriptor desc, gboolean is_parallel);
+GrayQueueEntry sgen_gray_object_dequeue (SgenGrayQueue *queue, gboolean is_parallel);
 GrayQueueSection* sgen_gray_object_dequeue_section (SgenGrayQueue *queue);
 GrayQueueSection* sgen_gray_object_steal_section (SgenGrayQueue *queue);
 void sgen_gray_object_spread (SgenGrayQueue *queue, int num_sections);
-void sgen_gray_object_enqueue_section (SgenGrayQueue *queue, GrayQueueSection *section);
+void sgen_gray_object_enqueue_section (SgenGrayQueue *queue, GrayQueueSection *section, gboolean is_parallel);
 void sgen_gray_object_queue_trim_free_list (SgenGrayQueue *queue);
 void sgen_gray_object_queue_init (SgenGrayQueue *queue, GrayQueueEnqueueCheckFunc enqueue_check_func, gboolean reuse_free_list);
 void sgen_gray_object_queue_dispose (SgenGrayQueue *queue);
 void sgen_gray_object_queue_deinit (SgenGrayQueue *queue);
-void sgen_gray_object_alloc_queue_section (SgenGrayQueue *queue);
+void sgen_gray_object_alloc_queue_section (SgenGrayQueue *queue, gboolean is_parallel);
 void sgen_gray_object_free_queue_section (GrayQueueSection *section);
 
 void sgen_section_gray_queue_init (SgenSectionGrayQueue *queue, gboolean locked,
@@ -153,13 +158,13 @@ sgen_gray_object_queue_is_empty (SgenGrayQueue *queue)
 }
 
 static inline MONO_ALWAYS_INLINE void
-GRAY_OBJECT_ENQUEUE (SgenGrayQueue *queue, GCObject *obj, SgenDescriptor desc)
+GRAY_OBJECT_ENQUEUE (SgenGrayQueue *queue, GCObject *obj, SgenDescriptor desc, gboolean is_parallel)
 {
 #if SGEN_MAX_DEBUG_LEVEL >= 9
-	sgen_gray_object_enqueue (queue, obj, desc);
+	sgen_gray_object_enqueue (queue, obj, desc, is_parallel);
 #else
 	if (G_UNLIKELY (!queue->first || queue->cursor == GRAY_LAST_CURSOR_POSITION (queue->first))) {
-		sgen_gray_object_enqueue (queue, obj, desc);
+		sgen_gray_object_enqueue (queue, obj, desc, is_parallel);
 	} else {
 		GrayQueueEntry entry = SGEN_GRAY_QUEUE_ENTRY (obj, desc);
 
@@ -174,11 +179,11 @@ GRAY_OBJECT_ENQUEUE (SgenGrayQueue *queue, GCObject *obj, SgenDescriptor desc)
 }
 
 static inline MONO_ALWAYS_INLINE void
-GRAY_OBJECT_DEQUEUE (SgenGrayQueue *queue, GCObject** obj, SgenDescriptor *desc)
+GRAY_OBJECT_DEQUEUE (SgenGrayQueue *queue, GCObject** obj, SgenDescriptor *desc, gboolean is_parallel)
 {
 	GrayQueueEntry entry;
 #if SGEN_MAX_DEBUG_LEVEL >= 9
-	entry = sgen_gray_object_dequeue (queue);
+	entry = sgen_gray_object_dequeue (queue, is_parallel);
 	*obj = entry.obj;
 	*desc = entry.desc;
 #else
@@ -187,7 +192,7 @@ GRAY_OBJECT_DEQUEUE (SgenGrayQueue *queue, GCObject** obj, SgenDescriptor *desc)
 
 		*obj = NULL;
 	} else if (G_UNLIKELY (queue->cursor == GRAY_FIRST_CURSOR_POSITION (queue->first))) {
-		entry = sgen_gray_object_dequeue (queue);
+		entry = sgen_gray_object_dequeue (queue, is_parallel);
 		*obj = entry.obj;
 		*desc = entry.desc;
 	} else {

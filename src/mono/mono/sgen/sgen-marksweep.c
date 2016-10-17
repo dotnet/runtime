@@ -1145,7 +1145,7 @@ major_block_is_evacuating (MSBlockInfo *block)
 		if (!MS_MARK_BIT ((block), __word, __bit)) {		\
 			MS_SET_MARK_BIT ((block), __word, __bit);	\
 			if (sgen_gc_descr_has_references (desc))			\
-				GRAY_OBJECT_ENQUEUE ((queue), (obj), (desc)); \
+				GRAY_OBJECT_ENQUEUE_SERIAL ((queue), (obj), (desc)); \
 			binary_protocol_mark ((obj), (gpointer)SGEN_LOAD_VTABLE ((obj)), sgen_safe_object_get_size ((obj))); \
 			INC_NUM_MAJOR_OBJECTS_MARKED ();		\
 		}							\
@@ -1158,7 +1158,7 @@ major_block_is_evacuating (MSBlockInfo *block)
 		MS_SET_MARK_BIT_PAR ((block), __word, __bit, first);	\
 		if (first) {						\
 			if (sgen_gc_descr_has_references (desc))	\
-				GRAY_OBJECT_ENQUEUE ((queue), (obj), (desc)); \
+				GRAY_OBJECT_ENQUEUE_PARALLEL ((queue), (obj), (desc)); \
 			binary_protocol_mark ((obj), (gpointer)SGEN_LOAD_VTABLE ((obj)), sgen_safe_object_get_size ((obj))); \
 			INC_NUM_MAJOR_OBJECTS_MARKED ();		\
 		}							\

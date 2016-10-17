@@ -519,7 +519,7 @@ sgen_drain_gray_stack (ScanCopyContext ctx)
 	for (;;) {
 		GCObject *obj;
 		SgenDescriptor desc;
-		GRAY_OBJECT_DEQUEUE (queue, &obj, &desc);
+		GRAY_OBJECT_DEQUEUE_PARALLEL (queue, &obj, &desc);
 		if (!obj)
 			return TRUE;
 		SGEN_LOG (9, "Precise gray object scan %p (%s)", obj, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (obj)));
@@ -674,7 +674,7 @@ pin_objects_from_nursery_pin_queue (gboolean do_scan_objects, ScanCopyContext ct
 					safe_object_get_size (obj_to_pin));
 
 			pin_object (obj_to_pin);
-			GRAY_OBJECT_ENQUEUE (queue, obj_to_pin, desc);
+			GRAY_OBJECT_ENQUEUE_SERIAL (queue, obj_to_pin, desc);
 			sgen_pin_stats_register_object (obj_to_pin, GENERATION_NURSERY);
 			definitely_pinned [count] = obj_to_pin;
 			count++;
@@ -724,7 +724,7 @@ sgen_pin_object (GCObject *object, SgenGrayQueue *queue)
 	++objects_pinned;
 	sgen_pin_stats_register_object (object, GENERATION_NURSERY);
 
-	GRAY_OBJECT_ENQUEUE (queue, object, sgen_obj_get_descriptor_safe (object));
+	GRAY_OBJECT_ENQUEUE_SERIAL (queue, object, sgen_obj_get_descriptor_safe (object));
 }
 
 /* Sort the addresses in array in increasing order.
@@ -1840,7 +1840,7 @@ major_copy_or_mark_from_roots (SgenGrayQueue *gc_thread_gray_queue, size_t *old_
 			}
 			sgen_los_pin_object (bigobj->data);
 			if (SGEN_OBJECT_HAS_REFERENCES (bigobj->data))
-				GRAY_OBJECT_ENQUEUE (gc_thread_gray_queue, bigobj->data, sgen_obj_get_descriptor ((GCObject*)bigobj->data));
+				GRAY_OBJECT_ENQUEUE_SERIAL (gc_thread_gray_queue, bigobj->data, sgen_obj_get_descriptor ((GCObject*)bigobj->data));
 			sgen_pin_stats_register_object (bigobj->data, GENERATION_OLD);
 			SGEN_LOG (6, "Marked large object %p (%s) size: %lu from roots", bigobj->data,
 					sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (bigobj->data)),

@@ -83,7 +83,7 @@ copy_object_no_checks (GCObject *obj, SgenGrayQueue *queue)
 
 	if (has_references) {
 		SGEN_LOG (9, "Enqueuing gray object %p (%s)", destination, sgen_client_vtable_get_name (vt));
-		GRAY_OBJECT_ENQUEUE (queue, (GCObject *)destination, sgen_vtable_get_descriptor (vt));
+		GRAY_OBJECT_ENQUEUE_SERIAL (queue, (GCObject *)destination, sgen_vtable_get_descriptor (vt));
 	}
 
 	return (GCObject *)destination;
@@ -120,7 +120,7 @@ copy_object_no_checks_par (GCObject *obj, SgenGrayQueue *queue)
 			/* In a racing case, only the worker that allocated the object enqueues it */
 			if (has_references) {
 				SGEN_LOG (9, "Enqueuing gray object %p (%s)", destination, sgen_client_vtable_get_name (vt));
-				GRAY_OBJECT_ENQUEUE (queue, (GCObject *)destination, sgen_vtable_get_descriptor (vt));
+				GRAY_OBJECT_ENQUEUE_PARALLEL (queue, (GCObject *)destination, sgen_vtable_get_descriptor (vt));
 			}
 		} else {
 			destination = final_destination;

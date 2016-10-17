@@ -45,7 +45,7 @@ guint64 stat_gray_queue_dequeue_slow_path;
 static GrayQueueSection *last_gray_queue_free_list;
 
 void
-sgen_gray_object_alloc_queue_section (SgenGrayQueue *queue)
+sgen_gray_object_alloc_queue_section (SgenGrayQueue *queue, gboolean is_parallel)
 {
 	GrayQueueSection *section;
 
@@ -77,15 +77,19 @@ sgen_gray_object_alloc_queue_section (SgenGrayQueue *queue)
 	queue->first = section;
 	queue->cursor = section->entries - 1;
 
-	mono_memory_write_barrier ();
-	/*
-	 * FIXME
-	 * we could probably optimize the code to only rely on the write barrier
-	 * for synchronization with the stealer thread. Additionally we could also
-	 * do a write barrier once every other gray queue change, and request
-	 * to have a minimum of sections before stealing, to keep consistency.
-	 */
-	InterlockedIncrement (&queue->num_sections);
+	if (is_parallel) {
+		mono_memory_write_barrier ();
+		/*
+		 * FIXME
+		 * we could probably optimize the code to only rely on the write barrier
+		 * for synchronization with the stealer thread. Additionally we could also
+		 * do a write barrier once every other gray queue change, and request
+		 * to have a minimum of sections before stealing, to keep consistency.
+		 */
+		InterlockedIncrement (&queue->num_sections);
+	} else {
+		queue->num_sections++;
+	}
 }
 
 void
@@ -104,7 +108,7 @@ sgen_gray_object_free_queue_section (GrayQueueSection *section)
  */
 
 void
-sgen_gray_object_enqueue (SgenGrayQueue *queue, GCObject *obj, SgenDescriptor desc)
+sgen_gray_object_enqueue (SgenGrayQueue *queue, GCObject *obj, SgenDescriptor desc, gboolean is_parallel)
 {
 	GrayQueueEntry entry = SGEN_GRAY_QUEUE_ENTRY (obj, desc);
 
@@ -128,7 +132,7 @@ sgen_gray_object_enqueue (SgenGrayQueue *queue, GCObject *obj, SgenDescriptor de
 			queue->first->size = SGEN_GRAY_QUEUE_SECTION_SIZE;
 		}
 
-		sgen_gray_object_alloc_queue_section (queue);
+		sgen_gray_object_alloc_queue_section (queue, is_parallel);
 	}
 	STATE_ASSERT (queue->first, GRAY_QUEUE_SECTION_STATE_ENQUEUED);
 	SGEN_ASSERT (9, queue->cursor <= GRAY_LAST_CURSOR_POSITION (queue->first), "gray queue %p overflow, first %p, cursor %p", queue, queue->first, queue->cursor);
@@ -172,7 +176,7 @@ sgen_gray_object_spread (SgenGrayQueue *queue, int num_sections)
 
 	/* Allocate all needed sections */
 	while (queue->num_sections < num_sections_final)
-		sgen_gray_object_alloc_queue_section (queue);
+		sgen_gray_object_alloc_queue_section (queue, TRUE);
 
 	/* Spread out the elements in the sections. By design, sections at the end are fuller. */
 	section_start = queue->first;
@@ -202,7 +206,7 @@ sgen_gray_object_spread (SgenGrayQueue *queue, int num_sections)
 }
 
 GrayQueueEntry
-sgen_gray_object_dequeue (SgenGrayQueue *queue)
+sgen_gray_object_dequeue (SgenGrayQueue *queue, gboolean is_parallel)
 {
 	GrayQueueEntry entry;
 
@@ -224,11 +228,14 @@ sgen_gray_object_dequeue (SgenGrayQueue *queue)
 
 	if (G_UNLIKELY (queue->cursor < GRAY_FIRST_CURSOR_POSITION (queue->first))) {
 		GrayQueueSection *section;
-		gint32 old_num_sections;
+		gint32 old_num_sections = 0;
 
-		old_num_sections = InterlockedDecrement (&queue->num_sections);
+		if (is_parallel)
+			old_num_sections = InterlockedDecrement (&queue->num_sections);
+		else
+			queue->num_sections--;
 
-		if (old_num_sections <= 0) {
+		if (is_parallel && old_num_sections <= 0) {
 			mono_os_mutex_lock (&queue->steal_mutex);
 		}
 
@@ -247,7 +254,7 @@ sgen_gray_object_dequeue (SgenGrayQueue *queue)
 		queue->free_list = section;
 		queue->cursor = queue->first ? queue->first->entries + queue->first->size - 1 : NULL;
 
-		if (old_num_sections <= 0) {
+		if (is_parallel && old_num_sections <= 0) {
 			mono_os_mutex_unlock (&queue->steal_mutex);
 		}
 	}
@@ -333,7 +340,7 @@ sgen_gray_object_steal_section (SgenGrayQueue *queue)
 }
 
 void
-sgen_gray_object_enqueue_section (SgenGrayQueue *queue, GrayQueueSection *section)
+sgen_gray_object_enqueue_section (SgenGrayQueue *queue, GrayQueueSection *section, gboolean is_parallel)
 {
 	STATE_TRANSITION (section, GRAY_QUEUE_SECTION_STATE_FLOATING, GRAY_QUEUE_SECTION_STATE_ENQUEUED);
 
@@ -355,8 +362,12 @@ sgen_gray_object_enqueue_section (SgenGrayQueue *queue, GrayQueueSection *sectio
 			queue->enqueue_check_func (section->entries [i].obj);
 	}
 #endif
-	mono_memory_write_barrier ();
-	InterlockedIncrement (&queue->num_sections);
+	if (is_parallel) {
+		mono_memory_write_barrier ();
+		InterlockedIncrement (&queue->num_sections);
+	} else {
+		queue->num_sections++;
+	}
 }
 
 void

@@ -204,7 +204,11 @@ COPY_OR_MARK_FUNCTION_NAME (GCObject **ptr, GCObject *obj, SgenGrayQueue *queue)
 			if (first) {
 				binary_protocol_pin (obj, (gpointer)SGEN_LOAD_VTABLE (obj), sgen_safe_object_get_size (obj));
 				if (SGEN_OBJECT_HAS_REFERENCES (obj))
-					GRAY_OBJECT_ENQUEUE (queue, obj, desc);
+#ifdef COPY_OR_MARK_PARALLEL
+					GRAY_OBJECT_ENQUEUE_PARALLEL (queue, obj, desc);
+#else
+					GRAY_OBJECT_ENQUEUE_SERIAL (queue, obj, desc);
+#endif
 			}
 		}
 		return FALSE;
@@ -324,7 +328,11 @@ DRAIN_GRAY_STACK_FUNCTION_NAME (SgenGrayQueue *queue)
 
 		HEAVY_STAT (++stat_drain_loops);
 
-		GRAY_OBJECT_DEQUEUE (queue, &obj, &desc);
+#if defined(COPY_OR_MARK_PARALLEL)
+		GRAY_OBJECT_DEQUEUE_PARALLEL (queue, &obj, &desc);
+#else
+		GRAY_OBJECT_DEQUEUE_SERIAL (queue, &obj, &desc);
+#endif
 		if (!obj)
 			return TRUE;
 

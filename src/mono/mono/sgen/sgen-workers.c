@@ -206,7 +206,7 @@ workers_get_work (WorkerData *data)
 	if (major->is_concurrent) {
 		GrayQueueSection *section = sgen_section_gray_queue_dequeue (&workers_distribute_gray_queue);
 		if (section) {
-			sgen_gray_object_enqueue_section (&data->private_gray_queue, section);
+			sgen_gray_object_enqueue_section (&data->private_gray_queue, section, major->is_parallel);
 			return TRUE;
 		}
 	}
@@ -238,7 +238,7 @@ workers_steal_work (WorkerData *data)
 	}
 
 	if (section) {
-		sgen_gray_object_enqueue_section (&data->private_gray_queue, section);
+		sgen_gray_object_enqueue_section (&data->private_gray_queue, section, TRUE);
 		return TRUE;
 	}
 
