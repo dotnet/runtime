@@ -2914,6 +2914,8 @@ public:
                                unsigned                flags,
                                void*                   compileTimeHandle);
 
+    GenTreePtr getRuntimeContextTree(CORINFO_LOOKUP* pLookup);
+
     GenTreePtr impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                       CORINFO_LOOKUP*         pLookup,
                                       void*                   compileTimeHandle);
