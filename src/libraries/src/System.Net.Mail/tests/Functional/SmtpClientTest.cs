@@ -197,12 +197,13 @@ namespace System.Net.Mail.Tests
             Assert.Equal(value, Smtp.Timeout);
         }
 
-        //[Fact]
+        [Fact]
         public void TestMailDelivery()
         {
             SmtpServer server = new SmtpServer();
             SmtpClient client = new SmtpClient("localhost", server.EndPoint.Port);
-            MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo\r\n");
+            client.Credentials = new NetworkCredential("user", "password");
+            MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
 
             Thread t = new Thread(server.Run);
             t.Start();
@@ -211,14 +212,16 @@ namespace System.Net.Mail.Tests
 
             Assert.Equal("<foo@example.com>", server.MailFrom);
             Assert.Equal("<bar@example.com>", server.MailTo);
+            Assert.Equal("hello", server.Subject);
+            Assert.Equal("howdydoo", server.Body);
         }
 
-        //[Fact]
+        [Fact]
         public void TestMailDeliveryAsync()
         {
             SmtpServer server = new SmtpServer();
             SmtpClient client = new SmtpClient("localhost", server.EndPoint.Port);
-            MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo\r\n");
+            MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
 
             Thread t = new Thread(server.Run);
             t.Start();
@@ -227,9 +230,11 @@ namespace System.Net.Mail.Tests
 
             Assert.Equal("<foo@example.com>", server.MailFrom);
             Assert.Equal("<bar@example.com>", server.MailTo);
+            Assert.Equal("hello", server.Subject);
+            Assert.Equal("howdydoo", server.Body);
 
             Assert.True(task.Wait(1000));
-            Assert.True(task.IsCompleted, "task");
+            Assert.True(task.IsCompleted);
         }
     }
 }
