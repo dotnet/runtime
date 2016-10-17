@@ -90,7 +90,6 @@ namespace System.Globalization
         // Numbers
         private String _sPositiveSign; // (user can override) positive sign
         private String _sNegativeSign; // (user can override) negative sign
-        private String[] _saNativeDigits; // (user can override) native characters for digits 0-9
         // (nfi populates these 5, don't have to be = undef)
         private int _iDigits; // (user can override) number of fractional digits
         private int _iNegativeNumber; // (user can override) negative number format
@@ -446,7 +445,6 @@ namespace System.Globalization
                     // Numbers
                     invariant._sPositiveSign = "+";                    // positive sign
                     invariant._sNegativeSign = "-";                    // negative sign
-                    invariant._saNativeDigits = new String[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" }; // native characters for digits 0-9
                     invariant._iDigits = 2;                      // number of fractional digits
                     invariant._iNegativeNumber = 1;                      // negative number format
                     invariant._waGrouping = new int[] { 3 };          // grouping of digits
@@ -1054,18 +1052,6 @@ namespace System.Globalization
                 return _sISO3166CountryName2;
             }
         }
-
-        /////////////
-        // Numbers //
-        ////////////
-
-        //                internal String sPositiveSign            ; // (user can override) positive sign
-        //                internal String sNegativeSign            ; // (user can override) negative sign
-        //                internal String[] saNativeDigits         ; // (user can override) native characters for digits 0-9
-        //                internal int iDigits                  ; // (user can override) number of fractional digits
-        //                internal int iNegativeNumber          ; // (user can override) negative number format
-
-
 
         // (user can override) grouping of digits
         internal int[] WAGROUPING
@@ -2101,7 +2087,6 @@ namespace System.Globalization
             if (this.IsInvariantCulture)
             {
                 // FUTURE: NumberFormatInfo already has default values for many of these fields.  Can we not do this?
-                // if we do need to do this, then why don't we set nfi.nativeDigits in this case?
                 nfi.positiveSign = _sPositiveSign;
                 nfi.negativeSign = _sNegativeSign;
 
@@ -2144,6 +2129,8 @@ namespace System.Globalization
                 {
                     nfi.nativeDigits[i] = new string(digits[i], 1);
                 }
+                
+                nfi.digitSubstitution = GetDigitSubstitution(_sRealName);
             }
 
             //

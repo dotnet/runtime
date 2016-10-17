@@ -339,5 +339,11 @@ namespace System.Globalization
             int geoId = LocaleData.GetLocaleDataNumericPart(cultureName, LocaleDataParts.GeoId);
             return geoId == -1 ? CultureData.Invariant.IGEOID : geoId; 
         }
+        
+        private static int GetDigitSubstitution(string cultureName)
+        {
+            int digitSubstitution = LocaleData.GetLocaleDataNumericPart(cultureName, LocaleDataParts.DigitSubstitution);
+            return digitSubstitution == -1 ? (int) DigitShapes.None : digitSubstitution; 
+        }
     }
 }

@@ -592,5 +592,10 @@ namespace System.Globalization
         {
             throw new NotImplementedException();
         }
+        
+        private static int GetDigitSubstitution(string cultureName)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

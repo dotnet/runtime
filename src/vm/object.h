@@ -4563,9 +4563,7 @@ public:
     INT32 cPositivePercentFormat;   // positivePercentFormat
     INT32 cNegativePercentFormat;   // negativePercentFormat
     INT32 cPercentDecimals;         // percentDecimalDigits
-#ifndef FEATURE_COREFX_GLOBALIZATION    
     INT32 iDigitSubstitution;       // digitSubstitution
-#endif
 
     CLR_BOOL bIsReadOnly;              // Is this NumberFormatInfo ReadOnly?
 #ifndef FEATURE_COREFX_GLOBALIZATION
