@@ -2,17 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
 
-namespace Microsoft.Win32.Primitives.Tests
+namespace System.ComponentModel.Tests
 {
-    public static class Win32ExceptionTestType
+    public static partial class Win32ExceptionTestType
     {
-
         private const int FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200;
         private const int FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000;
         private const int FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000;
