@@ -173,6 +173,7 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
                 Assert.Equal(false, output.CanRead);
             }
 
+#if netcoreapp11
             using (MemoryStream output = new MemoryStream())
             {
                 using (CryptoStream encryptStream = new CryptoStream(output, encryptor, CryptoStreamMode.Write, leaveOpen: false))
@@ -192,6 +193,7 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
 
                 Assert.Equal(true, output.CanRead);
             }
+#endif
         }
 
         private const string LoremText =
