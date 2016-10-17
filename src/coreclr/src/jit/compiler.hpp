@@ -768,7 +768,8 @@ inline double getR8LittleEndian(const BYTE* ptr)
 
 /*****************************************************************************
  *
- *  Return the bitmask to use in the EXPSET_TP for the CSE with the given CSE index.
+ *  Return the normalized index to use in the EXPSET_TP for the CSE with
+ *  the given CSE index.
  *  Each GenTree has the following field:
  *    signed char       gtCSEnum;        // 0 or the CSE index (negated if def)
  *  So zero is reserved to mean this node is not a CSE
@@ -777,15 +778,15 @@ inline double getR8LittleEndian(const BYTE* ptr)
  *  This precondition is checked by the assert on the first line of this method.
  */
 
-inline EXPSET_TP genCSEnum2bit(unsigned index)
+inline unsigned int genCSEnum2bit(unsigned index)
 {
     assert((index > 0) && (index <= EXPSET_SZ));
 
-    return ((EXPSET_TP)1 << (index - 1));
+    return (index - 1);
 }
 
 #ifdef DEBUG
-const char* genES2str(EXPSET_TP set);
+const char* genES2str(BitVecTraits* traits, EXPSET_TP set);
 const char* refCntWtd2str(unsigned refCntWtd);
 #endif
 

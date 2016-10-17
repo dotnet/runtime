@@ -665,11 +665,9 @@ void dumpILRange(const BYTE* const codeAddr, unsigned codeSize) // in bytes
 
 /*****************************************************************************
  *
- *  Display a variable set (which may be a 32-bit or 64-bit number); only
- *  one or two of these can be used at once.
+ *  Display a variable set.
  */
-
-const char* genES2str(EXPSET_TP set)
+const char* genES2str(BitVecTraits* traits, EXPSET_TP set)
 {
     const int   bufSize = 17;
     static char num1[bufSize];
@@ -682,11 +680,7 @@ const char* genES2str(EXPSET_TP set)
 
     nump = (nump == num1) ? num2 : num1;
 
-#if EXPSET_SZ == 32
-    sprintf_s(temp, bufSize, "%08X", set);
-#else
-    sprintf_s(temp, bufSize, "%08X%08X", (int)(set >> 32), (int)set);
-#endif
+    sprintf_s(temp, bufSize, "%s", BitVecOps::ToString(traits, set));
 
     return temp;
 }
