@@ -179,6 +179,11 @@ namespace System.Globalization
             get { return Environment.GetResourceString("Argument_InvalidDateTimeStyles"); }
         }
 
+        public static string Argument_InvalidDigitSubstitution
+        {
+            get { return Environment.GetResourceString("Argument_InvalidDigitSubstitution"); }
+        }
+
         public static string Argument_InvalidFlag
         {
             get { return Environment.GetResourceString("Argument_InvalidFlag"); }
@@ -187,6 +192,16 @@ namespace System.Globalization
         public static string Argument_InvalidGroupSize
         {
             get { return Environment.GetResourceString("Argument_InvalidGroupSize"); }
+        }
+
+        public static string Argument_InvalidNativeDigitCount
+        {
+            get { return Environment.GetResourceString("Argument_InvalidNativeDigitCount"); }
+        }
+
+        public static string Argument_InvalidNativeDigitValue
+        {
+            get { return Environment.GetResourceString("Argument_InvalidNativeDigitValue"); }
         }
 
         public static string Argument_InvalidNeutralRegionName

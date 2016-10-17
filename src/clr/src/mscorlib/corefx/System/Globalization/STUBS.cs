@@ -38,13 +38,6 @@ namespace System.Globalization
         public void SetAllDateTimePatterns(string[] patterns, char format) { throw new NotImplementedException(); }
     }
 
-    public enum DigitShapes
-    {
-        Context = 0,
-        NativeNational = 2,
-        None = 1,
-    }
-
     public sealed partial class IdnMapping
     {
         public IdnMapping() { }
@@ -58,13 +51,5 @@ namespace System.Globalization
         public string GetUnicode(string ascii) { throw new NotImplementedException(); }
         public string GetUnicode(string ascii, int index) { throw new NotImplementedException(); }
         public string GetUnicode(string ascii, int index, int count) { throw new NotImplementedException(); }
-    }
-
-    public sealed partial class NumberFormatInfo : System.ICloneable, System.IFormatProvider
-    {
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public System.Globalization.DigitShapes DigitSubstitution { get { throw new NotImplementedException(); } set { throw new NotImplementedException(); } }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public string[] NativeDigits { get { throw new NotImplementedException(); } set { throw new NotImplementedException(); } }
     }
 }

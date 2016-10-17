@@ -1086,9 +1086,7 @@ DEFINE_FIELD_U(numberNegativePattern,  NumberFormatInfo,   cNegativeNumberFormat
 DEFINE_FIELD_U(percentPositivePattern, NumberFormatInfo,   cPositivePercentFormat)
 DEFINE_FIELD_U(percentNegativePattern, NumberFormatInfo,   cNegativePercentFormat)
 DEFINE_FIELD_U(percentDecimalDigits,   NumberFormatInfo,   cPercentDecimals)
-#ifndef FEATURE_COREFX_GLOBALIZATION
 DEFINE_FIELD_U(digitSubstitution,      NumberFormatInfo,   iDigitSubstitution)
-#endif
 DEFINE_FIELD_U(isReadOnly,             NumberFormatInfo,   bIsReadOnly)
 #ifndef FEATURE_COREFX_GLOBALIZATION
 DEFINE_FIELD_U(m_useUserOverride,      NumberFormatInfo,   bUseUserOverride)
