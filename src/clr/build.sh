@@ -258,6 +258,9 @@ isMSBuildOnNETCoreSupported()
                 "ubuntu.16.10-x64")
                     __isMSBuildOnNETCoreSupported=1
                     ;;
+                "alpine.3.4.3-x64")
+                    __isMSBuildOnNETCoreSupported=1
+                    ;;
                 *)
             esac
         elif [ "$__HostOS" == "OSX" ]; then
