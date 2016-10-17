@@ -595,7 +595,60 @@ namespace System.Threading {
         [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern void ResumeInternal();
-#endif // !FEATURE_CORECLR
+
+        /*=========================================================================
+        ** Interrupts a thread that is inside a Wait(), Sleep() or Join().  If that
+        ** thread is not currently blocked in that manner, it will be interrupted
+        ** when it next begins to block.
+        =========================================================================*/
+        [System.Security.SecuritySafeCritical]  // auto-generated
+        [SecurityPermission(SecurityAction.Demand, ControlThread = true)]
+        public new void Interrupt() => base.Interrupt();
+
+        /*=========================================================================
+        ** Returns the priority of the thread.
+        **
+        ** Exceptions: ThreadStateException if the thread is dead.
+        =========================================================================*/
+
+        public new ThreadPriority Priority
+        {
+            [System.Security.SecuritySafeCritical]  // auto-generated
+            get
+            {
+                return base.Priority;
+            }
+            [System.Security.SecuritySafeCritical]  // auto-generated
+            [HostProtection(SelfAffectingThreading = true)]
+            set
+            {
+                base.Priority = value;
+            }
+        }
+
+        /*=========================================================================
+        ** Returns true if the thread has been started and is not dead.
+        =========================================================================*/
+        public new bool IsAlive
+        {
+            [System.Security.SecuritySafeCritical]  // auto-generated
+            get
+            {
+                return base.IsAlive;
+            }
+        }
+
+        /*=========================================================================
+        ** Returns true if the thread is a threadpool thread.
+        =========================================================================*/
+        public new bool IsThreadPoolThread
+        {
+            [System.Security.SecuritySafeCritical]  // auto-generated
+            get
+            {
+                return base.IsThreadPoolThread;
+            }
+        }
 
         /*=========================================================================
         ** Waits for the thread to die or for timeout milliseconds to elapse.
@@ -606,6 +659,15 @@ namespace System.Threading {
         **             ThreadInterruptedException if the thread is interrupted while waiting.
         **             ThreadStateException if the thread has not been started yet.
         =========================================================================*/
+        [System.Security.SecuritySafeCritical]
+        [HostProtection(Synchronization = true, ExternalThreading = true)]
+        public new void Join() => base.Join();
+
+        [System.Security.SecuritySafeCritical]
+        [HostProtection(Synchronization = true, ExternalThreading = true)]
+        public new bool Join(int millisecondsTimeout) => base.Join(millisecondsTimeout);
+#endif // !FEATURE_CORECLR
+
         [HostProtection(Synchronization=true, ExternalThreading=true)]
         public bool Join(TimeSpan timeout)
         {
@@ -761,6 +823,42 @@ namespace System.Threading {
         public extern void DisableComObjectEagerCleanup();
 #endif //FEATURE_COMINTEROP
 
+#if !FEATURE_CORECLR
+        /*=========================================================================
+        ** Return whether or not this thread is a background thread.  Background
+        ** threads do not affect when the Execution Engine shuts down.
+        **
+        ** Exceptions: ThreadStateException if the thread is dead.
+        =========================================================================*/
+        public new bool IsBackground
+        {
+            [System.Security.SecuritySafeCritical]  // auto-generated
+            get
+            {
+                return base.IsBackground;
+            }
+            [System.Security.SecuritySafeCritical]  // auto-generated
+            [HostProtection(SelfAffectingThreading = true)]
+            set
+            {
+                base.IsBackground = value;
+            }
+        }
+
+        /*=========================================================================
+        ** Return the thread state as a consistent set of bits.  This is more
+        ** general then IsAlive or IsBackground.
+        =========================================================================*/
+        public new ThreadState ThreadState
+        {
+            [System.Security.SecuritySafeCritical]  // auto-generated
+            get
+            {
+                return base.ThreadState;
+            }
+        }
+#endif // !FEATURE_CORECLR
+
 #if FEATURE_COMINTEROP_APARTMENT_SUPPORT
         /*=========================================================================
         ** An unstarted thread can be marked to indicate that it will host a
@@ -785,6 +883,15 @@ namespace System.Threading {
                 SetApartmentStateNative((int)value, true);
             }
         }
+
+#if !FEATURE_CORECLR
+        [System.Security.SecuritySafeCritical]  // auto-generated
+        public new ApartmentState GetApartmentState() => base.GetApartmentState();
+
+        [System.Security.SecuritySafeCritical]  // auto-generated
+        [HostProtection(Synchronization=true, SelfAffectingThreading=true)]
+        public new bool TrySetApartmentState(ApartmentState state) => base.TrySetApartmentState(state);
+#endif // !FEATURE_CORECLR
 
         [System.Security.SecuritySafeCritical]  // auto-generated
         [HostProtection(Synchronization=true, SelfAffectingThreading=true)]
@@ -1115,7 +1222,7 @@ namespace System.Threading {
 #endif
         }
 
-#if! FEATURE_LEAK_CULTURE_INFO
+#if !FEATURE_LEAK_CULTURE_INFO
         [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
@@ -1147,7 +1254,7 @@ namespace System.Threading {
             }
             return m_Context;
         }
-#endif        
+#endif
 
 
 #if FEATURE_IMPERSONATION
@@ -1187,7 +1294,7 @@ namespace System.Threading {
         }
 #endif // FEATURE_IMPERSONATION
 
-#if FEATURE_REMOTING   
+#if FEATURE_REMOTING
 
         // This returns the exposed context for a given context ID.
         [System.Security.SecurityCritical]  // auto-generated
@@ -1233,7 +1340,7 @@ namespace System.Threading {
             if (ad == null)
                 ad = GetDomainInternal();
 
-#if FEATURE_REMOTING        
+#if FEATURE_REMOTING
             Contract.Assert(CurrentThread.m_Context == null || CurrentThread.m_Context.AppDomain == ad, "AppDomains on the managed & unmanaged threads should match");
 #endif
             return ad;
