@@ -233,12 +233,14 @@ namespace System.IO
         protected string FullPath;
         protected string OriginalPath;
         protected FileSystemInfo() { }
+        protected FileSystemInfo(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public System.IO.FileAttributes Attributes { get { throw null; } set { } }
         public System.DateTime CreationTime { get { throw null; } set { } }
         public System.DateTime CreationTimeUtc { get { throw null; } set { } }
         public abstract bool Exists { get; }
         public string Extension { get { throw null; } }
         public virtual string FullName { get { throw null; } }
+        public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public System.DateTime LastAccessTime { get { throw null; } set { } }
         public System.DateTime LastAccessTimeUtc { get { throw null; } set { } }
         public System.DateTime LastWriteTime { get { throw null; } set { } }
