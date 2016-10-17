@@ -498,7 +498,7 @@ namespace System.Collections
         }
 
         [Serializable]
-        private class BitArrayEnumeratorSimple : IEnumerator
+        private class BitArrayEnumeratorSimple : IEnumerator, ICloneable
         {
             private BitArray bitarray;
             private int index;
