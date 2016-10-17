@@ -23,17 +23,18 @@ namespace System.Net.Mail.Tests
         public string Subject => _subject;
         public string Body => _body;
 
-        TcpListener server;
+        private readonly TcpListener _server;
+
         public IPEndPoint EndPoint
         {
-            get { return (IPEndPoint)server.LocalEndpoint; }
+            get { return (IPEndPoint)_server.LocalEndpoint; }
         }
 
         public SmtpServer()
         {
-            IPAddress address = IPAddress.Parse("127.0.0.1");
-            server = new TcpListener(address, 0);
-            server.Start(1);
+            IPAddress address = IPAddress.Loopback;
+            _server = new TcpListener(address, 0);
+            _server.Start(1);
         }
 
         private static void WriteNS(NetworkStream ns, string s)
@@ -43,10 +44,15 @@ namespace System.Net.Mail.Tests
             ns.Write(bytes, 0, bytes.Length);
         }
 
+        public void Stop()
+        {
+            _server.Stop();
+        }
+
         public void Run()
         {
             string s;
-            using (TcpClient client = server.AcceptTcpClient())
+            using (TcpClient client = _server.AcceptTcpClient())
             {
                 Trace("connection", EndPoint.Port);
                 using (NetworkStream ns = client.GetStream())
@@ -62,7 +68,7 @@ namespace System.Net.Mail.Tests
         }
 
         // return false == terminate
-        public bool Dispatch(NetworkStream ns, StreamReader r, string s)
+        private bool Dispatch(NetworkStream ns, StreamReader r, string s)
         {
             Trace("command", s);
             if (s.Length < 4)
@@ -118,7 +124,7 @@ namespace System.Net.Mail.Tests
         }
 
         [Conditional("TEST")]
-        static void Trace(string key, object value)
+        private static void Trace(string key, object value)
         {
             Console.Error.WriteLine("{0}: {1}", key, value);
         }

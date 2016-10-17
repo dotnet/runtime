@@ -16,7 +16,7 @@ namespace System.Net.Mail
         private bool _dsnEnabled;
         private bool _serverSupportsStartTls;
         private SupportedAuth _supportedAuth = SupportedAuth.None;
-        private ISmtpAuthenticationModule[] _authenticationModules;
+        private readonly ISmtpAuthenticationModule[] _authenticationModules;
 
         // accounts for the '=' or ' ' character after AUTH
         private const int SizeOfAuthString = 5;
@@ -32,9 +32,9 @@ namespace System.Net.Mail
         }
 
         internal bool DSNEnabled => _dsnEnabled;
-        
+
         internal bool ServerSupportsEai => _serverSupportsEai;
-       
+
         internal bool ServerSupportsStartTls => _serverSupportsStartTls;
 
         internal void ParseExtensions(string[] extensions)
@@ -73,16 +73,7 @@ namespace System.Net.Mail
 
         internal bool AuthSupported(ISmtpAuthenticationModule module)
         {
-            if (module is SmtpLoginAuthenticationModule)
-            {
-                if ((_supportedAuth & SupportedAuth.Login) > 0)
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return module is SmtpLoginAuthenticationModule && (_supportedAuth & SupportedAuth.Login) > 0;
         }
-
     }
 }

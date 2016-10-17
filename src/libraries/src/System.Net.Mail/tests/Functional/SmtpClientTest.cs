@@ -210,6 +210,8 @@ namespace System.Net.Mail.Tests
             client.Send(msg);
             t.Join();
 
+            server.Stop();
+
             Assert.Equal("<foo@example.com>", server.MailFrom);
             Assert.Equal("<bar@example.com>", server.MailTo);
             Assert.Equal("hello", server.Subject);
@@ -217,6 +219,7 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
+        [ActiveIssue(12740, TestPlatforms.AnyUnix)]
         public void TestMailDeliveryAsync()
         {
             SmtpServer server = new SmtpServer();
@@ -228,13 +231,14 @@ namespace System.Net.Mail.Tests
             Task task = client.SendMailAsync(msg);
             t.Join();
 
+            server.Stop();
+
             Assert.Equal("<foo@example.com>", server.MailFrom);
             Assert.Equal("<bar@example.com>", server.MailTo);
             Assert.Equal("hello", server.Subject);
             Assert.Equal("howdydoo", server.Body);
 
             Assert.True(task.Wait(1000));
-            Assert.True(task.IsCompleted);
         }
     }
 }
