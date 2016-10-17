@@ -28,6 +28,9 @@ set "__args= %*"
 set processedArgs=
 set __unprocessedBuildArgs=
 set __RunArgs=
+set __BuildAgainstPackages=
+set __BuildAgainstPackagesArg=
+set __RuntimeId=
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
@@ -48,6 +51,8 @@ if /i "%1" == "checked"               (set __BuildType=Checked&set processedArgs
 if /i "%1" == "skipmanaged"           (set __SkipManaged=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "updateinvalidpackages" (set __UpdateInvalidPackagesArg=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "toolset_dir"           (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
+if /i "%1" == "buildagainstpackages"  (set __BuildAgainstPackages=1&set __BuildAgainstPackagesArg=-BuildTestsAgainstPackages&shift&goto Arg_Loop)
+if /i "%1" == "runtimeid"             (set __RuntimeId=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 
 if [!processedArgs!]==[] (
   call set __UnprocessedBuildArgs=!__args!
@@ -176,7 +181,63 @@ if errorlevel 1 (
 
 :skipnative
 
+set __BuildLogRootName=Restore_Product
+set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.log
+set __BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn
+set __BuildErr=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.err
+set __msbuildLog=/flp:Verbosity=normal;LogFile="%__BuildLog%"
+set __msbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%"
+set __msbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
+
+if not defined __BuildAgainstPackages goto SkipRestoreProduct
+REM =========================================================================================
+REM ===
+REM === Restore product binaries from packages
+REM ===
+REM =========================================================================================
+
+set "__TestWorkingDir=%__RootBinDir%\tests\%__BuildOS%.%__BuildArch%.%__BuildType%"
+if not defined XunitTestBinBase       set  XunitTestBinBase=%__TestWorkingDir%
+set "CORE_ROOT=%XunitTestBinBase%\Tests\Core_Root"
+set "CORE_OVERLAY=%XunitTestBinBase%\Tests\coreoverlay"
+
+call %__ProjectDir%\run.cmd build -Project=%__ProjectDir%\tests\build.proj  -UpdateDependencies -BatchRestorePackages -MsBuildLog=!__msbuildLog! -MsBuildWrn=!__msbuildWrn! -MsBuildErr=!__msbuildErr! %__RunArgs% %__BuildAgainstPackagesArg% %__unprocessedBuildArgs%
+
+set __BuildLogRootName=Tests_GenerateRuntimeLayout
+
+call %__ProjectDir%\run.cmd build -Project=%__ProjectDir%\tests\runtest.proj -BinPlaceRef -BinPlaceProduct -CopyCrossgenToProduct -MsBuildLog=!__msbuildLog! -MsBuildWrn=!__msbuildWrn! -MsBuildErr=!__msbuildErr! %__RunArgs% %__BuildAgainstPackagesArg% %__unprocessedBuildArgs%
+if errorlevel 1 (
+    echo BinPlace of mscorlib.dll failed
+    exit /b 1
+)
+
+if defined __RuntimeId (
+
+    if not exist %__PackagesDir%\TestNativeBins (
+        echo %__MsgPrefix%Error: Ensure you have run sync.cmd -ab before building a non-Windows test overlay against packages
+        exit /b 1
+    )
+
+    call %__ProjectDir%\run.cmd build -Project=%__ProjectDir%\tests\runtest.proj -CreateNonWindowsTestOverlay -RuntimeId="%__RuntimeId%"  -MsBuildLog=!__msbuildLog! -MsBuildWrn=!__msbuildWrn! -MsBuildErr=!__msbuildErr! %__RunArgs% %__BuildAgainstPackagesArg% %__unprocessedBuildArgs%
+    for /R %__PackagesDir%\TestNativeBins\%__RuntimeId% %%f in (*.so) do copy %%f %Core_Overlay%
+    for /R %__PackagesDir%\TestNativeBins\%__RuntimeId% %%f in (*.dylib) do copy %%f %Core_Overlay%
+
+    echo %__MsgPrefix% Created the runtime layout for %__RuntimeId% in %CORE_OVERLAY%
+)
+
+echo %__MsgPrefix% Created the runtime layout with all dependencies in %CORE_ROOT%
+
+:SkipRestoreProduct
+
 if defined __SkipManaged exit /b 0
+
+set __BuildLogRootName=Tests_Managed
+set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.log
+set __BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn
+set __BuildErr=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.err
+set __msbuildLog=/flp:Verbosity=diag;LogFile="%__BuildLog%"
+set __msbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%"
+set __msbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
 
 REM =========================================================================================
 REM ===
@@ -190,14 +251,6 @@ if not defined VSINSTALLDIR (
     echo %__MsgPrefix%Error: buildtest.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md for build instructions.
     exit /b 1
 )
-
-set __BuildLogRootName=Tests_Managed
-set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.log
-set __BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn
-set __BuildErr=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.err
-set __msbuildLog=/flp:Verbosity=normal;LogFile="%__BuildLog%"
-set __msbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%"
-set __msbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
 
 if defined __UpdateInvalidPackagesArg (
   set __up=-updateinvalidpackageversions
@@ -253,6 +306,17 @@ echo. -? -h -help: view this message.
 echo Build architecture: -buildArch: only x64 is currently allowed ^(default: x64^).
 echo Build type: -buildType: one of Debug, Checked, Release ^(default: Debug^).
 echo updateinvalidpackageversions: Runs the target to update package versions.
+echo buildagainstpackages: builds tests against restored packages, instead of against a built product.
+echo runtimeid ^<ID^>: Builds a test overlay for the specified OS (Only supported when building against packages). Supported IDs are:
+echo     debian.8-x64: Builds overlay for Debian 8
+echo     fedora.23-x64: Builds overlay for Fedora 23
+echo     opensuse.13.2-x64: Builds overlay for OpenSUSE 13.2
+echo     opensuse.42.1-x64: Builds overlay for OpenSUSE 42.1
+echo     osx.10.10-x64: Builds overlay for OSX 10.10
+echo     rhel.7-x64: Builds overlay for RHEL 7 or CentOS
+echo     ubuntu.14.04-x64: Builds overlay for Ubuntu 14.04
+echo     ubuntu.16.04-x64: Builds overlay for Ubuntu 16.04
+echo     ubuntu.16.10-x64: Builds overlay for Ubuntu 16.10
 echo -- ... : all arguments following this tag will be passed directly to msbuild.
 echo -priority=^<N^> : specify a set of test that will be built and run, with priority N.
 echo     0: Build only priority 0 cases as essential testcases (default)

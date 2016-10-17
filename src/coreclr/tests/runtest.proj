@@ -323,6 +323,28 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
              Properties="Language=C#" />
   </Target>
 
+  <Target Name="CreateNonWindowsTestOverlay">
+    <MSBuild Projects="$(MSBuildProjectFile)"
+             Targets="CopyNonWindowsDependecyToCoreRoot"
+             Properties="Language=C#;NonWindowsRuntimeId=$(NonWindowsRuntimeId)" />
+  </Target>
+
+  <Target Name="BinPlaceRef">
+    <!-- Copy mscorlib.dll from TargetingPack to bin/Product/ref, if we're building against packages -->
+    <MSBuild Projects="$(MSBuildProjectFile)"
+             Targets="CopyDependencyToRef"
+             Properties="Language=C#"
+             Condition=" '$(BuildTestsAgainstPackages)'=='true' " />
+  </Target>
+
+  <Target Name="BinPlaceProduct">
+    <!-- Copy test dependencies to bin/Product, if we're building against packages -->
+    <MSBuild Projects="$(MSBuildProjectFile)"
+             Targets="CopyDependencyToProduct"
+             Properties="Language=C#"
+             Condition=" '$(BuildTestsAgainstPackages)'=='true' " />
+  </Target>
+
   <!-- All the test projects need to add dependency to currently built runtime as they require that to run. 
        In addition the version number of built runtime can change so all project.json needs to be dynamically generated.
        Instead the following task creates a project.json with dependencies like  Microsoft.netcore.runtime.coreclr ..etc.
