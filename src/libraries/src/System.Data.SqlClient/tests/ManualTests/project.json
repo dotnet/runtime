@@ -48,9 +48,9 @@
     "System.Threading.ThreadPool": "4.4.0-beta-24615-03",
     "System.Xml.ReaderWriter": "4.4.0-beta-24615-03",
     "System.Xml.XmlDocument": "4.4.0-beta-24615-03",
-    "runtime.win10-arm64.runtime.native.System.Data.SqlClient.sni": "4.4.0-beta-24616-00",
-    "runtime.win7-x64.runtime.native.System.Data.SqlClient.sni": "4.4.0-beta-24616-00",
-    "runtime.win7-x86.runtime.native.System.Data.SqlClient.sni": "4.4.0-beta-24616-00",
+    "runtime.win10-arm64.runtime.native.System.Data.SqlClient.sni": "4.4.0-beta-24617-00",
+    "runtime.win7-x64.runtime.native.System.Data.SqlClient.sni": "4.4.0-beta-24617-00",
+    "runtime.win7-x86.runtime.native.System.Data.SqlClient.sni": "4.4.0-beta-24617-00",
     "test-runtime": {
       "target": "project",
       "exclude": "compile"
