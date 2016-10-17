@@ -1984,6 +1984,7 @@ namespace System
         public virtual string Source { [System.Security.SecurityCriticalAttribute]get { throw null; } [System.Security.SecurityCriticalAttribute]set { } }
         public virtual string StackTrace { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
         public System.Reflection.MethodBase TargetSite { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
+        protected event System.EventHandler<System.Runtime.Serialization.SafeSerializationEventArgs> SerializeObjectState { add { } remove { } }
         public virtual System.Exception GetBaseException() { throw null; }
         [System.Security.SecurityCriticalAttribute]
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
@@ -11981,6 +11982,16 @@ namespace System.Runtime.Serialization
         Other = 32,
         Persistence = 8,
         Remoting = 16,
+    }
+    public sealed partial class SafeSerializationEventArgs : System.EventArgs
+    {
+        internal SafeSerializationEventArgs() { }
+        public System.Runtime.Serialization.StreamingContext StreamingContext { get { throw null; } }
+        public void AddSerializedState(System.Runtime.Serialization.ISafeSerializationData serializedState) { }
+    }
+    public partial interface ISafeSerializationData
+    {
+        void CompleteDeserialization(object deserialized);
     }
 }
 namespace System.Runtime.Versioning

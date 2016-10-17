@@ -942,6 +942,7 @@
     <SerializationSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\SerializationInfo.cs" />
     <SerializationSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\SerializationInfoEnumerator.cs" />
     <SerializationSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\StreamingContext.cs" />
+    <SerializationSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\SafeSerializationManager.cs" />
   </ItemGroup>
   <ItemGroup>
     <VersioningSources Include="$(BclSourcesRoot)\System\Runtime\Versioning\BinaryCompatibility.cs" />
