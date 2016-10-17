@@ -5,3 +5,5 @@ MembersMustExist : Member 'System.IO.FileNotFoundException.FusionLog.get()' does
 MembersMustExist : Member 'System.IO.Stream.CreateWaitHandle()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.IO.Stream.ObjectInvariant()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.IO.Stream.Synchronized(System.IO.Stream)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.IO.TextReader.Synchronized(System.IO.TextReader)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.IO.TextWriter.Synchronized(System.IO.TextWriter)' does not exist in the implementation but it does exist in the contract.
