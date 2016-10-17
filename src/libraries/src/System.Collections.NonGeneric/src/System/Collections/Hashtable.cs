@@ -1579,7 +1579,7 @@ namespace System.Collections
         // internal version number of the hashtable to ensure that no modifications
         // are made to the hashtable while an enumeration is in progress.
         [Serializable]
-        private class HashtableEnumerator : IDictionaryEnumerator
+        private class HashtableEnumerator : IDictionaryEnumerator, ICloneable
         {
             private Hashtable _hashtable;
             private int _bucket;
@@ -1601,6 +1601,8 @@ namespace System.Collections
                 _current = false;
                 _getObjectRetType = getObjRetType;
             }
+
+            public object Clone() => MemberwiseClone();
 
             public virtual Object Key
             {

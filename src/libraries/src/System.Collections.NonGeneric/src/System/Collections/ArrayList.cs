@@ -1265,7 +1265,7 @@ namespace System.Collections
             // This is the enumerator for an IList that's been wrapped in another
             // class that implements all of ArrayList's methods.
             [Serializable]
-            private sealed class IListWrapperEnumWrapper : IEnumerator
+            private sealed class IListWrapperEnumWrapper : IEnumerator, ICloneable
             {
                 private IEnumerator _en;
                 private int _remaining;
@@ -1281,6 +1281,19 @@ namespace System.Collections
                     while (startIndex-- > 0 && _en.MoveNext()) ;
                     _remaining = count;
                     _firstCall = true;
+                }
+
+                private IListWrapperEnumWrapper() { }
+
+                public object Clone()
+                {
+                    var clone = new IListWrapperEnumWrapper();
+                    clone._en = (IEnumerator)((ICloneable)_en).Clone();
+                    clone._initialStartIndex = _initialStartIndex;
+                    clone._initialCount = _initialCount;
+                    clone._remaining = _remaining;
+                    clone._firstCall = _firstCall;
+                    return clone;
                 }
 
                 public bool MoveNext()
@@ -2436,7 +2449,7 @@ namespace System.Collections
         // internal version number of the list to ensure that no modifications are
         // made to the list while an enumeration is in progress.
         [Serializable]
-        private sealed class ArrayListEnumerator : IEnumerator
+        private sealed class ArrayListEnumerator : IEnumerator, ICloneable
         {
             private ArrayList _list;
             private int _index;
@@ -2454,6 +2467,8 @@ namespace System.Collections
                 _version = list._version;
                 _currentElement = null;
             }
+
+            public object Clone() => MemberwiseClone();
 
             public bool MoveNext()
             {
@@ -2929,7 +2944,7 @@ namespace System.Collections
         }
 
         [Serializable]
-        private sealed class ArrayListEnumeratorSimple : IEnumerator
+        private sealed class ArrayListEnumeratorSimple : IEnumerator, ICloneable
         {
             private ArrayList _list;
             private int _index;
@@ -2947,6 +2962,8 @@ namespace System.Collections
                 _isArrayList = (list.GetType() == typeof(ArrayList));
                 _currentElement = s_dummyObject;
             }
+
+            public object Clone() => MemberwiseClone();
 
             public bool MoveNext()
             {

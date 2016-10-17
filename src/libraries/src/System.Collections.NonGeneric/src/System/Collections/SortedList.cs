@@ -832,7 +832,7 @@ namespace System.Collections
         }
 
         [Serializable]
-        private class SortedListEnumerator : IDictionaryEnumerator
+        private class SortedListEnumerator : IDictionaryEnumerator, ICloneable
         {
             private SortedList _sortedList;
             private Object _key;
@@ -859,6 +859,8 @@ namespace System.Collections
                 _getObjectRetType = getObjRetType;
                 _current = false;
             }
+
+            public object Clone() => MemberwiseClone();
 
             public virtual Object Key
             {
