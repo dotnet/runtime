@@ -19,30 +19,22 @@ namespace System.Net.Mail.Tests
 {
     public class AlternateViewTest
     {
-        AlternateView av;
-
-        public AlternateViewTest()
-        {
-            av = AlternateView.CreateAlternateViewFromString("test", new ContentType("text/plain"));
-        }
-
         [Fact]
         public void ArgumentNullExceptionTest()
         {
-            string s = null;
-            Assert.Throws<ArgumentNullException>(() => new AlternateView(s));
+            Assert.Throws<ArgumentNullException>(() => new AlternateView((string)null));
         }
 
         [Fact]
         public void ArgumentNullException2Test()
         {
-            Stream s = null;
-            Assert.Throws<ArgumentNullException>(() => new AlternateView(s));
+            Assert.Throws<ArgumentNullException>(() => new AlternateView((Stream)null));
         }
 
         [Fact]
         public void ContentTypeTest()
         {
+            AlternateView av = AlternateView.CreateAlternateViewFromString("test", new ContentType("text/plain"));
             Assert.NotNull(av.ContentType);
             Assert.Equal("text/plain", av.ContentType.MediaType);
         }
@@ -58,6 +50,7 @@ namespace System.Net.Mail.Tests
         [Fact]
         public void ContentStreamTest()
         {
+            AlternateView av = AlternateView.CreateAlternateViewFromString("test", new ContentType("text/plain"));
             Assert.NotNull(av.ContentStream);
             Assert.Equal(4, av.ContentStream.Length);
         }
@@ -65,6 +58,7 @@ namespace System.Net.Mail.Tests
         [Fact]
         public void TransferEncodingTest()
         {
+            AlternateView av = AlternateView.CreateAlternateViewFromString("test", new ContentType("text/plain"));
             Assert.Equal(TransferEncoding.QuotedPrintable, av.TransferEncoding);
 
             MemoryStream ms = new MemoryStream(new byte[] { 1, 2, 3 });
@@ -75,7 +69,8 @@ namespace System.Net.Mail.Tests
         [Fact]
         public void CreateAlternateViewFromStringEncodingNull()
         {
-            AlternateView.CreateAlternateViewFromString("<p>test message</p>", null, "text/html");
+            AlternateView av = AlternateView.CreateAlternateViewFromString("<p>test message</p>", null, "text/html");
+            Assert.Equal(Text.Encoding.ASCII.BodyName, av.ContentType.CharSet);
         }
     }
 }

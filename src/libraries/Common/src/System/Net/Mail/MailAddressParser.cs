@@ -309,7 +309,6 @@ namespace System.Net.Mail
 
         internal static string NormalizeOrThrow(string input)
         {
-#if NETSTANDARD1_7
             try
             {
                 return input.Normalize(Text.NormalizationForm.FormC);
@@ -318,9 +317,6 @@ namespace System.Net.Mail
             {
                 throw new FormatException(SR.MailAddressInvalidFormat, e);
             }
-#else
-            return input;
-#endif
         }
     }
 }

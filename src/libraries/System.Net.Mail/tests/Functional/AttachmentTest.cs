@@ -18,13 +18,6 @@ namespace System.Net.Mail.Tests
 {
     public class AttachmentTest
     {
-        Attachment attach;
-
-        public AttachmentTest()
-        {
-            attach = Attachment.CreateAttachmentFromString("test", "attachment-name");
-        }
-
         [Fact]
         public void TestNullStream()
         {
@@ -42,12 +35,14 @@ namespace System.Net.Mail.Tests
         [Fact]
         public void CreateAttachmentFromStringNullName()
         {
-            Attachment.CreateAttachmentFromString("", null, Encoding.ASCII, "application/octet-stream");
+            Attachment attach = Attachment.CreateAttachmentFromString("", null, Encoding.ASCII, "application/octet-stream");
+            Assert.Null(attach.Name);
         }
 
         [Fact]
         public void ContentDisposition()
         {
+            Attachment attach = Attachment.CreateAttachmentFromString("test", "attachment-name");
             Assert.NotNull(attach.ContentDisposition);
             Assert.Equal("attachment", attach.ContentDisposition.DispositionType);
         }
@@ -55,6 +50,7 @@ namespace System.Net.Mail.Tests
         [Fact]
         public void ContentType()
         {
+            Attachment attach = Attachment.CreateAttachmentFromString("test", "attachment-name");
             Assert.NotNull(attach.ContentType);
             Assert.Equal("text/plain", attach.ContentType.MediaType);
             Attachment a2 = new Attachment(new MemoryStream(), "myname");
@@ -65,6 +61,7 @@ namespace System.Net.Mail.Tests
         [Fact]
         public void NameEncoding()
         {
+            Attachment attach = Attachment.CreateAttachmentFromString("test", "attachment-name");
             Assert.Null(attach.NameEncoding);
             Attachment a = new Attachment(new MemoryStream(), "myname");
             Assert.Null(a.NameEncoding);
@@ -75,6 +72,7 @@ namespace System.Net.Mail.Tests
         [Fact]
         public void ContentStream()
         {
+            Attachment attach = Attachment.CreateAttachmentFromString("test", "attachment-name");
             Assert.NotNull(attach.ContentStream);
             Assert.Equal(4, attach.ContentStream.Length);
         }
@@ -83,6 +81,7 @@ namespace System.Net.Mail.Tests
         [Fact]
         public void Name()
         {
+            Attachment attach = Attachment.CreateAttachmentFromString("test", "attachment-name");
             Assert.Equal("attachment-name", attach.Name);
             Attachment a2 = new Attachment(new MemoryStream(), new ContentType("image/jpeg"));
             Assert.Equal(null, a2.Name);
@@ -92,6 +91,7 @@ namespace System.Net.Mail.Tests
         [Fact]
         public void TransferEncodingTest()
         {
+            Attachment attach = Attachment.CreateAttachmentFromString("test", "attachment-name");
             Assert.Equal(TransferEncoding.QuotedPrintable, attach.TransferEncoding);
         }
     }
