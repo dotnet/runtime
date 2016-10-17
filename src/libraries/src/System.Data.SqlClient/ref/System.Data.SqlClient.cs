@@ -476,6 +476,7 @@ namespace System.Data.SqlClient
         public string Server { get { throw null; } }
         public override string Source { get { throw null; } }
         public byte State { get { throw null; } }
+        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo si, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
     }
     public sealed partial class SqlInfoMessageEventArgs : System.EventArgs
