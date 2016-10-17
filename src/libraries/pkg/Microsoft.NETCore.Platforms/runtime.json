@@ -400,7 +400,28 @@
         },
         "opensuse.42.1-x64": {
             "#import": [ "opensuse.42.1", "opensuse-x64" ]
-        }
+        },
+
+        "alpine": {
+            "#import": [ "linux" ]
+        },
+        "alpine-x64": {
+            "#import": [ "alpine", "linux-x64" ]
+        },
+
+        "alpine.3": {
+            "#import": [ "alpine" ]
+        },
+        "alpine.3-x64": {
+            "#import": [ "alpine.3", "alpine-x64" ]
+        },
+
+        "alpine.3.4.3": {
+            "#import": [ "alpine.3" ]
+        },
+        "alpine.3.4.3-x64": {
+            "#import": [ "alpine.3.4.3", "alpine.3-x64" ]
+        },
     }
  }
 
