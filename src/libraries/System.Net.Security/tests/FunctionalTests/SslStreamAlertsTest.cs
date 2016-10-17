@@ -124,6 +124,7 @@ namespace System.Net.Security.Tests
         }
         
         [Fact]
+        [ActiveIssue(12706, TestPlatforms.Windows)]
         [ActiveIssue(12319, TestPlatforms.AnyUnix)]
         public async Task SslStream_StreamToStream_DataAfterShutdown_Fail()
         {
