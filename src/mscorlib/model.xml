@@ -6650,6 +6650,15 @@
       <Member MemberType="Property" Name="Value" />
       <Member Name="get_Value" />
     </Type>
+    <Type Name="System.Runtime.InteropServices.HandleRef">
+      <Member Name="#ctor(System.Object,System.IntPtr)"/>
+      <Member MemberType="Property" Name="Handle"/>
+      <Member Name="get_Handle"/>
+      <Member MemberType="Property" Name="Wrapper"/>
+      <Member Name="get_Wrapper"/>
+      <Member Name="op_Explicit(System.Runtime.InteropServices.HandleRef)" ReturnType="System.IntPtr" />
+      <Member Name="ToIntPtr(System.Runtime.InteropServices.HandleRef)"/>
+    </Type>
     <Type Name="System.Runtime.InteropServices.ICustomQueryInterface">
       <Member Name="GetInterface(System.Guid@,System.IntPtr@)" />
     </Type>
@@ -6734,6 +6743,8 @@
       <Member Name="PrelinkAll(System.Type)" />
       <Member Name="PtrToStringAnsi(System.IntPtr)" />
       <Member Name="PtrToStringAnsi(System.IntPtr,System.Int32)" />
+      <Member Name="PtrToStringAuto(System.IntPtr)" />
+      <Member Name="PtrToStringAuto(System.IntPtr,System.Int32)" />
       <Member Name="PtrToStringUTF8(System.IntPtr)" />
       <Member Name="PtrToStringUTF8(System.IntPtr,System.Int32)" />
       <Member Name="PtrToStringUni(System.IntPtr)" />
@@ -6812,8 +6823,10 @@
       <Member Name="SizeOf&lt;T&gt;(T)" />
       <Member Name="StringToBSTR(System.String)" />
       <Member Name="StringToCoTaskMemAnsi(System.String)" />
+      <Member Name="StringToCoTaskMemAuto(System.String)" />
       <Member Name="StringToCoTaskMemUni(System.String)" />
       <Member Name="StringToHGlobalAnsi(System.String)" />
+      <Member Name="StringToHGlobalAuto(System.String)" />
       <Member Name="StringToHGlobalUni(System.String)" />
       <Member Name="StringToCoTaskMemUTF8(System.String)" />
       <Member Name="StructureToPtr&lt;T&gt;(T,System.IntPtr,System.Boolean)" />
