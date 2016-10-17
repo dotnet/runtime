@@ -8008,6 +8008,7 @@
       <Member Name="Start" />
       <Member Name="Start(System.Object)" />
       <Member Name="TrySetApartmentState(System.Threading.ApartmentState)" />
+      <Member Name="Yield" />
     </Type>
     <Type Name="System.Threading.ThreadAbortException">
       <Member Status="ImplRoot" Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
