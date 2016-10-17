@@ -2074,8 +2074,11 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	klass->has_references = has_references;
 	klass->packing_size = packing_size;
 	klass->min_align = min_align;
-	for (i = 0; i < top; ++i)
-		klass->fields [i].offset = field_offsets [i];
+	for (i = 0; i < top; ++i) {
+		field = &klass->fields [i];
+		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
+			klass->fields [i].offset = field_offsets [i];
+	}
 
 	mono_memory_barrier ();
 	klass->size_inited = 1;
