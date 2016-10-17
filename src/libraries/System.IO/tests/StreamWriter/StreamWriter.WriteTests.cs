@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public class WriteTests
+    public partial class WriteTests
     {
         protected virtual Stream CreateStream()
         {
