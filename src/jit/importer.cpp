@@ -1856,36 +1856,10 @@ GenTreePtr Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CO
     return op1;
 }
 
-/*****************************************************************************/
-/* Import a dictionary lookup to access a handle in code shared between
-   generic instantiations.
-   The lookup depends on the typeContext which is only available at
-   runtime, and not at compile-time.
-   pLookup->token1 and pLookup->token2 specify the handle that is needed.
-   The cases are:
-
-   1. pLookup->indirections == CORINFO_USEHELPER : Call a helper passing it the
-      instantiation-specific handle, and the tokens to lookup the handle.
-   2. pLookup->indirections != CORINFO_USEHELPER :
-      2a. pLookup->testForNull == false : Dereference the instantiation-specific handle
-          to get the handle.
-      2b. pLookup->testForNull == true : Dereference the instantiation-specific handle.
-          If it is non-NULL, it is the handle required. Else, call a helper
-          to lookup the handle.
- */
-
-GenTreePtr Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                            CORINFO_LOOKUP*         pLookup,
-                                            void*                   compileTimeHandle)
+GenTreePtr Compiler::getRuntimeContextTree(CORINFO_LOOKUP* pLookup)
 {
-    CORINFO_RUNTIME_LOOKUP_KIND kind           = pLookup->lookupKind.runtimeLookupKind;
-    CORINFO_RUNTIME_LOOKUP*     pRuntimeLookup = &pLookup->runtimeLookup;
-
-    // This method can only be called from the importer instance of the Compiler.
-    // In other word, it cannot be called by the instance of the Compiler for the inlinee.
-    assert(!compIsForInlining());
-
-    GenTreePtr ctxTree;
+    GenTreePtr                  ctxTree = nullptr;
+    CORINFO_RUNTIME_LOOKUP_KIND kind    = pLookup->lookupKind.runtimeLookupKind;
 
     // Collectible types requires that for shared generic code, if we use the generic context parameter
     // that we report it. (This is a conservative approach, we could detect some cases particularly when the
@@ -1908,6 +1882,37 @@ GenTreePtr Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedTok
 
         ctxTree = gtNewLclvNode(info.compTypeCtxtArg, TYP_I_IMPL); // Exact method descriptor as passed in as last arg
     }
+    return ctxTree;
+}
+
+/*****************************************************************************/
+/* Import a dictionary lookup to access a handle in code shared between
+   generic instantiations.
+   The lookup depends on the typeContext which is only available at
+   runtime, and not at compile-time.
+   pLookup->token1 and pLookup->token2 specify the handle that is needed.
+   The cases are:
+
+   1. pLookup->indirections == CORINFO_USEHELPER : Call a helper passing it the
+      instantiation-specific handle, and the tokens to lookup the handle.
+   2. pLookup->indirections != CORINFO_USEHELPER :
+      2a. pLookup->testForNull == false : Dereference the instantiation-specific handle
+          to get the handle.
+      2b. pLookup->testForNull == true : Dereference the instantiation-specific handle.
+          If it is non-NULL, it is the handle required. Else, call a helper
+          to lookup the handle.
+ */
+
+GenTreePtr Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                            CORINFO_LOOKUP*         pLookup,
+                                            void*                   compileTimeHandle)
+{
+
+    // This method can only be called from the importer instance of the Compiler.
+    // In other word, it cannot be called by the instance of the Compiler for the inlinee.
+    assert(!compIsForInlining());
+
+    GenTreePtr ctxTree = getRuntimeContextTree(pLookup);
 
 #ifdef FEATURE_READYTORUN_COMPILER
     if (opts.IsReadyToRun())
@@ -1917,6 +1922,7 @@ GenTreePtr Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedTok
     }
 #endif
 
+    CORINFO_RUNTIME_LOOKUP* pRuntimeLookup = &pLookup->runtimeLookup;
     // It's available only via the run-time helper function
     if (pRuntimeLookup->indirections == CORINFO_USEHELPER)
     {
@@ -5727,10 +5733,10 @@ GenTreePtr Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolve
             FieldSeqNode* fs = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField);
             op1              = gtNewOperNode(GT_ADD, type, op1,
                                 new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, pFieldInfo->offset, fs));
+            break;
         }
-        break;
-
         case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
+        {
 #ifdef FEATURE_READYTORUN_COMPILER
             if (opts.IsReadyToRun())
             {
@@ -5757,8 +5763,26 @@ GenTreePtr Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolve
                                     new (this, GT_CNS_INT) GenTreeIntCon(TYP_INT, pFieldInfo->offset, fs));
             }
             break;
+        }
+        case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
+        {
+            noway_assert(opts.IsReadyToRun());
+            CORINFO_GENERICHANDLE_RESULT embedInfo;
+            info.compCompHnd->embedGenericHandle(pResolvedToken, FALSE, &embedInfo);
+            assert(embedInfo.lookup.lookupKind.needsRuntimeLookup);
 
+            GenTreePtr ctxTree = getRuntimeContextTree(&embedInfo.lookup);
+
+            var_types type = TYP_BYREF;
+            op1            = impReadyToRunHelperToTree(pResolvedToken, pFieldInfo->helper, type, gtNewArgList(ctxTree),
+                                            &embedInfo.lookup.lookupKind);
+            FieldSeqNode* fs = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField);
+            op1              = gtNewOperNode(GT_ADD, type, op1,
+                                new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, pFieldInfo->offset, fs));
+            break;
+        }
         default:
+        {
             if (!(access & CORINFO_ACCESS_ADDRESS))
             {
                 // In future, it may be better to just create the right tree here instead of folding it later.
@@ -5815,6 +5839,7 @@ GenTreePtr Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolve
                 }
             }
             break;
+        }
     }
 
     if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP)
@@ -12922,6 +12947,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_STATIC_RVA_ADDRESS:
                     case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
+                    case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
                         op1 = impImportStaticFieldAccess(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo,
                                                          lclTyp);
                         break;
@@ -13184,6 +13210,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_STATIC_RVA_ADDRESS:
                     case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
+                    case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
                         op1 = impImportStaticFieldAccess(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo,
                                                          lclTyp);
                         break;
