@@ -24,5 +24,16 @@ namespace System.Tests
         {
             Assert.Equal(expectedSign, Math.Sign(version1.CompareTo(version2)));
         }
+
+        [Theory]
+        [MemberData(nameof(Parse_Valid_TestData))]
+        public static void Clone_EqualsOriginal(string input, Version expected)
+        {
+            var actual = new Version(input);
+            Assert.Equal(expected, actual);
+
+            var clone = (Version)actual.Clone();
+            Assert.Equal(expected, clone);
+        }
     }
 }
