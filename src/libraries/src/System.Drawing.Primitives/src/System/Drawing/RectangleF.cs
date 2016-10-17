@@ -11,6 +11,7 @@ namespace System.Drawing
     ///       Stores the location and size of a rectangular region.
     ///    </para>
     /// </summary>
+    [Serializable]
     public struct RectangleF
     {
         /// <summary>
