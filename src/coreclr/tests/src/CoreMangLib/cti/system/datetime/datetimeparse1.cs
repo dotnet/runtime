@@ -472,7 +472,7 @@ public class DateTimeParse1
                 day       = (TestLibrary.Generator.GetInt32(-55) % 27) + 1;
                 year      = (TestLibrary.Generator.GetInt32(-55) % 100) + 1900;
                 month     = (TestLibrary.Generator.GetInt32(-55) % 12);
-                hour      = (TestLibrary.Generator.GetInt32(-55) % 12) + hourshift;	// Parse will convert perform GMT -> PST conversion
+                hour      = (TestLibrary.Generator.GetInt32(-55) % 12) + hourshift;	// Parse will convert perform GMT -> Local conversion
                 minute    = (TestLibrary.Generator.GetInt32(-55) % 60);
                 second    = (TestLibrary.Generator.GetInt32(-55) % 60);
                 dayOfWeek = (TestLibrary.Generator.GetInt32(-55) % 7);
@@ -489,10 +489,9 @@ public class DateTimeParse1
                        || day != dateAfter.Day
                        || year != dateAfter.Year 
                        || (DayOfWeek)dayOfWeek != dateAfter.DayOfWeek 
-                       || minute != dateAfter.Minute
                        || second != dateAfter.Second)
                 {
-                    TestLibrary.TestFramework.LogError("017", "DateTime.Parse(" + dateBefore + ") did not equal (" + c_DAYS_SH[(int)dateAfter.DayOfWeek] + ", " + dateAfter.Day + " " + c_MONTHS_SH[dateAfter.Month-1] + " " + dateAfter.Year + " " + dateAfter.Hour + ":" + dateAfter.Minute + ":" + dateAfter.Second + " GMT)");
+                    TestLibrary.TestFramework.LogError("017", "DateTime.Parse(" + dateBefore + ") did not equal (" + c_DAYS_SH[(int)dateAfter.DayOfWeek] + ", " + dateAfter.Day + " " + c_MONTHS_SH[dateAfter.Month-1] + " " + dateAfter.Year + " " + dateAfter.Hour + ":" + dateAfter.Minute + ":" + dateAfter.Second + " " + dateAfter.Kind + ")");
                     retVal = false;
                 }
              }
@@ -683,10 +682,9 @@ public class DateTimeParse1
                 if (month != dateAfter.Month 
                        || day != dateAfter.Day 
                        || year != dateAfter.Year 
-                       || minute != dateAfter.Minute
                        || second != dateAfter.Second)
                 {
-                    TestLibrary.TestFramework.LogError("025", "DateTime.Parse(" + dateBefore + ") did not equal (" + dateAfter.Year + "-" + dateAfter.Month + "-" + dateAfter.Day + " " + dateAfter.Hour + ":" + dateAfter.Minute + ":" + dateAfter.Second + "Z)");
+                    TestLibrary.TestFramework.LogError("025", "DateTime.Parse(" + dateBefore + ") did not equal (" + dateAfter.Year + "-" + dateAfter.Month + "-" + dateAfter.Day + " " + dateAfter.Hour + ":" + dateAfter.Minute + ":" + dateAfter.Second + " " + dateAfter.Kind + ")");
                     retVal = false;
                 }
              }
