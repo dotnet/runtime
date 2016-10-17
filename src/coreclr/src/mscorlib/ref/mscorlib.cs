@@ -13239,7 +13239,7 @@ namespace System.Threading
         public static void MemoryBarrier() { }
         [System.Security.SecuritySafeCriticalAttribute]
         public static new void Sleep(int millisecondsTimeout) { }
-        public static new void Sleep(System.TimeSpan timeout) { }
+        public static void Sleep(System.TimeSpan timeout) { }
         [System.Security.SecuritySafeCriticalAttribute]
         public static new void SpinWait(int iterations) { }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
