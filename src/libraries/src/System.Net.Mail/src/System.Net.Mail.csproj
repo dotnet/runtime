@@ -119,8 +119,8 @@
     <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.cs">
       <Link>Common\System\Net\Logging\NetEventSource.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\EmailEventSource.cs">
-      <Link>Common\System\Net\Logging\EmailEventSource.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\Logging\MailEventSource.cs">
+      <Link>Common\System\Net\Logging\MailEventSource.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\SecurityProtocol.cs">
       <Link>Common\System\Net\SecurityProtocol.cs</Link>
