@@ -64,7 +64,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         internal static InternalPrimitiveTypeE ToCode(Type type) =>
                 type == null ? ToPrimitiveTypeEnum(TypeCode.Empty) :
-                type.GetTypeInfo().IsPrimitive ? ToPrimitiveTypeEnum(type.GetTypeCode()) :
+                type.GetTypeInfo().IsPrimitive ? ToPrimitiveTypeEnum(Type.GetTypeCode(type)) :
                 ReferenceEquals(type, s_typeofDateTime) ? InternalPrimitiveTypeE.DateTime :
                 ReferenceEquals(type, s_typeofTimeSpan) ? InternalPrimitiveTypeE.TimeSpan :
                 ReferenceEquals(type, s_typeofDecimal) ? InternalPrimitiveTypeE.Decimal :
