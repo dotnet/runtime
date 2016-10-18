@@ -5785,13 +5785,18 @@ GenTreePtr Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolve
             assert(embedInfo.lookup.lookupKind.needsRuntimeLookup);
 
             GenTreePtr ctxTree = getRuntimeContextTree(&embedInfo.lookup);
+            GenTreeArgList* args = gtNewArgList(ctxTree);
 
-            var_types type = TYP_BYREF;
-            op1            = impReadyToRunHelperToTree(pResolvedToken, pFieldInfo->helper, type, gtNewArgList(ctxTree),
-                                            &embedInfo.lookup.lookupKind);
-            FieldSeqNode* fs = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField);
-            op1              = gtNewOperNode(GT_ADD, type, op1,
-                                new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, pFieldInfo->offset, fs));
+            unsigned callFlags = 0;
+
+            if (info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_BEFOREFIELDINIT)
+            {
+                callFlags |= GTF_CALL_HOISTABLE;
+            }
+
+            op1 = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_STATIC_BASE, TYP_BYREF, callFlags, args);
+
+            op1->gtCall.setEntryPoint(pFieldInfo->fieldLookup);
             break;
         }
         default:
