@@ -2,7 +2,7 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <ProjectReference Include="..\ref\System.Net.Security.csproj">
+    <ProjectReference Include="..\ref\System.Net.Security.builds">
       <SupportedFramework>net463;netcoreapp1.1;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Net.Security.builds" />
@@ -19,7 +19,6 @@
       <PackageTargetRuntime>win7</PackageTargetRuntime>
     </NotSupportedOnTargetFramework>
   </ItemGroup>
-  <ItemGroup>
-  </ItemGroup>
+
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
