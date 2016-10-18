@@ -810,7 +810,7 @@ namespace System.Reflection.Tests
         [InlineData(typeof(TI_NonGenericInterface2), new Type[0])]
         public void GetInterfaces(Type type, Type[] expected)
         {
-            Assert.Equal(expected, type.GetTypeInfo().GetInterfaces());
+            Assert.Equal(expected.OrderBy(t => t.Name), type.GetTypeInfo().GetInterfaces().OrderBy(t => t.Name));
         }
 
         [Theory]
@@ -857,11 +857,11 @@ namespace System.Reflection.Tests
             TypeInfo typeInfo = typeof(MembersClass).GetTypeInfo();
             if (bindingAttributes == BindingFlags.Default)
             {
-                Assert.Equal(expectedNames, typeInfo.GetEvents().Select(eventInfo => eventInfo.Name).ToArray());
+                Assert.Equal(expectedNames.OrderBy(e => e), typeInfo.GetEvents().Select(eventInfo => eventInfo.Name).OrderBy(e => e));
             }
             else
             {
-                Assert.Equal(expectedNames, typeInfo.GetEvents(bindingAttributes).Select(eventInfo => eventInfo.Name).ToArray());
+                Assert.Equal(expectedNames.OrderBy(e => e), typeInfo.GetEvents(bindingAttributes).Select(eventInfo => eventInfo.Name).OrderBy(e => e));
             }
         }
 
@@ -897,11 +897,11 @@ namespace System.Reflection.Tests
             TypeInfo typeInfo = typeof(MembersClass).GetTypeInfo();
             if (bindingAttributes == BindingFlags.Default)
             {
-                Assert.Equal(expectedNames, typeInfo.GetFields().Select(field => field.Name).ToArray());
+                Assert.Equal(expectedNames.OrderBy(f => f), typeInfo.GetFields().Select(field => field.Name).OrderBy(f => f));
             }
             else
             {
-                Assert.Equal(expectedNames, typeInfo.GetFields(bindingAttributes).Select(field => field.Name).ToArray());
+                Assert.Equal(expectedNames.OrderBy(f => f), typeInfo.GetFields(bindingAttributes).Select(field => field.Name).OrderBy(f => f));
             }
         }
 
@@ -911,7 +911,7 @@ namespace System.Reflection.Tests
         [InlineData(typeof(MembersClass.EventHandler), new string[0])]
         public void GetDefaultMembers(Type type, string[] expectedNames)
         {
-            Assert.Equal(expectedNames, type.GetTypeInfo().GetDefaultMembers().Select(member => member.Name).ToArray());
+            Assert.Equal(expectedNames.OrderBy(m => m), type.GetTypeInfo().GetDefaultMembers().Select(member => member.Name).OrderBy(m => m));
         }
 
         [Theory]
