@@ -339,21 +339,19 @@ namespace System.Collections.Tests
         [MemberData(nameof(CopyTo_Hidden_Data))]
         public static void CopyTo_Int_Hidden(string label, BitArray bits)
         {
-            int[] data = new int[2];
-            ((ICollection)bits).CopyTo(data, 0);
-
-            int maxValue = unchecked(((int)0xffffffff));
+            int allBitsSet = unchecked((int)0xffffffff); // 32 bits set to 1 = -1
             int fullInts = bits.Length / BitsPerInt32;
             int remainder = bits.Length % BitsPerInt32;
+            int arrayLength = fullInts + (remainder > 0 ? 1 : 0);
 
-            for (int i = 0; i < fullInts; ++i)
-            {
-                Assert.Equal(maxValue, data[i]);
-            }
+            int[] data = new int[arrayLength];
+            ((ICollection)bits).CopyTo(data, 0);
+
+            Assert.All(data.Take(fullInts), d => Assert.Equal(allBitsSet, d));
 
             if (remainder > 0)
             {
-                Assert.Equal((int)Math.Pow(2, remainder) - 1, data[fullInts]);
+                Assert.Equal((1 << remainder) - 1, data[fullInts]);
             }
         }
 
@@ -361,22 +359,20 @@ namespace System.Collections.Tests
         [MemberData(nameof(CopyTo_Hidden_Data))]
         public static void CopyTo_Byte_Hidden(string label, BitArray bits)
         {
-            int maxValue = (int)Math.Pow(2, BitsPerByte) - 1;
-
-            byte[] data = new byte[8];
-            ((ICollection)bits).CopyTo(data, 0);
-
+            byte allBitsSet = (1 << BitsPerByte) - 1; // 8 bits set to 1 = 255
+            
             int fullBytes = bits.Length / BitsPerByte;
             int remainder = bits.Length % BitsPerByte;
+            int arrayLength = fullBytes + (remainder > 0 ? 1 : 0);
 
-            for (int i = 0; i < fullBytes; ++i)
-            {
-                Assert.Equal(maxValue, data[i]);
-            }
+            byte[] data = new byte[arrayLength];
+            ((ICollection)bits).CopyTo(data, 0);
+
+            Assert.All(data.Take(fullBytes), d => Assert.Equal(allBitsSet, d));
 
             if (remainder > 0)
             {
-                Assert.Equal((int)Math.Pow(2, remainder) - 1, data[fullBytes]);
+                Assert.Equal((byte)((1 << remainder) - 1), data[fullBytes]);
             }
         }
     }

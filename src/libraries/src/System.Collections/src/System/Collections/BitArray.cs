@@ -400,9 +400,9 @@ namespace System.Collections
             if (intArray != null)
             {
                 int last = GetArrayLength(m_length, BitsPerInt32) - 1;
-                int bits = m_length % BitsPerInt32;
+                int extraBits = m_length % BitsPerInt32;
 
-                if (bits == 0)
+                if (extraBits == 0)
                 {
                     // we have perfect bit alignment, no need to sanitize, just copy
                     Array.Copy(m_array, 0, intArray, index, GetArrayLength(m_length, BitsPerInt32));
@@ -413,18 +413,18 @@ namespace System.Collections
                     Array.Copy(m_array, 0, intArray, index, GetArrayLength(m_length, BitsPerInt32) - 1);
 
                     // the last int needs to be masked
-                    intArray[last] = m_array[last] & ((1 << bits) - 1);
+                    intArray[last] = m_array[last] & ((1 << extraBits) - 1);
                 }
             }
             else if (array is byte[])
             {
-                int bits = m_length % BitsPerByte;
+                int extraBits = m_length % BitsPerByte;
 
                 int arrayLength = GetArrayLength(m_length, BitsPerByte);
                 if ((array.Length - index) < arrayLength)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
 
-                if (bits > 0)
+                if (extraBits > 0)
                 {
                     // last byte is not aligned, we will directly copy one less byte
                     arrayLength -= 1;
@@ -436,11 +436,11 @@ namespace System.Collections
                 for (int i = 0; i < arrayLength; i++)
                     b[index + i] = (byte)((m_array[i / 4] >> ((i % 4) * 8)) & 0x000000FF); // Shift to bring the required byte to LSB, then mask
 
-                if (bits > 0)
+                if (extraBits > 0)
                 {
                     // mask the final byte
                     int i = arrayLength;
-                    b[index + i] = (byte)((m_array[i / 4] >> ((i % 4) * 8)) & ((1 << bits) - 1));
+                    b[index + i] = (byte)((m_array[i / 4] >> ((i % 4) * 8)) & ((1 << extraBits) - 1));
                 }
             }
             else if (array is bool[])
