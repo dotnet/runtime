@@ -40,6 +40,9 @@
     <ProjectReference Include="fedora.23\Microsoft.NETCore.DotNetHost.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
+    <ProjectReference Include="fedora.24\Microsoft.NETCore.DotNetHost.pkgproj">
+      <Platform>amd64</Platform>
+    </ProjectReference>
     <ProjectReference Include="debian\Microsoft.NETCore.DotNetHost.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
