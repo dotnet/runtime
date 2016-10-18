@@ -32,6 +32,7 @@ static SgenPointerQueue job_queue;
 static SgenThreadPoolThreadInitFunc thread_init_func;
 static SgenThreadPoolIdleJobFunc idle_job_func;
 static SgenThreadPoolContinueIdleJobFunc continue_idle_job_func;
+static SgenThreadPoolShouldWorkFunc should_work_func;
 
 static volatile gboolean threadpool_shutdown;
 static volatile int threads_finished = 0;
@@ -88,6 +89,14 @@ continue_idle_job (void *thread_data)
 	return continue_idle_job_func (thread_data);
 }
 
+static gboolean
+should_work (void *thread_data)
+{
+	if (!should_work_func)
+		return TRUE;
+	return should_work_func (thread_data);
+}
+
 static mono_native_thread_return_t
 thread_func (void *thread_data)
 {
@@ -95,14 +104,21 @@ thread_func (void *thread_data)
 
 	mono_os_mutex_lock (&lock);
 	for (;;) {
+		gboolean do_idle;
+		SgenThreadPoolJob *job;
+
+		if (!should_work (thread_data)) {
+			mono_os_cond_wait (&work_cond, &lock);
+			continue;
+		}
 		/*
 		 * It's important that we check the continue idle flag with the lock held.
 		 * Suppose we didn't check with the lock held, and the result is FALSE.  The
 		 * main thread might then set continue idle and signal us before we can take
 		 * the lock, and we'd lose the signal.
 		 */
-		gboolean do_idle = continue_idle_job (thread_data);
-		SgenThreadPoolJob *job = get_job_and_set_in_progress ();
+		do_idle = continue_idle_job (thread_data);
+		job = get_job_and_set_in_progress ();
 
 		if (!job && !do_idle && !threadpool_shutdown) {
 			/*
@@ -154,7 +170,7 @@ thread_func (void *thread_data)
 }
 
 void
-sgen_thread_pool_init (int num_threads, SgenThreadPoolThreadInitFunc init_func, SgenThreadPoolIdleJobFunc idle_func, SgenThreadPoolContinueIdleJobFunc continue_idle_func, void **thread_datas)
+sgen_thread_pool_init (int num_threads, SgenThreadPoolThreadInitFunc init_func, SgenThreadPoolIdleJobFunc idle_func, SgenThreadPoolContinueIdleJobFunc continue_idle_func, SgenThreadPoolShouldWorkFunc should_work_func_p, void **thread_datas)
 {
 	int i;
 
@@ -167,6 +183,7 @@ sgen_thread_pool_init (int num_threads, SgenThreadPoolThreadInitFunc init_func, 
 	thread_init_func = init_func;
 	idle_job_func = idle_func;
 	continue_idle_job_func = continue_idle_func;
+	should_work_func = should_work_func_p;
 
 	for (i = 0; i < threads_num; i++)
 		mono_native_thread_create (&threads [i], thread_func, thread_datas ? thread_datas [i] : NULL);

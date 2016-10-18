@@ -1867,6 +1867,7 @@ major_copy_or_mark_from_roots (SgenGrayQueue *gc_thread_gray_queue, size_t *old_
 
 	SGEN_ASSERT (0, sgen_workers_all_done (), "Why are the workers not done when we start or finish a major collection?");
 	if (mode == COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT) {
+		sgen_workers_set_num_active_workers (0);
 		if (sgen_workers_have_idle_work ()) {
 			/*
 			 * We force the finish of the worker with the new object ops context
@@ -1900,6 +1901,7 @@ major_copy_or_mark_from_roots (SgenGrayQueue *gc_thread_gray_queue, size_t *old_
 	 * the roots.
 	 */
 	if (mode == COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT) {
+		sgen_workers_set_num_active_workers (1);
 		gray_queue_redirect (gc_thread_gray_queue);
 		if (precleaning_enabled) {
 			sgen_workers_start_all_workers (object_ops_nopar, object_ops_par, workers_finish_callback);

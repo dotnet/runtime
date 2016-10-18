@@ -20,6 +20,7 @@
 #include "mono/sgen/sgen-client.h"
 
 static int workers_num;
+static int active_workers_num;
 static volatile gboolean forced_stop;
 static WorkerData *workers_data;
 static SgenWorkerCallback worker_init_cb;
@@ -103,10 +104,10 @@ sgen_workers_ensure_awake (void)
 	 * or when the last worker is enqueuing preclean work. In both cases we can't
 	 * have a worker working using a nopar context, which means it is safe.
 	 */
-	idle_func_object_ops = (workers_num > 1) ? idle_func_object_ops_par : idle_func_object_ops_nopar;
+	idle_func_object_ops = (active_workers_num > 1) ? idle_func_object_ops_par : idle_func_object_ops_nopar;
 	workers_finished = FALSE;
 
-	for (i = 0; i < workers_num; i++) {
+	for (i = 0; i < active_workers_num; i++) {
 		State old_state;
 		gboolean did_set_state;
 
@@ -137,7 +138,7 @@ worker_try_finish (WorkerData *data)
 
 	mono_os_mutex_lock (&finished_lock);
 
-	for (i = 0; i < workers_num; i++) {
+	for (i = 0; i < active_workers_num; i++) {
 		if (state_is_working_or_enqueued (workers_data [i].state))
 			working++;
 	}
@@ -236,8 +237,8 @@ workers_steal_work (WorkerData *data)
 
 	current_worker = (int) (data - workers_data);
 
-	for (i = 1; i < workers_num && !section; i++) {
-		int steal_worker = (current_worker + i) % workers_num;
+	for (i = 1; i < active_workers_num && !section; i++) {
+		int steal_worker = (current_worker + i) % active_workers_num;
 		if (state_is_working_or_enqueued (workers_data [steal_worker].state))
 			section = sgen_gray_object_steal_section (&workers_data [steal_worker].private_gray_queue);
 	}
@@ -297,6 +298,15 @@ continue_idle_func (void *data_untyped)
 	}
 }
 
+static gboolean
+should_work_func (void *data_untyped)
+{
+	WorkerData *data = (WorkerData*)data_untyped;
+	int current_worker = (int) (data - workers_data);
+
+	return current_worker < active_workers_num;
+}
+
 static void
 marker_idle_func (void *data_untyped)
 {
@@ -317,7 +327,7 @@ marker_idle_func (void *data_untyped)
 
 		sgen_drain_gray_stack (ctx);
 
-		if (data->private_gray_queue.num_sections > 16 && workers_finished && worker_awakenings < workers_num) {
+		if (data->private_gray_queue.num_sections > 16 && workers_finished && worker_awakenings < active_workers_num) {
 			/* We bound the number of worker awakenings just to be sure */
 			worker_awakenings++;
 			sgen_workers_ensure_awake ();
@@ -356,7 +366,7 @@ sgen_workers_init (int num_workers, SgenWorkerCallback callback)
 	void **workers_data_ptrs = (void **)alloca(num_workers * sizeof(void *));
 
 	if (!sgen_get_major_collector ()->is_concurrent) {
-		sgen_thread_pool_init (num_workers, thread_pool_init_func, NULL, NULL, NULL);
+		sgen_thread_pool_init (num_workers, thread_pool_init_func, NULL, NULL, NULL, NULL);
 		return;
 	}
 
@@ -364,6 +374,7 @@ sgen_workers_init (int num_workers, SgenWorkerCallback callback)
 	//g_print ("initing %d workers\n", num_workers);
 
 	workers_num = num_workers;
+	active_workers_num = num_workers;
 
 	workers_data = (WorkerData *)sgen_alloc_internal_dynamic (sizeof (WorkerData) * num_workers, INTERNAL_MEM_WORKER_DATA, TRUE);
 	memset (workers_data, 0, sizeof (WorkerData) * num_workers);
@@ -375,7 +386,7 @@ sgen_workers_init (int num_workers, SgenWorkerCallback callback)
 
 	worker_init_cb = callback;
 
-	sgen_thread_pool_init (num_workers, thread_pool_init_func, marker_idle_func, continue_idle_func, workers_data_ptrs);
+	sgen_thread_pool_init (num_workers, thread_pool_init_func, marker_idle_func, continue_idle_func, should_work_func, workers_data_ptrs);
 
 	mono_counters_register ("# workers finished", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_workers_num_finished);
 }
@@ -390,6 +401,17 @@ sgen_workers_stop_all_workers (void)
 	sgen_thread_pool_wait_for_all_jobs ();
 	sgen_thread_pool_idle_wait ();
 	SGEN_ASSERT (0, sgen_workers_all_done (), "Can only signal enqueue work when in no work state");
+}
+
+void
+sgen_workers_set_num_active_workers (int num_workers)
+{
+	if (num_workers) {
+		SGEN_ASSERT (0, active_workers_num <= workers_num, "We can't start more workers than we initialized");
+		active_workers_num = num_workers;
+	} else {
+		active_workers_num = workers_num;
+	}
 }
 
 void
@@ -417,7 +439,7 @@ sgen_workers_join (void)
 	/* At this point all the workers have stopped. */
 
 	SGEN_ASSERT (0, sgen_section_gray_queue_is_empty (&workers_distribute_gray_queue), "Why is there still work left to do?");
-	for (i = 0; i < workers_num; ++i)
+	for (i = 0; i < active_workers_num; ++i)
 		SGEN_ASSERT (0, sgen_gray_object_queue_is_empty (&workers_data [i].private_gray_queue), "Why is there still work left to do?");
 }
 
@@ -435,7 +457,7 @@ sgen_workers_have_idle_work (void)
 	if (!sgen_section_gray_queue_is_empty (&workers_distribute_gray_queue))
 		return TRUE;
 
-	for (i = 0; i < workers_num; ++i) {
+	for (i = 0; i < active_workers_num; ++i) {
 		if (!sgen_gray_object_queue_is_empty (&workers_data [i].private_gray_queue))
 			return TRUE;
 	}
@@ -448,7 +470,7 @@ sgen_workers_all_done (void)
 {
 	int i;
 
-	for (i = 0; i < workers_num; i++) {
+	for (i = 0; i < active_workers_num; i++) {
 		if (state_is_working_or_enqueued (workers_data [i].state))
 			return FALSE;
 	}
@@ -498,7 +520,7 @@ sgen_workers_get_idle_func_object_ops (void)
 int
 sgen_workers_get_job_split_count (void)
 {
-	return (workers_num > 1) ? workers_num * 4 : 1;
+	return (active_workers_num > 1) ? active_workers_num * 4 : 1;
 }
 
 void
