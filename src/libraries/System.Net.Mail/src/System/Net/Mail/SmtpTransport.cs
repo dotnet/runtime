@@ -125,7 +125,7 @@ namespace System.Net.Mail
             {
                 _connection = new SmtpConnection(this, _client, _credentials, _authenticationModules);
                 _connection.Timeout = _timeout;
-                if (WebEventSource.Log.IsEnabled()) WebEventSource.Log.Associate(this, _connection);
+                if (EmailEventSource.Log.IsEnabled()) EmailEventSource.Log.Associate(this, _connection);
 
                 if (EnableSsl)
                 {
@@ -149,9 +149,9 @@ namespace System.Net.Mail
             {
                 _connection = new SmtpConnection(this, _client, _credentials, _authenticationModules);
                 _connection.Timeout = _timeout;
-                if (WebEventSource.Log.IsEnabled())
+                if (EmailEventSource.Log.IsEnabled())
                 {
-                    WebEventSource.Log.Associate(this, _connection);
+                    EmailEventSource.Log.Associate(this, _connection);
                 }
                 if (EnableSsl)
                 {

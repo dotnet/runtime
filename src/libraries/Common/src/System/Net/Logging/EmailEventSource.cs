@@ -10,8 +10,8 @@ using System.Runtime.InteropServices;
 
 namespace System.Net
 {
-    [EventSource(Name = "Microsoft-System-Net-Mail", LocalizationResources = "FxResources.System.Net.Mail.SR")]
-    internal sealed class WebEventSource : EventSource
+    [EventSource(Name = "Microsoft-System-Net-Mail", Guid = "32663b9f-4d8d-44f8-9f29-f4efc12e6879", LocalizationResources = "FxResources.System.Net.Mail.SR")]
+    internal sealed class EmailEventSource : EventSource
     {
         private const int RemoveId = 1;
         private const int GetId = 2;
@@ -19,9 +19,9 @@ namespace System.Net
         private const int SendId = 4;
         private const int AssociateId = 5;
 
-        private readonly static WebEventSource s_log = new WebEventSource();
-        private WebEventSource() { }
-        public static WebEventSource Log
+        private readonly static EmailEventSource s_log = new EmailEventSource();
+        private EmailEventSource() { }
+        public static EmailEventSource Log
         {
             get
             {
