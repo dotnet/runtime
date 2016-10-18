@@ -31,6 +31,8 @@
     <Compile Include="Fakes\GlobalLog.cs" />
     <Compile Include="Fakes\HostInformation.cs" />
     <Compile Include="Fakes\IPAddressPal.cs" />
+    <Compile Include="Fakes\CookieException.cs" />
+    <Compile Include="Fakes\Serialization.cs" Condition="'$(TargetGroup)' != ''"/>
     <Compile Include="..\..\src\System\Net\Cookie.cs">
       <Link>ProductionCode\System\Net\Cookie.cs</Link>
     </Compile>
@@ -39,9 +41,6 @@
     </Compile>
     <Compile Include="..\..\src\System\Net\CookieCollection.cs">
       <Link>ProductionCode\System\Net\CookieCollection.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\CookieException.cs">
-      <Link>ProductionCode\System\Net\CookieException.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\EndPoint.cs">
       <Link>ProductionCode\System\Net\EndPoint.cs</Link>
