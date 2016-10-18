@@ -742,6 +742,7 @@ namespace System.Data.Tests
             DataRowView a3 = dv.AddNew();
 
             Assert.Equal(reference, _eventWriter.ToString());
+            GC.KeepAlive(dv);
         }
 
         [Fact]
@@ -762,6 +763,7 @@ table was set.
             _dc2.ColumnName = "new_column_name";
 
             Assert.Equal(result.Replace("\r\n", "\n"), _eventWriter.ToString().Replace("\r\n", "\n"));
+            GC.KeepAlive(dv);
         }
 
         private void ListChanged(object o, ListChangedEventArgs e)
