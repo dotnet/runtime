@@ -13,6 +13,7 @@ namespace System.Drawing
     ///       with an ordered pair of width and height.
     ///    </para>
     /// </summary>
+    [Serializable]
     public struct SizeF
     {
         /// <summary>
