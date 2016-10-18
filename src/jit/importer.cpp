@@ -1856,6 +1856,18 @@ GenTreePtr Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CO
     return op1;
 }
 
+//------------------------------------------------------------------------
+// getRuntimeContextTree: find pointer to context for runtime lookup.
+//
+// Arguments:
+//    pLookup - how to do lookup.
+//
+// Return Value:
+//    Return GenTree pointer to generic shared context.
+//
+// Notes:
+//    Reports about generic context using.
+
 GenTreePtr Compiler::getRuntimeContextTree(CORINFO_LOOKUP* pLookup)
 {
     GenTreePtr                  ctxTree = nullptr;
