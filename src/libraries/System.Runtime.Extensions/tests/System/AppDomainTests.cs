@@ -59,6 +59,7 @@ namespace System.Tests
             AppDomain.CurrentDomain.UnhandledException -= new UnhandledExceptionEventHandler(NotExpectedToBeCalledHandler);
         }
 
+        [ActiveIssue(12716)]
         [PlatformSpecific(~TestPlatforms.OSX)] // Unhandled exception on a separate process causes xunit to crash on osx
         [Fact]
         public void UnhandledException_Called()
