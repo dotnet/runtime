@@ -112,6 +112,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue(12759)]
         public static void RunPosTests()
         {
             Type clsType2 = typeof(TestClass2);
@@ -239,6 +240,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue(12759)]
         public static void NegTest1()
         {
             Assembly element = null;
@@ -281,6 +283,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue(12759)]
         public static void NegTest2()
         {
             Assembly element = null;
