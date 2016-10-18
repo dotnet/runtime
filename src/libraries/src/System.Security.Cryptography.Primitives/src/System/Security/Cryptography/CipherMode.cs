@@ -10,6 +10,7 @@ namespace System.Security.Cryptography
     // This enum represents cipher chaining modes: cipher block chaining (CBC), 
     // electronic code book (ECB), and ciphertext-stealing (CTS).  Not all implementations 
     // will support all modes.
+    [Serializable]
     public enum CipherMode
     {
         CBC = 1,
