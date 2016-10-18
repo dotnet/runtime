@@ -536,6 +536,12 @@ namespace System {
             add { _safeSerializationManager.SerializeObjectState += value; }
             remove { _safeSerializationManager.SerializeObjectState -= value; }
         }
+#else
+        protected event EventHandler<SafeSerializationEventArgs> SerializeObjectState
+        {
+            add    { throw new PlatformNotSupportedException();}
+            remove { throw new PlatformNotSupportedException();}
+        }
 #endif // FEATURE_SERIALIZATION
 
         [System.Security.SecurityCritical]  // auto-generated_required

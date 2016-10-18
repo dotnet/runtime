@@ -2062,6 +2062,8 @@
       <Member Name="set_HResult(System.Int32)" />
       <Member Name="set_Source(System.String)" />
       <Member Name="ToString" />
+      <Member Name="add_SerializeObjectState(System.EventHandler&lt;System.Runtime.Serialization.SafeSerializationEventArgs&gt;)" />
+      <Member Name="remove_SerializeObjectState(System.EventHandler&lt;System.Runtime.Serialization.SafeSerializationEventArgs&gt;)" />
       <Member MemberType="Property" Name="Data" />
       <Member MemberType="Property" Name="HelpLink" />
       <Member MemberType="Property" Name="HResult" />
@@ -2070,6 +2072,7 @@
       <Member MemberType="Property" Name="Source" />
       <Member MemberType="Property" Name="StackTrace" />
       <Member MemberType="Property" Name="TargetSite" />
+      <Member MemberType="Event" Name="SerializeObjectState" />
       <Member Status="ImplRoot" Name="InternalToString" />
       <Member Status="ImplRoot" Name="InternalPreserveStackTrace" />
       <Member Status="ImplRoot" Name="OnDeserialized(System.Runtime.Serialization.StreamingContext)" />
@@ -10407,6 +10410,11 @@
     </Type>
     <Type Name="System.Runtime.Serialization.IDeserializationCallback">
       <Member Name="OnDeserialization(System.Object)" />
+    </Type>
+    <Type Name="System.Runtime.Serialization.SafeSerializationEventArgs">
+      <Member Name="AddSerializedState(System.Runtime.Serialization.ISafeSerializationData)" />
+      <Member Name="get_StreamingContext" />
+      <Member MemberType="Property" Name="StreamingContext" />
     </Type>
     <Type Status="ApiRoot" Name="System.Runtime.Serialization.OnSerializingAttribute">
       <Member Name="#ctor" />
