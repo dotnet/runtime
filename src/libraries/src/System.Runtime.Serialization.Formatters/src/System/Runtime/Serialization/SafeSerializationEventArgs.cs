@@ -21,9 +21,9 @@ namespace System.Runtime.Serialization
             {
                 throw new ArgumentNullException(nameof(serializedState));
             }
-            if (!serializedState.GetType().GetTypeInfo().IsSerializable)
+            if (!serializedState.GetType().IsSerializable)
             {
-                throw new ArgumentException(SR.Format(SR.Serialization_NonSerType, serializedState.GetType(), serializedState.GetType().GetTypeInfo().Assembly.FullName));
+                throw new ArgumentException(SR.Format(SR.Serialization_NonSerType, serializedState.GetType(), serializedState.GetType().Assembly.FullName));
             }
 
             // nop
