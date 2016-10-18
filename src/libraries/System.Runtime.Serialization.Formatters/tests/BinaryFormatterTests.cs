@@ -467,7 +467,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         public void SerializeNonSerializableTypeWithSurrogate()
         {
             var p = new NonSerializablePair<int, string>() { Value1 = 1, Value2 = "2" };
-            Assert.False(p.GetType().GetTypeInfo().IsSerializable);
+            Assert.False(p.GetType().IsSerializable);
             Assert.Throws<SerializationException>(() => FormatterClone(p));
 
             NonSerializablePair<int, string> result = FormatterClone(p, new NonSerializablePairSurrogate());
