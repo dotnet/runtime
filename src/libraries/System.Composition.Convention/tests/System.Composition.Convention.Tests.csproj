@@ -11,9 +11,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="..\..\System.Composition\tests\Util\AssertX.cs">
       <Link>Util\AssertX.cs</Link>
     </Compile>

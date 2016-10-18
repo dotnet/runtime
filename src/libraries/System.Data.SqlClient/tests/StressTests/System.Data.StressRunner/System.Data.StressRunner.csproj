@@ -50,9 +50,6 @@
     <Compile Include="ThreadPoolTest.cs" />
     <Compile Include="VersionUtil.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
   <!--Import the targets-->
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

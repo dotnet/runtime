@@ -5,7 +5,7 @@
     <AssemblyName>System.Collections.Performance.Tests</AssemblyName>
     <RootNamespace>System.Collections.Performance.Tests</RootNamespace>
     <IncludePerformanceTests>true</IncludePerformanceTests>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker>.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' "/>
@@ -20,9 +20,6 @@
     <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
       <Link>Common\System\PerfUtils.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

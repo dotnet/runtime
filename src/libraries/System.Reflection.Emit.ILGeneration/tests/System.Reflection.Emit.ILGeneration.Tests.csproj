@@ -16,9 +16,6 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="ILGenerator\DeclareLocalTests.cs" />
     <Compile Include="ILGenerator\DefineLabelTests.cs" />
     <Compile Include="ILGenerator\Emit1Tests.cs" />

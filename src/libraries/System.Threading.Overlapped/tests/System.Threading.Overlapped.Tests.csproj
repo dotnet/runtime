@@ -34,8 +34,5 @@
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.Threading.Overlapped.pkgproj" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -64,8 +64,5 @@
     <ProjectReference Include="..\pkg\System.IO.pkgproj" />
     <ProjectReference Include="..\..\System.Diagnostics.Debug\pkg\System.Diagnostics.Debug.pkgproj" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

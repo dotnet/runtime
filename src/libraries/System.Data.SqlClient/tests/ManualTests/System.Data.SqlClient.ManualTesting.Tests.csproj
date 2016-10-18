@@ -5,6 +5,7 @@
     <ProjectGuid>{45DB5F86-7AE3-45C6-870D-F9357B66BDB5}</ProjectGuid>
     <OutputType>Library</OutputType>
     <KeepAllProjectReferences>true</KeepAllProjectReferences>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />

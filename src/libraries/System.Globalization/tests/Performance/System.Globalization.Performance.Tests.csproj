@@ -28,9 +28,6 @@
     <TargetingPackReference Include="System.Runtime" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="$(CommonTestPath)\Data\UnicodeData.8.0.txt">
       <Link>CharUnicodeInfo\UnicodeData8.0.txt</Link>
       <LogicalName>UnicodeData.8.0.txt</LogicalName>

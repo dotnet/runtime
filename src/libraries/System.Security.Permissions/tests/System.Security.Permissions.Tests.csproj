@@ -25,9 +25,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="ApplicationTrustTests.cs" />
     <Compile Include="CodeConnectAccessTests.cs" />
     <Compile Include="EvidenceTests.cs" />

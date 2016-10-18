@@ -23,9 +23,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\..\pkg\System.Runtime.Extensions.pkgproj">
       <Project>{1e689c1b-690c-4799-bde9-6e7990585894}</Project>
       <Name>System.Runtime.Extensions.CoreCLR</Name>
