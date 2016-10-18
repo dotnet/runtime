@@ -2745,14 +2745,24 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
 #endif // !defined(JIT32_GCENCODER)
 }
 
-// Generate code for InitBlk using rep stos.
+//
+//------------------------------------------------------------------------
+// genCodeForInitBlkRepStos: Generate code for InitBlk using rep stos.
+//
+// Arguments:
+//    initBlkNode - The Block store for which we are generating code.
+//
 // Preconditions:
-//  The size of the buffers must be a constant and also less than INITBLK_STOS_LIMIT bytes.
-//  Any value larger than that, we'll use the helper even if both the
-//  fill byte and the size are integer constants.
+//    On x64:
+//      The size of the buffers must be a constant and also less than INITBLK_STOS_LIMIT bytes.
+//      Any value larger than that, we'll use the helper even if both the fill byte and the
+//      size are integer constants.
+//  On x86:
+//      The size must either be a non-constant or less than INITBLK_STOS_LIMIT bytes.
+//
 void CodeGen::genCodeForInitBlkRepStos(GenTreeBlk* initBlkNode)
 {
-    // Make sure we got the arguments of the initblk/initobj operation in the right registers
+    // Make sure we got the arguments of the initblk/initobj operation in the right registers.
     unsigned   size    = initBlkNode->Size();
     GenTreePtr dstAddr = initBlkNode->Addr();
     GenTreePtr initVal = initBlkNode->Data();
@@ -2768,7 +2778,8 @@ void CodeGen::genCodeForInitBlkRepStos(GenTreeBlk* initBlkNode)
 #ifdef _TARGET_AMD64_
         assert(size > CPBLK_UNROLL_LIMIT && size < CPBLK_MOVS_LIMIT);
 #else
-        assert(size > CPBLK_UNROLL_LIMIT);
+        // Note that a size of zero means a non-constant size.
+        assert((size == 0) || (size > CPBLK_UNROLL_LIMIT));
 #endif
     }
 
