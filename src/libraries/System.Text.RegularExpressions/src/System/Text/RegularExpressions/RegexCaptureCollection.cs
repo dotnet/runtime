@@ -22,6 +22,7 @@ namespace System.Text.RegularExpressions
     /// </summary>
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(RegexCollectionDebuggerProxy<Capture>))]
+    [Serializable]
     public class CaptureCollection : IList<Capture>, IReadOnlyList<Capture>, IList
     {
         private readonly Group _group;
@@ -191,6 +192,7 @@ namespace System.Text.RegularExpressions
             set { throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection); }
         }
 
+        [Serializable]
         private sealed class Enumerator : IEnumerator<Capture>
         {
             private readonly CaptureCollection _collection;
