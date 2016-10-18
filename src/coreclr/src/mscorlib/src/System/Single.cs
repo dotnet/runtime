@@ -37,6 +37,8 @@ namespace System {
         public const float NegativeInfinity = (float)-1.0 / (float)0.0;
         public const float NaN = (float)0.0 / (float)0.0;
 
+        internal static float NegativeZero = BitConverter.Int32BitsToSingle(unchecked((int)0x80000000));
+        
         [Pure]
         [System.Security.SecuritySafeCritical]  // auto-generated
         [System.Runtime.Versioning.NonVersionable]
@@ -64,6 +66,12 @@ namespace System {
         [System.Runtime.Versioning.NonVersionable]
         public unsafe static bool IsNaN(float f) {
             return (*(int*)(&f) & 0x7FFFFFFF) > 0x7F800000;
+        }
+        
+        [Pure]
+        [System.Security.SecuritySafeCritical]  // auto-generated
+        internal unsafe static bool IsNegative(float f) {
+            return (*(uint*)(&f) & 0x80000000) == 0x80000000;
         }
 
         // Compares this object to another object, returning an integer that

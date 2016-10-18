@@ -1,0 +1,13 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+# See the LICENSE file in the project root for more information.
+
+Version = 1.0
+Section = C Runtime
+Function = _finitef
+Name = Positive Test for _finitef
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Checks that _finitef correctly classifies all types of floating point
+= numbers (NaN, -Infinity, Infinity, finite nonzero, unnormalized, 0, and -0).
