@@ -11825,7 +11825,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
 #endif // defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR)
 
 #if defined(FEATURE_GDBJIT)
-    if (*nativeEntry != NULL)
+    if (SUCCEEDED(ret) && *nativeEntry != NULL)
     {
         CodeHeader* pCH = ((CodeHeader*)((PCODE)*nativeEntry & ~1)) - 1;
         pCH->SetCalledMethods((PTR_VOID)comp->GetCalledMethods());
