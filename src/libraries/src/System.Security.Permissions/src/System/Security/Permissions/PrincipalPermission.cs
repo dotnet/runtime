@@ -4,22 +4,23 @@
 
 namespace System.Security.Permissions
 {
-    //TODO implement PrincipalPermission
-    public sealed partial class PrincipalPermission : System.Security.IPermission, System.Security.ISecurityEncodable, System.Security.Permissions.IUnrestrictedPermission
+    //TODO #9641: Implement PrincipalPermission with real behavior
+    [Serializable]
+    public sealed partial class PrincipalPermission : IPermission, ISecurityEncodable, IUnrestrictedPermission
     {
-        public PrincipalPermission(System.Security.Permissions.PermissionState state) { }
+        public PrincipalPermission(PermissionState state) { }
         public PrincipalPermission(string name, string role) { }
         public PrincipalPermission(string name, string role, bool isAuthenticated) { }
-        public System.Security.IPermission Copy() { return default(System.Security.IPermission); }
-        public void Demand() { throw new System.Security.SecurityException(); }
+        public IPermission Copy() { return default(IPermission); }
+        public void Demand() { throw new SecurityException(); }
         public override bool Equals(object o) => base.Equals(o);
         public void FromXml(SecurityElement elem) { }
         public override int GetHashCode() => base.GetHashCode();
-        public System.Security.IPermission Intersect(System.Security.IPermission target) { return default(System.Security.IPermission); }
-        public bool IsSubsetOf(System.Security.IPermission target) { return false; }
+        public IPermission Intersect(IPermission target) { return default(IPermission); }
+        public bool IsSubsetOf(IPermission target) { return false; }
         public bool IsUnrestricted() { return false; }
         public override string ToString() => base.ToString();
         public SecurityElement ToXml() { return default(SecurityElement); }
-        public System.Security.IPermission Union(System.Security.IPermission other) { return default(System.Security.IPermission); }
+        public IPermission Union(IPermission other) { return default(IPermission); }
     }
 }

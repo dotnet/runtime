@@ -4,21 +4,22 @@
 
 namespace System.Security.Permissions
 {
-    [System.AttributeUsageAttribute((System.AttributeTargets)(4205), AllowMultiple = true, Inherited = false)]
-    public sealed partial class HostProtectionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
+    [Serializable]
+    [AttributeUsage((AttributeTargets)(4205), AllowMultiple = true, Inherited = false)]
+    public sealed partial class HostProtectionAttribute : CodeAccessSecurityAttribute
     {
-        public HostProtectionAttribute() : base(default(System.Security.Permissions.SecurityAction)) { }
-        public HostProtectionAttribute(System.Security.Permissions.SecurityAction action) : base(default(System.Security.Permissions.SecurityAction)) { }
+        public HostProtectionAttribute() : base(default(SecurityAction)) { }
+        public HostProtectionAttribute(SecurityAction action) : base(default(SecurityAction)) { }
         public bool ExternalProcessMgmt { get; set; }
         public bool ExternalThreading { get; set; }
         public bool MayLeakOnAbort { get; set; }
-        public System.Security.Permissions.HostProtectionResource Resources { get; set; }
+        public HostProtectionResource Resources { get; set; }
         public bool SecurityInfrastructure { get; set; }
         public bool SelfAffectingProcessMgmt { get; set; }
         public bool SelfAffectingThreading { get; set; }
         public bool SharedState { get; set; }
         public bool Synchronization { get; set; }
         public bool UI { get; set; }
-        public override System.Security.IPermission CreatePermission() { return default(System.Security.IPermission); }
+        public override IPermission CreatePermission() { return default(IPermission); }
     }
 }

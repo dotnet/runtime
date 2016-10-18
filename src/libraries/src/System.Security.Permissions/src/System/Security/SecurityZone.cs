@@ -4,6 +4,7 @@
 
 namespace System.Security
 {
+    [Serializable]
     public enum SecurityZone
     {
         Internet = 3,

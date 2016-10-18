@@ -4,6 +4,7 @@
 
 namespace System.Security
 {
+    [Serializable]
     public sealed partial class SecurityElement
     {
         public SecurityElement(string tag) { }
