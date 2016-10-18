@@ -1438,7 +1438,7 @@ mono_custom_attrs_has_attr (MonoCustomAttrInfo *ainfo, MonoClass *attr_klass)
 		if (centry->ctor == NULL)
 			continue;
 		MonoClass *klass = centry->ctor->klass;
-		if (mono_class_has_parent (klass, attr_klass) || (MONO_CLASS_IS_INTERFACE (attr_klass) && mono_class_is_assignable_from (attr_klass, klass)))
+		if (klass == attr_klass || mono_class_has_parent (klass, attr_klass) || (MONO_CLASS_IS_INTERFACE (attr_klass) && mono_class_is_assignable_from (attr_klass, klass)))
 			return TRUE;
 	}
 	return FALSE;
@@ -1468,7 +1468,7 @@ mono_custom_attrs_get_attr_checked (MonoCustomAttrInfo *ainfo, MonoClass *attr_k
 		if (centry->ctor == NULL)
 			continue;
 		MonoClass *klass = centry->ctor->klass;
-		if (mono_class_is_assignable_from (attr_klass, klass))
+		if (attr_klass == klass || mono_class_is_assignable_from (attr_klass, klass))
 			break;
 	}
 	if (centry == NULL)

@@ -5549,6 +5549,7 @@ mono_class_setup_parent (MonoClass *klass, MonoClass *parent)
 			/* set the parent to something useful and safe, but mark the type as broken */
 			parent = mono_defaults.object_class;
 			mono_class_set_type_load_failure (klass, "");
+			g_assert (parent);
 		}
 
 		klass->parent = parent;

@@ -697,7 +697,7 @@ void
 mono_context_init_checked (MonoDomain *domain, MonoError *error);
 
 gboolean
-mono_assembly_get_reference_assembly_attribute (MonoAssembly *assembly, MonoError *error);
+mono_assembly_has_reference_assembly_attribute (MonoAssembly *assembly, MonoError *error);
 
 
 #endif /* __MONO_METADATA_DOMAIN_INTERNALS_H__ */
