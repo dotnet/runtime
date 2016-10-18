@@ -10,7 +10,7 @@ namespace System.Xml.Linq
     /// <summary>
     /// Represents a name of an XML element or attribute. This class cannot be inherited.
     /// </summary>
-    [SuppressMessage("Microsoft.Usage", "CA2229:ImplementSerializationConstructors", Justification = "Deserialization handled by NameSerializer.")]
+    [Serializable]
     public sealed class XName : IEquatable<XName>, ISerializable
     {
         private XNamespace _ns;
@@ -196,7 +196,7 @@ namespace System.Xml.Linq
         }
     }
 
-    [Serializable()]
+    [Serializable]
     internal sealed class NameSerializer : IObjectReference, ISerializable
     {
         string _expandedName;
