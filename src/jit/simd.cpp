@@ -525,7 +525,8 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
                 // We don't check anything in that case.
                 if (!isThisPtr || !isNewObj)
                 {
-                    GenTreePtr arg = impStackTop(stackIndex).val;
+                    GenTreePtr arg     = impStackTop(stackIndex).val;
+                    var_types  argType = arg->TypeGet();
 
                     var_types expectedArgType;
                     if (argIndex < fixedArgCnt)
@@ -540,6 +541,7 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
                         {
                             // The type of the argument will be genActualType(*baseType).
                             expectedArgType = genActualType(*baseType);
+                            argType         = genActualType(argType);
                         }
                     }
                     else
@@ -547,7 +549,6 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
                         expectedArgType = *baseType;
                     }
 
-                    var_types argType = arg->TypeGet();
                     if (!isThisPtr && argType == TYP_I_IMPL)
                     {
                         // The reference implementation has a constructor that takes a pointer.
