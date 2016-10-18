@@ -24,7 +24,7 @@ namespace System.Security.Cryptography
         CTS = 5,
         ECB = 2,
     }
-    public partial class CryptographicException : System.Exception
+    public partial class CryptographicException : System.SystemException
     {
         public CryptographicException() { }
         public CryptographicException(int hr) { }

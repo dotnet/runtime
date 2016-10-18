@@ -12,7 +12,7 @@
 
 namespace System
 {
-    public sealed partial class DataMisalignedException : System.Exception
+    public sealed partial class DataMisalignedException : System.SystemException
     {
         public DataMisalignedException() { }
         public DataMisalignedException(string message) { }
@@ -426,13 +426,13 @@ namespace System.Runtime.InteropServices
         public InterfaceTypeAttribute(System.Runtime.InteropServices.ComInterfaceType interfaceType) { }
         public System.Runtime.InteropServices.ComInterfaceType Value { get { throw null; } }
     }
-    public partial class InvalidComObjectException : System.Exception
+    public partial class InvalidComObjectException : System.SystemException
     {
         public InvalidComObjectException() { }
         public InvalidComObjectException(string message) { }
         public InvalidComObjectException(string message, System.Exception inner) { }
     }
-    public partial class InvalidOleVariantTypeException : System.Exception
+    public partial class InvalidOleVariantTypeException : System.SystemException
     {
         public InvalidOleVariantTypeException() { }
         public InvalidOleVariantTypeException(string message) { }
@@ -761,7 +761,7 @@ namespace System.Runtime.InteropServices
         public MarshalAsAttribute(System.Runtime.InteropServices.UnmanagedType unmanagedType) { }
         public System.Runtime.InteropServices.UnmanagedType Value { get { throw null; } }
     }
-    public partial class MarshalDirectiveException : System.Exception
+    public partial class MarshalDirectiveException : System.SystemException
     {
         public MarshalDirectiveException() { }
         public MarshalDirectiveException(string message) { }
@@ -777,13 +777,13 @@ namespace System.Runtime.InteropServices
     {
         public PreserveSigAttribute() { }
     }
-    public partial class SafeArrayRankMismatchException : System.Exception
+    public partial class SafeArrayRankMismatchException : System.SystemException
     {
         public SafeArrayRankMismatchException() { }
         public SafeArrayRankMismatchException(string message) { }
         public SafeArrayRankMismatchException(string message, System.Exception inner) { }
     }
-    public partial class SafeArrayTypeMismatchException : System.Exception
+    public partial class SafeArrayTypeMismatchException : System.SystemException
     {
         public SafeArrayTypeMismatchException() { }
         public SafeArrayTypeMismatchException(string message) { }
