@@ -54,7 +54,7 @@ use this in the next step.
 
 ### Step 3: Modify the Project.json for the App to refer to your Runtime.     
 
-Replace the HelloWorld\project.json with (project.json)[../../tests/src/Common/netcoreapp/project.json], and update 
+Replace the HelloWorld\project.json with [project.json](../../tests/src/Common/netcoreapp/project.json), and update 
 `1.2.0-beta-XXXXX-X` version number in the dependencies section with the version number for your build of the runtime.
 This is the line that tells the tools that you want YOUR version of the CoreCLR runtime.
 ```
