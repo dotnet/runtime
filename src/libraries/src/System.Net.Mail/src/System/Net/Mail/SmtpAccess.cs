@@ -9,65 +9,8 @@ namespace System.Net.Mail
 {
     public enum SmtpAccess { None = 0, Connect = 1, ConnectToUnrestrictedPort = 2 };
 
-    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Assembly, AllowMultiple = true, Inherited = false)]
     [Serializable]
-    public sealed class SmtpPermissionAttribute : CodeAccessSecurityAttribute
-    {
-        private const string strAccess = "Access";
-        private string _access = null;
-
-        public SmtpPermissionAttribute(SecurityAction action) : base(action)
-        {
-        }
-
-        public string Access
-        {
-            get
-            {
-                return _access;
-            }
-            set
-            {
-                _access = value;
-            }
-        }
-
-        public override IPermission CreatePermission()
-        {
-            SmtpPermission perm = null;
-            if (Unrestricted)
-            {
-                perm = new SmtpPermission(PermissionState.Unrestricted);
-            }
-            else
-            {
-                perm = new SmtpPermission(PermissionState.None);
-                if (_access != null)
-                {
-                    if (string.Equals(_access, "Connect", StringComparison.OrdinalIgnoreCase))
-                    {
-                        perm.AddPermission(SmtpAccess.Connect);
-                    }
-                    else if (string.Equals(_access, "ConnectToUnrestrictedPort", StringComparison.OrdinalIgnoreCase))
-                    {
-                        perm.AddPermission(SmtpAccess.ConnectToUnrestrictedPort);
-                    }
-                    else if (string.Equals(_access, "None", StringComparison.OrdinalIgnoreCase))
-                    {
-                        perm.AddPermission(SmtpAccess.None);
-                    }
-                    else
-                    {
-                        throw new ArgumentException(SR.Format(SR.net_perm_invalid_val, strAccess, _access));
-                    }
-                }
-            }
-            return perm;
-        }
-    }
-
-    [Serializable]
-    public sealed class SmtpPermission : CodeAccessPermission, IUnrestrictedPermission
+    internal sealed class SmtpPermission : CodeAccessPermission, IUnrestrictedPermission
     {
         private SmtpAccess _access;
         private bool _unrestricted;

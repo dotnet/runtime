@@ -9,12 +9,6 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net.Mail
 {
-    internal enum SupportedAuth
-    {
-        None = 0,
-        Login = 1
-    };
-
     internal class SmtpTransport
     {
         internal const int DefaultPort = 25;
