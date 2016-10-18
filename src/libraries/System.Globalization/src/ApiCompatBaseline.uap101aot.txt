@@ -67,3 +67,4 @@ MembersMustExist : Member 'System.Globalization.TextInfo.MacCodePage.get()' does
 MembersMustExist : Member 'System.Globalization.TextInfo.OEMCodePage.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Globalization.TextInfo.ReadOnly(System.Globalization.TextInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Globalization.TextInfo.ToTitleCase(System.String)' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Globalization.CultureNotFoundException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.

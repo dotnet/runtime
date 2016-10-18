@@ -250,7 +250,6 @@ MembersMustExist : Member 'System.String.ToString(System.IFormatProvider)' does 
 MembersMustExist : Member 'System.String.ToUpper(System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.StringComparison System.StringComparison.InvariantCulture' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.StringComparison System.StringComparison.InvariantCultureIgnoreCase' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.SystemException' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.TimeoutException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.TimeSpan.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.TimeZoneInfo' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
@@ -532,4 +531,48 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.Task' does not im
 MembersMustExist : Member 'System.Threading.Tasks.Task.Dispose()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.Tasks.Task.Dispose(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.Task<TResult>' does not implement interface 'System.IDisposable' in the implementation but it does in the contract.
-Total Issues: 533
+CannotRemoveBaseTypeOrInterface : Type 'System.ArgumentException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ArgumentNullException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ArgumentOutOfRangeException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ArithmeticException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ArrayTypeMismatchException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.BadImageFormatException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DivideByZeroException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.FieldAccessException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.FormatException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.IndexOutOfRangeException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.InsufficientExecutionStackException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.InvalidCastException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.InvalidOperationException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.InvalidProgramException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.MemberAccessException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.MethodAccessException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.MissingFieldException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.MissingMemberException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.MissingMethodException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.NotImplementedException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.NotSupportedException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.NullReferenceException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ObjectDisposedException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.OutOfMemoryException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.OverflowException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.PlatformNotSupportedException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.RankException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.TimeoutException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.TypeAccessException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.TypeInitializationException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.TypeLoadException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.UnauthorizedAccessException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.UriFormatException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Collections.Generic.KeyNotFoundException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Globalization.CultureNotFoundException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.IO.DirectoryNotFoundException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.IO.FileLoadException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.IO.FileNotFoundException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.IO.IOException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.IO.PathTooLongException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.CustomAttributeFormatException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.Serialization.SerializationException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Text.DecoderFallbackException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Text.EncoderFallbackException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+Total Issues: 578

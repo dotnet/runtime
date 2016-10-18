@@ -4,7 +4,7 @@
 
 namespace System.IO
 {
-    public sealed class InvalidDataException : Exception
+    public sealed class InvalidDataException : SystemException
     {
         public InvalidDataException()
             : base(SR.GenericInvalidData)

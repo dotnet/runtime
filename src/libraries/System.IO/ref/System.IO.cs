@@ -163,7 +163,7 @@ namespace System.IO
         public EndOfStreamException(string message) { }
         public EndOfStreamException(string message, System.Exception innerException) { }
     }
-    public sealed partial class InvalidDataException : System.Exception
+    public sealed partial class InvalidDataException : System.SystemException
     {
         public InvalidDataException() { }
         public InvalidDataException(string message) { }

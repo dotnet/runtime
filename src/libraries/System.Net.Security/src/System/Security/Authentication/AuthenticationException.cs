@@ -9,7 +9,7 @@ namespace System.Security.Authentication
     /// The authentication process can be retried with different parameters subject to
     /// remote party willingness of accepting that.
     /// </summary>
-    public class AuthenticationException : Exception
+    public class AuthenticationException : SystemException
     {
         public AuthenticationException() { }
         public AuthenticationException(string message) : base(message) { }

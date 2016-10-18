@@ -142,7 +142,7 @@ namespace System.Net.Security
 }
 namespace System.Security.Authentication
 {
-    public partial class AuthenticationException : System.Exception
+    public partial class AuthenticationException : System.SystemException
     {
         public AuthenticationException() { }
         public AuthenticationException(string message) { }
