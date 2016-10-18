@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 namespace System.Net
 {
     [EventSource(Name = "Microsoft-System-Net-Mail", LocalizationResources = "FxResources.System.Net.Mail.SR")]
-    internal sealed class WebEventSource : EventSource
+    internal sealed class MailEventSource : EventSource
     {
         private const int RemoveId = 1;
         private const int GetId = 2;
@@ -19,9 +19,9 @@ namespace System.Net
         private const int SendId = 4;
         private const int AssociateId = 5;
 
-        private readonly static WebEventSource s_log = new WebEventSource();
-        private WebEventSource() { }
-        public static WebEventSource Log
+        private readonly static MailEventSource s_log = new MailEventSource();
+        private MailEventSource() { }
+        public static MailEventSource Log
         {
             get
             {

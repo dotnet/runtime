@@ -59,7 +59,7 @@ namespace System.Net.Mail
         internal bool IsStreamOpen => _isStreamOpen;
 
         internal SmtpReplyReaderFactory Reader => _responseReader;
-        
+
         internal bool EnableSsl
         {
             get
@@ -560,7 +560,7 @@ namespace System.Net.Mail
                 }
             }
 
-            private static void HandshakeCallback(IAsyncResult result)   //3
+            private static void HandshakeCallback(IAsyncResult result)
             {
                 if (!result.CompletedSynchronously)
                 {
@@ -633,7 +633,7 @@ namespace System.Net.Mail
                 return false;
             }
 
-            private static void SendEHelloCallback(IAsyncResult result)//5
+            private static void SendEHelloCallback(IAsyncResult result)
             {
                 if (!result.CompletedSynchronously)
                 {
@@ -695,7 +695,7 @@ namespace System.Net.Mail
                 }
             }
 
-            private bool SendHello()//6
+            private bool SendHello()
             {
                 IAsyncResult result = HelloCommand.BeginSend(_connection, _connection._client.clientDomain, s_sendHelloCallback, this);
                 //if ehello isn't supported, assume basic auth
@@ -709,7 +709,7 @@ namespace System.Net.Mail
                 return false;
             }
 
-            private static void SendHelloCallback(IAsyncResult result)     //7
+            private static void SendHelloCallback(IAsyncResult result)
             {
                 if (!result.CompletedSynchronously)
                 {
@@ -726,7 +726,7 @@ namespace System.Net.Mail
                 }
             }
 
-            private bool SendStartTls()//6
+            private bool SendStartTls()
             {
                 IAsyncResult result = StartTlsCommand.BeginSend(_connection, SendStartTlsCallback, this);
                 if (result.CompletedSynchronously)
@@ -738,7 +738,7 @@ namespace System.Net.Mail
                 return false;
             }
 
-            private static void SendStartTlsCallback(IAsyncResult result)     //7
+            private static void SendStartTlsCallback(IAsyncResult result)
             {
                 if (!result.CompletedSynchronously)
                 {
@@ -787,7 +787,7 @@ namespace System.Net.Mail
                 }
             }
 
-            private void Authenticate() //8
+            private void Authenticate()
             {
                 //if no credentials were supplied, try anonymous
                 //servers don't appear to anounce that they support anonymous login.
@@ -839,7 +839,7 @@ namespace System.Net.Mail
                 InvokeCallback();
             }
 
-            private static void AuthenticateCallback(IAsyncResult result) //9
+            private static void AuthenticateCallback(IAsyncResult result)
             {
                 if (!result.CompletedSynchronously)
                 {
@@ -873,7 +873,7 @@ namespace System.Net.Mail
                 }
             }
 
-            private bool AuthenticateContinue()        //10
+            private bool AuthenticateContinue()
             {
                 for (;;)
                 {
@@ -907,7 +907,7 @@ namespace System.Net.Mail
                 }
             }
 
-            private static void AuthenticateContinueCallback(IAsyncResult result)     //11
+            private static void AuthenticateContinueCallback(IAsyncResult result)
             {
                 if (!result.CompletedSynchronously)
                 {

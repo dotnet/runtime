@@ -66,6 +66,7 @@ namespace System.Net
                 {
                     return read;
                 }
+
                 offset += read;
                 count -= read;
             }
@@ -87,6 +88,7 @@ namespace System.Net
             {
                 return Task.FromResult<int>(read);
             }
+
             offset += read;
             count -= read;
 
@@ -110,7 +112,6 @@ namespace System.Net
                 return base.ReadByte();
             }
         }
-
 
         // adds additional content to the beginning of the buffer
         // so the layout of the storedBuffer will be
@@ -153,6 +154,7 @@ namespace System.Net
                     _storedBuffer = newBuffer;
                 }
             }
+
             Buffer.BlockCopy(buffer, offset, _storedBuffer, _storedOffset, count);
         }
 
@@ -233,13 +235,13 @@ namespace System.Net
                         InvokeCallback();
                         return;
                     }
+
                     count -= _read;
                     offset += _read;
                 }
                 IAsyncResult result = _parent.BaseStream.BeginRead(buffer, offset, count, s_onRead, this);
                 if (result.CompletedSynchronously)
                 {
-                    // TODO (dougwa): what if EndRead returns 0 bytes?  Will it ever hurt to call Read again?
                     _read += _parent.BaseStream.EndRead(result);
                     InvokeCallback();
                 }

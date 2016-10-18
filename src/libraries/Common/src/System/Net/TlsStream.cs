@@ -30,12 +30,12 @@ namespace System.Net
 
         public void AuthenticateAsClient()
         {
-            _sslStream.AuthenticateAsClient(_host, _clientCertificates, SslProtocols.Tls, false);
+            _sslStream.AuthenticateAsClient(_host, _clientCertificates, SecurityProtocol.DefaultSecurityProtocols, false);
         }
 
         public IAsyncResult BeginAuthenticateAsClient(AsyncCallback asyncCallback, object state)
         {
-            return _sslStream.BeginAuthenticateAsClient(_host, _clientCertificates, SslProtocols.Tls, false, asyncCallback, state);
+            return _sslStream.BeginAuthenticateAsClient(_host, _clientCertificates, SecurityProtocol.DefaultSecurityProtocols, false, asyncCallback, state);
         }
 
         public void EndAuthenticateAsClient(IAsyncResult asyncResult)
