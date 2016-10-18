@@ -512,21 +512,6 @@ namespace System.Drawing.Primitives.Tests
         }
 
         [Fact]
-        public void SerializationRoundTrip()
-        {
-            Color c = Color.Red;
-            CheckRed(c);
-
-            BinaryFormatter bf = new BinaryFormatter();
-            MemoryStream ms = new MemoryStream();
-            bf.Serialize(ms, c);
-
-            ms.Position = 0;
-            Color color = (Color)bf.Deserialize(ms);
-            CheckRed(color);
-        }
-
-        [Fact]
         public void DebuggerAttributesAreValid()
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(Color.Aquamarine);

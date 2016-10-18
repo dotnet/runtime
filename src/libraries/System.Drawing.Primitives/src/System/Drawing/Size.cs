@@ -11,6 +11,7 @@ namespace System.Drawing
     ///    Represents the size of a rectangular region
     ///    with an ordered pair of width and height.
     /// </summary>
+    [Serializable]
     public struct Size
     {
         /// <summary>

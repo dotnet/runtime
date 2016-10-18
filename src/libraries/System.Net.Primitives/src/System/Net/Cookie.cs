@@ -38,6 +38,7 @@ namespace System.Net
     // Currently, only represents client-side cookies. The cookie classes know
     // how to parse a set-cookie format string, but not a cookie format string
     // (e.g. "Cookie: $Version=1; name=value; $Path=/foo; $Secure")
+    [Serializable]
     public sealed class Cookie
     {
         // NOTE: these two constants must change together.

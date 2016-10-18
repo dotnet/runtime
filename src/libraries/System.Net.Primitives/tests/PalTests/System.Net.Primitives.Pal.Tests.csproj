@@ -33,6 +33,7 @@
     <Compile Include="SocketAddressPalTest.cs" />
 
     <Compile Include="Fakes\GlobalLog.cs" />
+    <Compile Include="Fakes\Serialization.cs" Condition="'$(TargetGroup)' != ''"/>
 
     <Compile Include="..\..\src\System\Net\EndPoint.cs" >
       <Link>ProductionCode\System\Net\EndPoint.cs</Link>
