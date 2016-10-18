@@ -8,7 +8,7 @@
     <ProjectGuid>{7B57D5F1-4E6C-4280-AD5B-C71C73B66B11}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Xml.XPath.XmlDocument.Tests</AssemblyName>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
     <DefineConstants>$(DefineConstants);FEATURE_XML_XPATH_ID</DefineConstants>
     <RootNamespace>System.Xml.XPath.XmlDocument.Tests</RootNamespace>
   </PropertyGroup>
@@ -21,6 +21,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\System.Xml.XPath.XmlDocument\pkg\System.Xml.XPath.XmlDocument.pkgproj" />
+    <ProjectReference Include="..\..\..\..\System.Xml.XPath\pkg\System.Xml.XPath.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <!-- XPath.XmlDocument navigator -->
