@@ -4,6 +4,7 @@
 
 namespace System.Security.Permissions
 {
+    [Serializable]
     public enum UIPermissionWindow
     {
         AllWindows = 3,

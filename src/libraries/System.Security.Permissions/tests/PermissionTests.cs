@@ -217,7 +217,7 @@ namespace System.Security.Permissions.Tests
         public static void StrongNameIdentityPermissionCallMethods()
         {
             StrongNameIdentityPermission snip = new StrongNameIdentityPermission(new Permissions.PermissionState());
-            StrongNameIdentityPermission snip2 = new StrongNameIdentityPermission(new Permissions.StrongNamePublicKeyBlob(new byte[1]), "test", new System.Version(1, 2));
+            StrongNameIdentityPermission snip2 = new StrongNameIdentityPermission(new Permissions.StrongNamePublicKeyBlob(new byte[1]), "test", new Version(1, 2));
             IPermission ip = snip.Copy();
             IPermission ip2 = snip.Intersect(ip);
             bool testbool = snip.IsSubsetOf(ip);

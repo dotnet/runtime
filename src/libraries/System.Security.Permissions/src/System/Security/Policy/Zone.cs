@@ -4,13 +4,14 @@
 
 namespace System.Security.Policy
 {
-    public sealed partial class Zone : System.Security.Policy.EvidenceBase, System.Security.Policy.IIdentityPermissionFactory
+    [Serializable]
+    public sealed partial class Zone : EvidenceBase, IIdentityPermissionFactory
     {
-        public Zone(System.Security.SecurityZone zone) { }
-        public System.Security.SecurityZone SecurityZone { get { return default(System.Security.SecurityZone); } }
+        public Zone(SecurityZone zone) { }
+        public SecurityZone SecurityZone { get { return default(SecurityZone); } }
         public object Copy() { return null; }
-        public static System.Security.Policy.Zone CreateFromUrl(string url) { return default(System.Security.Policy.Zone); }
-        public System.Security.IPermission CreateIdentityPermission(System.Security.Policy.Evidence evidence) { return default(System.Security.IPermission); }
+        public static Zone CreateFromUrl(string url) { return default(Zone); }
+        public IPermission CreateIdentityPermission(Evidence evidence) { return default(IPermission); }
         public override bool Equals(object o) => base.Equals(o);
         public override int GetHashCode() => base.GetHashCode();
         public override string ToString() => base.ToString();
