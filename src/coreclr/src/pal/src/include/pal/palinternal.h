@@ -348,9 +348,7 @@ function_name() to call the system's implementation
 #undef atexit
 #undef div
 #undef div_t
-#if !defined(_DEBUG)
 #undef memcpy
-#endif //!defined(_DEBUG)
 #undef memcmp
 #undef memset
 #undef memmove
