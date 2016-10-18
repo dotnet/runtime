@@ -9,6 +9,9 @@
 
   <ItemGroup Condition="'$(__SkipCoreLibBuild)'==''">
     <Project Include="Microsoft.NETCore.Runtime.CoreCLR\Microsoft.NETCore.Runtime.CoreCLR.builds" /> 
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetsWindows)'=='true'">
     <Project Include="Microsoft.TargetingPack.Private.CoreCLR\Microsoft.TargetingPack.Private.CoreCLR.pkgproj" /> 
   </ItemGroup>
 
