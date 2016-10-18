@@ -19,8 +19,5 @@
       <Project>{2ADDB484-6F57-4D71-A3FE-A57EC6329A2B}</Project>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

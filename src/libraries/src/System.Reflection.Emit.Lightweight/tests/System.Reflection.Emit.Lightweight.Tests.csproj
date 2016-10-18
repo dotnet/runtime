@@ -16,9 +16,6 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="DynamicMethodCreateDelegate.cs" />
     <Compile Include="DynamicMethodCtor.cs" />
     <Compile Include="DynamicMethodGetBaseDefinition.cs" />

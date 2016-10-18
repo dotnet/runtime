@@ -12,7 +12,7 @@
   <Target Name="BuildAndTest" DependsOnTargets="Build;Test" />
   <Target Name="RebuildAndTest" DependsOnTargets="Rebuild;Test" />
   <Target Name="Test" />
-
+  
   <!-- Targets will be overridden if buildagainstpackages.targets is imported. -->
   <Target Name="GenerateTestProjectJson" />
   <Target Name="GenerateAllTestProjectJsons" />
@@ -28,6 +28,23 @@
       </ProjectReference>
     </ItemGroup>
   </Target>
+  
+  <PropertyGroup>
+    <CommonTestProjectJson>$(MSBuildThisFileDirectory)src/Common/test-runtime/project.json</CommonTestProjectJson>
+    <CommonTestProjectLockJson>$(MSBuildThisFileDirectory)src/Common/test-runtime/project.lock.json</CommonTestProjectLockJson>
+    <CommonOutputTestProjectJson>$(GeneratedProjectJsonDir)/project.json</CommonOutputTestProjectJson>
+    <CommonOutputTestProjectLockJson>$(GeneratedProjectJsonDir)/project.lock.json</CommonOutputTestProjectLockJson>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
+    <CommonTestProjectJson Condition="'$(BuildTestsAgainstPackages)'=='true'">$(CommonOutputTestProjectJson)</CommonTestProjectJson>
+    <CommonTestProjectLockJson Condition="'$(BuildTestsAgainstPackages)'=='true'">$(CommonOutputTestProjectLockJson)</CommonTestProjectLockJson>
+    <ProjectJson Condition="'$(ProjectJson)'=='' and Exists('$(MSBuildProjectDirectory)/project.json')">$(MSBuildProjectDirectory)/project.json</ProjectJson>
+    <!-- If project specific project.json exists then don't skip generating test project.json files -->
+    <SkipGenerateTestProjectJson Condition="'$(ProjectJson)'==''" >true</SkipGenerateTestProjectJson>
+    <ProjectJson Condition="'$(ProjectJson)'==''">$(CommonTestProjectJson)</ProjectJson>
+    <ProjectLockJson Condition="'$(ProjectJson)'=='$(CommonTestProjectJson)'">$(CommonTestProjectLockJson)</ProjectLockJson>
+  </PropertyGroup>
 
   <Import Project="$(ToolsDir)/Build.Common.targets" Condition="Exists('$(ToolsDir)/Build.Common.targets')" />
 

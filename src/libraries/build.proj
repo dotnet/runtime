@@ -68,10 +68,15 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(BuildTestsAgainstPackages)' == 'true'">
     <TraversalBuildDependsOn>
+      UpdateVersionsOnTestProjectJson;
       BatchGenerateTestProjectJsons;
       $(TraversalBuildDependsOn);
     </TraversalBuildDependsOn>
   </PropertyGroup>
+  
+  <ItemGroup>
+    <TestProjectJsons Include="$(MSBuildThisFileDirectory)src/Common/test-runtime/project.json" />
+  </ItemGroup>
 
   <UsingTask TaskName="GatherDirectoriesToRestore" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" />
 
@@ -82,7 +87,7 @@
     <ProjectJsonFiles Condition="'$(BuildTestsAgainstPackages)' == 'true'" Include="$(GeneratedProjectJsonDir)/**/project.json" />
   </ItemGroup>
   
-  <Target Name="BatchRestorePackages" DependsOnTargets="VerifyDependencies">
+  <Target Name="BatchRestorePackages" DependsOnTargets="AddGeneratedProjectJsons;VerifyDependencies">
     <MakeDir Directories="$(PackagesDir)" Condition="!Exists('$(PackagesDir)')" /> 
 
     <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages..." />
@@ -90,6 +95,13 @@
     <IsRestoreRequired ProjectJsons="@(ProjectJsonFiles)" PackagesFolder="$(PackagesDir)">
       <Output TaskParameter="RestoreRequired" PropertyName="RestoreRequired" />
     </IsRestoreRequired>
+    
+    <!-- This is to restore the test-runtime project.json up front which contains the latest packages to be tested to avoid download contention within nuget. -->
+    <Exec Command="$(DnuRestoreCommand) @(TestProjectJsons->'&quot;%(Identity)&quot;', ' ')"
+          Condition="'$(RestoreRequired)' == 'true'"
+          StandardOutputImportance="Low"
+          CustomErrorRegularExpression="(^Unable to locate .*)|(^Updating the invalid lock file with .*)"
+          ContinueOnError="ErrorAndContinue" />
     
     <Exec Command="$(DnuRestoreCommand) @(DnuRestoreDir->'&quot;%(Identity)&quot;', ' ')"
           Condition="'$(RestoreRequired)' == 'true'"
@@ -102,11 +114,40 @@
     
     <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages...Done." />
   </Target>
+  
+  <!-- Generated project.json's may not exist when the "ProjectJsonFiles"" item group is defined (in dir.props), This target
+       ensures those files are added to the itemgroup. -->
+  <Target Name="AddGeneratedProjectJsons">
+    <ItemGroup>
+      <ProjectJsonFiles Condition="'$(BuildTestsAgainstPackages)' == 'true'" Include="$(GeneratedProjectJsonDir)/**/project.json" />
+    </ItemGroup>
+  </Target>
+  
+  <UsingTask TaskName="AddDependenciesToProjectJson" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
+  <Target Name="UpdateVersionsOnTestProjectJson" >
+  
+  <!-- Duplicate properties to be removed in future -->
+    <PropertyGroup>
+        <PackageNameRegex Condition="'$(PackageNameRegex)' == ''">(?%3Cname%3E.*)\.(?%3Cversion%3E\d+\.\d+\.\d+)(-(?%3Cprerelease%3E.*)?)?</PackageNameRegex>
+    </PropertyGroup>
+    <ItemGroup>
+      <_PackagesDropsForCommonProjectJson Include="$(PackagesDrops)" />
+    </ItemGroup>
+  
+    <AddDependenciesToProjectJson AdditionalDependencies="@(ExternalDependencies)"
+                                  PackagesDrops="@(_PackagesDropsForCommonProjectJson)"
+                                  PackageNameRegex="$(PackageNameRegex)"
+                                  VersionsFiles="@(_VersionsFiles)"
+                                  ProjectJson="$(CommonTestProjectJson)"
+                                  OutputProjectJson="$(CommonOutputTestProjectJson)"
+                                  UseNewestAvailablePackages="$(UseNewestAvailablePackages)"
+                                   />
+  </Target>
 
   <!-- Evaluate our test projects (in src\tests.builds) -->
   <Target Name="BatchGenerateTestProjectJsons"
           Condition="'$(BuildTestsAgainstPackages)' == 'true'" 
-          DependsOnTargets="FilterProjects"
+          DependsOnTargets="FilterProjects;UpdateVersionsOnTestProjectJson"
           BeforeTargets="RestorePackages">
       <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Generating Test project.json's..." />
       <MSBuild Targets="GenerateAllTestProjectJsons"
