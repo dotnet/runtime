@@ -64,6 +64,9 @@ namespace System
         public static object CreateInstance(System.Type type) { throw null; }
         public static object CreateInstance(System.Type type, System.Boolean nonPublic) { throw null; }
         public static object CreateInstance(System.Type type, params object[] args) { throw null; }
+        public static object CreateInstance(System.Type type, object[] args, object[] activationAttributes) { throw null; } 
+        public static object CreateInstance(System.Type type, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder binder, object[] args, System.Globalization.CultureInfo culture) { throw null; } 
+        public static object CreateInstance(System.Type type, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder binder, object[] args, System.Globalization.CultureInfo culture, object[] activationAttributes) { throw null; } 
         public static T CreateInstance<T>() { throw null; }
     }
 
