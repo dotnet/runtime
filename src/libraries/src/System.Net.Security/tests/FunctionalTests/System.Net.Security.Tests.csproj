@@ -43,7 +43,6 @@
     <Compile Include="ServerAsyncAuthenticateTest.cs" />
     <Compile Include="ServerNoEncryptionTest.cs" />
     <Compile Include="ServerRequireEncryptionTest.cs" />
-    <Compile Include="SslStreamAlertsTest.cs" Condition="'$(TargetGroup)'=='netcoreapp1.1'" />
     <Compile Include="SslStreamSchSendAuxRecordTest.cs" />
     <Compile Include="SslStreamStreamToStreamTest.cs" />
     <Compile Include="SslStreamNetworkStreamTest.cs" />
@@ -69,8 +68,8 @@
     <Compile Include="$(CommonTestPath)\System\Net\Configuration.Certificates.cs">
       <Link>Common\System\Net\Configuration.Certificates.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Net\SchSendAuxRecordTestServer.cs">
-      <Link>Common\System\Net\SchSendAuxRecordTestServer.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\Net\HttpsTestServer.cs">
+      <Link>Common\System\Net\HttpsTestServer.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\SslProtocolSupport.cs">
       <Link>Common\System\Net\SslProtocolSupport.cs</Link>
@@ -96,6 +95,11 @@
     <Compile Include="$(CommonTestPath)\System\Threading\Tasks\TaskTimeoutExtensions.cs">
       <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
     </Compile>
+    </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp1.1'">
+    <!-- TODO #13070: Add net463 to the condition after the TFM gets updated to the actual .Net 4.6.3.-->
+    <Compile Include="SslStreamAlertsTest.cs" />
+    <Compile Include="SslStreamSystemDefaultsTest.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'==''">
     <Compile Include="LoggingTest.cs" />
@@ -154,7 +158,12 @@
     <SupplementalTestData Include="$(PackagesDir)System.Net.TestData\1.0.0-prerelease\content\**\*.*" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\System.Net.Security.csproj">
+    <!-- TODO #13073: Remove P2P references. -->
+    <ProjectReference Include="..\..\..\System.Net.Primitives\pkg\System.Net.Primitives.pkgproj">
+      <Project>{17D5CC82-F72C-4DD2-B6DB-DE7FB2F19C34}</Project>
+      <Name>System.Net.Security</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\pkg\System.Net.Security.pkgproj">
       <Project>{89F37791-6254-4D60-AB96-ACD3CCA0E771}</Project>
       <Name>System.Net.Security</Name>
     </ProjectReference>

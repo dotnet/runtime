@@ -48,8 +48,8 @@
     <Compile Include="$(CommonTestPath)\System\Net\EventSourceTestLogging.cs">
       <Link>Common\System\Net\EventSourceTestLogging.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Net\SchSendAuxRecordTestServer.cs">
-      <Link>Common\System\Net\SchSendAuxRecordTestServer.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\Net\HttpsTestServer.cs">
+      <Link>Common\System\Net\HttpsTestServer.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\Configuration.cs">
       <Link>Common\System\Net\Configuration.cs</Link>

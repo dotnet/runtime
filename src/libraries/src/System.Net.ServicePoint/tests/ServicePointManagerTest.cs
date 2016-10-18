@@ -31,13 +31,13 @@ namespace System.Net.Tests
         [Fact]
         public static void DefaultConnectionLimit_Roundtrips()
         {
-            Assert.Equal(10, ServicePointManager.DefaultConnectionLimit);
+            Assert.Equal(2, ServicePointManager.DefaultConnectionLimit);
 
             ServicePointManager.DefaultConnectionLimit = 20;
             Assert.Equal(20, ServicePointManager.DefaultConnectionLimit);
 
-            ServicePointManager.DefaultConnectionLimit = 10;
-            Assert.Equal(10, ServicePointManager.DefaultConnectionLimit);
+            ServicePointManager.DefaultConnectionLimit = 2;
+            Assert.Equal(2, ServicePointManager.DefaultConnectionLimit);
         }
 
         [Fact]
@@ -115,7 +115,7 @@ namespace System.Net.Tests
         [Fact]
         public static void SecurityProtocol_Roundtrips()
         {
-            var orig = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
+            var orig = (SecurityProtocolType)0; // SystemDefault.
             Assert.Equal(orig, ServicePointManager.SecurityProtocol);
 
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls11;
@@ -153,7 +153,13 @@ namespace System.Net.Tests
         [Fact]
         public static void InvalidArguments_Throw()
         {
+            const int ssl2Client = 0x00000008;
+            const int ssl2Server = 0x00000004;
+
+            SecurityProtocolType ssl2 = (SecurityProtocolType)(ssl2Client | ssl2Server);
             Assert.Throws<NotSupportedException>(() => ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3);
+            Assert.Throws<NotSupportedException>(() => ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3 | ssl2);
+            Assert.Throws<NotSupportedException>(() => ServicePointManager.SecurityProtocol = ssl2);
             Assert.Throws<ArgumentNullException>("uriString", () => ServicePointManager.FindServicePoint((string)null, null));
             Assert.Throws<ArgumentOutOfRangeException>("value", () => ServicePointManager.MaxServicePoints = -1);
             Assert.Throws<ArgumentOutOfRangeException>("value", () => ServicePointManager.DefaultConnectionLimit = 0);

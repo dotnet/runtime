@@ -44,6 +44,9 @@ namespace System.Security.Authentication
     {
         None = 0,
         Md5 = (Interop.Crypt32.ALG_CLASS_HASH | Interop.Crypt32.ALG_CLASS_ANY | Interop.Crypt32.ALG_SID_MD5),
-        Sha1 = (Interop.Crypt32.ALG_CLASS_HASH | Interop.Crypt32.ALG_CLASS_ANY | Interop.Crypt32.ALG_SID_SHA)
+        Sha1 = (Interop.Crypt32.ALG_CLASS_HASH | Interop.Crypt32.ALG_CLASS_ANY | Interop.Crypt32.ALG_SID_SHA),
+        Sha256 = (Interop.Crypt32.ALG_CLASS_HASH | Interop.Crypt32.ALG_CLASS_ANY | Interop.Crypt32.ALG_SID_SHA_256),
+        Sha384 = (Interop.Crypt32.ALG_CLASS_HASH | Interop.Crypt32.ALG_CLASS_ANY | Interop.Crypt32.ALG_SID_SHA_384),
+        Sha512 = (Interop.Crypt32.ALG_CLASS_HASH | Interop.Crypt32.ALG_CLASS_ANY | Interop.Crypt32.ALG_SID_SHA_512)
     }
 }
