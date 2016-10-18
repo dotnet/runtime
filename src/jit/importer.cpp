@@ -5784,8 +5784,8 @@ GenTreePtr Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolve
             info.compCompHnd->embedGenericHandle(pResolvedToken, FALSE, &embedInfo);
             assert(embedInfo.lookup.lookupKind.needsRuntimeLookup);
 
-            GenTreePtr ctxTree = getRuntimeContextTree(&embedInfo.lookup);
-            GenTreeArgList* args = gtNewArgList(ctxTree);
+            GenTreePtr      ctxTree = getRuntimeContextTree(&embedInfo.lookup);
+            GenTreeArgList* args    = gtNewArgList(ctxTree);
 
             unsigned callFlags = 0;
 
