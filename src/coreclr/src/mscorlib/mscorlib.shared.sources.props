@@ -369,6 +369,7 @@
     <SystemSources Include="$(BclSourcesRoot)\System\_LocalDataStoreMgr.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\MarshalByRefObject.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\Math.cs" />
+    <SystemSources Include="$(BclSourcesRoot)\System\MathF.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\mda.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\MethodAccessException.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\MidpointRounding.cs" />

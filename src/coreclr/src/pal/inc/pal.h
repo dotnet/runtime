@@ -5791,6 +5791,13 @@ CoCreateGuid(OUT GUID * pguid);
 #define log           PAL_log
 #define log10         PAL_log10
 #define pow           PAL_pow
+#define acosf         PAL_acosf
+#define asinf         PAL_asinf
+#define atan2f        PAL_atan2f
+#define expf          PAL_expf
+#define logf          PAL_logf
+#define log10f        PAL_log10f
+#define powf          PAL_powf
 #define malloc        PAL_malloc
 #define free          PAL_free
 #define mkstemp       PAL_mkstemp
@@ -6040,9 +6047,29 @@ PALIMPORT double __cdecl sqrt(double);
 PALIMPORT double __cdecl tan(double);
 PALIMPORT double __cdecl tanh(double);
 
+PALIMPORT int __cdecl _finitef(float);
+PALIMPORT int __cdecl _isnanf(float);
+PALIMPORT float __cdecl _copysignf(float, float);
+PALIMPORT float __cdecl acosf(float);
+PALIMPORT float __cdecl asinf(float);
+PALIMPORT float __cdecl atanf(float);
+PALIMPORT float __cdecl atan2f(float, float);
+PALIMPORT float __cdecl ceilf(float);
+PALIMPORT float __cdecl cosf(float);
+PALIMPORT float __cdecl coshf(float);
+PALIMPORT float __cdecl expf(float);
 PALIMPORT float __cdecl fabsf(float);
+PALIMPORT float __cdecl floorf(float);
 PALIMPORT float __cdecl fmodf(float, float); 
+PALIMPORT float __cdecl logf(float);
+PALIMPORT float __cdecl log10f(float);
 PALIMPORT float __cdecl modff(float, float*);
+PALIMPORT float __cdecl powf(float, float);
+PALIMPORT float __cdecl sinf(float);
+PALIMPORT float __cdecl sinhf(float);
+PALIMPORT float __cdecl sqrtf(float);
+PALIMPORT float __cdecl tanf(float);
+PALIMPORT float __cdecl tanhf(float);
 
 #ifndef PAL_STDCPP_COMPAT
 

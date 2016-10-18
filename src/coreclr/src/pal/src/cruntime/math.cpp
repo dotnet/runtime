@@ -35,6 +35,12 @@ Abstract:
 
 #define IS_DBL_NEGZERO(x)         (((*((INT64*)((void*)&x))) & I64(0xFFFFFFFFFFFFFFFF)) == I64(0x8000000000000000))
 
+#define PAL_NAN_FLT     sqrtf(-1.0f)
+#define PAL_POSINF_FLT -logf(0.0f)
+#define PAL_NEGINF_FLT  logf(0.0f)
+
+#define IS_FLT_NEGZERO(x)         (((*((INT32*)((void*)&x))) & 0xFFFFFFFF) == 0x80000000)
+
 SET_DEFAULT_DEBUG_CHANNEL(CRT);
 
 /*++
@@ -420,5 +426,366 @@ PALIMPORT double __cdecl PAL_pow(double x, double y)
 
     LOGEXIT("pow returns double %f\n", ret);
     PERF_EXIT(pow);
+    return ret;
+}
+
+/*++
+Function:
+  _finitef
+
+Determines whether given single-precision floating point value is finite.
+
+Return Value
+
+_finitef returns a nonzero value (TRUE) if its argument x is not
+infinite, that is, if -INF < x < +INF. It returns 0 (FALSE) if the
+argument is infinite or a NaN.
+
+Parameter
+
+x  Single-precision floating-point value
+
+--*/
+int __cdecl _finitef(float x)
+{
+    int ret;
+    PERF_ENTRY(_finitef);
+    ENTRY("_finitef (x=%f)\n", x);
+
+#if defined(_IA64_) && defined (_HPUX_)
+    ret = !isnan(x) && (x != PAL_POSINF_FLT) && (x != PAL_NEGINF_FLT);
+#else
+    ret = isfinite(x);
+#endif
+
+    LOGEXIT("_finitef returns int %d\n", ret);
+    PERF_EXIT(_finitef);
+    return ret;
+}
+
+/*++
+Function:
+  _isnanf
+
+See MSDN doc
+--*/
+int __cdecl _isnanf(float x)
+{
+    int ret;
+    PERF_ENTRY(_isnanf);
+    ENTRY("_isnanf (x=%f)\n", x);
+
+    ret = isnan(x);
+
+    LOGEXIT("_isnanf returns int %d\n", ret);
+    PERF_EXIT(_isnanf);
+    return ret;
+}
+
+/*++
+Function:
+  _copysignf
+
+See MSDN doc
+--*/
+float __cdecl _copysignf(float x, float y)
+{
+    float ret;
+    PERF_ENTRY(_copysignf);
+    ENTRY("_copysignf (x=%f, y=%f)\n", x, y);
+
+    ret = copysign(x, y);
+
+    LOGEXIT("_copysignf returns float %f\n", ret);
+    PERF_EXIT(_copysignf);
+    return ret;
+}
+
+/*++
+Function:
+    acosf
+
+See MSDN.
+--*/
+PALIMPORT float __cdecl PAL_acosf(float x)
+{
+    float ret;
+    PERF_ENTRY(acosf);
+    ENTRY("acosf (x=%f)\n", x);
+
+#if !HAVE_COMPATIBLE_ACOS
+    errno = 0;
+#endif  // HAVE_COMPATIBLE_ACOS
+
+    ret = acosf(x);
+    
+#if !HAVE_COMPATIBLE_ACOS
+    if (errno == EDOM)
+    {
+        ret = PAL_NAN_FLT;  // NaN
+    }
+#endif  // HAVE_COMPATIBLE_ACOS
+
+    LOGEXIT("acosf returns float %f\n", ret);
+    PERF_EXIT(acosf);
+    return ret;
+}
+
+/*++
+Function:
+    asinf
+
+See MSDN.
+--*/
+PALIMPORT float __cdecl PAL_asinf(float x)
+{
+    float ret;
+    PERF_ENTRY(asinf);
+    ENTRY("asinf (x=%f)\n", x);
+
+#if !HAVE_COMPATIBLE_ASIN
+    errno = 0;
+#endif  // HAVE_COMPATIBLE_ASIN
+
+    ret = asinf(x);
+
+#if !HAVE_COMPATIBLE_ASIN
+    if (errno == EDOM)
+    {
+        ret = PAL_NAN_FLT;  // NaN
+    }
+#endif  // HAVE_COMPATIBLE_ASIN
+
+    LOGEXIT("asinf returns float %f\n", ret);
+    PERF_EXIT(asinf);
+    return ret;
+}
+
+/*++
+Function:
+    atan2f
+
+See MSDN.
+--*/
+PALIMPORT float __cdecl PAL_atan2f(float y, float x)
+{
+    float ret;
+    PERF_ENTRY(atan2f);
+    ENTRY("atan2f (y=%f, x=%f)\n", y, x);
+
+#if !HAVE_COMPATIBLE_ATAN2
+    errno = 0;
+#endif  // !HAVE_COMPATIBLE_ATAN2
+
+    ret = atan2f(y, x);
+
+#if !HAVE_COMPATIBLE_ATAN2
+    if ((errno == EDOM) && (x == 0.0f) && (y == 0.0f))
+    {
+        const float sign_x = copysign(1.0f, x);
+        const float sign_y = copysign(1.0f, y);
+
+        if (sign_x > 0)
+        {
+            ret = copysign(0.0f, sign_y);
+        }
+        else
+        {
+            ret = copysign(atan2f(0.0f, -1.0f), sign_y);
+        }
+    }
+#endif  // !HAVE_COMPATIBLE_ATAN2
+
+    LOGEXIT("atan2f returns float %f\n", ret);
+    PERF_EXIT(atan2f);
+    return ret;
+}
+
+/*++
+Function:
+    expf
+
+See MSDN.
+--*/
+PALIMPORT float __cdecl PAL_expf(float x)
+{
+    float ret;
+    PERF_ENTRY(expf);
+    ENTRY("expf (x=%f)\n", x);
+
+#if !HAVE_COMPATIBLE_EXP
+    if (x == 1.0f) 
+    {
+        ret = M_E;
+    }
+    else
+    {
+#endif  // HAVE_COMPATIBLE_EXP
+
+    ret = expf(x);
+    
+#if !HAVE_COMPATIBLE_EXP
+    }
+#endif // HAVE_COMPATIBLE_EXP
+
+    LOGEXIT("expf returns float %f\n", ret);
+    PERF_EXIT(expf);
+    return ret;
+}
+
+/*++
+Function:
+    logf
+
+See MSDN.
+--*/
+PALIMPORT float __cdecl PAL_logf(float x)
+{
+    float ret;
+    PERF_ENTRY(logf);
+    ENTRY("logf (x=%f)\n", x);
+
+#if !HAVE_COMPATIBLE_LOG
+    errno = 0;
+#endif  // !HAVE_COMPATIBLE_LOG
+
+    ret = logf(x);
+
+#if !HAVE_COMPATIBLE_LOG
+    if ((errno == EDOM) && (x < 0))
+    {
+        ret = PAL_NAN_FLT;    // NaN
+    }
+#endif  // !HAVE_COMPATIBLE_LOG
+
+    LOGEXIT("logf returns float %f\n", ret);
+    PERF_EXIT(logf);
+    return ret;
+}
+
+/*++
+Function:
+    log10f
+
+See MSDN.
+--*/
+PALIMPORT float __cdecl PAL_log10f(float x)
+{
+    float ret;
+    PERF_ENTRY(log10f);
+    ENTRY("log10f (x=%f)\n", x);
+
+#if !HAVE_COMPATIBLE_LOG10
+    errno = 0;
+#endif  // !HAVE_COMPATIBLE_LOG10
+
+    ret = log10f(x);
+    
+#if !HAVE_COMPATIBLE_LOG10
+    if ((errno == EDOM) && (x < 0))
+    {
+        ret = PAL_NAN_FLT;    // NaN
+    }
+#endif  // !HAVE_COMPATIBLE_LOG10
+
+    LOGEXIT("log10f returns float %f\n", ret);
+    PERF_EXIT(log10f);
+    return ret;
+}
+
+/*++
+Function:
+    powf
+
+See MSDN.
+--*/
+PALIMPORT float __cdecl PAL_powf(float x, float y)
+{
+    float ret;
+    PERF_ENTRY(powf);
+    ENTRY("powf (x=%f, y=%f)\n", x, y);
+
+#if !HAVE_COMPATIBLE_POW
+    if ((y == PAL_POSINF_FLT) && !isnan(x))    // +Inf
+    {
+        if (x == 1.0f)
+        {
+            ret = x;
+        }
+        else if (x == -1.0f)
+        {
+            ret = PAL_NAN_FLT;    // NaN
+        }
+        else if ((x > -1.0f) && (x < 1.0f))
+        {
+            ret = 0.0f;
+        }
+        else
+        {
+            ret = PAL_POSINF_FLT;    // +Inf
+        }
+    }
+    else if ((y == PAL_NEGINF_FLT) && !isnan(x))   // -Inf
+    {
+        if (x == 1.0f)
+        {
+            ret = x;
+        }
+        else if (x == -1.0f)
+        {
+            ret = PAL_NAN_FLT;    // NaN
+        }
+        else if ((x > -1.0f) && (x < 1.0f))
+        {
+            ret = PAL_POSINF_FLT;    // +Inf
+        }
+        else
+        {
+            ret = 0.0f;
+        }
+    }
+    else if (IS_FLT_NEGZERO(x) && (y == -1.0f))
+    {
+        ret = PAL_NEGINF_FLT;    // -Inf
+    }
+    else if ((x == 0.0f) && (y < 0.0f))
+    {
+        ret = PAL_POSINF_FLT;    // +Inf
+    }
+    else
+#endif  // !HAVE_COMPATIBLE_POW
+
+    if ((y == 0.0f) && isnan(x))
+    {
+        // Windows returns NaN for powf(NaN, 0), but POSIX specifies
+        // a return value of 1 for that case.  We need to return
+        // the same result as Windows.
+        ret = PAL_NAN_FLT;
+    }
+    else
+    {
+        ret = powf(x, y);
+    }
+    
+#if !HAVE_VALID_NEGATIVE_INF_POW
+    if ((ret == PAL_POSINF_FLT) && (x < 0) && isfinite(x) && (ceilf(y / 2) != floorf(y / 2)))
+    {
+        ret = PAL_NEGINF_FLT;   // -Inf
+    }
+#endif  // !HAVE_VALID_NEGATIVE_INF_POW
+
+#if !HAVE_VALID_POSITIVE_INF_POW
+    /*
+    * The (ceil(y/2) == floor(y/2)) test is slower, but more robust for platforms where large y
+    * will return the wrong result for ((long) y % 2 == 0). See PAL_pow(double) above for more details.
+    */
+    if ((ret == PAL_NEGINF_FLT) && (x < 0) && isfinite(x) && (ceilf(y / 2) == floorf(y / 2)))
+    {
+        ret = PAL_POSINF_FLT;   // +Inf
+    }
+#endif  // !HAVE_VALID_POSITIVE_INF_POW
+
+    LOGEXIT("powf returns float %f\n", ret);
+    PERF_EXIT(powf);
     return ret;
 }
