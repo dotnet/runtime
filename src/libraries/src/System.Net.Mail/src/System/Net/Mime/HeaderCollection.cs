@@ -5,6 +5,7 @@
 using System.Collections.Specialized;
 using System.Globalization;
 using System.Net.Mail;
+using System.Text;
 
 namespace System.Net.Mime
 {
@@ -149,8 +150,7 @@ namespace System.Net.Mime
 
             MailHeaderID id = MailHeaderInfo.GetID(name);
 
-            // TODO https://github.com/dotnet/corefx/issues/11747: Uncomment once we can use NormalizationForm
-            //value = value.Normalize(NormalizationForm.FormC);
+            value = value.Normalize(NormalizationForm.FormC);
 
             if (id == MailHeaderID.ContentType && _part != null)
             {
@@ -193,8 +193,7 @@ namespace System.Net.Mime
 
             MailHeaderID id = MailHeaderInfo.GetID(name);
 
-            // TODO https://github.com/dotnet/corefx/issues/11747: Uncomment once we can use NormalizationForm
-            //value = value.Normalize(Text.NormalizationForm.FormC);
+            value = value.Normalize(NormalizationForm.FormC);
 
             if (id == MailHeaderID.ContentType && _part != null)
             {

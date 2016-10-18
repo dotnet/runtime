@@ -235,7 +235,7 @@ namespace System.Net.Mail
                 if (_headers == null)
                 {
                     _headers = new HeaderCollection();
-                    if (WebEventSource.Log.IsEnabled()) WebEventSource.Log.Associate(this, _headers);
+                    if (MailEventSource.Log.IsEnabled()) MailEventSource.Log.Associate(this, _headers);
                 }
 
                 return _headers;
@@ -261,7 +261,7 @@ namespace System.Net.Mail
                 if (_envelopeHeaders == null)
                 {
                     _envelopeHeaders = new HeaderCollection();
-                    if (WebEventSource.Log.IsEnabled()) WebEventSource.Log.Associate(this, _envelopeHeaders);
+                    if (MailEventSource.Log.IsEnabled()) MailEventSource.Log.Associate(this, _envelopeHeaders);
                 }
 
                 return _envelopeHeaders;

@@ -58,6 +58,7 @@ namespace System.Net.Mail
             {
                 return;
             }
+
             Append(value, 0, value.Length, allowUnicode);
         }
 
@@ -82,9 +83,13 @@ namespace System.Net.Mail
             {
                 char c = value[offset + i];
                 if ((ushort)c > 0xFF)
+                {
                     throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, c));
+                }
+
                 _buffer[_offset + i] = (byte)c;
             }
+
             _offset += count;
         }
 

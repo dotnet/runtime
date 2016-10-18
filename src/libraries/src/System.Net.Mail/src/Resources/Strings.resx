@@ -223,6 +223,9 @@
   <data name="SmtpMailboxBusy" xml:space="preserve">
     <value>Mailbox unavailable.</value>
   </data>
+  <data name="net_securityprotocolnotsupported" xml:space="preserve">
+    <value>The requested security protocol is not supported.</value>
+  </data>
   <data name="SmtpMailboxNameNotAllowed" xml:space="preserve">
     <value>Mailbox name not allowed.</value>
   </data>
