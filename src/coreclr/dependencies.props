@@ -9,7 +9,6 @@
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
     <CoreFxExpectedPrerelease>beta-24615-03</CoreFxExpectedPrerelease>
-    <ExternalExpectedPrerelease>beta-24616-00</ExternalExpectedPrerelease>
   </PropertyGroup>
 
   <!-- Full package version strings that are used in other parts of the build. -->
@@ -52,11 +51,6 @@
       <Path>$(MSBuildThisFileFullPath)</Path>
       <ElementName>CoreClrPackageVersion</ElementName>
       <PackageId>Microsoft.NETCore.Runtime.CoreCLR</PackageId>
-    </XmlUpdateStep>
-    <XmlUpdateStep Include="External">
-      <Path>$(MSBuildThisFileFullPath)</Path>
-      <ElementName>ExternalExpectedPrerelease</ElementName>
-      <BuildInfoName>External</BuildInfoName>
     </XmlUpdateStep>
   </ItemGroup>
 
