@@ -17,6 +17,7 @@ namespace System.Text.RegularExpressions
     /// </summary>
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(RegexCollectionDebuggerProxy<Group>))]
+    [Serializable]
     public class GroupCollection : IList<Group>, IReadOnlyList<Group>, IList
     {
         private readonly Match _match;
