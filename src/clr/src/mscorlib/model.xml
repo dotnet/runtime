@@ -447,6 +447,7 @@
     </Type>
     <Type Name="System.BitConverter">
       <Member Name="DoubleToInt64Bits(System.Double)" />
+      <Member Name="Int32BitsToSingle(System.Int32)" />
       <Member Name="Int64BitsToDouble(System.Int64)" />
       <Member MemberType="Field" Name="IsLittleEndian" />
       <Member Name="GetBytes(System.Boolean)" />
@@ -459,6 +460,7 @@
       <Member Name="GetBytes(System.UInt32)" />
       <Member Name="GetBytes(System.UInt64)" />
       <Member Name="GetBytes(System.UInt16)" />
+      <Member Name="SingleToInt32Bits(System.Single)" />
       <Member Name="ToBoolean(System.Byte[],System.Int32)" />
       <Member Name="ToChar(System.Byte[],System.Int32)" />
       <Member Name="ToDouble(System.Byte[],System.Int32)" />
@@ -3659,6 +3661,38 @@
       <Member Name="Tanh(System.Double)" />
       <Member Name="Truncate(System.Decimal)"  />
       <Member Name="Truncate(System.Double)"  />
+    </Type>
+    <Type Name="System.MathF">
+      <Member MemberType="Field" Name="E" />
+      <Member MemberType="Field" Name="PI" />
+      <Member Name="Abs(System.Single)" />
+      <Member Name="Acos(System.Single)" />
+      <Member Name="Asin(System.Single)" />
+      <Member Name="Atan(System.Single)" />
+      <Member Name="Atan2(System.Single,System.Single)" />
+      <Member Name="Ceiling(System.Single)"/>
+      <Member Name="Cos(System.Single)" />
+      <Member Name="Cosh(System.Single)" />
+      <Member Name="Exp(System.Single)" />
+      <Member Name="Floor(System.Single)" />
+      <Member Name="IEEERemainder(System.Single,System.Single)" />
+      <Member Name="Log(System.Single)" />
+      <Member Name="Log(System.Single,System.Single)" />
+      <Member Name="Log10(System.Single)" />
+      <Member Name="Max(System.Single,System.Single)" />
+      <Member Name="Min(System.Single,System.Single)" />
+      <Member Name="Pow(System.Single,System.Single)" />
+      <Member Name="Round(System.Single)" />
+      <Member Name="Round(System.Single,System.Int32)" />
+      <Member Name="Round(System.Single,System.Int32,System.MidpointRounding)"  />
+      <Member Name="Round(System.Single,System.MidpointRounding)"  />
+      <Member Name="Sign(System.Single)" />
+      <Member Name="Sin(System.Single)" />
+      <Member Name="Sinh(System.Single)" />
+      <Member Name="Sqrt(System.Single)" />
+      <Member Name="Tan(System.Single)" />
+      <Member Name="Tanh(System.Single)" />
+      <Member Name="Truncate(System.Single)"  />
     </Type>
     <Type Name="System.MemberAccessException">
       <Member Name="#ctor" />
