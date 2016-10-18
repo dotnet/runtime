@@ -65,9 +65,6 @@
     <Compile Include="$(CommonPath)\System\Net\IPAddressParserStatics.cs" >
       <Link>ProductionCode\Common\System\Net\IPAddressParserStatics.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\NetworkInformation\NetworkInformationException.cs" >
-      <Link>ProductionCode\Common\System\Net\NetworkInformation\NetworkInformationException.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\SocketAddress.cs" >
       <Link>Common\System\Net\SocketAddress.cs</Link>
     </Compile>
