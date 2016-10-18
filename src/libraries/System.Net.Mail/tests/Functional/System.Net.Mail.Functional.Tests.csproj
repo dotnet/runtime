@@ -9,8 +9,20 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.7_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.7_Release|AnyCPU' " />
   <ItemGroup>
+    <Compile Include="AlternateViewCollectionTest.cs" />
+    <Compile Include="AlternateViewTest.cs" />
+    <Compile Include="AttachmentCollectionTest.cs" />
+    <Compile Include="AttachmentTest.cs" />
     <Compile Include="ContentDispositionTest.cs" />
     <Compile Include="ContentTypeTest.cs" />
+    <Compile Include="LinkedResourceCollectionTest.cs" />
+    <Compile Include="LinkedResourceTest.cs" />
+    <Compile Include="MailAddressCollectionTest.cs" />
+    <Compile Include="MailAddressTest.cs" />
+    <Compile Include="MailMessageTest.cs" />
+    <Compile Include="SmtpClientTest.cs" />
+    <Compile Include="SmtpExceptionTest.cs" />
+    <Compile Include="SmtpServer.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\pkg\System.Net.Mail.pkgproj">

@@ -309,7 +309,14 @@ namespace System.Net.Mail
 
         internal static string NormalizeOrThrow(string input)
         {
-            return input;
+            try
+            {
+                return input.Normalize(Text.NormalizationForm.FormC);
+            }
+            catch (ArgumentException e)
+            {
+                throw new FormatException(SR.MailAddressInvalidFormat, e);
+            }
         }
     }
 }
