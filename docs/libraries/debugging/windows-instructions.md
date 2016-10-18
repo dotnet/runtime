@@ -96,7 +96,6 @@ Logs are going to be placed in %SYSTEMDRIVE%\sockets.etl.
     "{501a994a-eb63-5415-9af1-1b031260f16c}"
     "{066c0e27-a02d-5a98-9a4d-078cc3b1a896}"
     "{bdd9a83e-1929-5482-0d73-2fe5e1c0e16d}"
-    "{32663b9f-4d8d-44f8-9f29-f4efc12e6879}"
     ```
 
 2. Create the trace

@@ -149,8 +149,8 @@
     <Compile Include="$(CommonPath)\System\Net\Logging\GlobalLog.cs">
       <Link>ProductionCode\Common\System\Net\Logging\GlobalLog.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\EmailEventSource.cs">
-      <Link>ProductionCode\Common\System\Net\Logging\EmailEventSource.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\Logging\MailEventSource.cs">
+      <Link>ProductionCode\Common\System\Net\Logging\MailEventSource.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.cs">
       <Link>ProductionCode\Common\System\Net\Logging\NetEventSource.cs</Link>

@@ -140,7 +140,7 @@ namespace System.Net.Mail
             }
 
             _transport = new SmtpTransport(this);
-            if (EmailEventSource.Log.IsEnabled()) EmailEventSource.Log.Associate(this, _transport);
+            if (MailEventSource.Log.IsEnabled()) MailEventSource.Log.Associate(this, _transport);
             _onSendCompletedDelegate = new SendOrPostCallback(SendCompletedWaitCallback);
 
             if (_host != null && _host.Length != 0)
@@ -401,9 +401,9 @@ namespace System.Net.Mail
 
         internal MailWriter GetFileMailWriter(string pickupDirectory)
         {
-            if (EmailEventSource.Log.IsEnabled())
+            if (MailEventSource.Log.IsEnabled())
             {
-                EmailEventSource.Log.Send(nameof(pickupDirectory), pickupDirectory);
+                MailEventSource.Log.Send(nameof(pickupDirectory), pickupDirectory);
             }
 
             if (!Path.IsPathRooted(pickupDirectory))
@@ -456,10 +456,10 @@ namespace System.Net.Mail
             }
             try
             {
-                if (EmailEventSource.Log.IsEnabled())
+                if (MailEventSource.Log.IsEnabled())
                 {
-                    EmailEventSource.Log.Send(nameof(DeliveryMethod), DeliveryMethod.ToString());
-                    EmailEventSource.Log.Associate(this, message);
+                    MailEventSource.Log.Send(nameof(DeliveryMethod), DeliveryMethod.ToString());
+                    MailEventSource.Log.Associate(this, message);
                 }
 
                 SmtpFailedRecipientException recipientException = null;
