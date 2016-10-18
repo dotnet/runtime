@@ -205,11 +205,6 @@ namespace System.Net.Mail
                 throw new ArgumentNullException(nameof(recipients));
             }
 
-            if (GlobalLog.IsEnabled && recipients.Count > 0)
-            {
-                GlobalLog.Assert("SmtpTransport::BeginSendMail()|recepients.Count <= 0");
-            }
-
             SendMailAsyncResult result = new SendMailAsyncResult(_connection, sender, recipients,
                 allowUnicode, _connection.DSNEnabled ? deliveryNotify : null,
                 callback, state);
@@ -257,10 +252,6 @@ namespace System.Net.Mail
                 throw new ArgumentNullException(nameof(recipients));
             }
 
-            if (GlobalLog.IsEnabled && recipients.Count > 0)
-            {
-                GlobalLog.Assert("SmtpTransport::SendMail()|recepients.Count <= 0");
-            }
             MailCommand.Send(_connection, SmtpCommands.Mail, sender, allowUnicode);
             _failedRecipientExceptions.Clear();
 
