@@ -57,10 +57,9 @@ namespace System.Collections.Tests
             ICloneable c1 = e1 as ICloneable;
             if (c1 == null)
             {
-                Assert.False(SupportsEnumeratorCloning, "Enumerator is not cloneable");
+                // Only test if the enumerator can be cloned
                 return;
             }
-            Assert.True(SupportsEnumeratorCloning, "Enumerator is cloneable");
 
             // Walk the enumerator, and at each step of the way, clone it.
             // For all cloned enumerators, make sure they match the original
