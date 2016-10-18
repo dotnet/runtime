@@ -9,6 +9,7 @@ using System.Text;
 
 namespace System.Security.Cryptography
 {
+    [Serializable]
     public enum FromBase64TransformMode
     {
         IgnoreWhiteSpaces = 0,
