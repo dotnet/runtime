@@ -31,7 +31,10 @@ namespace System.Globalization.Tests
 
             using (Stream stream = typeof(StringNormalizationAllTests).GetTypeInfo().Assembly.GetManifestResourceStream(PlatformDetection.IsWindows7 ? "NormalizationDataWin7" : "NormalizationDataWin8"))
             {
-                Assert.True(stream != null, "Couldn't get the stream for the normalization embedded file");
+                if (stream == null)
+                {
+                    throw new ArgumentNullException("Couldn't get the stream for the normalization embedded file");
+                }
                 using (StreamReader sr = new StreamReader(stream))
                 {
                     int index = 0;
@@ -39,7 +42,10 @@ namespace System.Globalization.Tests
                     {
                         string line = sr.ReadLine();
                         string[] parts = line.Split(',');
-                        Assert.True(parts.Length == 5, $"Wrong data at the line {index}");
+                        if (parts.Length != 5)
+                        {
+                            throw new ArgumentException($"Wrong data at the line {index}");
+                        }
 
                         string part0 = ConvertToString(parts[0]);
                         string part1 = ConvertToString(parts[1]);
