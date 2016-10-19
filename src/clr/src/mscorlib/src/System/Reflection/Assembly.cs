@@ -486,7 +486,7 @@ namespace System.Reflection
                 throw new ArgumentNullException("rawAssembly");
             AssemblyLoadContext alc = new FileLoadAssemblyLoadContext();
             MemoryStream assemblyStream = new MemoryStream(rawAssembly);
-            MemoryStream symbolStream = (rawSymbolStore==null)?new MemoryStream(rawSymbolStore):null;
+            MemoryStream symbolStream = (rawSymbolStore!=null)?new MemoryStream(rawSymbolStore):null;
             return alc.LoadFromStream(assemblyStream, symbolStream);
 #else
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
