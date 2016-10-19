@@ -84,8 +84,9 @@ namespace System.Globalization.Tests
             Assert.Equal(expected, new IdnMapping().GetAscii(unicode, index, count));
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix ^ TestPlatforms.OSX)]
+        public static bool GetAsciiWithDotSucceeds => !GetAsciiWithDotFails;
+
+        [ConditionalFact(nameof(GetAsciiWithDotSucceeds))]
         public void TestGetAsciiWithDot_Succeeds()
         {
             string dot = ".";
@@ -93,8 +94,14 @@ namespace System.Globalization.Tests
             Assert.Equal(dot, result);
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
+        public static bool GetAsciiWithDotFails =>
+            PlatformDetection.IsWindows ||
+            PlatformDetection.IsOSX ||
+            PlatformDetection.IsUbuntu1604 ||
+            PlatformDetection.IsUbuntu1610 ||
+            RuntimeInformation.IsOSPlatform(OSPlatform.Create("openSUSE"));
+
+        [ConditionalFact(nameof(GetAsciiWithDotFails))]
         public void TestGetAsciiWithDot_Exception()
         {
             IdnMapping mapping = new IdnMapping();
