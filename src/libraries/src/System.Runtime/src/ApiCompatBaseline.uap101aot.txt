@@ -598,4 +598,15 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.Task' does not im
 MembersMustExist : Member 'System.Threading.Tasks.Task.Dispose()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.Tasks.Task.Dispose(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.Task<TResult>' does not implement interface 'System.IDisposable' in the implementation but it does in the contract.
-Total Issues: 599
+MembersMustExist : Member 'System.Reflection.Assembly.GlobalAssemblyCache.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Assembly.HostContext.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Assembly.IsFullyTrusted.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Assembly.LoadFile(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Assembly.LoadFrom(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Assembly.LoadFrom(System.String, System.Byte[], System.Configuration.Assemblies.AssemblyHashAlgorithm)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Assembly.LoadModule(System.String, System.Byte[])' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Assembly.LoadModule(System.String, System.Byte[], System.Byte[])' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Assembly.LoadWithPartialName(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Assembly.SecurityRuleSet.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Assembly.UnsafeLoadFrom(System.String)' does not exist in the implementation but it does exist in the contract.
+Total Issues: 610
