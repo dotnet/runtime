@@ -337,7 +337,7 @@ namespace System.Linq.Expressions
             Type type = mi.DeclaringType;
             BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic;
             flags |= (mi.IsStatic) ? BindingFlags.Static : BindingFlags.Instance;
-            var props = type.GetProperties(flags);
+            PropertyInfo[] props = type.GetProperties(flags);
             foreach (PropertyInfo pi in props)
             {
                 if (pi.CanRead && CheckMethod(mi, pi.GetGetMethod(true)))

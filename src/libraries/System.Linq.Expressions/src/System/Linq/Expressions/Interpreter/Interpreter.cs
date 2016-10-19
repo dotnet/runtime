@@ -60,7 +60,7 @@ namespace System.Linq.Expressions.Interpreter
         [MethodImpl(MethodImplOptions.NoInlining)]
         public void Run(InterpretedFrame frame)
         {
-            var instructions = _instructions.Instructions;
+            Instruction[] instructions = _instructions.Instructions;
             int index = frame.InstructionIndex;
             while (index < instructions.Length)
             {

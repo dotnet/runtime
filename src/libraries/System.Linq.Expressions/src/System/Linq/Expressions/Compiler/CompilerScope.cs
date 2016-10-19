@@ -96,7 +96,7 @@ namespace System.Linq.Expressions.Compiler
         {
             Node = node;
             IsMethod = isMethod;
-            var variables = GetVariables(node);
+            IList<ParameterExpression> variables = GetVariables(node);
 
             Definitions = new Dictionary<ParameterExpression, VariableStorageKind>(variables.Count);
             foreach (var v in variables)
@@ -293,7 +293,7 @@ namespace System.Linq.Expressions.Compiler
                 _closureHoistedLocals = _parent.NearestHoistedLocals;
             }
 
-            var hoistedVars = GetVariables().Where(p => Definitions[p] == VariableStorageKind.Hoisted).ToReadOnly();
+            ReadOnlyCollection<ParameterExpression> hoistedVars = GetVariables().Where(p => Definitions[p] == VariableStorageKind.Hoisted).ToReadOnly();
 
             if (hoistedVars.Count > 0)
             {
@@ -417,7 +417,7 @@ namespace System.Linq.Expressions.Compiler
 
             while ((locals = locals.Parent) != null)
             {
-                var v = locals.SelfVariable;
+                ParameterExpression v = locals.SelfVariable;
                 var local = new LocalStorage(lc, v);
                 local.EmitStore(ResolveVariable(v));
                 _locals.Add(v, local);

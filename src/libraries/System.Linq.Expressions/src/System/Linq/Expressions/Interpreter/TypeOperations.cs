@@ -150,7 +150,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                var obj = frame.Pop();
+                object obj = frame.Pop();
                 frame.Push(ScriptingRuntimeHelpers.BooleanToObject(obj != null));
                 return +1;
             }
@@ -195,8 +195,8 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                var dflt = frame.Pop();
-                var obj = frame.Pop();
+                object dflt = frame.Pop();
+                object obj = frame.Pop();
                 if (obj == null)
                 {
                     frame.Push(dflt);
@@ -215,8 +215,8 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                var other = frame.Pop();
-                var obj = frame.Pop();
+                object other = frame.Pop();
+                object obj = frame.Pop();
                 if (obj == null)
                 {
                     frame.Push(ScriptingRuntimeHelpers.BooleanToObject(other == null));
@@ -237,7 +237,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                var obj = frame.Pop();
+                object obj = frame.Pop();
                 if (obj == null)
                 {
                     frame.Push("");
@@ -254,7 +254,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                var obj = frame.Pop();
+                object obj = frame.Pop();
                 if (obj == null)
                 {
                     frame.Push(ScriptingRuntimeHelpers.Int32ToObject(0));
@@ -309,7 +309,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                var value = frame.Pop();
+                object value = frame.Pop();
                 frame.Push((T)value);
                 return +1;
             }
@@ -337,10 +337,10 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                var value = frame.Pop();
+                object value = frame.Pop();
                 if (value != null)
                 {
-                    var valueType = value.GetType();
+                    Type valueType = value.GetType();
 
                     if (!TypeUtils.HasReferenceConversion(valueType, _t) &&
                         !TypeUtils.HasIdentityPrimitiveOrNullableConversion(valueType, _t))
@@ -431,7 +431,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            var from = frame.Pop();
+            object from = frame.Pop();
             switch (Convert.GetTypeCode(from))
             {
                 case TypeCode.Empty:
@@ -469,7 +469,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            var from = frame.Pop();
+            object from = frame.Pop();
             if (from == null)
             {
                 frame.Push(null);
@@ -607,7 +607,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     _shadowedVars.Push(new HashSet<ParameterExpression>(node.Variables));
                 }
-                var b = ExpressionVisitorUtils.VisitBlockExpressions(this, node);
+                Expression[] b = ExpressionVisitorUtils.VisitBlockExpressions(this, node);
                 if (node.Variables.Count > 0)
                 {
                     _shadowedVars.Pop();
@@ -665,7 +665,7 @@ namespace System.Linq.Expressions.Interpreter
                     return node;
                 }
 
-                var boxesConst = Expression.Constant(new RuntimeOps.RuntimeVariables(boxes.ToArray()), typeof(IRuntimeVariables));
+                ConstantExpression boxesConst = Expression.Constant(new RuntimeOps.RuntimeVariables(boxes.ToArray()), typeof(IRuntimeVariables));
                 // All of them were rewritten. Just return the array as a constant
                 if (vars.Count == 0)
                 {

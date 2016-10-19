@@ -12,7 +12,7 @@ namespace System.Dynamic.Utils
     {
         internal static T CommonNode<T>(T first, T second, Func<T, T> parent) where T : class
         {
-            var cmp = EqualityComparer<T>.Default;
+            EqualityComparer<T> cmp = EqualityComparer<T>.Default;
             if (cmp.Equals(first, second))
             {
                 return first;

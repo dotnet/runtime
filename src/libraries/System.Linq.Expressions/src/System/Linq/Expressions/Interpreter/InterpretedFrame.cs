@@ -142,7 +142,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public IEnumerable<InterpretedFrameInfo> GetStackTraceDebugInfo()
         {
-            var frame = this;
+            InterpretedFrame frame = this;
             do
             {
                 yield return new InterpretedFrameInfo(frame.Name, frame.GetDebugInfo(frame.InstructionIndex));
@@ -169,7 +169,7 @@ namespace System.Linq.Expressions.Interpreter
             get
             {
                 var trace = new List<string>();
-                var frame = this;
+                InterpretedFrame frame = this;
                 do
                 {
                     trace.Add(frame.Name);
@@ -182,7 +182,7 @@ namespace System.Linq.Expressions.Interpreter
 
         internal InterpretedFrame Enter()
         {
-            var currentFrame = CurrentFrame;
+            InterpretedFrame currentFrame = CurrentFrame;
             CurrentFrame = this;
             return _parent = currentFrame;
         }
@@ -213,7 +213,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public int YieldToCurrentContinuation()
         {
-            var target = Interpreter._labels[_continuations[_continuationIndex - 1]];
+            RuntimeLabel target = Interpreter._labels[_continuations[_continuationIndex - 1]];
             SetStackDepth(target.StackDepth);
             return target.Index - InstructionIndex;
         }
