@@ -361,7 +361,7 @@ void CodeGen::genPrepForCompiler()
             {
                 VarSetOps::AddElemD(compiler, compiler->raRegVarsMask, varDsc->lvVarIndex);
             }
-            else if (compiler->lvaIsGCTracked(varDsc) && (!varDsc->lvIsParam || varDsc->lvIsRegArg))
+            else if (compiler->lvaIsGCTracked(varDsc))
             {
                 VarSetOps::AddElemD(compiler, gcInfo.gcTrkStkPtrLcls, varDsc->lvVarIndex);
             }
