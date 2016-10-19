@@ -476,6 +476,20 @@ namespace System.Runtime.Loader
             return null;
         }
     }
+
+    [System.Security.SecuritySafeCritical]
+    internal class FileLoadAssemblyLoadContext : AssemblyLoadContext
+    {
+        internal FileLoadAssemblyLoadContext() : base(false)
+        {
+        }
+
+        [System.Security.SecuritySafeCritical]  
+        protected override Assembly Load(AssemblyName assemblyName)
+        {
+            return null;
+        }
+    }
 }
 
 #endif // FEATURE_HOST_ASSEMBLY_RESOLVER
