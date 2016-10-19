@@ -93,16 +93,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr size, regNumber reg, ssize_t imm, 
     }
     else
     {
-#ifdef _TARGET_AMD64_
-        if (AddrShouldUsePCRel(imm))
-        {
-            getEmitter()->emitIns_R_AI(INS_lea, EA_PTR_DSP_RELOC, reg, imm);
-        }
-        else
-#endif // _TARGET_AMD64_
-        {
-            getEmitter()->emitIns_R_I(INS_mov, size, reg, imm);
-        }
+        getEmitter()->emitIns_R_I(INS_mov, size, reg, imm);
     }
     regTracker.rsTrackRegIntCns(reg, imm);
 }

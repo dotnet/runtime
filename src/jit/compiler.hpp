@@ -4106,16 +4106,12 @@ inline bool Compiler::compIsProfilerHookNeeded()
 {
 #ifdef PROFILING_SUPPORTED
     return compProfilerHookNeeded
-
-#if defined(_TARGET_ARM_) || defined(_TARGET_AMD64_)
            // IL stubs are excluded by VM and we need to do the same even running
            // under a complus env hook to generate profiler hooks
-           || (opts.compJitELTHookEnabled && !(opts.eeFlags & CORJIT_FLG_IL_STUB))
-#endif
-        ;
-#else // PROFILING_SUPPORTED
+           || (opts.compJitELTHookEnabled && !(opts.eeFlags & CORJIT_FLG_IL_STUB));
+#else  // !PROFILING_SUPPORTED
     return false;
-#endif
+#endif // !PROFILING_SUPPORTED
 }
 
 /*****************************************************************************

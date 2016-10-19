@@ -7660,9 +7660,11 @@ public:
         // for any call. We have a plan for not needing for stubs though
         bool compNeedStackProbes;
 
-        // Whether to emit Enter/Leave/TailCall hooks using a dummy stub (DummyProfilerELTStub())
-        // This options helps one to make JIT behave as if it is under profiler.
+#ifdef PROFILING_SUPPORTED
+        // Whether to emit Enter/Leave/TailCall hooks using a dummy stub (DummyProfilerELTStub()).
+        // This option helps make the JIT behave as if it is running under a profiler.
         bool compJitELTHookEnabled;
+#endif // PROFILING_SUPPORTED
 
 #if FEATURE_TAILCALL_OPT
         // Whether opportunistic or implicit tail call optimization is enabled.
@@ -8343,14 +8345,14 @@ protected:
 #endif
     void compCompile(void** methodCodePtr, ULONG* methodCodeSize, CORJIT_FLAGS* compileFlags);
 
-    // Data required for generating profiler Enter/Leave/TailCall hooks
-    CLANG_FORMAT_COMMENT_ANCHOR;
-
 #ifdef PROFILING_SUPPORTED
+    // Data required for generating profiler Enter/Leave/TailCall hooks
+
     bool  compProfilerHookNeeded; // Whether profiler Enter/Leave/TailCall hook needs to be generated for the method
     void* compProfilerMethHnd;    // Profiler handle of the method being compiled. Passed as param to ELT callbacks
     bool  compProfilerMethHndIndirected; // Whether compProfilerHandle is pointer to the handle or is an actual handle
 #endif
+
 #ifdef _TARGET_AMD64_
     bool compQuirkForPPP(); // Check if this method should be Quirked for the PPP issue
 #endif
