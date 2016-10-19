@@ -60,7 +60,6 @@ namespace System.Globalization.Tests
         [Fact]
         public void Normalize_Invalid()
         {
-            //Assert.True(false, "Framework not skipped");
             Assert.Throws<ArgumentException>(() => "\uFB01".Normalize((NormalizationForm)7));
 
             Assert.Throws<ArgumentException>("strInput", () => "\uFFFE".Normalize()); // Invalid codepoint
