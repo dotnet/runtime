@@ -21,8 +21,8 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                var shift = frame.Pop();
-                var value = frame.Pop();
+                object shift = frame.Pop();
+                object value = frame.Pop();
                 if (value == null || shift == null)
                 {
                     frame.Push(null);
@@ -39,8 +39,8 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                var shift = frame.Pop();
-                var value = frame.Pop();
+                object shift = frame.Pop();
+                object value = frame.Pop();
                 if (value == null || shift == null)
                 {
                     frame.Push(null);
@@ -57,8 +57,8 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                var shift = frame.Pop();
-                var value = frame.Pop();
+                object shift = frame.Pop();
+                object value = frame.Pop();
                 if (value == null || shift == null)
                 {
                     frame.Push(null);
@@ -75,8 +75,8 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                var shift = frame.Pop();
-                var value = frame.Pop();
+                object shift = frame.Pop();
+                object value = frame.Pop();
                 if (value == null || shift == null)
                 {
                     frame.Push(null);
@@ -93,8 +93,8 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                var shift = frame.Pop();
-                var value = frame.Pop();
+                object shift = frame.Pop();
+                object value = frame.Pop();
                 if (value == null || shift == null)
                 {
                     frame.Push(null);
@@ -111,8 +111,8 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                var shift = frame.Pop();
-                var value = frame.Pop();
+                object shift = frame.Pop();
+                object value = frame.Pop();
                 if (value == null || shift == null)
                 {
                     frame.Push(null);
@@ -129,8 +129,8 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                var shift = frame.Pop();
-                var value = frame.Pop();
+                object shift = frame.Pop();
+                object value = frame.Pop();
                 if (value == null || shift == null)
                 {
                     frame.Push(null);
@@ -147,8 +147,8 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                var shift = frame.Pop();
-                var value = frame.Pop();
+                object shift = frame.Pop();
+                object value = frame.Pop();
                 if (value == null || shift == null)
                 {
                     frame.Push(null);

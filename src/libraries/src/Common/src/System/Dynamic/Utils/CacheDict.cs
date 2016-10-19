@@ -44,7 +44,7 @@ namespace System.Dynamic.Utils
         /// <param name="size">The maximum number of elements to store will be this number aligned to next ^2.</param>
         internal CacheDict(int size)
         {
-            var alignedSize = AlignSize(size);
+            int alignedSize = AlignSize(size);
             this.mask = alignedSize - 1;
             this.entries = new Entry[alignedSize];
         }
@@ -74,7 +74,7 @@ namespace System.Dynamic.Utils
             int hash = key.GetHashCode();
             int idx = hash & mask;
 
-            var entry = Volatile.Read(ref this.entries[idx]);
+            Entry entry = Volatile.Read(ref this.entries[idx]);
             if (entry != null && entry.hash == hash && entry.key.Equals(key))
             {
                 value = entry.value;
@@ -91,10 +91,10 @@ namespace System.Dynamic.Utils
         /// </summary>
         internal void Add(TKey key, TValue value)
         {
-            var hash = key.GetHashCode();
-            var idx = hash & mask;
+            int hash = key.GetHashCode();
+            int idx = hash & mask;
 
-            var entry = Volatile.Read(ref this.entries[idx]);
+            Entry entry = Volatile.Read(ref this.entries[idx]);
             if (entry == null || entry.hash != hash || !entry.key.Equals(key))
             {
                 Volatile.Write(ref entries[idx], new Entry(hash, key, value));

@@ -259,7 +259,7 @@ namespace System.Linq.Expressions
             // method and call that will be used for creating instances of this
             // delegate type
             Func<Expression, string, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression> fastPath;
-            var factories = s_lambdaFactories;
+            CacheDict<Type, Func<Expression, string, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>> factories = s_lambdaFactories;
             if (factories == null)
             {
                 s_lambdaFactories = factories = new CacheDict<Type, Func<Expression, string, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>>(50);
@@ -362,7 +362,7 @@ namespace System.Linq.Expressions
         /// <returns>An <see cref="Expression{TDelegate}"/> that has the <see cref="P:NodeType"/> property equal to <see cref="P:Lambda"/> and the <see cref="P:Body"/> and <see cref="P:Parameters"/> properties set to the specified values.</returns>
         public static Expression<TDelegate> Lambda<TDelegate>(Expression body, String name, bool tailCall, IEnumerable<ParameterExpression> parameters)
         {
-            var parameterList = parameters.ToReadOnly();
+            ReadOnlyCollection<ParameterExpression> parameterList = parameters.ToReadOnly();
             ValidateLambdaArgs(typeof(TDelegate), ref body, parameterList, nameof(TDelegate));
             return new Expression<TDelegate>(body, name, tailCall, parameterList);
         }
@@ -488,7 +488,7 @@ namespace System.Linq.Expressions
         {
             ContractUtils.RequiresNotNull(body, nameof(body));
 
-            var parameterList = parameters.ToReadOnly();
+            ReadOnlyCollection<ParameterExpression> parameterList = parameters.ToReadOnly();
 
             int paramCount = parameterList.Count;
             Type[] typeArgs = new Type[paramCount + 1];
@@ -497,7 +497,7 @@ namespace System.Linq.Expressions
                 var set = new HashSet<ParameterExpression>();
                 for (int i = 0; i < paramCount; i++)
                 {
-                    var param = parameterList[i];
+                    ParameterExpression param = parameterList[i];
                     ContractUtils.RequiresNotNull(param, "parameter");
                     typeArgs[i] = param.IsByRef ? param.Type.MakeByRefType() : param.Type;
                     if (!set.Add(param))
@@ -523,7 +523,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="LambdaExpression"/> that has the <see cref="P:NodeType"/> property equal to Lambda and the <see cref="P:Body"/> and <see cref="P:Parameters"/> properties set to the specified values.</returns>
         public static LambdaExpression Lambda(Type delegateType, Expression body, string name, IEnumerable<ParameterExpression> parameters)
         {
-            var paramList = parameters.ToReadOnly();
+            ReadOnlyCollection<ParameterExpression> paramList = parameters.ToReadOnly();
             ValidateLambdaArgs(delegateType, ref body, paramList, nameof(delegateType));
 
             return CreateLambda(delegateType, body, name, false, paramList);
@@ -540,7 +540,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="LambdaExpression"/> that has the <see cref="P:NodeType"/> property equal to Lambda and the <see cref="P:Body"/> and <see cref="P:Parameters"/> properties set to the specified values.</returns>
         public static LambdaExpression Lambda(Type delegateType, Expression body, string name, bool tailCall, IEnumerable<ParameterExpression> parameters)
         {
-            var paramList = parameters.ToReadOnly();
+            ReadOnlyCollection<ParameterExpression> paramList = parameters.ToReadOnly();
             ValidateLambdaArgs(delegateType, ref body, paramList, nameof(delegateType));
 
             return CreateLambda(delegateType, body, name, tailCall, paramList);
@@ -557,7 +557,7 @@ namespace System.Linq.Expressions
             }
 
             MethodInfo mi;
-            var ldc = s_lambdaDelegateCache;
+            CacheDict<Type, MethodInfo> ldc = s_lambdaDelegateCache;
             if (!ldc.TryGetValue(delegateType, out mi))
             {
                 mi = delegateType.GetMethod("Invoke");
@@ -631,7 +631,7 @@ namespace System.Linq.Expressions
 
             for (int i = 0; i < typeArgs.Length; i++)
             {
-                var a = typeArgs[i];
+                Type a = typeArgs[i];
                 if (a == null)
                 {
                     return TryGetFuncActionArgsResult.ArgumentNull;

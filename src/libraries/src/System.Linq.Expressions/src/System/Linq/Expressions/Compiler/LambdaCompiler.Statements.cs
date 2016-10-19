@@ -36,8 +36,8 @@ namespace System.Linq.Expressions.Compiler
             CompilationFlags tailCall = flags & CompilationFlags.EmitAsTailCallMask;
             for (int index = 0; index < count - 1; index++)
             {
-                var e = node.GetExpression(index);
-                var next = node.GetExpression(index + 1);
+                Expression e = node.GetExpression(index);
+                Expression next = node.GetExpression(index + 1);
 
                 CompilationFlags tailCallFlag;
                 if (tailCall != CompilationFlags.EmitAsNoTail)
@@ -199,8 +199,8 @@ namespace System.Linq.Expressions.Compiler
             // transform the tree to avoid stack overflow on a big switch.
             //
 
-            var switchValue = Expression.Parameter(node.SwitchValue.Type, "switchValue");
-            var testValue = Expression.Parameter(GetTestValueType(node), "testValue");
+            ParameterExpression switchValue = Expression.Parameter(node.SwitchValue.Type, "switchValue");
+            ParameterExpression testValue = Expression.Parameter(GetTestValueType(node), "testValue");
             _scope.AddLocal(this, switchValue);
             _scope.AddLocal(this, testValue);
 
@@ -285,7 +285,7 @@ namespace System.Linq.Expressions.Compiler
                 Default = @default;
                 Type = Node.SwitchValue.Type;
                 IsUnsigned = TypeUtils.IsUnsigned(Type);
-                var code = Type.GetTypeCode();
+                TypeCode code = Type.GetTypeCode();
                 Is64BitSwitch = code == TypeCode.UInt64 || code == TypeCode.Int64;
             }
         }
@@ -729,9 +729,9 @@ namespace System.Linq.Expressions.Compiler
             //     default:
             // }
             //
-            var switchValue = Expression.Variable(typeof(string), "switchValue");
-            var switchIndex = Expression.Variable(typeof(int), "switchIndex");
-            var reduced = Expression.Block(
+            ParameterExpression switchValue = Expression.Variable(typeof(string), "switchValue");
+            ParameterExpression switchIndex = Expression.Variable(typeof(int), "switchIndex");
+            BlockExpression reduced = Expression.Block(
                 new[] { switchIndex, switchValue },
                 Expression.Assign(switchValue, node.SwitchValue),
                 Expression.IfThenElse(

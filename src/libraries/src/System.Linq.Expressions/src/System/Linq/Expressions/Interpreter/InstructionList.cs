@@ -114,8 +114,8 @@ namespace System.Linq.Expressions.Interpreter
                 int stackDepth = 0;
                 int continuationsDepth = 0;
 
-                var cookieEnumerator = (debugCookies ?? Array.Empty<KeyValuePair<int, object>>()).GetEnumerator();
-                var hasCookie = cookieEnumerator.MoveNext();
+                IEnumerator<KeyValuePair<int, object>> cookieEnumerator = (debugCookies ?? Array.Empty<KeyValuePair<int, object>>()).GetEnumerator();
+                bool hasCookie = cookieEnumerator.MoveNext();
 
                 for (int i = 0, n = instructions.Count; i < n; i++)
                 {
@@ -409,7 +409,7 @@ namespace System.Linq.Expressions.Interpreter
 
             if (instruction != null)
             {
-                var newInstruction = instruction.BoxIfIndexMatches(index);
+                Instruction newInstruction = instruction.BoxIfIndexMatches(index);
                 if (newInstruction != null)
                 {
                     _instructions[instructionIndex] = newInstruction;

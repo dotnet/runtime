@@ -21,8 +21,8 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                var left = frame.Pop();
-                var right = frame.Pop();
+                object left = frame.Pop();
+                object right = frame.Pop();
                 if (left == null || right == null)
                 {
                     frame.Push(null);
@@ -37,8 +37,8 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                var left = frame.Pop();
-                var right = frame.Pop();
+                object left = frame.Pop();
+                object right = frame.Pop();
                 if (left == null || right == null)
                 {
                     frame.Push(null);
@@ -53,8 +53,8 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                var left = frame.Pop();
-                var right = frame.Pop();
+                object left = frame.Pop();
+                object right = frame.Pop();
                 if (left == null || right == null)
                 {
                     frame.Push(null);
@@ -69,8 +69,8 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                var left = frame.Pop();
-                var right = frame.Pop();
+                object left = frame.Pop();
+                object right = frame.Pop();
                 if (left == null || right == null)
                 {
                     frame.Push(null);
@@ -85,8 +85,8 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                var left = frame.Pop();
-                var right = frame.Pop();
+                object left = frame.Pop();
+                object right = frame.Pop();
                 if (left == null || right == null)
                 {
                     frame.Push(null);
@@ -101,8 +101,8 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                var left = frame.Pop();
-                var right = frame.Pop();
+                object left = frame.Pop();
+                object right = frame.Pop();
                 if (left == null || right == null)
                 {
                     frame.Push(null);
@@ -117,8 +117,8 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                var left = frame.Pop();
-                var right = frame.Pop();
+                object left = frame.Pop();
+                object right = frame.Pop();
                 if (left == null || right == null)
                 {
                     frame.Push(null);
@@ -133,8 +133,8 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                var left = frame.Pop();
-                var right = frame.Pop();
+                object left = frame.Pop();
+                object right = frame.Pop();
                 if (left == null || right == null)
                 {
                     frame.Push(null);
@@ -149,8 +149,8 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                var left = frame.Pop();
-                var right = frame.Pop();
+                object left = frame.Pop();
+                object right = frame.Pop();
                 if (left == null || right == null)
                 {
                     frame.Push(null);

@@ -206,7 +206,7 @@ namespace System.Linq.Expressions.Compiler
             }
             else
             {
-                var address = node.Object.Type.GetMethod("Address", BindingFlags.Public | BindingFlags.Instance);
+                MethodInfo address = node.Object.Type.GetMethod("Address", BindingFlags.Public | BindingFlags.Instance);
                 EmitMethodCall(node.Object, address, node);
             }
         }
@@ -294,7 +294,7 @@ namespace System.Linq.Expressions.Compiler
             EmitCall(instanceType, pi.GetGetMethod(true));
 
             // emit the address of the value
-            var valueLocal = GetLocal(node.Type);
+            LocalBuilder valueLocal = GetLocal(node.Type);
             _ilg.Emit(OpCodes.Stloc, valueLocal);
             _ilg.Emit(OpCodes.Ldloca, valueLocal);
 
@@ -339,14 +339,14 @@ namespace System.Linq.Expressions.Compiler
 
             // Emit indexes. We don't allow byref args, so no need to worry
             // about write-backs or EmitAddress
-            var n = node.ArgumentCount;
+            int n = node.ArgumentCount;
             var args = new LocalBuilder[n];
             for (var i = 0; i < n; i++)
             {
-                var arg = node.GetArgument(i);
+                Expression arg = node.GetArgument(i);
                 EmitExpression(arg);
 
-                var argLocal = GetLocal(arg.Type);
+                LocalBuilder argLocal = GetLocal(arg.Type);
                 _ilg.Emit(OpCodes.Dup);
                 _ilg.Emit(OpCodes.Stloc, argLocal);
                 args[i] = argLocal;
@@ -356,7 +356,7 @@ namespace System.Linq.Expressions.Compiler
             EmitGetIndexCall(node, instanceType);
 
             // emit the address of the value
-            var valueLocal = GetLocal(node.Type);
+            LocalBuilder valueLocal = GetLocal(node.Type);
             _ilg.Emit(OpCodes.Stloc, valueLocal);
             _ilg.Emit(OpCodes.Ldloca, valueLocal);
 
@@ -383,7 +383,7 @@ namespace System.Linq.Expressions.Compiler
 
         private LocalBuilder GetInstanceLocal(Type type)
         {
-            var instanceLocalType = type.GetTypeInfo().IsValueType ? type.MakeByRefType() : type;
+            Type instanceLocalType = type.GetTypeInfo().IsValueType ? type.MakeByRefType() : type;
             return GetLocal(instanceLocalType);
         }
     }

@@ -73,9 +73,9 @@ namespace System.Linq.Expressions
             try
             {
                 // Using default scheduler rather than picking up the current scheduler.
-                var task = Task.Factory.StartNew(action, state, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+                Task<R> task = Task.Factory.StartNew(action, state, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
-                var awaiter = task.GetAwaiter();
+                TaskAwaiter<R> awaiter = task.GetAwaiter();
 
                 // Avoid AsyncWaitHandle lazy allocation of ManualResetEvent in the rare case we finish quickly.
                 if (!awaiter.IsCompleted)

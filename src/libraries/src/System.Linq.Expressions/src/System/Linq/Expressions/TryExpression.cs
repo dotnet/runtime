@@ -176,7 +176,7 @@ namespace System.Linq.Expressions
         {
             RequiresCanRead(body, nameof(body));
 
-            var @catch = handlers.ToReadOnly();
+            ReadOnlyCollection<CatchBlock> @catch = handlers.ToReadOnly();
             ContractUtils.RequiresNotNullItems(@catch, nameof(handlers));
             ValidateTryAndCatchHaveSameType(type, body, @catch);
 

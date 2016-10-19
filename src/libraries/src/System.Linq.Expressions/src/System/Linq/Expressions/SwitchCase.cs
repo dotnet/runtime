@@ -91,7 +91,7 @@ namespace System.Linq.Expressions
         {
             RequiresCanRead(body, nameof(body));
 
-            var values = testValues.ToReadOnly();
+            ReadOnlyCollection<Expression> values = testValues.ToReadOnly();
             ContractUtils.RequiresNotEmpty(values, nameof(testValues));
             RequiresCanRead(values, nameof(testValues));
 

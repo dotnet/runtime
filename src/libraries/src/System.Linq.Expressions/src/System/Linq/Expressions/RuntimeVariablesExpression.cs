@@ -99,7 +99,7 @@ namespace System.Linq.Expressions
         {
             ContractUtils.RequiresNotNull(variables, nameof(variables));
 
-            var vars = variables.ToReadOnly();
+            ReadOnlyCollection<ParameterExpression> vars = variables.ToReadOnly();
             for (int i = 0; i < vars.Count; i++)
             {
                 ContractUtils.RequiresNotNull(vars[i], nameof(variables), i);
