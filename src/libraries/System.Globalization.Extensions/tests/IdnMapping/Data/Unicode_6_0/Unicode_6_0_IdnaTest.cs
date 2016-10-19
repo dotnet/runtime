@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Text;
-using Xunit;
 
 namespace System.Globalization.Tests
 {
@@ -69,7 +68,10 @@ namespace System.Globalization.Tests
                 if (i + 1 < escaped.Length && escaped[i] == '\\' && escaped[i + 1] == 'u')
                 {
                     // Verify that the escaped sequence is not malformed
-                    Assert.True(i + 5 < escaped.Length, "There was a problem converting to literal string on Line " + lineNumber);
+                    if (i + 5 >= escaped.Length)
+                    {
+                        throw new ArgumentException($"There was a problem converting to literal string on Line {lineNumber}");
+                    }
 
                     var codepoint = Convert.ToInt32(escaped.Substring(i + 2, 4), 16);
                     sb.Append((char)codepoint);
