@@ -7,14 +7,14 @@
     <RootNamespace>System.Dynamic.Runtime</RootNamespace>
     <IsInterpreting Condition="'$(TargetGroup)' == 'netcore50' or '$(TargetGroup)' == 'netcore50aot'">true</IsInterpreting>
     <DefineConstants Condition="'$(IsInterpreting)' != 'true'">$(DefineConstants);FEATURE_COMPILER</DefineConstants>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Debug|AnyCPU'" />
@@ -80,10 +80,6 @@
     <Compile Include="$(CommonPath)\System\Linq\Expressions\Compiler\DelegateHelpers.Generated.cs">
       <Link>Common\System\Linq\Expressions\Compiler\DelegateHelpers.Generated.cs</Link>
     </Compile>
-    <Compile Include="..\..\System.Linq.Expressions\src\System\Runtime\CompilerServices\ReadOnlyCollectionBuilder.cs"> 
-      <!-- TODO #11414: Remove this once Sys.Linq.Expressions contract is updated -->
-      <Link>Common\System\Runtime\CompilerServices\ReadOnlyCollectionBuilder.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Runtime\CompilerServices\TrueReadOnlyCollection.cs">
       <Link>Common\System\Runtime\CompilerServices\TrueReadOnlyCollection.cs</Link>
     </Compile>
@@ -133,7 +129,7 @@
       <Link>Common\System\Linq\Expressions\Compiler\AssemblyGen.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System.Core" />
   </ItemGroup>
