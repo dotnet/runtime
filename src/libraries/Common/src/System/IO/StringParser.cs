@@ -94,6 +94,37 @@ namespace System.IO
         }
 
         /// <summary>
+        /// Moves to the next component of the string, which must be enclosed in the only set of top-level parentheses
+        /// in the string.  The extracted value will be everything between (not including) those parentheses.
+        /// </summary>
+        /// <returns></returns>
+        public string MoveAndExtractNextInOuterParens()
+        {
+            // Move to the next position
+            MoveNextOrFail();
+
+            // After doing so, we should be sitting at a the opening paren.
+            if (_buffer[_startIndex] != '(')
+            {
+                ThrowForInvalidData();
+            }
+
+            // Since we only allow for one top-level set of parentheses, find the last
+            // parenthesis in the string; it's paired with the opening one we just found.
+            int lastParen = _buffer.LastIndexOf(')');
+            if (lastParen == -1 || lastParen < _startIndex)
+            {
+                ThrowForInvalidData();
+            }
+
+            // Extract the contents of the parens, then move our ending position to be after the paren
+            string result = _buffer.Substring(_startIndex + 1, lastParen - _startIndex - 1);
+            _endIndex = lastParen + 1;
+
+            return result;
+        }
+
+        /// <summary>
         /// Gets the current subcomponent of the string as a string.
         /// </summary>
         public string ExtractCurrent()
