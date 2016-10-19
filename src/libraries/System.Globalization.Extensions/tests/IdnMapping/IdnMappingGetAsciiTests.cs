@@ -85,22 +85,20 @@ namespace System.Globalization.Tests
         }
         
         [Fact]
-        public void TestGetAsciiWithDot()
+        [PlatformSpecific(TestPlatforms.AnyUnix ^ TestPlatforms.OSX)]
+        public void TestGetAsciiWithDot_Succeeds()
         {
-            string result = "";
-            Exception ex = Record.Exception(()=> result = new IdnMapping().GetAscii("."));
-            
-            if (ex == null)
-            {
-                // Windows and OSX always throw exception. some versions of Linux succeed and others throw exception   
-                Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
-                Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
-                Assert.Equal(result, ".");
-            }
-            else
-            {
-                Assert.True(ex is ArgumentException);
-            }
+            string dot = ".";
+            string result = new IdnMapping().GetAscii(dot);
+            Assert.Equal(dot, result);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
+        public void TestGetAsciiWithDot_Exception()
+        {
+            IdnMapping mapping = new IdnMapping();
+            Assert.Throws<ArgumentException>("unicode", () => mapping.GetAscii("."));
         }
 
         public static IEnumerable<object[]> GetAscii_Invalid_TestData()
