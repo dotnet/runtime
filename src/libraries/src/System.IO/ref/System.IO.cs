@@ -162,6 +162,7 @@ namespace System.IO
         public EndOfStreamException() { }
         public EndOfStreamException(string message) { }
         public EndOfStreamException(string message, System.Exception innerException) { }
+        protected EndOfStreamException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public sealed partial class InvalidDataException : System.SystemException
     {

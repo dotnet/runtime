@@ -10,7 +10,7 @@ namespace System.IO
     // This abstract base class represents a writer that can write
     // primitives to an arbitrary stream. A subclass can override methods to
     // give unique encodings.
-    //
+    [Serializable]
     public class BinaryWriter : IDisposable
     {
         public static readonly BinaryWriter Null = new BinaryWriter();
