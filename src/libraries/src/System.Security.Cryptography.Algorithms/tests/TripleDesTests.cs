@@ -4,8 +4,6 @@
 
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Security.Cryptography;
 using System.Text;
 using Test.Cryptography;
 using Xunit;
@@ -16,7 +14,7 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
     public static partial class TripleDesTests
     {
         [Fact]
-        public static void DesDefaultCtor()
+        public static void TripleDesDefaultCtor()
         {
             using (TripleDES tdes = new TripleDESMinimal())
             {
@@ -106,8 +104,92 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
 
         private sealed class TripleDESMinimal : TripleDES
         {
+            // If the constructor uses a virtual call to any of the property setters
+            // they will fail.
+            private readonly bool _ready;
+
             public TripleDESMinimal()
             {
+                // Don't set this as a field initializer, otherwise it runs before the base ctor.
+                _ready = true;
+            }
+
+            public override int KeySize
+            {
+                set
+                {
+                    if (!_ready)
+                    {
+                        throw new InvalidOperationException();
+                    }
+
+                    base.KeySize = value;
+                }
+            }
+
+            public override int BlockSize
+            {
+                set
+                {
+                    if (!_ready)
+                    {
+                        throw new InvalidOperationException();
+                    }
+
+                    base.BlockSize = value;
+                }
+            }
+
+            public override byte[] IV
+            {
+                set
+                {
+                    if (!_ready)
+                    {
+                        throw new InvalidOperationException();
+                    }
+
+                    base.IV = value;
+                }
+            }
+
+            public override byte[] Key
+            {
+                set
+                {
+                    if (!_ready)
+                    {
+                        throw new InvalidOperationException();
+                    }
+
+                    base.Key = value;
+                }
+            }
+
+            public override CipherMode Mode
+            {
+                set
+                {
+                    if (!_ready)
+                    {
+                        throw new InvalidOperationException();
+                    }
+
+                    base.Mode = value;
+                }
+            }
+
+            public override PaddingMode Padding
+            {
+                set
+                {
+                    if (!_ready)
+                    {
+                        throw new InvalidOperationException();
+                    }
+
+                    base.Padding = value;
+                }
             }
 
             public sealed override void GenerateIV()
