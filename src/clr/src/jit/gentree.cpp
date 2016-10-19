@@ -7777,6 +7777,10 @@ GenTreePtr Compiler::gtCloneExpr(
                 if (tree->gtLclVarCommon.gtLclNum == varNum)
                 {
                     copy = gtNewIconNode(varVal, tree->gtType);
+                    if (tree->gtFlags & GTF_VAR_ARR_INDEX)
+                    {
+                        copy->LabelIndex(this);
+                    }
                 }
                 else
                 {
@@ -8117,18 +8121,6 @@ GenTreePtr Compiler::gtCloneExpr(
         if (addFlags & GTF_REG_VAL)
         {
             copy->CopyReg(tree);
-        }
-
-        // We can call gtCloneExpr() before we have called fgMorph when we expand a GT_INDEX node in fgMorphArrayIndex()
-        // The method gtFoldExpr() expects to be run after fgMorph so it will set the GTF_DEBUG_NODE_MORPHED
-        // flag on nodes that it adds/modifies.  Then when we call fgMorph we will assert.
-        // We really only will need to fold when this method is used to replace references to
-        // local variable with an integer.
-        //
-        if (varNum != (unsigned)-1)
-        {
-            /* Try to do some folding */
-            copy = gtFoldExpr(copy);
         }
 
         goto DONE;
