@@ -656,17 +656,24 @@ regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
 #endif
 
         case CORINFO_HELP_PROF_FCN_ENTER:
-#ifdef _TARGET_AMD64_
+#ifdef RBM_PROFILER_ENTER_TRASH
             return RBM_PROFILER_ENTER_TRASH;
 #else
-            unreached();
+            NYI("Model kill set for CORINFO_HELP_PROF_FCN_ENTER on target arch");
 #endif
+
         case CORINFO_HELP_PROF_FCN_LEAVE:
-        case CORINFO_HELP_PROF_FCN_TAILCALL:
-#ifdef _TARGET_AMD64_
+#ifdef RBM_PROFILER_LEAVE_TRASH
             return RBM_PROFILER_LEAVE_TRASH;
 #else
-            unreached();
+            NYI("Model kill set for CORINFO_HELP_PROF_FCN_LEAVE on target arch");
+#endif
+
+        case CORINFO_HELP_PROF_FCN_TAILCALL:
+#ifdef RBM_PROFILER_TAILCALL_TRASH
+            return RBM_PROFILER_TAILCALL_TRASH;
+#else
+            NYI("Model kill set for CORINFO_HELP_PROF_FCN_TAILCALL on target arch");
 #endif
 
         case CORINFO_HELP_STOP_FOR_GC:
@@ -689,26 +696,29 @@ regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
 regMaskTP Compiler::compNoGCHelperCallKillSet(CorInfoHelpFunc helper)
 {
     assert(emitter::emitNoGChelper(helper));
-#ifdef _TARGET_AMD64_
+
     switch (helper)
     {
+#if defined(_TARGET_AMD64_) || defined(_TARGET_X86_)
         case CORINFO_HELP_PROF_FCN_ENTER:
             return RBM_PROFILER_ENTER_TRASH;
 
         case CORINFO_HELP_PROF_FCN_LEAVE:
-        case CORINFO_HELP_PROF_FCN_TAILCALL:
             return RBM_PROFILER_LEAVE_TRASH;
 
+        case CORINFO_HELP_PROF_FCN_TAILCALL:
+            return RBM_PROFILER_TAILCALL_TRASH;
+#endif // defined(_TARGET_AMD64_) || defined(_TARGET_X86_)
+
+#if defined(_TARGET_AMD64_)
         case CORINFO_HELP_ASSIGN_BYREF:
             // this helper doesn't trash RSI and RDI
             return RBM_CALLEE_TRASH_NOGC & ~(RBM_RSI | RBM_RDI);
+#endif // defined(_TARGET_AMD64_)
 
         default:
             return RBM_CALLEE_TRASH_NOGC;
     }
-#else
-    return RBM_CALLEE_TRASH_NOGC;
-#endif
 }
 
 // Update liveness (always var liveness, i.e., compCurLife, and also, if "ForCodeGen" is true, reg liveness, i.e.,
@@ -7253,11 +7263,31 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
 
 #ifdef PROFILING_SUPPORTED
 
-/*-----------------------------------------------------------------------------
- *
- *  Generate the profiling function enter callback.
- */
-
+//-----------------------------------------------------------------------------------
+// genProfilingEnterCallback: Generate the profiling function enter callback.
+//
+// Arguments:
+//     initReg        - register to use as scratch register
+//     pInitRegZeroed - OUT parameter. *pInitRegZeroed set to 'false' if 'initReg' is
+//                      not zero after this call.
+//
+// Return Value:
+//     None
+//
+// Notes:
+// The x86 profile enter helper has the following requirements (see ProfileEnterNaked in
+// VM\i386\asmhelpers.asm for details):
+// 1. The calling sequence for calling the helper is:
+//          push FunctionIDOrClientID
+//          call ProfileEnterHelper
+// 2. The calling function has an EBP frame.
+// 3. EBP points to the saved ESP which is the first thing saved in the function. Thus,
+//    the following prolog is assumed:
+//          push ESP
+//          mov EBP, ESP
+// 4. All registers are preserved.
+// 5. The helper pops the FunctionIDOrClientID argument from the stack.
+//
 void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 {
     assert(compiler->compGeneratingProlog);
@@ -7268,7 +7298,6 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
         return;
     }
 
-#ifndef LEGACY_BACKEND
 #if defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI) // No profiling for System V systems yet.
     unsigned   varNum;
     LclVarDsc* varDsc;
@@ -7312,7 +7341,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     else
     {
         // No need to record relocations, if we are generating ELT hooks under the influence
-        // of complus_JitELtHookEnabled=1
+        // of COMPlus_JitELTHookEnabled=1
         if (compiler->opts.compJitELTHookEnabled)
         {
             genSetRegToIcon(REG_ARG_0, (ssize_t)compiler->compProfilerMethHnd, TYP_I_IMPL);
@@ -7378,11 +7407,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
         *pInitRegZeroed = false;
     }
 
-#else //!_TARGET_AMD64_
-    NYI("RyuJIT: Emit Profiler Enter callback");
-#endif
-
-#else // LEGACY_BACKEND
+#elif defined(_TARGET_X86_) || (defined(_TARGET_ARM_) && defined(LEGACY_BACKEND))
 
     unsigned saveStackLvl2 = genStackLevel;
 
@@ -7455,17 +7480,41 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     /* Restore the stack level */
 
     genStackLevel = saveStackLvl2;
-#endif // LEGACY_BACKEND
+
+#else  // target
+    NYI("Emit Profiler Enter callback");
+#endif // target
 }
 
-/*****************************************************************************
- *
- *  Generates Leave profiler hook.
- *  Technically, this is not part of the epilog; it is called when we are generating code for a GT_RETURN node.
- */
-
+//-----------------------------------------------------------------------------------
+// genProfilingLeaveCallback: Generate the profiling function leave or tailcall callback.
+// Technically, this is not part of the epilog; it is called when we are generating code for a GT_RETURN node.
+//
+// Arguments:
+//     helper - which helper to call. Either CORINFO_HELP_PROF_FCN_LEAVE or CORINFO_HELP_PROF_FCN_TAILCALL
+//
+// Return Value:
+//     None
+//
+// Notes:
+// The x86 profile leave/tailcall helper has the following requirements (see ProfileLeaveNaked and
+// ProfileTailcallNaked in VM\i386\asmhelpers.asm for details):
+// 1. The calling sequence for calling the helper is:
+//          push FunctionIDOrClientID
+//          call ProfileLeaveHelper or ProfileTailcallHelper
+// 2. The calling function has an EBP frame.
+// 3. EBP points to the saved ESP which is the first thing saved in the function. Thus,
+//    the following prolog is assumed:
+//          push ESP
+//          mov EBP, ESP
+// 4. helper == CORINFO_HELP_PROF_FCN_LEAVE: All registers are preserved.
+//    helper == CORINFO_HELP_PROF_FCN_TAILCALL: Only argument registers are preserved.
+// 5. The helper pops the FunctionIDOrClientID argument from the stack.
+//
 void CodeGen::genProfilingLeaveCallback(unsigned helper /*= CORINFO_HELP_PROF_FCN_LEAVE*/)
 {
+    assert((helper == CORINFO_HELP_PROF_FCN_LEAVE) || (helper == CORINFO_HELP_PROF_FCN_TAILCALL));
+
     // Only hook if profiler says it's okay.
     if (!compiler->compIsProfilerHookNeeded())
     {
@@ -7474,12 +7523,11 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper /*= CORINFO_HELP_PROF_FC
 
     compiler->info.compProfilerCallback = true;
 
-    // Need to save on to the stack level, since the callee will pop the argument
+    // Need to save on to the stack level, since the helper call will pop the argument
     unsigned saveStackLvl2 = genStackLevel;
 
-#ifndef LEGACY_BACKEND
-
 #if defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI) // No profiling for System V systems yet.
+
     // Since the method needs to make a profiler callback, it should have out-going arg space allocated.
     noway_assert(compiler->lvaOutgoingArgSpaceVar != BAD_VAR_NUM);
     noway_assert(compiler->lvaOutgoingArgSpaceSize >= (4 * REGSIZE_BYTES));
@@ -7509,7 +7557,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper /*= CORINFO_HELP_PROF_FC
     else
     {
         // Don't record relocations, if we are generating ELT hooks under the influence
-        // of complus_JitELtHookEnabled=1
+        // of COMPlus_JitELTHookEnabled=1
         if (compiler->opts.compJitELTHookEnabled)
         {
             genSetRegToIcon(REG_ARG_0, (ssize_t)compiler->compProfilerMethHnd, TYP_I_IMPL);
@@ -7549,13 +7597,8 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper /*= CORINFO_HELP_PROF_FC
     // "mov r8, helper addr; call r8"
     genEmitHelperCall(helper, 0, EA_UNKNOWN, REG_ARG_2);
 
-#else  //!_TARGET_AMD64_
-    NYI("RyuJIT: Emit Profiler Leave callback");
-#endif // _TARGET_*
+#elif defined(_TARGET_X86_)
 
-#else // LEGACY_BACKEND
-
-#if defined(_TARGET_X86_)
     //
     // Push the profilerHandle
     //
@@ -7570,7 +7613,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper /*= CORINFO_HELP_PROF_FC
     }
     genSinglePush();
 
-    genEmitHelperCall(CORINFO_HELP_PROF_FCN_LEAVE,
+    genEmitHelperCall(helper,
                       sizeof(int) * 1, // argSize
                       EA_UNKNOWN);     // retSize
 
@@ -7581,7 +7624,9 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper /*= CORINFO_HELP_PROF_FC
     {
         compiler->fgPtrArgCntMax = 1;
     }
-#elif defined(_TARGET_ARM_)
+
+#elif defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
+
     //
     // Push the profilerHandle
     //
@@ -7657,11 +7702,10 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper /*= CORINFO_HELP_PROF_FC
     }
 
     regSet.rsUnlockReg(RBM_PROFILER_RET_USED);
-#else  // _TARGET_*
-    NYI("Pushing the profilerHandle & caller's sp for the profiler callout and locking them");
-#endif // _TARGET_*
 
-#endif // LEGACY_BACKEND
+#else  // target
+    NYI("Emit Profiler Leave callback");
+#endif // target
 
     /* Restore the stack level */
     genStackLevel = saveStackLvl2;

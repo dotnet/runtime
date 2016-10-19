@@ -28,6 +28,7 @@
 
 #ifdef _MSC_VER
 // These don't seem useful, so turning them off is no big deal
+#pragma warning(disable : 4065) // "switch statement contains 'default' but no 'case' labels" (happens due to #ifdefs)
 #pragma warning(disable : 4510) // can't generate default constructor
 #pragma warning(disable : 4511) // can't generate copy constructor
 #pragma warning(disable : 4512) // can't generate assignment constructor
