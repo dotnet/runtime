@@ -21,9 +21,6 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
@@ -35,8 +32,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'==''">
+    <Compile Include="FileInfo\Serialization.cs" />
     <Compile Include="FileStream\Handle.cs" />
     <Compile Include="Directory\GetLogicalDrives.cs" />
+    <Compile Include="DirectoryInfo\Serialization.cs" />
     <Compile Include="FileStream\BeginRead.cs" />
     <Compile Include="FileStream\EndRead.cs" />
     <Compile Include="FileStream\BeginWrite.cs" />
@@ -45,6 +44,9 @@
     <Compile Include="File\EncryptDecrypt.cs" />
     <Compile Include="File\Replace.cs" />
     <Compile Include="File\ReadWriteAllLines.netstandard1.7.cs" />
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
+      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <!-- Rewritten -->

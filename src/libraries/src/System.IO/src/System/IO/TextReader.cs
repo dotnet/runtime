@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Text;
-using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
@@ -18,7 +17,7 @@ namespace System.IO
     //
     // This class is intended for character input, not bytes.  
     // There are methods on the Stream class for reading bytes. 
-    public abstract class TextReader : IDisposable
+    public abstract partial class TextReader : IDisposable
     {
         public static readonly TextReader Null = new NullTextReader();
 

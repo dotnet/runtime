@@ -20,7 +20,7 @@ namespace Microsoft.Win32.SafeHandles
 }
 namespace System.Security.Principal
 {
-    public sealed partial class IdentityNotMappedException : System.Exception
+    public sealed partial class IdentityNotMappedException : System.SystemException
     {
         public IdentityNotMappedException() { }
         public IdentityNotMappedException(string message) { }

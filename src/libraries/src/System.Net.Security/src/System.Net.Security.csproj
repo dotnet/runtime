@@ -119,12 +119,6 @@
       <Link>Common\System\Net\SecurityProtocol.cs</Link>
     </Compile>
     <!-- Common -->
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\CriticalHandleMinusOneIsInvalid.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\CriticalHandleMinusOneIsInvalid.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\CriticalHandleZeroOrMinusOneIsInvalid.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\CriticalHandleZeroOrMinusOneIsInvalid.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>
     </Compile>

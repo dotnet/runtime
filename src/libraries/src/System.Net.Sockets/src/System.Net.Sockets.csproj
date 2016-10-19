@@ -75,6 +75,12 @@
     <Compile Include="System\Net\Sockets\MultipleConnectAsync.cs" />
     <Compile Include="System\Net\Sockets\OverlappedAsyncResult.cs" />
     <Compile Include="System\Net\Sockets\ReceiveMessageOverlappedAsyncResult.cs" />
+    <Compile Include="$(CommonPath)\System\IO\StreamHelpers.ArrayPoolCopy.cs">
+      <Link>Common\System\IO\StreamHelpers.ArrayPoolCopy.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\StreamHelpers.CopyValidation.cs">
+      <Link>Common\System\IO\StreamHelpers.CopyValidation.cs</Link>
+    </Compile>
     <!-- Logging -->
     <Compile Include="$(CommonPath)\System\Net\Logging\GlobalLog.cs">
       <Link>Common\System\Net\Logging\GlobalLog.cs</Link>

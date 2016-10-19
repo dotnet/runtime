@@ -5,7 +5,7 @@
     <RootNamespace>System.Collections.NonGeneric.Performance.Tests</RootNamespace>
     <AssemblyName>System.Collections.NonGeneric.Performance.Tests</AssemblyName>
     <IncludePerformanceTests>true</IncludePerformanceTests>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker>.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
@@ -20,9 +20,6 @@
     <ProjectReference Include="..\..\pkg\System.Collections.NonGeneric.pkgproj">
       <Name>System.Collections.NonGeneric</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

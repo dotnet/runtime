@@ -10,6 +10,7 @@ namespace System.Net
     // CookieCollection
     //
     // A list of cookies maintained in Sorted order. Only one cookie with matching Name/Domain/Path
+    [Serializable]
     public class CookieCollection : ICollection
     {
         internal enum Stamp

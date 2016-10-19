@@ -7,7 +7,8 @@ using System.Runtime.Serialization;
 
 namespace System.Security.Cryptography
 {
-    public class CryptographicException : Exception
+    [Serializable]
+    public class CryptographicException : SystemException
     {
         public CryptographicException()
             : base(SR.Arg_CryptographyException)

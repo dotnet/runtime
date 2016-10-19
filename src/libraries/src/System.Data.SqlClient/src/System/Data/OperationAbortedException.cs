@@ -6,11 +6,12 @@
 
 //------------------------------------------------------------------------------
 
+using System.Runtime.Serialization;
 using Res = System.SR;
-
 
 namespace System.Data
 {
+    [Serializable]
     public sealed class OperationAbortedException : Exception
     {
         private OperationAbortedException(string message, Exception innerException) : base(message, innerException)
@@ -18,6 +19,9 @@ namespace System.Data
             HResult = unchecked((int)0x80131936);
         }
 
+        private OperationAbortedException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+        }
 
         static internal OperationAbortedException Aborted(Exception inner)
         {

@@ -38,9 +38,13 @@
     <Compile Include="System\Convert.netstandard1.7.cs" />
     <Compile Include="System\EnvironmentTests.cs" />
     <Compile Include="System\Math.netstandard1.7.cs" />
+    <Compile Include="System\OperatingSystemTests.cs" />
     <Compile Include="System\StringComparer.netstandard1.7.cs" />
     <Compile Include="System\Runtime\Versioning\VersioningHelperTests.cs" />
     <Compile Include="System\AppDomainTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
+      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp1.1'">
     <Compile Include="System\IO\Path.GetRelativePath.cs" />
@@ -93,9 +97,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Diagnostics\AssertWithCallerAttributes.cs">
-      <Link>Common\tests\System\Diagnostics\AssertWithCallerAttributes.cs</Link>
-    </Compile>
     <Compile Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorTestBase.cs">
       <Link>Common\System\Diagnostics\RemoteExecutorTestBase.cs</Link>
     </Compile>
@@ -108,9 +109,6 @@
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\System\PlatformDetection.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj" />

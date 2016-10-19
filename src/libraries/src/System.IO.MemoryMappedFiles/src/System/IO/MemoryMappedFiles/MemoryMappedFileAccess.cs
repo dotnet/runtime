@@ -4,6 +4,7 @@
 
 namespace System.IO.MemoryMappedFiles
 {
+    [Serializable]
     public enum MemoryMappedFileAccess
     {
         ReadWrite = 0,

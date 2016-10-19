@@ -42,9 +42,7 @@ namespace OLEDB.Test.ModuleCore
             //up to be two carriage returns!
             if (ch != null)
             {
-                StringBuilder builder = new StringBuilder(ch.Length);
-                builder.Append(ch);
-                Write(builder.ToString());
+                Write(new string(ch));
             }
         }
 

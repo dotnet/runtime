@@ -9,6 +9,7 @@ namespace System.ComponentModel
     /// <summary>
     ///    <para>The exception that is thrown when a thread that an operation should execute on no longer exists or is not pumping messages</para>
     /// </summary>
+    [Serializable]
     public class InvalidAsynchronousStateException : ArgumentException
     {
         /// <summary>

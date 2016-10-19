@@ -47,5 +47,41 @@ namespace System.Collections.Tests
                 }
             }
         }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void CloneEnumerator_MatchesOriginal(int count)
+        {
+            IEnumerator e1 = NonGenericIEnumerableFactory(count).GetEnumerator();
+
+            ICloneable c1 = e1 as ICloneable;
+            if (c1 == null)
+            {
+                // Only test if the enumerator can be cloned
+                return;
+            }
+
+            // Walk the enumerator, and at each step of the way, clone it.
+            // For all cloned enumerators, make sure they match the original
+            // for the remainder of the iteration.
+            var enumerators = new List<IEnumerator>();
+            while (e1.MoveNext())
+            {
+                foreach (IEnumerator e2 in enumerators)
+                {
+                    Assert.True(e2.MoveNext(), "Could not MoveNext the enumerator");
+                    Assert.Equal(e1.Current, e2.Current);
+                }
+
+                if (enumerators.Count < 10) // arbitrary limit to time-consuming N^2 behavior
+                {
+                    enumerators.Add((IEnumerator)c1.Clone());
+                }
+            }
+            foreach (IEnumerator e2 in enumerators)
+            {
+                Assert.False(e2.MoveNext(), "Expected to not be able to MoveNext the enumerator");
+            }
+        }
     }
 }

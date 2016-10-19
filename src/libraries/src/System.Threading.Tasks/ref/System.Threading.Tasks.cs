@@ -28,7 +28,7 @@
 
 namespace System
 {
-    public partial class OperationCanceledException : System.Exception
+    public partial class OperationCanceledException : System.SystemException
     {
         public OperationCanceledException() { }
         public OperationCanceledException(string message) { }

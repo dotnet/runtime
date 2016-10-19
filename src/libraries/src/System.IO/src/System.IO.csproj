@@ -9,6 +9,7 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
     <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.7;uap10.1</PackageTargetFramework>
+    <DefineConstants Condition="'$(TargetGroup)'==''">$(DefineConstants);netstandard17</DefineConstants>
     <NoWarn Condition="'$(TargetGroup)' != 'net462' and '$(TargetGroup)' != 'net463'">CS0436</NoWarn>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
@@ -31,6 +32,8 @@
     <DefineConstants>$(DefineConstants);uap101aot</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetGroup)' == ''">
+    <Compile Include="System\IO\TextReader.netstandard17.cs" />
+    <Compile Include="System\IO\TextWriter.netstandard17.cs" />
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj">
       <Project>{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}</Project>
       <Name>System.Diagnostics.Debug</Name>
@@ -65,6 +68,7 @@
 
   <!-- Common -->
   <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot'">
+    <Compile Include="$(CommonPath)\System\SystemException.cs" />
     <Compile Include="$(CommonPath)\System\HResults.cs">
       <Link>Common\System\HResults.cs</Link>
     </Compile>

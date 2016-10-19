@@ -410,6 +410,9 @@ namespace System.Security.Cryptography.X509Certificates
     public enum X509KeyStorageFlags
     {
         DefaultKeySet = 0,
+#if netcoreapp11
+        EphemeralKeySet = 32,
+#endif
         Exportable = 4,
         MachineKeySet = 2,
         PersistKeySet = 16,

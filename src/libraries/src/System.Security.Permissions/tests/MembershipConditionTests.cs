@@ -107,7 +107,7 @@ namespace System.Security.Permissions.Tests
         [Fact]
         public static void StrongNameMembershipConditionCallMethods()
         {
-            Policy.StrongNameMembershipCondition snmc = new Policy.StrongNameMembershipCondition(new StrongNamePublicKeyBlob(new byte[1]), "test", new System.Version(0, 1));
+            Policy.StrongNameMembershipCondition snmc = new Policy.StrongNameMembershipCondition(new StrongNamePublicKeyBlob(new byte[1]), "test", new Version(0, 1));
             bool check = snmc.Check(new Policy.Evidence());
             Policy.IMembershipCondition obj = snmc.Copy();
             check = snmc.Equals(new object());

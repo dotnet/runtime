@@ -16,6 +16,7 @@ namespace System.Xml
     ///    <para>Returns detailed information about the last parse error, including the error
     ///       number, line number, character position, and a text description.</para>
     /// </devdoc>
+    [Serializable]
     public class XmlException : SystemException
     {
         private string _res;

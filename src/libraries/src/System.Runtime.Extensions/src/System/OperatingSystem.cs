@@ -3,20 +3,21 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.Serialization;
 
 namespace System
 {
-    public sealed class OperatingSystem
+    [Serializable]
+    public sealed class OperatingSystem : ISerializable, ICloneable
     {
         private readonly Version _version;
         private readonly PlatformID _platform;
         private readonly string _servicePack;
         private string _versionString;
 
-        private OperatingSystem() { }
-
-        public OperatingSystem(PlatformID platform, Version version) : 
-            this(platform, version, null) { }
+        public OperatingSystem(PlatformID platform, Version version) : this(platform, version, null)
+        {
+        }
 
         internal OperatingSystem(PlatformID platform, Version version, string servicePack)
         {
@@ -33,6 +34,25 @@ namespace System
             _platform = platform;
             _version = version;
             _servicePack = servicePack;
+        }
+
+        private OperatingSystem(SerializationInfo info, StreamingContext context)
+        {
+            _version = (Version)info.GetValue("_version", typeof(Version));
+            _platform = (PlatformID)info.GetValue("_platform", typeof(PlatformID));
+            _servicePack = info.GetString("_servicePack");
+        }
+
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null)
+            {
+                throw new ArgumentNullException(nameof(info));
+            }
+
+            info.AddValue("_version", _version);
+            info.AddValue("_platform", _platform);
+            info.AddValue("_servicePack", _servicePack);
         }
 
         public PlatformID Platform => _platform;

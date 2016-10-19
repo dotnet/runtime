@@ -8,7 +8,7 @@
 
 namespace System.Threading
 {
-    public partial class AbandonedMutexException : System.Exception
+    public partial class AbandonedMutexException : System.SystemException
     {
         public AbandonedMutexException() { }
         public AbandonedMutexException(int location, System.Threading.WaitHandle handle) { }
@@ -257,7 +257,7 @@ namespace System.Threading
         public int Release(int releaseCount) { throw null; }
         public static bool TryOpenExisting(string name, out System.Threading.Semaphore result) { throw null; }
     }
-    public partial class SemaphoreFullException : System.Exception
+    public partial class SemaphoreFullException : System.SystemException
     {
         public SemaphoreFullException() { }
         public SemaphoreFullException(string message) { }
@@ -325,7 +325,7 @@ namespace System.Threading
         [System.Security.SecurityCriticalAttribute]
         public static void SetSynchronizationContext(System.Threading.SynchronizationContext syncContext) { }
     }
-    public partial class SynchronizationLockException : System.Exception
+    public partial class SynchronizationLockException : System.SystemException
     {
         public SynchronizationLockException() { }
         public SynchronizationLockException(string message) { }

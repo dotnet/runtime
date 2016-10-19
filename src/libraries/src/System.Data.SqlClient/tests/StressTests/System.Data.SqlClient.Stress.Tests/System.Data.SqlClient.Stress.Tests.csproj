@@ -27,9 +27,6 @@
   </ItemGroup>
   <!--Import the targets-->
   <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\..\pkg\System.Data.SqlClient.pkgproj" />
 
     <!-- TODO: Remove Common reference once packages are updated -->

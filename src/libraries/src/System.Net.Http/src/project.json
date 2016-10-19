@@ -15,6 +15,7 @@
         "System.Diagnostics.Debug": "4.0.10",
         "System.Diagnostics.Tools": "4.0.0",
         "System.Globalization": "4.0.10",
+        "System.Globalization.Extensions": "4.0.1",
         "System.IO": "4.0.10",
         "System.IO.Compression": "4.0.0",
         "System.Net.Primitives": "4.0.10",

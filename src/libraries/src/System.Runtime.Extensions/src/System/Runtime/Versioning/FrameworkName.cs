@@ -6,6 +6,7 @@ using System.Diagnostics;
 
 namespace System.Runtime.Versioning
 {
+    [Serializable]
     public sealed class FrameworkName : IEquatable<FrameworkName>
     {
         private readonly string _identifier;

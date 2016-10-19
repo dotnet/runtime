@@ -39,6 +39,7 @@
     <Compile Include="TcpClientTest.cs" />
     <Compile Include="Shutdown.cs" />
     <Compile Include="SocketAPMExtensions.cs" />
+    <Compile Include="SocketAsyncEventArgsTest.cs" />
     <Compile Include="SocketAsyncExtensions.cs" />
     <Compile Include="SocketOptionNameTest.cs" />
     <Compile Include="UdpClientTest.cs" />
@@ -100,9 +101,6 @@
       <Project>{43311AFB-D7C4-4E5A-B1DE-855407F90D1B}</Project>
       <Name>System.Net.Sockets</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

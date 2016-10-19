@@ -6,6 +6,7 @@ using System;
 
 namespace System.IO
 {
+    [Serializable]
     [Flags]
     public enum FileAttributes
     {

@@ -158,9 +158,6 @@
     <Compile Include="$(CommonPath)\System\Runtime\InteropServices\Marshal.Unix.cs" Condition="'$(TargetsUnix)'=='true'">
       <Link>Common\System\Runtime\InteropServices\Marshal.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\OperationCanceledException.cs" Condition="'$(TargetsUnix)'=='true'">
-      <Link>Common\System\System\OperationCanceledException.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLastError.cs" Condition="'$(TargetsWindows)'=='true'">
       <Link>Common\Interop\Windows\mincore\Interop.GetLastError.cs</Link>
     </Compile>

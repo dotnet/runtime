@@ -163,7 +163,7 @@ namespace System.IO
         public EndOfStreamException(string message) { }
         public EndOfStreamException(string message, System.Exception innerException) { }
     }
-    public sealed partial class InvalidDataException : System.Exception
+    public sealed partial class InvalidDataException : System.SystemException
     {
         public InvalidDataException() { }
         public InvalidDataException(string message) { }
@@ -320,6 +320,7 @@ namespace System.IO
         public virtual System.Threading.Tasks.Task<string> ReadLineAsync() { throw null; }
         public virtual string ReadToEnd() { throw null; }
         public virtual System.Threading.Tasks.Task<string> ReadToEndAsync() { throw null; }
+        public static System.IO.TextReader Synchronized(System.IO.TextReader reader) { throw null; }
     }
     public abstract partial class TextWriter : System.IDisposable
     {
@@ -335,6 +336,7 @@ namespace System.IO
         protected virtual void Dispose(bool disposing) { }
         public virtual void Flush() { }
         public virtual System.Threading.Tasks.Task FlushAsync() { throw null; }
+        public static System.IO.TextWriter Synchronized(System.IO.TextWriter writer) { throw null; }
         public virtual void Write(bool value) { }
         public abstract void Write(char value);
         public virtual void Write(char[] buffer) { }

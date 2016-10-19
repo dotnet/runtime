@@ -10,10 +10,6 @@ using System.Text;
 
 namespace System.Net.Mail
 {
-    /// <summary>
-    /// Summary description for MailMessage.
-    /// </summary>
-    //rfc3461
     [Flags]
     public enum DeliveryNotificationOptions
     {
@@ -36,7 +32,7 @@ namespace System.Net.Mail
         public MailMessage()
         {
             _message = new Message();
-            if (WebEventSource.Log.IsEnabled()) WebEventSource.Log.Associate(this, _message);
+            if (MailEventSource.Log.IsEnabled()) MailEventSource.Log.Associate(this, _message);
         }
 
         public MailMessage(string from, string to)
@@ -54,7 +50,7 @@ namespace System.Net.Mail
                 throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(to)), nameof(to));
 
             _message = new Message(from, to);
-            if (WebEventSource.Log.IsEnabled()) WebEventSource.Log.Associate(this, _message);
+            if (MailEventSource.Log.IsEnabled()) MailEventSource.Log.Associate(this, _message);
         }
 
 

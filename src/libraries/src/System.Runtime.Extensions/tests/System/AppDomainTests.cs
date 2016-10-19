@@ -59,6 +59,7 @@ namespace System.Tests
             AppDomain.CurrentDomain.UnhandledException -= new UnhandledExceptionEventHandler(NotExpectedToBeCalledHandler);
         }
 
+        [ActiveIssue(12716)]
         [PlatformSpecific(~TestPlatforms.OSX)] // Unhandled exception on a separate process causes xunit to crash on osx
         [Fact]
         public void UnhandledException_Called()
@@ -69,7 +70,7 @@ namespace System.Tests
             RemoteInvoke(() =>
             {
                 AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(MyHandler);
-                throw new Exception("****This Unhandled Exception is excepted***");
+                throw new Exception("****This Unhandled Exception is Expected****");
 #pragma warning disable 0162
                 return SuccessExitCode;
 #pragma warning restore 0162

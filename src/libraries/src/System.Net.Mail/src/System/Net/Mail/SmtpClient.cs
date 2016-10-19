@@ -140,7 +140,7 @@ namespace System.Net.Mail
             }
 
             _transport = new SmtpTransport(this);
-            if (WebEventSource.Log.IsEnabled()) WebEventSource.Log.Associate(this, _transport);
+            if (MailEventSource.Log.IsEnabled()) MailEventSource.Log.Associate(this, _transport);
             _onSendCompletedDelegate = new SendOrPostCallback(SendCompletedWaitCallback);
 
             if (_host != null && _host.Length != 0)
@@ -401,9 +401,9 @@ namespace System.Net.Mail
 
         internal MailWriter GetFileMailWriter(string pickupDirectory)
         {
-            if (WebEventSource.Log.IsEnabled())
+            if (MailEventSource.Log.IsEnabled())
             {
-                WebEventSource.Log.Send(nameof(pickupDirectory), pickupDirectory);
+                MailEventSource.Log.Send(nameof(pickupDirectory), pickupDirectory);
             }
 
             if (!Path.IsPathRooted(pickupDirectory))
@@ -456,10 +456,10 @@ namespace System.Net.Mail
             }
             try
             {
-                if (WebEventSource.Log.IsEnabled())
+                if (MailEventSource.Log.IsEnabled())
                 {
-                    WebEventSource.Log.Send(nameof(DeliveryMethod), DeliveryMethod.ToString());
-                    WebEventSource.Log.Associate(this, message);
+                    MailEventSource.Log.Send(nameof(DeliveryMethod), DeliveryMethod.ToString());
+                    MailEventSource.Log.Associate(this, message);
                 }
 
                 SmtpFailedRecipientException recipientException = null;
@@ -529,7 +529,10 @@ namespace System.Net.Mail
 
                         case SmtpDeliveryMethod.SpecifiedPickupDirectory:
                             if (EnableSsl)
+                            {
                                 throw new SmtpException(SR.SmtpPickupDirectoryDoesnotSupportSsl);
+                            }
+
                             allowUnicode = IsUnicodeSupported(); // Determend by the DeliveryFormat paramiter
                             ValidateUnicodeRequirement(message, recipients, allowUnicode);
                             writer = GetFileMailWriter(pickupDirectory);
@@ -694,7 +697,10 @@ namespace System.Net.Mail
                         case SmtpDeliveryMethod.SpecifiedPickupDirectory:
                             {
                                 if (EnableSsl)
+                                {
                                     throw new SmtpException(SR.SmtpPickupDirectoryDoesnotSupportSsl);
+                                }
+
                                 _writer = GetFileMailWriter(pickupDirectory);
                                 bool allowUnicode = IsUnicodeSupported();
                                 ValidateUnicodeRequirement(message, _recipients, allowUnicode);

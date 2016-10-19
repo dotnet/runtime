@@ -1,3 +1,4 @@
+Compat issues with assembly System.Runtime:
 TypesMustExist : Type 'Microsoft.Win32.SafeHandles.CriticalHandleMinusOneIsInvalid' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'Microsoft.Win32.SafeHandles.CriticalHandleZeroOrMinusOneIsInvalid' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'Microsoft.Win32.SafeHandles.SafeHandleMinusOneIsInvalid' does not inherit from base type 'System.Runtime.ConstrainedExecution.CriticalFinalizerObject' in the implementation but it does in the contract.
@@ -62,6 +63,7 @@ MembersMustExist : Member 'System.Attribute.TypeId.get()' does not exist in the 
 MembersMustExist : Member 'System.BadImageFormatException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Boolean.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Boolean.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Boolean.ToString(System.IFormatProvider)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Byte.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Byte.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Char.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
@@ -69,6 +71,7 @@ MembersMustExist : Member 'System.Char.GetTypeCode()' does not exist in the impl
 MembersMustExist : Member 'System.Char.GetUnicodeCategory(System.Char)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Char.GetUnicodeCategory(System.String, System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Char.ToLower(System.Char, System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Char.ToString(System.IFormatProvider)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Char.ToUpper(System.Char, System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.CharEnumerator' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Comparison<T>' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
@@ -170,6 +173,7 @@ MembersMustExist : Member 'System.Int32.CompareTo(System.Object)' does not exist
 MembersMustExist : Member 'System.Int32.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Int64.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Int64.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.IntPtr' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.InvalidCastException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.InvalidOperationException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.InvalidTimeZoneException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
@@ -229,9 +233,11 @@ MembersMustExist : Member 'System.String.Compare(System.String, System.Int32, Sy
 MembersMustExist : Member 'System.String.Compare(System.String, System.Int32, System.String, System.Int32, System.Int32, System.Globalization.CultureInfo, System.Globalization.CompareOptions)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.Compare(System.String, System.String, System.Boolean, System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.Compare(System.String, System.String, System.Globalization.CultureInfo, System.Globalization.CompareOptions)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.String.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.Copy(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.EndsWith(System.String, System.Boolean, System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.GetEnumerator()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.String.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.Intern(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.IsInterned(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.IsNormalized()' does not exist in the implementation but it does exist in the contract.
@@ -240,10 +246,10 @@ MembersMustExist : Member 'System.String.Normalize()' does not exist in the impl
 MembersMustExist : Member 'System.String.Normalize(System.Text.NormalizationForm)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.StartsWith(System.String, System.Boolean, System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.ToLower(System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.String.ToString(System.IFormatProvider)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.ToUpper(System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.StringComparison System.StringComparison.InvariantCulture' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.StringComparison System.StringComparison.InvariantCultureIgnoreCase' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.SystemException' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.TimeoutException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.TimeSpan.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.TimeZoneInfo' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
@@ -287,6 +293,7 @@ MembersMustExist : Member 'System.UInt32.CompareTo(System.Object)' does not exis
 MembersMustExist : Member 'System.UInt32.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.UInt64.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.UInt64.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.UIntPtr' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.UnauthorizedAccessException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.UnhandledExceptionEventArgs' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.UnhandledExceptionEventHandler' does not exist in the implementation but it does exist in the contract.
@@ -405,11 +412,14 @@ MembersMustExist : Member 'System.IO.Stream.CreateWaitHandle()' does not exist i
 MembersMustExist : Member 'System.IO.Stream.ObjectInvariant()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.IO.Stream.Synchronized(System.IO.Stream)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.AmbiguousMatchException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+MembersMustExist : Member 'System.Reflection.AssemblyName.KeyPair.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.AssemblyName.KeyPair.set(System.Reflection.StrongNameKeyPair)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.MemberFilter' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.ModuleResolveEventHandler' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
 TypesMustExist : Type 'System.Reflection.ObfuscateAssemblyAttribute' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Reflection.ObfuscationAttribute' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.ReflectionTypeLoadException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+TypesMustExist : Type 'System.Reflection.StrongNameKeyPair' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Reflection.TypeDelegator' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.TypeFilter' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
 TypesMustExist : Type 'System.Runtime.MemoryFailPoint' does not exist in the implementation but it does exist in the contract.
@@ -447,8 +457,44 @@ TypesMustExist : Type 'System.Runtime.InteropServices.CriticalHandle' does not e
 TypesMustExist : Type 'System.Runtime.InteropServices.ExternalException' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.SafeHandle' does not inherit from base type 'System.Runtime.ConstrainedExecution.CriticalFinalizerObject' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.SafeHandle.Close()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.InteropServices.StructLayoutAttribute..ctor(System.Int16)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.Serialization.SerializationException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.AllowPartiallyTrustedCallersAttribute.PartialTrustVisibilityLevel.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.AllowPartiallyTrustedCallersAttribute.PartialTrustVisibilityLevel.set(System.Security.PartialTrustVisibilityLevel)' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.PartialTrustVisibilityLevel' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.SecurityCriticalAttribute..ctor(System.Security.SecurityCriticalScope)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.SecurityCriticalAttribute.Scope.get()' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.SecurityCriticalScope' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Security.SecurityException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Security.SecurityException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.SecurityException..ctor(System.String, System.Type)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.SecurityException..ctor(System.String, System.Type, System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.SecurityException.Demanded.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.SecurityException.Demanded.set(System.Object)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.SecurityException.DenySetInstance.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.SecurityException.DenySetInstance.set(System.Object)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.SecurityException.FailedAssemblyInfo.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.SecurityException.FailedAssemblyInfo.set(System.Reflection.AssemblyName)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.SecurityException.GrantedSet.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.SecurityException.GrantedSet.set(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.SecurityException.Method.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.SecurityException.Method.set(System.Reflection.MethodInfo)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.SecurityException.PermissionState.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.SecurityException.PermissionState.set(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.SecurityException.PermissionType.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.SecurityException.PermissionType.set(System.Type)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.SecurityException.PermitOnlySetInstance.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.SecurityException.PermitOnlySetInstance.set(System.Object)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.SecurityException.RefusedSet.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.SecurityException.RefusedSet.set(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.SecurityException.Url.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.SecurityException.Url.set(System.String)' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.SecurityRulesAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.SecurityRuleSet' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.SecurityTreatAsSafeAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.SuppressUnmanagedCodeSecurityAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.UnverifiableCodeAttribute' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Security.VerificationException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Security.VerificationException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Text.Decoder.Convert(System.Byte*, System.Int32, System.Char*, System.Int32, System.Boolean, System.Int32, System.Int32, System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Text.Decoder.GetCharCount(System.Byte*, System.Int32, System.Boolean)' does not exist in the implementation but it does exist in the contract.
@@ -468,6 +514,7 @@ MembersMustExist : Member 'System.Text.Encoding.IsMailNewsSave.get()' does not e
 MembersMustExist : Member 'System.Text.Encoding.WindowsCodePage.get()' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Text.EncodingInfo' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Text.NormalizationForm' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Text.StringBuilder' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Threading.WaitHandle.Close()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.WaitHandle.Handle.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.WaitHandle.Handle.set(System.IntPtr)' does not exist in the implementation but it does exist in the contract.
@@ -484,8 +531,48 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.Task' does not im
 MembersMustExist : Member 'System.Threading.Tasks.Task.Dispose()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.Tasks.Task.Dispose(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.Task<TResult>' does not implement interface 'System.IDisposable' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Reflection.AssemblyName.KeyPair.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Reflection.AssemblyName.KeyPair.set(System.Reflection.StrongNameKeyPair)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Diagnostics.DebuggableAttribute.DebuggingFlags.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.InteropServices.StructLayoutAttribute..ctor(System.Int16)' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Reflection.StrongNameKeyPair' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ArgumentException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ArgumentNullException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ArgumentOutOfRangeException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ArithmeticException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ArrayTypeMismatchException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.BadImageFormatException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DivideByZeroException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.FieldAccessException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.FormatException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.IndexOutOfRangeException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.InsufficientExecutionStackException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.InvalidCastException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.InvalidOperationException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.InvalidProgramException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.MemberAccessException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.MethodAccessException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.MissingFieldException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.MissingMemberException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.MissingMethodException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.NotImplementedException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.NotSupportedException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.NullReferenceException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ObjectDisposedException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.OutOfMemoryException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.OverflowException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.PlatformNotSupportedException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.RankException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.TimeoutException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.TypeAccessException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.TypeInitializationException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.TypeLoadException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.UnauthorizedAccessException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.UriFormatException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Collections.Generic.KeyNotFoundException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Globalization.CultureNotFoundException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.IO.DirectoryNotFoundException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.IO.FileLoadException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.IO.FileNotFoundException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.IO.IOException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.IO.PathTooLongException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.CustomAttributeFormatException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.Serialization.SerializationException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Text.DecoderFallbackException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Text.EncoderFallbackException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+Total Issues: 578

@@ -445,7 +445,7 @@ namespace System.Collections
         // internal version number of the list to ensure that no modifications are
         // made to the list while an enumeration is in progress.
         [Serializable]
-        private class QueueEnumerator : IEnumerator
+        private class QueueEnumerator : IEnumerator, ICloneable
         {
             private Queue _q;
             private int _index;
@@ -461,6 +461,8 @@ namespace System.Collections
                 if (_q._size == 0)
                     _index = -1;
             }
+
+            public object Clone() => MemberwiseClone();
 
             public virtual bool MoveNext()
             {

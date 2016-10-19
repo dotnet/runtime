@@ -17,9 +17,14 @@ namespace System.Dynamic.Utils
             string name,
             Type[] types)
         {
-            var method = type.GetAnyStaticMethod(name);
-
-            return method.MatchesArgumentTypes(types) ? method : null;
+            foreach (MethodInfo method in type.GetTypeInfo().DeclaredMethods)
+            {
+                if (method.IsStatic && method.Name == name && method.MatchesArgumentTypes(types))
+                {
+                    return method;
+                }
+            }
+            return null;
         }
 
         /// <summary>
@@ -104,18 +109,6 @@ namespace System.Dynamic.Utils
                     yield return method;
                 }
             }
-        }
-
-        public static MethodInfo GetAnyStaticMethod(this Type type, string name)
-        {
-            foreach (var method in type.GetRuntimeMethods())
-            {
-                if (method.IsStatic && method.Name == name)
-                {
-                    return method;
-                }
-            }
-            return null;
         }
     }
 }

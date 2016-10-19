@@ -4,9 +4,10 @@
 
 namespace System.Security.Permissions
 {
-    [System.AttributeUsageAttribute((System.AttributeTargets)(109), AllowMultiple = true, Inherited = false)]
-    public abstract partial class CodeAccessSecurityAttribute : System.Security.Permissions.SecurityAttribute
+    [Serializable]
+    [AttributeUsage((AttributeTargets)(109), AllowMultiple = true, Inherited = false)]
+    public abstract partial class CodeAccessSecurityAttribute : SecurityAttribute
     {
-        protected CodeAccessSecurityAttribute(System.Security.Permissions.SecurityAction action) : base(default(System.Security.Permissions.SecurityAction)) { }
+        protected CodeAccessSecurityAttribute(SecurityAction action) : base(default(SecurityAction)) { }
     }
 }

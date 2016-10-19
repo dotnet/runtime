@@ -11,7 +11,7 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)'=='netcore50aot'">
-    <DefineConstants>$(DefineConstants);PROJECTN</DefineConstants>
+    <DefineConstants>$(DefineConstants);PROJECTN;FEATURE_SERIALIZATION</DefineConstants>
     <!-- Need to remove reference to System.Reflection.TypeExtensions
     which is included transitively via System.Reflection -->
     <OmitTransitiveCompileReferences>true</OmitTransitiveCompileReferences>

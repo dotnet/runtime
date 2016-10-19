@@ -71,6 +71,8 @@ namespace System.Collections.Tests
 
         protected virtual Type IList_NonGeneric_Item_InvalidIndex_ThrowType => typeof(ArgumentOutOfRangeException);
 
+        protected virtual bool IList_NonGeneric_RemoveNonExistent_Throws => false;
+
         #endregion
 
         #region ICollection Helper Methods
@@ -866,12 +868,20 @@ namespace System.Collections.Tests
             if (!IsReadOnly && !ExpectedFixedSize)
             {
                 int seed = count * 251;
-                IList collection = NonGenericIListFactory(count);
+                IList list = NonGenericIListFactory(count);
                 object value = CreateT(seed++);
-                while (collection.Contains(value) || Enumerable.Contains(InvalidValues, value))
+                while (list.Contains(value) || Enumerable.Contains(InvalidValues, value))
                     value = CreateT(seed++);
-                collection.Remove(value);
-                Assert.Equal(count, collection.Count);
+                list.Remove(value);
+
+                if (IList_NonGeneric_RemoveNonExistent_Throws)
+                {
+                    Assert.Throws<ArgumentException>(() => list.Remove(value));
+                }
+                else
+                {
+                    Assert.Equal(count, list.Count);
+                }
             }
         }
 

@@ -6,6 +6,8 @@
     <AssemblyName>System.Collections</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <!-- 436 is thrown because BitArray conflict with corelib -->
+    <NoWarn>0436</NoWarn>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
     <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.7;uap10.1</PackageTargetFramework>
   </PropertyGroup>
@@ -36,6 +38,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
+    <Compile Include="System\Collections\BitArray.cs" />
     <Compile Include="System\Collections\Generic\BitHelper.cs" />
     <Compile Include="System\Collections\Generic\ICollectionDebugView.cs" />
     <Compile Include="System\Collections\Generic\IDictionaryDebugView.cs" />
@@ -62,7 +65,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot'">
-    <Compile Include="System\Collections\BitArray.cs" />
     <Compile Include="System\Collections\Generic\Dictionary.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
