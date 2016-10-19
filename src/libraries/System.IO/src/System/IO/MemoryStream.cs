@@ -17,6 +17,7 @@ namespace System.IO
     // from an unsigned byte array, or you can create an empty one.  Empty 
     // memory streams are resizable, while ones created with a byte array provide
     // a stream "view" of the data.
+    [Serializable]
     public class MemoryStream : Stream
     {
         private byte[] _buffer;    // Either allocated internally or externally.
