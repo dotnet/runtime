@@ -9,7 +9,7 @@ using System.Threading;
 
 namespace System.IO
 {
-    public partial class FileStream : FileStreamBase
+    public partial class FileStream : Stream
     {
         public override IAsyncResult BeginRead(byte[] array, int offset, int numBytes, AsyncCallback callback, object state)
         {

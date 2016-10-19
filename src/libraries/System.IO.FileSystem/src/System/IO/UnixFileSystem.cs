@@ -17,7 +17,7 @@ namespace System.IO
 
         public override int MaxDirectoryPath { get { return Interop.Sys.MaxPath; } }
 
-        public override FileStreamBase Open(string fullPath, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, FileStream parent)
+        public override FileStream Open(string fullPath, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, FileStream parent)
         {
             return new FileStream(fullPath, mode, access, share, bufferSize, options);
         }

@@ -8,7 +8,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
 {
-    public partial class FileStream : FileStreamBase
+    public partial class FileStream : Stream
     {
         private const FileShare DefaultShare = FileShare.Read;
         private const bool DefaultIsAsync = false;
@@ -139,7 +139,7 @@ namespace System.IO
 
         public virtual IntPtr Handle { get { return SafeFileHandle.DangerousGetHandle(); } }
 
-        public override void Lock(long position, long length)
+        public virtual void Lock(long position, long length)
         {
             if (position < 0 || length < 0)
             {
@@ -149,7 +149,7 @@ namespace System.IO
             LockInternal(position, length);
         }
 
-        public override void Unlock(long position, long length)
+        public virtual void Unlock(long position, long length)
         {
             if (position < 0 || length < 0)
             {
@@ -238,7 +238,7 @@ namespace System.IO
         /// Clears buffers for this stream, and if <param name="flushToDisk"/> is true, 
         /// causes any buffered data to be written to the file.
         /// </summary>
-        public override void Flush(bool flushToDisk)
+        public virtual void Flush(bool flushToDisk)
         {
             if (IsClosed) throw Error.GetFileNotOpen();
 

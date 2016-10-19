@@ -43,7 +43,6 @@
     <Compile Include="System\IO\FileInfo.cs" />
     <Compile Include="System\IO\FileOptions.cs" />
     <Compile Include="System\IO\FileStream.cs" />
-    <Compile Include="System\IO\FileStreamBase.cs" />
     <Compile Include="System\IO\FileSystem.cs" />
     <Compile Include="System\IO\FileSystemInfo.cs" />
     <Compile Include="System\IO\IFileSystemObject.cs" />
