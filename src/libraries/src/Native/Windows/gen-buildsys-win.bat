@@ -10,7 +10,7 @@ if %1=="/?" GOTO :USAGE
 
 setlocal
 set __sourceDir=%~dp0
-:: VS 2015 is the minimum supported OS
+:: VS 2015 is the minimum supported toolset
 set __VSString=14 2015
 
 :: Set the target architecture to a format cmake understands. ANYCPU defaults to x64
