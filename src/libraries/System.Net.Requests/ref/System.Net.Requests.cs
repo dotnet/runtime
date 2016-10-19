@@ -173,10 +173,13 @@ namespace System.Net
     {
         System.Net.WebRequest Create(System.Uri uri);
     }
-    public partial class ProtocolViolationException : System.InvalidOperationException
+    public partial class ProtocolViolationException : System.InvalidOperationException, System.Runtime.Serialization.ISerializable
     {
         public ProtocolViolationException() { }
         public ProtocolViolationException(string message) { }
+        protected ProtocolViolationException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
+        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
     public partial class WebException : System.InvalidOperationException , System.Runtime.Serialization.ISerializable
     {

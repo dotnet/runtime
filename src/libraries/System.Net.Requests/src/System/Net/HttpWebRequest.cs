@@ -15,7 +15,8 @@ using System.Threading.Tasks;
 
 namespace System.Net
 {
-    public class HttpWebRequest : WebRequest ,ISerializable
+    [Serializable]
+    public class HttpWebRequest : WebRequest, ISerializable
     {
         private const int DefaultContinueTimeout = 350; // Current default value from .NET Desktop.
 
