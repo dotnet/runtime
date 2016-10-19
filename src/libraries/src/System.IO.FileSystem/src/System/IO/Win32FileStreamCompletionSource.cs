@@ -10,7 +10,7 @@ using System.Diagnostics;
 
 namespace System.IO
 {
-    public partial class FileStream : FileStreamBase
+    public partial class FileStream : Stream
     {
         // This is an internal object extending TaskCompletionSource with fields
         // for all of the relevant data necessary to complete the IO operation.

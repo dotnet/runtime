@@ -40,7 +40,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.IO
 {
-    public partial class FileStream : FileStreamBase
+    public partial class FileStream : Stream
     {
         private byte[] _buffer;   // Shared read/write buffer.  Alloc on first use.
         private string _fileName; // Fully qualified file name.
@@ -315,7 +315,7 @@ namespace System.IO
             { return _canSeek; }
         }
 
-        public override bool IsAsync
+        public virtual bool IsAsync
         {
             get { return _isAsync; }
         }
@@ -340,7 +340,7 @@ namespace System.IO
             }
         }
 
-        public override string Name
+        public virtual string Name
         {
             get
             {
@@ -518,7 +518,7 @@ namespace System.IO
             _writePos = 0;
         }
 
-        public override SafeFileHandle SafeFileHandle
+        public virtual SafeFileHandle SafeFileHandle
         {
             get
             {
@@ -534,7 +534,7 @@ namespace System.IO
             }
         }
 
-        internal override bool IsClosed => _handle.IsClosed;
+        internal virtual bool IsClosed => _handle.IsClosed;
 
         public override void SetLength(long value)
         {

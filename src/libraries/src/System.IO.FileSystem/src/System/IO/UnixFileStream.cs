@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace System.IO
 {
     /// <summary>Provides an implementation of a file stream for Unix files.</summary>
-    public partial class FileStream : FileStreamBase
+    public partial class FileStream : Stream
     {
         /// <summary>The file descriptor wrapped in a file handle.</summary>
         private SafeFileHandle _fileHandle;
@@ -299,7 +299,7 @@ namespace System.IO
         }
 
         /// <summary>Gets a value indicating whether the stream was opened for I/O to be performed synchronously or asynchronously.</summary>
-        public override bool IsAsync
+        public virtual bool IsAsync
         {
             get { return _useAsyncIO; }
         }
@@ -335,10 +335,10 @@ namespace System.IO
         }
 
         /// <summary>Gets the path that was passed to the constructor.</summary>
-        public override string Name { get { return _path ?? SR.IO_UnknownFileName; } }
+        public virtual string Name { get { return _path ?? SR.IO_UnknownFileName; } }
 
         /// <summary>Gets the SafeFileHandle for the file descriptor encapsulated in this stream.</summary>
-        public override SafeFileHandle SafeFileHandle
+        public virtual SafeFileHandle SafeFileHandle
         {
             get
             {
@@ -348,7 +348,7 @@ namespace System.IO
             }
         }
 
-        internal override bool IsClosed => _fileHandle.IsClosed;
+        internal virtual bool IsClosed => _fileHandle.IsClosed;
 
         /// <summary>Gets or sets the position within the current stream</summary>
         public override long Position
