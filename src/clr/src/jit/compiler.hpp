@@ -4371,10 +4371,12 @@ inline bool Compiler::lvaIsGCTracked(const LclVarDsc* varDsc)
 {
     if (varDsc->lvTracked && (varDsc->lvType == TYP_REF || varDsc->lvType == TYP_BYREF))
     {
+        // Stack parameters are always untracked w.r.t. GC reportings
+        const bool isStackParam = varDsc->lvIsParam && !varDsc->lvIsRegArg;
 #ifdef _TARGET_AMD64_
-        return !lvaIsFieldOfDependentlyPromotedStruct(varDsc);
+        return !isStackParam && !lvaIsFieldOfDependentlyPromotedStruct(varDsc);
 #else  // !_TARGET_AMD64_
-        return true;
+        return !isStackParam;
 #endif // !_TARGET_AMD64_
     }
     else
