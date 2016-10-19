@@ -20,6 +20,29 @@ namespace System.Security.Cryptography.Algorithms.Tests
             }
         }
 
+        [Fact]
+        public static void EnsureLegalSizesValuesIsolated()
+        {
+            new AesLegalSizesBreaker().Dispose();
+
+            using (Aes aes = Aes.Create())
+            {
+                Assert.Equal(128, aes.LegalKeySizes[0].MinSize);
+                Assert.Equal(128, aes.LegalBlockSizes[0].MinSize);
+
+                aes.Key = new byte[16];
+            }
+        }
+
+        private class AesLegalSizesBreaker : AesMinimal
+        {
+            public AesLegalSizesBreaker()
+            {
+                LegalKeySizesValue[0] = new KeySizes(1, 1, 0);
+                LegalBlockSizesValue[0] = new KeySizes(1, 1, 0);
+            }
+        }
+
         private class AesMinimal : Aes
         {
             // If the constructor uses a virtual call to any of the property setters

@@ -10,8 +10,8 @@ namespace System.Security.Cryptography
     {
         protected Aes()
         {
-            LegalBlockSizesValue = s_legalBlockSizes;
-            LegalKeySizesValue = s_legalKeySizes;
+            LegalBlockSizesValue = s_legalBlockSizes.CloneKeySizesArray();
+            LegalKeySizesValue = s_legalKeySizes.CloneKeySizesArray();
 
             BlockSizeValue = 128;
             // TODO(12368): FeedbackSizeValue = 8;, but the field is not yet available.
