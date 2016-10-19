@@ -98,6 +98,20 @@ namespace System.Net.Sockets.Tests
             listener.Stop();
         }
 
+        [Fact]
+        public void StaticCreate_Success()
+        {
+            TcpListener listener = TcpListener.Create(0);
+
+            IPEndPoint ep = (IPEndPoint)listener.LocalEndpoint;
+            Assert.Equal(ep.Address, IPAddress.IPv6Any);
+            Assert.Equal(ep.Port, 0);
+            Assert.True(listener.Server.DualMode);
+
+            listener.Start();
+            listener.Stop();
+        }
+
         #region GC Finalizer test
         // This test assumes sequential execution of tests and that it is going to be executed after other tests
         // that used Sockets.
