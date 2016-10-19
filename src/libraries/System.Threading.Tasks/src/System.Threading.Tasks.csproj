@@ -28,8 +28,6 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot'">
     <Compile Include="System\Threading\Tasks\TaskExtensions.CoreRT.cs" />
     <TargetingPackReference Include="System.Private.CoreLib" />
-    <TargetingPackReference Include="System.Private.CoreLib.Threading" />
-    <TargetingPackReference Include="System.Private.Threading" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
