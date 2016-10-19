@@ -53,7 +53,6 @@ namespace System.Net.Mail.Tests
 
             Assert.Equal(1, _message.EnvelopeHeaders.GetValues("X-Receiver").Length);
             Assert.Equal(1, _message.Headers.GetValues("X-Receiver").Length);
-
         }
 
         [Fact]
@@ -122,7 +121,6 @@ namespace System.Net.Mail.Tests
             Assert.True(toHeaders[0].Contains(validTo));
             Assert.True(ccHeaders[0].Contains(validCc));
             Assert.True(replyToHeaders[0].Contains(validReplyTo));
-
         }
 
         [Fact]
@@ -145,7 +143,6 @@ namespace System.Net.Mail.Tests
             Assert.True(_message.Headers.GetValues("Importance")[0].Contains("low"));
             Assert.True(_message.Headers.GetValues("X-Priority")[0].Contains("5"));
             Assert.True(_message.Headers.GetValues("Priority")[0].Contains("non-urgent"));
-
         }
 
         [Fact]
@@ -159,7 +156,6 @@ namespace System.Net.Mail.Tests
             Assert.Equal("correct subject", _message.Subject);
             Assert.True(_message.Headers.GetValues("Subject").Length == 1);
             Assert.True(_message.Headers.GetValues("Subject")[0].Contains("correct subject"));
-
         }
 
         [Fact]
@@ -172,7 +168,6 @@ namespace System.Net.Mail.Tests
 
             Assert.Equal(string.Empty, _message.Subject);
             Assert.Null(_message.Headers["Subject"]);
-
         }
 
         [Fact]
@@ -180,7 +175,7 @@ namespace System.Net.Mail.Tests
         {
             _message.From = new MailAddress("from@example.com"); ;
 
-            string input = "Hi Ü Bob";
+            string input = "Hi \u00DC Bob";
             _message.Subject = input;
 
             Assert.Equal(Encoding.UTF8, _message.SubjectEncoding);
@@ -203,7 +198,7 @@ namespace System.Net.Mail.Tests
 
             _message.PrepareHeaders(true, false);
 
-            Assert.Equal("Hi Ü Bob", _message.Subject);
+            Assert.Equal("Hi \u00DC Bob", _message.Subject);
             Assert.Equal(input, _message.Headers["Subject"]);
         }
 
@@ -251,7 +246,7 @@ namespace System.Net.Mail.Tests
 
             _message.PrepareHeaders(true, false);
 
-            Assert.Equal("Hi Ü Bob", _message.Subject);
+            Assert.Equal("Hi \u00DC Bob", _message.Subject);
             Assert.Equal("=?utf-8?B?SGkgw5wgQm9i?=", _message.Headers["Subject"]);
         }
 
