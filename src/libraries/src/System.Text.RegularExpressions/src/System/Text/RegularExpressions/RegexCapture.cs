@@ -13,6 +13,7 @@ namespace System.Text.RegularExpressions
     /// Represents the results from a single subexpression capture. The object represents
     /// one substring for a single successful capture.
     /// </summary>
+    [Serializable]
     public class Capture
     {
         internal string _text;

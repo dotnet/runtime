@@ -33,6 +33,7 @@ namespace System.Text.RegularExpressions
     /// <summary>
     /// Represents the results from a single regular expression match.
     /// </summary>
+    [Serializable]
     public class Match : Group
     {
         internal static readonly Match s_empty = new Match(null, 1, string.Empty, 0, 0, 0);

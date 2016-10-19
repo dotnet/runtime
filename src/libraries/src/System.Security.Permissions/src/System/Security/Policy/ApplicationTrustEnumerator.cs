@@ -2,13 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+
 namespace System.Security.Policy
 {
-    public sealed partial class ApplicationTrustEnumerator : System.Collections.IEnumerator
+    public sealed partial class ApplicationTrustEnumerator : IEnumerator
     {
         internal ApplicationTrustEnumerator() { }
-        public System.Security.Policy.ApplicationTrust Current { get { return default(System.Security.Policy.ApplicationTrust); } }
-        object System.Collections.IEnumerator.Current { get { return null; } }
+        public ApplicationTrust Current { get { return default(ApplicationTrust); } }
+        object IEnumerator.Current { get { return null; } }
         public bool MoveNext() { return false; }
         public void Reset() { }
     }
