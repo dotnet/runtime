@@ -4,6 +4,11 @@ namespace System.Globalization
 {
     internal static class SR
     {
+        public static string Arg_ArrayZeroError
+        {
+            get { return Environment.GetResourceString("Arg_ArrayZeroError"); }
+        }
+
         public static string Arg_HexStyleNotSupported
         {
             get { return Environment.GetResourceString("Arg_HexStyleNotSupported"); }
