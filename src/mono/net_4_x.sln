@@ -625,7 +625,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "nunitreport-net_4_x", "mcs/
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pdb2mdb-net_4_x", "mcs/tools/pdb2mdb/pdb2mdb-net_4_x.csproj", "{F7C83E4F-C1C4-4939-8BA3-3EF6E3631E08}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "sqlsharp-net_4_x", "mcs/tools/SqlSharp/sqlsharp-net_4_x.csproj", "{DCCC3618-803B-4492-A968-010E2C0851E8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "sqlsharp-net_4_x", "mcs/tools/sqlsharp/sqlsharp-net_4_x.csproj", "{DCCC3618-803B-4492-A968-010E2C0851E8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "sqlmetal-net_4_x", "mcs/tools/sqlmetal/sqlmetal-net_4_x.csproj", "{71A04260-D8F6-4E97-898D-5F3D5A2F3D94}"
 EndProject
