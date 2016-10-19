@@ -1753,11 +1753,11 @@ mono_main (int argc, char* argv[])
 		} else if (strcmp (argv [i], "--verify-all") == 0) {
 			mono_verifier_enable_verify_all ();
 		} else if (strcmp (argv [i], "--full-aot") == 0) {
-			mono_aot_only = TRUE;
+			mono_jit_set_aot_mode (MONO_AOT_MODE_FULL);
 		} else if (strcmp (argv [i], "--llvmonly") == 0) {
-			mono_aot_only = TRUE;
-			mono_llvm_only = TRUE;
+			mono_jit_set_aot_mode (MONO_AOT_MODE_LLVMONLY);
 		} else if (strcmp (argv [i], "--hybrid-aot") == 0) {
+			mono_jit_set_aot_mode (MONO_AOT_MODE_HYBRID);
 		} else if (strcmp (argv [i], "--print-vtable") == 0) {
 			mono_print_vtable = TRUE;
 		} else if (strcmp (argv [i], "--stats") == 0) {
@@ -2306,10 +2306,20 @@ mono_jit_set_aot_only (gboolean val)
 void
 mono_jit_set_aot_mode (MonoAotMode mode)
 {
+	/* we don't want to set mono_aot_mode twice */
+	g_assert (mono_aot_mode == MONO_AOT_MODE_NONE);
 	mono_aot_mode = mode;
+
 	if (mono_aot_mode == MONO_AOT_MODE_LLVMONLY) {
 		mono_aot_only = TRUE;
 		mono_llvm_only = TRUE;
+	}
+	if (mono_aot_mode == MONO_AOT_MODE_FULL) {
+		mono_aot_only = TRUE;
+	}
+	if (mono_aot_mode == MONO_AOT_MODE_HYBRID) {
+		mono_set_generic_sharing_vt_supported (TRUE);
+		mono_set_partial_sharing_supported (TRUE);
 	}
 }
 
