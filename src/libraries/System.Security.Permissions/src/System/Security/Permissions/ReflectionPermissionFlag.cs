@@ -4,17 +4,18 @@
 
 namespace System.Security.Permissions
 {
-    [System.FlagsAttribute]
+    [Serializable]
+    [Flags]
     public enum ReflectionPermissionFlag
     {
-        [System.ObsoleteAttribute("This permission has been deprecated. Use PermissionState.Unrestricted to get full access.")]
+        [Obsolete("This permission has been deprecated. Use PermissionState.Unrestricted to get full access.")]
         AllFlags = 7,
         MemberAccess = 2,
         NoFlags = 0,
-        [System.ObsoleteAttribute("This permission is no longer used by the CLR.")]
+        [Obsolete("This permission is no longer used by the CLR.")]
         ReflectionEmit = 4,
         RestrictedMemberAccess = 8,
-        [System.ObsoleteAttribute("This API has been deprecated. http://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("This API has been deprecated. http://go.microsoft.com/fwlink/?linkid=14202")]
         TypeInformation = 1,
     }
 }
