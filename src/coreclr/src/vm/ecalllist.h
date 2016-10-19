@@ -1252,7 +1252,6 @@ FCFuncStart(gMathFuncs)
 FCFuncEnd()
 
 FCFuncStart(gMathFFuncs)
-    FCIntrinsic("Abs", COMSingle::Abs, CORINFO_INTRINSIC_Abs)
     FCIntrinsic("Acos", COMSingle::Acos, CORINFO_INTRINSIC_Acos)
     FCIntrinsic("Asin", COMSingle::Asin, CORINFO_INTRINSIC_Asin)
     FCIntrinsic("Atan", COMSingle::Atan, CORINFO_INTRINSIC_Atan)
