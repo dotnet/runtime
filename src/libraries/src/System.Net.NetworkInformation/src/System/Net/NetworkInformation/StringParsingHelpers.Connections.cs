@@ -139,7 +139,7 @@ namespace System.Net.NetworkInformation
         // Parsing logic for local and remote addresses and ports, as well as socket state.
         internal static TcpConnectionInformation ParseTcpConnectionInformationFromLine(string line)
         {
-            StringParser parser = new StringParser(line, ' ', true);
+            StringParser parser = new StringParser(line, ' ', skipEmpty: true);
             parser.MoveNextOrFail(); // skip Index
 
             string localAddressAndPort = parser.MoveAndExtractNext(); // local_address
@@ -163,7 +163,7 @@ namespace System.Net.NetworkInformation
         // Common parsing logic for the local connection information.
         private static IPEndPoint ParseLocalConnectionInformation(string line)
         {
-            StringParser parser = new StringParser(line, ' ', true);
+            StringParser parser = new StringParser(line, ' ', skipEmpty: true);
             parser.MoveNextOrFail(); // skip Index
 
             string localAddressAndPort = parser.MoveAndExtractNext();

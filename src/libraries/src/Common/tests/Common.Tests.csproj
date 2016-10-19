@@ -28,6 +28,9 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\src\Interop\Linux\procfs\Interop.ProcFsStat.cs">
+      <Link>Common\Interop\Linux\procfs\Interop.ProcFsStat.cs</Link>
+    </Compile>
     <Compile Include="..\src\System\CharArrayHelpers.cs">
       <Link>Common\System\CharArrayHelpers.cs</Link>
     </Compile>
@@ -58,9 +61,13 @@
     <Compile Include="..\src\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs">
       <Link>Common\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs</Link>
     </Compile>
+    <Compile Include="..\src\System\Text\ReusableTextReader.cs">
+      <Link>Common\System\Text\ReusableTextReader.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
       <Link>CommonTest\System\AssertExtensions.cs</Link>
     </Compile>
+    <Compile Include="Tests\Interop\procfsTests.cs" />
     <Compile Include="Tests\System\CharArrayHelpersTests.cs" />
     <Compile Include="Tests\System\StringExtensions.Tests.cs" />
     <Compile Include="Tests\System\Collections\Generic\ArrayBuilderTests.cs" />
