@@ -9,11 +9,6 @@
     <IncludeRuntimeJson>true</IncludeRuntimeJson>
   </PropertyGroup>
   <ItemGroup>
-    <!-- Declare a runtime dependency on the win8-arm CoreCLR built using the TFS builds -->
-    <RuntimeDependency Include="runtime.win7-arm.Microsoft.NETCore.TestHost">
-      <TargetRuntime>win7-arm</TargetRuntime>
-      <Version>1.0.1-$(ExternalExpectedPrerelease)</Version>
-    </RuntimeDependency>
     <ProjectReference Include="win\Microsoft.NETCore.TestHost.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
