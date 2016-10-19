@@ -136,7 +136,7 @@ public:
                     _ASSERTE(eightByteSize == 4);
                     *(UINT32*)floatRegDest = *(UINT32*)src;
                 }
-                floatRegDest += 8;
+                floatRegDest += 16;
             }
             else
             {
