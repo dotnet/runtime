@@ -1725,7 +1725,7 @@ void Assembler::EmitInstrBrOffset(Instr* instr, int offset)
     unsigned opc=instr->opcode;
     if(m_fOptimize)
     {
-        if((-128 >= offset)&&(offset <= 127))
+        if((-128 <= offset)&&(offset <= 127))
         {
             opc = instr->opcode = ShortOf(opc);
         }
