@@ -20,10 +20,12 @@ using LSA_STRING = Interop.SspiCli.LSA_STRING;
 using QUOTA_LIMITS = Interop.SspiCli.QUOTA_LIMITS;
 using SECURITY_LOGON_TYPE = Interop.SspiCli.SECURITY_LOGON_TYPE;
 using TOKEN_SOURCE = Interop.SspiCli.TOKEN_SOURCE;
+using System.Runtime.Serialization;
 
 namespace System.Security.Principal
 {
-    public class WindowsIdentity : ClaimsIdentity, IDisposable
+    [Serializable]
+    public class WindowsIdentity : ClaimsIdentity, IDisposable, ISerializable, IDeserializationCallback
     {
         private string _name = null;
         private SecurityIdentifier _owner = null;
@@ -37,10 +39,15 @@ namespace System.Security.Principal
         private volatile bool _impersonationLevelInitialized;
 
         public new const string DefaultIssuer = @"AD AUTHORITY";
+        [NonSerialized]
         private string _issuerName = DefaultIssuer;
+        [NonSerialized]
         private object _claimsIntiailizedLock = new object();
+        [NonSerialized]
         private volatile bool _claimsInitialized;
+        [NonSerialized]
         private List<Claim> _deviceClaims;
+        [NonSerialized]
         private List<Claim> _userClaims;
 
         //
@@ -229,10 +236,30 @@ namespace System.Security.Principal
                 throw new SecurityException(new Win32Exception().Message);
         }
 
+        public WindowsIdentity(SerializationInfo info, StreamingContext context)
+        {
+            _claimsInitialized = false;
+
+            IntPtr userToken = (IntPtr)info.GetValue("m_userToken", typeof(IntPtr));
+            if (userToken != IntPtr.Zero)
+            {
+                CreateFromToken(userToken);
+            }
+        }
+
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            // TODO: Add back when ClaimsIdentity is serializable
+            // base.GetObjectData(info, context);
+            info.AddValue("m_userToken", _safeTokenHandle.DangerousGetHandle());
+        }
+
+        void IDeserializationCallback.OnDeserialization(object sender) { }
+
         //
         // Factory methods.
         //
-        
+
         public static WindowsIdentity GetCurrent()
         {
             return GetCurrentInternal(TokenAccessLevels.MaximumAllowed, false);
@@ -1106,12 +1133,14 @@ namespace System.Security.Principal
         Failed = 2     // failed to query 
     }
 
+    [Serializable]
     internal enum TokenType : int
     {
         TokenPrimary = 1,
         TokenImpersonation
     }
 
+    [Serializable]
     internal enum TokenInformationClass : int
     {
         TokenUser = 1,
