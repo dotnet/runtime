@@ -1130,6 +1130,9 @@
     <SafehandleSources Condition="'$(FeatureWin32Registry)' == 'true'" Include="$(BclSourcesRoot)\Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs" />
   </ItemGroup>
   <ItemGroup>
+    <NumericsSources Include="$(BclSourcesRoot)\System\Numerics\Hashing\HashHelpers.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <MscorlibSources Include="@(SystemSources)"/>
     <MscorlibSources Include="@(ThreadingSources)"/>
     <MscorlibSources Include="@(DeploymentSources)"/>
@@ -1179,6 +1182,7 @@
     <MscorlibSources Include="@(VersioningSources)"/>
     <MscorlibSources Include="@(DesignerServicesSources)"/>
     <MscorlibSources Include="@(InternalSources)"/>
+    <MscorlibSources Include="@(NumericsSources)"/>
     <MscorlibSources Include="$(BclSourcesRoot)\GlobalSuppressions.cs"/>
   </ItemGroup>
 </Project>
