@@ -99,7 +99,7 @@ namespace System.Globalization.Tests
             PlatformDetection.IsOSX ||
             PlatformDetection.IsUbuntu1604 ||
             PlatformDetection.IsUbuntu1610 ||
-            RuntimeInformation.IsOSPlatform(OSPlatform.Create("openSUSE"));
+            PlatformDetection.IsOpenSUSE;
 
         [ConditionalFact(nameof(GetAsciiWithDotFails))]
         public void TestGetAsciiWithDot_Exception()
