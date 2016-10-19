@@ -308,11 +308,15 @@ namespace System.Net.Mail
             // We may need to restore user thread token here
             if (ReferenceEquals(credential, CredentialCache.DefaultNetworkCredentials))
             {
-                // CONSIDER: Change to a real runtime check that throws InvalidOperationException to help catch customer race conditions.
 #if DEBUG
-                if (GlobalLog.IsEnabled)
+                if (context != null && !context.IdentityRequested)
                 {
-                    GlobalLog.AssertFormat(context == null || context.IdentityRequested, "SmtpConnection#{0}::SetContextAndTryAuthenticate|Authentication required when it wasn't expected.  (Maybe Credentials was changed on another thread?)", LoggingHash.HashString(this));
+                    if (GlobalLog.IsEnabled)
+                    {
+                        GlobalLog.AssertFormat("SmtpConnection#{0}::SetContextAndTryAuthenticate|Authentication required when it wasn't expected.  (Maybe Credentials was changed on another thread?)", LoggingHash.HashString(this));
+                    }
+
+                    Debug.Fail("SmtpConnection#" + LoggingHash.HashString(this) + "::SetContextAndTryAuthenticate|Authentication required when it wasn't expected.  (Maybe Credentials was changed on another thread?)");
                 }
 #endif
 
