@@ -13,6 +13,7 @@ namespace System.Security.Cryptography
     ///     which parameters are expected to be providers.  We also provide a list of well known provider
     ///     names, which helps Intellisense users find a set of good provider names to use.
     /// </summary>
+    [Serializable]
     public sealed class CngProvider : IEquatable<CngProvider>
     {
         public CngProvider(string provider)

@@ -95,7 +95,7 @@ namespace System.Security.Cryptography.X509Certificates
         public int PathLengthConstraint { get { throw null; } }
         public override void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
     }
-    public partial class X509Certificate : System.IDisposable
+    public partial class X509Certificate : System.IDisposable, System.Runtime.Serialization.ISerializable, System.Runtime.Serialization.IDeserializationCallback
     {
         public X509Certificate() { }
         public X509Certificate(byte[] data) { }
@@ -106,6 +106,7 @@ namespace System.Security.Cryptography.X509Certificates
         public X509Certificate(string fileName) { }
         public X509Certificate(string fileName, string password) { }
         public X509Certificate(string fileName, string password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
+        public X509Certificate(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public System.IntPtr Handle { get { throw null; } }
         public string Issuer { get { throw null; } }
         public string Subject { get { throw null; } }
@@ -128,12 +129,14 @@ namespace System.Security.Cryptography.X509Certificates
         public virtual string GetKeyAlgorithmParametersString() { throw null; }
         [System.ObsoleteAttribute("This method has been deprecated.  Please use the Subject property instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
         public virtual string GetName() { throw null; }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public virtual byte[] GetPublicKey() { throw null; }
         public virtual string GetPublicKeyString() { throw null; }
         public virtual byte[] GetRawCertData() { throw null; }
         public virtual string GetRawCertDataString() { throw null; }
         public virtual byte[] GetSerialNumber() { throw null; }
         public virtual string GetSerialNumberString() { throw null; }
+        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
         public override string ToString() { throw null; }
         public virtual string ToString(bool fVerbose) { throw null; }
     }
@@ -148,6 +151,7 @@ namespace System.Security.Cryptography.X509Certificates
         public X509Certificate2(string fileName) { }
         public X509Certificate2(string fileName, string password) { }
         public X509Certificate2(string fileName, string password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
+        protected X509Certificate2(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public bool Archived { get { throw null; } set { } }
         public System.Security.Cryptography.X509Certificates.X509ExtensionCollection Extensions { get { throw null; } }
         public string FriendlyName { get { throw null; } set { } }

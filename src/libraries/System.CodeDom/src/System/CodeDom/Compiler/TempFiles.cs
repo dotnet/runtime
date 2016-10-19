@@ -7,6 +7,8 @@ using System.IO;
 
 namespace System.CodeDom.Compiler
 {
+    // Explicitly not [Serializable], so as to avoid accidentally deleting
+    // files specified in a serialized payload.
     public class TempFileCollection : ICollection, IDisposable
     {
         private string _basePath;
