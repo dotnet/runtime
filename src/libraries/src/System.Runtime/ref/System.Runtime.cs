@@ -3102,6 +3102,10 @@ namespace System.Runtime.ConstrainedExecution
         public System.Runtime.ConstrainedExecution.Cer Cer { get { throw null; } }
         public System.Runtime.ConstrainedExecution.Consistency ConsistencyGuarantee { get { throw null; } }
     }
+    public sealed partial class PrePrepareMethodAttribute : System.Attribute
+    {
+        public PrePrepareMethodAttribute() { }
+    }
 }
 
 namespace System.Runtime.InteropServices
