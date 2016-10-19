@@ -461,16 +461,7 @@ namespace System.Runtime.Versioning
             int fxVersion = 0;
             if (targetFrameworkName == null)
             {
-#if FEATURE_CORECLR
-                // if we don't have a value for targetFrameworkName we need to figure out if we should give the newest behavior or not.
-                if (CompatibilitySwitches.UseLatestBehaviorWhenTFMNotSpecified)
-                {
-                    fxId = TargetFrameworkId.NetFramework;
-                    fxVersion = 50000; // We are going to default to the latest value for version that we have in our code.
-                }
-                else
-#endif
-                    fxId = TargetFrameworkId.Unspecified;
+                fxId = TargetFrameworkId.Unspecified;
             }
             else if (!ParseTargetFrameworkMonikerIntoEnum(targetFrameworkName, out fxId, out fxVersion))
                 fxId = TargetFrameworkId.Unrecognized;

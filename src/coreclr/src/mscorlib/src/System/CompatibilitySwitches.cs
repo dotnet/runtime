@@ -39,10 +39,6 @@ namespace System
 
         internal static void InitializeSwitches()
         {
-#if FEATURE_CORECLR
-            s_useLatestBehaviorWhenTFMNotSpecified = IsCompatibilitySwitchSet("UseLatestBehaviorWhenTFMNotSpecified");
-#endif //FEATURE_CORECLR
-
 #if !FEATURE_CORECLR
             s_isNetFx40TimeSpanLegacyFormatMode = IsCompatibilitySwitchSet("NetFx40_TimeSpanLegacyFormatMode");
             s_isNetFx40LegacySecurityPolicy = IsCompatibilitySwitchSet("NetFx40_LegacySecurityPolicy");
@@ -52,19 +48,7 @@ namespace System
             s_AreSwitchesSet = true;
         }
 
-#if FEATURE_CORECLR
-        /// <summary>
-        /// This property returns whether to give the latest behavior when the TFM is missing
-        /// </summary>
-        internal static bool UseLatestBehaviorWhenTFMNotSpecified
-        {
-            get
-            {
-                return s_useLatestBehaviorWhenTFMNotSpecified;
-            }
-        }
-#else //FEATURE_CORECLR
-
+#if !FEATURE_CORECLR
         public static bool IsAppEarlierThanSilverlight4
         {
             get
@@ -89,7 +73,7 @@ namespace System
             }
         }
 
-#endif //FEATURE_CORECLR
+#endif //!FEATURE_CORECLR
 
         public static bool IsNetFx40TimeSpanLegacyFormatMode
         {

@@ -457,7 +457,6 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
         W("APP_PATHS"),
         W("APP_NI_PATHS"),
         W("NATIVE_DLL_SEARCH_DIRECTORIES"),
-        W("AppDomainCompatSwitch")
     };
     const wchar_t *property_values[] = { 
         // TRUSTED_PLATFORM_ASSEMBLIES
@@ -468,8 +467,6 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
         appNiPath,
         // NATIVE_DLL_SEARCH_DIRECTORIES
         nativeDllSearchDirs,
-        // AppDomainCompatSwitch
-        W("UseLatestBehaviorWhenTFMNotSpecified")
     };
 
 
