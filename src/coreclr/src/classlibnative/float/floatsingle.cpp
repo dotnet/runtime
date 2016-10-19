@@ -13,8 +13,14 @@
 
 // Windows x86 and Windows ARM don't define _isnanf() but they do define a generic macro isnan()
 #if (defined(_TARGET_X86_) || defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)) && !defined(FEATURE_PAL) && !defined(_isnanf)
+#if defined(_TARGET_ARM64_)
+#define _isnanf      _isnan
+#else
 #define _isnanf      isnan
 #endif
+#endif
+
+#
 
 // The default compilation mode is /fp:precise, which disables floating-point intrinsics. This
 // default compilation mode has previously caused performance regressions in floating-point code.
