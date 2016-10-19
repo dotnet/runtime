@@ -33,8 +33,7 @@ namespace System {
         public const float E = 2.71828183f;
 
         [System.Security.SecuritySafeCritical]  // auto-generated
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern float Abs(float x);
+        public static float Abs(float x) => Math.Abs(x);
 
         [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -157,10 +156,10 @@ namespace System {
         public static extern float Log10(float x);
 
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        public static float Max(float x, float y) => ((x > y) || float.IsNaN(x)) ? x : y;
+        public static float Max(float x, float y) => Math.Max(x, y);
 
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        public static float Min(float x, float y) => ((x < y) || float.IsNaN(x)) ? x : y;
+        public static float Min(float x, float y) => Math.Min(x, y);
 
         [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -208,23 +207,7 @@ namespace System {
             return InternalRound(x, 0, mode);
         }
 
-        public static int Sign(float x)
-        {
-            if (x < 0)
-            {
-                return -1;
-            }
-            else if (x > 0)
-            {
-                return 1;
-            }
-            else if (x == 0)
-            {
-                return 0;
-            }
-
-            throw new ArithmeticException(Environment.GetResourceString("Arithmetic_NaN"));
-        }
+        public static int Sign(float x) => Math.Sign(x);
 
         [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
