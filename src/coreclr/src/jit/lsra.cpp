@@ -2777,7 +2777,7 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
             }
             break;
 
-#if defined(PROFILING_SUPPORTED) && defined(_TARGET_AMD64_)
+#if defined(PROFILING_SUPPORTED)
         // If this method requires profiler ELT hook then mark these nodes as killing
         // callee trash registers (excluding RAX and XMM0). The reason for this is that
         // profiler callback would trash these registers. See vm\amd64\asmhelpers.asm for
@@ -2793,10 +2793,9 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
             if (compiler->compIsProfilerHookNeeded())
             {
                 killMask = compiler->compHelperCallKillSet(CORINFO_HELP_PROF_FCN_TAILCALL);
-                ;
             }
             break;
-#endif // PROFILING_SUPPORTED && _TARGET_AMD64_
+#endif // PROFILING_SUPPORTED
 
         default:
             // for all other 'tree->OperGet()' kinds, leave 'killMask' = RBM_NONE

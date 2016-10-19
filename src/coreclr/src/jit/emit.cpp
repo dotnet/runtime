@@ -2314,7 +2314,7 @@ bool emitter::emitNoGChelper(unsigned IHX)
 
         case CORINFO_HELP_PROF_FCN_LEAVE:
         case CORINFO_HELP_PROF_FCN_ENTER:
-#ifdef _TARGET_AMD64_
+#if defined(_TARGET_AMD64_) || (defined(_TARGET_X86_) && !defined(LEGACY_BACKEND))
         case CORINFO_HELP_PROF_FCN_TAILCALL:
 #endif
         case CORINFO_HELP_LLSH:

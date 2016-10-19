@@ -1394,6 +1394,7 @@ void Lowering::CheckVSQuirkStackPaddingNeeded(GenTreeCall* call)
 
 // Inserts profiler hook, GT_PROF_HOOK for a tail call node.
 //
+// AMD64:
 // We need to insert this after all nested calls, but before all the arguments to this call have been set up.
 // To do this, we look for the first GT_PUTARG_STK or GT_PUTARG_REG, and insert the hook immediately before
 // that. If there are no args, then it should be inserted before the call node.
@@ -1418,15 +1419,29 @@ void Lowering::CheckVSQuirkStackPaddingNeeded(GenTreeCall* call)
 // In this case, the GT_PUTARG_REG src is a nested call. We need to put the instructions after that call
 // (as shown). We assume that of all the GT_PUTARG_*, only the first one can have a nested call.
 //
+// X86:
+// Insert the profiler hook immediately before the call. The profiler hook will preserve
+// all argument registers (ECX, EDX), but nothing else.
+//
 // Params:
 //    callNode        - tail call node
-//    insertionPoint  - if caller has an insertion point; If null
-//                      profiler hook is inserted before args are setup
+//    insertionPoint  - if non-null, insert the profiler hook before this point.
+//                      If null, insert the profiler hook before args are setup
 //                      but after all arg side effects are computed.
+//
 void Lowering::InsertProfTailCallHook(GenTreeCall* call, GenTree* insertionPoint)
 {
     assert(call->IsTailCall());
     assert(comp->compIsProfilerHookNeeded());
+
+#if defined(_TARGET_X86_)
+
+    if (insertionPoint == nullptr)
+    {
+        insertionPoint = call;
+    }
+
+#else // !defined(_TARGET_X86_)
 
     if (insertionPoint == nullptr)
     {
@@ -1463,6 +1478,8 @@ void Lowering::InsertProfTailCallHook(GenTreeCall* call, GenTree* insertionPoint
             }
         }
     }
+
+#endif // !defined(_TARGET_X86_)
 
     assert(insertionPoint != nullptr);
     GenTreePtr profHookNode = new (comp, GT_PROF_HOOK) GenTree(GT_PROF_HOOK, TYP_VOID);
@@ -1869,12 +1886,16 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
     // Now add back tail call flags for identifying this node as tail call dispatched via helper.
     call->gtCallMoreFlags |= GTF_CALL_M_TAILCALL | GTF_CALL_M_TAILCALL_VIA_HELPER;
 
+#ifdef PROFILING_SUPPORTED
     // Insert profiler tail call hook if needed.
     // Since we don't know the insertion point, pass null for second param.
     if (comp->compIsProfilerHookNeeded())
     {
         InsertProfTailCallHook(call, nullptr);
     }
+#endif // PROFILING_SUPPORTED
+
+    assert(call->IsTailCallViaHelper());
 
     return result;
 }

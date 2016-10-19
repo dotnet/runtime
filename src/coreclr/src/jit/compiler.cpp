@@ -3001,22 +3001,25 @@ void Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
     opts.compTailCallLoopOpt = true;
 #endif
 
-#ifdef DEBUG
-    opts.dspInstrs             = false;
-    opts.dspEmit               = false;
-    opts.dspLines              = false;
-    opts.varNames              = false;
-    opts.dmpHex                = false;
-    opts.disAsm                = false;
-    opts.disAsmSpilled         = false;
-    opts.disDiffable           = false;
-    opts.dspCode               = false;
-    opts.dspEHTable            = false;
-    opts.dspGCtbls             = false;
-    opts.disAsm2               = false;
-    opts.dspUnwind             = false;
-    opts.compLongAddress       = false;
+#ifdef PROFILING_SUPPORTED
     opts.compJitELTHookEnabled = false;
+#endif // PROFILING_SUPPORTED
+
+#ifdef DEBUG
+    opts.dspInstrs       = false;
+    opts.dspEmit         = false;
+    opts.dspLines        = false;
+    opts.varNames        = false;
+    opts.dmpHex          = false;
+    opts.disAsm          = false;
+    opts.disAsmSpilled   = false;
+    opts.disDiffable     = false;
+    opts.dspCode         = false;
+    opts.dspEHTable      = false;
+    opts.dspGCtbls       = false;
+    opts.disAsm2         = false;
+    opts.dspUnwind       = false;
+    opts.compLongAddress = false;
 
 #ifdef LATE_DISASM
     opts.doLateDisasm = false;
@@ -3212,11 +3215,8 @@ void Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
         compProfilerMethHndIndirected = false;
     }
 
-#if defined(_TARGET_ARM_) || defined(_TARGET_AMD64_)
-    // Right now this ELT hook option is enabled only for arm and amd64
-
-    // Honour complus_JitELTHookEnabled only if VM has not asked us to generate profiler
-    // hooks in the first place. That is, Override VM only if it hasn't asked for a
+    // Honour COMPlus_JitELTHookEnabled only if VM has not asked us to generate profiler
+    // hooks in the first place. That is, override VM only if it hasn't asked for a
     // profiler callback for this method.
     if (!compProfilerHookNeeded && (JitConfig.JitELTHookEnabled() != 0))
     {
@@ -3229,7 +3229,6 @@ void Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
         compProfilerMethHnd           = (void*)DummyProfilerELTStub;
         compProfilerMethHndIndirected = false;
     }
-#endif // _TARGET_ARM_ || _TARGET_AMD64_
 
 #endif // PROFILING_SUPPORTED
 
