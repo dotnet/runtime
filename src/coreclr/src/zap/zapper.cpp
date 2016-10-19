@@ -1017,6 +1017,15 @@ void Zapper::DestroyDomain()
     CleanupAssembly();
 
     //
+    // Shut down JIT compiler.
+    //
+
+    if (m_pJitCompiler != NULL)
+    {
+        m_pJitCompiler->ProcessShutdownWork(NULL);
+    }
+
+    //
     // Get rid of domain.
     //
 
