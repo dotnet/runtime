@@ -3960,7 +3960,10 @@
       <Member Name="GetReferencedAssemblies" />
       <Member Name="get_EntryPoint" />
       <Member Name="get_FullName" />
+      <Member Name="get_GlobalAssemblyCache" />
+      <Member Name="get_HostContext" />
       <Member Name="get_ImageRuntimeVersion" />
+      <Member Name="get_IsFullyTrusted" />
       <Member Name="get_IsDynamic" />
       <Member Name="get_CodeBase" />
       <Member Name="get_Location" />
@@ -3968,6 +3971,7 @@
       <Member Name="get_CustomAttributes" />
       <Member Name="get_Modules" />
       <Member Name="get_ReflectionOnly" />
+      <Member Name="get_SecurityRuleSet" />
       <Member Name="GetAssembly(System.Type)" />
       <Member Name="op_Equality(System.Reflection.Assembly,System.Reflection.Assembly)" />
       <Member Name="op_Inequality(System.Reflection.Assembly,System.Reflection.Assembly)" />
@@ -4003,20 +4007,31 @@
       <Member Name="Load(System.String)" />
       <Member Name="Load(System.Byte[])" />
       <Member Name="Load(System.Byte[],System.Byte[])" />
+      <Member Name="LoadFile(System.String)" />
+      <Member Name="LoadFrom(System.String)" />
+      <Member Name="LoadFrom(System.String,System.Byte[],System.Configuration.Assemblies.AssemblyHashAlgorithm)" />
+      <Member Name="LoadModule(System.String,System.Byte[])" />
+      <Member Name="LoadModule(System.String,System.Byte[],System.Byte[])" />
+      <Member Name="LoadWithPartialName(System.String)" />
       <Member Name="ReflectionOnlyLoad(System.String)" />
       <Member Name="ReflectionOnlyLoad(System.Byte[])" />
       <Member Name="ReflectionOnlyLoadFrom(System.String)" />
       <Member Name="ToString" />
+      <Member Name="UnsafeLoadFrom(System.String)" />
       <Member MemberType="Property" Name="DefinedTypes" />
       <Member MemberType="Property" Name="CustomAttributes" />
       <Member MemberType="Property" Name="Modules" />
       <Member MemberType="Property" Name="ExportedTypes" />
       <Member MemberType="Property" Name="EntryPoint" />
       <Member MemberType="Property" Name="FullName" />
+      <Member MemberType="Property" Name="GlobalAssemblyCache" />
+      <Member MemberType="Property" Name="HostContext" />
       <Member MemberType="Property" Name="CodeBase" />
       <Member MemberType="Property" Name="ImageRuntimeVersion" />
+      <Member MemberType="Property" Name="IsFullyTrusted" />
       <Member MemberType="Property" Name="Location" />
       <Member MemberType="Property" Name="ManifestModule" />
+      <Member MemberType="Property" Name="SecurityRuleSet" />
       <Member Status="ImplRoot" MemberType="Event" Name="ModuleResolve" />
     </Type>
     <Type Name="System.Reflection.IntrospectionExtensions">
