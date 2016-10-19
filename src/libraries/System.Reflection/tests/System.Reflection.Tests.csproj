@@ -16,49 +16,21 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="AssemblyNameTests.cs" />
     <Compile Include="AssemblyTests.cs" />
     <Compile Include="ConstructorInfoTests.cs" />
     <Compile Include="EventInfoTests.cs" />
     <Compile Include="FieldInfoTests.cs" />
     <Compile Include="GetTypeTests.cs" />
-    <Compile Include="ManifestResourceInfo\ManifestResourceInfo.cs" />
+    <Compile Include="ManifestResourceInfoTests.cs" />
     <Compile Include="MemberInfoTests.cs" />
     <Compile Include="MethodInfoTests.cs" />
-    <Compile Include="Module\ModuleTests.cs" />
+    <Compile Include="ModuleTests.cs" />
     <Compile Include="Common.cs" />
     <Compile Include="ParameterInfoTests.cs" />
-    <Compile Include="PropertyInfo\PropertyInfo_GetConstantValueTests.cs" />
-    <Compile Include="PropertyInfo\PropertyInfo_GetSetMethodTests.cs" />
-    <Compile Include="PropertyInfo\PropertyInfo_GetSetValueTests.cs" />
-    <Compile Include="PropertyInfo\PropertyInfo_Members.cs" />
-    <Compile Include="PropertyInfo\PropertyInfo_MethodTests.cs" />
-    <Compile Include="PropertyInfo\PropertyInfo_propertyTests.cs" />
-    <Compile Include="ReflectionContext\ReflectionContext.cs" />
-    <Compile Include="TypeInfo\TypeInfo_DeclaredCtorTests.cs" />
-    <Compile Include="TypeInfo\TypeInfo_DeclaredEventTests.cs" />
-    <Compile Include="TypeInfo\TypeInfo_DeclaredFieldTests.cs" />
-    <Compile Include="TypeInfo\TypeInfo_DeclaredMemberTests.cs" />
-    <Compile Include="TypeInfo\TypeInfo_DeclaredMethodTests.cs" />
-    <Compile Include="TypeInfo\TypeInfo_DeclaredNestedTypeTests.cs" />
-    <Compile Include="TypeInfo\TypeInfo_DeclaredPropertiesTests.cs" />
-    <Compile Include="TypeInfo\TypeInfo_GenericTypeArgumentsTests.cs" />
-    <Compile Include="TypeInfo\TypeInfo_GenericTypeParametersTests.cs" />
-    <Compile Include="TypeInfo\TypeInfo_ImplementedInterfacesTests.cs" />
-    <Compile Include="TypeInfo\TypeInfo_IsAssignableFromTests.cs" />
-    <Compile Include="TypeInfo\TypeInfo_IsEquivalentTo.cs" />
-    <Compile Include="TypeInfo\TypeInfo_MethodTests.cs" />
-    <Compile Include="TypeInfo\TypeInfo_PropertyTests.cs" />
-    <Compile Include="TypeInfo\TypeInfo_FindInterfaces.cs" />
-    <Compile Include="TypeInfo\TypeInfo_GetEnum.cs" />
-    <Compile Include="TypeInfo\TypeInfo_IsAssignableAndInstanceOf.cs" />
-    <Compile Include="TypeInfo\TypeInfo_Members.cs" />
-    <Compile Include="TypeInfo\TypeInfo_StructLayoutAttribute.cs" />
-    <Compile Include="TypeInfo\TypeInfo_TypeInitializer.cs" />
-    <Compile Include="TypeInfo\TypeInfo_UnderlyingSystemType.cs" />
+    <Compile Include="PropertyInfoTests.cs" />
+    <Compile Include="ReflectionContextTests.cs" />
+    <Compile Include="TypeInfoTests.cs" />
     <Compile Include="ExceptionTests.cs" />
   </ItemGroup>
   <ItemGroup>

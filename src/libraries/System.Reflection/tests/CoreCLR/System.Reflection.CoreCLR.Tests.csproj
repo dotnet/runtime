@@ -18,7 +18,7 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assembly\AssemblyTests.CoreCLR.cs" />
+    <Compile Include="AssemblyTests.CoreCLR.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="..\..\..\Common\tests\Data\TinyAssembly.dll">

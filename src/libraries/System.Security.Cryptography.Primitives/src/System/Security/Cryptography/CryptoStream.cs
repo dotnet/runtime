@@ -25,15 +25,22 @@ namespace System.Security.Cryptography
         private bool _canWrite;
         private bool _finalBlockTransformed;
         private SemaphoreSlim _lazyAsyncActiveSemaphore;
-        
+        private readonly bool _leaveOpen;
+
         // Constructors
 
         public CryptoStream(Stream stream, ICryptoTransform transform, CryptoStreamMode mode)
+            : this(stream, transform, mode, false)
+        {
+        }
+
+        public CryptoStream(Stream stream, ICryptoTransform transform, CryptoStreamMode mode, bool leaveOpen)
         {
 
             _stream = stream;
             _transformMode = mode;
             _transform = transform;
+            _leaveOpen = leaveOpen;
             switch (_transformMode)
             {
                 case CryptoStreamMode.Read:
@@ -523,7 +530,10 @@ namespace System.Security.Cryptography
                     {
                         FlushFinalBlock();
                     }
-                    _stream.Dispose();
+                    if (!_leaveOpen)
+                    {
+                        _stream.Dispose();
+                    }
                 }
             }
             finally

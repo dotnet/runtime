@@ -63,9 +63,6 @@
     <Compile Include="XunitAssemblyAttributes.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\pkg\Microsoft.Win32.Registry.pkgproj">
       <Project>{d3f18acc-d327-4abb-ba6c-e9c34a041b2f}</Project>
       <Name>Microsoft.Win32.Registry</Name>

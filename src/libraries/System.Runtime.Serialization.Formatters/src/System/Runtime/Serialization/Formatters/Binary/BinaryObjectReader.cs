@@ -148,9 +148,9 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         private void CheckSerializable(Type t)
         {
-            if (!t.GetTypeInfo().IsSerializable && !HasSurrogate(t))
+            if (!t.IsSerializable && !HasSurrogate(t))
             {
-                throw new SerializationException(string.Format(CultureInfo.InvariantCulture, SR.Serialization_NonSerType, t.FullName, t.GetTypeInfo().Assembly.FullName));
+                throw new SerializationException(string.Format(CultureInfo.InvariantCulture, SR.Serialization_NonSerType, t.FullName, t.Assembly.FullName));
             }
         }
 
@@ -443,7 +443,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     }
                     else if (couldBeValueType && pr._arrayElementType != null)
                     {
-                        if (!pr._arrayElementType.GetTypeInfo().IsValueType && !pr._isLowerBound)
+                        if (!pr._arrayElementType.IsValueType && !pr._isLowerBound)
                         {
                             pr._objectA = (object[])pr._newObj;
                         }
@@ -598,7 +598,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
                 if (objectPr._arrayElementType != null)
                 {
-                    if ((objectPr._arrayElementType.GetTypeInfo().IsValueType) && (pr._arrayElementTypeCode == InternalPrimitiveTypeE.Invalid))
+                    if ((objectPr._arrayElementType.IsValueType) && (pr._arrayElementTypeCode == InternalPrimitiveTypeE.Invalid))
                     {
                         pr._isValueTypeFixup = true; //Valuefixup
                         ValueFixupStack.Push(new ValueFixup((Array)objectPr._newObj, objectPr._indexMap)); //valuefixup
@@ -748,7 +748,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 ParseObject(pr);
                 _stack.Push(pr);
 
-                if ((pr._objectInfo != null) && pr._objectInfo._objectType != null && (pr._objectInfo._objectType.GetTypeInfo().IsValueType))
+                if ((pr._objectInfo != null) && pr._objectInfo._objectType != null && (pr._objectInfo._objectType.IsValueType))
                 {
                     pr._isValueTypeFixup = true; //Valuefixup
                     ValueFixupStack.Push(new ValueFixup(objectPr._newObj, pr._name, objectPr._objectInfo));//valuefixup
@@ -988,7 +988,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 }
 
                 // before adding it to cache, let us do the security check 
-                CheckTypeForwardedTo(assm, type.GetTypeInfo().Assembly, type);
+                CheckTypeForwardedTo(assm, type.Assembly, type);
 
                 entry = new TypeNAssembly();
                 entry.Type = type;
@@ -1044,7 +1044,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     // here let us do the security check 
                     if (objectType != null)
                     {
-                        CheckTypeForwardedTo(sourceAssembly, objectType.GetTypeInfo().Assembly, objectType);
+                        CheckTypeForwardedTo(sourceAssembly, objectType.Assembly, objectType);
                     }
                 }
 

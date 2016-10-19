@@ -124,9 +124,6 @@
   <ItemGroup Condition="'$(TargetGroup)' == ''">
     <Compile Include="Misc\Calendars.netstandard1.7.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
   <PropertyGroup Condition="'$(TargetGroup)' == 'net46'">
     <DefineConstants>$(DefineConstants);net46</DefineConstants>
   </PropertyGroup>

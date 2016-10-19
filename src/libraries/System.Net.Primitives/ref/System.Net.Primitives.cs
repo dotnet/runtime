@@ -71,9 +71,12 @@ namespace System.Net
         public System.Net.CookieCollection GetCookies(System.Uri uri) { throw null; }
         public void SetCookies(System.Uri uri, string cookieHeader) { }
     }
-    public partial class CookieException : System.FormatException
+    public partial class CookieException : System.FormatException, System.Runtime.Serialization.ISerializable
     {
         public CookieException() { }
+        protected CookieException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
+        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
     public partial class CredentialCache : System.Collections.IEnumerable, System.Net.ICredentials, System.Net.ICredentialsByHost
     {
@@ -205,6 +208,8 @@ namespace System.Net
         public static System.Net.IPAddress Parse(string ipString) { throw null; }
         public override string ToString() { throw null; }
         public static bool TryParse(string ipString, out System.Net.IPAddress address) { throw null; }
+        [Obsolete("This property has been deprecated. It is address family dependent. Please use IPAddress.Equals method to perform comparisons.http://go.microsoft.com/fwlink/?linkid=14202")]
+        public long Address { get { throw null; } set { } }
     }
     public partial class IPEndPoint : System.Net.EndPoint
     {

@@ -18,7 +18,7 @@ using System.Threading;
 
 namespace System.Net.Mail
 {
-    internal class SmtpConnection
+    internal partial class SmtpConnection
     {
         private static readonly ContextCallback s_AuthenticateCallback = new ContextCallback(AuthenticateCallback);
 
@@ -35,26 +35,12 @@ namespace System.Net.Mail
         internal int _port = 0;
         private SmtpReplyReaderFactory _responseReader;
 
-        // accounts for the '=' or ' ' character after AUTH
-        private const int sizeOfAuthString = 5;
-        private const int sizeOfAuthExtension = 4;
-        // string comparisons for these MUST be case-insensitive
-        private const string authExtension = "auth";
-        private const string authLogin = "login";
-
-        private SupportedAuth _supportedAuth = SupportedAuth.None;
-        private bool _serverSupportsStartTls = false;
-        private ISmtpAuthenticationModule[] _authenticationModules;
         private ICredentialsByHost _credentials;
         private int _timeout = 100000;
         private string[] _extensions;
         private ChannelBinding _channelBindingToken = null;
-        private bool _serverSupportsEai;
-        private bool _dsnEnabled;
         private bool _enableSsl;
         private X509CertificateCollection _clientCertificates;
-
-        private static readonly char[] s_authExtensionSplitters = new char[] { ' ', '=' };
 
         internal SmtpConnection(SmtpTransport parent, SmtpClient client, ICredentialsByHost credentials, ISmtpAuthenticationModule[] authenticationModules)
         {
@@ -66,53 +52,13 @@ namespace System.Net.Mail
             _onCloseHandler = new EventHandler(OnClose);
         }
 
-        internal BufferBuilder BufferBuilder
-        {
-            get
-            {
-                return _bufferBuilder;
-            }
-        }
+        internal BufferBuilder BufferBuilder => _bufferBuilder;
 
-        internal bool ServerSupportsEai
-        {
-            get
-            {
-                return _serverSupportsEai;
-            }
-        }
+        internal bool IsConnected => _isConnected;
 
-        internal bool DSNEnabled
-        {
-            get
-            {
-                return _dsnEnabled;
-            }
-        }
+        internal bool IsStreamOpen => _isStreamOpen;
 
-        internal bool IsConnected
-        {
-            get
-            {
-                return _isConnected;
-            }
-        }
-
-        internal bool IsStreamOpen
-        {
-            get
-            {
-                return _isStreamOpen;
-            }
-        }
-
-        internal SmtpReplyReaderFactory Reader
-        {
-            get
-            {
-                return _responseReader;
-            }
-        }
+        internal SmtpReplyReaderFactory Reader => _responseReader;
 
         internal bool EnableSsl
         {
@@ -243,53 +189,6 @@ namespace System.Net.Mail
                 }
             }
             _isConnected = false;
-        }
-
-        internal void ParseExtensions(string[] extensions)
-        {
-            _supportedAuth = SupportedAuth.None;
-            foreach (string extension in extensions)
-            {
-                if (string.Compare(extension, 0, authExtension, 0,
-                    sizeOfAuthExtension, StringComparison.OrdinalIgnoreCase) == 0)
-                {
-                    // remove the AUTH text including the following character 
-                    // to ensure that split only gets the modules supported
-                    string[] authTypes = extension.Remove(0, sizeOfAuthExtension).Split(s_authExtensionSplitters, StringSplitOptions.RemoveEmptyEntries);
-                    foreach (string authType in authTypes)
-                    {
-                        if (string.Equals(authType, authLogin, StringComparison.OrdinalIgnoreCase))
-                        {
-                            _supportedAuth |= SupportedAuth.Login;
-                        }
-                    }
-                }
-                else if (string.Compare(extension, 0, "dsn ", 0, 3, StringComparison.OrdinalIgnoreCase) == 0)
-                {
-                    _dsnEnabled = true;
-                }
-                else if (string.Compare(extension, 0, "STARTTLS", 0, 8, StringComparison.OrdinalIgnoreCase) == 0)
-                {
-                    _serverSupportsStartTls = true;
-                }
-                else if (string.Compare(extension, 0, "SMTPUTF8", 0, 8, StringComparison.OrdinalIgnoreCase) == 0)
-                {
-                    _serverSupportsEai = true;
-                }
-            }
-        }
-
-        internal bool AuthSupported(ISmtpAuthenticationModule module)
-        {
-            if (module is SmtpLoginAuthenticationModule)
-            {
-                if ((_supportedAuth & SupportedAuth.Login) > 0)
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         internal void GetConnection(string host, int port)
@@ -661,7 +560,7 @@ namespace System.Net.Mail
                 }
             }
 
-            private static void HandshakeCallback(IAsyncResult result)   //3
+            private static void HandshakeCallback(IAsyncResult result)
             {
                 if (!result.CompletedSynchronously)
                 {
@@ -734,7 +633,7 @@ namespace System.Net.Mail
                 return false;
             }
 
-            private static void SendEHelloCallback(IAsyncResult result)//5
+            private static void SendEHelloCallback(IAsyncResult result)
             {
                 if (!result.CompletedSynchronously)
                 {
@@ -796,7 +695,7 @@ namespace System.Net.Mail
                 }
             }
 
-            private bool SendHello()//6
+            private bool SendHello()
             {
                 IAsyncResult result = HelloCommand.BeginSend(_connection, _connection._client.clientDomain, s_sendHelloCallback, this);
                 //if ehello isn't supported, assume basic auth
@@ -810,7 +709,7 @@ namespace System.Net.Mail
                 return false;
             }
 
-            private static void SendHelloCallback(IAsyncResult result)     //7
+            private static void SendHelloCallback(IAsyncResult result)
             {
                 if (!result.CompletedSynchronously)
                 {
@@ -827,7 +726,7 @@ namespace System.Net.Mail
                 }
             }
 
-            private bool SendStartTls()//6
+            private bool SendStartTls()
             {
                 IAsyncResult result = StartTlsCommand.BeginSend(_connection, SendStartTlsCallback, this);
                 if (result.CompletedSynchronously)
@@ -839,7 +738,7 @@ namespace System.Net.Mail
                 return false;
             }
 
-            private static void SendStartTlsCallback(IAsyncResult result)     //7
+            private static void SendStartTlsCallback(IAsyncResult result)
             {
                 if (!result.CompletedSynchronously)
                 {
@@ -888,7 +787,7 @@ namespace System.Net.Mail
                 }
             }
 
-            private void Authenticate() //8
+            private void Authenticate()
             {
                 //if no credentials were supplied, try anonymous
                 //servers don't appear to anounce that they support anonymous login.
@@ -940,7 +839,7 @@ namespace System.Net.Mail
                 InvokeCallback();
             }
 
-            private static void AuthenticateCallback(IAsyncResult result) //9
+            private static void AuthenticateCallback(IAsyncResult result)
             {
                 if (!result.CompletedSynchronously)
                 {
@@ -974,7 +873,7 @@ namespace System.Net.Mail
                 }
             }
 
-            private bool AuthenticateContinue()        //10
+            private bool AuthenticateContinue()
             {
                 for (;;)
                 {
@@ -1008,7 +907,7 @@ namespace System.Net.Mail
                 }
             }
 
-            private static void AuthenticateContinueCallback(IAsyncResult result)     //11
+            private static void AuthenticateContinueCallback(IAsyncResult result)
             {
                 if (!result.CompletedSynchronously)
                 {

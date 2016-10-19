@@ -49,9 +49,6 @@
     <TargetingPackReference Include="System.Threading.Tasks" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\pkg\System.Globalization.Extensions.pkgproj">
       <Project>{2b96aa10-84c0-4927-8611-8d2474b990e8}</Project>
       <Name>System.Globalization.Extensions</Name>

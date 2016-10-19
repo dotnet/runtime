@@ -10,6 +10,9 @@
     <ProjectGuid>{4FE5ECEE-ACC5-4558-A946-573426599B73}</ProjectGuid>
     <OutputType>Library</OutputType>
     <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
+  </PropertyGroup> 
+  <PropertyGroup Condition="'$(TargetGroup)' == ''">
+     <DefineConstants>NetStandard17</DefineConstants>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
@@ -32,14 +35,17 @@
     <Compile Include="NetworkCredentialTest.cs" />
     <Compile Include="SocketAddressTest.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
+    <Compile Include="SerializationTest.cs" />
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
+      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
+    </Compile>
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\pkg\System.Net.Primitives.pkgproj">
       <Project>{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}</Project>
       <Name>System.Net.Primitives</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

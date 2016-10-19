@@ -6,6 +6,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net463'">true</IsPartialFacadeAssembly>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
+    <DefineConstants Condition="'$(TargetGroup)' == ''">NETSTANDARD1_7</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.7_Debug|AnyCPU'" />
@@ -62,10 +63,11 @@
     <Compile Include="System\Net\Mail\SmtpClient.cs" />
     <Compile Include="System\Net\Mail\SmtpCommands.cs" />
     <Compile Include="System\Net\Mail\SmtpConnection.cs" />
+    <Compile Include="System\Net\Mail\SmtpConnection.Auth.cs" />
     <Compile Include="System\Net\Mail\SmtpException.cs" />
     <Compile Include="System\Net\Mail\SmtpFailedRecipientException.cs" />
     <Compile Include="System\Net\Mail\SmtpFailedRecipientsException.cs" />
-    <Compile Include="System\Net\Mail\SmtpPermission.cs" />
+    <Compile Include="System\Net\Mail\SmtpAccess.cs" />
     <Compile Include="System\Net\Mail\SmtpReplyReader.cs" />
     <Compile Include="System\Net\Mail\SmtpReplyReaderFactory.cs" />
     <Compile Include="System\Net\Mail\SmtpStatusCode.cs" />
@@ -117,8 +119,11 @@
     <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.cs">
       <Link>Common\System\Net\Logging\NetEventSource.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\WebEventSource.cs">
-      <Link>Common\System\Net\Logging\WebEventSource.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\Logging\MailEventSource.cs">
+      <Link>Common\System\Net\Logging\MailEventSource.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\SecurityProtocol.cs">
+      <Link>Common\System\Net\SecurityProtocol.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\StringExtensions.cs">
       <Link>Common\System\StringExtensions.cs</Link>

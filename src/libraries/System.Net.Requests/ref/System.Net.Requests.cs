@@ -178,7 +178,7 @@ namespace System.Net
         public ProtocolViolationException() { }
         public ProtocolViolationException(string message) { }
     }
-    public partial class WebException : System.InvalidOperationException
+    public partial class WebException : System.InvalidOperationException , System.Runtime.Serialization.ISerializable
     {
         public WebException() { }
         public WebException(string message) { }
@@ -187,6 +187,12 @@ namespace System.Net
         public WebException(string message, System.Net.WebExceptionStatus status) { }
         public System.Net.WebResponse Response { get { throw null; } }
         public System.Net.WebExceptionStatus Status { get { throw null; } }
+        protected WebException(System.Runtime.Serialization.SerializationInfo serializationInfo, 
+            System.Runtime.Serialization.StreamingContext streamingContext) { }
+        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, 
+            System.Runtime.Serialization.StreamingContext streamingContext) { }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo,
+            System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
     public enum WebExceptionStatus
     {

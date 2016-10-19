@@ -4,7 +4,7 @@
 
 namespace System.Security.Principal
 {
-    public sealed class IdentityNotMappedException : Exception
+    public sealed class IdentityNotMappedException : SystemException
     {
         private IdentityReferenceCollection _unmappedIdentities;
 

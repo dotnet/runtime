@@ -21,9 +21,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\..\pkg\System.Reflection.TypeExtensions.pkgproj" />
   </ItemGroup>
   <ItemGroup>

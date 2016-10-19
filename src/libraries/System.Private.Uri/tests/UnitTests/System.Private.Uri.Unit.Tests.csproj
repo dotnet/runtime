@@ -26,9 +26,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
     <!-- Production code references -->
     <Compile Include="..\..\src\System\UriHelper.cs" />
     <Compile Include="..\..\src\System\IriHelper.cs" />

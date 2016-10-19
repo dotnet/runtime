@@ -64,6 +64,9 @@ namespace System
         public static object CreateInstance(System.Type type) { throw null; }
         public static object CreateInstance(System.Type type, System.Boolean nonPublic) { throw null; }
         public static object CreateInstance(System.Type type, params object[] args) { throw null; }
+        public static object CreateInstance(System.Type type, object[] args, object[] activationAttributes) { throw null; } 
+        public static object CreateInstance(System.Type type, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder binder, object[] args, System.Globalization.CultureInfo culture) { throw null; } 
+        public static object CreateInstance(System.Type type, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder binder, object[] args, System.Globalization.CultureInfo culture, object[] activationAttributes) { throw null; } 
         public static T CreateInstance<T>() { throw null; }
     }
 
@@ -153,7 +156,7 @@ namespace System
         public void Handle(System.Func<System.Exception, bool> predicate) { }
         public override string ToString() { throw null; }
     }
-    public partial class ArgumentException : System.Exception, System.Runtime.Serialization.ISerializable
+    public partial class ArgumentException : System.SystemException, System.Runtime.Serialization.ISerializable
     {
         public ArgumentException() { }
         public ArgumentException(string message) { }
@@ -185,7 +188,7 @@ namespace System
         public override string Message { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
-    public partial class ArithmeticException : System.Exception
+    public partial class ArithmeticException : System.SystemException
     {
         public ArithmeticException() { }
         public ArithmeticException(string message) { }
@@ -338,7 +341,7 @@ namespace System
         void System.Collections.Generic.IList<T>.RemoveAt(int index) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
     }
-    public partial class ArrayTypeMismatchException : System.Exception
+    public partial class ArrayTypeMismatchException : System.SystemException
     {
         public ArrayTypeMismatchException() { }
         public ArrayTypeMismatchException(string message) { }
@@ -416,7 +419,7 @@ namespace System
         public bool Inherited { get { throw null; } set { } }
         public System.AttributeTargets ValidOn { get { throw null; } }
     }
-    public partial class BadImageFormatException : System.Exception
+    public partial class BadImageFormatException : System.SystemException
     {
         public BadImageFormatException() { }
         public BadImageFormatException(string message) { }
@@ -451,7 +454,7 @@ namespace System
         long System.IConvertible.ToInt64(System.IFormatProvider provider) { throw null; }
         sbyte System.IConvertible.ToSByte(System.IFormatProvider provider) { throw null; }
         float System.IConvertible.ToSingle(System.IFormatProvider provider) { throw null; }
-        string System.IConvertible.ToString(System.IFormatProvider provider) { throw null; }
+        public string ToString(System.IFormatProvider provider) { throw null; }
         object System.IConvertible.ToType(System.Type type, System.IFormatProvider provider) { throw null; }
         ushort System.IConvertible.ToUInt16(System.IFormatProvider provider) { throw null; }
         uint System.IConvertible.ToUInt32(System.IFormatProvider provider) { throw null; }
@@ -569,7 +572,7 @@ namespace System
         long System.IConvertible.ToInt64(System.IFormatProvider provider) { throw null; }
         sbyte System.IConvertible.ToSByte(System.IFormatProvider provider) { throw null; }
         float System.IConvertible.ToSingle(System.IFormatProvider provider) { throw null; }
-        string System.IConvertible.ToString(System.IFormatProvider provider) { throw null; }
+        public string ToString(System.IFormatProvider provider) { throw null; }
         object System.IConvertible.ToType(System.Type type, System.IFormatProvider provider) { throw null; }
         ushort System.IConvertible.ToUInt16(System.IFormatProvider provider) { throw null; }
         uint System.IConvertible.ToUInt32(System.IFormatProvider provider) { throw null; }
@@ -1128,7 +1131,7 @@ namespace System
     }
     public delegate void EventHandler(object sender, System.EventArgs e);
     public delegate void EventHandler<TEventArgs>(object sender, TEventArgs e);
-    public partial class Exception
+    public partial class Exception : System.Runtime.Serialization.ISerializable
     {
         public Exception() { }
         public Exception(string message) { }
@@ -1159,7 +1162,7 @@ namespace System
     {
         public FlagsAttribute() { }
     }
-    public partial class FormatException : System.Exception
+    public partial class FormatException : System.SystemException
     {
         public FormatException() { }
         public FormatException(string message) { }
@@ -1311,13 +1314,13 @@ namespace System
     {
         string ToString(string format, System.IFormatProvider formatProvider);
     }
-    public sealed partial class IndexOutOfRangeException : System.Exception
+    public sealed partial class IndexOutOfRangeException : System.SystemException
     {
         public IndexOutOfRangeException() { }
         public IndexOutOfRangeException(string message) { }
         public IndexOutOfRangeException(string message, System.Exception innerException) { }
     }
-    public sealed partial class InsufficientExecutionStackException : System.Exception
+    public sealed partial class InsufficientExecutionStackException : System.SystemException
     {
         public InsufficientExecutionStackException() { }
         public InsufficientExecutionStackException(string message) { }
@@ -1441,9 +1444,9 @@ namespace System
         public static bool TryParse(string s, out long result) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct IntPtr
+    public partial struct IntPtr : System.Runtime.Serialization.ISerializable
 #if netcoreapp11
-: IEquatable<IntPtr>
+, IEquatable<IntPtr>
 #endif
     {
         public static readonly System.IntPtr Zero;
@@ -1459,6 +1462,7 @@ namespace System
         bool IEquatable<IntPtr>.Equals(IntPtr other) { return default(bool); }
 #endif
         public override int GetHashCode() { throw null; }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static System.IntPtr operator +(System.IntPtr pointer, int offset) { throw null; }
         public static bool operator ==(System.IntPtr value1, System.IntPtr value2) { throw null; }
         public static explicit operator System.IntPtr(int value) { throw null; }
@@ -1480,7 +1484,7 @@ namespace System
         public override string ToString() { throw null; }
         public string ToString(string format) { throw null; }
     }
-    public partial class InvalidCastException : System.Exception
+    public partial class InvalidCastException : System.SystemException
     {
         public InvalidCastException() { }
         public InvalidCastException(string message) { }
@@ -1488,14 +1492,14 @@ namespace System
         public InvalidCastException(string message, int errorCode) { }
         protected InvalidCastException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
-    public partial class InvalidOperationException : System.Exception
+    public partial class InvalidOperationException : System.SystemException
     {
         public InvalidOperationException() { }
         public InvalidOperationException(string message) { }
         public InvalidOperationException(string message, System.Exception innerException) { }
         protected InvalidOperationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
-    public sealed partial class InvalidProgramException : System.Exception
+    public sealed partial class InvalidProgramException : System.SystemException
     {
         public InvalidProgramException() { }
         public InvalidProgramException(string message) { }
@@ -1551,7 +1555,7 @@ namespace System
         public Lazy(System.Func<T> valueFactory, TMetadata metadata, System.Threading.LazyThreadSafetyMode mode) { }
         public TMetadata Metadata { get { throw null; } }
     }
-    public partial class MemberAccessException : System.Exception
+    public partial class MemberAccessException : System.SystemException
     {
         public MemberAccessException() { }
         public MemberAccessException(string message) { }
@@ -1647,14 +1651,14 @@ namespace System
         {
         }
     }
-    public partial class NotImplementedException : System.Exception
+    public partial class NotImplementedException : System.SystemException
     {
         public NotImplementedException() { }
         public NotImplementedException(string message) { }
         public NotImplementedException(string message, System.Exception inner) { }
         protected NotImplementedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
-    public partial class NotSupportedException : System.Exception
+    public partial class NotSupportedException : System.SystemException
     {
         public NotSupportedException() { }
         public NotSupportedException(string message) { }
@@ -1681,7 +1685,7 @@ namespace System
         public static implicit operator System.Nullable<T>(T value) { throw null; }
         public override string ToString() { throw null; }
     }
-    public partial class NullReferenceException : System.Exception
+    public partial class NullReferenceException : System.SystemException
     {
         public NullReferenceException() { }
         public NullReferenceException(string message) { }
@@ -1719,7 +1723,7 @@ namespace System
         public bool IsError { get { throw null; } }
         public string Message { get { throw null; } }
     }
-    public partial class OutOfMemoryException : System.Exception
+    public partial class OutOfMemoryException : System.SystemException
     {
         public OutOfMemoryException() { }
         public OutOfMemoryException(string message) { }
@@ -1744,7 +1748,7 @@ namespace System
         protected PlatformNotSupportedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     public delegate bool Predicate<in T>(T obj);
-    public partial class RankException : System.Exception
+    public partial class RankException : System.SystemException
     {
         public RankException() { }
         public RankException(string message) { }
@@ -1896,7 +1900,7 @@ namespace System
     {
         public STAThreadAttribute() { }
     }
-    public sealed partial class String : System.Collections.Generic.IEnumerable<char>, System.Collections.IEnumerable, System.IComparable, System.IComparable<string>, System.IConvertible, System.IEquatable<string>
+    public sealed partial class String : System.Collections.Generic.IEnumerable<char>, System.Collections.IEnumerable, System.IComparable, System.IComparable<string>, System.IConvertible, System.IEquatable<string>, System.ICloneable
     {
         public static readonly string Empty;
         [System.CLSCompliantAttribute(false)]
@@ -2029,8 +2033,8 @@ namespace System
         public string Substring(int startIndex, int length) { throw null; }
         System.Collections.Generic.IEnumerator<char> System.Collections.Generic.IEnumerable<System.Char>.GetEnumerator() { throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
-        int System.IComparable.CompareTo(object value) { throw null; }
-        System.TypeCode System.IConvertible.GetTypeCode() { throw null; }
+        public int CompareTo(object value) { throw null; }
+        public System.TypeCode GetTypeCode() { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
         byte System.IConvertible.ToByte(System.IFormatProvider provider) { throw null; }
         char System.IConvertible.ToChar(System.IFormatProvider provider) { throw null; }
@@ -2042,7 +2046,7 @@ namespace System
         long System.IConvertible.ToInt64(System.IFormatProvider provider) { throw null; }
         sbyte System.IConvertible.ToSByte(System.IFormatProvider provider) { throw null; }
         float System.IConvertible.ToSingle(System.IFormatProvider provider) { throw null; }
-        string System.IConvertible.ToString(System.IFormatProvider provider) { throw null; }
+        public string ToString(System.IFormatProvider provider) { throw null; }
         object System.IConvertible.ToType(System.Type type, System.IFormatProvider provider) { throw null; }
         ushort System.IConvertible.ToUInt16(System.IFormatProvider provider) { throw null; }
         uint System.IConvertible.ToUInt32(System.IFormatProvider provider) { throw null; }
@@ -2081,7 +2085,7 @@ namespace System
     {
         public ThreadStaticAttribute() { }
     }
-    public partial class TimeoutException : System.Exception
+    public partial class TimeoutException : System.SystemException
     {
         public TimeoutException() { }
         public TimeoutException(string message) { }
@@ -2587,13 +2591,13 @@ namespace System
         UInt32 = 10,
         UInt64 = 12,
     }
-    public sealed partial class TypeInitializationException : System.Exception
+    public sealed partial class TypeInitializationException : System.SystemException
     {
         public TypeInitializationException(string fullTypeName, System.Exception innerException) { }
         public string TypeName { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
-    public partial class TypeLoadException : System.Exception, System.Runtime.Serialization.ISerializable
+    public partial class TypeLoadException : System.SystemException, System.Runtime.Serialization.ISerializable
     {
         public TypeLoadException() { }
         public TypeLoadException(string message) { }
@@ -2737,9 +2741,9 @@ namespace System
     }
     [System.CLSCompliantAttribute(false)]
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct UIntPtr
+    public partial struct UIntPtr : System.Runtime.Serialization.ISerializable
 #if netcoreapp11
-: IEquatable<UIntPtr>    
+, IEquatable<UIntPtr>    
 #endif
     {
         public static readonly System.UIntPtr Zero;
@@ -2755,6 +2759,7 @@ namespace System
         bool IEquatable<UIntPtr>.Equals(UIntPtr other) { return default(bool); }
 #endif
         public override int GetHashCode() { throw null; }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static System.UIntPtr operator +(System.UIntPtr pointer, int offset) { throw null; }
         public static bool operator ==(System.UIntPtr value1, System.UIntPtr value2) { throw null; }
         public static explicit operator System.UIntPtr(uint value) { throw null; }
@@ -2776,7 +2781,7 @@ namespace System
         public uint ToUInt32() { throw null; }
         public ulong ToUInt64() { throw null; }
     }
-    public partial class UnauthorizedAccessException : System.Exception
+    public partial class UnauthorizedAccessException : System.SystemException
     {
         public UnauthorizedAccessException() { }
         public UnauthorizedAccessException(string message) { }
@@ -3012,7 +3017,7 @@ namespace System
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
     }
-    public sealed partial class Version : System.IComparable, System.IComparable<System.Version>, System.IEquatable<System.Version>
+    public sealed partial class Version : System.IComparable, System.IComparable<System.Version>, System.IEquatable<System.Version>, System.ICloneable
     {
         public Version(int major, int minor) { }
         public Version(int major, int minor, int build) { }
@@ -3025,6 +3030,7 @@ namespace System
         public int Minor { get { throw null; } }
         public short MinorRevision { get { throw null; } }
         public int Revision { get { throw null; } }
+        public object Clone() { throw null; }
         public int CompareTo(object version) { throw null; }
         public int CompareTo(System.Version value) { throw null; }
         public override bool Equals(object obj) { throw null; }
@@ -4417,7 +4423,7 @@ namespace System.IO
         Inheritable = 1,
         None = 0,
     }
-    public partial class IOException : System.Exception
+    public partial class IOException : System.SystemException
     {
         public IOException() { }
         public IOException(string message) { }
@@ -6019,7 +6025,7 @@ namespace System.Runtime.Serialization
         public Type ObjectType { get { throw null; } }
         public object Value { get { throw null; } }
     }
-    public partial class SerializationException : System.Exception
+    public partial class SerializationException : System.SystemException
     {
         public SerializationException() { }
         public SerializationException(string message) { }
@@ -6126,46 +6132,104 @@ namespace System.Runtime.Versioning
 }
 namespace System.Security
 {
-    [System.AttributeUsageAttribute((System.AttributeTargets)(1), AllowMultiple = false, Inherited = false)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(1), AllowMultiple=false, Inherited=false)]
     public sealed partial class AllowPartiallyTrustedCallersAttribute : System.Attribute
     {
         public AllowPartiallyTrustedCallersAttribute() { }
+        public System.Security.PartialTrustVisibilityLevel PartialTrustVisibilityLevel { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(5501), AllowMultiple = false, Inherited = false)]
+    public enum PartialTrustVisibilityLevel
+    {
+        NotVisibleByDefault = 1,
+        VisibleToAllHosts = 0,
+    }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(5501), AllowMultiple=false, Inherited=false)]
     public sealed partial class SecurityCriticalAttribute : System.Attribute
     {
         public SecurityCriticalAttribute() { }
+#pragma warning disable 0618        
+        public SecurityCriticalAttribute(System.Security.SecurityCriticalScope scope) { }
+#pragma warning restore 0618
+        [System.ObsoleteAttribute("SecurityCriticalScope is only used for .NET 2.0 transparency compatibility.")]
+        public System.Security.SecurityCriticalScope Scope { get { throw null; } }
     }
-    public partial class SecurityException : System.Exception
+    [System.ObsoleteAttribute("SecurityCriticalScope is only used for .NET 2.0 transparency compatibility.")]
+    public enum SecurityCriticalScope
+    {
+        Everything = 1,
+        Explicit = 0,
+    }
+    public partial class SecurityException : System.SystemException
     {
         public SecurityException() { }
+        protected SecurityException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public SecurityException(string message) { }
         public SecurityException(string message, System.Exception inner) { }
-        protected SecurityException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+        public SecurityException(string message, System.Type type) { }
+        public SecurityException(string message, System.Type type, string state) { }
+        public object Demanded { get { throw null; } set { } }
+        public object DenySetInstance { get { throw null; } set { } }
+        public System.Reflection.AssemblyName FailedAssemblyInfo { get { throw null; } set { } }
+        public string GrantedSet { get { throw null; } set { } }
+        public System.Reflection.MethodInfo Method { get { throw null; } set { } }
+        public string PermissionState { get { throw null; } set { } }
+        public System.Type PermissionType { get { throw null; } set { } }
+        public object PermitOnlySetInstance { get { throw null; } set { } }
+        public string RefusedSet { get { throw null; } set { } }
+        public string Url { get { throw null; } set { } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(5500), AllowMultiple = false, Inherited = false)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(1), AllowMultiple=false)]
+    public sealed partial class SecurityRulesAttribute : System.Attribute
+    {
+        public SecurityRulesAttribute(System.Security.SecurityRuleSet ruleSet) { }
+        public System.Security.SecurityRuleSet RuleSet { get { throw null; } }
+        public bool SkipVerificationInFullTrust { get { throw null; } set { } }
+    }
+    public enum SecurityRuleSet : byte
+    {
+        Level1 = (byte)1,
+        Level2 = (byte)2,
+        None = (byte)0,
+    }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(5500), AllowMultiple=false, Inherited=false)]
     public sealed partial class SecuritySafeCriticalAttribute : System.Attribute
     {
         public SecuritySafeCriticalAttribute() { }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(1), AllowMultiple = false, Inherited = false)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(1), AllowMultiple=false, Inherited=false)]
     public sealed partial class SecurityTransparentAttribute : System.Attribute
     {
         public SecurityTransparentAttribute() { }
     }
-    public partial class VerificationException : System.Exception
+    [System.AttributeUsageAttribute((System.AttributeTargets)(5501), AllowMultiple=false, Inherited=false)]
+    [System.ObsoleteAttribute("SecurityTreatAsSafe is only used for .NET 2.0 transparency compatibility.  Please use the SecuritySafeCriticalAttribute instead.")]
+    public sealed partial class SecurityTreatAsSafeAttribute : System.Attribute
+    {
+        public SecurityTreatAsSafeAttribute() { }
+    }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(5188), AllowMultiple=true, Inherited=false)]
+    public sealed partial class SuppressUnmanagedCodeSecurityAttribute : System.Attribute
+    {
+        public SuppressUnmanagedCodeSecurityAttribute() { }
+    }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(2), AllowMultiple=true, Inherited=false)]
+    public sealed partial class UnverifiableCodeAttribute : System.Attribute
+    {
+        public UnverifiableCodeAttribute() { }
+    }
+    public partial class VerificationException : System.SystemException
     {
         public VerificationException() { }
+        protected VerificationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public VerificationException(string message) { }
         public VerificationException(string message, System.Exception innerException) { }
-        protected VerificationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
 }
 namespace System.Text
 {
-    public sealed partial class StringBuilder
+    public sealed partial class StringBuilder : System.Runtime.Serialization.ISerializable
     {
         public StringBuilder() { }
         public StringBuilder(int capacity) { }
@@ -6218,6 +6282,7 @@ namespace System.Text
         public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count) { }
         public int EnsureCapacity(int capacity) { throw null; }
         public bool Equals(System.Text.StringBuilder sb) { throw null; }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public System.Text.StringBuilder Insert(int index, bool value) { throw null; }
         public System.Text.StringBuilder Insert(int index, byte value) { throw null; }
         public System.Text.StringBuilder Insert(int index, char value) { throw null; }

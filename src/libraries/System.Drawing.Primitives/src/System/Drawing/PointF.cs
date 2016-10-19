@@ -8,6 +8,7 @@ namespace System.Drawing
     ///    Represents an ordered pair of x and y coordinates that
     ///    define a point in a two-dimensional plane.
     /// </summary>
+    [Serializable]
     public struct PointF
     {
         /// <summary>

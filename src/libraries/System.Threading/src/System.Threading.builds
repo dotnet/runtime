@@ -6,11 +6,6 @@
     <Project Include="System.Threading.csproj">
       <TargetGroup>net463</TargetGroup>
     </Project>
-    <!-- Net46 facade is currently inbox for 4.0 
-    <Project Include="System.Threading.csproj">
-      <TargetGroup>net46</TargetGroup>
-    </Project>
-    -->
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>

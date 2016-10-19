@@ -139,6 +139,7 @@
     <Compile Include="System\GuidTests.netstandard1.7.cs" />
     <Compile Include="System\MarshalByRefObjectTests.cs" />
     <Compile Include="System\NotFiniteNumberExceptionTests.cs" />
+    <Compile Include="System\Security\SecurityAttributeTests.cs" /> 
     <Compile Include="System\StackOverflowExceptionTests.cs" />
     <Compile Include="System\SystemExceptionTests.cs" />
     <Compile Include="System\StringTests.netstandard1.7.cs" />
@@ -186,9 +187,7 @@
     <Compile Include="System\AppContext\AppContext.Switch.cs" />
     <Compile Include="System\AppContext\AppContext.Switch.Validation.cs" />
     <Compile Include="System\Reflection\StrongNameKeyPairTests.netstandard1.7.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
+    <Compile Include="System\ActivatorTest.netstandard1.7.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="TestModule\System.Reflection.TestModule.dll">
@@ -200,6 +199,11 @@
     <ProjectReference Include="..\..\System.Private.Uri\pkg\System.Private.Uri.pkgproj">
       <Project>{4AC5343E-6E31-4BA5-A795-0493AE7E9008}</Project>
       <Name>System.Private.Uri</Name>
+    </ProjectReference>
+    <!-- TODO Remove once System.Security.Permissions has been published -->
+    <ProjectReference Include="..\..\System.Security.Permissions\pkg\System.Security.Permissions.pkgproj">
+      <Project>{4AC5343E-6E31-4BA5-A795-0493AE7E9008}</Project>
+      <Name>System.Security.Permissions</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

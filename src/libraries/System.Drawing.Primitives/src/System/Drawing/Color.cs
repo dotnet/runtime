@@ -660,27 +660,7 @@ namespace System.Drawing
 
         public override bool Equals(object obj)
         {
-            if (obj is Color)
-            {
-                Color right = (Color)obj;
-                if (value == right.value
-                    && state == right.state
-                    && knownColor == right.knownColor)
-                {
-                    if (name == right.name)
-                    {
-                        return true;
-                    }
-
-                    if (ReferenceEquals(name, null) || ReferenceEquals(right.name, null))
-                    {
-                        return false;
-                    }
-
-                    return name.Equals(name);
-                }
-            }
-            return false;
+            return obj is Color && this == (Color)obj;
         }
 
         public override int GetHashCode()

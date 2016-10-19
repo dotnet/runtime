@@ -4,7 +4,7 @@
 
 namespace System.Resources
 {
-    public class MissingManifestResourceException : Exception
+    public class MissingManifestResourceException : SystemException
     {
         public MissingManifestResourceException()
             : base(SR.Arg_MissingManifestResourceException)

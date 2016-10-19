@@ -16,9 +16,6 @@
     <ProjectReference Include="..\pkg\System.Runtime.Handles.pkgproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="CriticalHandle.cs" />
     <Compile Include="SafeHandle.cs" />
     <Compile Include="SafeWaitHandle.cs" />

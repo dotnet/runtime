@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization.Json;
@@ -70,26 +71,14 @@ namespace System.Json
             }
 
             if (ret is bool) return new JsonPrimitive((bool)ret);
-            if (ret is byte) return new JsonPrimitive((byte)ret);
-            if (ret is char) return new JsonPrimitive((char)ret);
             if (ret is decimal) return new JsonPrimitive((decimal)ret);
             if (ret is double) return new JsonPrimitive((double)ret);
-            if (ret is float) return new JsonPrimitive((float)ret);
             if (ret is int) return new JsonPrimitive((int)ret);
             if (ret is long) return new JsonPrimitive((long)ret);
-            if (ret is sbyte) return new JsonPrimitive((sbyte)ret);
-            if (ret is short) return new JsonPrimitive((short)ret);
             if (ret is string) return new JsonPrimitive((string)ret);
-            if (ret is uint) return new JsonPrimitive((uint)ret);
-            if (ret is ulong) return new JsonPrimitive((ulong)ret);
-            if (ret is ushort) return new JsonPrimitive((ushort)ret);
-            if (ret is DateTime) return new JsonPrimitive((DateTime)ret);
-            if (ret is DateTimeOffset) return new JsonPrimitive((DateTimeOffset)ret);
-            if (ret is Guid) return new JsonPrimitive((Guid)ret);
-            if (ret is TimeSpan) return new JsonPrimitive((TimeSpan)ret);
-            if (ret is Uri) return new JsonPrimitive((Uri)ret);
 
-            throw new NotSupportedException(SR.Format(SR.NotSupported_UnexpectedParserType, ret.GetType()));
+            Debug.Assert(ret is ulong);
+            return new JsonPrimitive((ulong)ret);
         }
 
         public static JsonValue Parse(string jsonString)

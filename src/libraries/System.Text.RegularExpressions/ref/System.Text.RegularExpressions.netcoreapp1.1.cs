@@ -8,6 +8,17 @@
 
 namespace System.Text.RegularExpressions
 {
+    public partial class Group
+    {
+        public string Name { get { throw null; } }
+    }
+    public partial class Regex
+    {
+        [System.CLSCompliant(false)]
+        protected System.Collections.IDictionary Caps { get { throw null; } set { } }
+        [System.CLSCompliant(false)]
+        protected System.Collections.IDictionary CapNames { get { throw null; } set { } }
+    }
     public partial class CaptureCollection : System.Collections.Generic.ICollection<System.Text.RegularExpressions.Capture>, System.Collections.Generic.IEnumerable<System.Text.RegularExpressions.Capture>, System.Collections.Generic.IList<System.Text.RegularExpressions.Capture>, System.Collections.Generic.IReadOnlyCollection<System.Text.RegularExpressions.Capture>, System.Collections.Generic.IReadOnlyList<System.Text.RegularExpressions.Capture>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
     {
         public void CopyTo(System.Text.RegularExpressions.Capture[] array, int arrayIndex) { }

@@ -13,6 +13,7 @@ namespace System.Text.RegularExpressions
     /// capture zero, one, or more strings in a single match because of quantifiers, so
     /// Group supplies a collection of Capture objects.
     /// </summary>
+    [Serializable]
     public class Group : Capture
     {
         // the empty group object

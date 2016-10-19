@@ -24,7 +24,7 @@ namespace System.Security.Cryptography
         CTS = 5,
         ECB = 2,
     }
-    public partial class CryptographicException : System.Exception
+    public partial class CryptographicException : System.SystemException
     {
         public CryptographicException() { }
         public CryptographicException(int hr) { }
@@ -44,6 +44,9 @@ namespace System.Security.Cryptography
     public partial class CryptoStream : System.IO.Stream, System.IDisposable
     {
         public CryptoStream(System.IO.Stream stream, System.Security.Cryptography.ICryptoTransform transform, System.Security.Cryptography.CryptoStreamMode mode) { }
+#if netcoreapp11
+        public CryptoStream(System.IO.Stream stream, System.Security.Cryptography.ICryptoTransform transform, System.Security.Cryptography.CryptoStreamMode mode, bool leaveOpen) { }
+#endif
         public override bool CanRead { get { throw null; } }
         public override bool CanSeek { get { throw null; } }
         public override bool CanWrite { get { throw null; } }

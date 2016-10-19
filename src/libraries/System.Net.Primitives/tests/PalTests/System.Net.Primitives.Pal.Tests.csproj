@@ -33,6 +33,7 @@
     <Compile Include="SocketAddressPalTest.cs" />
 
     <Compile Include="Fakes\GlobalLog.cs" />
+    <Compile Include="Fakes\Serialization.cs" Condition="'$(TargetGroup)' != ''"/>
 
     <Compile Include="..\..\src\System\Net\EndPoint.cs" >
       <Link>ProductionCode\System\Net\EndPoint.cs</Link>
@@ -63,9 +64,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\IPAddressParserStatics.cs" >
       <Link>ProductionCode\Common\System\Net\IPAddressParserStatics.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\NetworkInformation\NetworkInformationException.cs" >
-      <Link>ProductionCode\Common\System\Net\NetworkInformation\NetworkInformationException.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\SocketAddress.cs" >
       <Link>Common\System\Net\SocketAddress.cs</Link>

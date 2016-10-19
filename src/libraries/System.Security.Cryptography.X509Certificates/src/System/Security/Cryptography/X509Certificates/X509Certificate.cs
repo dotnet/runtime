@@ -31,8 +31,8 @@ namespace System.Security.Cryptography.X509Certificates
         {
             if (rawData == null || rawData.Length == 0)
                 throw new ArgumentException(SR.Arg_EmptyOrNullArray, nameof(rawData));
-            if ((keyStorageFlags & ~KeyStorageFlagsAll) != 0)
-                throw new ArgumentException(SR.Argument_InvalidFlag, nameof(keyStorageFlags));
+ 
+            ValidateKeyStorageFlags(keyStorageFlags);
 
             Pal = CertificatePal.FromBlob(rawData, password, keyStorageFlags);
         }
@@ -62,8 +62,8 @@ namespace System.Security.Cryptography.X509Certificates
         {
             if (fileName == null)
                 throw new ArgumentNullException(nameof(fileName));
-            if ((keyStorageFlags & ~KeyStorageFlagsAll) != 0)
-                throw new ArgumentException(SR.Argument_InvalidFlag, nameof(keyStorageFlags));
+            
+            ValidateKeyStorageFlags(keyStorageFlags);
 
             Pal = CertificatePal.FromFile(fileName, password, keyStorageFlags);
         }
@@ -430,6 +430,24 @@ namespace System.Security.Cryptography.X509Certificates
             return date.ToString(culture);
         }
 
+        internal static void ValidateKeyStorageFlags(X509KeyStorageFlags keyStorageFlags)
+        {
+            if ((keyStorageFlags & ~KeyStorageFlagsAll) != 0)
+                throw new ArgumentException(SR.Argument_InvalidFlag, nameof(keyStorageFlags));
+
+            const X509KeyStorageFlags EphemeralPersist =
+                X509KeyStorageFlags.EphemeralKeySet | X509KeyStorageFlags.PersistKeySet;
+
+            X509KeyStorageFlags persistenceFlags = keyStorageFlags & EphemeralPersist;
+
+            if (persistenceFlags == EphemeralPersist)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.Cryptography_X509_InvalidFlagCombination, persistenceFlags),
+                    nameof(keyStorageFlags));
+            }
+        }
+
         private volatile byte[] _lazyCertHash;
         private volatile string _lazyIssuer;
         private volatile string _lazySubject;
@@ -440,6 +458,12 @@ namespace System.Security.Cryptography.X509Certificates
         private DateTime _lazyNotBefore = DateTime.MinValue;
         private DateTime _lazyNotAfter = DateTime.MinValue;
 
-        private const X509KeyStorageFlags KeyStorageFlagsAll = (X509KeyStorageFlags)0x1f;
+        internal const X509KeyStorageFlags KeyStorageFlagsAll =
+            X509KeyStorageFlags.UserKeySet |
+            X509KeyStorageFlags.MachineKeySet |
+            X509KeyStorageFlags.Exportable |
+            X509KeyStorageFlags.UserProtected |
+            X509KeyStorageFlags.PersistKeySet |
+            X509KeyStorageFlags.EphemeralKeySet;
     }
 }

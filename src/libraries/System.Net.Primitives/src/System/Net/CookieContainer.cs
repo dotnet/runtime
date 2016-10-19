@@ -87,6 +87,7 @@ namespace System.Net
     // CookieContainer
     //
     // Manage cookies for a user (implicit). Based on RFC 2965.
+    [Serializable]
     public class CookieContainer
     {
         public const int DefaultCookieLimit = 300;
@@ -977,6 +978,7 @@ namespace System.Net
         }
     }
 
+    [Serializable]
     internal struct PathList
     {
         // Usage of PathList depends on it being shallowly immutable;
@@ -1054,6 +1056,7 @@ namespace System.Net
             }
         }
 
+        [Serializable]
         private sealed class PathListComparer : IComparer<string>
         {
             internal static readonly PathListComparer StaticInstance = new PathListComparer();

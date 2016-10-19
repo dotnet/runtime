@@ -1,4 +1,9 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
@@ -175,6 +180,35 @@ namespace System.Drawing.Primitives.Tests
             }
         }
 
+        [Theory]
+        [InlineData(255, 255, 255, 255)]
+        [InlineData(0, 0, 0, 0)]
+        [InlineData(255, 0, 0, 0)]
+        [InlineData(0, 255, 0, 0)]
+        [InlineData(0, 0, 255, 0)]
+        [InlineData(0, 0, 0, 255)]
+        [InlineData(1, 2, 3, 4)]
+        public void FromArgb_Roundtrips(int a, int r, int g, int b)
+        {
+            Color c1 = Color.FromArgb((int)unchecked((uint)a << 24 | (uint)r << 16 | (uint)g << 8 | (uint)b));
+            Assert.Equal(a, c1.A);
+            Assert.Equal(r, c1.R);
+            Assert.Equal(g, c1.G);
+            Assert.Equal(b, c1.B);
+
+            Color c2 = Color.FromArgb(a, r, g, b);
+            Assert.Equal(a, c2.A);
+            Assert.Equal(r, c2.R);
+            Assert.Equal(g, c2.G);
+            Assert.Equal(b, c2.B);
+
+            Color c3 = Color.FromArgb(r, g, b);
+            Assert.Equal(255, c3.A);
+            Assert.Equal(r, c3.R);
+            Assert.Equal(g, c3.G);
+            Assert.Equal(b, c3.B);
+        }
+
         [Fact]
         public void Empty()
         {
@@ -187,6 +221,10 @@ namespace System.Drawing.Primitives.Tests
         {
             Assert.True(Color.FromKnownColor(KnownColor.AliceBlue).IsKnownColor);
             Assert.True(Color.FromName("AliceBlue").IsKnownColor);
+
+            Assert.False(Color.FromKnownColor((KnownColor)(-1)).IsKnownColor);
+            Assert.False(Color.FromKnownColor((KnownColor)(12345)).IsKnownColor);
+            Assert.False(Color.FromName("SomethingNotAColor").IsKnownColor);
             Assert.False(Color.FromArgb(Color.AliceBlue.A, Color.AliceBlue.R, Color.AliceBlue.G, Color.AliceBlue.B).IsKnownColor);
         }
 
@@ -270,6 +308,7 @@ namespace System.Drawing.Primitives.Tests
 
         [Theory]
         [MemberData(nameof(ColorNames))]
+        [InlineData("SomeUnknownColorName")]
         public void ToStringNamed(string name)
         {
             string expected = $"Color [{name}]";
@@ -368,19 +407,115 @@ namespace System.Drawing.Primitives.Tests
             Assert.False(color.IsSystemColor, "IsSystemColor");
         }
 
-        [Fact]
-        public void SerializationRoundTrip()
+        [Theory]
+        [InlineData(0, 0, 0, 0f)]
+        [InlineData(255, 255, 255, 1f)]
+        [InlineData(255, 0, 0, 0.5f)]
+        [InlineData(0, 255, 0, 0.5f)]
+        [InlineData(0, 0, 255, 0.5f)]
+        [InlineData(255, 255, 0, 0.5f)]
+        [InlineData(255, 0, 255, 0.5f)]
+        [InlineData(0, 255, 255, 0.5f)]
+        [InlineData(51, 255, 255, 0.6f)]
+        [InlineData(255, 51, 255, 0.6f)]
+        [InlineData(255, 255, 51, 0.6f)]
+        [InlineData(255, 51, 51, 0.6f)]
+        [InlineData(51, 255, 51, 0.6f)]
+        [InlineData(51, 51, 255, 0.6f)]
+        [InlineData(51, 51, 51, 0.2f)]
+        public void GetBrightness(int r, int g, int b, float expected)
         {
-            Color c = Color.Red;
-            CheckRed(c);
+            Assert.Equal(expected, Color.FromArgb(r, g, b).GetBrightness());
+        }
 
-            BinaryFormatter bf = new BinaryFormatter();
-            MemoryStream ms = new MemoryStream();
-            bf.Serialize(ms, c);
+        [Theory]
+        [InlineData(0, 0, 0, 0f)]
+        [InlineData(255, 255, 255, 0f)]
+        [InlineData(255, 0, 0, 0f)]
+        [InlineData(0, 255, 0, 120f)]
+        [InlineData(0, 0, 255, 240f)]
+        [InlineData(255, 255, 0, 60f)]
+        [InlineData(255, 0, 255, 300f)]
+        [InlineData(0, 255, 255, 180f)]
+        [InlineData(51, 255, 255, 180f)]
+        [InlineData(255, 51, 255, 300f)]
+        [InlineData(255, 255, 51, 60f)]
+        [InlineData(255, 51, 51, 0f)]
+        [InlineData(51, 255, 51, 120f)]
+        [InlineData(51, 51, 255, 240f)]
+        [InlineData(51, 51, 51, 0f)]
+        public void GetHue(int r, int g, int b, float expected)
+        {
+            Assert.Equal(expected, Color.FromArgb(r, g, b).GetHue());
+        }
 
-            ms.Position = 0;
-            Color color = (Color)bf.Deserialize(ms);
-            CheckRed(color);
+        [Theory]
+        [InlineData(0, 0, 0, 0f)]
+        [InlineData(255, 255, 255, 0f)]
+        [InlineData(255, 0, 0, 1f)]
+        [InlineData(0, 255, 0, 1f)]
+        [InlineData(0, 0, 255, 1f)]
+        [InlineData(255, 255, 0, 1f)]
+        [InlineData(255, 0, 255, 1f)]
+        [InlineData(0, 255, 255, 1f)]
+        [InlineData(51, 255, 255, 1f)]
+        [InlineData(255, 51, 255, 1f)]
+        [InlineData(255, 255, 51, 1f)]
+        [InlineData(255, 51, 51, 1f)]
+        [InlineData(51, 255, 51, 1f)]
+        [InlineData(51, 51, 255, 1f)]
+        [InlineData(51, 51, 51, 0f)]
+        public void GetSaturation(int r, int g, int b, float expected)
+        {
+            Assert.Equal(expected, Color.FromArgb(r, g, b).GetSaturation());
+        }
+
+        public static IEnumerable<object[]> Equality_MemberData()
+        {
+            yield return new object[] { Color.FromKnownColor(KnownColor.AliceBlue), Color.FromKnownColor(KnownColor.AliceBlue), true };
+            yield return new object[] { Color.FromKnownColor(KnownColor.AliceBlue), Color.FromKnownColor(KnownColor.Aquamarine), false };
+
+            yield return new object[] { Color.AliceBlue, Color.AliceBlue, true };
+            yield return new object[] { Color.AliceBlue, Color.White, false};
+            yield return new object[] { Color.AliceBlue, Color.Black, false };
+
+            yield return new object[] { Color.FromArgb(255, 1, 2, 3), Color.FromArgb(255, 1, 2, 3), true };
+            yield return new object[] { Color.FromArgb(255, 1, 2, 3), Color.FromArgb(1, 2, 3), true };
+            yield return new object[] { Color.FromArgb(0, 1, 2, 3), Color.FromArgb(255, 1, 2, 3), false };
+            yield return new object[] { Color.FromArgb(0, 1, 2, 3), Color.FromArgb(1, 2, 3), false };
+            yield return new object[] { Color.FromArgb(0, 1, 2, 3), Color.FromArgb(0, 0, 2, 3), false };
+            yield return new object[] { Color.FromArgb(0, 1, 2, 3), Color.FromArgb(0, 1, 0, 3), false };
+            yield return new object[] { Color.FromArgb(0, 1, 2, 3), Color.FromArgb(0, 1, 2, 0), false };
+
+            yield return new object[] { Color.FromName("SomeName"), Color.FromName("SomeName"), true };
+            yield return new object[] { Color.FromName("SomeName"), Color.FromName("SomeOtherName"), false };
+
+            yield return new object[] { Color.FromArgb(0, 0, 0), default(Color), false };
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // desktop incorrectly does "name.Equals(name)" in Equals
+        [Theory]
+        [MemberData(nameof(Equality_MemberData))]
+        public void Equality(Color left, Color right, bool expected)
+        {
+            Assert.True(left.Equals(left), "left should always Equals itself");
+            Assert.True(right.Equals(right), "right should always Equals itself");
+
+            Assert.Equal(expected, left == right);
+            Assert.Equal(expected, right == left);
+
+            Assert.Equal(expected, left.Equals(right));
+            Assert.Equal(expected, right.Equals(left));
+
+            Assert.Equal(!expected, left != right);
+            Assert.Equal(!expected, right != left);
+        }
+
+        [Fact]
+        public void DebuggerAttributesAreValid()
+        {
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(Color.Aquamarine);
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(Color.FromArgb(4, 3, 2, 1));
         }
     }
 }

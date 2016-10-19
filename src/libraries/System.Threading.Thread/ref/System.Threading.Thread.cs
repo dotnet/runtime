@@ -48,7 +48,7 @@ namespace System.Threading
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public delegate void ThreadStart();
-    public sealed partial class ThreadStartException : System.Exception
+    public sealed partial class ThreadStartException : System.SystemException
     {
         internal ThreadStartException() { }
     }
@@ -68,7 +68,7 @@ namespace System.Threading
         WaitSleepJoin = 32,
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public partial class ThreadStateException : System.Exception
+    public partial class ThreadStateException : System.SystemException
     {
         public ThreadStateException() { }
         public ThreadStateException(string message) { }

@@ -33,6 +33,8 @@
     <Compile Include="Regex.Tests.Common.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp1.1'">
+    <Compile Include="PrecompiledRegexScenarioTest.cs" />
+    <Compile Include="RegexGroupNameTests.cs" />
     <Compile Include="CaptureCollectionTests.netcoreapp1.1.cs" />
     <Compile Include="GroupCollectionTests.netcoreapp1.1.cs" />
     <Compile Include="MatchCollectionTests.netcoreapp1.1.cs" />
@@ -41,8 +43,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetGroup)' == ''">
-    <Compile Include="PrecompiledRegexScenarioTest.cs" />
-    <Compile Include="RegexGroupNameTests.cs" />
     <Compile Include="Regex.Serialization.cs" />
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
       <Link>System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
@@ -58,9 +58,6 @@
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

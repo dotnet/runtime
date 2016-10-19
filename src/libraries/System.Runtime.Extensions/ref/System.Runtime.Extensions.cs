@@ -776,7 +776,7 @@ namespace System
         public static decimal Truncate(decimal d) { throw null; }
         public static double Truncate(double d) { throw null; }
     }
-    public sealed class OperatingSystem
+    public sealed class OperatingSystem : System.ICloneable, System.Runtime.Serialization.ISerializable
     {
         private OperatingSystem() { }
         public OperatingSystem(System.PlatformID platform, System.Version version) { }
@@ -786,6 +786,7 @@ namespace System
         public object Clone() { throw null; }
         public override string ToString() { throw null; }
         public string VersionString { get { throw null; } }
+        public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public enum PlatformID
     {
@@ -831,7 +832,7 @@ namespace System
         public abstract bool Equals(string x, string y);
         public int GetHashCode(object obj) { throw null; }
         public abstract int GetHashCode(string obj);
-        int System.Collections.IComparer.Compare(object x, object y) { throw null; }
+        public int Compare(object x, object y) { throw null; }
         bool System.Collections.IEqualityComparer.Equals(object x, object y) { throw null; }
         int System.Collections.IEqualityComparer.GetHashCode(object obj) { throw null; }
     }

@@ -37,78 +37,78 @@ namespace System.Tests
             string s1 = Convert.ToBase64String(barray, Base64FormattingOptions.InsertLineBreaks);
             string s2 = Convert.ToBase64String(barray, Base64FormattingOptions.None);
             string s3 = Convert.ToBase64String(barray, 1, 2, Base64FormattingOptions.None);
-            Assert.Equal(barray, Convert.FromBase64String(s1), "s1");
+            Assert.Equal(barray, Convert.FromBase64String(s1));
             Assert.True(!s2.Contains("\n"));
-            Assert.Equal(barray, Convert.FromBase64String(s2), "s2");
-            Assert.Equal(subset, Convert.FromBase64String(s3), "s3");
+            Assert.Equal(barray, Convert.FromBase64String(s2));
+            Assert.Equal(subset, Convert.FromBase64String(s3));
         }
 
         [Fact]
         public void ToBooleanTests()
         {
             char testValue = char.MinValue;
-            Assert.Throws<InvalidCastException>(() => Convert.ToBoolean(testValue), "char");
+            Assert.Throws<InvalidCastException>(() => Convert.ToBoolean(testValue));
             DateTime testValue2 = DateTime.MinValue;
-            Assert.Throws<InvalidCastException>(() => Convert.ToBoolean(testValue2), "DateTime");
+            Assert.Throws<InvalidCastException>(() => Convert.ToBoolean(testValue2));
         }
 
         [Fact]
         public void ToByteTest()
         {
             DateTime testValue = DateTime.MaxValue;
-            Assert.Throws<InvalidCastException>(() => Convert.ToByte(testValue), "DateTime");
+            Assert.Throws<InvalidCastException>(() => Convert.ToByte(testValue));
         }
 
         [Fact]
         public void ToCharTests()
         {
             char testValue = char.MinValue;
-            Assert.Equal(testValue, Convert.ToChar(testValue), "char");
+            Assert.Equal(testValue, Convert.ToChar(testValue));
             DateTime testValue2 = DateTime.MinValue;
-            Assert.Throws<InvalidCastException>(() => Convert.ToChar(testValue2), "DateTime");
+            Assert.Throws<InvalidCastException>(() => Convert.ToChar(testValue2));
         }
 
         [Fact]
         public void ToDateTimeTests()
         {
-            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(byte.MinValue), "byte");
-            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(sbyte.MinValue), "sbyte");
-            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(float.MinValue), "float");
-            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(ushort.MinValue), "ushort");
-            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(uint.MinValue), "uint");
-            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(ulong.MinValue), "ulong");
+            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(byte.MinValue));
+            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(sbyte.MinValue));
+            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(float.MinValue));
+            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(ushort.MinValue));
+            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(uint.MinValue));
+            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(ulong.MinValue));
         }
 
         [Fact]
         public void ToDecimalTests()
         {
-            Assert.Throws<InvalidCastException>(() => Convert.ToDecimal(char.MinValue), "char");
-            Assert.Throws<InvalidCastException>(() => Convert.ToDecimal(DateTime.MinValue), "Datetime");
+            Assert.Throws<InvalidCastException>(() => Convert.ToDecimal(char.MinValue));
+            Assert.Throws<InvalidCastException>(() => Convert.ToDecimal(DateTime.MinValue));
         }
 
         [Fact]
         public void ToDoubleTests()
         {
-            Assert.Throws<InvalidCastException>(() => Convert.ToDouble(char.MinValue), "char");
-            Assert.Throws<InvalidCastException>(() => Convert.ToDouble(DateTime.MinValue), "Datetime");
+            Assert.Throws<InvalidCastException>(() => Convert.ToDouble(char.MinValue));
+            Assert.Throws<InvalidCastException>(() => Convert.ToDouble(DateTime.MinValue));
         }
 
         [Fact]
         public void ToInt16Test()
         {
-            Assert.Throws<InvalidCastException>(() => Convert.ToInt16(DateTime.MaxValue), "Datetime");
+            Assert.Throws<InvalidCastException>(() => Convert.ToInt16(DateTime.MaxValue));
         }
 
         [Fact]
         public void ToInt32Test()
         {
-            Assert.Throws<InvalidCastException>(() => Convert.ToInt32(DateTime.MaxValue), "Datetime");
+            Assert.Throws<InvalidCastException>(() => Convert.ToInt32(DateTime.MaxValue));
         }
 
         [Fact]
         public void ToInt64Test()
         {
-            Assert.Throws<InvalidCastException>(() => Convert.ToInt64(DateTime.MaxValue), "Datetime");
+            Assert.Throws<InvalidCastException>(() => Convert.ToInt64(DateTime.MaxValue));
         }
 
         [Fact]
@@ -125,40 +125,40 @@ namespace System.Tests
         [Fact]
         public void ToSByteTest()
         {
-            Assert.Throws<InvalidCastException>(() => Convert.ToSByte(DateTime.MaxValue), "DateTime");
+            Assert.Throws<InvalidCastException>(() => Convert.ToSByte(DateTime.MaxValue));
         }
 
         [Fact]
         public void ToSingleTests()
         {
-            Assert.Throws<InvalidCastException>(() => Convert.ToSingle(DateTime.MaxValue), "DateTime");
-            Assert.Throws<InvalidCastException>(() => Convert.ToSingle(char.MinValue), "char");
+            Assert.Throws<InvalidCastException>(() => Convert.ToSingle(DateTime.MaxValue));
+            Assert.Throws<InvalidCastException>(() => Convert.ToSingle(char.MinValue));
         }
 
         [Fact]
         public static void ToStringTests()
         {
             string testValue = "Hello World!";
-            Assert.Equal(testValue, Convert.ToString(testValue), "t1");
-            Assert.Equal(testValue, Convert.ToString(testValue, NumberFormatInfo.CurrentInfo), "t2");
+            Assert.Equal(testValue, Convert.ToString(testValue));
+            Assert.Equal(testValue, Convert.ToString(testValue, NumberFormatInfo.CurrentInfo));
         }
 
         [Fact]
         public void ToUInt16Test()
         {
-            Assert.Throws<InvalidCastException>(() => Convert.ToUInt16(DateTime.MaxValue), "Datetime");
+            Assert.Throws<InvalidCastException>(() => Convert.ToUInt16(DateTime.MaxValue));
         }
 
         [Fact]
         public void ToUInt32Test()
         {
-            Assert.Throws<InvalidCastException>(() => Convert.ToUInt32(DateTime.MaxValue), "Datetime");
+            Assert.Throws<InvalidCastException>(() => Convert.ToUInt32(DateTime.MaxValue));
         }
 
         [Fact]
         public void ToUInt64Test()
         {
-            Assert.Throws<InvalidCastException>(() => Convert.ToUInt64(DateTime.MaxValue), "DateTime");
+            Assert.Throws<InvalidCastException>(() => Convert.ToUInt64(DateTime.MaxValue));
         }
     }
 }

@@ -10,6 +10,7 @@
     <AssemblyName>System.Security.Cryptography.Primitives.Tests</AssemblyName>
     <RootNamespace>System.Security.Cryptography.Primitives.Tests</RootNamespace>
     <NugetTargetMoniker Condition="'$(TargetGroup)'==''">.NETStandard,Version=v1.7</NugetTargetMoniker>
+    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp1.1'">$(DefineConstants);netcoreapp11</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.Security.Cryptography.Primitives.pkgproj">
@@ -31,9 +32,6 @@
     <Compile Include="$(CommonTestPath)\System\IO\PositionValueStream.cs">
       <Link>CommonTest\System\IO\PositionValueStream.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

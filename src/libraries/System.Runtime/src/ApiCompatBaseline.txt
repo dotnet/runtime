@@ -1,7 +1,4 @@
 Compat issues with assembly System.Runtime:
-MembersMustExist : Member 'System.Type.IsSecurityCritical.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Type.IsSecuritySafeCritical.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Type.IsSecurityTransparent.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Type.GetType(System.String, System.Func<System.Reflection.AssemblyName, System.Reflection.Assembly>, System.Func<System.Reflection.Assembly, System.String, System.Boolean, System.Type>)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Type.GetType(System.String, System.Func<System.Reflection.AssemblyName, System.Reflection.Assembly>, System.Func<System.Reflection.Assembly, System.String, System.Boolean, System.Type>, System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Type.GetType(System.String, System.Func<System.Reflection.AssemblyName, System.Reflection.Assembly>, System.Func<System.Reflection.Assembly, System.String, System.Boolean, System.Type>, System.Boolean, System.Boolean)' does not exist in the implementation but it does exist in the contract.
@@ -9,4 +6,4 @@ MembersMustExist : Member 'System.Type.IsContextful.get()' does not exist in the
 MembersMustExist : Member 'System.Type.IsContextfulImpl()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Assembly.add_ModuleResolve(System.Reflection.ModuleResolveEventHandler)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Assembly.remove_ModuleResolve(System.Reflection.ModuleResolveEventHandler)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 10
+Total Issues: 7
