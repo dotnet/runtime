@@ -26,18 +26,6 @@ namespace System.Globalization
         WindowsOnlyCultures = 32,
     }
 
-    public sealed partial class DateTimeFormatInfo : System.ICloneable, System.IFormatProvider
-    {
-        // Can't do partial properties so add the setter for DateSeparator and TimeSeparator
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public string NativeCalendarName { get { throw new NotImplementedException(); } }
-        public string[] GetAllDateTimePatterns() { throw new NotImplementedException(); }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public string GetShortestDayName(System.DayOfWeek dayOfWeek) { throw new NotImplementedException(); }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public void SetAllDateTimePatterns(string[] patterns, char format) { throw new NotImplementedException(); }
-    }
-
     public sealed partial class IdnMapping
     {
         public IdnMapping() { }
