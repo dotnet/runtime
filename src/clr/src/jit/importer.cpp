@@ -5779,6 +5779,7 @@ GenTreePtr Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolve
         }
         case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
         {
+#ifdef FEATURE_READYTORUN_COMPILER
             noway_assert(opts.IsReadyToRun());
             CORINFO_GENERICHANDLE_RESULT embedInfo;
             info.compCompHnd->embedGenericHandle(pResolvedToken, FALSE, &embedInfo);
@@ -5798,6 +5799,9 @@ GenTreePtr Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolve
 
             op1->gtCall.setEntryPoint(pFieldInfo->fieldLookup);
             break;
+#else
+            unreached();
+#endif // FEATURE_READYTORUN_COMPILER
         }
         default:
         {
