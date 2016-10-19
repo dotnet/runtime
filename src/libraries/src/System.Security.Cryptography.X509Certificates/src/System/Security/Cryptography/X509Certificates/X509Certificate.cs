@@ -6,11 +6,13 @@ using Internal.Cryptography;
 using Internal.Cryptography.Pal;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.Serialization;
 using System.Text;
 
 namespace System.Security.Cryptography.X509Certificates
 {
-    public class X509Certificate : IDisposable
+    [Serializable]
+    public class X509Certificate : IDisposable, IDeserializationCallback, ISerializable
     {
         public X509Certificate()
         {
@@ -78,6 +80,22 @@ namespace System.Security.Cryptography.X509Certificates
                 Pal = CertificatePal.FromOtherCert(cert);
             }
         }
+
+        public X509Certificate(SerializationInfo info, StreamingContext context) : this()
+        {
+            byte[] rawData = (byte[])info.GetValue("RawData", typeof(byte[]));
+            if (rawData != null)
+            {
+                Pal = CertificatePal.FromBlob(rawData, null, X509KeyStorageFlags.DefaultKeySet);
+            }
+        }
+
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            info.AddValue("RawData", Pal?.RawData);
+        }
+
+        void IDeserializationCallback.OnDeserialization(object sender) { }
 
         public IntPtr Handle
         {

@@ -15,6 +15,7 @@ namespace System.IO
     //
     // This class is intended for character output, not bytes.  
     // There are methods on the Stream class for writing bytes. 
+    [Serializable]
     public abstract partial class TextWriter : IDisposable
     {
         public static readonly TextWriter Null = new NullTextWriter();
@@ -556,6 +557,7 @@ namespace System.IO
         }
         #endregion
 
+        [Serializable]
         private sealed class NullTextWriter : TextWriter
         {
             internal NullTextWriter() : base(CultureInfo.InvariantCulture)

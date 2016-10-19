@@ -25,6 +25,7 @@ namespace System.Security.Principal
         public IdentityNotMappedException() { }
         public IdentityNotMappedException(string message) { }
         public IdentityNotMappedException(string message, System.Exception inner) { }
+        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public System.Security.Principal.IdentityReferenceCollection UnmappedIdentities { get { throw null; } }
     }
     public abstract partial class IdentityReference
@@ -188,12 +189,13 @@ namespace System.Security.Principal
         SystemOperator = 549,
         User = 545,
     }
-    public partial class WindowsIdentity : System.Security.Claims.ClaimsIdentity, System.IDisposable
+    public partial class WindowsIdentity : System.Security.Claims.ClaimsIdentity, System.IDisposable, System.Runtime.Serialization.ISerializable, System.Runtime.Serialization.IDeserializationCallback
     {
         public new const string DefaultIssuer = "AD AUTHORITY";
         public WindowsIdentity(System.IntPtr userToken) { }
         public WindowsIdentity(System.IntPtr userToken, string type) { }
         public WindowsIdentity(string sUserPrincipalName) { }
+        public WindowsIdentity(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public Microsoft.Win32.SafeHandles.SafeAccessTokenHandle AccessToken {[System.Security.SecurityCriticalAttribute]get { throw null; } }
         public sealed override string AuthenticationType { get { throw null; } }
         public override System.Collections.Generic.IEnumerable<System.Security.Claims.Claim> Claims { get { throw null; } }
@@ -214,6 +216,8 @@ namespace System.Security.Principal
         public static System.Security.Principal.WindowsIdentity GetCurrent() { throw null; }
         public static System.Security.Principal.WindowsIdentity GetCurrent(bool ifImpersonating) { throw null; }
         public static System.Security.Principal.WindowsIdentity GetCurrent(System.Security.Principal.TokenAccessLevels desiredAccess) { throw null; }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
         public static void RunImpersonated(Microsoft.Win32.SafeHandles.SafeAccessTokenHandle safeAccessTokenHandle, System.Action action) { }
         public static T RunImpersonated<T>(Microsoft.Win32.SafeHandles.SafeAccessTokenHandle safeAccessTokenHandle, System.Func<T> func) { throw null; }
     }

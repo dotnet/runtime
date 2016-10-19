@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace System.IO
 {
     // This class implements a text reader that reads from a string.
-    //
+    [Serializable]
     public class StringReader : TextReader
     {
         private string _s;

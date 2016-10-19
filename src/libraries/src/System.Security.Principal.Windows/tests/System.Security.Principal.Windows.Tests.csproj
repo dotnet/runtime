@@ -16,6 +16,9 @@
   <ItemGroup>
     <Compile Include="WindowsIdentityTests.cs" />
     <Compile Include="WindowsPrincipalTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
+      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.Security.Principal.Windows.pkgproj">
