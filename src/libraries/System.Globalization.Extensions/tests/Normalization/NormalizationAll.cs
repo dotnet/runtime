@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.IO;
 using System.Reflection;
 using System.Text;
+using System.IO;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -17,16 +17,16 @@ namespace System.Globalization.Tests
             string[] parts = codepoints.Split('-');
             foreach (string part in parts)
             {
-                sb.Append((char)Int32.Parse(part, NumberStyles.HexNumber | NumberStyles.AllowTrailingWhite | NumberStyles.AllowLeadingWhite, CultureInfo.InvariantCulture));
+                sb.Append((char) Int32.Parse(part, NumberStyles.HexNumber | NumberStyles.AllowTrailingWhite | NumberStyles.AllowLeadingWhite, CultureInfo.InvariantCulture));
             }
             return sb.ToString();
         }
-
+        
         [Fact]
         public void Normalize()
         {
-            // Windows 8 test data came from http://www.unicode.org/Public/UCD/latest/ucd/NormalizationTest.txt
-            // Windows 7 test came from http://www.unicode.org/Public/3.0-Update1/NormalizationTest-3.0.1.txt
+            // Windows 8 test data came from http://www.unicode.org/Public/UCD/latest/ucd/NormalizationTest.txt 
+            // Windows 7 test came from http://www.unicode.org/Public/3.0-Update1/NormalizationTest-3.0.1.txt 
 
             using (Stream stream = typeof(StringNormalizationAllTests).GetTypeInfo().Assembly.GetManifestResourceStream(PlatformDetection.IsWindows7 ? "NormalizationDataWin7" : "NormalizationDataWin8"))
             {
@@ -37,26 +37,23 @@ namespace System.Globalization.Tests
                     {
                         string line = sr.ReadLine();
                         string[] parts = line.Split(',');
-                        if (parts.Length != 5)
-                        {
-                            throw new ArgumentException($"Wrong data at the line {index}");
-                        }
+                        Assert.True(parts.Length == 5, $"Wrong data at the line {index}");
 
                         string part0 = ConvertToString(parts[0]);
                         string part1 = ConvertToString(parts[1]);
                         string part2 = ConvertToString(parts[2]);
                         string part3 = ConvertToString(parts[3]);
                         string part4 = ConvertToString(parts[4]);
-
+            
                         // Form C
                         VerifyConformanceInvariant(NormalizationForm.FormC, part0, part1, part2, part3, part4);
-
+                        
                         // Form D
                         VerifyConformanceInvariant(NormalizationForm.FormD, part0, part1, part2, part3, part4);
-
+                        
                         // Form KC
                         VerifyConformanceInvariant(NormalizationForm.FormKC, part0, part1, part2, part3, part4);
-
+                        
                         // Form KD
                         VerifyConformanceInvariant(NormalizationForm.FormKD, part0, part1, part2, part3, part4);
                     }
@@ -68,7 +65,7 @@ namespace System.Globalization.Tests
         /// Verifies the first normalization conformance invariant for the
         /// specified normalization form, where the rule as defined for all
         /// Unicode normalization forms is as follows:
-        ///  1. The following invariants must be true for all conformant
+        ///  1. The following invariants must be true for all conformant 
         ///    implementations:
         ///    NFC
         ///      c2 ==  NFC(c1) ==  NFC(c2) ==  NFC(c3)
@@ -91,7 +88,7 @@ namespace System.Globalization.Tests
             string normalized3 = c3.Normalize(normForm);
             string normalized4 = c4.Normalize(normForm);
             string normalized5 = c5.Normalize(normForm);
-
+            
             switch (normForm)
             {
                 case NormalizationForm.FormC:
@@ -129,7 +126,7 @@ namespace System.Globalization.Tests
                     break;
 
                 case NormalizationForm.FormKC:
-                    // c4 == NFKC(c1) == NFKC(c2) == NFKC(c3) == NFKC(c4)
+                    // c4 == NFKC(c1) == NFKC(c2) == NFKC(c3) == NFKC(c4) 
                     //    == NFKC(c5)
                     AssertEqualsForm(c4, normalized1);
                     AssertEqualsForm(c4, normalized2);
@@ -142,7 +139,7 @@ namespace System.Globalization.Tests
                     break;
 
                 case NormalizationForm.FormKD:
-                    // c5 == NFKD(c1) == NFKD(c2) == NFKD(c3) == NFKD(c4)
+                    // c5 == NFKD(c1) == NFKD(c2) == NFKD(c3) == NFKD(c4) 
                     //    == NFKD(c5)
                     AssertEqualsForm(c5, normalized1);
                     AssertEqualsForm(c5, normalized2);
@@ -164,12 +161,13 @@ namespace System.Globalization.Tests
         private static string DumpStringAsCodepoints(string s)
         {
             StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < s.Length; i++)
+            for (int i=0; i<s.Length; i++)
             {
                 sb.Append("\\x");
                 sb.Append(((int)s[i]).ToString("X4"));
             }
             return sb.ToString();
         }
+
     }
 }
