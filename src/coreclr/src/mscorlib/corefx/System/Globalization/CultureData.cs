@@ -1665,6 +1665,13 @@ namespace System.Globalization
             }
         }
 
+        // Native calendar names.  index of optional calendar - 1, empty if no optional calendar at that number
+        internal string CalendarName(CalendarId calendarId)
+        {
+            // Get the calendar
+            return GetCalendar(calendarId).sNativeName;
+        }
+
         internal CalendarData GetCalendar(CalendarId calendarId)
         {
             Contract.Assert(calendarId > 0 && calendarId <= CalendarId.LAST_CALENDAR,
