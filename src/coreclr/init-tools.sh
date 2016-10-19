@@ -1,17 +1,7 @@
 #!/usr/bin/env bash
 
 __scriptpath=$(cd "$(dirname "$0")"; pwd -P)
-
-# CI_SPECIFIC - On CI machines, $HOME may not be set. In such a case, create a subfolder and set the variable to set.
-# This is needed by CLI to function.
-if [ -z "$HOME" ]; then
-    if [ ! -d "$__scriptpath/temp_home" ]; then
-        mkdir temp_home
-    fi
-    export HOME=$__scriptpath/temp_home
-    echo "HOME not defined; setting it to $HOME"
-fi
-
+__init_tools_log=$__scriptpath/init-tools.log
 __PACKAGES_DIR=$__scriptpath/packages
 __TOOLRUNTIME_DIR=$__scriptpath/Tools
 __DOTNET_PATH=$__TOOLRUNTIME_DIR/dotnetcli
@@ -22,7 +12,8 @@ __DOTNET_TOOLS_VERSION=$(cat $__scriptpath/DotnetCLIVersion.txt)
 __BUILD_TOOLS_PATH=$__PACKAGES_DIR/Microsoft.DotNet.BuildTools/$__BUILD_TOOLS_PACKAGE_VERSION/lib
 __PROJECT_JSON_PATH=$__TOOLRUNTIME_DIR/$__BUILD_TOOLS_PACKAGE_VERSION
 __PROJECT_JSON_FILE=$__PROJECT_JSON_PATH/project.json
-__PROJECT_JSON_CONTENTS="{ \"dependencies\": { \"Microsoft.DotNet.BuildTools\": \"$__BUILD_TOOLS_PACKAGE_VERSION\" }, \"frameworks\": { \"dnxcore50\": { } } }"
+__PROJECT_JSON_CONTENTS="{ \"dependencies\": { \"Microsoft.DotNet.BuildTools\": \"$__BUILD_TOOLS_PACKAGE_VERSION\" }, \"frameworks\": { \"netcoreapp1.0\": { } } }"
+__INIT_TOOLS_DONE_MARKER=$__PROJECT_JSON_PATH/done
 
 # Extended version of platform detection logic from dotnet/cli/scripts/obtain/dotnet-install.sh 16692fc
 get_current_linux_name() {
@@ -98,49 +89,81 @@ OSName=$(uname -s)
   esac
 fi
 
-__CLIDownloadURL=https://dotnetcli.blob.core.windows.net/dotnet/Sdk/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.${__DOTNET_TOOLS_VERSION}.tar.gz
-echo ".NET CLI will be downloaded from $__CLIDownloadURL"
-echo "Locating $__PROJECT_JSON_FILE to see if we already downloaded .NET CLI tools..." 
+if [ ! -e $__INIT_TOOLS_DONE_MARKER ]; then
+    __PATCH_CLI_NUGET_FRAMEWORKS=0
 
-if [ ! -e $__PROJECT_JSON_FILE ]; then
-    echo "$__PROJECT_JSON_FILE not found. Proceeding to download .NET CLI tools. " 
     if [ -e $__TOOLRUNTIME_DIR ]; then rm -rf -- $__TOOLRUNTIME_DIR; fi
+    echo "Running: $__scriptpath/init-tools.sh" > $__init_tools_log
 
     if [ ! -e $__DOTNET_PATH ]; then
-        # curl has HTTPS CA trust-issues less often than wget, so lets try that first.
-        which curl > /dev/null 2> /dev/null
-        if [ $? -ne 0 ]; then
-          mkdir -p "$__DOTNET_PATH"
-          wget -q -O $__DOTNET_PATH/dotnet.tar $__CLIDownloadURL
-          echo "wget -q -O $__DOTNET_PATH/dotnet.tar $__CLIDownloadURL"
+
+        mkdir -p "$__DOTNET_PATH"
+
+        if [ -n "$DOTNET_TOOLSET_DIR" ] && [ -d "$DOTNET_TOOLSET_DIR/$__DOTNET_TOOLS_VERSION" ]; then
+            echo "Copying $DOTNET_TOOLSET_DIR/$__DOTNET_TOOLS_VERSION to $__DOTNET_PATH" >> $__init_tools_log
+            cp -r $DOTNET_TOOLSET_DIR/$__DOTNET_TOOLS_VERSION/* $__DOTNET_PATH
+        elif [ -n "$DOTNET_TOOL_DIR" ] && [ -d "$DOTNET_TOOL_DIR" ]; then
+            echo "Copying $DOTNET_TOOL_DIR to $__DOTNET_PATH" >> $__init_tools_log
+            cp -r $DOTNET_TOOL_DIR/* $__DOTNET_PATH
         else
-          curl --retry 10 -sSL --create-dirs -o $__DOTNET_PATH/dotnet.tar $__CLIDownloadURL
-          echo "curl --retry 10 -sSL --create-dirs -o $__DOTNET_PATH/dotnet.tar $__CLIDownloadURL"
-        fi
-        cd $__DOTNET_PATH
-        tar -xf $__DOTNET_PATH/dotnet.tar
-        if [ -n "$BUILDTOOLS_OVERRIDE_RUNTIME" ]; then
-            find $__DOTNET_PATH -name *.ni.* | xargs rm 2>/dev/null
-            cp -R $BUILDTOOLS_OVERRIDE_RUNTIME/* $__DOTNET_PATH/bin
-            cp -R $BUILDTOOLS_OVERRIDE_RUNTIME/* $__DOTNET_PATH/bin/dnx
-            cp -R $BUILDTOOLS_OVERRIDE_RUNTIME/* $__DOTNET_PATH/runtime/coreclr
-        fi
+            echo "Installing dotnet cli..."
+            __DOTNET_LOCATION="https://dotnetcli.blob.core.windows.net/dotnet/Sdk/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.${__DOTNET_TOOLS_VERSION}.tar.gz"
+            # curl has HTTPS CA trust-issues less often than wget, so lets try that first.
+            echo "Installing '${__DOTNET_LOCATION}' to '$__DOTNET_PATH/dotnet.tar'" >> $__init_tools_log
+            which curl > /dev/null 2> /dev/null
+            if [ $? -ne 0 ]; then
+                wget -q -O $__DOTNET_PATH/dotnet.tar ${__DOTNET_LOCATION}
+            else
+                curl --retry 10 -sSL --create-dirs -o $__DOTNET_PATH/dotnet.tar ${__DOTNET_LOCATION}
+            fi
+            cd $__DOTNET_PATH
+            tar -xf $__DOTNET_PATH/dotnet.tar
 
-        cd $__scriptpath
+            cd $__scriptpath
+
+            __PATCH_CLI_NUGET_FRAMEWORKS=1
+        fi
     fi
 
-    mkdir "$__PROJECT_JSON_PATH"
-    echo $__PROJECT_JSON_CONTENTS > "$__PROJECT_JSON_FILE"
 
-    if [ ! -e $__BUILD_TOOLS_PATH ]; then
-        $__DOTNET_CMD restore "$__PROJECT_JSON_FILE" --packages $__PACKAGES_DIR --source $__BUILDTOOLS_SOURCE
+    if [ -n "$BUILD_TOOLS_TOOLSET_DIR" ] && [ -d "$BUILD_TOOLS_TOOLSET_DIR/$__BUILD_TOOLS_PACKAGE_VERSION" ]; then
+        echo "Copying $BUILD_TOOLS_TOOLSET_DIR/$__BUILD_TOOLS_PACKAGE_VERSION to $__TOOLRUNTIME_DIR" >> $__init_tools_log
+        cp -r $BUILD_TOOLS_TOOLSET_DIR/$__BUILD_TOOLS_PACKAGE_VERSION/* $__TOOLRUNTIME_DIR
+    elif [ -n "$BUILD_TOOLS_TOOL_DIR" ] && [ -d "$BUILD_TOOLS_TOOL_DIR" ]; then
+        echo "Copying $BUILD_TOOLS_TOOL_DIR to $__TOOLRUNTIME_DIR" >> $__init_tools_log
+        cp -r $BUILD_TOOLS_TOOL_DIR/* $__TOOLRUNTIME_DIR
+    else
+        if [ ! -d "$__PROJECT_JSON_PATH" ]; then mkdir "$__PROJECT_JSON_PATH"; fi
+        echo $__PROJECT_JSON_CONTENTS > "$__PROJECT_JSON_FILE"
+
+        if [ ! -e $__BUILD_TOOLS_PATH ]; then
+            echo "Restoring BuildTools version $__BUILD_TOOLS_PACKAGE_VERSION..."
+            echo "Running: $__DOTNET_CMD restore \"$__PROJECT_JSON_FILE\" --no-cache --packages $__PACKAGES_DIR --source $__BUILDTOOLS_SOURCE" >> $__init_tools_log
+            $__DOTNET_CMD restore "$__PROJECT_JSON_FILE" --no-cache --packages $__PACKAGES_DIR --source $__BUILDTOOLS_SOURCE >> $__init_tools_log
+            if [ ! -e "$__BUILD_TOOLS_PATH/init-tools.sh" ]; then echo "ERROR: Could not restore build tools correctly. See '$__init_tools_log' for more details."1>&2; fi
+        fi
+
+        echo "Initializing BuildTools..."
+        echo "Running: $__BUILD_TOOLS_PATH/init-tools.sh $__scriptpath $__DOTNET_CMD $__TOOLRUNTIME_DIR" >> $__init_tools_log
+        $__BUILD_TOOLS_PATH/init-tools.sh $__scriptpath $__DOTNET_CMD $__TOOLRUNTIME_DIR >> $__init_tools_log
+        if [ "$?" != "0" ]; then
+            echo "ERROR: An error occured when trying to initialize the tools. Please check '$__init_tools_log' for more details."1>&2
+            exit 1
+        fi
     fi
 
-    # On ubuntu 14.04, /bin/sh (symbolic link) calls /bin/dash by default.
-    $__BUILD_TOOLS_PATH/init-tools.sh $__scriptpath $__DOTNET_CMD $__TOOLRUNTIME_DIR
+    if [ $__PATCH_CLI_NUGET_FRAMEWORKS -eq 1 ]; then
+        echo "Updating CLI NuGet Frameworks map..."
+        cp $__TOOLRUNTIME_DIR/NuGet.Frameworks.dll $__TOOLRUNTIME_DIR/dotnetcli/sdk/$__DOTNET_TOOLS_VERSION >> $__init_tools_log
+        if [ "$?" != "0" ]; then
+            echo "ERROR: An error occured when updating Nuget for CLI . Please check '$__init_tools_log' for more details."1>&2
+            exit 1
+        fi
+    fi
 
-    cp $__TOOLRUNTIME_DIR/NuGet.Frameworks.dll $__TOOLRUNTIME_DIR/dotnetcli/sdk/$__DOTNET_TOOLS_VERSION
+    touch $__INIT_TOOLS_DONE_MARKER
 
+    echo "Done initializing tools."
 else
-    echo "$__PROJECT_JSON_FILE found. Skipping .NET CLI installation."   
+    echo "Tools are already initialized"
 fi
