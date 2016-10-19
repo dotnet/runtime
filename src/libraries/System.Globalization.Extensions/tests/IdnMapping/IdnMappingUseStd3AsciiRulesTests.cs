@@ -8,13 +8,13 @@ using Xunit;
 namespace System.Globalization.Tests
 {
     /// <summary>
-    /// According to the ToASCII algorithm, if the UseSTD3ASCIIRules flag is set, 
-    /// then perform these checks: 
+    /// According to the ToASCII algorithm, if the UseSTD3ASCIIRules flag is set,
+    /// then perform these checks:
     ///
-    ///	(a) Verify the absence of non-LDH ASCII code points; that is, the absence 
+    ///	(a) Verify the absence of non-LDH ASCII code points; that is, the absence
     ///      of 0..2C, 2E..2F, 3A..40, 5B..60, and 7B..7F.
     ///
-    /// (b) Verify the absence of leading and trailing hyphen-minus; that is, the 
+    /// (b) Verify the absence of leading and trailing hyphen-minus; that is, the
     ///      absence of U+002D at the beginning and end of the sequence.
     ///
     /// By default this flag should not be set.
