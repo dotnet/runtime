@@ -7027,12 +7027,12 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             noway_assert(varTypeIsGC(varDsc->TypeGet()) || (varDsc->TypeGet() == TYP_STRUCT) ||
                          compiler->info.compInitMem || compiler->opts.compDbgCode);
 
-#ifdef _TARGET_64BIT_
+#ifndef LEGACY_BACKEND
             if (!varDsc->lvOnFrame)
             {
                 continue;
             }
-#else  // !_TARGET_64BIT_
+#else  // LEGACY_BACKEND
             if (varDsc->lvRegister)
             {
                 if (varDsc->lvOnFrame)
@@ -7048,7 +7048,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 }
                 continue;
             }
-#endif // !_TARGET_64BIT_
+#endif // LEGACY_BACKEND
 
             if ((varDsc->TypeGet() == TYP_STRUCT) && !compiler->info.compInitMem &&
                 (varDsc->lvExactSize >= TARGET_POINTER_SIZE))
