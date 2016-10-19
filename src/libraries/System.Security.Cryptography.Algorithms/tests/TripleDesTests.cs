@@ -76,6 +76,25 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
             Assert.Equal(inputBytes, decryptedBytes);
         }
 
+        [Fact]
+        public static void EnsureLegalSizesValuesIsolated()
+        {
+            new TripleDESLegalSizesBreaker().Dispose();
+
+            using (TripleDES tripleDes = TripleDES.Create())
+            {
+                Assert.Equal(3 * 64, tripleDes.LegalKeySizes[0].MaxSize);
+                Assert.Equal(64, tripleDes.LegalBlockSizes[0].MaxSize);
+
+                tripleDes.Key = new byte[]
+                {
+                    /* k1 */ 0, 1, 2, 3, 4, 5, 6, 7,
+                    /* k2 */ 0, 0, 0, 2, 4, 6, 0, 1,
+                    /* k3 */ 0, 1, 2, 3, 4, 5, 6, 7,
+                };
+            }
+        }
+
         private static IEnumerable<byte[]> BadKeys()
         {
             foreach (byte[] key in _weakKeys)
@@ -102,7 +121,16 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
             "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0000000000000000".HexToByteArray(),
         };
 
-        private sealed class TripleDESMinimal : TripleDES
+        private class TripleDESLegalSizesBreaker : TripleDESMinimal
+        {
+            public TripleDESLegalSizesBreaker()
+            {
+                LegalKeySizesValue[0] = new KeySizes(1, 1, 0);
+                LegalBlockSizesValue[0] = new KeySizes(1, 1, 0);
+            }
+        }
+
+        private class TripleDESMinimal : TripleDES
         {
             // If the constructor uses a virtual call to any of the property setters
             // they will fail.
