@@ -53,6 +53,15 @@ add_compile_options(/ZH:SHA_256) # use SHA256 for generating hashes of compiler 
 if ($ENV{__BuildArch} STREQUAL "x86")
     add_compile_options(/Gz)
 endif ()
+
+if ($ENV{__BuildArch} STREQUAL "arm")
+    if(NOT DEFINED CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION OR CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION STREQUAL "" )
+	      message(FATAL_ERROR "Windows SDK is required for the Arm32 build.")
+      else()
+	      message("Using Windows SDK version ${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}")
+      endif()
+endif ()
+
 if(NOT $ENV{__BuildArch} STREQUAL "arm64")
     # enable control-flow-guard support for native components for non-Arm64 builds
     add_compile_options(/guard:cf) 
