@@ -37,7 +37,9 @@ namespace System.Reflection
     using __HResults = System.__HResults;
     using System.Runtime.Versioning;
     using System.Diagnostics.Contracts;
+#if FEATURE_CORECLR
     using System.Runtime.Loader;
+#endif
 
 
     [Serializable]
