@@ -88,25 +88,11 @@ namespace System.Net.Sockets
             set { ExclusiveAddressUseCore = value; }
         }
 
-        public Task ConnectAsync(IPAddress address, int port)
-        {
-            return Task.Factory.FromAsync(
-                (targetAddess, targetPort, callback, state) => ((TcpClient)state).BeginConnect(targetAddess, targetPort, callback, state),
-                asyncResult => ((TcpClient)asyncResult.AsyncState).EndConnect(asyncResult),
-                address,
-                port,
-                state: this);
-        }
+        public Task ConnectAsync(IPAddress address, int port) => ConnectAsyncCore(address, port);
 
-        public Task ConnectAsync(string host, int port)
-        {
-            return ConnectAsyncCore(host, port);
-        }
+        public Task ConnectAsync(string host, int port) => ConnectAsyncCore(host, port);
 
-        public Task ConnectAsync(IPAddress[] addresses, int port)
-        {
-            return ConnectAsyncCore(addresses, port);
-        }
+        public Task ConnectAsync(IPAddress[] addresses, int port) => ConnectAsyncCore(addresses, port);
 
         public IAsyncResult BeginConnect(IPAddress address, int port, AsyncCallback requestCallback, object state)
         {
@@ -116,6 +102,7 @@ namespace System.Net.Sockets
             }
 
             IAsyncResult result = Client.BeginConnect(address, port, requestCallback, state);
+
             if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, nameof(BeginConnect), null);
@@ -131,7 +118,8 @@ namespace System.Net.Sockets
                 NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, nameof(BeginConnect), host);
             }
 
-            IAsyncResult result = Client.BeginConnect(host, port, requestCallback, state);
+            IAsyncResult result = BeginConnectCore(host, port, requestCallback, state);
+
             if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, nameof(BeginConnect), null);
@@ -147,7 +135,8 @@ namespace System.Net.Sockets
                 NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, nameof(BeginConnect), addresses);
             }
 
-            IAsyncResult result = Client.BeginConnect(addresses, port, requestCallback, state);
+            IAsyncResult result = BeginConnectCore(addresses, port, requestCallback, state);
+
             if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, nameof(BeginConnect), null);
@@ -169,9 +158,11 @@ namespace System.Net.Sockets
                 // Dispose nulls out the client socket field.
                 throw new ObjectDisposedException(GetType().Name);
             }
-            s.EndConnect(asyncResult);
+
+            EndConnectCore(s, asyncResult);
 
             _active = true;
+
             if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, nameof(EndConnect), null);
