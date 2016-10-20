@@ -108,6 +108,7 @@
       <Link>CommonTest\System\RandomDataGenerator.cs</Link>
     </Compile>
     <Compile Include="AesProvider.cs" />
+    <Compile Include="AesTests.cs" />
     <Compile Include="DefaultECDsaProvider.cs" />
     <Compile Include="DefaultRSAProvider.cs" />
     <Compile Include="HashAlgorithmTest.cs" />
