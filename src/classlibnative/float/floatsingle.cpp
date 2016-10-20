@@ -13,7 +13,7 @@
 
 // Windows x86 and Windows ARM don't define _isnanf() but they do define a generic macro isnan()
 #if (defined(_TARGET_X86_) || defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)) && !defined(FEATURE_PAL) && !defined(_isnanf)
-#if defined(_TARGET_ARM64_)
+#if defined(_TARGET_ARM64_) || defined(_TARGET_ARM_)
 #define _isnanf      _isnan
 #else
 #define _isnanf      isnan
