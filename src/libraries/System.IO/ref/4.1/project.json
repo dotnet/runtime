@@ -3,10 +3,6 @@
     "System.IO": "4.1.0"
   },
   "frameworks": {
-    "netstandard1.5": {
-      "imports": [
-        "dotnet5.6"
-      ]
-    }
+    "netstandard1.5": {}
   }
 }

@@ -89,9 +89,12 @@
     <TargetingPackDependency Include="Microsoft.TargetingPack.NETFramework.v4.6" />
     <TargetingPackDependency Include="Microsoft.TargetingPack.NETFramework.v4.6.1" />
     <TargetingPackDependency Include="Microsoft.TargetingPack.NETFramework.v4.6.2" />
-    <TargetingPackDependency Include="Microsoft.TargetingPack.Private.WinRT" />
     <StaticDependency Include="@(TargetingPackDependency)">
       <Version>1.0.1</Version>
+    </StaticDependency>
+
+    <StaticDependency Include="Microsoft.TargetingPack.Private.WinRT">
+      <Version>1.0.2</Version>
     </StaticDependency>
 
     <XUnitDependency Include="xunit"/>

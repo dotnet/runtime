@@ -1,14 +1,10 @@
 {
   "dependencies": {
-    "System.Runtime": "4.0.0",
-    "System.Linq.Expressions": "4.0.0",
-    "System.Linq": "4.0.0"
+    "System.Runtime": "4.1.0",
+    "System.Linq.Expressions": "4.1.0",
+    "System.Linq": "4.1.0"
   },
   "frameworks": {
-    "netstandard1.0": {
-      "imports": [
-        "dotnet5.1"
-      ]
-    }
+    "netstandard1.0": {}
   }
 }
