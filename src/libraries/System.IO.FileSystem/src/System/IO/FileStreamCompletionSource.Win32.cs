@@ -51,8 +51,8 @@ namespace System.IO
                 // where the user-provided buffer is smaller than the FileStream's buffer (such that the FileStream's 
                 // buffer is used) and where operations on the FileStream are not being performed concurrently.
                 _overlapped = ReferenceEquals(bytes, _stream._buffer) && Interlocked.CompareExchange(ref _stream._currentOverlappedOwner, this, null) == null ?
-                    _stream._handle.ThreadPoolBinding.AllocateNativeOverlapped(_stream._preallocatedOverlapped) :
-                    _stream._handle.ThreadPoolBinding.AllocateNativeOverlapped(s_ioCallback, this, bytes);
+                    _stream._fileHandle.ThreadPoolBinding.AllocateNativeOverlapped(_stream._preallocatedOverlapped) :
+                    _stream._fileHandle.ThreadPoolBinding.AllocateNativeOverlapped(s_ioCallback, this, bytes);
                 Debug.Assert(_overlapped != null, "AllocateNativeOverlapped returned null");
             }
 
@@ -114,7 +114,7 @@ namespace System.IO
                 // (this is why we disposed the registration above).
                 if (_overlapped != null)
                 {
-                    _stream._handle.ThreadPoolBinding.FreeNativeOverlapped(_overlapped);
+                    _stream._fileHandle.ThreadPoolBinding.FreeNativeOverlapped(_overlapped);
                     _overlapped = null;
                 }
 
@@ -203,8 +203,8 @@ namespace System.IO
                 Debug.Assert(completionSource._overlapped != null && !completionSource.Task.IsCompleted, "IO should not have completed yet");
 
                 // If the handle is still valid, attempt to cancel the IO
-                if (!completionSource._stream._handle.IsInvalid && 
-                    !Interop.mincore.CancelIoEx(completionSource._stream._handle, completionSource._overlapped))
+                if (!completionSource._stream._fileHandle.IsInvalid && 
+                    !Interop.mincore.CancelIoEx(completionSource._stream._fileHandle, completionSource._overlapped))
                 {
                     int errorCode = Marshal.GetLastWin32Error();
 
