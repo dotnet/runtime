@@ -510,6 +510,15 @@
       <Member Name="MemoryCopy(System.Void*,System.Void*,System.Int64,System.Int64)" />
       <Member Name="MemoryCopy(System.Void*,System.Void*,System.UInt64,System.UInt64)" />
     </Type>
+    <Type Name="System.Buffers.ArrayPool&lt;T&gt;">
+      <Member Name="#ctor" />
+      <Member Name="Create" />
+      <Member Name="Create(System.Int32,System.Int32)" />
+      <Member Name="get_Shared" />
+      <Member MemberType="Property" Name="Shared" />
+      <Member Name="Rent(System.Int32)" />
+      <Member Name="Return(T[],System.Boolean)" />
+    </Type>
     <Type Name="System.Byte">
       <Member MemberType="Field" Name="MaxValue" />
       <Member MemberType="Field" Name="MinValue" />
