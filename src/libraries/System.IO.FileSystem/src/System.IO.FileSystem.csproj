@@ -79,7 +79,7 @@
   </ItemGroup>
   <!-- .NET Standard 1.7 -->
   <ItemGroup Condition="'$(TargetGroup)' == ''">
-    <Compile Include="System\IO\FileStreamBase.NetStandard17.cs" />
+    <Compile Include="System\IO\FileStream.NetStandard17.cs" />
   </ItemGroup>
   <!-- Windows -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'net463'">
@@ -89,8 +89,8 @@
     <Compile Include="System\IO\FileInfo.Windows.cs" />
     <Compile Include="System\IO\FileSystemInfo.Windows.cs" />
     <Compile Include="System\IO\PathHelpers.Windows.cs" />
-    <Compile Include="System\IO\Win32FileStream.cs" />
-    <Compile Include="System\IO\Win32FileStreamCompletionSource.cs" />
+    <Compile Include="System\IO\FileStream.Win32.cs" />
+    <Compile Include="System\IO\FileStreamCompletionSource.Win32.cs" />
     <Compile Include="System\IO\Win32FileSystem.cs" />
     <Compile Include="System\IO\Win32FileSystemEnumerable.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
@@ -286,7 +286,7 @@
     <Compile Include="System\IO\FileSystem.Current.Unix.cs" />
     <Compile Include="System\IO\FileSystemInfo.Unix.cs" />
     <Compile Include="System\IO\PathHelpers.Unix.cs" />
-    <Compile Include="System\IO\UnixFileStream.cs" />
+    <Compile Include="System\IO\FileStream.Unix.cs" />
     <Compile Include="System\IO\UnixFileSystem.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
