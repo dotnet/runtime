@@ -2630,54 +2630,53 @@ namespace System
     {
         public const float E =  2.71828183f;
         public const float PI = 3.14159265f;
+        public static float Abs(float x) { throw null; }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
-        public static float Abs(float x) { return default(float); }
+        public static float Acos(float x) { throw null; }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
-        public static float Acos(float x) { return default(float); }
+        public static float Asin(float x) { throw null; }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
-        public static float Asin(float x) { return default(float); }
+        public static float Atan(float x) { throw null; }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
-        public static float Atan(float x) { return default(float); }
+        public static float Atan2(float y, float x) { throw null; }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
-        public static float Atan2(float y, float x) { return default(float); }
+        public static float Ceiling(float x) { throw null; }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
-        public static float Ceiling(float x) { return default(float); }
+        public static float Cos(float x) { throw null; }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
-        public static float Cos(float x) { return default(float); }
+        public static float Cosh(float x) { throw null; }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
-        public static float Cosh(float x) { return default(float); }
+        public static float Exp(float x) { throw null; }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
-        public static float Exp(float x) { return default(float); }
+        public static float Floor(float x) { throw null; }
+        public static float IEEERemainder(float x, float y) { throw null; }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
-        public static float Floor(float x) { return default(float); }
-        public static float IEEERemainder(float x, float y) { return default(float); }
+        public static float Log(float x) { throw null; }
+        public static float Log(float x, float y) { throw null; }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
-        public static float Log(float x) { return default(float); }
-        public static float Log(float x, float y) { return default(float); }
+        public static float Log10(float x) { throw null; }        
+        public static float Max(float x, float y) { throw null; }
+        public static float Min(float x, float y) { throw null; }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
-        public static float Log10(float x) { return default(float); }        
-        public static float Max(float x, float y) { return default(float); }
-        public static float Min(float x, float y) { return default(float); }
+        public static float Pow(float x, float y) { throw null; }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
-        public static float Pow(float x, float y) { return default(float); }
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
-        public static float Round(float x) { return default(float); }
-        public static float Round(float x, int digits) { return default(float); }
-        public static float Round(float x, int digits, System.MidpointRounding mode) { return default(float); }
-        public static float Round(float x, System.MidpointRounding mode) { return default(float); }
+        public static float Round(float x) { throw null; }
+        public static float Round(float x, int digits) { throw null; }
+        public static float Round(float x, int digits, System.MidpointRounding mode) { throw null; }
+        public static float Round(float x, System.MidpointRounding mode) { throw null; }
         public static int Sign(float x) { return default(int); }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
-        public static float Sin(float x) { return default(float); }
+        public static float Sin(float x) { throw null; }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
-        public static float Sinh(float x) { return default(float); }
+        public static float Sinh(float x) { throw null; }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
         [System.Security.SecuritySafeCriticalAttribute]
-        public static float Sqrt(float x) { return default(float); }
+        public static float Sqrt(float x) { throw null; }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
-        public static float Tan(float x) { return default(float); }
+        public static float Tan(float x) { throw null; }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
-        public static float Tanh(float x) { return default(float); }
-        public static float Truncate(float x) { return default(float); }
+        public static float Tanh(float x) { throw null; }
+        public static float Truncate(float x) { throw null; }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class MemberAccessException : System.SystemException
