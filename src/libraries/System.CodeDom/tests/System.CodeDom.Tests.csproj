@@ -46,6 +46,8 @@
     <Compile Include="CodeExpressions\CodeArgumentReferenceExpressionTests.cs" />
     <Compile Include="CodeExpressions\CodeBinaryOperatorExpressionTests.cs" />
     <Compile Include="CodeExpressions\CodeSnippetExpressionTests.cs" />
+    <Compile Include="Microsoft\CSharp\CSharpCodeProviderTests.cs" />
+    <Compile Include="Compiler\CodeDomProviderTests.cs" />
     <Compile Include="CodeGenerationTests.cs" />
     <Compile Include="CodeObjects\CodeTypeReferenceTests.cs" />
     <Compile Include="CodeObjects\CodeTypeParameterTests.cs" />
@@ -82,6 +84,7 @@
     <Compile Include="CodeObjects\CodeObjectTestBase.cs" />
     <Compile Include="CodeStatements\CodeStatementTestBase.cs" />
     <Compile Include="CodeObjects\CodeChecksumPragmaTests.cs" />
+    <Compile Include="Microsoft\VisualBasic\VBCodeProviderTests.cs" />
     <Compile Include="Other\CodeRegionDirectiveTests.cs" />
     <Compile Include="CodeObjects\CodeNamespaceImportTests.cs" />
     <Compile Include="Other\CodeLinePragmaTests.cs" />
