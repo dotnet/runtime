@@ -30,7 +30,6 @@ namespace System.Linq.Expressions
             return false;
         }
 
-
         /// <summary>
         /// If the result of a TypeBinaryExpression is known statically, this
         /// returns the result, otherwise it returns null, meaning we'll need

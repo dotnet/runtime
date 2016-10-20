@@ -2,10 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq.Expressions;
-using System.Threading;
 
 namespace System.Dynamic.Utils
 {
@@ -129,7 +128,7 @@ namespace System.Dynamic.Utils
 
         #region IEnumerable Members
 
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         #endregion
     }
