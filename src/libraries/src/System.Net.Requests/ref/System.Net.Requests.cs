@@ -221,7 +221,7 @@ namespace System.Net
         TrustFailure = 9,
         UnknownError = 16
     }
-    public abstract partial class WebRequest : System.Runtime.Serialization.ISerializable
+    public abstract partial class WebRequest : System.MarshalByRefObject, System.Runtime.Serialization.ISerializable
     {
         protected WebRequest() { }
         protected WebRequest(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
@@ -293,7 +293,7 @@ namespace System.Net
             public const string UploadFile = "PUT";
         }
     }
-    public abstract partial class WebResponse : System.Runtime.Serialization.ISerializable, System.IDisposable
+    public abstract partial class WebResponse : System.MarshalByRefObject, System.Runtime.Serialization.ISerializable, System.IDisposable
     {
         protected WebResponse() { }
         protected WebResponse(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }

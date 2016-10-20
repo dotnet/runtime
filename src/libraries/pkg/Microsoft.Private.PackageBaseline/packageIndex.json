@@ -2429,7 +2429,7 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.10.0": "4.0.10",
         "4.0.11.0": "4.3.0",
-        "4.0.12.0": "4.4.0"
+        "4.1.0.0": "4.4.0"
       }
     },
     "System.Threading.Timer": {

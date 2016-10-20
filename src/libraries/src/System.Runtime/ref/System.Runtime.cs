@@ -4448,7 +4448,7 @@ namespace System.IO
         Current = 1,
         End = 2,
     }
-    public abstract partial class Stream : System.IDisposable
+    public abstract partial class Stream : System.MarshalByRefObject, System.IDisposable
     {
         public static readonly System.IO.Stream Null;
         protected Stream() { }
@@ -6624,7 +6624,7 @@ namespace System.Threading
         public const int Infinite = -1;
         public static readonly System.TimeSpan InfiniteTimeSpan;
     }
-    public abstract partial class WaitHandle : System.IDisposable
+    public abstract partial class WaitHandle : System.MarshalByRefObject, System.IDisposable
     {
         protected static readonly System.IntPtr InvalidHandle;
         public const int WaitTimeout = 258;
