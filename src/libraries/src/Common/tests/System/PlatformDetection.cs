@@ -16,6 +16,8 @@ namespace System
         public static bool IsWindows7 { get; } = IsWindows && GetWindowsVersion() == 6 && GetWindowsMinorVersion() == 1;
         public static bool IsOSX { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
         public static bool IsNetBSD { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
+        public static bool IsOpenSUSE { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Create("OPENSUSE"));
+        public static bool IsUbuntu { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Create("UBUNTU"));
         public static bool IsNotWindowsNanoServer { get; } = (IsWindows &&
             File.Exists(Path.Combine(Environment.GetEnvironmentVariable("windir"), "regedit.exe")));
         public static bool IsWindows10Version1607OrGreater { get; } = IsWindows &&
@@ -50,6 +52,7 @@ namespace System
         }
 
         public static bool IsDebian8 { get; } = IsDistroAndVersion("debian", "8");
+        public static bool IsUbuntu1404 { get; } = IsDistroAndVersion("ubuntu", "14.04");
         public static bool IsUbuntu1510 { get; } = IsDistroAndVersion("ubuntu", "15.10");
         public static bool IsUbuntu1604 { get; } = IsDistroAndVersion("ubuntu", "16.04");
         public static bool IsUbuntu1610 { get; } = IsDistroAndVersion("ubuntu", "16.10");
