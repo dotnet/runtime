@@ -379,10 +379,11 @@ namespace System.Net.Sockets
         VersionNotSupported = 10092,
         WouldBlock = 10035,
     }
-    public partial class SocketException : System.Exception
+    public partial class SocketException : System.ComponentModel.Win32Exception
     {
         public SocketException() { }
         public SocketException(int errorCode) { }
+        protected SocketException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public override string Message { get { throw null; } }
         public System.Net.Sockets.SocketError SocketErrorCode { get { throw null; } }
     }
