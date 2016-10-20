@@ -304,7 +304,7 @@ namespace System.IO
         public override System.Threading.Tasks.Task WriteLineAsync(char[] buffer, int index, int count) { throw null; }
         public override System.Threading.Tasks.Task WriteLineAsync(string value) { throw null; }
     }
-    public abstract partial class TextReader : System.IDisposable
+    public abstract partial class TextReader : System.MarshalByRefObject,  System.IDisposable
     {
         public static readonly System.IO.TextReader Null;
         protected TextReader() { }
@@ -323,7 +323,7 @@ namespace System.IO
         public virtual System.Threading.Tasks.Task<string> ReadToEndAsync() { throw null; }
         public static System.IO.TextReader Synchronized(System.IO.TextReader reader) { throw null; }
     }
-    public abstract partial class TextWriter : System.IDisposable
+    public abstract partial class TextWriter : System.MarshalByRefObject ,System.IDisposable
     {
         protected char[] CoreNewLine;
         public static readonly System.IO.TextWriter Null;
