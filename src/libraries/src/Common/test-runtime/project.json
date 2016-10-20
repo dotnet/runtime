@@ -5,7 +5,7 @@
     "ReportGenerator": "2.4.3",
     "Microsoft.NETCore.TestHost": "1.2.0-beta-24619-03",
     "Microsoft.NETCore.Runtime.CoreCLR": "1.2.0-beta-24619-03",
-    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00830-02",
+    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00920-01",
     "xunit.console.netcore": "1.0.3-prerelease-00903-02",
     "Microsoft.xunit.netcore.extensions": "1.0.0-prerelease-00830-02",
     "perf": {
