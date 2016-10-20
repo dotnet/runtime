@@ -293,6 +293,31 @@ namespace System.Security.Cryptography
         public override int KeySize { get { return default(int); } set { } }
         public static System.Security.Cryptography.RC2 Create() { return default(System.Security.Cryptography.RC2); }
     }
+    [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+    public abstract partial class Rijndael : System.Security.Cryptography.SymmetricAlgorithm
+    {
+        protected Rijndael() { }
+        public static System.Security.Cryptography.Rijndael Create() { return default(System.Security.Cryptography.Rijndael); }
+    }
+    [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+    public sealed partial class RijndaelManaged : System.Security.Cryptography.Rijndael
+    {
+        public RijndaelManaged() { }
+        public override int BlockSize { get { return default(int); } set { } }
+        public override byte[] IV { get { return default(byte[]); } set { } }
+        public override byte[] Key { get { return default(byte[]); } set { } }
+        public override int KeySize { get { return default(int); } set { } }
+        public override System.Security.Cryptography.KeySizes[] LegalKeySizes { get { return default(System.Security.Cryptography.KeySizes[]); } }
+        public override System.Security.Cryptography.CipherMode Mode { get { return default(System.Security.Cryptography.CipherMode); } set { } }
+        public override System.Security.Cryptography.PaddingMode Padding { get { return default(System.Security.Cryptography.PaddingMode); } set { } }
+        public override System.Security.Cryptography.ICryptoTransform CreateDecryptor() { return default(System.Security.Cryptography.ICryptoTransform); }
+        public override System.Security.Cryptography.ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] rgbIV) { return default(System.Security.Cryptography.ICryptoTransform); }
+        public override System.Security.Cryptography.ICryptoTransform CreateEncryptor() { return default(System.Security.Cryptography.ICryptoTransform); }
+        public override System.Security.Cryptography.ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV) { return default(System.Security.Cryptography.ICryptoTransform); }
+        protected override void Dispose(bool disposing) { }
+        public override void GenerateIV() { }
+        public override void GenerateKey() { }
+    }
     public partial class Rfc2898DeriveBytes : System.Security.Cryptography.DeriveBytes
     {
         public Rfc2898DeriveBytes(byte[] password, byte[] salt, int iterations) { }
