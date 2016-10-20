@@ -349,6 +349,11 @@ namespace System.Net
         protected virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
+    public class GlobalProxySelection
+    {
+        public static IWebProxy Select { get { throw null; } set { } }
+        public static IWebProxy GetEmptyWebProxy() { throw null; }
+    }
 }
 namespace System.Net.Cache
 {
