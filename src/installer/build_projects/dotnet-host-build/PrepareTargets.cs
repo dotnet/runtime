@@ -33,9 +33,9 @@ namespace Microsoft.DotNet.Host.Build
         // All major targets will depend on this in order to ensure variables are set up right if they are run independently
         [Target(
             nameof(SetNuGetPackagesDir),
-            nameof(GenerateVersions), 
-            nameof(CheckPrereqs), 
-            nameof(LocateStage0), 
+            nameof(GenerateVersions),
+            nameof(CheckPrereqs),
+            nameof(LocateStage0),
             nameof(ExpectedBuildArtifacts),
             nameof(RestorePackages),
             nameof(PackDotnetDebTool))]
@@ -52,13 +52,13 @@ namespace Microsoft.DotNet.Host.Build
                     targetRID = $"win7-{RuntimeEnvironment.RuntimeArchitecture}";
                 }
             }
-            string targetFramework = Environment.GetEnvironmentVariable("TARGETFRAMEWORK") ?? "netcoreapp1.0";
+            string targetFramework = Environment.GetEnvironmentVariable("TARGETFRAMEWORK") ?? "netcoreapp1.1";
 
             if (string.IsNullOrEmpty(configEnv))
             {
                 configEnv = "Debug";
             }
-            
+
             c.BuildContext["Configuration"] = configEnv;
             c.BuildContext["Channel"] = Environment.GetEnvironmentVariable("CHANNEL");
             c.BuildContext["Platform"] = platformEnv;
@@ -114,7 +114,7 @@ namespace Microsoft.DotNet.Host.Build
         {
             var commitCount = GitUtils.GetCommitCount();
 
-            var commitHash = GitUtils.GetCommitHash(); 
+            var commitHash = GitUtils.GetCommitHash();
 
             var branchInfo = new BranchInfo(Dirs.RepoRoot);
 
@@ -318,7 +318,7 @@ namespace Microsoft.DotNet.Host.Build
                 .WorkingDirectory(Path.Combine(c.BuildContext.BuildDirectory, "src"))
                 .Execute()
                 .EnsureSuccessful();
-                
+
             return c.Success();
         }
 
