@@ -32,7 +32,6 @@ namespace System {
 
         public const float E = 2.71828183f;
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static float Abs(float x) => Math.Abs(x);
 
         [System.Security.SecuritySafeCritical]  // auto-generated
@@ -112,7 +111,7 @@ namespace System {
                 }
             }
 
-            if (Math.Abs(alternativeResult) < Math.Abs(regularMod))
+            if (Abs(alternativeResult) < Abs(regularMod))
             {
                 return alternativeResult;
             }
