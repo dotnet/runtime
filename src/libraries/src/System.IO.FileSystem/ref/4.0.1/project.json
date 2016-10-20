@@ -3,6 +3,6 @@
     "System.IO.FileSystem": "4.0.1"
   },
   "frameworks": {
-    "netstandard1.3": { }
+    "netstandard1.3": {}
   }
 }

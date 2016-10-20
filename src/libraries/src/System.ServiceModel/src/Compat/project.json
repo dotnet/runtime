@@ -10,8 +10,6 @@
     "System.Runtime.Serialization.Xml": "4.4.0-beta-24619-02"
   },
   "frameworks": {
-    "netstandard1.6": {
-      "imports": "dnxcore50"
-    }
+    "netstandard1.6": {}
   }
 }

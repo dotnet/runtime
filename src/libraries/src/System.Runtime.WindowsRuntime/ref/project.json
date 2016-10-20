@@ -1,15 +1,11 @@
 {
   "dependencies": {
-    "Microsoft.TargetingPack.Private.WinRT": "1.0.1",
-    "System.Runtime": "4.0.0",
-    "System.IO": "4.0.0",
-    "System.Threading.Tasks": "4.0.0"
+    "Microsoft.TargetingPack.Private.WinRT": "1.0.2",
+    "System.Runtime": "4.1.0",
+    "System.IO": "4.1.0",
+    "System.Threading.Tasks": "4.0.11"
   },
   "frameworks": {
-    "netstandard1.2": {
-      "imports": [
-        "dotnet5.3"
-      ]
-    }
+    "netstandard1.2": {}
   }
 }
