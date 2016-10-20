@@ -5777,6 +5777,7 @@ GenTreePtr Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolve
             }
             break;
         }
+#if COR_JIT_EE_VERSION > 460
         case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
         {
 #ifdef FEATURE_READYTORUN_COMPILER
@@ -5794,14 +5795,18 @@ GenTreePtr Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolve
             {
                 callFlags |= GTF_CALL_HOISTABLE;
             }
-
-            op1 = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_STATIC_BASE, TYP_BYREF, callFlags, args);
+            var_types type = TYP_BYREF;
+            op1            = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE, type, callFlags, args);
 
             op1->gtCall.setEntryPoint(pFieldInfo->fieldLookup);
+            FieldSeqNode* fs = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField);
+            op1              = gtNewOperNode(GT_ADD, type, op1,
+                                new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, pFieldInfo->offset, fs));
             break;
 #else
             unreached();
 #endif // FEATURE_READYTORUN_COMPILER
+#endif // COR_JIT_EE_VERSION > 460
         }
         default:
         {
@@ -12738,7 +12743,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             return;
 
                         case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
-
+#if COR_JIT_EE_VERSION > 460
+                        case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
+#endif
                             /* We may be able to inline the field accessors in specific instantiations of generic
                              * methods */
                             compInlineResult->NoteFatal(InlineObservation::CALLSITE_LDFLD_NEEDS_HELPER);
@@ -12969,7 +12976,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_STATIC_RVA_ADDRESS:
                     case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
+#if COR_JIT_EE_VERSION > 460
                     case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
+#endif
                         op1 = impImportStaticFieldAccess(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo,
                                                          lclTyp);
                         break;
@@ -13113,6 +13122,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             return;
 
                         case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
+#if COR_JIT_EE_VERSION > 460
+                        case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
+#endif
 
                             /* We may be able to inline the field accessors in specific instantiations of generic
                              * methods */
@@ -13232,7 +13244,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_STATIC_RVA_ADDRESS:
                     case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
+#if COR_JIT_EE_VERSION > 460
                     case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
+#endif
                         op1 = impImportStaticFieldAccess(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo,
                                                          lclTyp);
                         break;
