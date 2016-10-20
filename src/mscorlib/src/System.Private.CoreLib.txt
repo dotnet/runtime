@@ -2383,6 +2383,9 @@ InvalidOperation_CollectionBackingListTooLarge=The collection backing this List 
 InvalidOperation_CollectionBackingDictionaryTooLarge=The collection backing this Dictionary contains too many elements.
 InvalidOperation_CannotRemoveLastFromEmptyCollection=Cannot remove the last element from an empty collection.
 
+; Buffers
+ArgumentException_BufferNotFromPool=The buffer is not associated with this pool and may not be returned to it.
+
 ; Globalization resources
 ;------------------
 
