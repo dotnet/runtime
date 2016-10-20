@@ -6,7 +6,7 @@ src\<Library Name>\ref - Contains any reference assembly projects for the librar
 src\<Library Name>\pkg - Contains package projects for the library.
 src\<Library Name>\tests - Contains the test code for a library
 ```
-In the src directory for a library there should be only **one** `.csproj` file that contains any information necessary to build the library in various configurartions (see [Configurations](#project-configuration-conventions)). The src directory should also contain exactly **one** `.builds` file which contains all the valid configurations that a library should be built for (see [#.builds file](#project-builds-file)).
+In the src directory for a library there should be only **one** `.csproj` file that contains any information necessary to build the library in various configurations (see [Configurations](#project-configuration-conventions)). The src directory should also contain exactly **one** `.builds` file which contains all the valid configurations that a library should be built for (see [#.builds file](#project-builds-file)).
 
 In the ref directory for the library there should be at most **one** `.csproj` that contains the latest API for the reference assembly for the library.  If a library cannot support all supported targets using the latest API it should use `.depproj` projects for each significant historical version in order to download and redistribute the historical reference assembly in the latest package.  If a library is a pure portable library with a single implementation it need not use a reference assembly at all. (see [Reference assembly projects](#reference-assembly-projects)).
 
