@@ -32,8 +32,6 @@ namespace System.Globalization.Tests
             Assert.Throws<ArgumentException>("strInput", () => "\uD800\uD800".IsNormalized()); // Invalid surrogate pair
 
             Assert.Throws<ArgumentNullException>("strInput", () => StringNormalizationExtensions.IsNormalized(null));
-            // Ensure that extension method not used by current framework.
-            Assert.Throws<NullReferenceException>(() => ((string)null).IsNormalized());
         }
 
         [Theory]
@@ -66,8 +64,6 @@ namespace System.Globalization.Tests
             Assert.Throws<ArgumentException>("strInput", () => "\uD800\uD800".Normalize()); // Invalid surrogate pair
 
             Assert.Throws<ArgumentNullException>("strInput", () => StringNormalizationExtensions.Normalize(null));
-            // Ensure that extension method not used by current framework.
-            Assert.Throws<NullReferenceException>(() => ((string)null).Normalize());
         }
     }
 }
