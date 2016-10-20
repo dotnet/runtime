@@ -7,17 +7,16 @@
     <AssemblyName>System.Runtime.Numerics</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ProjectGuid>{D2C99D27-0BEF-4319-ADB3-05CBEBA8F69B}</ProjectGuid>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
-    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net46'">None</ResourcesSourceOutputDirectory>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
-    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.3;netcore50</PackageTargetFramework>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
+    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net463'">None</ResourcesSourceOutputDirectory>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
     <Compile Include="System\Numerics\BigIntegerCalculator.AddSub.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.BitsBuffer.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.DivRem.cs" />
@@ -35,7 +34,7 @@
       <Link>System\Globalization\FormatProvider.Number.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System.Numerics" />
   </ItemGroup>
