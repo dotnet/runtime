@@ -42,7 +42,16 @@ namespace Microsoft.DotNet.Cli.Build
             _corehostLockedDirectory = corehostLockedDirectory;
             _corehostLatestDirectory = corehostLatestDirectory;
             _corehostPackageSource = corehostPackageSource;
-            _crossgenUtil = new Crossgen(DependencyVersions.CoreCLRVersion, DependencyVersions.JitVersion, sharedFrameworkRid == "win10-arm64" ? sharedFrameworkRid : null);
+
+            string crossgenRID = null;
+
+            // If we are dealing with cross-targeting compilation, then specify the 
+            // correct RID for crossgen to use when compiling SharedFramework.
+            if ((sharedFrameworkRid == "win8-arm") || (sharedFrameworkRid == "win10-arm64"))
+            {
+                crossgenRID = sharedFrameworkRid;
+            }
+            _crossgenUtil = new Crossgen(DependencyVersions.CoreCLRVersion, DependencyVersions.JitVersion, crossgenRID);
 
             _sharedFrameworkTemplateSourceRoot = Path.Combine(repoRoot, "src", "sharedframework", "framework");
             _sharedFrameworkNugetVersion = sharedFrameworkNugetVersion;

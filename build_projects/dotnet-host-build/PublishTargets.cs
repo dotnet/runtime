@@ -115,6 +115,7 @@ namespace Microsoft.DotNet.Host.Build
                     {
                         "win.x86.version",
                         "win.x64.version",
+                        "win.arm.version",
                         "win.arm64.version",
                         "ubuntu.x64.version",
                         "ubuntu.16.04.x64.version",
@@ -180,6 +181,7 @@ namespace Microsoft.DotNet.Host.Build
              {
                  { "sharedfx_Windows_x86", false },
                  { "sharedfx_Windows_x64", false },
+                 { "sharedfx_Windows_arm", false },
                  { "sharedfx_Windows_arm64", false },
                  { "sharedfx_Ubuntu_x64", false },
                  { "sharedfx_Ubuntu_16_04_x64", false },

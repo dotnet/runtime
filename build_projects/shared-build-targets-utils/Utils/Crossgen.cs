@@ -38,14 +38,27 @@ namespace Microsoft.DotNet.Cli.Build
         private string GetCrossgenPathForVersion()
         {
             var crossgenPackagePath = GetCrossGenPackagePathForVersion();
+            string ridCrossgen = null;
 
             if (crossgenPackagePath == null)
             {
-                return null;
+                return ridCrossgen;
             }
-            return (_targetRID == "win10-arm64") ?
-                Path.Combine(crossgenPackagePath, "tools", "x64_arm64", $"crossgen{Constants.ExeSuffix}") :
-                Path.Combine(crossgenPackagePath, "tools", $"crossgen{Constants.ExeSuffix}");
+
+            if (_targetRID == "win8-arm")
+            {
+                ridCrossgen = Path.Combine(crossgenPackagePath, "tools", "x86_arm", $"crossgen{Constants.ExeSuffix}");
+            }
+            else if (_targetRID == "win10-arm64")
+            {
+                ridCrossgen = Path.Combine(crossgenPackagePath, "tools", "x64_arm64", $"crossgen{Constants.ExeSuffix}");
+            }
+            else
+            {
+                ridCrossgen = Path.Combine(crossgenPackagePath, "tools", $"crossgen{Constants.ExeSuffix}");
+            }
+
+            return ridCrossgen;
         }
 
         private string GetLibCLRJitPathForVersion()
@@ -57,9 +70,19 @@ namespace Microsoft.DotNet.Cli.Build
             {
                 return null;
             }
-            return (_targetRID == "win10-arm64") ?
-                Path.Combine(jitPackagePath, "runtimes", "x64_arm64", "native", $"{Constants.DynamicLibPrefix}clrjit{Constants.DynamicLibSuffix}") :
-                Path.Combine(jitPackagePath, "runtimes", jitRid, "native", $"{Constants.DynamicLibPrefix}clrjit{Constants.DynamicLibSuffix}");
+
+            string jitPath = Path.Combine(jitPackagePath, "runtimes", jitRid, "native", $"{Constants.DynamicLibPrefix}clrjit{Constants.DynamicLibSuffix}");
+            
+            if (_targetRID == "win8-arm") 
+            {
+                jitPath = Path.Combine(jitPackagePath, "runtimes", "x86_arm", "native", $"{Constants.DynamicLibPrefix}clrjit{Constants.DynamicLibSuffix}");
+            }
+            else if (_targetRID == "win10-arm64") 
+            {
+                jitPath = Path.Combine(jitPackagePath, "runtimes", "x64_arm64", "native", $"{Constants.DynamicLibPrefix}clrjit{Constants.DynamicLibSuffix}");
+            }
+            
+            return jitPath;
         }
 
         private string GetJitPackagePathForVersion()
