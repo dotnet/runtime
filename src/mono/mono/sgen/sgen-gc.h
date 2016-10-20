@@ -753,12 +753,18 @@ static mword sgen_client_slow_object_get_size (GCVTable vtable, GCObject* o);
 static inline mword
 sgen_safe_object_get_size (GCObject *obj)
 {
-       GCObject *forwarded;
+	GCObject *forwarded;
+	GCVTable vtable = SGEN_LOAD_VTABLE_UNCHECKED (obj);
 
-       if ((forwarded = SGEN_OBJECT_IS_FORWARDED (obj)))
-               obj = forwarded;
-
-       return sgen_client_par_object_get_size (SGEN_LOAD_VTABLE (obj), obj);
+	/*
+	 * Once we load the vtable, we must always use it, in case we are in parallel case.
+	 * Otherwise the object might get forwarded in the meantime and we would read an
+	 * invalid vtable. An object cannot be forwarded for a second time during same GC.
+	 */
+	if ((forwarded = SGEN_VTABLE_IS_FORWARDED (vtable)))
+		return sgen_client_par_object_get_size (SGEN_LOAD_VTABLE (forwarded), obj);
+	else
+		return sgen_client_par_object_get_size ((GCVTable)SGEN_POINTER_UNTAG_ALL (vtable), obj);
 }
 
 static inline gboolean
