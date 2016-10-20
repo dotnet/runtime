@@ -121,7 +121,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             object result;
 
-            switch (System.Dynamic.Utils.TypeExtensions.GetTypeCode(type))
+            switch (type.GetTypeCode())
             {
                 case TypeCode.Boolean:
                     result = ScriptingRuntimeHelpers.False;

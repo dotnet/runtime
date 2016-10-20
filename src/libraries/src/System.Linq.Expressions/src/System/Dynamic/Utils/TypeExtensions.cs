@@ -95,7 +95,7 @@ namespace System.Dynamic.Utils
             else if (type == typeof(string))
                 return TypeCode.String;
             else if (type.GetTypeInfo().IsEnum)
-                return GetTypeCode(Enum.GetUnderlyingType(type));
+                return Enum.GetUnderlyingType(type).GetTypeCode();
             else
                 return TypeCode.Object;
         }
