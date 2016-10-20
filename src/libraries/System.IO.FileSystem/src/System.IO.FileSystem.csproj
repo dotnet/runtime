@@ -43,7 +43,6 @@
     <Compile Include="System\IO\FileInfo.cs" />
     <Compile Include="System\IO\FileOptions.cs" />
     <Compile Include="System\IO\FileStream.cs" />
-    <Compile Include="System\IO\FileStreamBase.cs" />
     <Compile Include="System\IO\FileSystem.cs" />
     <Compile Include="System\IO\FileSystemInfo.cs" />
     <Compile Include="System\IO\IFileSystemObject.cs" />
@@ -79,9 +78,8 @@
     </Compile>
   </ItemGroup>
   <!-- .NET Standard 1.7 -->
-  <ItemGroup Condition="'$(TargetGroup)' == ''" >
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
     <Compile Include="System\IO\FileStreamBase.NetStandard17.cs" />
-    <Compile Include="System\IO\FileStream.NetStandard17.cs" />
   </ItemGroup>
   <!-- Windows -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'net463'">
@@ -89,7 +87,6 @@
     <Compile Include="Microsoft\Win32\SafeHandles\SafeFindHandle.Windows.cs" />
     <Compile Include="System\IO\DirectoryInfo.Windows.cs" />
     <Compile Include="System\IO\FileInfo.Windows.cs" />
-    <Compile Include="System\IO\FileStream.Win32.cs" />
     <Compile Include="System\IO\FileSystemInfo.Windows.cs" />
     <Compile Include="System\IO\PathHelpers.Windows.cs" />
     <Compile Include="System\IO\Win32FileStream.cs" />
@@ -286,7 +283,6 @@
   <!-- Unix -->
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs" />
-    <Compile Include="System\IO\FileStream.Unix.cs" />
     <Compile Include="System\IO\FileSystem.Current.Unix.cs" />
     <Compile Include="System\IO\FileSystemInfo.Unix.cs" />
     <Compile Include="System\IO\PathHelpers.Unix.cs" />

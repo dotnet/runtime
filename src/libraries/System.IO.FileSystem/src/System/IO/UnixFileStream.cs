@@ -4,33 +4,31 @@
 
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.IO
 {
     /// <summary>Provides an implementation of a file stream for Unix files.</summary>
-    internal sealed partial class UnixFileStream : FileStreamBase
+    public partial class FileStream : Stream
     {
         /// <summary>The file descriptor wrapped in a file handle.</summary>
-        private readonly SafeFileHandle _fileHandle;
+        private SafeFileHandle _fileHandle;
 
         /// <summary>The path to the opened file.</summary>
-        private readonly string _path;
+        private string _path;
 
         /// <summary>File mode.</summary>
-        private readonly FileMode _mode;
+        private FileMode _mode;
 
         /// <summary>Whether the file is opened for reading, writing, or both.</summary>
-        private readonly FileAccess _access;
+        private FileAccess _access;
 
         /// <summary>Advanced options requested when opening the file.</summary>
-        private readonly FileOptions _options;
+        private FileOptions _options;
 
         /// <summary>If the file was opened with FileMode.Append, the length of the file when opened; otherwise, -1.</summary>
-        private readonly long _appendStart = -1;
+        private long _appendStart = -1;
 
         /// <summary>
         /// Whether asynchronous read/write/flush operations should be performed using async I/O.
@@ -47,7 +45,7 @@ namespace System.IO
         /// delegate to the base stream, and no attempt is made to synchronize.  If async, we use
         /// a semaphore to coordinate both sync and async operations.
         /// </summary>
-        private readonly bool _useAsyncIO;
+        private bool _useAsyncIO;
 
         /// <summary>
         /// Extra state used by the file stream when _useAsyncIO is true.  This includes
@@ -56,10 +54,10 @@ namespace System.IO
         /// synchronously from ReadAsync which can be reused if the count matches the next request.
         /// Only initialized when <see cref="_useAsyncIO"/> is true.
         /// </summary>
-        private readonly AsyncState _asyncState;
+        private AsyncState _asyncState;
 
         /// <summary>The length of the _buffer.</summary>
-        private readonly int _bufferLength;
+        private int _bufferLength;
 
         /// <summary>Lazily-initialized buffer data from Write waiting to be written to the underlying handle, or data read from the underlying handle and waiting to be Read.</summary>
         private byte[] _buffer;
@@ -93,8 +91,7 @@ namespace System.IO
         /// <param name="share">What other access to the file should be allowed.  This is currently ignored.</param>
         /// <param name="bufferSize">The size of the buffer to use when buffering.</param>
         /// <param name="options">Additional options for working with the file.</param>
-        internal UnixFileStream(String path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, FileStream parent)
-            : base(parent)
+        private void InitInternal(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
         {
             // FileStream performs most of the general argument validation.  We can assume here that the arguments
             // are all checked and consistent (e.g. non-null-or-empty path; valid enums in mode, access, share, and options; etc.)
@@ -170,18 +167,12 @@ namespace System.IO
         /// <param name="access">Whether the file will be read, written, or both.</param>
         /// <param name="bufferSize">The size of the buffer to use when buffering.</param>
         /// <param name="useAsyncIO">Whether access to the stream is performed asynchronously.</param>
-        internal UnixFileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool useAsyncIO, FileStream parent)
-            : base(parent)
+        private void InitFromHandleInternal(SafeFileHandle handle, FileAccess access, int bufferSize, bool useAsyncIO)
         {
             // Make sure the handle is open
-            if (handle.IsInvalid)
-                throw new ArgumentException(SR.Arg_InvalidHandle, nameof(handle));
+
             if (handle.IsClosed)
                 throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
-            if (access < FileAccess.Read || access > FileAccess.ReadWrite)
-                throw new ArgumentOutOfRangeException(nameof(access), SR.ArgumentOutOfRange_Enum);
-            if (bufferSize <= 0)
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (handle.IsAsync.HasValue && useAsyncIO != handle.IsAsync.Value)
                 throw new ArgumentException(SR.Arg_HandleNotAsync, nameof(handle));
 
@@ -279,14 +270,12 @@ namespace System.IO
         /// <summary>Gets a value indicating whether the current stream supports reading.</summary>
         public override bool CanRead
         {
-            [Pure]
             get { return !_fileHandle.IsClosed && (_access & FileAccess.Read) != 0; }
         }
 
         /// <summary>Gets a value indicating whether the current stream supports writing.</summary>
         public override bool CanWrite
         {
-            [Pure]
             get { return !_fileHandle.IsClosed && (_access & FileAccess.Write) != 0; }
         }
 
@@ -310,7 +299,7 @@ namespace System.IO
         }
 
         /// <summary>Gets a value indicating whether the stream was opened for I/O to be performed synchronously or asynchronously.</summary>
-        public override bool IsAsync
+        public virtual bool IsAsync
         {
             get { return _useAsyncIO; }
         }
@@ -324,7 +313,7 @@ namespace System.IO
                 {
                     throw Error.GetFileNotOpen();
                 }
-                if (!_parent.CanSeek)
+                if (!CanSeek)
                 {
                     throw Error.GetSeekNotSupported();
                 }
@@ -346,20 +335,20 @@ namespace System.IO
         }
 
         /// <summary>Gets the path that was passed to the constructor.</summary>
-        public override String Name { get { return _path ?? SR.IO_UnknownFileName; } }
+        public virtual string Name { get { return _path ?? SR.IO_UnknownFileName; } }
 
         /// <summary>Gets the SafeFileHandle for the file descriptor encapsulated in this stream.</summary>
-        public override SafeFileHandle SafeFileHandle
+        public virtual SafeFileHandle SafeFileHandle
         {
             get
             {
-                _parent.Flush();
+                Flush();
                 _exposedHandle = true;
                 return _fileHandle;
             }
         }
 
-        internal override bool IsClosed => _fileHandle.IsClosed;
+        internal virtual bool IsClosed => _fileHandle.IsClosed;
 
         /// <summary>Gets or sets the position within the current stream</summary>
         public override long Position
@@ -370,7 +359,7 @@ namespace System.IO
                 {
                     throw Error.GetFileNotOpen();
                 }
-                if (!_parent.CanSeek)
+                if (!CanSeek)
                 {
                     throw Error.GetSeekNotSupported();
                 }
@@ -393,7 +382,7 @@ namespace System.IO
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
                 }
-                _parent.Seek(value, SeekOrigin.Begin);
+                Seek(value, SeekOrigin.Begin);
             }
         }
 
@@ -422,7 +411,7 @@ namespace System.IO
 #if DEBUG
             verifyPosition = true; // in debug, always make sure our position matches what the OS says it should be
 #endif
-            if (verifyPosition && _parent.CanSeek)
+            if (verifyPosition && CanSeek)
             {
                 long oldPos = _filePosition; // SeekCore will override the current _position, so save it now
                 long curPos = SeekCore(0, SeekOrigin.Current);
@@ -473,37 +462,6 @@ namespace System.IO
             }
         }
 
-        /// <summary>Finalize the stream.</summary>
-        ~UnixFileStream()
-        {
-            Dispose(false);
-        }
-
-
-        /// <summary>Clears buffers for this stream and causes any buffered data to be written to the file.</summary>
-        public override void Flush()
-        {
-            _parent.Flush(flushToDisk: false);
-        }
-
-        /// <summary>
-        /// Clears buffers for this stream, and if <param name="flushToDisk"/> is true, 
-        /// causes any buffered data to be written to the file.
-        /// </summary>
-        public override void Flush(Boolean flushToDisk)
-        {
-            if (_fileHandle.IsClosed)
-            {
-                throw Error.GetFileNotOpen();
-            }
-
-            FlushInternalBuffer();
-            if (flushToDisk && _parent.CanWrite)
-            {
-                FlushOSBuffer();
-            }
-        }
-
         /// <summary>Flushes the OS buffer.  This does not flush the internal read/write buffer.</summary>
         private void FlushOSBuffer()
         {
@@ -537,7 +495,7 @@ namespace System.IO
             {
                 FlushWriteBuffer();
             }
-            else if (_readPos < _readLength && _parent.CanSeek)
+            else if (_readPos < _readLength && CanSeek)
             {
                 FlushReadBuffer();
             }
@@ -569,7 +527,7 @@ namespace System.IO
         /// <summary>Asynchronously clears all buffers for this stream, causing any buffered data to be written to the underlying device.</summary>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous flush operation.</returns>
-        public override Task FlushAsync(CancellationToken cancellationToken)
+        private Task FlushAsyncInternal(CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -592,10 +550,10 @@ namespace System.IO
 
             // We then separately flush to disk asynchronously.  This is only 
             // necessary if we support writing; otherwise, we're done.
-            if (_parent.CanWrite)
+            if (CanWrite)
             {
                 return Task.Factory.StartNew(
-                    state => ((UnixFileStream)state).FlushOSBuffer(),
+                    state => ((FileStream)state).FlushOSBuffer(),
                     this,
                     cancellationToken,
                     TaskCreationOptions.DenyChildAttach,
@@ -619,11 +577,11 @@ namespace System.IO
             {
                 throw Error.GetFileNotOpen();
             }
-            if (!_parent.CanSeek)
+            if (!CanSeek)
             {
                 throw Error.GetSeekNotSupported();
             }
-            if (!_parent.CanWrite)
+            if (!CanWrite)
             {
                 throw Error.GetWriteNotSupported();
             }
@@ -715,7 +673,7 @@ namespace System.IO
                 // If we're not able to seek, then we're not able to rewind the stream (i.e. flushing
                 // a read buffer), in which case we don't want to use a read buffer.  Similarly, if
                 // the user has asked for more data than we can buffer, we also want to skip the buffer.
-                if (!_parent.CanSeek || (count >= _bufferLength))
+                if (!CanSeek || (count >= _bufferLength))
                 {
                     // Read directly into the user's buffer
                     _readPos = _readLength = 0;
@@ -798,17 +756,11 @@ namespace System.IO
         /// <param name="count">The maximum number of bytes to read.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous read operation.</returns>
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        private Task<int> ReadAsyncInternal(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            if (cancellationToken.IsCancellationRequested)
-                return Task.FromCanceled<int>(cancellationToken);
-
-            if (_fileHandle.IsClosed)
-                throw Error.GetFileNotOpen();
-
             if (_useAsyncIO)
             {
-                if (!_parent.CanRead) // match Windows behavior; this gets thrown synchronously
+                if (!CanRead) // match Windows behavior; this gets thrown synchronously
                 {
                     throw Error.GetReadNotSupported();
                 }
@@ -863,7 +815,7 @@ namespace System.IO
                     // whereas on Windows it may happen before the write has completed.
 
                     Debug.Assert(t.Status == TaskStatus.RanToCompletion);
-                    var thisRef = (UnixFileStream)s;
+                    var thisRef = (FileStream)s;
                     try
                     {
                         byte[] b = thisRef._asyncState._buffer;
@@ -923,7 +875,7 @@ namespace System.IO
             {
                 throw Error.GetFileNotOpen();
             }
-            if (_readLength == 0 && !_parent.CanRead)
+            if (_readLength == 0 && !CanRead)
             {
                 throw Error.GetReadNotSupported();
             }
@@ -1039,7 +991,7 @@ namespace System.IO
         /// <param name="count">The maximum number of bytes to write.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous write operation.</returns>
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        private Task WriteAsyncInternal(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled(cancellationToken);
@@ -1049,7 +1001,7 @@ namespace System.IO
 
             if (_useAsyncIO)
             {
-                if (!_parent.CanWrite) // match Windows behavior; this gets thrown synchronously
+                if (!CanWrite) // match Windows behavior; this gets thrown synchronously
                 {
                     throw Error.GetWriteNotSupported();
                 }
@@ -1098,7 +1050,7 @@ namespace System.IO
                     // whereas on Windows it may happen before the write has completed.
 
                     Debug.Assert(t.Status == TaskStatus.RanToCompletion);
-                    var thisRef = (UnixFileStream)s;
+                    var thisRef = (FileStream)s;
                     try
                     {
                         byte[] b = thisRef._asyncState._buffer;
@@ -1163,7 +1115,7 @@ namespace System.IO
             // this checking and flushing.
             if (_writePos == 0)
             {
-                if (!_parent.CanWrite) throw Error.GetWriteNotSupported();
+                if (!CanWrite) throw Error.GetWriteNotSupported();
                 FlushReadBuffer();
             }
         }
@@ -1199,7 +1151,7 @@ namespace System.IO
         /// <summary>Prevents other processes from reading from or writing to the FileStream.</summary>
         /// <param name="position">The beginning of the range to lock.</param>
         /// <param name="length">The range to be locked.</param>
-        public override void Lock(long position, long length)
+        private void LockInternal(long position, long length)
         {
             // TODO #5964: Implement this with fcntl and F_SETLK in System.Native
             throw new PlatformNotSupportedException();
@@ -1208,7 +1160,7 @@ namespace System.IO
         /// <summary>Allows access by other processes to all or part of a file that was previously locked.</summary>
         /// <param name="position">The beginning of the range to unlock.</param>
         /// <param name="length">The range to be unlocked.</param>
-        public override void Unlock(long position, long length)
+        private void UnlockInternal(long position, long length)
         {
             // TODO #5964: Implement this with fcntl and F_SETLK in System.Native
             throw new PlatformNotSupportedException();
@@ -1223,7 +1175,7 @@ namespace System.IO
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
-            return StreamHelpers.ArrayPoolCopyToAsync(_parent, destination, bufferSize, cancellationToken);
+            return StreamHelpers.ArrayPoolCopyToAsync(this, destination, bufferSize, cancellationToken);
         }
 
         /// <summary>Sets the current position of this stream to the given value.</summary>
@@ -1243,7 +1195,7 @@ namespace System.IO
             {
                 throw Error.GetFileNotOpen();
             }
-            if (!_parent.CanSeek)
+            if (!CanSeek)
             {
                 throw Error.GetSeekNotSupported();
             }
