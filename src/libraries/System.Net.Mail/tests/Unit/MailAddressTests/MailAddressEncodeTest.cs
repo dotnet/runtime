@@ -23,12 +23,12 @@ namespace System.Net.Mail.Tests
         [Fact]
         public void EncodeSingleMailAddress_WithAddressAndUnicode_AndPaddingValueOfNonZero_ShouldEncodeCorrectly()
         {
-            MailAddress testAddress = new MailAddress("jeff@nclmailtest.com", "jeff ÃÚêëïï");
+            MailAddress testAddress = new MailAddress("jeff@nclmailtest.com", "jeff \u00C3\u00DA\u00EA\u00EB\u00EF\u00EF");
             string result = testAddress.Encode(2, false);
             Assert.Equal("=?utf-8?Q?jeff_=C3=83=C3=9A=C3=AA=C3=AB=C3=AF=C3=AF?= <jeff@nclmailtest.com>", result);
 
             result = testAddress.Encode(2, true);
-            Assert.Equal("\"jeff ÃÚêëïï\" <jeff@nclmailtest.com>", result);
+            Assert.Equal("\"jeff \u00C3\u00DA\u00EA\u00EB\u00EF\u00EF\" <jeff@nclmailtest.com>", result);
         }
 
         [Fact]
@@ -53,26 +53,26 @@ namespace System.Net.Mail.Tests
         [Fact]
         public void EncodeSingleMailAddress_WithAddressAndDisplayNameUnicode_ShouldQEncode()
         {
-            MailAddress testAddress = new MailAddress("test@example.com", "testÜ");
+            MailAddress testAddress = new MailAddress("test@example.com", "test\u00DC");
 
             string result = testAddress.Encode(0, false);
             Assert.Equal("=?utf-8?Q?test=C3=9C?= <test@example.com>", result);
 
             result = testAddress.Encode(0, true);
-            Assert.Equal("\"testÜ\" <test@example.com>", result);
+            Assert.Equal("\"test\u00DC\" <test@example.com>", result);
         }
 
         [Fact]
         public void EncodeSingleMailAddress_WithAddressAndLongDisplayNameUnicode_ShouldQEncode()
         {
-            MailAddress testAddress = new MailAddress("test@example.com", 
-                "testÜtesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttest");
+            MailAddress testAddress = new MailAddress("test@example.com",
+                "test\u00DCtesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttest");
             string result = testAddress.Encode(0, false);
             Assert.Equal("=?utf-8?Q?test=C3=9Ctesttesttesttesttesttesttesttesttesttesttesttest?=\r\n "
                 + "=?utf-8?Q?testtesttesttesttesttest?= <test@example.com>", result);
-            
+
             result = testAddress.Encode(0, true);
-            Assert.Equal("\"testÜtesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttest\" "
+            Assert.Equal("\"test\u00DCtesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttest\" "
                 + "<test@example.com>", result);
         }
 
@@ -80,7 +80,7 @@ namespace System.Net.Mail.Tests
         public void EncodeSingleMailAddress_WithAddressAndNonAsciiAndRangeOfChars_ShouldQEncode()
         {
             MailAddress testAddress = new MailAddress("test@example.com",
-                "® !#$%&'()+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");
+                "\u00AE !#$%&'()+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");
             string result = testAddress.Encode(0, false);
             Assert.Equal("=?utf-8?Q?=C2=AE_=21=23=24=25=26=27=28=29=2B=2C=2D=2E=2F0123456789=3A?="
                 + "\r\n =?utf-8?Q?=3B=3C=3D=3E=3F=40ABCDEFGHIJKLMNOPQRSTUVWXYZ=5B=5C=5D=5E=5F?="
@@ -88,10 +88,10 @@ namespace System.Net.Mail.Tests
 
             result = testAddress.Encode(0, true);
             Assert.Equal(
-                "\"® !#$%&'()+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\" "
+                "\"\u00AE !#$%&'()+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\" "
                 + "<test@example.com>", result);
         }
-        
+
         [Fact]
         public void EncodeMultipleMailAddress_WithOneAddressAndDisplayName_ShouldEncodeAsDisplayNameAndAddressInBrackets()
         {
@@ -126,7 +126,7 @@ namespace System.Net.Mail.Tests
         public void EncodeMultipleMailAddress_WithTwoAddressesThatAreDifferentAndContainUnicode_ShouldEncodeCorrectly()
         {
             MailAddress testAddress = new MailAddress("test@example.com", "test");
-            MailAddress testAddress2 = new MailAddress("test2@example.com", "testÜ");
+            MailAddress testAddress2 = new MailAddress("test2@example.com", "test\u00DC");
             MailAddressCollection collection = new MailAddressCollection();
             collection.Add(testAddress);
             collection.Add(testAddress2);
@@ -135,16 +135,16 @@ namespace System.Net.Mail.Tests
             Assert.Equal("\"test\" <test@example.com>, =?utf-8?Q?test=C3=9C?= <test2@example.com>", result);
 
             result = collection.Encode(0, true);
-            Assert.Equal("\"test\" <test@example.com>, \"testÜ\" <test2@example.com>", result);
+            Assert.Equal("\"test\" <test@example.com>, \"test\u00DC\" <test2@example.com>", result);
         }
 
         [Fact]
         public void EncodeMultipleMailAddress_WithManyAddressesThatAreDifferentAndContainUnicode_ShouldEncodeCorrectly()
         {
             MailAddress testAddress = new MailAddress("test@example.com", "test");
-            MailAddress testAddress2 = new MailAddress("test2@example.com", "testÜ");
+            MailAddress testAddress2 = new MailAddress("test2@example.com", "test\u00DC");
             MailAddress testAddress3 = new MailAddress("test5@example2.com");
-            MailAddress testAddress4 = new MailAddress("test2@example.com", "testÜ");
+            MailAddress testAddress4 = new MailAddress("test2@example.com", "test\u00DC");
 
             MailAddressCollection collection = new MailAddressCollection();
             collection.Add(testAddress);
@@ -157,8 +157,8 @@ namespace System.Net.Mail.Tests
                 + " test5@example2.com, =?utf-8?Q?test=C3=9C?= <test2@example.com>", result);
 
             result = collection.Encode(0, true);
-            Assert.Equal("\"test\" <test@example.com>, \"testÜ\" <test2@example.com>, test5@example2.com,"
-                + " \"testÜ\" <test2@example.com>", result);
+            Assert.Equal("\"test\" <test@example.com>, \"test\u00DC\" <test2@example.com>, test5@example2.com,"
+                + " \"test\u00DC\" <test2@example.com>", result);
         }
     }
 }
