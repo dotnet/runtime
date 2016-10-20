@@ -2,10 +2,13 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
+    <Project Include="System.Text.Encoding.CodePages.Tests.csproj" />
     <Project Include="System.Text.Encoding.CodePages.Tests.csproj">
-      <OSGroup>Unix</OSGroup>
+      <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>net463</TestTFMs>
     </Project>
     <Project Include="System.Text.Encoding.CodePages.Tests.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
       <OSGroup>Windows_NT</OSGroup>
       <TestTFMs>netcore50;netcoreapp1.0;net46</TestTFMs>
     </Project>
