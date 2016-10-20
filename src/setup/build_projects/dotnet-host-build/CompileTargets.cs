@@ -310,6 +310,7 @@ namespace Microsoft.DotNet.Host.Build
         [Target]
         public static BuildTargetResult GenerateMSbuildPropsFile(BuildTargetContext c)
         {
+            var buildVersion = c.BuildContext.Get<BuildVersion>("BuildVersion");
             var hostVersion = c.BuildContext.Get<HostVersion>("HostVersion");
             string platform = c.BuildContext.Get<string>("Platform");
 
@@ -326,6 +327,7 @@ namespace Microsoft.DotNet.Host.Build
             msbuildProps.AppendLine($"    <BuildNumberMinor>{hostVersion.LatestHostBuildMinor}</BuildNumberMinor>");
             msbuildProps.AppendLine($"    <PreReleaseLabel>{hostVersion.ReleaseSuffix}</PreReleaseLabel>");
             msbuildProps.AppendLine($"    <EnsureStableVersion>{hostVersion.EnsureStableVersion}</EnsureStableVersion>");
+            msbuildProps.AppendLine($"    <NetCoreAppVersion>{buildVersion.ProductionVersion}</NetCoreAppVersion>");
             msbuildProps.AppendLine("  </PropertyGroup>");
             msbuildProps.AppendLine("</Project>");
 
@@ -343,11 +345,8 @@ namespace Microsoft.DotNet.Host.Build
             var pkgDir = Path.Combine(c.BuildContext.BuildDirectory, "pkg");
             var packCmd = "pack." + (CurrentPlatform.IsWindows ? "cmd" : "sh");
             string rid = HostPackageSupportedRids[c.BuildContext.Get<string>("TargetRID")];
-            var buildVersion = c.BuildContext.Get<BuildVersion>("BuildVersion");
             File.WriteAllText(Path.Combine(pkgDir, "version.txt"), content);
-
-            // Pass the Major.Minor.Patch version to be used when generating packages
-            Exec(Path.Combine(pkgDir, packCmd), buildVersion.ProductionVersion);
+            Exec(Path.Combine(pkgDir, packCmd));
 
             foreach (var file in Directory.GetFiles(Path.Combine(pkgDir, "bin", "packages"), "*.nupkg"))
             {
