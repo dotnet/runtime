@@ -30,6 +30,7 @@
     <Compile Include="Internal\Cryptography\HMACCommon.cs" />
     <Compile Include="Internal\Cryptography\HashAlgorithmNames.cs" />
     <Compile Include="Internal\Cryptography\RC2Implementation.cs" />
+    <Compile Include="Internal\Cryptography\RijndaelImplementation.cs" />
     <Compile Include="Internal\Cryptography\TripleDesImplementation.cs" />
     <Compile Include="System\Security\Cryptography\Aes.cs" />
     <Compile Include="System\Security\Cryptography\AsymmetricKeyExchangeDeformatter.cs" />
@@ -62,6 +63,8 @@
     <Compile Include="System\Security\Cryptography\IncrementalHash.cs" />
     <Compile Include="System\Security\Cryptography\RandomNumberGenerator.cs" />
     <Compile Include="System\Security\Cryptography\RC2.cs" />
+    <Compile Include="System\Security\Cryptography\Rijndael.cs" />
+    <Compile Include="System\Security\Cryptography\RijndaelManaged.cs" />
     <Compile Include="System\Security\Cryptography\Rfc2898DeriveBytes.cs" />
     <Compile Include="System\Security\Cryptography\RSA.cs" />
     <Compile Include="System\Security\Cryptography\RSAEncryptionPadding.cs" />
