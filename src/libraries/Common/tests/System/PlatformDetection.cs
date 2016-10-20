@@ -16,8 +16,8 @@ namespace System
         public static bool IsWindows7 { get; } = IsWindows && GetWindowsVersion() == 6 && GetWindowsMinorVersion() == 1;
         public static bool IsOSX { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
         public static bool IsNetBSD { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
-        public static bool IsOpenSUSE { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Create("opensuse"));
-        public static bool IsUbuntu { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Create("ubuntu"));
+        public static bool IsOpenSUSE { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Create("OPENSUSE"));
+        public static bool IsUbuntu { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Create("UBUNTU"));
         public static bool IsNotWindowsNanoServer { get; } = (IsWindows &&
             File.Exists(Path.Combine(Environment.GetEnvironmentVariable("windir"), "regedit.exe")));
         public static bool IsWindows10Version1607OrGreater { get; } = IsWindows &&
