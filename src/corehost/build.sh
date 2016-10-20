@@ -12,7 +12,7 @@ init_rid_plat()
 
         if [[ "$ID" == "rhel" && $VERSION_ID = 7* ]]; then
             export __rid_plat="rhel.7"
-        elif [ "$ID" == "centos" && "$VERSION_ID" = "7" ]; then
+        elif [[ "$ID" == "centos" && "$VERSION_ID" = "7" ]]; then
             export __rid_plat="rhel.7"
         else
             export __rid_plat="$ID.$VERSION_ID"
