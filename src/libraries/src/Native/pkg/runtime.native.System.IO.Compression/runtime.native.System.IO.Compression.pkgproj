@@ -6,21 +6,19 @@
     <SkipValidatePackage>true</SkipValidatePackage>
   </PropertyGroup>
   <ItemGroup>
-    <!-- When updating ExternalExpectedPrerelease with a version that 
-         below should be updated to $(PackageVersion)-$(ExternalExpectedPrerelease) -->
     <RuntimeDependency Include="runtime.win10-x64-aot.runtime.native.System.IO.Compression">
       <TargetRuntime>win10-amd64-aot</TargetRuntime>
-      <Version>4.1.1-$(ExternalExpectedPrerelease)</Version>
+      <Version>$(RuntimeWin10RuntimeNativeSystemIOCompressionVersion)</Version>
       <SkipVersionCheck>true</SkipVersionCheck>
     </RuntimeDependency>
     <RuntimeDependency Include="runtime.win10-arm-aot.runtime.native.System.IO.Compression">
       <TargetRuntime>win10-arm-aot</TargetRuntime>
-      <Version>4.1.1-$(ExternalExpectedPrerelease)</Version>
+      <Version>$(RuntimeWin10RuntimeNativeSystemIOCompressionVersion)</Version>
       <SkipVersionCheck>true</SkipVersionCheck>
     </RuntimeDependency>
     <RuntimeDependency Include="runtime.win10-x86-aot.runtime.native.System.IO.Compression">
       <TargetRuntime>win10-x86-aot</TargetRuntime>
-      <Version>4.1.1-$(ExternalExpectedPrerelease)</Version>
+      <Version>$(RuntimeWin10RuntimeNativeSystemIOCompressionVersion)</Version>
       <SkipVersionCheck>true</SkipVersionCheck>
     </RuntimeDependency>
     <!-- make this package installable and noop in a packages.config-based project -->

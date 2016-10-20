@@ -9,6 +9,7 @@ set __rootDir=%~dp0..\..
 set __CMakeBinDir=""
 set __IntermediatesDir=""
 set __BuildArch=x64
+set __appContainer=""
 set __VCBuildArch=x86_amd64
 set CMAKE_BUILD_TYPE=Debug
 set "__LinkArgs= "
@@ -29,8 +30,10 @@ if /i [%1] == [x64]         ( set __BuildArch=x64&&set __VCBuildArch=x86_amd64&&
 if /i [%1] == [amd64]       ( set __BuildArch=x64&&set __VCBuildArch=x86_amd64&&shift&goto Arg_Loop)
 if /i [%1] == [arm64]       ( set __BuildArch=arm64&&set __VCBuildArch=arm64&&shift&goto Arg_Loop)
 
-if /i [%1] == [toolsetDir] ( set "__ToolsetDir=%2"&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [toolsetDir]  ( set "__ToolsetDir=%2"&&shift&&shift&goto Arg_Loop)
 
+if /i [%1] == [netcore50]    ( set "__LinkArgs=%__LinkArgs% /APPCONTAINER"&&set "__appContainer=true"&&shift&goto Arg_Loop)
+if /i [%1] == [netcore50aot] ( set "__LinkArgs=%__LinkArgs% /APPCONTAINER"&&set "__appContainer=true"&&shift&goto Arg_Loop)
 shift
 goto :Arg_Loop
 
