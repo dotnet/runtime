@@ -532,9 +532,11 @@ namespace System.Linq.Expressions.Interpreter
         public static Instruction Create(Type type, bool liftedToNull)
         {
             // Boxed enums can be unboxed as their underlying types:
+            Type underlyingType = type.GetTypeInfo().IsEnum ? Enum.GetUnderlyingType(type) : TypeUtils.GetNonNullableType(type);
+
             if (liftedToNull)
             {
-                switch (System.Dynamic.Utils.TypeExtensions.GetTypeCode(type.GetTypeInfo().IsEnum ? Enum.GetUnderlyingType(type) : TypeUtils.GetNonNullableType(type)))
+                switch (underlyingType.GetTypeCode())
                 {
                     case TypeCode.Boolean: return s_booleanLiftedToNull ?? (s_booleanLiftedToNull = new EqualBooleanLiftedToNull());
                     case TypeCode.SByte: return s_SByteLiftedToNull ?? (s_SByteLiftedToNull = new EqualSByteLiftedToNull());
@@ -566,7 +568,7 @@ namespace System.Linq.Expressions.Interpreter
             }
             else
             {
-                switch (System.Dynamic.Utils.TypeExtensions.GetTypeCode(type.GetTypeInfo().IsEnum ? Enum.GetUnderlyingType(type) : TypeUtils.GetNonNullableType(type)))
+                switch (underlyingType.GetTypeCode())
                 {
                     case TypeCode.Boolean: return s_boolean ?? (s_boolean = new EqualBoolean());
                     case TypeCode.SByte: return s_SByte ?? (s_SByte = new EqualSByte());

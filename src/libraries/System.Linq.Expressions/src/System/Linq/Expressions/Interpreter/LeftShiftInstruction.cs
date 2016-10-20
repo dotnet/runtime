@@ -165,7 +165,9 @@ namespace System.Linq.Expressions.Interpreter
         public static Instruction Create(Type type)
         {
             // Boxed enums can be unboxed as their underlying types:
-            switch (System.Dynamic.Utils.TypeExtensions.GetTypeCode(type.GetTypeInfo().IsEnum ? Enum.GetUnderlyingType(type) : TypeUtils.GetNonNullableType(type)))
+            Type underlyingType = type.GetTypeInfo().IsEnum ? Enum.GetUnderlyingType(type) : TypeUtils.GetNonNullableType(type);
+
+            switch (underlyingType.GetTypeCode())
             {
                 case TypeCode.SByte: return s_SByte ?? (s_SByte = new LeftShiftSByte());
                 case TypeCode.Byte: return s_byte ?? (s_byte = new LeftShiftByte());
