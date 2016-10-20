@@ -7230,6 +7230,184 @@ mono_test_marshal_fixed_array (FixedArrayStruct s)
 	return s.array [0] + s.array [1] + s.array [2];
 }
 
+const int NSTRINGS = 6;
+//test strings
+const char  *utf8Strings[] = {  
+                                "Managed",
+                                 "Sîne klâwen durh die wolken sint geslagen" ,
+                                 "काचं शक्नोम्यत्तुम् । नोपहिनस्ति माम्",
+                                 "我能吞下玻璃而不伤身体",
+                                 "ღმერთსი შემვედრე,შემვედრე, ნუთუ კვლა დამხსნას შემვედრე,სოფლისა შემვედრე, შემვედრე,შემვედრე,შემვედრე,შრომასა, ცეცხლს, წყალსა და მიწასა, ჰაერთა თანა მრომასა; მომცნეს ფრთენი და აღვფრინდე, მივჰხვდე მას ჩემსა ნდომასა, დღისით და ღამით ვჰხედვიდე მზისა ელვათა კრთომაასაშემვედრე,შემვედრე,",
+                                 "Τη γλώσσα μου έδωσαν ελληνική",
+"\0"
+};
+
+LIBTEST_API char *
+build_return_string(const char* pReturn)
+{
+	char *ret = 0;
+	if (pReturn == 0 || *pReturn == 0)
+		return ret;
+
+	size_t strLength = strlen(pReturn);
+	ret = (char *)(malloc(sizeof(char)* (strLength + 1)));
+	memset(ret, '\0', strLength + 1);
+	strncpy(ret, pReturn, strLength);
+	return ret;
+}
+
+LIBTEST_API char *
+StringParameterInOut(/*[In,Out]*/ char *s, int index)
+{
+	// return a copy
+	return build_return_string(s);
+}
+
+LIBTEST_API void
+StringParameterRefOut(/*out*/ char **s, int index)
+{
+	char *pszTextutf8 = (char*)utf8Strings[index];
+	size_t strLength = strlen(pszTextutf8);
+	*s = (char *)(malloc(sizeof(char)* (strLength + 1)));
+	memcpy(*s, pszTextutf8, strLength);
+	(*s)[strLength] = '\0';
+}
+
+LIBTEST_API void
+StringParameterRef(/*ref*/ char **s, int index)
+{
+    char *pszTextutf8 = (char*)utf8Strings[index];
+    size_t strLength = strlen(pszTextutf8);
+    // do byte by byte validation of in string
+    size_t szLen = strlen(*s);
+    for (size_t i = 0; i < szLen; i++)
+    {
+        if ((*s)[i] != pszTextutf8[i])
+        {
+            printf("[in] managed string do not match native string\n");
+	    abort ();
+        }
+    }
+
+    if (*s)
+    {
+       free(*s);
+    }
+    // overwrite the orginal 
+    *s = (char *)(malloc(sizeof(char)* (strLength + 1)));
+    memcpy(*s, pszTextutf8, strLength);
+    (*s)[strLength] = '\0';
+}
+
+LIBTEST_API void
+StringBuilderParameterInOut(/*[In,Out] StringBuilder*/ char *s, int index)
+{
+    // if string.empty 
+    if (s == 0 || *s == 0)
+        return;
+
+    char *pszTextutf8 = (char*)utf8Strings[index];
+
+    // do byte by byte validation of in string
+    size_t szLen = strlen(s);
+    for (size_t i = 0; i < szLen; i++) 
+    {
+        if (s[i] != pszTextutf8[i])
+        {
+            printf("[in] managed string do not match native string\n");
+	    abort ();
+        }
+    }  
+
+    // modify the string inplace 
+    size_t outLen = strlen(pszTextutf8);
+    for (size_t i = 0; i < outLen; i++) {
+        s[i] = pszTextutf8[i];
+    }
+    s[outLen] = '\0';
+}
+
+//out string builder
+LIBTEST_API void
+StringBuilderParameterOut(/*[Out] StringBuilder*/ char *s, int index)
+{
+    char *pszTextutf8 = (char*)utf8Strings[index];
+
+    printf ("SBPO: Receiving %s\n", s);
+    // modify the string inplace 
+    size_t outLen = strlen(pszTextutf8);
+    for (size_t i = 0; i < outLen; i++) {
+        s[i] = pszTextutf8[i];
+    }
+    s[outLen] = '\0';
+}
+
+LIBTEST_API char *
+StringParameterOut(/*[Out]*/ char *s, int index)
+{
+    // return a copy
+    return build_return_string(s);
+}
+
+// Utf8 field
+typedef struct FieldWithUtf8
+{
+    char *pFirst;
+    int index;
+}FieldWithUtf8;
+
+//utf8 struct field
+LIBTEST_API void
+TestStructWithUtf8Field(struct FieldWithUtf8 fieldStruct)
+{
+    char *pszManagedutf8 = fieldStruct.pFirst;
+    int stringIndex = fieldStruct.index;
+    char *pszNative = 0;
+    size_t outLen = 0;
+
+    if (pszManagedutf8 == 0 || *pszManagedutf8 == 0)
+        return;
+
+    pszNative = (char*)utf8Strings[stringIndex];
+
+    outLen = strlen(pszNative);
+    // do byte by byte comparision
+    for (size_t i = 0; i < outLen; i++) 
+    {
+        if (pszNative[i] != pszManagedutf8[i]) 
+        {
+            printf("Native and managed string do not match.\n");
+	    abort ();
+        }
+    }
+}
+
+typedef void (* Callback2)(char *text, int index);
+
+LIBTEST_API void
+Utf8DelegateAsParameter(Callback2 managedCallback)
+{
+    for (int i = 0; i < NSTRINGS; ++i) 
+    {
+        char *pszNative = 0;
+        pszNative = (char*)utf8Strings[i];
+        managedCallback(pszNative, i);
+    }
+}
+
+
+LIBTEST_API char*
+StringBuilderParameterReturn(int index)
+{
+    char *pszTextutf8 = (char*)utf8Strings[index];
+    size_t strLength = strlen(pszTextutf8);
+    char * ret = (char *)(malloc(sizeof(char)* (strLength + 1)));
+    memcpy(ret, pszTextutf8, strLength);
+    ret[strLength] = '\0';
+
+    return  ret;
+}
+
 LIBTEST_API int STDCALL
 mono_test_marshal_pointer_array (int *arr[])
 {
