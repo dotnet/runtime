@@ -7,5 +7,11 @@
     <PreventImplementationReference>true</PreventImplementationReference>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\System.Text.Encoding.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>uap101aot</TargetGroup>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

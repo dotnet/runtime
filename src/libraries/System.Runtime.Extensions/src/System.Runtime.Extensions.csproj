@@ -15,6 +15,8 @@
     <!-- System.IO.Path conflicts between type in partial facade and in mscorlib -->
     <NoWarn>0436</NoWarn>
     <NuGetTargetMoniker Condition="'$(NuGetTargetMoniker)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
+    <!-- copy to uap10.1 until nuget makes the change to map that to ns1.7 -->
+    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.7;uap10.1</PackageTargetFramework>
     <TargetsWindowsUap Condition="'$(TargetGroup)'=='uap101aot'">true</TargetsWindowsUap>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->

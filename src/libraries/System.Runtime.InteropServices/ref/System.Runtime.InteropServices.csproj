@@ -8,6 +8,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>Library</OutputType>
     <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
+    <!-- copy to uap10.1 until nuget makes the change to map that to ns1.7 -->
+    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.7;uap10.1</PackageTargetFramework>
     <ProjectGuid>{B17014F1-D902-417F-89B0-271204695831}</ProjectGuid>
   </PropertyGroup>
   <ItemGroup>
