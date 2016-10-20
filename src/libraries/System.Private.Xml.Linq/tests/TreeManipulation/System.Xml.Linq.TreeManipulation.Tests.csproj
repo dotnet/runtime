@@ -9,8 +9,6 @@
     <AssemblyName>System.Xml.Linq.TreeManipulation.Tests</AssemblyName>
     <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
     <RootNamespace>XLinqTests</RootNamespace>
-    <!-- Don't allow project reference to package dependency conversion -->
-    <KeepAllProjectReferences>true</KeepAllProjectReferences>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

@@ -6,16 +6,12 @@
     <OutputType>Library</OutputType>
     <RootNamespace>System.Data.SqlClient.Tests</RootNamespace>
     <AssemblyName>System.Data.SqlClient.Tests</AssemblyName>
-    <KeepAllProjectReferences>true</KeepAllProjectReferences>
     <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
   <ItemGroup Condition=" '$(EnableManualTests)' == 'true' ">
     <Compile Include="DiagnosticTest.cs" />
   </ItemGroup>
@@ -29,9 +25,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\pkg\System.Data.SqlClient.pkgproj" />
-    
-    <!-- TODO: Remove Common reference once packages are updated -->
-    <ProjectReference Include="..\..\..\System.Data.Common\pkg\System.Data.Common.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

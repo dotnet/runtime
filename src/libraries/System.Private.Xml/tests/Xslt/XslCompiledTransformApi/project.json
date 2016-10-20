@@ -19,6 +19,8 @@
     "System.Threading": "4.4.0-beta-24624-01",
     "System.Threading.Thread": "4.4.0-beta-24624-01",
     "System.Threading.Tasks": "4.4.0-beta-24624-01",
+    "System.Xml.ReaderWriter": "4.4.0-beta-24624-01",
+    "System.Xml.XPath": "4.4.0-beta-24624-01",
     "test-runtime": {
       "target": "project",
       "exclude": "compile"
