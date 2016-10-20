@@ -109,7 +109,7 @@ namespace System.IO
             }
         }
 
-        public String VolumeLabel
+        public string VolumeLabel
         {
             [SecuritySafeCritical]
             get
