@@ -97,8 +97,7 @@ namespace System.Globalization.Tests
         public static bool GetAsciiWithDotFails =>
             PlatformDetection.IsWindows ||
             PlatformDetection.IsOSX ||
-            PlatformDetection.IsUbuntu1604 ||
-            PlatformDetection.IsUbuntu1610 ||
+            (PlatformDetection.IsUbuntu && !PlatformDetection.IsUbuntu1404) ||
             PlatformDetection.IsOpenSUSE;
 
         [ConditionalFact(nameof(GetAsciiWithDotFails))]
