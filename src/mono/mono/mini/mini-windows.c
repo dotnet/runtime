@@ -13,6 +13,7 @@
 #include <config.h>
 #include <signal.h>
 #include <math.h>
+#include <conio.h>
 
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/loader.h>
@@ -56,6 +57,134 @@
 #include <mmsystem.h>
 #endif
 
+#define MONO_HANDLER_DELIMITER ','
+#define MONO_HANDLER_DELIMITER_LEN G_N_ELEMENTS(MONO_HANDLER_DELIMITER)-1
+
+#define MONO_HANDLER_ATEXIT_WAIT_KEYPRESS "atexit-waitkeypress"
+#define MONO_HANDLER_ATEXIT_WAIT_KEYPRESS_LEN G_N_ELEMENTS(MONO_HANDLER_ATEXIT_WAIT_KEYPRESS)-1
+
+// Typedefs used to setup handler table.
+typedef void (*handler)(void);
+
+typedef struct {
+	const char * cmd;
+	const int cmd_len;
+	handler handler;
+} HandlerItem;
+
+#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+/**
+* atexit_wait_keypress:
+*
+* This function is installed as an atexit function making sure that the console is not terminated before the end user has a chance to read the result.
+* This can be handy in debug scenarios (running from within the debugger) since an exit of the process will close the console window
+* without giving the end user a chance to look at the output before closed.
+*/
+static void
+atexit_wait_keypress (void)
+{
+
+	fflush (stdin);
+
+	printf ("Press any key to continue . . . ");
+	fflush (stdout);
+
+	_getch ();
+
+	return;
+}
+
+/**
+* install_atexit_wait_keypress:
+*
+* This function installs the wait keypress exit handler.
+*/
+static void
+install_atexit_wait_keypress (void)
+{
+	atexit (atexit_wait_keypress);
+	return;
+}
+
+#else
+
+/**
+* install_atexit_wait_keypress:
+*
+* Not supported on WINAPI family.
+*/
+static void
+install_atexit_wait_keypress (void)
+{
+	return;
+}
+
+#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
+
+// Table describing handlers that can be installed at process startup. Adding a new handler can be done by adding a new item to the table together with an install handler function.
+const HandlerItem g_handler_items[] = { { MONO_HANDLER_ATEXIT_WAIT_KEYPRESS, MONO_HANDLER_ATEXIT_WAIT_KEYPRESS_LEN, install_atexit_wait_keypress },
+					{ NULL, 0, NULL } };
+
+/**
+ * get_handler_arg_len:
+ * @handlers: Get length of next handler.
+ *
+ * This function calculates the length of next handler included in argument.
+ *
+ * Returns: The length of next handler, if available.
+ */
+static size_t
+get_next_handler_arg_len (const char *handlers)
+{
+	assert (handlers != NULL);
+
+	size_t current_len = 0;
+	const char *handler = strchr (handlers, MONO_HANDLER_DELIMITER);
+	if (handler != NULL) {
+		// Get length of next handler arg.
+		current_len = (handler - handlers);
+	} else {
+		// Consume rest as length of next handler arg.
+		current_len = strlen (handlers);
+	}
+
+	return current_len;
+}
+
+/**
+ * install_custom_handler:
+ * @handlers: Handlers included in --handler argument, example "atexit-waitkeypress,someothercmd,yetanothercmd".
+ * @handler_arg_len: Output, length of consumed handler.
+ *
+ * This function installs the next handler included in @handlers parameter.
+ *
+ * Returns: TRUE on successful install, FALSE on failure or unrecognized handler.
+ */
+static gboolean
+install_custom_handler (const char *handlers, size_t *handler_arg_len)
+{
+	gboolean result = FALSE;
+
+	assert (handlers != NULL);
+	assert (handler_arg_len);
+
+	*handler_arg_len = get_next_handler_arg_len (handlers);
+	for (int current_item = 0; current_item < G_N_ELEMENTS (g_handler_items); ++current_item) {
+		const HandlerItem * handler_item = &g_handler_items [current_item];
+
+		if (handler_item->cmd == NULL)
+			continue;
+
+		if (*handler_arg_len == handler_item->cmd_len && strncmp (handlers, handler_item->cmd, *handler_arg_len) == 0) {
+			assert (handler_item->handler != NULL);
+			handler_item->handler ();
+			result = TRUE;
+			break;
+		}
+	}
+	return result;
+}
+
 void
 mono_runtime_install_handlers (void)
 {
@@ -67,6 +196,44 @@ mono_runtime_install_handlers (void)
 	if (mini_get_debug_options ()->handle_sigint)
 		win32_seh_set_handler(SIGINT, mono_sigint_signal_handler);
 #endif
+}
+
+gboolean
+mono_runtime_install_custom_handlers (const char *handlers)
+{
+	gboolean result = FALSE;
+
+	assert (handlers != NULL);
+	while (*handlers != '\0') {
+		size_t handler_arg_len = 0;
+
+		result = install_custom_handler (handlers, &handler_arg_len);
+		handlers += handler_arg_len;
+
+		if (*handlers == MONO_HANDLER_DELIMITER)
+			handlers++;
+		if (!result)
+			break;
+	}
+
+	return result;
+}
+
+void
+mono_runtime_install_custom_handlers_usage (void)
+{
+	fprintf (stdout,
+		 "Custom Handlers:\n"
+		 "   --handlers=HANDLERS            Enable handler support, HANDLERS is a comma\n"
+		 "                                  separated list of available handlers to install.\n"
+		 "\n"
+#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+		 "HANDLERS is composed of:\n"
+		 "    atexit-waitkeypress           Install an atexit handler waiting for a keypress\n"
+		 "                                  before exiting process.\n");
+#else
+		 "No handlers supported on current platform.\n");
+#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
 }
 
 void
