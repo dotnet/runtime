@@ -12,7 +12,7 @@
 #include <glib.h>
 
 #if defined(HOST_WIN32)
-#include <Windows.h>
+#include <windows.h>
 #include "mono/utils/mono-mmap-windows.h"
 #include <mono/utils/mono-counters.h>
 #include <io.h>

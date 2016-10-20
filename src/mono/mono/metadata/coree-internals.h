@@ -9,7 +9,7 @@
 #include <glib.h>
 
 #ifdef HOST_WIN32
-#include <Windows.h>
+#include <windows.h>
 
 BOOL STDMETHODCALLTYPE
 _CorDllMain (HINSTANCE hInst, DWORD dwReason, LPVOID lpReserved);
