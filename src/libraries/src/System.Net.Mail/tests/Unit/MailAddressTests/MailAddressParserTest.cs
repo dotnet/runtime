@@ -518,10 +518,10 @@ namespace System.Net.Mail.Tests
         [Fact]
         public void ParseAdresses_WithOnlyOneAddress_ShouldReadCorrectly()
         {
-            IList<MailAddress> result = MailAddressParser.ParseMultipleAddresses("Dr Müller <test@mail.com>");
+            IList<MailAddress> result = MailAddressParser.ParseMultipleAddresses("Dr M\u00FCller <test@mail.com>");
 
             Assert.Equal(1, result.Count);
-            Assert.Equal("Dr Müller", result[0].DisplayName);
+            Assert.Equal("Dr M\u00FCller", result[0].DisplayName);
             Assert.Equal("test", result[0].User);
             Assert.Equal("mail.com", result[0].Host);
         }
@@ -530,7 +530,7 @@ namespace System.Net.Mail.Tests
         public void ParseAddresses_WithManyComplexAddresses_ShouldReadCorrectly()
         {
             string addresses = string.Format("{0},{1},{2},{3},{4},{5},{6}",
-                "\"Dr Müller\" test@mail.com",
+                "\"Dr M\u00FCller\" test@mail.com",
                 "(comment)this.test.this(comment)@(comment)this.test.this(comment)",
                 "jeff@example.com",
                 "jeff2@example.org",
@@ -542,7 +542,7 @@ namespace System.Net.Mail.Tests
 
             Assert.Equal(7, result.Count);
 
-            Assert.Equal("Dr Müller", result[0].DisplayName);
+            Assert.Equal("Dr M\u00FCller", result[0].DisplayName);
             Assert.Equal("test", result[0].User);
             Assert.Equal("mail.com", result[0].Host);
 
