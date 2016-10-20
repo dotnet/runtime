@@ -1842,6 +1842,12 @@ mono_assembly_has_reference_assembly_attribute (MonoAssembly *assembly, MonoErro
 {
 	mono_error_init (error);
 
+/* TODO: mono_custom_attrs_from_assembly_checked returns NULL if a
+ * single assembly is missing.  The custom attr we want is from
+ * corlib, however, so we need a more robust version that doesn't care
+ * about missing attributes.
+ */
+#if 0
 	MonoCustomAttrInfo *attrs = mono_custom_attrs_from_assembly_checked (assembly, error);
 	return_val_if_nok (error, FALSE);
 	if (!attrs)
@@ -1851,6 +1857,9 @@ mono_assembly_has_reference_assembly_attribute (MonoAssembly *assembly, MonoErro
 	gboolean result = mono_custom_attrs_has_attr (attrs, ref_asm_class);
 	mono_custom_attrs_free (attrs);
 	return result;
+#else
+	return FALSE;
+#endif
 }
 
 /**
