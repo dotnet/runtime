@@ -232,7 +232,9 @@ MembersMustExist : Member 'System.NullReferenceException..ctor(System.Runtime.Se
 CannotRemoveBaseTypeOrInterface : Type 'System.ObjectDisposedException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.ObjectDisposedException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.OutOfMemoryException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+MembersMustExist : Member 'System.OutOfMemoryException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.OverflowException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+MembersMustExist : Member 'System.OverflowException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.PlatformNotSupportedException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.PlatformNotSupportedException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Predicate<T>' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
@@ -577,4 +579,4 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.Task' does not im
 MembersMustExist : Member 'System.Threading.Tasks.Task.Dispose()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.Tasks.Task.Dispose(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.Task<TResult>' does not implement interface 'System.IDisposable' in the implementation but it does in the contract.
-Total Issues: 578
+Total Issues: 580
