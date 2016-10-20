@@ -2367,15 +2367,14 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                opcode,
 
         case SIMDIntrinsicDotProduct:
         {
-#if defined(_TARGET_AMD64_) && defined(DEBUG)
-            // Right now dot product is supported only for float vectors.
-            // See SIMDIntrinsicList.h for supported base types for this intrinsic.
-            if (!varTypeIsFloating(baseType))
+#ifdef _TARGET_AMD64_
+            // Right now dot product is supported only for float/double vectors and
+            // int vectors on AVX.
+            if (!varTypeIsFloating(baseType) && !(baseType == TYP_INT && canUseAVX()))
             {
-                assert(!"Dot product on integer type vectors not supported");
                 return nullptr;
             }
-#endif //_TARGET_AMD64_ && DEBUG
+#endif // _TARGET_AMD64_
 
             // op1 is a SIMD variable that is the first source and also "this" arg.
             // op2 is a SIMD variable which is the second source.
