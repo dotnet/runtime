@@ -14,6 +14,8 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     public class DiagnosticsTest : RemoteExecutorTestBase
     {
         // Diagnostic tests are each invoked in their own process as they enable/disable

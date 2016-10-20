@@ -13,6 +13,8 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     public class HttpClientHandler_ServerCertificates_Test
     {
         [OuterLoop] // TODO: Issue #11345
