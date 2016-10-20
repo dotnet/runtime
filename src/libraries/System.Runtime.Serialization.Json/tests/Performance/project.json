@@ -28,7 +28,7 @@
     },
     "Newtonsoft.Json": "8.0.4-beta1",
     "Microsoft.xunit.netcore.extensions": "1.0.0-prerelease-00830-02",
-    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00830-02",
+    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00920-01",
     "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0040"
   },
   "frameworks": {
