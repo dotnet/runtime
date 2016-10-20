@@ -21,6 +21,7 @@
         "System.ObjectModel": "4.0.12",
         "System.Reflection.Metadata": "1.3.0",
         "System.Runtime": "4.1.0",
+        "System.Runtime.Extensions": "4.1.0",
         "System.Runtime.WindowsRuntime": "4.0.11"
       }
     },
