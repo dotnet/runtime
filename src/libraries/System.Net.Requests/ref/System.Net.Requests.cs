@@ -406,21 +406,4 @@ namespace System.Net.Cache
         public System.TimeSpan MaxStale { get { throw null; } }
         public override string ToString() { throw null; }
     }
-    public enum RequestCacheLevel
-    {
-        Default = 0,
-        BypassCache = 1,
-        CacheOnly = 2,
-        CacheIfAvailable = 3,
-        Revalidate = 4,
-        Reload = 5,
-        NoCacheNoStore = 6
-    }
-    public class RequestCachePolicy
-    {
-        public RequestCachePolicy() { }
-        public RequestCachePolicy(System.Net.Cache.RequestCacheLevel level) { }
-        public System.Net.Cache.RequestCacheLevel Level { get { throw null; } }
-        public override string ToString() { throw null; }
-    }
 }
