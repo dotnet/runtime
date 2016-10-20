@@ -111,7 +111,7 @@ namespace System.Text
         }
 
         [System.Security.SecurityCritical]  // auto-generated
-        public unsafe int GetByteCount(char* chars, int count, bool flush)
+        public override unsafe int GetByteCount(char* chars, int count, bool flush)
         {
             // Validate input parameters
             if (chars == null)
@@ -161,7 +161,7 @@ namespace System.Text
         }
 
         [System.Security.SecurityCritical]  // auto-generated
-        public unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount, bool flush)
+        public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount, bool flush)
         {
             // Validate parameters
             if (chars == null || bytes == null)
@@ -221,7 +221,7 @@ namespace System.Text
         // This is the version that uses pointers.  We call the base encoding worker function
         // after setting our appropriate internal variables.  This is getting bytes
         [System.Security.SecurityCritical]  // auto-generated
-        public unsafe void Convert(char* chars, int charCount,
+        public override unsafe void Convert(char* chars, int charCount,
                                               byte* bytes, int byteCount, bool flush,
                                               out int charsUsed, out int bytesUsed, out bool completed)
         {
