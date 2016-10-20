@@ -299,6 +299,7 @@ namespace System.ComponentModel.DataAnnotations
         public ValidationException(string message) { }
         public ValidationException(string errorMessage, System.ComponentModel.DataAnnotations.ValidationAttribute validatingAttribute, object value) { }
         public ValidationException(string message, System.Exception innerException) { }
+        protected ValidationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public System.ComponentModel.DataAnnotations.ValidationAttribute ValidationAttribute { get { throw null; } }
         public System.ComponentModel.DataAnnotations.ValidationResult ValidationResult { get { throw null; } }
         public object Value { get { throw null; } }
