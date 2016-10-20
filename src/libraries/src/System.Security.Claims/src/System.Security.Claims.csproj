@@ -4,14 +4,14 @@
   <PropertyGroup>
     <AssemblyName>System.Security.Claims</AssemblyName>
     <ProjectGuid>{A70BEC0D-5A1C-4DA0-8A0F-69F3BF565D52}</ProjectGuid>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46'">true</IsPartialFacadeAssembly>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net463'">true</IsPartialFacadeAssembly>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)'==''">
     <Compile Include="System\Security\Claims\Claim.cs" />
     <Compile Include="System\Security\Claims\ClaimsIdentity.cs" />
@@ -21,7 +21,7 @@
     <Compile Include="System\Security\Claims\GenericIdentity.cs" />
     <Compile Include="System\Security\Claims\GenericPrincipal.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='net46'">
+  <ItemGroup Condition="'$(TargetGroup)'=='net463'">
     <TargetingPackReference Include="mscorlib" />
   </ItemGroup>
   <ItemGroup>
