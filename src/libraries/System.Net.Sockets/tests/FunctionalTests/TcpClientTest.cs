@@ -27,6 +27,9 @@ namespace System.Net.Sockets.Tests
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
         public async Task ConnectAsync_DnsEndPoint_Success(int mode)
         {
             using (TcpClient client = new TcpClient())
@@ -36,16 +39,32 @@ namespace System.Net.Sockets.Tests
                 string host = System.Net.Test.Common.Configuration.Sockets.SocketServer.IdnHost;
                 int port = System.Net.Test.Common.Configuration.Sockets.SocketServer.Port;
 
-                if (mode == 0)
+                IPAddress[] addresses;
+                switch (mode)
                 {
-                    await client.ConnectAsync(host, port);
-                }
-                else
-                {
-                    IPAddress[] addresses = await Dns.GetHostAddressesAsync(host);
-                    await (mode == 1 ?
-                        client.ConnectAsync(addresses[0], port) :
-                        client.ConnectAsync(addresses, port));
+                    case 0:
+                        await client.ConnectAsync(host, port);
+                        break;
+                    case 1:
+                        addresses = await Dns.GetHostAddressesAsync(host);
+                        await client.ConnectAsync(addresses[0], port);
+                        break;
+                    case 2:
+                        addresses = await Dns.GetHostAddressesAsync(host);
+                        await client.ConnectAsync(addresses, port);
+                        break;
+
+                    case 3:
+                        await Task.Factory.FromAsync(client.BeginConnect, client.EndConnect, host, port, null);
+                        break;
+                    case 4:
+                        addresses = await Dns.GetHostAddressesAsync(host);
+                        await Task.Factory.FromAsync(client.BeginConnect, client.EndConnect, addresses[0], port, null);
+                        break;
+                    case 5:
+                        addresses = await Dns.GetHostAddressesAsync(host);
+                        await Task.Factory.FromAsync(client.BeginConnect, client.EndConnect, addresses, port, null);
+                        break;
                 }
 
                 Assert.True(client.Connected);
