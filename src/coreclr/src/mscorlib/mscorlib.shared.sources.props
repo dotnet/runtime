@@ -1133,6 +1133,13 @@
     <NumericsSources Include="$(BclSourcesRoot)\System\Numerics\Hashing\HashHelpers.cs" />
   </ItemGroup>
   <ItemGroup>
+    <BuffersSources Include="$(BclSourcesRoot)\System\Buffers\ArrayPool.cs" />
+    <BuffersSources Include="$(BclSourcesRoot)\System\Buffers\ArrayPoolEventSource.cs" />
+    <BuffersSources Include="$(BclSourcesRoot)\System\Buffers\DefaultArrayPool.cs" />
+    <BuffersSources Include="$(BclSourcesRoot)\System\Buffers\DefaultArrayPoolBucket.cs" />
+    <BuffersSources Include="$(BclSourcesRoot)\System\Buffers\Utilities.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <MscorlibSources Include="@(SystemSources)"/>
     <MscorlibSources Include="@(ThreadingSources)"/>
     <MscorlibSources Include="@(DeploymentSources)"/>
@@ -1184,5 +1191,6 @@
     <MscorlibSources Include="@(InternalSources)"/>
     <MscorlibSources Include="@(NumericsSources)"/>
     <MscorlibSources Include="$(BclSourcesRoot)\GlobalSuppressions.cs"/>
+    <MscorlibSources Include="@(BuffersSources)"/>
   </ItemGroup>
 </Project>
