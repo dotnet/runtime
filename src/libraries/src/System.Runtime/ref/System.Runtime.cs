@@ -1729,12 +1729,14 @@ namespace System
         public OutOfMemoryException() { }
         public OutOfMemoryException(string message) { }
         public OutOfMemoryException(string message, System.Exception innerException) { }
+        protected OutOfMemoryException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public partial class OverflowException : System.ArithmeticException
     {
         public OverflowException() { }
         public OverflowException(string message) { }
         public OverflowException(string message, System.Exception innerException) { }
+        protected OverflowException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(2048), Inherited = true, AllowMultiple = false)]
     public sealed partial class ParamArrayAttribute : System.Attribute
