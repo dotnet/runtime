@@ -92,6 +92,7 @@ namespace System.Net.WebSockets
         public WebSocketException(string message) { }
         public WebSocketException(string message, System.Exception innerException) { }
         public System.Net.WebSockets.WebSocketError WebSocketErrorCode { get { throw null; } }
+        public override int ErrorCode { get { throw null; } }
     }
     public enum WebSocketMessageType
     {

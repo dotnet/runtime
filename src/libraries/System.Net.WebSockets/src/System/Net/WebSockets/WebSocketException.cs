@@ -121,7 +121,7 @@ namespace System.Net.WebSockets
         {
         }
 
-        public int ErrorCode
+        public override int ErrorCode
         {
             get
             {
