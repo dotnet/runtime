@@ -5,10 +5,11 @@
 using Microsoft.Win32.SafeHandles;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Threading;
 
 namespace System.IO
 {
-    internal abstract partial class FileStreamBase : Stream
+    public partial class FileStream : Stream
     {
         public override IAsyncResult BeginRead(byte[] array, int offset, int numBytes, AsyncCallback callback, object state)
         {
@@ -27,7 +28,7 @@ namespace System.IO
             if (!IsAsync)
                 return base.BeginRead(array, offset, numBytes, callback, state);
             else
-                return TaskToApm.Begin(ReadAsync(array, offset, numBytes), callback, state);
+                return TaskToApm.Begin(ReadAsyncInternal(array, offset, numBytes, CancellationToken.None), callback, state);
         }
 
         public override IAsyncResult BeginWrite(byte[] array, int offset, int numBytes, AsyncCallback callback, object state)
@@ -47,7 +48,7 @@ namespace System.IO
             if (!IsAsync)
                 return base.BeginWrite(array, offset, numBytes, callback, state);
             else
-                return TaskToApm.Begin(WriteAsync(array, offset, numBytes), callback, state);
+                return TaskToApm.Begin(WriteAsyncInternal(array, offset, numBytes, CancellationToken.None), callback, state);
         }
 
         public override int EndRead(IAsyncResult asyncResult)
