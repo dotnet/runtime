@@ -46,6 +46,11 @@ endif()
 add_executable(dotnet ${SOURCES} ${RESOURCES})
 install(TARGETS dotnet DESTINATION bin)
 
+# Specify the import library to link against for Arm32 build since the default set is minimal
+if (WIN32 AND CLI_CMAKE_PLATFORM_ARCH_ARM)
+    target_link_libraries(dotnet shell32.lib)
+endif()
+
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     target_link_libraries (dotnet "dl" "pthread")
 endif()

@@ -21,7 +21,7 @@ if($Help)
     Write-Host "Options:"
     Write-Host "  -Configuration <CONFIGURATION>     Build the specified Configuration (Debug or Release, default: Debug)"
     Write-Host "  -Architecture  <ARCHITECTURE>      Build on the specified architecture (x64 or x86 (supported only on Windows), default: x64)"
-    Write-Host "  -TargetArch  <ARCHITECTURE>        Build for the specified architecture (x64, x86 (supported only on Windows), or arm64, default: x64)"
+    Write-Host "  -TargetArch  <ARCHITECTURE>        Build for the specified architecture (x64, x86 (supported only on Windows), arm, or arm64, default: x64)"
     Write-Host "  -ToolsetDir  <TOOLSETDIR>          Temporary variable specifying a path to a toolset to use when building the native host for ARM64. To be removed when the toolset is publicly available. )"
     Write-Host "  -Framework  <FRAMEWORK>            Build the specified framework (netcoreapp1.0 or netcoreapp1.1, default: netcoreapp1.0)"
     Write-Host "  -Targets <TARGETS...>              Comma separated build targets to run (Init, Compile, Publish, etc.; Default is a full build and publish)"
@@ -62,6 +62,10 @@ if($TargetArch -eq "x86" -and $Architecture -ne "x86")
 if($TargetArch -eq "x64" -and $Architecture -ne "x64")
 {
     $env:TARGETRID = "win7-x64";
+}
+if($TargetArch -eq "arm")
+{
+    $env:TARGETRID = "win8-arm";
 }
 
 if($NoPackage)
