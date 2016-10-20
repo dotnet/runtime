@@ -216,7 +216,7 @@ namespace System.IO.FileSystem.DriveInfoTests
         internal static extern int GetDriveType(string drive);
 
         [DllImport("api-ms-win-core-file-l1-1-0.dll", SetLastError = true)]
-        internal static extern bool GetDiskFreeSpaceEx(String drive, out long freeBytesForUser, out long totalBytes, out long freeBytes);
+        internal static extern bool GetDiskFreeSpaceEx(string drive, out long freeBytesForUser, out long totalBytes, out long freeBytes);
 
         private IEnumerable<char> GetValidDriveLettersOnMachine()
         {
