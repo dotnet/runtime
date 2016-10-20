@@ -24,7 +24,7 @@
     <swid:Tag Regid="microsoft.com" InstallPath="[DOTNETHOME]" />
 
     <Variable Name="DOTNETHOME" Type="string" Value="[ProgramFiles6432Folder]dotnet" bal:Overridable="no" />
-    <Variable Name="BUNDLEMONIKER" Type="string" Value="$(var.ProductMoniker)" bal:Overridable="no" />
+    <Variable Name="BUNDLEMONIKER" Type="string" Value="$(var.ProductMoniker) ($(var.TargetArchitecture))" bal:Overridable="no" />
 
     <Chain DisableSystemRestore="yes" ParallelCache="yes">
       <ExePackage Name="VC_redist.$(var.Platform).exe"
