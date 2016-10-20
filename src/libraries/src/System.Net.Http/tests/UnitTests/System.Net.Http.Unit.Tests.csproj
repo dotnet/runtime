@@ -13,7 +13,7 @@
     <AssemblyName>System.Net.Http.Unit.Tests</AssemblyName>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   
   <!-- Help VS understand available configurations -->
@@ -55,9 +55,6 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\System\ShouldNotBeInvokedException.cs">
       <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\Internal\ICloneable.cs">
-      <Link>ProductionCode\Internal\ICloneable.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Mail\MailAddress.cs">
       <Link>ProductionCode\Common\src\System\Net\Mail\MailAddress.cs</Link>
@@ -342,6 +339,11 @@
     <Compile Include="HttpRuleParserTest.cs" />
     <Compile Include="MockContent.cs" />
     <Compile Include="StreamToStreamCopyTest.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != ''">
+    <Compile Include="..\..\src\Internal\ICloneable.cs">
+      <Link>ProductionCode\Internal\ICloneable.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
