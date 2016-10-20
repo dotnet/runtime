@@ -49,8 +49,6 @@
     <Compile Include="System\Net\Cache\HttpCacheAgeControl.cs" />
     <Compile Include="System\Net\Cache\HttpRequestCacheLevel.cs" />
     <Compile Include="System\Net\Cache\HttpRequestCachePolicy.cs" />
-    <Compile Include="System\Net\Cache\RequestCacheLevel.cs" />
-    <Compile Include="System\Net\Cache\RequestCachePolicy.cs" />
     <Compile Include="System\Net\HttpDateParse.cs" />
     <Compile Include="System\Net\HttpVersion.cs" />
 
@@ -106,6 +104,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- TODO: Remove this reference once packages are updated -->
+    <ProjectReference Include="..\..\System.Net.Primitives\ref\System.Net.Primitives.csproj">
+      <UndefineProperties>TargetGroup;OSGroup</UndefineProperties>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
