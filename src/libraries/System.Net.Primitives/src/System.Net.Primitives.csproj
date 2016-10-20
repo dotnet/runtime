@@ -53,6 +53,7 @@
     <Compile Include="System\Net\NetworkCredential.cs" />
     <Compile Include="System\Net\TransportContext.cs" />
     <Compile Include="System\Net\SocketException.cs" />
+    <Compile Include="System\Net\SocketException.netstandard17.cs" Condition="'$(TargetGroup)' == ''" />
     <Compile Include="System\Net\SecureProtocols\NegotiateEnumTypes.cs" />
     <Compile Include="System\Net\SecureProtocols\SslEnumTypes.cs" />
     <Compile Include="System\Net\Security\SslPolicyErrors.cs" />
