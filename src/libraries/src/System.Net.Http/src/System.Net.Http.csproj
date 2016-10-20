@@ -14,16 +14,15 @@
     <!-- Suppress warnings for type conflicts between SR in partial facade and mscorlib -->
     <NoWarn>0436</NoWarn>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
-    <AssemblyVersion Condition="'$(TargetGroup)' == 'netcore50'">4.1.0.0</AssemblyVersion>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(TargetGroup)' == 'netcore50'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_uap101_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_uap101_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(TargetGroup)' == 'uap101'">
     <DefineConstants>$(DefineConstants);NETNative;NETNative_SystemNetHttp</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
@@ -132,7 +131,7 @@
       <Link>Common\System\Net\Logging\NetEventSource.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'netcore50' ">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap101' ">
     <Compile Include="System\Net\Http\HttpClientHandler.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' != 'true' Or '$(TargetGroup)' != 'net46' ">
@@ -153,11 +152,11 @@
          HttpMessageHandler.cs. We also use the HTTP_DLL define to change public classes into
          internal ones to remove confusion if someone looks at the implementation dlls. They are
          public in the separate WinHttpHandler.dll binary.  -->
-  <Import Project="..\..\System.Net.Http.WinHttpHandler\src\System.Net.Http.WinHttpHandler.msbuild" Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'netcore50'" />
+  <Import Project="..\..\System.Net.Http.WinHttpHandler\src\System.Net.Http.WinHttpHandler.msbuild" Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap101'" />
   <!--  For source files to be shown within the visual tree in Solution Explorer, the items must be
          included directly in the project file. We have the *.msbuild define the Compile items in a made
          up item called CompileItem and then just include it here. -->
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'netcore50' ">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap101' ">
     <Compile Include="@(CompileItem)" />
   </ItemGroup>
   <PropertyGroup Condition=" '$(TargetsUnix)' == 'true' ">
@@ -327,7 +326,7 @@
       <Link>Common\Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'uap101'">
     <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" />
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>
@@ -356,6 +355,20 @@
     <Compile Include="netcore50\System\Net\CookieHelper.cs" />
     <Compile Include="netcore50\System\Net\HttpHandlerToFilter.cs" />
     <Compile Include="netcore50\System\Net\HttpClientHandler.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'uap101'">
+    <ProjectReference Include="..\..\System.Runtime.Extensions\ref\System.Runtime.Extensions.csproj">
+      <UndefineProperties>TargetGroup;OSGroup</UndefineProperties>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Runtime.InteropServices\ref\System.Runtime.InteropServices.csproj">
+      <UndefineProperties>TargetGroup;OSGroup</UndefineProperties>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Text.Encoding\ref\System.Text.Encoding.csproj">
+      <UndefineProperties>TargetGroup;OSGroup</UndefineProperties>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Globalization.Extensions\ref\System.Globalization.Extensions.csproj">
+      <UndefineProperties>TargetGroup;OSGroup</UndefineProperties>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
     <TargetingPackReference Include="mscorlib" />

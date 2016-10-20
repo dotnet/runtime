@@ -1,0 +1,19 @@
+MembersMustExist : Member 'System.Text.Decoder.Convert(System.Byte*, System.Int32, System.Char*, System.Int32, System.Boolean, System.Int32, System.Int32, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Text.Decoder.GetCharCount(System.Byte*, System.Int32, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Text.Decoder.GetChars(System.Byte*, System.Int32, System.Char*, System.Int32, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Text.DecoderFallbackException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+MembersMustExist : Member 'System.Text.Encoder.Convert(System.Char*, System.Int32, System.Byte*, System.Int32, System.Boolean, System.Int32, System.Int32, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Text.Encoder.GetBytes(System.Char*, System.Int32, System.Byte*, System.Int32, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Text.EncoderFallbackException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+MembersMustExist : Member 'System.Text.Encoding.BodyName.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Text.Encoding.Default.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Text.Encoding.GetEncodings()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Text.Encoding.HeaderName.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Text.Encoding.IsAlwaysNormalized()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Text.Encoding.IsAlwaysNormalized(System.Text.NormalizationForm)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Text.Encoding.IsBrowserDisplay.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Text.Encoding.IsBrowserSave.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Text.Encoding.IsMailNewsDisplay.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Text.Encoding.IsMailNewsSave.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Text.Encoding.WindowsCodePage.get()' does not exist in the implementation but it does exist in the contract.
+

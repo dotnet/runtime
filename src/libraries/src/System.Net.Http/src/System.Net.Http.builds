@@ -10,7 +10,7 @@
     </Project>
     <Project Include="System.Net.Http.csproj">
       <OSGroup>Windows_NT</OSGroup>
-      <TargetGroup>netcore50</TargetGroup>
+      <TargetGroup>uap101</TargetGroup>
     </Project>
     <Project Include="System.Net.Http.csproj">
       <OSGroup>Windows_NT</OSGroup>
