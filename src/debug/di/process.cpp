@@ -8120,7 +8120,9 @@ void CordbProcess::DispatchUnmanagedInBandEvent()
             break;
 
         // Get the thread for this event
+        _ASSERTE(pUnmanagedThread == NULL);
         pUnmanagedThread = pUnmanagedEvent->m_owner;
+        _ASSERTE(pUnmanagedThread != NULL);
 
         // We better not have dispatched it yet!
         _ASSERTE(!pUnmanagedEvent->IsDispatched());
@@ -8178,13 +8180,10 @@ void CordbProcess::DispatchUnmanagedInBandEvent()
         m_pShim->GetWin32EventThread()->DoDbgContinue(this, pUnmanagedEvent);
 
         // Release our reference to the unmanaged thread that we dispatched
-        if (pUnmanagedThread)
-        {
-            // This event should have been continued long ago...
-            _ASSERTE(!pUnmanagedThread->IBEvent()->IsEventWaitingForContinue());
-            pUnmanagedThread->InternalRelease();
-            pUnmanagedThread = NULL;
-        }
+        // This event should have been continued long ago...
+        _ASSERTE(!pUnmanagedThread->IBEvent()->IsEventWaitingForContinue());
+        pUnmanagedThread->InternalRelease();
+        pUnmanagedThread = NULL;
     }
 
     m_dispatchingUnmanagedEvent = false;
