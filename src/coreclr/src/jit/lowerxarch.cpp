@@ -2734,17 +2734,38 @@ void Lowering::TreeNodeInfoInitSIMD(GenTree* tree)
             break;
 
         case SIMDIntrinsicDotProduct:
-            if ((comp->getSIMDInstructionSet() == InstructionSet_SSE2) ||
-                (simdTree->gtOp.gtOp1->TypeGet() == TYP_SIMD32))
+            // Float/Double vectors:
+            // For SSE, or AVX with 32-byte vectors, we also need an internal register
+            // as scratch. Further we need the targetReg and internal reg to be distinct
+            // registers. Note that if this is a TYP_SIMD16 or smaller on AVX, then we
+            // don't need a tmpReg.
+            //
+            // 32-byte integer vector on AVX:
+            // will take advantage of phaddd, which operates only on 128-bit xmm reg.
+            // This would need 2 internal registers since targetReg is an int type
+            // register.
+            //
+            // See genSIMDIntrinsicDotProduct() for details on code sequence generated
+            // and the need for scratch registers.
+            if (varTypeIsFloating(simdTree->gtSIMDBaseType))
             {
-                // For SSE, or AVX with 32-byte vectors, we also need an internal register as scratch.
-                // Further we need the targetReg and internal reg to be distinct registers.
-                // Note that if this is a TYP_SIMD16 or smaller on AVX, then we don't need a tmpReg.
-                //
-                // See genSIMDIntrinsicDotProduct() for details on code sequence generated and
-                // the need for scratch registers.
-                info->internalFloatCount     = 1;
-                info->isInternalRegDelayFree = true;
+                if ((comp->getSIMDInstructionSet() == InstructionSet_SSE2) ||
+                    (simdTree->gtOp.gtOp1->TypeGet() == TYP_SIMD32))
+                {
+                    info->internalFloatCount     = 1;
+                    info->isInternalRegDelayFree = true;
+                    info->setInternalCandidates(lsra, lsra->allSIMDRegs());
+                }
+                // else don't need scratch reg(s).
+            }
+            else
+            {
+                assert(simdTree->gtSIMDBaseType == TYP_INT && comp->canUseAVX());
+
+                // No need to set isInternalRegDelayFree since targetReg is a
+                // an int type reg and guaranteed to be different from xmm/ymm
+                // regs.
+                info->internalFloatCount = 2;
                 info->setInternalCandidates(lsra, lsra->allSIMDRegs());
             }
             info->srcCount = 2;
