@@ -11,6 +11,8 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     public class HttpClientHandler_MaxConnectionsPerServer_Test
     {
         [Fact]

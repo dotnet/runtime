@@ -3,10 +3,11 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Net.Http.csproj">
-      <SupportedFramework>net46;netcore50;netcoreapp1.0;$(AllXamarinFrameworks)</SupportedFramework>
-      <!-- Make sure this doesn't get stripped during harvesting.
-           We have an implementation that will work on desktop, thus needs a unique assembly version -->
-      <Preserve>true</Preserve>
+      <SupportedFramework>netcoreapp1.1;uap10.1;$(AllXamarinFrameworks)</SupportedFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\ref\System.Net.Http.csproj">
+      <TargetGroup>net46</TargetGroup>
+      <SupportedFramework>net46</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Net.Http.builds" />
   </ItemGroup>
@@ -35,6 +36,10 @@
     <InboxOnTargetFramework Include="xamarinwatchos10">
       <AsFrameworkReference>true</AsFrameworkReference>
     </InboxOnTargetFramework>
+    <ValidatePackageSuppression Include="SuppressNETStandardInference">
+      <!-- we support the netstandard1.7 API version on net46, but suppress inferring netstandard support based on desktop support -->
+      <Value>.NETFramework,Version=v4.6;.NETFramework,Version=v4.6.1;.NETFramework,Version=v4.6.2</Value>
+    </ValidatePackageSuppression>
     <!-- TODO: Bring in Microsoft.Net.Http on older platforms -->
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
