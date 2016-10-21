@@ -13,7 +13,7 @@ from bockbuild.util.util import *
 from glob import glob
 
 class MonoReleaseProfile(DarwinProfile):
-
+    description = 'The Mono Framework for MacOS'
     packages = [
         'gettext',
         'pkg-config',

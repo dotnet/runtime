@@ -14,11 +14,9 @@ from bockbuild.util.util import *
 
 
 class MonoXamarinPackageProfile(MonoReleaseProfile):
-    description = 'Signed package'
+    description = 'The Mono Framework for MacOS (official release)'
 
-    def attach (self, bockbuild):
-        print dir(bockbuild)
-        MonoReleaseProfile.attach(self, bockbuild)
+    def setup (self):
         bockbuild.packages_to_build.extend(['mono-extensions'])
         if bockbuild.cmd_options.release_build:
             self.setup_codesign()
