@@ -470,7 +470,8 @@ BASE_TEST_CS_SRC_UNIVERSAL=		\
 	bug-29585.cs	\
 	priority.cs	\
 	abort-cctor.cs	\
-	thread-native-exit.cs
+	thread-native-exit.cs \
+	reference-loader.cs
 
 if INSTALL_MOBILE_STATIC
 BASE_TEST_CS_SRC= \
@@ -692,7 +693,6 @@ DISABLED_TESTS=			\
 	bug-459094.exe \
 	delegate-invoke.exe \
 	bug-Xamarin-5278.exe \
-	reference-loader.cs \
 	$(PLATFORM_DISABLED_TESTS) \
 	$(EXTRA_DISABLED_TESTS) \
 	$(COOP_DISABLED_TESTS) \
