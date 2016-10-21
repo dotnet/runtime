@@ -5,9 +5,9 @@
     "ReportGenerator": "2.4.3",
     "Microsoft.NETCore.TestHost": "1.2.0-beta-24620-03",
     "Microsoft.NETCore.Runtime.CoreCLR": "1.2.0-beta-24620-03",
-    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00920-01",
-    "xunit.console.netcore": "1.0.3-prerelease-00903-02",
-    "Microsoft.xunit.netcore.extensions": "1.0.0-prerelease-00830-02",
+    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00921-01",
+    "xunit.console.netcore": "1.0.3-prerelease-00921-01",
+    "Microsoft.xunit.netcore.extensions": "1.0.0-prerelease-00921-01",
     "perf": {
       "target": "project",
       "include": "compile,runtime"
@@ -302,11 +302,7 @@
         "System.Numerics.Vectors.WindowsRuntime": "4.4.0-beta-24623-01",
         "System.Runtime.WindowsRuntime": "4.4.0-beta-24623-01",
         "System.Runtime.WindowsRuntime.UI.Xaml": "4.4.0-beta-24623-01",
-        "microsoft.xunit.runner.uwp": "1.0.3-prerelease-00903-02",
-        "Microsoft.DotNet.TestILC": {
-          "version": "1.4.24208-prerelease",
-          "include": "contentFiles"
-        },
+        "microsoft.xunit.runner.uwp": "1.0.3-prerelease-00921-01",
         "System.Diagnostics.Process": {
           "version": "4.4.0-beta-24623-01",
           "include": "compile"
