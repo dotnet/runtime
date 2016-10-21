@@ -150,17 +150,8 @@
   <data name="ErrorMissingPropertyAccessors" xml:space="preserve">
     <value>Accessor methods for the {0} property are missing.</value>
   </data>
-  <data name="ErrorPropertyAccessorException" xml:space="preserve">
-    <value>Property accessor '{0}' on object '{1}' threw the following exception:'{2}'</value>
-  </data>
   <data name="InvalidMemberName" xml:space="preserve">
     <value>Invalid member name</value>
-  </data>
-  <data name="InvalidNullArgument" xml:space="preserve">
-   <value>Null is not a valid value for {0}.</value> 
-  </data>
-  <data name="MetaExtenderName" xml:space="preserve">
-   <value>{0} on {1}</value> 
   </data>
   <data name="none" xml:space="preserve">
     <value>(none)</value>
@@ -282,9 +273,6 @@
   <data name="PropertyCategoryAsynchronous" xml:space="preserve">
     <value>Asynchronous</value>
   </data>
-  <data name="BackgroundWorker_Desc" xml:space="preserve">
-    <value>Executes an operation on a separate thread.</value>
-  </data>
   <data name="BackgroundWorker_DoWorkEventArgs_Argument" xml:space="preserve">
     <value>Argument passed into the worker handler from BackgroundWorker.RunWorkerAsync.</value>
   </data>
@@ -299,9 +287,6 @@
   </data>
   <data name="BackgroundWorker_WorkerAlreadyRunning" xml:space="preserve">
     <value>This BackgroundWorker is currently busy and cannot run multiple tasks concurrently.</value>
-  </data>
-  <data name="BackgroundWorker_WorkerDoesntReportProgress" xml:space="preserve">
-    <value>This BackgroundWorker states that it doesn't report progress. Modify WorkerReportsProgress to state that it does report progress.</value>
   </data>
   <data name="PropertyTabAttributeBadPropertyTabScope" xml:space="preserve">
     <value>Scope must be PropertyTabScope.Document or PropertyTabScope.Component</value>
@@ -327,25 +312,6 @@
   <data name="ErrorServiceExists" xml:space="preserve">
     <value>The service {0} already exists in the service container.</value>
   </data>
-
-  <data name="ErrorMissingPropertyAccessors" xml:space="preserve">
-    <value>Accessor methods for the {0} property are missing.</value>
-  </data>
-  <data name="ErrorInvalidPropertyType" xml:space="preserve">
-    <value>Invalid type for the {0} property.</value>
-  </data>
-  <data name="ErrorMissingEventAccessors" xml:space="preserve">
-    <value>Accessor methods for the {0} event are missing.</value>
-  </data>
-  <data name="ErrorInvalidEventHandler" xml:space="preserve">
-    <value>Invalid event handler for the {0} event.</value>
-  </data>
-  <data name="ErrorInvalidEventType" xml:space="preserve">
-    <value>Invalid type for the {0} event.</value>
-  </data>
-  <data name="InvalidMemberName" xml:space="preserve">
-    <value>Invalid member name.</value>
-  </data>
   <data name="ErrorBadExtenderType" xml:space="preserve">
     <value>The {0} extender provider is not compatible with the {1} type.</value>
   </data>
@@ -357,12 +323,6 @@
   </data>
   <data name="DuplicateComponentName" xml:space="preserve">
     <value>Duplicate component name '{0}'.  Component names must be unique and case-insensitive.</value>
-  </data>
-  <data name="ErrorInvalidServiceInstance" xml:space="preserve">
-    <value>The service instance must derive from or implement {0}.</value>
-  </data>
-  <data name="ErrorServiceExists" xml:space="preserve">
-    <value>The service {0} already exists in the service container.</value>
   </data>
   <data name="MaskedTextProviderPasswordAndPromptCharError" xml:space="preserve">
     <value>The PasswordChar and PromptChar values cannot be the same.</value>
@@ -424,9 +384,6 @@
   <data name="CHECKOUTCanceled" xml:space="preserve">
     <value>The checkout was canceled by the user.</value>
   </data> 
-  <data name="ErrorBadExtenderType" xml:space="preserve">
-    <value>The {0} extender provider is not compatible with the {1} type.</value>
-  </data>
    <data name="toStringNone" xml:space="preserve">
     <value>(none)</value>
   </data>
