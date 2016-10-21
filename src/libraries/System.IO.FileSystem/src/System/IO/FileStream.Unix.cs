@@ -12,40 +12,14 @@ namespace System.IO
     /// <summary>Provides an implementation of a file stream for Unix files.</summary>
     public partial class FileStream : Stream
     {
-        /// <summary>The file descriptor wrapped in a file handle.</summary>
-        private SafeFileHandle _fileHandle;
-
-        /// <summary>The path to the opened file.</summary>
-        private string _path;
-
         /// <summary>File mode.</summary>
         private FileMode _mode;
-
-        /// <summary>Whether the file is opened for reading, writing, or both.</summary>
-        private FileAccess _access;
 
         /// <summary>Advanced options requested when opening the file.</summary>
         private FileOptions _options;
 
         /// <summary>If the file was opened with FileMode.Append, the length of the file when opened; otherwise, -1.</summary>
         private long _appendStart = -1;
-
-        /// <summary>
-        /// Whether asynchronous read/write/flush operations should be performed using async I/O.
-        /// On Windows FileOptions.Asynchronous controls how the file handle is configured, 
-        /// and then as a result how operations are issued against that file handle.  On Unix, 
-        /// there isn't any distinction around how file descriptors are created for async vs 
-        /// sync, but we still differentiate how the operations are issued in order to provide
-        /// similar behavioral semantics and performance characteristics as on Windows.  On
-        /// Windows, if non-async, async read/write requests just delegate to the base stream,
-        /// and no attempt is made to synchronize between sync and async operations on the stream;
-        /// if async, then async read/write requests are implemented specially, and sync read/write
-        /// requests are coordinated with async ones by implementing the sync ones over the async
-        /// ones.  On Unix, we do something similar.  If non-async, async read/write requests just
-        /// delegate to the base stream, and no attempt is made to synchronize.  If async, we use
-        /// a semaphore to coordinate both sync and async operations.
-        /// </summary>
-        private bool _useAsyncIO;
 
         /// <summary>
         /// Extra state used by the file stream when _useAsyncIO is true.  This includes
@@ -56,33 +30,8 @@ namespace System.IO
         /// </summary>
         private AsyncState _asyncState;
 
-        /// <summary>The length of the _buffer.</summary>
-        private int _bufferLength;
-
-        /// <summary>Lazily-initialized buffer data from Write waiting to be written to the underlying handle, or data read from the underlying handle and waiting to be Read.</summary>
-        private byte[] _buffer;
-
-        /// <summary>The number of valid bytes in _buffer.</summary>
-        private int _readLength;
-
-        /// <summary>The next available byte to be read from the _buffer.</summary>
-        private int _readPos;
-
-        /// <summary>The next location in which a write should occur to the buffer.</summary>
-        private int _writePos;
-
         /// <summary>Lazily-initialized value for whether the file supports seeking.</summary>
         private bool? _canSeek;
-
-        /// <summary>Whether the file stream's handle has been exposed.</summary>
-        private bool _exposedHandle;
-
-        /// <summary>
-        /// Currently cached position in the stream.  This should always mirror the underlying file descriptor's actual position,
-        /// and should only ever be out of sync if another stream with access to this same file descriptor manipulates it, at which
-        /// point we attempt to error out.
-        /// </summary>
-        private long _filePosition;
 
         /// <summary>Initializes a stream for reading or writing a Unix file.</summary>
         /// <param name="path">The path to the file.</param>
@@ -265,18 +214,6 @@ namespace System.IO
             }
 
             return flags;
-        }
-
-        /// <summary>Gets a value indicating whether the current stream supports reading.</summary>
-        public override bool CanRead
-        {
-            get { return !_fileHandle.IsClosed && (_access & FileAccess.Read) != 0; }
-        }
-
-        /// <summary>Gets a value indicating whether the current stream supports writing.</summary>
-        public override bool CanWrite
-        {
-            get { return !_fileHandle.IsClosed && (_access & FileAccess.Write) != 0; }
         }
 
         /// <summary>Gets a value indicating whether the current stream supports seeking.</summary>
