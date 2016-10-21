@@ -13,7 +13,7 @@ namespace System.Linq.Expressions
     /// <summary>
     /// Represents accessing a field or property.
     /// </summary>
-    [DebuggerTypeProxy(typeof(Expression.MemberExpressionProxy))]
+    [DebuggerTypeProxy(typeof(MemberExpressionProxy))]
     public class MemberExpression : Expression
     {
         private readonly Expression _expression;

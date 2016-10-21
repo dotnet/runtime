@@ -14,7 +14,7 @@ namespace System.Linq.Expressions
     /// <summary>
     /// Represents an expression that has a binary operator.
     /// </summary>
-    [DebuggerTypeProxy(typeof(Expression.BinaryExpressionProxy))]
+    [DebuggerTypeProxy(typeof(BinaryExpressionProxy))]
     public class BinaryExpression : Expression
     {
         private readonly Expression _left;

@@ -12,7 +12,7 @@ namespace System.Linq.Expressions
     /// <summary>
     /// Represents a named parameter expression.
     /// </summary>
-    [DebuggerTypeProxy(typeof(Expression.ParameterExpressionProxy))]
+    [DebuggerTypeProxy(typeof(ParameterExpressionProxy))]
     public class ParameterExpression : Expression
     {
         private readonly string _name;
