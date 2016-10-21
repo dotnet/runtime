@@ -567,6 +567,10 @@ namespace System.IO
             }
         }
 
+        // Instance method to help code external to this MarshalByRefObject avoid
+        // accessing its fields by ref.  This avoids a compiler warning.
+        private FileStreamCompletionSource CompareExchangeCurrentOverlappedOwner(FileStreamCompletionSource newSource, FileStreamCompletionSource existingSource) => Interlocked.CompareExchange(ref _currentOverlappedOwner, newSource, existingSource);
+
         public override int Read(byte[] array, int offset, int count)
         {
             if (array == null)
