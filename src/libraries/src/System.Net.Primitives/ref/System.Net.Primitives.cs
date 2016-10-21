@@ -260,6 +260,26 @@ namespace System.Net
         public abstract System.Security.Authentication.ExtendedProtection.ChannelBinding GetChannelBinding(System.Security.Authentication.ExtendedProtection.ChannelBindingKind kind);
     }
 }
+namespace System.Net.Cache
+{
+    public enum RequestCacheLevel
+    {
+        Default = 0,
+        BypassCache = 1,
+        CacheOnly = 2,
+        CacheIfAvailable = 3,
+        Revalidate = 4,
+        Reload = 5,
+        NoCacheNoStore = 6
+    }
+    public class RequestCachePolicy
+    {
+        public RequestCachePolicy() { }
+        public RequestCachePolicy(System.Net.Cache.RequestCacheLevel level) { }
+        public System.Net.Cache.RequestCacheLevel Level { get { throw null; } }
+        public override string ToString() { throw null; }
+    }
+}
 namespace System.Net.NetworkInformation
 {
     public partial class IPAddressCollection : System.Collections.Generic.ICollection<System.Net.IPAddress>, System.Collections.Generic.IEnumerable<System.Net.IPAddress>, System.Collections.IEnumerable
@@ -379,10 +399,11 @@ namespace System.Net.Sockets
         VersionNotSupported = 10092,
         WouldBlock = 10035,
     }
-    public partial class SocketException : System.Exception
+    public partial class SocketException : System.ComponentModel.Win32Exception
     {
         public SocketException() { }
         public SocketException(int errorCode) { }
+        protected SocketException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public override string Message { get { throw null; } }
         public System.Net.Sockets.SocketError SocketErrorCode { get { throw null; } }
     }

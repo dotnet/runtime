@@ -12,7 +12,7 @@ namespace System.IO.IsolatedStorage
         object Normalize();
     }
 
-    public abstract partial class IsolatedStorage // : System.MarshalByRefObject
+    public abstract partial class IsolatedStorage : System.MarshalByRefObject
     {
         protected IsolatedStorage() { }
         public object ApplicationIdentity { get { throw null; } }

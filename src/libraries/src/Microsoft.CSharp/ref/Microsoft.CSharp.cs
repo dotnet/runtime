@@ -61,11 +61,13 @@ namespace Microsoft.CSharp.RuntimeBinder
         public RuntimeBinderException() { }
         public RuntimeBinderException(string message) { }
         public RuntimeBinderException(string message, System.Exception innerException) { }
+        protected RuntimeBinderException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public partial class RuntimeBinderInternalCompilerException : System.Exception
     {
         public RuntimeBinderInternalCompilerException() { }
         public RuntimeBinderInternalCompilerException(string message) { }
         public RuntimeBinderInternalCompilerException(string message, System.Exception innerException) { }
+        protected RuntimeBinderInternalCompilerException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
 }

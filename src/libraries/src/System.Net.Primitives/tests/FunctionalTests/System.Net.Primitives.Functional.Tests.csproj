@@ -33,6 +33,7 @@
     <Compile Include="IPAddressMappingTest.cs" />
     <Compile Include="IPEndPointTest.cs" />
     <Compile Include="NetworkCredentialTest.cs" />
+    <Compile Include="RequestCachePolicyTest.cs" Condition="'$(TargetGroup)' == ''" />
     <Compile Include="SocketAddressTest.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == ''">
@@ -40,6 +41,10 @@
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
       <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <!-- TODO: Remove this reference once packages are updated -->
+    <ProjectReference Include="..\..\..\System.Net.Requests\pkg\System.Net.Requests.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\pkg\System.Net.Primitives.pkgproj">

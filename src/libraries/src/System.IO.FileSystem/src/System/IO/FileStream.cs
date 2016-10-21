@@ -2,62 +2,111 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics.Contracts;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
 {
     public partial class FileStream : Stream
     {
-        internal const int DefaultBufferSize = 4096;
         private const FileShare DefaultShare = FileShare.Read;
-        private const bool DefaultUseAsync = false;
         private const bool DefaultIsAsync = false;
+        internal const int DefaultBufferSize = 4096;
 
-        private FileStreamBase _innerStream;
+        private byte[] _buffer;
+        private int _bufferLength;
+        private SafeFileHandle _fileHandle;
 
-        internal FileStream(FileStreamBase innerStream)
+        /// <summary>Whether the file is opened for reading, writing, or both.</summary>
+        private FileAccess _access;
+
+        /// <summary>The path to the opened file.</summary>
+        private string _path;
+
+        /// <summary>The next available byte to be read from the _buffer.</summary>
+        private int _readPos;
+
+        /// <summary>The number of valid bytes in _buffer.</summary>
+        private int _readLength;
+
+        /// <summary>The next location in which a write should occur to the buffer.</summary>
+        private int _writePos;
+
+        /// <summary>
+        /// Whether asynchronous read/write/flush operations should be performed using async I/O.
+        /// On Windows FileOptions.Asynchronous controls how the file handle is configured, 
+        /// and then as a result how operations are issued against that file handle.  On Unix, 
+        /// there isn't any distinction around how file descriptors are created for async vs 
+        /// sync, but we still differentiate how the operations are issued in order to provide
+        /// similar behavioral semantics and performance characteristics as on Windows.  On
+        /// Windows, if non-async, async read/write requests just delegate to the base stream,
+        /// and no attempt is made to synchronize between sync and async operations on the stream;
+        /// if async, then async read/write requests are implemented specially, and sync read/write
+        /// requests are coordinated with async ones by implementing the sync ones over the async
+        /// ones.  On Unix, we do something similar.  If non-async, async read/write requests just
+        /// delegate to the base stream, and no attempt is made to synchronize.  If async, we use
+        /// a semaphore to coordinate both sync and async operations.
+        /// </summary>
+        private bool _useAsyncIO;
+
+        /// <summary>
+        /// Currently cached position in the stream.  This should always mirror the underlying file's actual position,
+        /// and should only ever be out of sync if another stream with access to this same file manipulates it, at which
+        /// point we attempt to error out.
+        /// </summary>
+        private long _filePosition;
+
+        /// <summary>Whether the file stream's handle has been exposed.</summary>
+        private bool _exposedHandle;
+
+        public FileStream(SafeFileHandle handle, FileAccess access)
+            : this(handle, access, DefaultBufferSize)
         {
-            if (innerStream == null)
-            {
-                throw new ArgumentNullException(nameof(innerStream));
-            }
-
-            this._innerStream = innerStream;
         }
 
-        public FileStream(Microsoft.Win32.SafeHandles.SafeFileHandle handle, FileAccess access) :
-            this(handle, access, DefaultBufferSize)
+        public FileStream(SafeFileHandle handle, FileAccess access, int bufferSize)
+            : this(handle, access, bufferSize, GetDefaultIsAsync(handle))
         {
         }
 
-        public FileStream(string path, System.IO.FileMode mode) :
-            this(path, mode, (mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite), DefaultShare, DefaultBufferSize, DefaultUseAsync)
+        public FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
+        {
+            InitFromHandle(handle, access, bufferSize, isAsync);
+        }
+
+        public FileStream(string path, FileMode mode) :
+            this(path, mode, (mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite), DefaultShare, DefaultBufferSize, DefaultIsAsync)
         { }
 
-        public FileStream(string path, System.IO.FileMode mode, FileAccess access) :
-            this(path, mode, access, DefaultShare, DefaultBufferSize, DefaultUseAsync)
+        public FileStream(string path, FileMode mode, FileAccess access) :
+            this(path, mode, access, DefaultShare, DefaultBufferSize, DefaultIsAsync)
         { }
 
-        public FileStream(string path, System.IO.FileMode mode, FileAccess access, FileShare share) :
-            this(path, mode, access, share, DefaultBufferSize, DefaultUseAsync)
+        public FileStream(string path, FileMode mode, FileAccess access, FileShare share) :
+            this(path, mode, access, share, DefaultBufferSize, DefaultIsAsync)
         { }
 
-        public FileStream(string path, System.IO.FileMode mode, FileAccess access, FileShare share, int bufferSize) :
-            this(path, mode, access, share, bufferSize, DefaultUseAsync)
+        public FileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize) :
+            this(path, mode, access, share, bufferSize, DefaultIsAsync)
         { }
 
-        public FileStream(string path, System.IO.FileMode mode, FileAccess access, FileShare share, int bufferSize, bool useAsync) :
+        public FileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, bool useAsync) :
             this(path, mode, access, share, bufferSize, useAsync ? FileOptions.Asynchronous : FileOptions.None)
         { }
 
-        public FileStream(string path, System.IO.FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
+        public FileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
         {
             Init(path, mode, access, share, bufferSize, options);
         }
 
-        private void Init(String path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
+        private static bool GetDefaultIsAsync(SafeFileHandle handle)
+        {
+            // This will eventually get more complicated as we can actually check the underlying handle type on Windows
+            return handle.IsAsync.HasValue ? handle.IsAsync.Value : false;
+        }
+
+        private void Init(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path), SR.ArgumentNull_Path);
@@ -66,7 +115,7 @@ namespace System.IO
 
             // don't include inheritable in our bounds check for share
             FileShare tempshare = share & ~FileShare.Inheritable;
-            String badArg = null;
+            string badArg = null;
 
             if (mode < FileMode.CreateNew || mode > FileMode.Append)
                 badArg = "mode";
@@ -100,37 +149,41 @@ namespace System.IO
             if ((access & FileAccess.Read) != 0 && mode == FileMode.Append)
                 throw new ArgumentException(SR.Argument_InvalidAppendMode, nameof(access));
 
-            this._innerStream = FileSystem.Current.Open(fullPath, mode, access, share, bufferSize, options, this);
+            InitInternal(fullPath, mode, access, share, bufferSize, options);
+        }
+
+        private void InitFromHandle(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
+        {
+            if (handle.IsInvalid)
+                throw new ArgumentException(SR.Arg_InvalidHandle, nameof(handle));
+
+            if (access < FileAccess.Read || access > FileAccess.ReadWrite)
+                throw new ArgumentOutOfRangeException(nameof(access), SR.ArgumentOutOfRange_Enum);
+            if (bufferSize <= 0)
+                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
+
+            InitFromHandleInternal(handle, access, bufferSize, isAsync);
         }
 
         // InternalOpen, InternalCreate, and InternalAppend:
         // Factory methods for FileStream used by File, FileInfo, and ReadLinesIterator
         // Specifies default access and sharing options for FileStreams created by those classes
-        internal static FileStream InternalOpen(String path, int bufferSize = DefaultBufferSize, bool useAsync = DefaultUseAsync)
+        internal static FileStream InternalOpen(string path, int bufferSize = DefaultBufferSize, bool useAsync = DefaultIsAsync)
         {
             return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, useAsync);
         }
 
-        internal static FileStream InternalCreate(String path, int bufferSize = DefaultBufferSize, bool useAsync = DefaultUseAsync)
+        internal static FileStream InternalCreate(string path, int bufferSize = DefaultBufferSize, bool useAsync = DefaultIsAsync)
         {
             return new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read, bufferSize, useAsync);
         }
 
-        internal static FileStream InternalAppend(String path, int bufferSize = DefaultBufferSize, bool useAsync = DefaultUseAsync)
+        internal static FileStream InternalAppend(string path, int bufferSize = DefaultBufferSize, bool useAsync = DefaultIsAsync)
         {
             return new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read, bufferSize, useAsync);
         }
 
-        #region FileStream members
-        public virtual bool IsAsync { get { return this._innerStream.IsAsync; } }
-        public string Name { get { return this._innerStream.Name; } }
-        public virtual Microsoft.Win32.SafeHandles.SafeFileHandle SafeFileHandle { get { return this._innerStream.SafeFileHandle; } }
         public virtual IntPtr Handle { get { return SafeFileHandle.DangerousGetHandle(); } }
-
-        public virtual void Flush(bool flushToDisk)
-        {
-            this._innerStream.Flush(flushToDisk);
-        }
 
         public virtual void Lock(long position, long length)
         {
@@ -139,7 +192,7 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException(position < 0 ? nameof(position) : nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            _innerStream.Lock(position, length);
+            LockInternal(position, length);
         }
 
         public virtual void Unlock(long position, long length)
@@ -149,78 +202,7 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException(position < 0 ? nameof(position) : nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            _innerStream.Unlock(position, length);
-        }
-
-        #endregion
-
-        #region Stream members
-        #region Properties
-
-        public override bool CanRead
-        {
-            get { return _innerStream.CanRead; }
-        }
-
-        public override bool CanSeek
-        {
-            get { return _innerStream.CanSeek; }
-        }
-
-        public override bool CanWrite
-        {
-            get { return _innerStream.CanWrite; }
-        }
-
-        public override long Length
-        {
-            get { return _innerStream.Length; }
-        }
-
-        public override long Position
-        {
-            get { return _innerStream.Position; }
-            set { _innerStream.Position = value; }
-        }
-
-        public override int ReadTimeout
-        {
-            get { return _innerStream.ReadTimeout; }
-            set { _innerStream.ReadTimeout = value; }
-        }
-
-        public override bool CanTimeout
-        {
-            get { return _innerStream.CanTimeout; }
-        }
-
-        public override int WriteTimeout
-        {
-            get { return _innerStream.WriteTimeout; }
-            set { _innerStream.WriteTimeout = value; }
-        }
-
-        #endregion Properties
-
-        #region Methods
-        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
-        {
-            return _innerStream.CopyToAsync(destination, bufferSize, cancellationToken);
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (_innerStream != null)
-            {
-                // called even during finalization
-                _innerStream.DisposeInternal(disposing);
-            }
-            base.Dispose(disposing);
-        }
-
-        public override void Flush()
-        {
-            _innerStream.Flush();
+            UnlockInternal(position, length);
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)
@@ -229,15 +211,10 @@ namespace System.IO
             // since it does not call through to Flush() which a subclass might have overridden.  To be safe 
             // we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Flush) when we are not sure.
-            if (this.GetType() != typeof(FileStream))
+            if (GetType() != typeof(FileStream))
                 return base.FlushAsync(cancellationToken);
 
-            return _innerStream.FlushAsync(cancellationToken);
-        }
-
-        public override int Read(byte[] buffer, int offset, int count)
-        {
-            return _innerStream.Read(buffer, offset, count);
+            return FlushAsyncInternal(cancellationToken);
         }
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -250,36 +227,21 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen /*, no good single parameter name to pass*/);
-            Contract.EndContractBlock();
 
             // If we have been inherited into a subclass, the following implementation could be incorrect
             // since it does not call through to Read() or ReadAsync() which a subclass might have overridden.  
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Read/ReadAsync) when we are not sure.
-            if (this.GetType() != typeof(FileStream))
+            if (GetType() != typeof(FileStream))
                 return base.ReadAsync(buffer, offset, count, cancellationToken);
 
-            return _innerStream.ReadAsync(buffer, offset, count, cancellationToken);
-        }
+            if (cancellationToken.IsCancellationRequested)
+                return Task.FromCanceled<int>(cancellationToken);
 
-        public override int ReadByte()
-        {
-            return _innerStream.ReadByte();
-        }
+            if (IsClosed)
+                throw Error.GetFileNotOpen();
 
-        public override long Seek(long offset, SeekOrigin origin)
-        {
-            return _innerStream.Seek(offset, origin);
-        }
-
-        public override void SetLength(long value)
-        {
-            _innerStream.SetLength(value);
-        }
-
-        public override void Write(byte[] buffer, int offset, int count)
-        {
-            _innerStream.Write(buffer, offset, count);
+            return ReadAsyncInternal(buffer, offset, count, cancellationToken);
         }
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -292,26 +254,60 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen /*, no good single parameter name to pass*/);
-            Contract.EndContractBlock();
 
             // If we have been inherited into a subclass, the following implementation could be incorrect
             // since it does not call through to Write() or WriteAsync() which a subclass might have overridden.  
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Write/WriteAsync) when we are not sure.
-            if (this.GetType() != typeof(FileStream))
+            if (GetType() != typeof(FileStream))
                 return base.WriteAsync(buffer, offset, count, cancellationToken);
 
-            return _innerStream.WriteAsync(buffer, offset, count, cancellationToken);
+            if (cancellationToken.IsCancellationRequested)
+                return Task.FromCanceled(cancellationToken);
+
+            if (IsClosed)
+                throw Error.GetFileNotOpen();
+
+            return WriteAsyncInternal(buffer, offset, count, cancellationToken);
         }
 
-        public override void WriteByte(byte value)
+        /// <summary>
+        /// Clears buffers for this stream and causes any buffered data to be written to the file.
+        /// </summary>
+        public override void Flush()
         {
-            _innerStream.WriteByte(value);
+            // Make sure that we call through the public virtual API
+            Flush(flushToDisk: false);
         }
-        #endregion Methods
-        #endregion Stream members
 
-        [Security.SecuritySafeCritical]
+        /// <summary>
+        /// Clears buffers for this stream, and if <param name="flushToDisk"/> is true, 
+        /// causes any buffered data to be written to the file.
+        /// </summary>
+        public virtual void Flush(bool flushToDisk)
+        {
+            if (IsClosed) throw Error.GetFileNotOpen();
+
+            FlushInternalBuffer();
+
+            if (flushToDisk && CanWrite)
+            {
+                FlushOSBuffer();
+            }
+        }
+
+        /// <summary>Gets a value indicating whether the current stream supports reading.</summary>
+        public override bool CanRead
+        {
+            get { return !_fileHandle.IsClosed && (_access & FileAccess.Read) != 0; }
+        }
+
+        /// <summary>Gets a value indicating whether the current stream supports writing.</summary>
+        public override bool CanWrite
+        {
+            get { return !_fileHandle.IsClosed && (_access & FileAccess.Write) != 0; }
+        }
+
         ~FileStream()
         {
             // Preserved for compatibility since FileStream has defined a 

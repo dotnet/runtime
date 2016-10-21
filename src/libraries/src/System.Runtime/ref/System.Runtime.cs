@@ -845,7 +845,7 @@ namespace System
         public string ToString(System.IFormatProvider provider) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct Decimal : System.IComparable, System.IComparable<decimal>, System.IConvertible, System.IEquatable<decimal>, System.IFormattable
+    public partial struct Decimal : System.IComparable, System.IComparable<decimal>, System.IConvertible, System.IEquatable<decimal>, System.IFormattable, System.Runtime.Serialization.IDeserializationCallback
     {
         [System.Runtime.CompilerServices.DecimalConstantAttribute((byte)0, (byte)0, (uint)4294967295, (uint)4294967295, (uint)4294967295)]
         public static readonly decimal MaxValue;
@@ -881,6 +881,7 @@ namespace System
         public override int GetHashCode() { throw null; }
         public static decimal Multiply(decimal d1, decimal d2) { throw null; }
         public static decimal Negate(decimal d) { throw null; }
+        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
         public static decimal operator +(decimal d1, decimal d2) { throw null; }
         public static decimal operator --(decimal d) { throw null; }
         public static decimal operator /(decimal d1, decimal d2) { throw null; }
@@ -1728,12 +1729,14 @@ namespace System
         public OutOfMemoryException() { }
         public OutOfMemoryException(string message) { }
         public OutOfMemoryException(string message, System.Exception innerException) { }
+        protected OutOfMemoryException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public partial class OverflowException : System.ArithmeticException
     {
         public OverflowException() { }
         public OverflowException(string message) { }
         public OverflowException(string message, System.Exception innerException) { }
+        protected OverflowException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(2048), Inherited = true, AllowMultiple = false)]
     public sealed partial class ParamArrayAttribute : System.Attribute
@@ -3102,6 +3105,10 @@ namespace System.Runtime.ConstrainedExecution
         public System.Runtime.ConstrainedExecution.Cer Cer { get { throw null; } }
         public System.Runtime.ConstrainedExecution.Consistency ConsistencyGuarantee { get { throw null; } }
     }
+    public sealed partial class PrePrepareMethodAttribute : System.Attribute
+    {
+        public PrePrepareMethodAttribute() { }
+    }
 }
 
 namespace System.Runtime.InteropServices
@@ -3486,11 +3493,13 @@ namespace System.ComponentModel
         public virtual object Value { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
+        protected void SetValue(object value) { throw null; }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(6140))]
     public sealed partial class EditorBrowsableAttribute : System.Attribute
     {
         public EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState state) { }
+        public EditorBrowsableAttribute() { }
         public System.ComponentModel.EditorBrowsableState State { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -4444,7 +4453,7 @@ namespace System.IO
         Current = 1,
         End = 2,
     }
-    public abstract partial class Stream : System.IDisposable
+    public abstract partial class Stream : System.MarshalByRefObject, System.IDisposable
     {
         public static readonly System.IO.Stream Null;
         protected Stream() { }
@@ -6620,7 +6629,7 @@ namespace System.Threading
         public const int Infinite = -1;
         public static readonly System.TimeSpan InfiniteTimeSpan;
     }
-    public abstract partial class WaitHandle : System.IDisposable
+    public abstract partial class WaitHandle : System.MarshalByRefObject, System.IDisposable
     {
         protected static readonly System.IntPtr InvalidHandle;
         public const int WaitTimeout = 258;

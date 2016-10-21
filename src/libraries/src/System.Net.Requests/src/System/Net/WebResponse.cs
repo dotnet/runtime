@@ -14,7 +14,7 @@ namespace System.Net
     ///    </para>
     /// </devdoc>
     [Serializable]
-    public abstract class WebResponse : ISerializable, IDisposable
+    public abstract class WebResponse : MarshalByRefObject, ISerializable, IDisposable
     {
         /// <devdoc>
         ///    <para>Initializes a new

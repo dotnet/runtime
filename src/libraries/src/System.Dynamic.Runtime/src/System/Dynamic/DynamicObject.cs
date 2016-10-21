@@ -19,6 +19,7 @@ namespace System.Dynamic
     /// If a method is not overridden then the DynamicObject does not directly support that behavior and 
     /// the call site will determine how the binding should be performed.
     /// </summary>
+    [Serializable]
     public class DynamicObject : IDynamicMetaObjectProvider
     {
         /// <summary>

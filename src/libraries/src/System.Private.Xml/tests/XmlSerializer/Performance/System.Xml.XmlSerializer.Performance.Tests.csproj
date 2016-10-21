@@ -6,11 +6,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>System.Xml.XmlSerializer.Performance.Tests</RootNamespace>
     <AssemblyName>System.Xml.XmlSerializer.Performance.Tests</AssemblyName>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(UseContractReferences)' == 'true'" >
-    <ProjectJson>ContractReferences/project.json</ProjectJson>
-    <ProjectLockJson>ContractReferences/project.lock.json</ProjectLockJson>
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\..\..\System.Runtime.Serialization.Xml\tests\Utils.cs" />
@@ -21,15 +17,10 @@
     <Compile Include="XsPerformanceTest.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseContractReferences)' == ''" >
-    <ProjectReference Include="..\..\..\..\System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj">
-      <Project>{6B4C1660-D158-4820-BE1C-D7A29CEBEC9B}</Project>
-      <Name>System.Private.DataContractSerialization</Name>
-      <KeepProjectReference>true</KeepProjectReference>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\src\System.Private.Xml.csproj" />
-    <ProjectReference Include="..\..\..\..\System.Private.Xml.Linq\src\System.Private.Xml.Linq.csproj" />
-    <ProjectReference Include="..\..\..\..\System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj" />
-    <ProjectReference Include="..\..\..\..\System.Xml.XDocument\src\System.Xml.XDocument.csproj" />
+    <ProjectReference Include="..\..\..\..\System.Private.Xml.Linq\pkg\System.Private.Xml.Linq.pkgproj" />
+    <ProjectReference Include="..\..\..\..\System.Xml.ReaderWriter\pkg\System.Xml.ReaderWriter.pkgproj" />
+    <ProjectReference Include="..\..\..\..\System.Xml.XDocument\pkg\System.Xml.XDocument.pkgproj" />
+    <ProjectReference Include="..\..\..\..\System.Xml.XmlSerializer\pkg\System.Xml.XmlSerializer.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace System.Net
 {
     [Serializable]
-    public abstract class WebRequest : ISerializable
+    public abstract class WebRequest :  MarshalByRefObject, ISerializable
     {
         internal class WebRequestPrefixElement
         {

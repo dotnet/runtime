@@ -147,6 +147,8 @@
     <Compile Include="TimeZoneInfoTests.netstandard1.7.cs" />
     <Compile Include="TimeZoneNotFoundExceptionTests.netstandard1.7.cs" />
     <Compile Include="VersionTests.netstandard1.7.cs" />
+    <Compile Include="System\ComponentModel\DefaultValueAttributeTests.netstandard1.7.cs" />
+    <Compile Include="System\ComponentModel\EditorBrowsableAttributeTests.netstandard1.7.cs" />
     <Compile Include="System\Reflection\AssemblyTests.cs" />
     <Compile Include="System\Reflection\AssemblyNameTests.cs" />
     <Compile Include="System\Reflection\ConstructorInfoTests.cs" />

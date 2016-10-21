@@ -7,7 +7,7 @@
     <ProjectGuid>{04C5492C-FA54-4F93-8698-44B8BB7C72E0}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Xml.RW.FactoryReader.Tests</AssemblyName>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
     <RootNamespace>XmlReaderTest</RootNamespace>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
@@ -28,6 +28,7 @@
     <ProjectReference Include="$(CommonTestPath)\System\Xml\ModuleCore\ModuleCore.csproj" />
     <ProjectReference Include="$(CommonTestPath)\System\Xml\XmlCoreTest\XmlCoreTest.csproj" />
     <ProjectReference Include="..\..\XmlReaderLib\System.Xml.RW.XmlReaderLib.csproj" />
+    <ProjectReference Include="..\..\..\..\System.Xml.ReaderWriter\pkg\System.Xml.ReaderWriter.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

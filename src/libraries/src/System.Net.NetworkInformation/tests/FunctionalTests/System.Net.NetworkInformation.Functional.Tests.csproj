@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
-  <PropertyGroup>
-    <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
-  </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -11,7 +8,7 @@
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ResourcesSourceOutputDirectory>../../src/Resources/</ResourcesSourceOutputDirectory>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -52,7 +49,7 @@
     <Compile Include="IPInterfacePropertiesTest_Windows.cs" />
     <Compile Include="MiscParsingTests.cs" />
     <Compile Include="MockMapTcpState.cs" />
-    <Compile Include="NetworkChangeTest.cs" />
+    <Compile Include="NetworkAddressChangedTests.cs" />
     <Compile Include="NetworkInterfaceBasicTest.cs" />
     <Compile Include="PhysicalAddressTest.cs" />
     <Compile Include="ConnectionsParsingTests.cs" />
@@ -79,6 +76,10 @@
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\tests\System\PlatformDetection.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
+    <Compile Include="NetworkAvailabilityChangedTests.cs" />
+    <Compile Include="NetworkInterfaceIPv4Statistics.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\pkg\System.Net.NetworkInformation.pkgproj">

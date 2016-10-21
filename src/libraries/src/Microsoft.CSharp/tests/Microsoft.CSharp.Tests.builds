@@ -5,6 +5,11 @@
     <Project Include="Microsoft.CSharp.Tests.csproj" />
     <Project Include="Microsoft.CSharp.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>net463</TestTFMs>
+    </Project>
+    <Project Include="Microsoft.CSharp.Tests.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netstandard1.3</TargetGroup>
       <TestTFMs>netcore50;net46</TestTFMs>
     </Project>
   </ItemGroup>

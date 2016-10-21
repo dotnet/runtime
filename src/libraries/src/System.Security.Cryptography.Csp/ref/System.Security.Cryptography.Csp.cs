@@ -49,6 +49,17 @@ namespace System.Security.Cryptography
         UseNonExportableKey = 4,
         UseUserProtectedKey = 32,
     }
+    [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+    public sealed partial class DESCryptoServiceProvider : System.Security.Cryptography.DES
+    {
+        public DESCryptoServiceProvider() { }
+        public override System.Security.Cryptography.ICryptoTransform CreateDecryptor() { return default(System.Security.Cryptography.ICryptoTransform); }
+        public override System.Security.Cryptography.ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] rgbIV) { return default(System.Security.Cryptography.ICryptoTransform); }
+        public override System.Security.Cryptography.ICryptoTransform CreateEncryptor() { return default(System.Security.Cryptography.ICryptoTransform); }
+        public override System.Security.Cryptography.ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV) { return default(System.Security.Cryptography.ICryptoTransform); }
+        public override void GenerateIV() { }
+        public override void GenerateKey() { }
+    }
     public sealed partial class DSACryptoServiceProvider : System.Security.Cryptography.DSA, System.Security.Cryptography.ICspAsymmetricAlgorithm
     {
         public DSACryptoServiceProvider() { }
@@ -87,6 +98,17 @@ namespace System.Security.Cryptography
     {
         Exchange = 1,
         Signature = 2,
+    }
+    [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+    public sealed partial class RC2CryptoServiceProvider : System.Security.Cryptography.RC2
+    {
+        public RC2CryptoServiceProvider() { }
+        public override int EffectiveKeySize { get { return default(int); } set { } }
+        public bool UseSalt { get { return default(bool); } set { } }
+        public override System.Security.Cryptography.ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] rgbIV) { return default(System.Security.Cryptography.ICryptoTransform); }
+        public override System.Security.Cryptography.ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV) { return default(System.Security.Cryptography.ICryptoTransform); }
+        public override void GenerateIV() { }
+        public override void GenerateKey() { }
     }
     public sealed partial class RSACryptoServiceProvider : System.Security.Cryptography.RSA, System.Security.Cryptography.ICspAsymmetricAlgorithm
     {

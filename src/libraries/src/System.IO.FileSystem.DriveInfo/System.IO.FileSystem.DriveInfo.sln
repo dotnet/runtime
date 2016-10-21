@@ -1,14 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.22823.1
+VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.FileSystem.DriveInfo", "src\System.IO.FileSystem.DriveInfo.csproj", "{29C14AD7-DC03-45DC-897D-8DACC762707E}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{FBCF7C99-4809-411D-BE8A-8E3E0DD17B7E}"
-	ProjectSection(SolutionItems) = preProject
-		..\.nuget\packages.Windows_NT.config = ..\.nuget\packages.Windows_NT.config
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.FileSystem.DriveInfo.Tests", "tests\System.IO.FileSystem.DriveInfo.Tests.csproj", "{7D9E5F2F-5677-40FC-AD04-FA7D603E4806}"
 EndProject
@@ -29,7 +24,9 @@ Global
 		{29C14AD7-DC03-45DC-897D-8DACC762707E}.Windows_Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
 		{29C14AD7-DC03-45DC-897D-8DACC762707E}.Windows_Release|Any CPU.Build.0 = Windows_Release|Any CPU
 		{7D9E5F2F-5677-40FC-AD04-FA7D603E4806}.Unix_Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7D9E5F2F-5677-40FC-AD04-FA7D603E4806}.Unix_Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7D9E5F2F-5677-40FC-AD04-FA7D603E4806}.Unix_Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7D9E5F2F-5677-40FC-AD04-FA7D603E4806}.Unix_Release|Any CPU.Build.0 = Release|Any CPU
 		{7D9E5F2F-5677-40FC-AD04-FA7D603E4806}.Windows_Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{7D9E5F2F-5677-40FC-AD04-FA7D603E4806}.Windows_Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7D9E5F2F-5677-40FC-AD04-FA7D603E4806}.Windows_Release|Any CPU.ActiveCfg = Release|Any CPU

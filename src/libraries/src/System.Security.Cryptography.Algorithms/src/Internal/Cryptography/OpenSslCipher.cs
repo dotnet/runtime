@@ -14,14 +14,14 @@ namespace Internal.Cryptography
         private readonly bool _encrypting;
         private SafeEvpCipherCtxHandle _ctx;
 
-        public OpenSslCipher(IntPtr algorithm, CipherMode cipherMode, int blockSizeInBytes, byte[] key, byte[] iv, bool encrypting)
+        public OpenSslCipher(IntPtr algorithm, CipherMode cipherMode, int blockSizeInBytes, byte[] key, int effectiveKeyLength, byte[] iv, bool encrypting)
             : base(cipherMode.GetCipherIv(iv), blockSizeInBytes)
         {
             Debug.Assert(algorithm != IntPtr.Zero);
 
             _encrypting = encrypting;
 
-            OpenKey(algorithm, key);
+            OpenKey(algorithm, key, effectiveKeyLength);
         }
 
         protected override void Dispose(bool disposing)
@@ -117,11 +117,13 @@ namespace Internal.Cryptography
             return bytesWritten;
         }
 
-        private void OpenKey(IntPtr algorithm, byte[] key)
+        private void OpenKey(IntPtr algorithm, byte[] key, int effectiveKeyLength)
         {
             _ctx = Interop.Crypto.EvpCipherCreate(
                 algorithm,
                 key,
+                key.Length * 8,
+                effectiveKeyLength,
                 IV,
                 _encrypting ? 1 : 0);
 

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
@@ -26,20 +26,23 @@
     <Compile Include="$(CommonTestPath)\System\IO\PositionValueStream.cs">
       <Link>CommonTest\System\IO\PositionValueStream.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\RandomDataGenerator.cs">
+      <Link>CommonTest\System\RandomDataGenerator.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherTests.Data.cs">
-      <Link>CommonTest\AlgorithmImplementations\AES\AesCipherTests.Data.cs</Link>
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherTests.Data.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherTests.cs">
-      <Link>CommonTest\AlgorithmImplementations\AES\AesCipherTests.cs</Link>
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherTests.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesContractTests.cs">
-      <Link>CommonTest\AlgorithmImplementations\AES\AesContractTests.cs</Link>
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\AES\AesContractTests.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesCornerTests.cs">
-      <Link>CommonTest\AlgorithmImplementations\AES\AesCornerTests.cs</Link>
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\AES\AesCornerTests.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesModeTests.cs">
-      <Link>CommonTest\AlgorithmImplementations\AES\AesModeTests.cs</Link>
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\AES\AesModeTests.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\ByteUtils.cs">
       <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
@@ -48,10 +51,10 @@
       <Link>CommonTest\System\Security\Cryptography\CryptoUtils.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\DecryptorReusability.cs">
-      <Link>CommonTest\AlgorithmImplementations\AES\DecryptorReusability.cs</Link>
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\AES\DecryptorReusability.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesFactory.cs">
-      <Link>CommonTest\AlgorithmImplementations\AES\AesFactory.cs</Link>
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\AES\AesFactory.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\EC\CurveDef.cs">
       <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\EC\CurveDef.cs</Link>
@@ -96,18 +99,16 @@
       <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\TestData.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESCipherTests.cs">
-      <Link>CommonTest\AlgorithmImplementations\TripleDES\TripleDESCipherTests.cs</Link>
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESCipherTests.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESFactory.cs">
-      <Link>CommonTest\AlgorithmImplementations\TripleDES\TripleDESFactory.cs</Link>
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESFactory.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESReusabilityTests.cs">
-      <Link>CommonTest\AlgorithmImplementations\TripleDES\TripleDESReusabilityTests.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)\System\RandomDataGenerator.cs">
-      <Link>CommonTest\System\RandomDataGenerator.cs</Link>
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESReusabilityTests.cs</Link>
     </Compile>
     <Compile Include="AesProvider.cs" />
+    <Compile Include="AesTests.cs" />
     <Compile Include="DefaultECDsaProvider.cs" />
     <Compile Include="DefaultRSAProvider.cs" />
     <Compile Include="HashAlgorithmTest.cs" />
@@ -134,13 +135,26 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'==''">
     <Compile Include="AsymmetricSignatureFormatterTests.cs" />
+    <Compile Include="DefaultDSAProvider.cs" />
+    <Compile Include="DESProvider.cs" />
+    <Compile Include="DESTests.cs" />
     <Compile Include="DSASignatureFormatterTests.cs" />
     <Compile Include="ECDiffieHellmanPublicKeyTests.cs" />
+    <Compile Include="RC2Provider.cs" />
+    <Compile Include="RC2Tests.cs" />
     <Compile Include="RSAKeyExchangeFormatterTests.cs" />
     <Compile Include="RSASignatureFormatterTests.cs" />
-    <Compile Include="DefaultDSAProvider.cs" />
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AsymmetricSignatureFormatter.cs">
       <Link>CommonTest\System\Security\Cryptography\AsymmetricSignatureFormatter.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\DES\DESCipherTests.cs">
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\DES\DESCipherTests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\DES\DESFactory.cs">
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\DES\DESFactory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\DES\DesTests.cs">
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\DES\DesTests.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAFactory.cs">
       <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAFactory.cs</Link>
@@ -159,6 +173,15 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\DSA\DSATestData.cs">
       <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSATestData.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\RC2\RC2CipherTests.cs">
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\RC2\RC2CipherTests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\RC2\RC2Factory.cs">
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\RC2\RC2Factory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\RC2\RC2Tests.cs">
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\RC2\RC2Tests.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\RSA\RSAKeyExchangeFormatter.cs">
       <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\RSAKeyExchangeFormatter.cs</Link>

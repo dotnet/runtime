@@ -10,7 +10,7 @@ using System.Diagnostics;
 
 namespace System.IO
 {
-    internal partial class Win32FileStream
+    public partial class FileStream : Stream
     {
         // This is an internal object extending TaskCompletionSource with fields
         // for all of the relevant data necessary to complete the IO operation.
@@ -26,7 +26,7 @@ namespace System.IO
 
             private static Action<object> s_cancelCallback;
 
-            private readonly Win32FileStream _stream;
+            private readonly FileStream _stream;
             private readonly int _numBufferedBytes;
             private readonly CancellationToken _cancellationToken;
             private CancellationTokenRegistration _cancellationRegistration;
@@ -37,7 +37,7 @@ namespace System.IO
             private long _result; // Using long since this needs to be used in Interlocked APIs
 
             // Using RunContinuationsAsynchronously for compat reasons (old API used Task.Factory.StartNew for continuations)
-            internal FileStreamCompletionSource(Win32FileStream stream, int numBufferedBytes, byte[] bytes, CancellationToken cancellationToken)
+            internal FileStreamCompletionSource(FileStream stream, int numBufferedBytes, byte[] bytes, CancellationToken cancellationToken)
                 : base(TaskCreationOptions.RunContinuationsAsynchronously)
             {
                 _numBufferedBytes = numBufferedBytes;
@@ -51,8 +51,8 @@ namespace System.IO
                 // where the user-provided buffer is smaller than the FileStream's buffer (such that the FileStream's 
                 // buffer is used) and where operations on the FileStream are not being performed concurrently.
                 _overlapped = ReferenceEquals(bytes, _stream._buffer) && Interlocked.CompareExchange(ref _stream._currentOverlappedOwner, this, null) == null ?
-                    _stream._handle.ThreadPoolBinding.AllocateNativeOverlapped(_stream._preallocatedOverlapped) :
-                    _stream._handle.ThreadPoolBinding.AllocateNativeOverlapped(s_ioCallback, this, bytes);
+                    _stream._fileHandle.ThreadPoolBinding.AllocateNativeOverlapped(_stream._preallocatedOverlapped) :
+                    _stream._fileHandle.ThreadPoolBinding.AllocateNativeOverlapped(s_ioCallback, this, bytes);
                 Debug.Assert(_overlapped != null, "AllocateNativeOverlapped returned null");
             }
 
@@ -114,7 +114,7 @@ namespace System.IO
                 // (this is why we disposed the registration above).
                 if (_overlapped != null)
                 {
-                    _stream._handle.ThreadPoolBinding.FreeNativeOverlapped(_overlapped);
+                    _stream._fileHandle.ThreadPoolBinding.FreeNativeOverlapped(_overlapped);
                     _overlapped = null;
                 }
 
@@ -134,7 +134,7 @@ namespace System.IO
                 // be directly the FileStreamCompletion that's completing (in the case where the preallocated
                 // overlapped was already in use by another operation).
                 object state = ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped);
-                Win32FileStream fs = state as Win32FileStream;
+                FileStream fs = state as FileStream;
                 FileStreamCompletionSource completionSource = fs != null ? 
                     fs._currentOverlappedOwner : 
                     (FileStreamCompletionSource)state;
@@ -145,7 +145,7 @@ namespace System.IO
                 // an async read on a pipe to be issued and then the pipe is closed, 
                 // returning this error.  This may very well be necessary.
                 ulong packedResult;
-                if (errorCode != 0 && errorCode != Win32FileStream.ERROR_BROKEN_PIPE && errorCode != Win32FileStream.ERROR_NO_DATA)
+                if (errorCode != 0 && errorCode != ERROR_BROKEN_PIPE && errorCode != ERROR_NO_DATA)
                 {
                     packedResult = ((ulong)ResultError | errorCode);
                 }
@@ -203,8 +203,8 @@ namespace System.IO
                 Debug.Assert(completionSource._overlapped != null && !completionSource.Task.IsCompleted, "IO should not have completed yet");
 
                 // If the handle is still valid, attempt to cancel the IO
-                if (!completionSource._stream._handle.IsInvalid && 
-                    !Interop.mincore.CancelIoEx(completionSource._stream._handle, completionSource._overlapped))
+                if (!completionSource._stream._fileHandle.IsInvalid && 
+                    !Interop.mincore.CancelIoEx(completionSource._stream._fileHandle, completionSource._overlapped))
                 {
                     int errorCode = Marshal.GetLastWin32Error();
 
