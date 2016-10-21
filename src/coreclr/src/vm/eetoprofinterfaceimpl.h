@@ -173,10 +173,14 @@ public:
 
     HRESULT DynamicMethodJITCompilationStarted(
         FunctionID  functionId,
-        LPCBYTE     ilHeader);
+        BOOL        fIsSafeToBlock,
+        LPCBYTE     pILHeader,
+        ULONG       cbILHeader);
 
     HRESULT DynamicMethodJITCompilationFinished(
-        FunctionID functionId);
+        FunctionID  functionId,
+        HRESULT     hrStatus,
+        BOOL        fIsSafeToBlock);
     
     HRESULT JITCachedFunctionSearchStarted(
         /* [in] */  FunctionID functionId,
