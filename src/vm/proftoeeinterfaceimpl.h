@@ -133,7 +133,7 @@ typedef struct _PROFILER_STACK_WALK_DATA PROFILER_STACK_WALK_DATA;
 // from the profiler implementation.  The profiler will call back on the v-table
 // to get at EE internals as required.
 
-class ProfToEEInterfaceImpl : public ICorProfilerInfo7
+class ProfToEEInterfaceImpl : public ICorProfilerInfo8
 {
 public:
 
@@ -554,6 +554,28 @@ public:
         DWORD* pCountSymbolBytesRead);
 
     // end ICorProfilerInfo7
+
+    // begin ICorProfilerInfo8
+
+    COM_METHOD IsFunctionDynamic(
+        FunctionID functionId,
+        BOOL *isDynamic);
+
+    COM_METHOD GetFunctionFromIP3(
+        LPCBYTE      ip,          // in
+        FunctionID * pFunctionId, // out
+        ReJITID *    pReJitId);   // out
+
+    COM_METHOD GetDynamicFunctionInfo(
+        FunctionID functionId,
+        ModuleID* moduleId,
+        PCCOR_SIGNATURE* ppvSig,
+        ULONG* pbSig,
+        ULONG cchName,
+        ULONG *pcchName,
+        WCHAR wszName[]);
+
+    // end ICorProfilerInfo8
 
 protected:
 
