@@ -244,6 +244,11 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
             nextNode = DecomposeShift(use);
             break;
 
+        case GT_ROL:
+        case GT_ROR:
+            nextNode = DecomposeRotate(use);
+            break;
+
         case GT_LOCKADD:
         case GT_XADD:
         case GT_XCHG:
@@ -1291,6 +1296,135 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
         use.ReplaceWith(m_compiler, call);
         return call;
     }
+}
+
+//------------------------------------------------------------------------
+// DecomposeRotate: Decompose GT_ROL and GT_ROR with constant shift amounts. We can
+// inspect the rotate amount and decompose to the appropriate node types, generating
+// a shld/shld pattern for GT_ROL, a shrd/shrd pattern for GT_ROR, for most rotate
+// amounts.
+//
+// Arguments:
+//    use - the LIR::Use object for the def that needs to be decomposed.
+//
+// Return Value:
+//    The next node to process.
+//
+GenTree* DecomposeLongs::DecomposeRotate(LIR::Use& use)
+{
+    GenTree* tree       = use.Def();
+    GenTree* gtLong     = tree->gtGetOp1();
+    GenTree* rotateByOp = tree->gtGetOp2();
+
+    genTreeOps oper = tree->OperGet();
+
+    assert((oper == GT_ROL) || (oper == GT_ROR));
+    assert(rotateByOp->IsCnsIntOrI());
+
+    // For longs, we need to change rols into two GT_LSH_HIs and rors into two GT_RSH_LOs
+    // so we will get:
+    //
+    // shld lo, hi, rotateAmount
+    // shld hi, loCopy, rotateAmount
+    //
+    // or:
+    //
+    // shrd lo, hi, rotateAmount
+    // shrd hi, loCopy, rotateAmount
+
+    if (oper == GT_ROL)
+    {
+        oper = GT_LSH_HI;
+    }
+    else
+    {
+        oper = GT_RSH_LO;
+    }
+
+    unsigned int count = rotateByOp->gtIntCon.gtIconVal;
+    Range().Remove(rotateByOp);
+
+    // Make sure the rotate amount is between 0 and 63.
+    assert((count < 64) && (count != 0));
+
+    GenTree* loOp1;
+    GenTree* hiOp1;
+
+    if (count > 32)
+    {
+        // If count > 32, we swap hi and lo, and subtract 32 from count
+        hiOp1 = gtLong->gtGetOp1();
+        loOp1 = gtLong->gtGetOp2();
+        count -= 32;
+    }
+    else
+    {
+        loOp1 = gtLong->gtGetOp1();
+        hiOp1 = gtLong->gtGetOp2();
+    }
+
+    GenTree* loResult;
+    GenTree* hiResult;
+
+    if (count == 32)
+    {
+        // If the rotate amount is 32, then swap hi and lo
+        gtLong->gtOp.gtOp1 = hiOp1;
+        gtLong->gtOp.gtOp2 = loOp1;
+
+        GenTree* next = tree->gtNext;
+        // Remove tree and don't do anything else.
+        Range().Remove(tree);
+        use.ReplaceWith(m_compiler, gtLong);
+        return next;
+    }
+    else
+    {
+        Range().Remove(gtLong);
+        loOp1 = RepresentOpAsLocalVar(loOp1, gtLong, &gtLong->gtOp.gtOp1);
+        hiOp1 = RepresentOpAsLocalVar(hiOp1, gtLong, &gtLong->gtOp.gtOp2);
+
+        unsigned loOp1LclNum = loOp1->AsLclVarCommon()->gtLclNum;
+        unsigned hiOp1LclNum = hiOp1->AsLclVarCommon()->gtLclNum;
+
+        if (count > 32)
+        {
+            Range().Remove(hiOp1);
+            Range().Remove(loOp1);
+        }
+        else
+        {
+            Range().Remove(loOp1);
+            Range().Remove(hiOp1);
+        }
+
+        GenTree* rotateByHi = m_compiler->gtNewIconNode(count, TYP_INT);
+        GenTree* rotateByLo = m_compiler->gtNewIconNode(count, TYP_INT);
+
+        // Create a GT_LONG that contains loOp1 and hiCopy. This will be used in codegen to
+        // generate the shld instruction
+        GenTree* hiCopy = m_compiler->gtNewLclvNode(hiOp1LclNum, TYP_INT);
+        GenTree* loOp   = new (m_compiler, GT_LONG) GenTreeOp(GT_LONG, TYP_LONG, hiCopy, loOp1);
+        loResult        = m_compiler->gtNewOperNode(oper, TYP_INT, loOp, rotateByLo);
+
+        // Create a GT_LONG that contains loCopy and hiOp1. This will be used in codegen to
+        // generate the shld instruction
+        GenTree* loCopy = m_compiler->gtNewLclvNode(loOp1LclNum, TYP_INT);
+        GenTree* hiOp   = new (m_compiler, GT_LONG) GenTreeOp(GT_LONG, TYP_LONG, loCopy, hiOp1);
+        hiResult        = m_compiler->gtNewOperNode(oper, TYP_INT, hiOp, rotateByHi);
+
+        m_compiler->lvaIncRefCnts(loCopy);
+        m_compiler->lvaIncRefCnts(hiCopy);
+
+        Range().InsertBefore(tree, hiCopy, loOp1, loOp);
+        Range().InsertBefore(tree, rotateByLo, loResult);
+        Range().InsertBefore(tree, loCopy, hiOp1, hiOp);
+        Range().InsertBefore(tree, rotateByHi, hiResult);
+    }
+
+    Range().Remove(tree);
+
+    return FinalizeDecomposition(use, loResult, hiResult, hiResult);
 }
 
 //------------------------------------------------------------------------
