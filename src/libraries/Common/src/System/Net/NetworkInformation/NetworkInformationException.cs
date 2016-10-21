@@ -44,7 +44,7 @@ namespace System.Net.NetworkInformation
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public int ErrorCode
+        public override int ErrorCode
         {
             // The base class returns the HResult with this property.
             // We need the Win32 error code, hence the override.
