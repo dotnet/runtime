@@ -524,7 +524,9 @@ namespace System.Linq.Expressions.Interpreter
             if (liftedToNull)
             {
                 // Boxed enums can be unboxed as their underlying types:
-                switch (System.Dynamic.Utils.TypeExtensions.GetTypeCode(type.GetTypeInfo().IsEnum ? Enum.GetUnderlyingType(type) : TypeUtils.GetNonNullableType(type)))
+                Type underlyingType = type.GetTypeInfo().IsEnum ? Enum.GetUnderlyingType(type) : TypeUtils.GetNonNullableType(type);
+
+                switch (underlyingType.GetTypeCode())
                 {
                     case TypeCode.Boolean: return s_booleanLiftedToNull ?? (s_booleanLiftedToNull = new NotEqualBooleanLiftedToNull());
                     case TypeCode.SByte: return s_SByteLiftedToNull ?? (s_SByteLiftedToNull = new NotEqualSByteLiftedToNull());
@@ -556,7 +558,9 @@ namespace System.Linq.Expressions.Interpreter
             else
             {
                 // Boxed enums can be unboxed as their underlying types:
-                switch (System.Dynamic.Utils.TypeExtensions.GetTypeCode(type.GetTypeInfo().IsEnum ? Enum.GetUnderlyingType(type) : TypeUtils.GetNonNullableType(type)))
+                Type underlyingType = type.GetTypeInfo().IsEnum ? Enum.GetUnderlyingType(type) : TypeUtils.GetNonNullableType(type);
+
+                switch (underlyingType.GetTypeCode())
                 {
                     case TypeCode.Boolean: return s_boolean ?? (s_boolean = new NotEqualBoolean());
                     case TypeCode.SByte: return s_SByte ?? (s_SByte = new NotEqualSByte());

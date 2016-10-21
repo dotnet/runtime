@@ -157,7 +157,7 @@ namespace System.Linq.Expressions.Interpreter
         public static Instruction Create(Type type)
         {
             Debug.Assert(!type.GetTypeInfo().IsEnum);
-            switch (System.Dynamic.Utils.TypeExtensions.GetTypeCode(TypeUtils.GetNonNullableType(type)))
+            switch (TypeUtils.GetNonNullableType(type).GetTypeCode())
             {
                 case TypeCode.Byte: return s_byte ?? (s_byte = new OnesComplementByte());
                 case TypeCode.SByte: return s_sbyte ?? (s_sbyte = new OnesComplementSByte());
