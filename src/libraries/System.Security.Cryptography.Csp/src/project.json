@@ -14,6 +14,7 @@
         "System.Runtime.InteropServices": "4.4.0-beta-24626-02",
         "System.Security.Cryptography.Algorithms": "4.4.0-beta-24626-02",
         "System.Security.Cryptography.Encoding": "4.4.0-beta-24626-02",
+        "System.Security.Cryptography.Primitives": "4.4.0-beta-24626-02",        
         "System.Text.Encoding": "4.4.0-beta-24626-02",
         "System.Threading": "4.4.0-beta-24626-02",
         "System.Threading.Tasks": "4.4.0-beta-24626-02"
