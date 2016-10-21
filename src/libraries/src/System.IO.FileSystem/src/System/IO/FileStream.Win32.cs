@@ -43,41 +43,31 @@ namespace System.IO
     public partial class FileStream : Stream
     {
         private bool _canSeek;
-        private bool _isPipe;     // Whether to disable async buffering code.
-
-        private long _appendStart;// When appending, prevent overwriting file.
+        private bool _isPipe;      // Whether to disable async buffering code.
+        private long _appendStart; // When appending, prevent overwriting file.
 
         private static unsafe IOCompletionCallback s_ioCallback = FileStreamCompletionSource.IOCallback;
 
-        private Task<int> _lastSynchronouslyCompletedTask = null; // cached task for read ops that complete synchronously
-        private Task _activeBufferOperation = null;               // tracks in-progress async ops using the buffer
-        private PreAllocatedOverlapped _preallocatedOverlapped;   // optimization for async ops to avoid per-op allocations
+        private Task<int> _lastSynchronouslyCompletedTask = null;   // cached task for read ops that complete synchronously
+        private Task _activeBufferOperation = null;                 // tracks in-progress async ops using the buffer
+        private PreAllocatedOverlapped _preallocatedOverlapped;     // optimization for async ops to avoid per-op allocations
         private FileStreamCompletionSource _currentOverlappedOwner; // async op currently using the preallocated overlapped
 
-        private void InitInternal(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
+        private SafeFileHandle OpenHandle(FileMode mode, FileShare share, FileOptions options)
         {
             Interop.mincore.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(share);
 
-            _exposedHandle = false;
-
             int fAccess =
-                ((access & FileAccess.Read) == FileAccess.Read ? GENERIC_READ : 0) |
-                ((access & FileAccess.Write) == FileAccess.Write ? GENERIC_WRITE : 0);
-
-            _path = path;
+                ((_access & FileAccess.Read) == FileAccess.Read ? GENERIC_READ : 0) |
+                ((_access & FileAccess.Write) == FileAccess.Write ? GENERIC_WRITE : 0);
 
             // Our Inheritable bit was stolen from Windows, but should be set in
             // the security attributes class.  Don't leave this bit set.
             share &= ~FileShare.Inheritable;
 
-            bool seekToEnd = (mode == FileMode.Append);
-
             // Must use a valid Win32 constant here...
             if (mode == FileMode.Append)
                 mode = FileMode.OpenOrCreate;
-
-            if ((options & FileOptions.Asynchronous) != 0)
-                _useAsyncIO = true;
 
             int flagsAndAttributes = (int)options;
 
@@ -90,10 +80,10 @@ namespace System.IO
             uint oldMode = Interop.mincore.SetErrorMode(Interop.mincore.SEM_FAILCRITICALERRORS);
             try
             {
-                _fileHandle = Interop.mincore.SafeCreateFile(path, fAccess, share, ref secAttrs, mode, flagsAndAttributes, IntPtr.Zero);
-                _fileHandle.IsAsync = _useAsyncIO;
+                SafeFileHandle fileHandle = Interop.mincore.SafeCreateFile(_path, fAccess, share, ref secAttrs, mode, flagsAndAttributes, IntPtr.Zero);
+                fileHandle.IsAsync = _useAsyncIO;
 
-                if (_fileHandle.IsInvalid)
+                if (fileHandle.IsInvalid)
                 {
                     // Return a meaningful exception with the full path.
 
@@ -102,17 +92,22 @@ namespace System.IO
                     // probably be consistent w/ every other directory.
                     int errorCode = Marshal.GetLastWin32Error();
 
-                    if (errorCode == Interop.mincore.Errors.ERROR_PATH_NOT_FOUND && path.Equals(Directory.InternalGetDirectoryRoot(path)))
+                    if (errorCode == Interop.mincore.Errors.ERROR_PATH_NOT_FOUND && _path.Equals(Directory.InternalGetDirectoryRoot(_path)))
                         errorCode = Interop.mincore.Errors.ERROR_ACCESS_DENIED;
 
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
                 }
+
+                return fileHandle;
             }
             finally
             {
                 Interop.mincore.SetErrorMode(oldMode);
             }
+        }
 
+        private void Init(FileMode mode, FileShare share)
+        {
             // Disallow access to all non-file devices from the Win32FileStream
             // constructors that take a String.  Everyone else can call 
             // CreateFile themselves then use the constructor that takes an 
@@ -153,17 +148,10 @@ namespace System.IO
                 }
             }
 
-            _access = access;
             _canSeek = true;
-            _isPipe = false;
-            _filePosition = 0;
-            _bufferLength = bufferSize;
-            _readPos = 0;
-            _readLength = 0;
-            _writePos = 0;
 
             // For Append mode...
-            if (seekToEnd)
+            if (mode == FileMode.Append)
             {
                 _appendStart = SeekCore(0, SeekOrigin.End);
             }
@@ -173,22 +161,12 @@ namespace System.IO
             }
         }
 
-        private void InitFromHandleInternal(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
+        private void InitFromHandle(SafeFileHandle handle)
         {
-            _fileHandle = handle;
-            _exposedHandle = true;
-
             int handleType = Interop.mincore.GetFileType(_fileHandle);
             Debug.Assert(handleType == Interop.mincore.FileTypes.FILE_TYPE_DISK || handleType == Interop.mincore.FileTypes.FILE_TYPE_PIPE || handleType == Interop.mincore.FileTypes.FILE_TYPE_CHAR, "FileStream was passed an unknown file type!");
 
-            _useAsyncIO = isAsync;
-            _access = access;
             _canSeek = handleType == Interop.mincore.FileTypes.FILE_TYPE_DISK;
-            _bufferLength = bufferSize;
-            _readPos = 0;
-            _readLength = 0;
-            _writePos = 0;
-            _path = null;
             _isPipe = handleType == Interop.mincore.FileTypes.FILE_TYPE_PIPE;
 
             // This is necessary for async IO using IO Completion ports via our 
@@ -290,43 +268,22 @@ namespace System.IO
 
         public override bool CanSeek
         {
-            get
-            { return _canSeek; }
+            get { return _canSeek; }
         }
 
-        public virtual bool IsAsync
+        private long GetLengthInternal()
         {
-            get { return _useAsyncIO; }
-        }
+            Interop.mincore.FILE_STANDARD_INFO info = new Interop.mincore.FILE_STANDARD_INFO();
 
-        public override long Length
-        {
-            get
-            {
-                if (_fileHandle.IsClosed) throw Error.GetFileNotOpen();
-                if (!CanSeek) throw Error.GetSeekNotSupported();
-                Interop.mincore.FILE_STANDARD_INFO info = new Interop.mincore.FILE_STANDARD_INFO();
-
-                if (!Interop.mincore.GetFileInformationByHandleEx(_fileHandle, Interop.mincore.FILE_INFO_BY_HANDLE_CLASS.FileStandardInfo, out info, (uint)Marshal.SizeOf<Interop.mincore.FILE_STANDARD_INFO>()))
-                    throw Win32Marshal.GetExceptionForLastWin32Error();
-                long len = info.EndOfFile;
-                // If we're writing near the end of the file, we must include our
-                // internal buffer in our Length calculation.  Don't flush because
-                // we use the length of the file in our async write method.
-                if (_writePos > 0 && _filePosition + _writePos > len)
-                    len = _writePos + _filePosition;
-                return len;
-            }
-        }
-
-        public virtual string Name
-        {
-            get
-            {
-                if (_path == null)
-                    return SR.IO_UnknownFileName;
-                return _path;
-            }
+            if (!Interop.mincore.GetFileInformationByHandleEx(_fileHandle, Interop.mincore.FILE_INFO_BY_HANDLE_CLASS.FileStandardInfo, out info, (uint)Marshal.SizeOf<Interop.mincore.FILE_STANDARD_INFO>()))
+                throw Win32Marshal.GetExceptionForLastWin32Error();
+            long len = info.EndOfFile;
+            // If we're writing near the end of the file, we must include our
+            // internal buffer in our Length calculation.  Don't flush because
+            // we use the length of the file in our async write method.
+            if (_writePos > 0 && _filePosition + _writePos > len)
+                len = _writePos + _filePosition;
+            return len;
         }
 
         public override long Position
@@ -495,33 +452,10 @@ namespace System.IO
             _writePos = 0;
         }
 
-        public virtual SafeFileHandle SafeFileHandle
-        {
-            get
-            {
-                Flush();
-                // Explicitly dump any buffered data, since the user could move our
-                // position or write to the file.
-                _readPos = 0;
-                _readLength = 0;
-                _writePos = 0;
-                _exposedHandle = true;
-
-                return _fileHandle;
-            }
-        }
-
         internal virtual bool IsClosed => _fileHandle.IsClosed;
 
-        public override void SetLength(long value)
+        private void SetLengthInternal(long value)
         {
-            if (value < 0)
-                throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
-
-            if (_fileHandle.IsClosed) throw Error.GetFileNotOpen();
-            if (!CanSeek) throw Error.GetSeekNotSupported();
-            if (!CanWrite) throw Error.GetWriteNotSupported();
-
             // Handle buffering updates.
             if (_writePos > 0)
             {
@@ -573,18 +507,10 @@ namespace System.IO
 
         public override int Read(byte[] array, int offset, int count)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array), SR.ArgumentNull_Buffer);
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (array.Length - offset < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen /*, no good single parameter name to pass*/);
+            ValidateReadWriteArgs(array, offset, count);
 
-            if (_fileHandle.IsClosed) throw Error.GetFileNotOpen();
-
-            Debug.Assert((_readPos == 0 && _readLength == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLength), "We're either reading or writing, but not both.");
+            Debug.Assert((_readPos == 0 && _readLength == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLength),
+                "We're either reading or writing, but not both.");
 
             bool isBlocked = false;
             int n = _readLength - _readPos;
@@ -843,16 +769,7 @@ namespace System.IO
 
         public override void Write(byte[] array, int offset, int count)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array), SR.ArgumentNull_Buffer);
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (array.Length - offset < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen /*, no good single parameter name to pass*/);
-
-            if (_fileHandle.IsClosed) throw Error.GetFileNotOpen();
+            ValidateReadWriteArgs(array, offset, count);
 
             if (_writePos == 0)
             {
@@ -1959,11 +1876,6 @@ namespace System.IO
 
         private void LockInternal(long position, long length)
         {
-            if (_fileHandle.IsClosed)
-            {
-                throw Error.GetFileNotOpen();
-            }
-
             int positionLow = unchecked((int)(position));
             int positionHigh = unchecked((int)(position >> 32));
             int lengthLow = unchecked((int)(length));
@@ -1977,11 +1889,6 @@ namespace System.IO
 
         private void UnlockInternal(long position, long length)
         {
-            if (_fileHandle.IsClosed)
-            {
-                throw Error.GetFileNotOpen();
-            }
-
             int positionLow = unchecked((int)(position));
             int positionHigh = unchecked((int)(position >> 32));
             int lengthLow = unchecked((int)(length));
