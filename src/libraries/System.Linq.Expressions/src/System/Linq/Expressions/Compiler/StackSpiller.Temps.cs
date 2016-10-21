@@ -347,7 +347,7 @@ namespace System.Linq.Expressions.Compiler
         }
 
         [Conditional("DEBUG")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
+        [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         private void VerifyTemps()
         {
             _tm.VerifyTemps();
