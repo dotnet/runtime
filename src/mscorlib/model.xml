@@ -8079,6 +8079,7 @@
       <Member Name="GetMinThreads(System.Int32@,System.Int32@)" />
       <Member Status="ImplRoot" Name="RegisterWaitForSingleObject(System.Threading.WaitHandle,System.Threading.WaitOrTimerCallback,System.Object,System.UInt32,System.Boolean,System.Threading.StackCrawlMark@,System.Boolean)" />
       <Member Status="ImplRoot" Name="RegisterWaitForSingleObjectNative(System.Threading.WaitHandle,System.Object,System.UInt32,System.Boolean,System.Threading.RegisteredWaitHandle,System.Threading.StackCrawlMark@,System.Boolean)" />
+      <Member Name="UnsafeQueueNativeOverlapped(System.Threading.NativeOverlapped*)" />
       <Member Status="ImplRoot" Name="UnsafeQueueCustomWorkItem(System.Threading.IThreadPoolWorkItem,System.Boolean)"/>
       <Member Status="ImplRoot" Name="TryPopCustomWorkItem(System.Threading.IThreadPoolWorkItem)"/>
       <Member Status="ImplRoot" Name="GetQueuedWorkItemsForDebugger"/>
@@ -8109,7 +8110,10 @@
     </Type>
     <Type Name="System.Threading.Overlapped">
       <Member Name="#ctor" />
+      <Member Name="#ctor(System.Int32,System.Int32,System.Int32,System.IAsyncResult)" />
+      <Member Name="#ctor(System.Int32,System.Int32,System.IntPtr,System.IAsyncResult)" />
       <Member MemberType="Property" Name="AsyncResult" />
+      <Member MemberType="Property" Name="EventHandle" />
       <Member MemberType="Property" Name="OffsetLow" />
       <Member MemberType="Property" Name="OffsetHigh" />
       <Member Name="Free(System.Threading.NativeOverlapped*)" />
@@ -9781,7 +9785,6 @@
    </Type>
    <Type Name="System.Diagnostics.Tracing.FrameworkEventSource+Keywords">
       <Member MemberType="Field" Name="Loader" />
-      <Member MemberType="Field" Name="ThreadPool" />
       <Member MemberType="Field" Name="NetClient" />
       <Member MemberType="Field" Name="DynamicTypeUsage" />
       <Member MemberType="Field" Name="ThreadTransfer" />
