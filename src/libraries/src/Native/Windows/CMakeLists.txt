@@ -62,11 +62,9 @@ if ($ENV{__BuildArch} STREQUAL "arm")
       endif()
 endif ()
 
-if(NOT $ENV{__BuildArch} STREQUAL "arm64")
-    # enable control-flow-guard support for native components for non-Arm64 builds
-    add_compile_options(/guard:cf) 
-    set(__LinkArgs "${__LinkArgs} /guard:cf")
-endif ()
+# enable control-flow-guard support for native components
+add_compile_options(/guard:cf) 
+set(__LinkArgs "${__LinkArgs} /guard:cf")
 
 # Statically linked CRT (libcmt[d].lib, libvcruntime[d].lib and libucrt[d].lib) by default. This is done to avoid
 # linking in VCRUNTIME140.DLL for a simplified xcopy experience by reducing the dependency on VC REDIST.
