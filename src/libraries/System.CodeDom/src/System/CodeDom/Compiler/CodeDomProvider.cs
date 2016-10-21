@@ -208,11 +208,6 @@ namespace System.CodeDom.Compiler
         }
 #pragma warning restore 618
 
-        internal static bool TryGetProbableCoreAssemblyFilePath(CompilerParameters parameters, out string coreAssemblyFilePath)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
         private sealed class ConfigurationErrorsException : SystemException
         {
             public ConfigurationErrorsException(string message) : base(message) { }
