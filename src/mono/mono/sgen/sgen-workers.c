@@ -31,6 +31,8 @@ static SgenWorkerCallback worker_init_cb;
  * gracefully finished, so it can restart them.
  */
 static mono_mutex_t finished_lock;
+static volatile gboolean workers_finished;
+static int worker_awakenings;
 
 static SgenSectionGrayQueue workers_distribute_gray_queue;
 static gboolean workers_distribute_gray_queue_inited;
@@ -102,6 +104,7 @@ sgen_workers_ensure_awake (void)
 	 * have a worker working using a nopar context, which means it is safe.
 	 */
 	idle_func_object_ops = (workers_num > 1) ? idle_func_object_ops_par : idle_func_object_ops_nopar;
+	workers_finished = FALSE;
 
 	for (i = 0; i < workers_num; i++) {
 		State old_state;
@@ -147,6 +150,7 @@ worker_try_finish (WorkerData *data)
 		if (callback) {
 			finish_callback = NULL;
 			callback ();
+			worker_awakenings = 0;
 			/* Make sure each worker has a chance of seeing the enqueued jobs */
 			sgen_workers_ensure_awake ();
 			SGEN_ASSERT (0, data->state == STATE_WORK_ENQUEUED, "Why did we fail to set our own state to ENQUEUED");
@@ -171,6 +175,7 @@ worker_try_finish (WorkerData *data)
 	if (working == 2)
 		idle_func_object_ops = idle_func_object_ops_nopar;
 
+	workers_finished = TRUE;
 	mono_os_mutex_unlock (&finished_lock);
 
 	binary_protocol_worker_finish (sgen_timestamp (), forced_stop);
@@ -311,6 +316,12 @@ marker_idle_func (void *data_untyped)
 		SGEN_ASSERT (0, !sgen_gray_object_queue_is_empty (&data->private_gray_queue), "How is our gray queue empty if we just got work?");
 
 		sgen_drain_gray_stack (ctx);
+
+		if (data->private_gray_queue.num_sections > 16 && workers_finished && worker_awakenings < workers_num) {
+			/* We bound the number of worker awakenings just to be sure */
+			worker_awakenings++;
+			sgen_workers_ensure_awake ();
+		}
 	} else {
 		worker_try_finish (data);
 	}
@@ -388,6 +399,7 @@ sgen_workers_start_all_workers (SgenObjectOperations *object_ops_nopar, SgenObje
 	idle_func_object_ops_nopar = object_ops_nopar;
 	forced_stop = FALSE;
 	finish_callback = callback;
+	worker_awakenings = 0;
 	mono_memory_write_barrier ();
 
 	sgen_workers_ensure_awake ();
