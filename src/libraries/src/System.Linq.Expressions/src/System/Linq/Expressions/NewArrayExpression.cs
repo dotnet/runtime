@@ -13,7 +13,7 @@ namespace System.Linq.Expressions
     /// <summary>
     /// Represents creating a new array and possibly initializing the elements of the new array.
     /// </summary>
-    [DebuggerTypeProxy(typeof(Expression.NewArrayExpressionProxy))]
+    [DebuggerTypeProxy(typeof(NewArrayExpressionProxy))]
     public class NewArrayExpression : Expression
     {
         private readonly ReadOnlyCollection<Expression> _expressions;

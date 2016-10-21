@@ -14,7 +14,7 @@ namespace System.Linq.Expressions
     /// <summary>
     /// Represents a constructor call.
     /// </summary>
-    [DebuggerTypeProxy(typeof(Expression.NewExpressionProxy))]
+    [DebuggerTypeProxy(typeof(NewExpressionProxy))]
     public class NewExpression : Expression, IArgumentProvider
     {
         private readonly ConstructorInfo _constructor;

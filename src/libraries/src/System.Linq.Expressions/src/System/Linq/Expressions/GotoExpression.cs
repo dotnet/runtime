@@ -33,7 +33,7 @@ namespace System.Linq.Expressions
     /// <summary>
     /// Represents an unconditional jump. This includes return statements, break and continue statements, and other jumps.
     /// </summary>
-    [DebuggerTypeProxy(typeof(Expression.GotoExpressionProxy))]
+    [DebuggerTypeProxy(typeof(GotoExpressionProxy))]
     public sealed class GotoExpression : Expression
     {
         private readonly GotoExpressionKind _kind;

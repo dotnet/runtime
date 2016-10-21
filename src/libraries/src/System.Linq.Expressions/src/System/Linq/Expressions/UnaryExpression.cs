@@ -12,7 +12,7 @@ namespace System.Linq.Expressions
     /// <summary>
     /// Represents an expression that has a unary operator.
     /// </summary>
-    [DebuggerTypeProxy(typeof(Expression.UnaryExpressionProxy))]
+    [DebuggerTypeProxy(typeof(UnaryExpressionProxy))]
     public sealed class UnaryExpression : Expression
     {
         private readonly Expression _operand;
