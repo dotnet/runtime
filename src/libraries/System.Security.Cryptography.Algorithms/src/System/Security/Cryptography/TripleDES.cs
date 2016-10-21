@@ -13,29 +13,16 @@ namespace System.Security.Cryptography
     {
         protected TripleDES()
         {
-            KeySize = 3*64;
-            BlockSize = 64;
+            KeySizeValue = 3*64;
+            BlockSizeValue = 64;
+            // TODO(12368): FeedbackSizeValue = BlockSizeValue; but the field is not yet available.
+            LegalBlockSizesValue = s_legalBlockSizes.CloneKeySizesArray();
+            LegalKeySizesValue = s_legalKeySizes.CloneKeySizesArray();
         }
 
         public static TripleDES Create()
         {
             return new TripleDesImplementation();
-        }
-
-        public override KeySizes[] LegalKeySizes
-        {
-            get
-            {
-                return s_legalKeySizes.CloneKeySizesArray();
-            }
-        }
-
-        public override KeySizes[] LegalBlockSizes
-        {
-            get
-            {
-                return s_legalBlockSizes.CloneKeySizesArray();
-            }
         }
 
         public override byte[] Key

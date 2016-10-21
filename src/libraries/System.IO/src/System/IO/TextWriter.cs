@@ -16,7 +16,7 @@ namespace System.IO
     // This class is intended for character output, not bytes.  
     // There are methods on the Stream class for writing bytes. 
     [Serializable]
-    public abstract partial class TextWriter : IDisposable
+    public abstract partial class TextWriter : MarshalByRefObject, IDisposable
     {
         public static readonly TextWriter Null = new NullTextWriter();
 

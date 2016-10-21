@@ -221,7 +221,7 @@ namespace System.Net
         TrustFailure = 9,
         UnknownError = 16
     }
-    public abstract partial class WebRequest : System.Runtime.Serialization.ISerializable
+    public abstract partial class WebRequest : System.MarshalByRefObject, System.Runtime.Serialization.ISerializable
     {
         protected WebRequest() { }
         protected WebRequest(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
@@ -293,7 +293,7 @@ namespace System.Net
             public const string UploadFile = "PUT";
         }
     }
-    public abstract partial class WebResponse : System.Runtime.Serialization.ISerializable, System.IDisposable
+    public abstract partial class WebResponse : System.MarshalByRefObject, System.Runtime.Serialization.ISerializable, System.IDisposable
     {
         protected WebResponse() { }
         protected WebResponse(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
@@ -404,23 +404,6 @@ namespace System.Net.Cache
         public System.TimeSpan MaxAge { get { throw null; } }
         public System.TimeSpan MinFresh { get { throw null; } }
         public System.TimeSpan MaxStale { get { throw null; } }
-        public override string ToString() { throw null; }
-    }
-    public enum RequestCacheLevel
-    {
-        Default = 0,
-        BypassCache = 1,
-        CacheOnly = 2,
-        CacheIfAvailable = 3,
-        Revalidate = 4,
-        Reload = 5,
-        NoCacheNoStore = 6
-    }
-    public class RequestCachePolicy
-    {
-        public RequestCachePolicy() { }
-        public RequestCachePolicy(System.Net.Cache.RequestCacheLevel level) { }
-        public System.Net.Cache.RequestCacheLevel Level { get { throw null; } }
         public override string ToString() { throw null; }
     }
 }

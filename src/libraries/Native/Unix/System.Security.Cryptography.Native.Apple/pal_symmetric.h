@@ -19,7 +19,9 @@ typedef uint32_t PAL_SymmetricOperation;
 enum
 {
     PAL_AlgorithmAES = 0,
+    PAL_AlgorithmDES = 1,
     PAL_Algorithm3DES = 2,
+    PAL_AlgorithmRC2 = 5,
 };
 typedef uint32_t PAL_SymmetricAlgorithm;
 

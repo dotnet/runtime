@@ -163,7 +163,7 @@ namespace System.IO.Tests
             {
             }
 
-            public bool? LastFlushArg;
+            public bool? LastFlushArg { get; set; }
 
             public override void Flush(bool flushToDisk)
             {

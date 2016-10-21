@@ -729,5 +729,11 @@
     <Compile Include="System\Xml\Core\LocalAppContextSwitches.cs" />
     <Compile Include="Misc\ThisAssembly.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- TODO: Remove this reference once packages are updated -->
+    <ProjectReference Include="..\..\System.Net.Primitives\ref\System.Net.Primitives.csproj">
+      <UndefineProperties>TargetGroup;OSGroup</UndefineProperties>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

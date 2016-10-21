@@ -9,7 +9,7 @@
       <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="System.ServiceProcess.ServiceController.csproj">
-      <TargetGroup>net461</TargetGroup>
+      <TargetGroup>net463</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

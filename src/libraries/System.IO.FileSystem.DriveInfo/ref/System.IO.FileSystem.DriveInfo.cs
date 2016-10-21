@@ -8,9 +8,10 @@
 
 namespace System.IO
 {
-    public sealed partial class DriveInfo
+    public sealed partial class DriveInfo : System.Runtime.Serialization.ISerializable
     {
         public DriveInfo(string driveName) { }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public long AvailableFreeSpace { get { throw null; } }
         public string DriveFormat { get { throw null; } }
         public System.IO.DriveType DriveType { get { throw null; } }
@@ -28,6 +29,7 @@ namespace System.IO
         public DriveNotFoundException() { }
         public DriveNotFoundException(string message) { }
         public DriveNotFoundException(string message, System.Exception innerException) { }
+        protected DriveNotFoundException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public enum DriveType
     {

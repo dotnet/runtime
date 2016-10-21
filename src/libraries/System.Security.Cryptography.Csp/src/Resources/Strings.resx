@@ -195,14 +195,29 @@
   <data name="Cryptography_InvalidIVSize" xml:space="preserve">
     <value>Specified initialization vector (IV) does not match the block size for this algorithm.</value>
   </data>
+  <data name="Cryptography_InvalidKey_Weak" xml:space="preserve">
+    <value>Specified key is a known weak key for '{0}' and cannot be used.</value>
+  </data>
+  <data name="Cryptography_InvalidKey_SemiWeak" xml:space="preserve">
+    <value>Specified key is a known semi-weak key for '{0}' and cannot be used.</value>
+  </data>
   <data name="Cryptography_InvalidKeySize" xml:space="preserve">
     <value>Specified key is not a valid size for this algorithm.</value>
   </data>
   <data name="Cryptography_InvalidOID" xml:space="preserve">
     <value>Object identifier (OID) is unknown.</value>
   </data>
+  <data name="Cryptography_InvalidPadding" xml:space="preserve">
+    <value>Specified padding mode is not valid for this algorithm.</value>
+  </data>
   <data name="Cryptography_InvalidPaddingMode" xml:space="preserve">
     <value>Specified padding mode is not valid for this algorithm.</value>
+  </data>
+  <data name="Cryptography_MissingIV" xml:space="preserve">
+    <value>The cipher mode specified requires that an initialization vector (IV) be used.</value>
+  </data>
+  <data name="Cryptography_MustTransformWholeBlock" xml:space="preserve">
+    <value>TransformBlock may only process bytes in block sized increments.</value>
   </data>
   <data name="Cryptography_OpenInvalidHandle" xml:space="preserve">
     <value>Cannot open an invalid handle.</value>
@@ -210,8 +225,23 @@
   <data name="Cryptography_Padding_DecDataTooBig" xml:space="preserve">
     <value>Cryptographic padding data is too big</value>
   </data>
+  <data name="Cryptography_PartialBlock" xml:space="preserve">
+    <value>The input data is not a complete block.</value>
+  </data>
+  <data name="Cryptography_RC2_EKSKS2" xml:space="preserve">
+    <value>EffectiveKeySize must be the same as KeySize in this implementation.</value>
+  </data>
+  <data name="Cryptography_TransformBeyondEndOfBuffer" xml:space="preserve">
+    <value>Attempt to transform beyond end of buffer.</value>
+  </data>
   <data name="Cryptography_UnknownHashAlgorithm" xml:space="preserve">
     <value>'{0}' is not a known hash algorithm.</value>
+  </data>
+  <data name="Cryptography_UnknownPaddingMode" xml:space="preserve">
+    <value>Unknown padding mode used.</value>
+  </data>
+  <data name="CryptSetKeyParam_Failed" xml:space="preserve">
+    <value>CryptSetKeyParam failed with error code {0}</value>
   </data>
   <data name="CspParameter_invalid" xml:space="preserve">
     <value>CSPParameters cannot be null</value>

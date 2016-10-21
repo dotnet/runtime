@@ -2,44 +2,41 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics.Contracts;
-using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 
 namespace System.IO
 {
-    public sealed partial class DriveInfo
+    [Serializable]
+    public sealed partial class DriveInfo : ISerializable
     {
-        private readonly String _name;
+        private readonly string _name;
 
-        public DriveInfo(String driveName)
+        public DriveInfo(string driveName)
         {
             if (driveName == null)
             {
                 throw new ArgumentNullException(nameof(driveName));
             }
-            Contract.EndContractBlock();
 
             _name = NormalizeDriveName(driveName);
         }
 
-        public String Name
+        private DriveInfo(SerializationInfo info, StreamingContext context) :
+            this((string)info.GetValue("_name", typeof(string)))
         {
-            get { return _name; }
         }
 
-        public bool IsReady
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            get { return Directory.Exists(Name); }
+            info.AddValue("_name", _name, typeof(String));
         }
 
-        public DirectoryInfo RootDirectory
-        {
-            get { return new DirectoryInfo(Name); }
-        }
+        public string Name => _name;
 
-        public override String ToString()
-        {
-            return Name;
-        }
+        public bool IsReady => Directory.Exists(Name);
+
+        public DirectoryInfo RootDirectory => new DirectoryInfo(Name);
+
+        public override string ToString() => Name;
     }
 }

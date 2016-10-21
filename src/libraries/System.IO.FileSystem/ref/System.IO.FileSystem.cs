@@ -228,7 +228,7 @@ namespace System.IO
         public override void WriteByte(byte value) { }
         public virtual void Unlock(long position, long length) { }
     }
-    public abstract partial class FileSystemInfo
+    public abstract partial class FileSystemInfo : System.MarshalByRefObject, System.Runtime.Serialization.ISerializable
     {
         protected string FullPath;
         protected string OriginalPath;

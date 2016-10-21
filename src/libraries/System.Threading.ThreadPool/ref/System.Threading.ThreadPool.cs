@@ -8,7 +8,7 @@
 
 namespace System.Threading
 {
-    public sealed partial class RegisteredWaitHandle
+    public sealed partial class RegisteredWaitHandle : System.MarshalByRefObject
     {
         internal RegisteredWaitHandle() { }
         public bool Unregister(System.Threading.WaitHandle waitObject) { throw null; }

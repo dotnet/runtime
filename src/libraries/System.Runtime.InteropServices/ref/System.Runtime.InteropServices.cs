@@ -23,6 +23,7 @@ namespace System
         public DllNotFoundException() { }
         public DllNotFoundException(string message) { }
         public DllNotFoundException(string message, System.Exception inner) { }
+        protected DllNotFoundException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
 }
 namespace System.IO

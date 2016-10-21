@@ -569,7 +569,9 @@ namespace System.Net.Sockets
         public void Start() { }
         public void Start(int backlog) { }
         public void Stop() { }
+        public static TcpListener Create(int port) { throw null; }
     }
+
     [System.FlagsAttribute]
     public enum TransmitFileOptions
     {
