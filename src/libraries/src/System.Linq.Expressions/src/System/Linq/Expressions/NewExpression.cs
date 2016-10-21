@@ -113,7 +113,7 @@ namespace System.Linq.Expressions
         }
     }
 
-    internal class NewValueTypeExpression : NewExpression
+    internal sealed class NewValueTypeExpression : NewExpression
     {
         private readonly Type _valueType;
 
