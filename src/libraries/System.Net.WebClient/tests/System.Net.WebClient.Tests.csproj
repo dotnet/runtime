@@ -30,6 +30,11 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <!-- TODO: Remove these reference once packages are updated -->
+    <ProjectReference Include="..\..\System.Net.Primitives\pkg\System.Net.Primitives.pkgproj" />
+    <ProjectReference Include="..\..\System.Net.Requests\pkg\System.Net.Requests.pkgproj" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
