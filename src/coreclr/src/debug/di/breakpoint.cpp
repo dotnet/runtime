@@ -15,7 +15,7 @@
 
 CordbBreakpoint::CordbBreakpoint(CordbProcess * pProcess, CordbBreakpointType bpType)
   : CordbBase(pProcess, 0, enumCordbBreakpoint), 
-  m_active(false), m_type(bpType)
+  m_active(false), m_pAppDomain(NULL), m_type(bpType)
 {
 }
 
