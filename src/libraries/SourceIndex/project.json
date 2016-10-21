@@ -1,8 +1,8 @@
 {
-    "dependencies": {
-        "Microsoft.SourceBrowser": "1.0.13"
-    },
-    "frameworks": {
-        "net45": {}
-    }
+  "dependencies": {
+    "Microsoft.SourceBrowser": "1.0.13"
+  },
+  "frameworks": {
+    "net45": {}
+  }
 }

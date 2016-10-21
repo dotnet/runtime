@@ -3,6 +3,6 @@
     "System.Linq.Expressions": "4.1.0"
   },
   "frameworks": {
-    "netstandard1.6": { }
+    "netstandard1.6": {}
   }
 }
