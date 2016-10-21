@@ -129,6 +129,7 @@ void sgen_gray_object_enqueue (SgenGrayQueue *queue, GCObject *obj, SgenDescript
 GrayQueueEntry sgen_gray_object_dequeue (SgenGrayQueue *queue);
 GrayQueueSection* sgen_gray_object_dequeue_section (SgenGrayQueue *queue);
 GrayQueueSection* sgen_gray_object_steal_section (SgenGrayQueue *queue);
+void sgen_gray_object_spread (SgenGrayQueue *queue, int num_sections);
 void sgen_gray_object_enqueue_section (SgenGrayQueue *queue, GrayQueueSection *section);
 void sgen_gray_object_queue_trim_free_list (SgenGrayQueue *queue);
 void sgen_gray_object_queue_init (SgenGrayQueue *queue, GrayQueueEnqueueCheckFunc enqueue_check_func, gboolean reuse_free_list);

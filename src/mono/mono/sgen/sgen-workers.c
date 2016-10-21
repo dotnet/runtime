@@ -459,6 +459,8 @@ sgen_workers_assert_gray_queue_is_empty (void)
 void
 sgen_workers_take_from_queue (SgenGrayQueue *queue)
 {
+	sgen_gray_object_spread (queue, sgen_workers_get_job_split_count ());
+
 	for (;;) {
 		GrayQueueSection *section = sgen_gray_object_dequeue_section (queue);
 		if (!section)

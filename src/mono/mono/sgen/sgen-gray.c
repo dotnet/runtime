@@ -139,6 +139,68 @@ sgen_gray_object_enqueue (SgenGrayQueue *queue, GCObject *obj, SgenDescriptor de
 #endif
 }
 
+/*
+ * We attempt to spread the objects in the gray queue across a number
+ * of sections. If the queue has more sections, then it's already spread,
+ * if it doesn't have enough sections, then we allocate as many as we
+ * can.
+ */
+void
+sgen_gray_object_spread (SgenGrayQueue *queue, int num_sections)
+{
+	GrayQueueSection *section_start, *section_end;
+	int total_entries = 0, num_entries_per_section;
+	int num_sections_final;
+
+	if (queue->num_sections >= num_sections)
+		return;
+
+	if (!queue->first)
+		return;
+
+	/* Compute number of elements in the gray queue */
+	queue->first->size = queue->cursor - queue->first->entries + 1;
+	total_entries = queue->first->size;
+	for (section_start = queue->first->next; section_start != NULL; section_start = section_start->next) {
+		SGEN_ASSERT (0, section_start->size == SGEN_GRAY_QUEUE_SECTION_SIZE, "We expect all section aside from the first one to be full");
+		total_entries += section_start->size;
+	}
+
+	/* Compute how many sections we should have and elements per section */
+	num_sections_final = (total_entries > num_sections) ? num_sections : total_entries;
+	num_entries_per_section = total_entries / num_sections_final;
+
+	/* Allocate all needed sections */
+	while (queue->num_sections < num_sections_final)
+		sgen_gray_object_alloc_queue_section (queue);
+
+	/* Spread out the elements in the sections. By design, sections at the end are fuller. */
+	section_start = queue->first;
+	section_end = queue->last;
+	while (section_start != section_end) {
+		/* We move entries from end to start, until they meet */
+		while (section_start->size < num_entries_per_section) {
+			GrayQueueEntry entry;
+			if (section_end->size <= num_entries_per_section) {
+				section_end = section_end->prev;
+				if (section_end == section_start)
+					break;
+			}
+			if (section_end->size <= num_entries_per_section)
+				break;
+
+			section_end->size--;
+			entry = section_end->entries [section_end->size];
+			section_start->entries [section_start->size] = entry;
+			section_start->size++;
+		}
+		section_start = section_start->next;
+	}
+
+	queue->cursor = queue->first->entries + queue->first->size - 1;
+	queue->num_sections = num_sections_final;
+}
+
 GrayQueueEntry
 sgen_gray_object_dequeue (SgenGrayQueue *queue)
 {
