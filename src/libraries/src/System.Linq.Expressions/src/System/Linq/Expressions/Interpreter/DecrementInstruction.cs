@@ -29,7 +29,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.Int32ToObject(unchecked((Int32)obj - 1)));
+                    frame.Push(ScriptingRuntimeHelpers.Int32ToObject(unchecked((int)obj - 1)));
                 }
                 return +1;
             }
@@ -46,7 +46,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(unchecked((Int16)((Int16)obj - 1)));
+                    frame.Push(unchecked((short)((short)obj - 1)));
                 }
                 return +1;
             }
@@ -63,7 +63,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(unchecked((Int64)((Int64)obj - 1)));
+                    frame.Push(unchecked((long)((long)obj - 1)));
                 }
                 return +1;
             }
@@ -80,7 +80,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(unchecked((UInt16)((UInt16)obj - 1)));
+                    frame.Push(unchecked((ushort)((ushort)obj - 1)));
                 }
                 return +1;
             }
@@ -97,7 +97,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(unchecked((UInt32)((UInt32)obj - 1)));
+                    frame.Push(unchecked((uint)((uint)obj - 1)));
                 }
                 return +1;
             }
@@ -114,7 +114,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(unchecked((UInt64)((UInt64)obj - 1)));
+                    frame.Push(unchecked((ulong)((ulong)obj - 1)));
                 }
                 return +1;
             }
@@ -131,7 +131,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(unchecked((Single)((Single)obj - 1)));
+                    frame.Push(unchecked((float)((float)obj - 1)));
                 }
                 return +1;
             }
@@ -148,7 +148,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(unchecked((Double)((Double)obj - 1)));
+                    frame.Push(unchecked((double)((double)obj - 1)));
                 }
                 return +1;
             }

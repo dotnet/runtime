@@ -115,7 +115,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Produces a delegate that represents the lambda expression.
         /// </summary>
-        /// <param name="preferInterpretation">A <see cref="Boolean"/> that indicates if the expression should be compiled to an interpreted form, if available. </param>
+        /// <param name="preferInterpretation">A <see cref="bool"/> that indicates if the expression should be compiled to an interpreted form, if available. </param>
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
         public Delegate Compile(bool preferInterpretation)
         {
@@ -181,7 +181,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Produces a delegate that represents the lambda expression.
         /// </summary>
-        /// <param name="preferInterpretation">A <see cref="Boolean"/> that indicates if the expression should be compiled to an interpreted form, if available. </param>
+        /// <param name="preferInterpretation">A <see cref="bool"/> that indicates if the expression should be compiled to an interpreted form, if available. </param>
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
         public new TDelegate Compile(bool preferInterpretation)
         {
@@ -305,7 +305,7 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <typeparam name="TDelegate">The delegate type. </typeparam>
         /// <param name="body">An <see cref="Expression"/> to set the <see cref="P:Body"/> property equal to. </param>
-        /// <param name="tailCall">A <see cref="Boolean"/> that indicates if tail call optimization will be applied when compiling the created expression. </param>
+        /// <param name="tailCall">A <see cref="bool"/> that indicates if tail call optimization will be applied when compiling the created expression. </param>
         /// <param name="parameters">An array that contains <see cref="ParameterExpression"/> objects to use to populate the <see cref="P:Parameters"/> collection. </param>
         /// <returns>An <see cref="Expression{TDelegate}"/> that has the <see cref="P:NodeType"/> property equal to <see cref="P:Lambda"/> and the <see cref="P:Body"/> and <see cref="P:Parameters"/> properties set to the specified values.</returns>
         public static Expression<TDelegate> Lambda<TDelegate>(Expression body, bool tailCall, params ParameterExpression[] parameters)
@@ -330,7 +330,7 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <typeparam name="TDelegate">The delegate type. </typeparam>
         /// <param name="body">An <see cref="Expression"/> to set the <see cref="P:Body"/> property equal to. </param>
-        /// <param name="tailCall">A <see cref="Boolean"/> that indicates if tail call optimization will be applied when compiling the created expression. </param>
+        /// <param name="tailCall">A <see cref="bool"/> that indicates if tail call optimization will be applied when compiling the created expression. </param>
         /// <param name="parameters">An <see cref="IEnumerable{T}"/> that contains <see cref="ParameterExpression"/> objects to use to populate the <see cref="P:Parameters"/> collection. </param>
         /// <returns>An <see cref="Expression{TDelegate}"/> that has the <see cref="P:NodeType"/> property equal to <see cref="P:Lambda"/> and the <see cref="P:Body"/> and <see cref="P:Parameters"/> properties set to the specified values.</returns>
         public static Expression<TDelegate> Lambda<TDelegate>(Expression body, bool tailCall, IEnumerable<ParameterExpression> parameters)
@@ -346,7 +346,7 @@ namespace System.Linq.Expressions
         /// <param name="parameters">An <see cref="IEnumerable{T}"/> that contains <see cref="ParameterExpression"/> objects to use to populate the <see cref="P:Parameters"/> collection. </param>
         /// <param name="name">The name of the lambda. Used for generating debugging info.</param>
         /// <returns>An <see cref="Expression{TDelegate}"/> that has the <see cref="P:NodeType"/> property equal to <see cref="P:Lambda"/> and the <see cref="P:Body"/> and <see cref="P:Parameters"/> properties set to the specified values.</returns>
-        public static Expression<TDelegate> Lambda<TDelegate>(Expression body, String name, IEnumerable<ParameterExpression> parameters)
+        public static Expression<TDelegate> Lambda<TDelegate>(Expression body, string name, IEnumerable<ParameterExpression> parameters)
         {
             return Lambda<TDelegate>(body, name, false, parameters);
         }
@@ -358,9 +358,9 @@ namespace System.Linq.Expressions
         /// <param name="body">An <see cref="Expression"/> to set the <see cref="P:Body"/> property equal to. </param>
         /// <param name="name">The name of the lambda. Used for generating debugging info.</param>
         /// <param name="parameters">An <see cref="IEnumerable{T}"/> that contains <see cref="ParameterExpression"/> objects to use to populate the <see cref="P:Parameters"/> collection. </param>
-        /// <param name="tailCall">A <see cref="Boolean"/> that indicates if tail call optimization will be applied when compiling the created expression. </param>
+        /// <param name="tailCall">A <see cref="bool"/> that indicates if tail call optimization will be applied when compiling the created expression. </param>
         /// <returns>An <see cref="Expression{TDelegate}"/> that has the <see cref="P:NodeType"/> property equal to <see cref="P:Lambda"/> and the <see cref="P:Body"/> and <see cref="P:Parameters"/> properties set to the specified values.</returns>
-        public static Expression<TDelegate> Lambda<TDelegate>(Expression body, String name, bool tailCall, IEnumerable<ParameterExpression> parameters)
+        public static Expression<TDelegate> Lambda<TDelegate>(Expression body, string name, bool tailCall, IEnumerable<ParameterExpression> parameters)
         {
             ReadOnlyCollection<ParameterExpression> parameterList = parameters.ToReadOnly();
             ValidateLambdaArgs(typeof(TDelegate), ref body, parameterList, nameof(TDelegate));
@@ -383,7 +383,7 @@ namespace System.Linq.Expressions
         /// Creates a LambdaExpression by first constructing a delegate type. 
         /// </summary>
         /// <param name="body">An <see cref="Expression"/> to set the <see cref="P:Body"/> property equal to. </param>
-        /// <param name="tailCall">A <see cref="Boolean"/> that indicates if tail call optimization will be applied when compiling the created expression. </param>
+        /// <param name="tailCall">A <see cref="bool"/> that indicates if tail call optimization will be applied when compiling the created expression. </param>
         /// <param name="parameters">An array that contains <see cref="ParameterExpression"/> objects to use to populate the <see cref="P:Parameters"/> collection. </param>
         /// <returns>A <see cref="LambdaExpression"/> that has the <see cref="P:NodeType"/> property equal to Lambda and the <see cref="P:Body"/> and <see cref="P:Parameters"/> properties set to the specified values.</returns>
         public static LambdaExpression Lambda(Expression body, bool tailCall, params ParameterExpression[] parameters)
@@ -406,7 +406,7 @@ namespace System.Linq.Expressions
         /// Creates a LambdaExpression by first constructing a delegate type. 
         /// </summary>
         /// <param name="body">An <see cref="Expression"/> to set the <see cref="P:Body"/> property equal to. </param>
-        /// <param name="tailCall">A <see cref="Boolean"/> that indicates if tail call optimization will be applied when compiling the created expression. </param>
+        /// <param name="tailCall">A <see cref="bool"/> that indicates if tail call optimization will be applied when compiling the created expression. </param>
         /// <param name="parameters">An <see cref="IEnumerable{T}"/> that contains <see cref="ParameterExpression"/> objects to use to populate the <see cref="P:Parameters"/> collection. </param>
         /// <returns>A <see cref="LambdaExpression"/> that has the <see cref="P:NodeType"/> property equal to Lambda and the <see cref="P:Body"/> and <see cref="P:Parameters"/> properties set to the specified values.</returns>
         public static LambdaExpression Lambda(Expression body, bool tailCall, IEnumerable<ParameterExpression> parameters)
@@ -430,7 +430,7 @@ namespace System.Linq.Expressions
         /// Creates a LambdaExpression by first constructing a delegate type. 
         /// </summary>
         /// <param name="body">An <see cref="Expression"/> to set the <see cref="P:Body"/> property equal to. </param>
-        /// <param name="tailCall">A <see cref="Boolean"/> that indicates if tail call optimization will be applied when compiling the created expression. </param>
+        /// <param name="tailCall">A <see cref="bool"/> that indicates if tail call optimization will be applied when compiling the created expression. </param>
         /// <param name="parameters">An array that contains <see cref="ParameterExpression"/> objects to use to populate the <see cref="P:Parameters"/> collection. </param>
         /// <param name="delegateType">A <see cref="Type"/> representing the delegate signature for the lambda.</param>
         /// <returns>A <see cref="LambdaExpression"/> that has the <see cref="P:NodeType"/> property equal to Lambda and the <see cref="P:Body"/> and <see cref="P:Parameters"/> properties set to the specified values.</returns>
@@ -455,7 +455,7 @@ namespace System.Linq.Expressions
         /// Creates a LambdaExpression by first constructing a delegate type. 
         /// </summary>
         /// <param name="body">An <see cref="Expression"/> to set the <see cref="P:Body"/> property equal to. </param>
-        /// <param name="tailCall">A <see cref="Boolean"/> that indicates if tail call optimization will be applied when compiling the created expression. </param>
+        /// <param name="tailCall">A <see cref="bool"/> that indicates if tail call optimization will be applied when compiling the created expression. </param>
         /// <param name="parameters">An <see cref="IEnumerable{T}"/> that contains <see cref="ParameterExpression"/> objects to use to populate the <see cref="P:Parameters"/> collection. </param>
         /// <param name="delegateType">A <see cref="Type"/> representing the delegate signature for the lambda.</param>
         /// <returns>A <see cref="LambdaExpression"/> that has the <see cref="P:NodeType"/> property equal to Lambda and the <see cref="P:Body"/> and <see cref="P:Parameters"/> properties set to the specified values.</returns>
@@ -481,7 +481,7 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <param name="body">An <see cref="Expression"/> to set the <see cref="P:Body"/> property equal to. </param>
         /// <param name="name">The name for the lambda. Used for emitting debug information.</param>
-        /// <param name="tailCall">A <see cref="Boolean"/> that indicates if tail call optimization will be applied when compiling the created expression. </param>
+        /// <param name="tailCall">A <see cref="bool"/> that indicates if tail call optimization will be applied when compiling the created expression. </param>
         /// <param name="parameters">An <see cref="IEnumerable{T}"/> that contains <see cref="ParameterExpression"/> objects to use to populate the <see cref="P:Parameters"/> collection. </param>
         /// <returns>A <see cref="LambdaExpression"/> that has the <see cref="P:NodeType"/> property equal to Lambda and the <see cref="P:Body"/> and <see cref="P:Parameters"/> properties set to the specified values.</returns>
         public static LambdaExpression Lambda(Expression body, string name, bool tailCall, IEnumerable<ParameterExpression> parameters)
@@ -535,7 +535,7 @@ namespace System.Linq.Expressions
         /// <param name="delegateType">A <see cref="Type"/> representing the delegate signature for the lambda.</param>
         /// <param name="body">An <see cref="Expression"/> to set the <see cref="P:Body"/> property equal to. </param>
         /// <param name="name">The name for the lambda. Used for emitting debug information.</param>
-        /// <param name="tailCall">A <see cref="Boolean"/> that indicates if tail call optimization will be applied when compiling the created expression. </param>
+        /// <param name="tailCall">A <see cref="bool"/> that indicates if tail call optimization will be applied when compiling the created expression. </param>
         /// <param name="parameters">An <see cref="IEnumerable{T}"/> that contains <see cref="ParameterExpression"/> objects to use to populate the <see cref="P:Parameters"/> collection. </param>
         /// <returns>A <see cref="LambdaExpression"/> that has the <see cref="P:NodeType"/> property equal to Lambda and the <see cref="P:Body"/> and <see cref="P:Parameters"/> properties set to the specified values.</returns>
         public static LambdaExpression Lambda(Type delegateType, Expression body, string name, bool tailCall, IEnumerable<ParameterExpression> parameters)

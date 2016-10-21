@@ -93,12 +93,12 @@ namespace System.Linq.Expressions.Interpreter
             Data[StackIndex++] = value;
         }
 
-        public void Push(Int16 value)
+        public void Push(short value)
         {
             Data[StackIndex++] = value;
         }
 
-        public void Push(UInt16 value)
+        public void Push(ushort value)
         {
             Data[StackIndex++] = value;
         }
