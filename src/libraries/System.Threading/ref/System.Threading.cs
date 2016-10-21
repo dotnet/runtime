@@ -387,7 +387,7 @@ namespace System.Threading
         public static void Write(ref System.UIntPtr location, System.UIntPtr value) { }
         public static void Write<T>(ref T location, T value) where T : class { }
     }
-    public partial class WaitHandleCannotBeOpenedException : System.Exception
+    public partial class WaitHandleCannotBeOpenedException : System.ApplicationException
     {
         public WaitHandleCannotBeOpenedException() { }
         public WaitHandleCannotBeOpenedException(string message) { }
