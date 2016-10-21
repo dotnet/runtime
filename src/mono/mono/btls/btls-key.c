@@ -8,31 +8,31 @@
 
 #include <btls-key.h>
 
-void
+MONO_API void
 mono_btls_key_free (EVP_PKEY *pkey)
 {
 	EVP_PKEY_free (pkey);
 }
 
-EVP_PKEY *
+MONO_API EVP_PKEY *
 mono_btls_key_up_ref (EVP_PKEY *pkey)
 {
 	return EVP_PKEY_up_ref (pkey);
 }
 
-int
+MONO_API int
 mono_btls_key_get_bits (EVP_PKEY *pkey)
 {
 	return EVP_PKEY_bits (pkey);
 }
 
-int
+MONO_API int
 mono_btls_key_is_rsa (EVP_PKEY *pkey)
 {
 	return pkey->type == EVP_PKEY_RSA;
 }
 
-int
+MONO_API int
 mono_btls_key_get_bytes (EVP_PKEY *pkey, uint8_t **buffer, int *size, int include_private_bits)
 {
 	size_t len;

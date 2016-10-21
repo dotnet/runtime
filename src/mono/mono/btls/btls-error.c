@@ -7,27 +7,28 @@
 //
 
 #include <btls-error.h>
+#include <btls-util.h>
 #include <assert.h>
 
-int
+MONO_API int
 mono_btls_error_peek_error (void)
 {
 	return ERR_peek_error ();
 }
 
-int
+MONO_API int
 mono_btls_error_get_error (void)
 {
 	return ERR_get_error ();
 }
 
-void
+MONO_API void
 mono_btls_error_clear_error (void)
 {
 	ERR_clear_error ();
 }
 
-void
+MONO_API void
 mono_btls_error_get_error_string_n (int error, char *buf, int len)
 {
 	ERR_error_string_n (error, buf, len);

@@ -26,7 +26,7 @@ __func__, __VA_ARGS__); } while (0)
 
 STACK_OF(SSL_CIPHER) *ssl_bytes_to_cipher_list (SSL *s, const CBS *cbs);
 
-MonoBtlsSsl *
+MONO_API MonoBtlsSsl *
 mono_btls_ssl_new (MonoBtlsSslCtx *ctx)
 {
 	MonoBtlsSsl *ptr;
@@ -41,7 +41,7 @@ mono_btls_ssl_new (MonoBtlsSslCtx *ctx)
 	return ptr;
 }
 
-void
+MONO_API void
 mono_btls_ssl_destroy (MonoBtlsSsl *ptr)
 {
 	mono_btls_ssl_close (ptr);
@@ -56,92 +56,92 @@ mono_btls_ssl_destroy (MonoBtlsSsl *ptr)
 	free (ptr);
 }
 
-void
+MONO_API void
 mono_btls_ssl_close (MonoBtlsSsl *ptr)
 {
 	;
 }
 
-void
+MONO_API void
 mono_btls_ssl_set_bio (MonoBtlsSsl *ptr, BIO *bio)
 {
 	BIO_up_ref (bio);
 	SSL_set_bio (ptr->ssl, bio, bio);
 }
 
-void
+MONO_API void
 mono_btls_ssl_print_errors_cb (ERR_print_errors_callback_t callback, void *ctx)
 {
 	ERR_print_errors_cb (callback, ctx);
 }
 
-int
+MONO_API int
 mono_btls_ssl_use_certificate (MonoBtlsSsl *ptr, X509 *x509)
 {
 	return SSL_use_certificate (ptr->ssl, x509);
 }
 
-int
+MONO_API int
 mono_btls_ssl_use_private_key (MonoBtlsSsl *ptr, EVP_PKEY *key)
 {
 	return SSL_use_PrivateKey (ptr->ssl, key);
 }
 
-int
+MONO_API int
 mono_btls_ssl_add_chain_certificate (MonoBtlsSsl *ptr, X509 *x509)
 {
 	return SSL_add1_chain_cert (ptr->ssl, x509);
 }
 
-int
+MONO_API int
 mono_btls_ssl_accept (MonoBtlsSsl *ptr)
 {
 	return SSL_accept (ptr->ssl);
 }
 
-int
+MONO_API int
 mono_btls_ssl_connect (MonoBtlsSsl *ptr)
 {
 	return SSL_connect (ptr->ssl);
 }
 
-int
+MONO_API int
 mono_btls_ssl_handshake (MonoBtlsSsl *ptr)
 {
 	return SSL_do_handshake (ptr->ssl);
 }
 
-int
+MONO_API int
 mono_btls_ssl_read (MonoBtlsSsl *ptr, void *buf, int count)
 {
 	return SSL_read (ptr->ssl, buf, count);
 }
 
-int
+MONO_API int
 mono_btls_ssl_write (MonoBtlsSsl *ptr, void *buf, int count)
 {
 	return SSL_write (ptr->ssl, buf, count);
 }
 
-int
+MONO_API int
 mono_btls_ssl_get_version (MonoBtlsSsl *ptr)
 {
 	return SSL_version (ptr->ssl);
 }
 
-void
+MONO_API void
 mono_btls_ssl_set_min_version (MonoBtlsSsl *ptr, int version)
 {
 	SSL_set_min_version (ptr->ssl, version);
 }
 
-void
+MONO_API void
 mono_btls_ssl_set_max_version (MonoBtlsSsl *ptr, int version)
 {
 	SSL_set_max_version (ptr->ssl, version);
 }
 
-int
+MONO_API int
 mono_btls_ssl_get_cipher (MonoBtlsSsl *ptr)
 {
 	const SSL_CIPHER *cipher;
@@ -152,13 +152,13 @@ mono_btls_ssl_get_cipher (MonoBtlsSsl *ptr)
 	return (uint16_t)SSL_CIPHER_get_id (cipher);
 }
 
-int
+MONO_API int
 mono_btls_ssl_set_cipher_list (MonoBtlsSsl *ptr, const char *str)
 {
 	return SSL_set_cipher_list(ptr->ssl, str);
 }
 
-int
+MONO_API int
 mono_btls_ssl_get_ciphers (MonoBtlsSsl *ptr, uint16_t **data)
 {
 	STACK_OF(SSL_CIPHER) *ciphers;
@@ -184,25 +184,25 @@ mono_btls_ssl_get_ciphers (MonoBtlsSsl *ptr, uint16_t **data)
 	return count;
 }
 
-X509 *
+MONO_API X509 *
 mono_btls_ssl_get_peer_certificate (MonoBtlsSsl *ptr)
 {
 	return SSL_get_peer_certificate (ptr->ssl);
 }
 
-int
+MONO_API int
 mono_btls_ssl_get_error (MonoBtlsSsl *ptr, int ret_code)
 {
 	return SSL_get_error (ptr->ssl, ret_code);
 }
 
-int
+MONO_API int
 mono_btls_ssl_set_verify_param (MonoBtlsSsl *ptr, const MonoBtlsX509VerifyParam *param)
 {
 	return SSL_set1_param (ptr->ssl, mono_btls_x509_verify_param_peek_param (param));
 }
 
-int
+MONO_API int
 mono_btls_ssl_set_server_name (MonoBtlsSsl *ptr, const char *name)
 {
 	return SSL_set_tlsext_host_name (ptr->ssl, name);

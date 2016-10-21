@@ -15,7 +15,7 @@ struct MonoBtlsPkcs12 {
 	CRYPTO_refcount_t references;
 };
 
-MonoBtlsPkcs12 *
+MONO_API MonoBtlsPkcs12 *
 mono_btls_pkcs12_new (void)
 {
 	MonoBtlsPkcs12 *pkcs12 = (MonoBtlsPkcs12 *)OPENSSL_malloc (sizeof (MonoBtlsPkcs12));
@@ -28,13 +28,13 @@ mono_btls_pkcs12_new (void)
 	return pkcs12;
 }
 
-int
+MONO_API int
 mono_btls_pkcs12_get_count (MonoBtlsPkcs12 *pkcs12)
 {
 	return (int)sk_X509_num (pkcs12->certs);
 }
 
-X509 *
+MONO_API X509 *
 mono_btls_pkcs12_get_cert (MonoBtlsPkcs12 *pkcs12, int index)
 {
 	X509 *cert;
@@ -47,13 +47,13 @@ mono_btls_pkcs12_get_cert (MonoBtlsPkcs12 *pkcs12, int index)
 	return cert;
 }
 
-STACK_OF(X509) *
+MONO_API STACK_OF(X509) *
 mono_btls_pkcs12_get_certs (MonoBtlsPkcs12 *pkcs12)
 {
 	return pkcs12->certs;
 }
 
-int
+MONO_API int
 mono_btls_pkcs12_free (MonoBtlsPkcs12 *pkcs12)
 {
 	if (!CRYPTO_refcount_dec_and_test_zero (&pkcs12->references))
@@ -64,21 +64,21 @@ mono_btls_pkcs12_free (MonoBtlsPkcs12 *pkcs12)
 	return 1;
 }
 
-MonoBtlsPkcs12 *
+MONO_API MonoBtlsPkcs12 *
 mono_btls_pkcs12_up_ref (MonoBtlsPkcs12 *pkcs12)
 {
 	CRYPTO_refcount_inc (&pkcs12->references);
 	return pkcs12;
 }
 
-void
+MONO_API void
 mono_btls_pkcs12_add_cert (MonoBtlsPkcs12 *pkcs12, X509 *x509)
 {
 	X509_up_ref (x509);
 	sk_X509_push (pkcs12->certs, x509);
 }
 
-int
+MONO_API int
 mono_btls_pkcs12_import (MonoBtlsPkcs12 *pkcs12, const void *data, int len, const void *password)
 {
 	CBS cbs;
@@ -86,13 +86,13 @@ mono_btls_pkcs12_import (MonoBtlsPkcs12 *pkcs12, const void *data, int len, cons
 	return PKCS12_get_key_and_certs (&pkcs12->private_key, pkcs12->certs, &cbs, password);
 }
 
-int
+MONO_API int
 mono_btls_pkcs12_has_private_key (MonoBtlsPkcs12 *pkcs12)
 {
 	return pkcs12->private_key != NULL;
 }
 
-EVP_PKEY *
+MONO_API EVP_PKEY *
 mono_btls_pkcs12_get_private_key (MonoBtlsPkcs12 *pkcs12)
 {
 	if (!pkcs12->private_key)

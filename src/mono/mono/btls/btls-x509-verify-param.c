@@ -15,7 +15,7 @@ struct MonoBtlsX509VerifyParam {
 	X509_VERIFY_PARAM *param;
 };
 
-MonoBtlsX509VerifyParam *
+MONO_API MonoBtlsX509VerifyParam *
 mono_btls_x509_verify_param_new (void)
 {
 	MonoBtlsX509VerifyParam *param;
@@ -29,7 +29,7 @@ mono_btls_x509_verify_param_new (void)
 	return param;
 }
 
-MonoBtlsX509VerifyParam *
+MONO_API MonoBtlsX509VerifyParam *
 mono_btls_x509_verify_param_from_store_ctx (MonoBtlsX509StoreCtx *ctx, X509_VERIFY_PARAM *param)
 {
 	MonoBtlsX509VerifyParam *instance;
@@ -43,7 +43,7 @@ mono_btls_x509_verify_param_from_store_ctx (MonoBtlsX509StoreCtx *ctx, X509_VERI
 	return instance;
 }
 
-MonoBtlsX509VerifyParam *
+MONO_API MonoBtlsX509VerifyParam *
 mono_btls_x509_verify_param_copy (const MonoBtlsX509VerifyParam *from)
 {
 	MonoBtlsX509VerifyParam *param;
@@ -56,19 +56,19 @@ mono_btls_x509_verify_param_copy (const MonoBtlsX509VerifyParam *from)
 	return param;
 }
 
-const X509_VERIFY_PARAM *
+MONO_API const X509_VERIFY_PARAM *
 mono_btls_x509_verify_param_peek_param (const MonoBtlsX509VerifyParam *param)
 {
 	return param->param;
 }
 
-int
+MONO_API int
 mono_btls_x509_verify_param_can_modify (MonoBtlsX509VerifyParam *param)
 {
 	return param->owns;
 }
 
-MonoBtlsX509VerifyParam *
+MONO_API MonoBtlsX509VerifyParam *
 mono_btls_x509_verify_param_lookup (const char *name)
 {
 	MonoBtlsX509VerifyParam *param;
@@ -86,7 +86,7 @@ mono_btls_x509_verify_param_lookup (const char *name)
 	return param;
 }
 
-void
+MONO_API void
 mono_btls_x509_verify_param_free (MonoBtlsX509VerifyParam *param)
 {
 	if (param->owns) {
@@ -102,7 +102,7 @@ mono_btls_x509_verify_param_free (MonoBtlsX509VerifyParam *param)
 	OPENSSL_free (param);
 }
 
-int
+MONO_API int
 mono_btls_x509_verify_param_set_name (MonoBtlsX509VerifyParam *param, const char *name)
 {
 	if (!param->owns)
@@ -110,7 +110,7 @@ mono_btls_x509_verify_param_set_name (MonoBtlsX509VerifyParam *param, const char
 	return X509_VERIFY_PARAM_set1_name (param->param, name);
 }
 
-int
+MONO_API int
 mono_btls_x509_verify_param_set_host (MonoBtlsX509VerifyParam *param, const char *host, int namelen)
 {
 	if (!param->owns)
@@ -118,7 +118,7 @@ mono_btls_x509_verify_param_set_host (MonoBtlsX509VerifyParam *param, const char
 	return X509_VERIFY_PARAM_set1_host (param->param, host, namelen);
 }
 
-int
+MONO_API int
 mono_btls_x509_verify_param_add_host (MonoBtlsX509VerifyParam *param, const char *host, int namelen)
 {
 	if (!param->owns)
@@ -126,13 +126,13 @@ mono_btls_x509_verify_param_add_host (MonoBtlsX509VerifyParam *param, const char
 	return X509_VERIFY_PARAM_set1_host (param->param, host, namelen);
 }
 
-unsigned long
+MONO_API unsigned long
 mono_btls_x509_verify_param_get_flags (MonoBtlsX509VerifyParam *param)
 {
 	return X509_VERIFY_PARAM_get_flags (param->param);
 }
 
-int
+MONO_API int
 mono_btls_x509_verify_param_set_flags (MonoBtlsX509VerifyParam *param, unsigned long flags)
 {
 	if (!param->owns)
@@ -140,7 +140,7 @@ mono_btls_x509_verify_param_set_flags (MonoBtlsX509VerifyParam *param, unsigned 
 	return X509_VERIFY_PARAM_set_flags (param->param, flags);
 }
 
-MonoBtlsX509VerifyFlags
+MONO_API MonoBtlsX509VerifyFlags
 mono_btls_x509_verify_param_get_mono_flags (MonoBtlsX509VerifyParam *param)
 {
 	MonoBtlsX509VerifyFlags current;
@@ -162,7 +162,7 @@ mono_btls_x509_verify_param_get_mono_flags (MonoBtlsX509VerifyParam *param)
 	return current;
 }
 
-int
+MONO_API int
 mono_btls_x509_verify_param_set_mono_flags (MonoBtlsX509VerifyParam *param, MonoBtlsX509VerifyFlags flags)
 {
 	unsigned long current;
@@ -181,7 +181,7 @@ mono_btls_x509_verify_param_set_mono_flags (MonoBtlsX509VerifyParam *param, Mono
 	return X509_VERIFY_PARAM_set_flags (param->param, current);
 }
 
-int
+MONO_API int
 mono_btls_x509_verify_param_set_purpose (MonoBtlsX509VerifyParam *param, MonoBtlsX509Purpose purpose)
 {
 	if (!param->owns)
@@ -189,13 +189,13 @@ mono_btls_x509_verify_param_set_purpose (MonoBtlsX509VerifyParam *param, MonoBtl
 	return X509_VERIFY_PARAM_set_purpose (param->param, purpose);
 }
 
-int
+MONO_API int
 mono_btls_x509_verify_param_get_depth (MonoBtlsX509VerifyParam *param)
 {
 	return X509_VERIFY_PARAM_get_depth (param->param);
 }
 
-int
+MONO_API int
 mono_btls_x509_verify_param_set_depth (MonoBtlsX509VerifyParam *param, int depth)
 {
 	if (!param->owns)
@@ -204,7 +204,7 @@ mono_btls_x509_verify_param_set_depth (MonoBtlsX509VerifyParam *param, int depth
 	return 1;
 }
 
-int
+MONO_API int
 mono_btls_x509_verify_param_set_time (MonoBtlsX509VerifyParam *param, long time)
 {
 	if (!param->owns)
@@ -213,7 +213,7 @@ mono_btls_x509_verify_param_set_time (MonoBtlsX509VerifyParam *param, long time)
 	return 1;
 }
 
-char *
+MONO_API char *
 mono_btls_x509_verify_param_get_peername (MonoBtlsX509VerifyParam *param)
 {
 	char *peer = X509_VERIFY_PARAM_get0_peername (param->param);

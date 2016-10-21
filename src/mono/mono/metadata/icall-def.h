@@ -78,7 +78,7 @@ ICALL(NATIVEMETHODS_10, "TerminateProcess", ves_icall_Microsoft_Win32_NativeMeth
 ICALL(NATIVEMETHODS_11, "WaitForInputIdle", ves_icall_Microsoft_Win32_NativeMethods_WaitForInputIdle)
 #endif /* !DISABLE_PROCESS_HANDLING */
 
-#if HAVE_BTLS
+#if defined(HAVE_BTLS) && !defined(HAVE_DYNAMIC_BTLS)
 ICALL_TYPE(BTLS_BIO, "Mono.Btls.MonoBtlsBio", BTLS_BIO_1)
 ICALL(BTLS_BIO_1, "mono_btls_bio_flush", mono_btls_bio_flush)
 ICALL(BTLS_BIO_2, "mono_btls_bio_free", mono_btls_bio_free)

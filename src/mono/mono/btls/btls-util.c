@@ -17,7 +17,7 @@ extern time_t timegm (struct tm* const t);
 
 extern int asn1_generalizedtime_to_tm (struct tm *tm, const ASN1_GENERALIZEDTIME *d);
 
-void
+MONO_API void
 mono_btls_free (void *data)
 {
 	OPENSSL_free (data);

@@ -13,7 +13,7 @@ struct MonoBtlsX509Name {
 	X509_NAME *name;
 };
 
-MonoBtlsX509Name *
+MONO_API MonoBtlsX509Name *
 mono_btls_x509_name_from_name (X509_NAME *xn)
 {
 	MonoBtlsX509Name *name;
@@ -27,7 +27,7 @@ mono_btls_x509_name_from_name (X509_NAME *xn)
 	return name;
 }
 
-MonoBtlsX509Name *
+MONO_API MonoBtlsX509Name *
 mono_btls_x509_name_copy (X509_NAME *xn)
 {
 	MonoBtlsX509Name *name;
@@ -42,7 +42,7 @@ mono_btls_x509_name_copy (X509_NAME *xn)
 	return name;
 }
 
-void
+MONO_API void
 mono_btls_x509_name_free (MonoBtlsX509Name *name)
 {
 	if (name->owns) {
@@ -54,19 +54,19 @@ mono_btls_x509_name_free (MonoBtlsX509Name *name)
 	OPENSSL_free(name);
 }
 
-X509_NAME *
+MONO_API X509_NAME *
 mono_btls_x509_name_peek_name (MonoBtlsX509Name *name)
 {
 	return name->name;
 }
 
-int
+MONO_API int
 mono_btls_x509_name_print_bio (MonoBtlsX509Name *name, BIO *bio)
 {
 	return X509_NAME_print_ex (bio, name->name, 0, ASN1_STRFLGS_RFC2253 | XN_FLAG_FN_SN | XN_FLAG_SEP_CPLUS_SPC | XN_FLAG_DN_REV);
 }
 
-int
+MONO_API int
 mono_btls_x509_name_get_raw_data (MonoBtlsX509Name *name, void **buffer, int use_canon_enc)
 {
 	int len;
@@ -91,7 +91,7 @@ mono_btls_x509_name_get_raw_data (MonoBtlsX509Name *name, void **buffer, int use
 	return len;
 }
 
-MonoBtlsX509Name *
+MONO_API MonoBtlsX509Name *
 mono_btls_x509_name_from_data (const void *data, int len, int use_canon_enc)
 {
 	MonoBtlsX509Name *name;
@@ -146,26 +146,26 @@ mono_btls_x509_name_from_data (const void *data, int len, int use_canon_enc)
 	return name;
 }
 
-int
+MONO_API int
 mono_btls_x509_name_print_string (MonoBtlsX509Name *name, char *buffer, int size)
 {
 	*buffer = 0;
 	return X509_NAME_oneline (name->name, buffer, size) != NULL;
 }
 
-long
+MONO_API long
 mono_btls_x509_name_hash (MonoBtlsX509Name *name)
 {
 	return X509_NAME_hash (name->name);
 }
 
-long
+MONO_API long
 mono_btls_x509_name_hash_old (MonoBtlsX509Name *name)
 {
 	return X509_NAME_hash_old (name->name);
 }
 
-int
+MONO_API int
 mono_btls_x509_name_get_entry_count (MonoBtlsX509Name *name)
 {
 	return X509_NAME_entry_count (name->name);
@@ -210,7 +210,7 @@ nid2mono (int nid)
 	}
 }
 
-MonoBtlsX509NameEntryType
+MONO_API MonoBtlsX509NameEntryType
 mono_btls_x509_name_get_entry_type (MonoBtlsX509Name *name, int index)
 {
 	X509_NAME_ENTRY *entry;
@@ -230,7 +230,7 @@ mono_btls_x509_name_get_entry_type (MonoBtlsX509Name *name, int index)
 	return nid2mono (OBJ_obj2nid (obj));
 }
 
-int
+MONO_API int
 mono_btls_x509_name_get_entry_oid (MonoBtlsX509Name *name, int index, char *buffer, int size)
 {
 	X509_NAME_ENTRY *entry;
@@ -250,7 +250,7 @@ mono_btls_x509_name_get_entry_oid (MonoBtlsX509Name *name, int index, char *buff
 	return OBJ_obj2txt (buffer, size, obj, 1);
 }
 
-int
+MONO_API int
 mono_btls_x509_name_get_entry_oid_data (MonoBtlsX509Name *name, int index, const void **data)
 {
 	X509_NAME_ENTRY *entry;
@@ -271,7 +271,7 @@ mono_btls_x509_name_get_entry_oid_data (MonoBtlsX509Name *name, int index, const
 	return obj->length;
 }
 
-int
+MONO_API int
 mono_btls_x509_name_get_entry_value (MonoBtlsX509Name *name, int index, int *tag, unsigned char **str)
 {
 	X509_NAME_ENTRY *entry;

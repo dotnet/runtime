@@ -31,13 +31,13 @@ mono_btls_ssl_ctx_debug_printf (ptr, "%s:%d:%s(): " fmt, __FILE__, __LINE__, \
 
 void ssl_cipher_preference_list_free (struct ssl_cipher_preference_list_st *cipher_list);
 
-int
+MONO_API int
 mono_btls_ssl_ctx_is_debug_enabled (MonoBtlsSslCtx *ctx)
 {
 	return ctx->debug_bio != NULL;
 }
 
-int
+MONO_API int
 mono_btls_ssl_ctx_debug_printf (MonoBtlsSslCtx *ctx, const char *format, ...)
 {
 	va_list args;
@@ -52,7 +52,7 @@ mono_btls_ssl_ctx_debug_printf (MonoBtlsSslCtx *ctx, const char *format, ...)
 	return ret;
 }
 
-MonoBtlsSslCtx *
+MONO_API MonoBtlsSslCtx *
 mono_btls_ssl_ctx_new (void)
 {
 	MonoBtlsSslCtx *ctx;
@@ -67,14 +67,14 @@ mono_btls_ssl_ctx_new (void)
 	return ctx;
 }
 
-MonoBtlsSslCtx *
+MONO_API MonoBtlsSslCtx *
 mono_btls_ssl_ctx_up_ref (MonoBtlsSslCtx *ctx)
 {
 	CRYPTO_refcount_inc (&ctx->references);
 	return ctx;
 }
 
-int
+MONO_API int
 mono_btls_ssl_ctx_free (MonoBtlsSslCtx *ctx)
 {
 	if (!CRYPTO_refcount_dec_and_test_zero (&ctx->references))
@@ -85,13 +85,13 @@ mono_btls_ssl_ctx_free (MonoBtlsSslCtx *ctx)
 	return 1;
 }
 
-SSL_CTX *
+MONO_API SSL_CTX *
 mono_btls_ssl_ctx_get_ctx (MonoBtlsSslCtx *ctx)
 {
 	return ctx->ctx;
 }
 
-void
+MONO_API void
 mono_btls_ssl_ctx_set_debug_bio (MonoBtlsSslCtx *ctx, BIO *debug_bio)
 {
 	if (debug_bio)
@@ -100,7 +100,7 @@ mono_btls_ssl_ctx_set_debug_bio (MonoBtlsSslCtx *ctx, BIO *debug_bio)
 		ctx->debug_bio = NULL;
 }
 
-void
+MONO_API void
 mono_btls_ssl_ctx_initialize (MonoBtlsSslCtx *ctx, void *instance)
 {
 	ctx->instance = instance;
@@ -122,7 +122,7 @@ cert_verify_callback (X509_STORE_CTX *storeCtx, void *arg)
 	return ret;
 }
 
-void
+MONO_API void
 mono_btls_ssl_ctx_set_cert_verify_callback (MonoBtlsSslCtx *ptr, MonoBtlsVerifyFunc func, int cert_required)
 {
 	int mode;
@@ -151,32 +151,32 @@ cert_select_callback (SSL *ssl, void *arg)
 	return ret;
 }
 
-void
+MONO_API void
 mono_btls_ssl_ctx_set_cert_select_callback (MonoBtlsSslCtx *ptr, MonoBtlsSelectFunc func)
 {
 	ptr->select_func = func;
 	SSL_CTX_set_cert_cb (ptr->ctx, cert_select_callback, ptr);
 }
 
-X509_STORE *
+MONO_API X509_STORE *
 mono_btls_ssl_ctx_peek_store (MonoBtlsSslCtx *ctx)
 {
 	return SSL_CTX_get_cert_store (ctx->ctx);
 }
 
-void
+MONO_API void
 mono_btls_ssl_ctx_set_min_version (MonoBtlsSslCtx *ctx, int version)
 {
 	SSL_CTX_set_min_version (ctx->ctx, version);
 }
 
-void
+MONO_API void
 mono_btls_ssl_ctx_set_max_version (MonoBtlsSslCtx *ctx, int version)
 {
 	SSL_CTX_set_max_version (ctx->ctx, version);
 }
 
-int
+MONO_API int
 mono_btls_ssl_ctx_is_cipher_supported (MonoBtlsSslCtx *ctx, uint16_t value)
 {
 	const SSL_CIPHER *cipher;
@@ -185,7 +185,7 @@ mono_btls_ssl_ctx_is_cipher_supported (MonoBtlsSslCtx *ctx, uint16_t value)
 	return cipher != NULL;
 }
 
-int
+MONO_API int
 mono_btls_ssl_ctx_set_ciphers (MonoBtlsSslCtx *ctx, int count, const uint16_t *data,
 				   int allow_unsupported)
 {
@@ -247,7 +247,7 @@ err:
 	return 0;
 }
 
-int
+MONO_API int
 mono_btls_ssl_ctx_set_verify_param (MonoBtlsSslCtx *ctx, const MonoBtlsX509VerifyParam *param)
 {
 	return SSL_CTX_set1_param (ctx->ctx, mono_btls_x509_verify_param_peek_param (param));

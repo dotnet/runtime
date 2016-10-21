@@ -14,7 +14,7 @@ struct MonoBtlsX509Crl {
 	CRYPTO_refcount_t references;
 };
 
-MonoBtlsX509Crl *
+MONO_API MonoBtlsX509Crl *
 mono_btls_x509_crl_from_data (const void *buf, int len, MonoBtlsX509Format format)
 {
 	MonoBtlsX509Crl *crl;
@@ -43,14 +43,14 @@ mono_btls_x509_crl_from_data (const void *buf, int len, MonoBtlsX509Format forma
 	return crl;
 }
 
-MonoBtlsX509Crl *
+MONO_API MonoBtlsX509Crl *
 mono_btls_x509_crl_ref (MonoBtlsX509Crl *crl)
 {
 	CRYPTO_refcount_inc (&crl->references);
 	return crl;
 }
 
-int
+MONO_API int
 mono_btls_x509_crl_free (MonoBtlsX509Crl *crl)
 {
 	if (!CRYPTO_refcount_dec_and_test_zero (&crl->references))
@@ -61,7 +61,7 @@ mono_btls_x509_crl_free (MonoBtlsX509Crl *crl)
 	return 1;
 }
 
-MonoBtlsX509Revoked *
+MONO_API MonoBtlsX509Revoked *
 mono_btls_x509_crl_get_by_cert (MonoBtlsX509Crl *crl, X509 *x509)
 {
 	X509_REVOKED *revoked;
@@ -77,7 +77,7 @@ mono_btls_x509_crl_get_by_cert (MonoBtlsX509Crl *crl, X509 *x509)
 	return mono_btls_x509_revoked_new (crl, revoked);
 }
 
-MonoBtlsX509Revoked *
+MONO_API MonoBtlsX509Revoked *
 mono_btls_x509_crl_get_by_serial (MonoBtlsX509Crl *crl, void *serial, int len)
 {
 	ASN1_INTEGER si;
@@ -98,7 +98,7 @@ mono_btls_x509_crl_get_by_serial (MonoBtlsX509Crl *crl, void *serial, int len)
 	return mono_btls_x509_revoked_new (crl, revoked);
 }
 
-int
+MONO_API int
 mono_btls_x509_crl_get_revoked_count (MonoBtlsX509Crl *crl)
 {
 	STACK_OF(X509_REVOKED) *stack;
@@ -107,7 +107,7 @@ mono_btls_x509_crl_get_revoked_count (MonoBtlsX509Crl *crl)
 	return (int)sk_X509_REVOKED_num (stack);
 }
 
-MonoBtlsX509Revoked *
+MONO_API MonoBtlsX509Revoked *
 mono_btls_x509_crl_get_revoked (MonoBtlsX509Crl *crl, int index)
 {
 	STACK_OF(X509_REVOKED) *stack;
@@ -124,25 +124,25 @@ mono_btls_x509_crl_get_revoked (MonoBtlsX509Crl *crl, int index)
 	return mono_btls_x509_revoked_new (crl, revoked);
 }
 
-long
+MONO_API long
 mono_btls_x509_crl_get_last_update (MonoBtlsX509Crl *crl)
 {
 	return mono_btls_util_asn1_time_to_ticks (X509_CRL_get_lastUpdate (crl->crl));
 }
 
-long
+MONO_API long
 mono_btls_x509_crl_get_next_update (MonoBtlsX509Crl *crl)
 {
 	return mono_btls_util_asn1_time_to_ticks (X509_CRL_get_nextUpdate (crl->crl));
 }
 
-long
+MONO_API long
 mono_btls_x509_crl_get_version (MonoBtlsX509Crl *crl)
 {
 	return X509_CRL_get_version (crl->crl);
 }
 
-MonoBtlsX509Name *
+MONO_API MonoBtlsX509Name *
 mono_btls_x509_crl_get_issuer (MonoBtlsX509Crl *crl)
 {
 	return mono_btls_x509_name_copy (X509_CRL_get_issuer (crl->crl));
