@@ -2892,7 +2892,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
         }
         else
 #endif // defined(_TARGET_X86_)
-        if (call->gtCallType == CT_INDIRECT && call->gtCallCookie)
+        if (call->gtCallType == CT_INDIRECT && (call->gtCallCookie != nullptr))
         {
             assert(!call->IsUnmanaged());
 
@@ -2900,16 +2900,20 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
             noway_assert(arg != nullptr);
             call->gtCallCookie = nullptr;
 
+#if defined(_TARGET_X86_)
+            // x86 passes the cookie on the stack as the final argument to the call.
+            GenTreeArgList** insertionPoint = &call->gtCallArgs;
+            for (; *insertionPoint != nullptr; insertionPoint = &(*insertionPoint)->Rest())
+            {
+            }
+            *insertionPoint = gtNewListNode(arg, nullptr);
+#else  // !defined(_TARGET_X86_)
+            // All other architectures pass the cookie in a register.
             call->gtCallArgs = gtNewListNode(arg, call->gtCallArgs);
-            numArgs++;
+#endif // defined(_TARGET_X86_)
 
-            // x86 passes the cookie on the stack.
-            CLANG_FORMAT_COMMENT_ANCHOR;
-
-#if !defined(_TARGET_X86_)
-            // put cookie into R11
             nonStandardArgs.Add(arg, REG_PINVOKE_COOKIE_PARAM);
-#endif // !defined(_TARGET_X86_)
+            numArgs++;
 
             // put destination into R10/EAX
             arg              = gtClone(call->gtCallAddr, true);
@@ -3140,9 +3144,11 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
             compFloatingPointUsed = true;
         }
 
-        unsigned             size         = 0;
-        CORINFO_CLASS_HANDLE copyBlkClass = nullptr;
-        bool                 isRegArg     = false;
+        unsigned             size          = 0;
+        CORINFO_CLASS_HANDLE copyBlkClass  = nullptr;
+        bool                 isRegArg      = false;
+        bool                 isNonStandard = false;
+        regNumber            nonStdRegNum  = REG_NA;
 
         fgArgTabEntryPtr argEntry = nullptr;
 
@@ -3313,7 +3319,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                     }
                 }
 #else  // !FEATURE_UNIX_AMD64_STRUCT_PASSING
-                size = 1; // On AMD64, all primitives fit in a single (64-bit) 'slot'
+                size         = 1; // On AMD64, all primitives fit in a single (64-bit) 'slot'
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 #elif defined(_TARGET_ARM64_)
                 if (isStructArg)
@@ -3870,8 +3876,19 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                 isRegArg = false;
             }
 
-#if defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)
-            if (call->IsTailCallViaHelper())
+#ifndef LEGACY_BACKEND
+            // If there are nonstandard args (outside the calling convention) they were inserted above
+            // and noted them in a table so we can recognize them here and build their argInfo.
+            //
+            // They should not affect the placement of any other args or stack space required.
+            // Example: on AMD64 R10 and R11 are used for indirect VSD (generic interface) and cookie calls.
+            isNonStandard = nonStandardArgs.FindReg(argx, &nonStdRegNum);
+            if (isNonStandard && (nonStdRegNum == REG_STK))
+            {
+                isRegArg = false;
+            }
+#if defined(_TARGET_X86_)
+            else if (call->IsTailCallViaHelper())
             {
                 // We have already (before calling fgMorphArgs()) appended the 4 special args
                 // required by the x86 tailcall helper. These args are required to go on the
@@ -3882,8 +3899,8 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                     isRegArg = false;
                 }
             }
-#endif // defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)
-
+#endif    // defined(_TARGET_X86_)
+#endif    // !LEGACY_BACKEND
         } // end !reMorphing
 
         //
@@ -3970,16 +3987,10 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
             }
             else
             {
-                bool isNonStandard = false;
-
-#ifndef LEGACY_BACKEND
-                // If there are nonstandard args (outside the calling convention) they were inserted above
-                // and noted them in a table so we can recognize them here and build their argInfo.
-                //
-                // They should not affect the placement of any other args or stack space required.
-                // Example: on AMD64 R10 and R11 are used for indirect VSD (generic interface) and cookie calls.
-                isNonStandard = nonStandardArgs.FindReg(argx, &nextRegNum);
-#endif // !LEGACY_BACKEND
+                if (isNonStandard)
+                {
+                    nextRegNum = nonStdRegNum;
+                }
 
                 // This is a register argument - put it in the table
                 newArgEntry = call->fgArgInfo->AddRegArg(argIndex, argx, args, nextRegNum, size, argAlign
