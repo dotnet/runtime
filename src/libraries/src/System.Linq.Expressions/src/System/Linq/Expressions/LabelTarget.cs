@@ -45,7 +45,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="String"/> that represents the current <see cref="Object"/>. </returns>
         public override string ToString()
         {
-            return String.IsNullOrEmpty(this.Name) ? "UnamedLabel" : this.Name;
+            return string.IsNullOrEmpty(this.Name) ? "UnamedLabel" : this.Name;
         }
     }
 
