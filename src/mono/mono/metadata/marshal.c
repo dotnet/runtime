@@ -6678,7 +6678,8 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_icon (mb, esize);
 			mono_mb_emit_byte (mb, CEE_MUL);
 			mono_mb_emit_byte (mb, CEE_PREFIX1);
-			mono_mb_emit_byte (mb, CEE_CPBLK);			
+			mono_mb_emit_byte (mb, CEE_CPBLK);
+			mono_mb_patch_branch (mb, label1);
 			break;
 		}
 

@@ -746,6 +746,21 @@ public class Tests {
 		return mono_test_marshal_array_delegate1 (null, 0, new ArrayDelegate1 (array_delegate2));
 	}
 
+	public delegate int ArrayDelegateBlittable (int i, string j,
+										[In, MarshalAs(UnmanagedType.LPArray,
+													   ArraySubType=UnmanagedType.LPStr, SizeParamIndex=0)] int[] arr);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_array_delegate")]
+	public static extern int mono_test_marshal_array_delegate1 (string[] arr, int len, ArrayDelegateBlittable d);
+
+	public static int array_delegate_null_blittable (int i, string j, int[] arr) {
+		return (arr == null) ? 0 : 1;
+	}
+
+	public static int test_0_marshal_array_delegate_null_blittable () {
+		return mono_test_marshal_array_delegate1 (null, 0, new ArrayDelegateBlittable (array_delegate_null_blittable));
+	}
+
 	public delegate int ArrayDelegate3 (int i, 
 										string j, 
 										[In, MarshalAs(UnmanagedType.LPArray, 
