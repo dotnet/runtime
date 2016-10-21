@@ -8099,6 +8099,73 @@ ves_icall_Mono_TlsProviderFactory_IsBtlsSupported (void)
 #endif
 }
 
+#ifndef DISABLE_COM
+
+ICALL_EXPORT int
+ves_icall_System_Runtime_InteropServices_Marshal_GetHRForException_WinRT(MonoException* ex)
+{
+	mono_set_pending_exception(mono_get_exception_not_implemented("System.Runtime.InteropServices.Marshal.GetHRForException_WinRT internal call is not implemented."));
+	return 0;
+}
+
+ICALL_EXPORT MonoObject*
+ves_icall_System_Runtime_InteropServices_Marshal_GetNativeActivationFactory(MonoObject* type)
+{
+	mono_set_pending_exception(mono_get_exception_not_implemented("System.Runtime.InteropServices.Marshal.GetNativeActivationFactory internal call is not implemented."));
+	return NULL;
+}
+
+ICALL_EXPORT void*
+ves_icall_System_Runtime_InteropServices_Marshal_GetRawIUnknownForComObjectNoAddRef(MonoObject* obj)
+{
+	mono_set_pending_exception(mono_get_exception_not_implemented("System.Runtime.InteropServices.Marshal.GetRawIUnknownForComObjectNoAddRef internal call is not implemented."));
+	return NULL;
+}
+
+ICALL_EXPORT MonoObject*
+ves_icall_System_Runtime_InteropServices_WindowsRuntime_UnsafeNativeMethods_GetRestrictedErrorInfo()
+{
+	mono_set_pending_exception(mono_get_exception_not_implemented("System.Runtime.InteropServices.WindowsRuntime.UnsafeNativeMethods.GetRestrictedErrorInfo internal call is not implemented."));
+	return NULL;
+}
+
+ICALL_EXPORT MonoBoolean
+ves_icall_System_Runtime_InteropServices_WindowsRuntime_UnsafeNativeMethods_RoOriginateLanguageException(int error, MonoString* message, void* languageException)
+{
+	mono_set_pending_exception(mono_get_exception_not_implemented("System.Runtime.InteropServices.WindowsRuntime.UnsafeNativeMethods.RoOriginateLanguageException internal call is not implemented."));
+	return FALSE;
+}
+
+ICALL_EXPORT void
+ves_icall_System_Runtime_InteropServices_WindowsRuntime_UnsafeNativeMethods_RoReportUnhandledError(MonoObject* error)
+{
+	mono_set_pending_exception(mono_get_exception_not_implemented("System.Runtime.InteropServices.WindowsRuntime.UnsafeNativeMethods.RoReportUnhandledError internal call is not implemented."));
+}
+
+ICALL_EXPORT int
+ves_icall_System_Runtime_InteropServices_WindowsRuntime_UnsafeNativeMethods_WindowsCreateString(MonoString* sourceString, int length, void** hstring)
+{
+	mono_set_pending_exception(mono_get_exception_not_implemented("System.Runtime.InteropServices.WindowsRuntime.UnsafeNativeMethods.WindowsCreateString internal call is not implemented."));
+	return 0;
+}
+
+ICALL_EXPORT int
+ves_icall_System_Runtime_InteropServices_WindowsRuntime_UnsafeNativeMethods_WindowsDeleteString(void* hstring)
+{
+	mono_set_pending_exception(mono_get_exception_not_implemented("System.Runtime.InteropServices.WindowsRuntime.UnsafeNativeMethods.WindowsDeleteString internal call is not implemented."));
+	return 0;
+}
+
+ICALL_EXPORT mono_unichar2*
+ves_icall_System_Runtime_InteropServices_WindowsRuntime_UnsafeNativeMethods_WindowsGetStringRawBuffer(void* hstring, unsigned* length)
+{
+	mono_set_pending_exception(mono_get_exception_not_implemented("System.Runtime.InteropServices.WindowsRuntime.UnsafeNativeMethods.WindowsGetStringRawBuffer internal call is not implemented."));
+	return NULL;
+}
+
+#endif
+
+
 #ifndef DISABLE_ICALL_TABLES
 
 #define ICALL_TYPE(id,name,first)
