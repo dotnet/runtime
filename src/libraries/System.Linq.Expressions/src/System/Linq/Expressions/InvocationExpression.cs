@@ -128,7 +128,7 @@ namespace System.Linq.Expressions
 
     #region Specialized Subclasses
 
-    internal class InvocationExpressionN : InvocationExpression
+    internal sealed class InvocationExpressionN : InvocationExpression
     {
         private IList<Expression> _arguments;
 
@@ -165,7 +165,7 @@ namespace System.Linq.Expressions
         }
     }
 
-    internal class InvocationExpression0 : InvocationExpression
+    internal sealed class InvocationExpression0 : InvocationExpression
     {
         public InvocationExpression0(Expression lambda, Type returnType)
             : base(lambda, returnType)
@@ -199,7 +199,7 @@ namespace System.Linq.Expressions
         }
     }
 
-    internal class InvocationExpression1 : InvocationExpression
+    internal sealed class InvocationExpression1 : InvocationExpression
     {
         private object _arg0;       // storage for the 1st argument or a readonly collection.  See IArgumentProvider
 
@@ -244,7 +244,7 @@ namespace System.Linq.Expressions
         }
     }
 
-    internal class InvocationExpression2 : InvocationExpression
+    internal sealed class InvocationExpression2 : InvocationExpression
     {
         private object _arg0;               // storage for the 1st argument or a readonly collection.  See IArgumentProvider
         private readonly Expression _arg1;  // storage for the 2nd arg
@@ -292,7 +292,7 @@ namespace System.Linq.Expressions
         }
     }
 
-    internal class InvocationExpression3 : InvocationExpression
+    internal sealed class InvocationExpression3 : InvocationExpression
     {
         private object _arg0;               // storage for the 1st argument or a readonly collection.  See IArgumentProvider
         private readonly Expression _arg1;  // storage for the 2nd arg
@@ -343,7 +343,7 @@ namespace System.Linq.Expressions
         }
     }
 
-    internal class InvocationExpression4 : InvocationExpression
+    internal sealed class InvocationExpression4 : InvocationExpression
     {
         private object _arg0;               // storage for the 1st argument or a readonly collection.  See IArgumentProvider
         private readonly Expression _arg1;  // storage for the 2nd arg
@@ -397,7 +397,7 @@ namespace System.Linq.Expressions
         }
     }
 
-    internal class InvocationExpression5 : InvocationExpression
+    internal sealed class InvocationExpression5 : InvocationExpression
     {
         private object _arg0;               // storage for the 1st argument or a readonly collection.  See IArgumentProvider
         private readonly Expression _arg1;  // storage for the 2nd arg

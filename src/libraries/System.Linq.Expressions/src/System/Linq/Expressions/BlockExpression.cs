@@ -539,7 +539,7 @@ namespace System.Linq.Expressions
         }
     }
 
-    internal class ScopeWithType : ScopeN
+    internal sealed class ScopeWithType : ScopeN
     {
         private readonly Type _type;
 

@@ -13,7 +13,7 @@ namespace System.Linq.Expressions.Compiler
 {
     internal partial class StackSpiller
     {
-        private class TempMaker
+        private sealed class TempMaker
         {
             /// <summary>
             /// Current temporary variable
@@ -128,7 +128,7 @@ namespace System.Linq.Expressions.Compiler
         /// the original expression or the rewritten expression. Finish will call
         /// Expression.Comma if necessary and return a new Result.
         /// </summary>
-        private class ChildRewriter
+        private sealed class ChildRewriter
         {
             private readonly StackSpiller _self;
             private readonly Expression[] _expressions;
