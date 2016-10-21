@@ -38,7 +38,6 @@
     <Compile Include="AuthenticationManagerTest.cs" />
     <Compile Include="FileWebRequestTest.cs" />
     <Compile Include="HttpRequestCachePolicyTest.cs" />
-    <Compile Include="RequestCachePolicyTest.cs" />
     <Compile Include="ServicePointManagerTest.cs" />
     <Compile Include="HttpWebRequestHeaderTest.cs" />   
     <Compile Include="HttpWebResponseHeaderTest.cs" />   
@@ -48,6 +47,10 @@
       <Name>System.Net.Requests</Name>
       <Project>{5EE76DCC-9FD5-47FD-AB45-BD0F0857740F}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <!-- TODO: Remove this reference once packages are updated -->
+    <ProjectReference Include="..\..\System.Net.Primitives\pkg\System.Net.Primitives.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
