@@ -5,6 +5,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
+using System.Diagnostics;
 
 namespace System.IO
 {
@@ -401,6 +402,50 @@ namespace System.IO
                 if (!CanSeek) throw Error.GetSeekNotSupported();
                 return GetLengthInternal();
             }
+        }
+
+        /// <summary>
+        /// Verify that the actual position of the OS's handle equals what we expect it to.
+        /// This will fail if someone else moved the UnixFileStream's handle or if
+        /// our position updating code is incorrect.
+        /// </summary>
+        private void VerifyOSHandlePosition()
+        {
+            bool verifyPosition = _exposedHandle; // in release, only verify if we've given out the handle such that someone else could be manipulating it
+#if DEBUG
+            verifyPosition = true; // in debug, always make sure our position matches what the OS says it should be
+#endif
+            if (verifyPosition && CanSeek)
+            {
+                long oldPos = _filePosition; // SeekCore will override the current _position, so save it now
+                long curPos = SeekCore(0, SeekOrigin.Current);
+                if (oldPos != curPos)
+                {
+                    // For reads, this is non-fatal but we still could have returned corrupted 
+                    // data in some cases, so discard the internal buffer. For writes, 
+                    // this is a problem; discard the buffer and error out.
+                    _readPos = _readLength = 0;
+                    if (_writePos > 0)
+                    {
+                        _writePos = 0;
+                        throw new IOException(SR.IO_FileStreamHandlePosition);
+                    }
+                }
+            }
+        }
+
+        /// <summary>Verifies that state relating to the read/write buffer is consistent.</summary>
+        [Conditional("DEBUG")]
+        private void VerifyBufferInvariants()
+        {
+            // Read buffer values must be in range: 0 <= _bufferReadPos <= _bufferReadLength <= _bufferLength
+            Debug.Assert(0 <= _readPos && _readPos <= _readLength && _readLength <= _bufferLength);
+
+            // Write buffer values must be in range: 0 <= _bufferWritePos <= _bufferLength
+            Debug.Assert(0 <= _writePos && _writePos <= _bufferLength);
+
+            // Read buffering and write buffering can't both be active
+            Debug.Assert((_readPos == 0 && _readLength == 0) || _writePos == 0);
         }
 
         ~FileStream()
