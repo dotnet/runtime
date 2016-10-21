@@ -14785,6 +14785,9 @@ int gc_heap::generation_to_condemn (int n_initial,
         dprintf (GTC_LOG, ("h%d: alloc full - BLOCK", heap_number));
         n = max_generation;
         *blocking_collection_p = TRUE;
+        if ((local_settings->reason == reason_oos_loh) ||
+            (local_settings->reason == reason_alloc_loh))
+            evaluate_elevation = FALSE;
 
         local_condemn_reasons->set_condition (gen_before_oom);
     }
@@ -16499,7 +16502,7 @@ int gc_heap::garbage_collect (int n)
         if ((settings.condemned_generation == max_generation) &&
             (recursive_gc_sync::background_running_p()))
         {
-            //TODO BACKGROUND_GC If we just wait for the end of gc, it won't woork
+            //TODO BACKGROUND_GC If we just wait for the end of gc, it won't work
             // because we have to collect 0 and 1 properly
             // in particular, the allocation contexts are gone.
             // For now, it is simpler to collect max_generation-1
