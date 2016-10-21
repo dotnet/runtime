@@ -12,7 +12,7 @@ namespace System.Linq.Expressions
     /// <summary>
     /// Represents an expression that has a conditional operator.
     /// </summary>
-    [DebuggerTypeProxy(typeof(Expression.ConditionalExpressionProxy))]
+    [DebuggerTypeProxy(typeof(ConditionalExpressionProxy))]
     public class ConditionalExpression : Expression
     {
         private readonly Expression _test;

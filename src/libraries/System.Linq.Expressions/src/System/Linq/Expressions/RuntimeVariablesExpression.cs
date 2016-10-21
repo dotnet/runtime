@@ -15,7 +15,7 @@ namespace System.Linq.Expressions
     /// Needed to implement "eval" in some dynamic languages.
     /// Evaluates to an instance of <see cref="IList{IStrongBox}" /> when executed.
     /// </summary>
-    [DebuggerTypeProxy(typeof(Expression.RuntimeVariablesExpressionProxy))]
+    [DebuggerTypeProxy(typeof(RuntimeVariablesExpressionProxy))]
     public sealed class RuntimeVariablesExpression : Expression
     {
         private readonly ReadOnlyCollection<ParameterExpression> _variables;

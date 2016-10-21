@@ -18,7 +18,7 @@ namespace System.Linq.Expressions
     /// Use the <see cref="M:ListInit"/> factory methods to create a ListInitExpression. 
     /// The value of the NodeType property of a ListInitExpression is ListInit. 
     /// </remarks>
-    [DebuggerTypeProxy(typeof(Expression.ListInitExpressionProxy))]
+    [DebuggerTypeProxy(typeof(ListInitExpressionProxy))]
     public sealed class ListInitExpression : Expression
     {
         private readonly NewExpression _newExpression;

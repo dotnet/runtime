@@ -12,7 +12,7 @@ namespace System.Linq.Expressions
     /// <see cref="GotoExpression"/>. Otherwise, it gets the value in <see cref="LabelExpression.DefaultValue"/>. If the
     /// <see cref="Type"/> equals System.Void, no value should be provided.
     /// </summary>
-    [DebuggerTypeProxy(typeof(Expression.LabelExpressionProxy))]
+    [DebuggerTypeProxy(typeof(LabelExpressionProxy))]
     public sealed class LabelExpression : Expression
     {
         private readonly Expression _defaultValue;

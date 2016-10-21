@@ -14,7 +14,7 @@ namespace System.Linq.Expressions
     /// <summary>
     /// Represents an expression that applies a delegate or lambda expression to a list of argument expressions.
     /// </summary>
-    [DebuggerTypeProxy(typeof(Expression.InvocationExpressionProxy))]
+    [DebuggerTypeProxy(typeof(InvocationExpressionProxy))]
     public class InvocationExpression : Expression, IArgumentProvider
     {
         private readonly Expression _lambda;

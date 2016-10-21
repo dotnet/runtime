@@ -17,7 +17,7 @@ namespace System.Linq.Expressions
     /// <remarks>
     /// Lambda expressions take input through parameters and are expected to be fully bound. 
     /// </remarks>
-    [DebuggerTypeProxy(typeof(Expression.LambdaExpressionProxy))]
+    [DebuggerTypeProxy(typeof(LambdaExpressionProxy))]
     public abstract class LambdaExpression : Expression
     {
         private readonly string _name;

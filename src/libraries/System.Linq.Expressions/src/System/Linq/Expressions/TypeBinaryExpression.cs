@@ -12,7 +12,7 @@ namespace System.Linq.Expressions
     /// <summary>
     /// Represents an operation between an expression and a type. 
     /// </summary>
-    [DebuggerTypeProxy(typeof(Expression.TypeBinaryExpressionProxy))]
+    [DebuggerTypeProxy(typeof(TypeBinaryExpressionProxy))]
     public sealed class TypeBinaryExpression : Expression
     {
         private readonly Expression _expression;
