@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http
 {
+    [Serializable]
     public class HttpRequestException : Exception
     {
         public HttpRequestException()
