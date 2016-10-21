@@ -19,7 +19,7 @@
     },
     "uap10.1": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.WinRT": "1.0.1",
+        "Microsoft.TargetingPack.Private.WinRT": "1.0.2",
         "Microsoft.Win32.Primitives": "4.4.0-beta-24619-02",
         "System.Collections": "4.4.0-beta-24619-02",
         "System.Diagnostics.Contracts": "4.4.0-beta-24619-02",

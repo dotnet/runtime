@@ -9,10 +9,6 @@
     "System.Text.Encoding": "4.4.0-beta-24619-02"
   },
   "frameworks": {
-    "netstandard1.7": {
-      "imports": [
-        "dotnet5.8"
-      ]
-    }
+    "netstandard1.7": {}
   }
 }

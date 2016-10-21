@@ -4,13 +4,10 @@
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.1",
         "System.IO.Pipes": "4.0.0",
-        "System.Resources.ResourceManager": "4.0.0.0",
+        "System.Resources.ResourceManager": "4.0.1",
         "System.Security.AccessControl": "4.0.0",
         "System.Security.Principal.Windows": "4.0.0"
-      },
-      "imports": [
-        "dotnet5.4"
-      ]
+      }
     },
     "net46": {
       "dependencies": {

@@ -3,16 +3,13 @@
     "netstandard1.6": {
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.1",
-        "System.Collections": "4.0.10",
-        "System.Diagnostics.Debug": "4.0.10",
-        "System.Resources.ResourceManager": "4.0.0",
-        "System.Runtime": "4.0.20",
-        "System.Runtime.Extensions": "4.0.10",
-        "System.Threading.Tasks": "4.0.10"
-      },
-      "imports": [
-        "dotnet5.7"
-      ]
+        "System.Collections": "4.0.11",
+        "System.Diagnostics.Debug": "4.0.11",
+        "System.Resources.ResourceManager": "4.0.1",
+        "System.Runtime": "4.1.0",
+        "System.Runtime.Extensions": "4.1.0",
+        "System.Threading.Tasks": "4.0.11"
+      }
     },
     "net463": {
       "dependencies": {

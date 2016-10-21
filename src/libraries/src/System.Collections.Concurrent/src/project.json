@@ -15,10 +15,7 @@
         "System.Runtime.Extensions": "4.4.0-beta-24619-02",
         "System.Threading": "4.4.0-beta-24619-02",
         "System.Threading.Tasks": "4.4.0-beta-24619-02"
-      },
-      "imports": [
-        "dotnet5.8"
-      ]
+      }
     },
     "net46": {
       "dependencies": {

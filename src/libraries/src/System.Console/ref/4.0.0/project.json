@@ -3,10 +3,6 @@
     "System.Console": "4.0.0"
   },
   "frameworks": {
-    "netstandard1.3": {
-      "imports": [
-        "dotnet5.4"
-      ]
-    }
+    "netstandard1.3": {}
   }
 }

@@ -1,15 +1,11 @@
 {
   "dependencies": {
-    "System.Runtime": "4.0.0",
-    "System.Reflection": "4.0.0",
-    "System.Reflection.Primitives": "4.0.0",
-    "System.IO": "4.0.0"
+    "System.Runtime": "4.1.0",
+    "System.Reflection": "4.1.0",
+    "System.Reflection.Primitives": "4.0.1",
+    "System.IO": "4.1.0"
   },
   "frameworks": {
-    "netstandard1.5": {
-      "imports": [
-        "dotnet5.6"
-      ]
-    }
+    "netstandard1.5": {}
   }
 }
