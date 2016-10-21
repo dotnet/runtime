@@ -286,33 +286,6 @@ namespace System.IO
             return len;
         }
 
-        public override long Position
-        {
-            get
-            {
-                if (_fileHandle.IsClosed) throw Error.GetFileNotOpen();
-                if (!CanSeek) throw Error.GetSeekNotSupported();
-
-                Debug.Assert((_readPos == 0 && _readLength == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLength), "We're either reading or writing, but not both.");
-
-                // Verify that internal position is in sync with the handle
-                VerifyOSHandlePosition();
-
-                // Compensate for buffer that we read from the handle (_readLen) Vs what the user
-                // read so far from the internal buffer (_readPos). Of course add any unwritten  
-                // buffered data
-                return _filePosition + (_readPos - _readLength + _writePos);
-            }
-            set
-            {
-                if (value < 0) throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
-                if (_writePos > 0) FlushWrite(false);
-                _readPos = 0;
-                _readLength = 0;
-                Seek(value, SeekOrigin.Begin);
-            }
-        }
-
         protected override void Dispose(bool disposing)
         {
             // Nothing will be done differently based on whether we are 
@@ -450,8 +423,6 @@ namespace System.IO
 
             _writePos = 0;
         }
-
-        internal virtual bool IsClosed => _fileHandle.IsClosed;
 
         private void SetLengthInternal(long value)
         {
@@ -636,6 +607,7 @@ namespace System.IO
                 // if we're seeking relative to the beginning or end of the stream.
                 offset -= (_readLength - _readPos);
             }
+            _readPos = _readLength = 0;
 
             // Verify that internal position is in sync with the handle
             VerifyOSHandlePosition();

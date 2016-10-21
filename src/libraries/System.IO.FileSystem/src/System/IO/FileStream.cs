@@ -448,6 +448,40 @@ namespace System.IO
             Debug.Assert((_readPos == 0 && _readLength == 0) || _writePos == 0);
         }
 
+        /// <summary>Gets or sets the position within the current stream</summary>
+        public override long Position
+        {
+            get
+            {
+                if (_fileHandle.IsClosed)
+                    throw Error.GetFileNotOpen();
+
+                if (!CanSeek)
+                    throw Error.GetSeekNotSupported();
+
+                VerifyBufferInvariants();
+                VerifyOSHandlePosition();
+
+                // We may have read data into our buffer from the handle, such that the handle position
+                // is artificially further along than the consumer's view of the stream's position.
+                // Thus, when reading, our position is really starting from the handle position negatively
+                // offset by the number of bytes in the buffer and positively offset by the number of
+                // bytes into that buffer we've read.  When writing, both the read length and position
+                // must be zero, and our position is just the handle position offset positive by how many
+                // bytes we've written into the buffer.
+                return (_filePosition - _readLength) + _readPos + _writePos;
+            }
+            set
+            {
+                if (value < 0)
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
+
+                Seek(value, SeekOrigin.Begin);
+            }
+        }
+
+        internal virtual bool IsClosed => _fileHandle.IsClosed;
+
         ~FileStream()
         {
             // Preserved for compatibility since FileStream has defined a 
