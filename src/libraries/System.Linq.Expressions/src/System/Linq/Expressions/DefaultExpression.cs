@@ -11,7 +11,7 @@ namespace System.Linq.Expressions
     /// <summary>
     /// Represents the default value of a type or an empty expression.
     /// </summary>
-    [DebuggerTypeProxy(typeof(Expression.DefaultExpressionProxy))]
+    [DebuggerTypeProxy(typeof(DefaultExpressionProxy))]
     public sealed class DefaultExpression : Expression
     {
         private readonly Type _type;

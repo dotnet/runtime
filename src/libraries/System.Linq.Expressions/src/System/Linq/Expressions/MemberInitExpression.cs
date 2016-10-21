@@ -14,7 +14,7 @@ namespace System.Linq.Expressions
     /// <summary>
     /// Represents calling a constructor and initializing one or more members of the new object.
     /// </summary>
-    [DebuggerTypeProxy(typeof(Expression.MemberInitExpressionProxy))]
+    [DebuggerTypeProxy(typeof(MemberInitExpressionProxy))]
     public sealed class MemberInitExpression : Expression
     {
         private readonly NewExpression _newExpression;

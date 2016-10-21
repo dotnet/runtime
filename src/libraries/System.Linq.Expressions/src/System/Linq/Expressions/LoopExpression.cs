@@ -11,7 +11,7 @@ namespace System.Linq.Expressions
     /// <summary>
     /// Represents an infinite loop. It can be exited with "break".
     /// </summary>
-    [DebuggerTypeProxy(typeof(Expression.LoopExpressionProxy))]
+    [DebuggerTypeProxy(typeof(LoopExpressionProxy))]
     public sealed class LoopExpression : Expression
     {
         private readonly Expression _body;

@@ -15,7 +15,7 @@ namespace System.Linq.Expressions
     /// This allows the debugger to highlight the correct source code when
     /// debugging.
     /// </summary>
-    [DebuggerTypeProxy(typeof(Expression.DebugInfoExpressionProxy))]
+    [DebuggerTypeProxy(typeof(DebugInfoExpressionProxy))]
     public class DebugInfoExpression : Expression
     {
         private readonly SymbolDocumentInfo _document;
