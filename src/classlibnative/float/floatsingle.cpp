@@ -11,16 +11,21 @@
 
 #define IS_FLT_INFINITY(x)         (((*((INT32*)((void*)&x))) & 0x7FFFFFFF) == 0x7F800000)
 
-// Windows x86 and Windows ARM don't define _isnanf() but they do define a generic macro isnan()
-#if (defined(_TARGET_X86_) || defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)) && !defined(FEATURE_PAL) && !defined(_isnanf)
-#if defined(_TARGET_ARM64_) || defined(_TARGET_ARM_)
+// Windows x86 and Windows ARM/ARM64 may not define _isnanf() or _copysignf() but they do
+// define _isnan() and _copysign(). We will redirect the macros to these other functions if
+// the macro is not defined for the platform. This has the side effect of a possible implicit
+// upcasting for arguments passed in and an explicit downcasting for the _copysign() call.
+#if (defined(_TARGET_X86_) || defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)) && !defined(FEATURE_PAL)
+
+#if !defined(_isnanf)
 #define _isnanf      _isnan
-#else
-#define _isnanf      isnan
-#endif
 #endif
 
-#
+#if !defined(_copysignf)
+#define _copysignf   (float)_copysign
+#endif
+
+#endif
 
 // The default compilation mode is /fp:precise, which disables floating-point intrinsics. This
 // default compilation mode has previously caused performance regressions in floating-point code.
