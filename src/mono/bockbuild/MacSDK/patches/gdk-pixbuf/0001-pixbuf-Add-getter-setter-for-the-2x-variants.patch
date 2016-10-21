@@ -1,0 +1,56 @@
+From f6d2db5a0c105785ee6f03717966ef0dbb1421f6 Mon Sep 17 00:00:00 2001
+From: Carlos Garnacho <carlosg@gnome.org>
+Date: Tue, 16 Jul 2013 10:32:11 +0200
+Subject: [PATCH] pixbuf: Add getter/setter for the 2x variants
+
+---
+ gdk-pixbuf/gdk-pixbuf-core.h |  3 +++
+ gdk-pixbuf/gdk-pixbuf.c      | 22 ++++++++++++++++++++++
+ 2 files changed, 25 insertions(+)
+
+diff --git a/gdk-pixbuf/gdk-pixbuf-core.h b/gdk-pixbuf/gdk-pixbuf-core.h
+index eb4d0a1..60c4ea3 100644
+--- a/gdk-pixbuf/gdk-pixbuf-core.h
++++ b/gdk-pixbuf/gdk-pixbuf-core.h
+@@ -474,6 +474,9 @@ GdkPixbuf *gdk_pixbuf_apply_embedded_orientation (GdkPixbuf *src);
+ const gchar * gdk_pixbuf_get_option (GdkPixbuf   *pixbuf,
+                                               const gchar *key);
+
++GdkPixbuf * gdk_pixbuf_get_hires_variant (GdkPixbuf *pixbuf);
++void        gdk_pixbuf_set_hires_variant (GdkPixbuf *pixbuf,
++                                          GdkPixbuf *hires);
+
+ G_END_DECLS
+
+diff --git a/gdk-pixbuf/gdk-pixbuf.c b/gdk-pixbuf/gdk-pixbuf.c
+index 0e13f27..d61f2c7 100644
+--- a/gdk-pixbuf/gdk-pixbuf.c
++++ b/gdk-pixbuf/gdk-pixbuf.c
+@@ -990,3 +990,25 @@ gdk_pixbuf_get_property (GObject         *object,
+                   break;
+           }
+ }
++
++GdkPixbuf *
++gdk_pixbuf_get_hires_variant (GdkPixbuf *pixbuf)
++{
++        g_return_val_if_fail (GDK_IS_PIXBUF (pixbuf), NULL);
++
++        return g_object_get_data (G_OBJECT (pixbuf),
++                                  "gdk-pixbuf-2x-variant");
++}
++
++void
++gdk_pixbuf_set_hires_variant (GdkPixbuf *pixbuf,
++                              GdkPixbuf *hires)
++{
++        g_return_if_fail (GDK_IS_PIXBUF (pixbuf));
++        g_return_if_fail (GDK_IS_PIXBUF (hires));
++
++        g_object_set_data_full (G_OBJECT (pixbuf),
++                                "gdk-pixbuf-2x-variant",
++                                g_object_ref (hires),
++                                (GDestroyNotify) g_object_unref);
++}
+--
+1.8.3.2

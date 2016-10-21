@@ -9,19 +9,18 @@ import traceback
 
 from glob import glob
 
-from MonoReleaseProfile import MonoReleaseProfile
+from MacSDK import profile
 from bockbuild.util.util import *
 
 
 class MonoXamarinPackageProfile(MonoReleaseProfile):
+    description = 'Signed package'
 
-    def __init__(self):
-        MonoReleaseProfile.__init__(self)
-
-        # add the private stuff
-        self.packages_to_build.extend(['mono-extensions'])
-
-        if self.cmd_options.release_build:
+    def attach (self, bockbuild):
+        print dir(bockbuild)
+        MonoReleaseProfile.attach(self, bockbuild)
+        bockbuild.packages_to_build.extend(['mono-extensions'])
+        if bockbuild.cmd_options.release_build:
             self.setup_codesign()
         else:
             info("'--release' option not set, will not attempt to sign package!")
@@ -87,3 +86,5 @@ class MonoXamarinPackageProfile(MonoReleaseProfile):
                 error("%s IS NOT SIGNED:" % pkg)
         finally:
             os.chdir(oldcwd)
+
+MonoXamarinPackageProfile()
