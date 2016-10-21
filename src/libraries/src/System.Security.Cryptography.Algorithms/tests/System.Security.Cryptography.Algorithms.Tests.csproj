@@ -134,6 +134,7 @@
     <Compile Include="TripleDesTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'==''">
+    <Compile Include="AesManagedTests.cs" />
     <Compile Include="AsymmetricSignatureFormatterTests.cs" />
     <Compile Include="DefaultDSAProvider.cs" />
     <Compile Include="DESProvider.cs" />
@@ -145,6 +146,10 @@
     <Compile Include="RijndaelTests.cs" />
     <Compile Include="RSAKeyExchangeFormatterTests.cs" />
     <Compile Include="RSASignatureFormatterTests.cs" />
+    <Compile Include="Sha1ManagedTests.cs" />
+    <Compile Include="Sha256ManagedTests.cs" />
+    <Compile Include="Sha384ManagedTests.cs" />
+    <Compile Include="Sha512ManagedTests.cs" />
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AsymmetricSignatureFormatter.cs">
       <Link>CommonTest\System\Security\Cryptography\AsymmetricSignatureFormatter.cs</Link>
     </Compile>

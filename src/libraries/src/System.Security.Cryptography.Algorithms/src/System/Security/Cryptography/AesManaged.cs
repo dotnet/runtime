@@ -7,14 +7,12 @@ using System.ComponentModel;
 namespace System.Security.Cryptography
 {
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public sealed class RijndaelManaged : Rijndael
+    public sealed class AesManaged : Aes
     {
         private readonly Aes _impl;
 
-        public RijndaelManaged()
+        public AesManaged()
         {
-            LegalBlockSizesValue = new KeySizes[] { new KeySizes(minSize: 128, maxSize: 128, skipSize: 0) };
-
             // This class wraps Aes
             _impl = Aes.Create();
         }
@@ -22,15 +20,7 @@ namespace System.Security.Cryptography
         public override int BlockSize
         {
             get { return _impl.BlockSize; }
-            set
-            {
-                // Values which were legal in desktop RijndaelManaged but not here in this wrapper type
-                if (value == 192 || value == 256)
-                    throw new PlatformNotSupportedException(SR.Cryptography_Rijndael_BlockSize);
-
-                // Any other invalid block size will get the normal “invalid block size” exception.
-                _impl.BlockSize = value;
-            }
+            set { _impl.BlockSize = value; }
         }
 
         public override byte[] IV
@@ -62,7 +52,7 @@ namespace System.Security.Cryptography
             set { _impl.Padding = value; }
         }
 
-        // LegalBlockSizes not forwarded because base has correct information
+        public override KeySizes[] LegalBlockSizes => _impl.LegalBlockSizes;
         public override KeySizes[] LegalKeySizes => _impl.LegalKeySizes;
         public override ICryptoTransform CreateEncryptor() => _impl.CreateEncryptor();
         public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV) => _impl.CreateEncryptor(rgbKey, rgbIV);
