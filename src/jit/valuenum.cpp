@@ -4805,8 +4805,16 @@ void Compiler::fgValueNumberTreeConst(GenTreePtr tree)
             tree->gtVNPair.SetBoth(vnStore->VNForDoubleCon(tree->gtDblCon.gtDconVal));
             break;
         case TYP_REF:
-            // Null is the only constant.  (Except maybe for String?)
-            tree->gtVNPair.SetBoth(ValueNumStore::VNForNull());
+            if (tree->gtIntConCommon.IconValue() == 0)
+            {
+                tree->gtVNPair.SetBoth(ValueNumStore::VNForNull());
+            }
+            else
+            {
+                assert(tree->gtFlags == GTF_ICON_STR_HDL); // Constant object can be only frozen string.
+                tree->gtVNPair.SetBoth(
+                    vnStore->VNForHandle(ssize_t(tree->gtIntConCommon.IconValue()), tree->GetIconHandleFlag()));
+            }
             break;
 
         case TYP_BYREF:
