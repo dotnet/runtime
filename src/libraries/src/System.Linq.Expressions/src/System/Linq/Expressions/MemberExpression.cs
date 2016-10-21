@@ -98,7 +98,7 @@ namespace System.Linq.Expressions
         }
     }
 
-    internal class FieldExpression : MemberExpression
+    internal sealed class FieldExpression : MemberExpression
     {
         private readonly FieldInfo _field;
 
@@ -119,7 +119,7 @@ namespace System.Linq.Expressions
         }
     }
 
-    internal class PropertyExpression : MemberExpression
+    internal sealed class PropertyExpression : MemberExpression
     {
         private readonly PropertyInfo _property;
         public PropertyExpression(Expression expression, PropertyInfo member)

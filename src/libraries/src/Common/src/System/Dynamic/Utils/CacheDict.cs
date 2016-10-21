@@ -14,7 +14,7 @@ namespace System.Dynamic.Utils
     /// Provides a dictionary-like object used for caches which holds onto a maximum
     /// number of elements specified at construction time.
     /// </summary>
-    internal class CacheDict<TKey, TValue>
+    internal sealed class CacheDict<TKey, TValue>
     {
 
         // cache size is always ^2. 
