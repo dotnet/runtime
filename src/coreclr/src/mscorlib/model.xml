@@ -10463,6 +10463,9 @@
     <Type Name="System.Runtime.Serialization.IDeserializationCallback">
       <Member Name="OnDeserialization(System.Object)" />
     </Type>
+    <Type Name="System.Runtime.Serialization.ISafeSerializationData">
+      <Member Name="CompleteDeserialization(System.Object)" />
+    </Type>
     <Type Name="System.Runtime.Serialization.SafeSerializationEventArgs">
       <Member Name="AddSerializedState(System.Runtime.Serialization.ISafeSerializationData)" />
       <Member Name="get_StreamingContext" />
