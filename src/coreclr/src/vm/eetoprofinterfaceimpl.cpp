@@ -3230,7 +3230,9 @@ HRESULT EEToProfInterfaceImpl::JITCompilationStarted(FunctionID functionId,
     }
 }
 
-HRESULT EEToProfInterfaceImpl::DynamicMethodJITCompilationFinished(FunctionID functionId)
+HRESULT EEToProfInterfaceImpl::DynamicMethodJITCompilationFinished(FunctionID functionId,
+                                                                   HRESULT hrStatus,
+                                                                   BOOL fIsSafeToBlock)
 {
     CONTRACTL
     {
@@ -3252,21 +3254,23 @@ HRESULT EEToProfInterfaceImpl::DynamicMethodJITCompilationFinished(FunctionID fu
 
     _ASSERTE(functionId);
 
-    // Should only be called on profilers that support ICorProfilerCallback8
     if (m_pCallback8 == NULL)
     {
-        return E_FAIL;
+        return S_OK;
     }
 
     {
         // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
         // whose try/catch blocks aren't visible to the contract system        
         PERMANENT_CONTRACT_VIOLATION(ThrowsViolation, ReasonProfilerCallout);
-        return m_pCallback8->DynamicMethodJITCompilationFinished(functionId);
+        return m_pCallback8->DynamicMethodJITCompilationFinished(functionId, hrStatus, fIsSafeToBlock);
     }
 }
 
-HRESULT EEToProfInterfaceImpl::DynamicMethodJITCompilationStarted(FunctionID functionId, LPCBYTE ilHeader)
+HRESULT EEToProfInterfaceImpl::DynamicMethodJITCompilationStarted(FunctionID functionId,
+                                                                  BOOL fIsSafeToBlock,
+                                                                  LPCBYTE pILHeader,
+                                                                  ULONG cbILHeader)
 {
     CONTRACTL
     {
@@ -3288,17 +3292,21 @@ HRESULT EEToProfInterfaceImpl::DynamicMethodJITCompilationStarted(FunctionID fun
 
     _ASSERTE(functionId);
 
-    // Should only be called on profilers that support ICorProfilerCallback8
+    // Currently DynamicMethodJITCompilationStarted is always called with fIsSafeToBlock==TRUE.  If this ever changes,
+    // it's safe to remove this assert, but this should serve as a trigger to change our
+    // public documentation to state that this callback is no longer called in preemptive mode all the time.
+    _ASSERTE(fIsSafeToBlock);
+
     if (m_pCallback8 == NULL)
     {
-        return E_FAIL;
+        return S_OK;
     }
 
     {
         // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
         // whose try/catch blocks aren't visible to the contract system        
         PERMANENT_CONTRACT_VIOLATION(ThrowsViolation, ReasonProfilerCallout);
-        return m_pCallback8->DynamicMethodJITCompilationStarted(functionId, ilHeader);
+        return m_pCallback8->DynamicMethodJITCompilationStarted(functionId, fIsSafeToBlock, pILHeader, cbILHeader);
     }
 }
 

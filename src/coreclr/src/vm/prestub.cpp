@@ -443,7 +443,7 @@ PCODE MethodDesc::MakeJitWorker(COR_ILMETHOD_DECODER* ILHeader, DWORD flags, DWO
                 }
                 else
                 {
-                    g_profControlBlock.pProfInterface->DynamicMethodJITCompilationStarted((FunctionID) this, (LPCBYTE)ILHeader);
+                    g_profControlBlock.pProfInterface->DynamicMethodJITCompilationStarted((FunctionID) this, TRUE, (LPCBYTE)ILHeader, ILHeader->GetSize());
                 }
                 END_PIN_PROFILER();
             }
@@ -599,7 +599,7 @@ GotNewCode:
                 }
                 else
                 {
-                    g_profControlBlock.pProfInterface->DynamicMethodJITCompilationFinished((FunctionID) this);
+                    g_profControlBlock.pProfInterface->DynamicMethodJITCompilationFinished((FunctionID) this, pEntry->m_hrResultCode, TRUE);
                 }
                 END_PIN_PROFILER();
             }
