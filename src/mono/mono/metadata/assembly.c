@@ -1768,7 +1768,7 @@ mono_assembly_load_friends (MonoAssembly* ass)
 	if (ass->friend_assembly_names_inited)
 		return;
 
-	attrs = mono_custom_attrs_from_assembly_checked (ass, &error);
+	attrs = mono_custom_attrs_from_assembly_checked (ass, FALSE, &error);
 	mono_error_assert_ok (&error);
 	if (!attrs) {
 		mono_assemblies_lock ();
@@ -1848,7 +1848,7 @@ mono_assembly_has_reference_assembly_attribute (MonoAssembly *assembly, MonoErro
  * about missing attributes.
  */
 #if 0
-	MonoCustomAttrInfo *attrs = mono_custom_attrs_from_assembly_checked (assembly, error);
+	MonoCustomAttrInfo *attrs = mono_custom_attrs_from_assembly_checked (assembly, TRUE, error);
 	return_val_if_nok (error, FALSE);
 	if (!attrs)
 		return FALSE;

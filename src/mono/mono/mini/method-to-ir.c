@@ -7952,7 +7952,7 @@ is_jit_optimizer_disabled (MonoMethod *m)
 		return FALSE;
 	}
 
-	attrs = mono_custom_attrs_from_assembly_checked (ass, &error);
+	attrs = mono_custom_attrs_from_assembly_checked (ass, FALSE, &error);
 	mono_error_cleanup (&error); /* FIXME don't swallow the error */
 	if (attrs) {
 		for (i = 0; i < attrs->num_attrs; ++i) {
