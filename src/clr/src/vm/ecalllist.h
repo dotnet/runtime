@@ -1354,8 +1354,8 @@ FCFuncStart(gThreadFuncs)
 FCFuncEnd()
 
 FCFuncStart(gThreadPoolFuncs)
-#ifndef FEATURE_CORECLR
     FCFuncElement("PostQueuedCompletionStatus", ThreadPoolNative::CorPostQueuedCompletionStatus)
+#ifndef FEATURE_CORECLR
     FCFuncElement("GetAvailableThreadsNative", ThreadPoolNative::CorGetAvailableThreads)
 #endif // FEATURE_CORECLR
     FCFuncElement("SetMinThreadsNative", ThreadPoolNative::CorSetMinThreads)
