@@ -2387,18 +2387,25 @@ interface ICorProfilerCallback7 : ICorProfilerCallback6
 ]
 interface ICorProfilerCallback8 : ICorProfilerCallback7
 {
-    // This event is triggered whenever a metadata less method is jit compiled.
+    // This event is triggered whenever a dynamic method is jit compiled.
     // These include various IL Stubs and LCG Methods.
     // The goal is to provide profiler writers with enough information to identify
     // it to users as beyond unknown code addresses.
     // Note: FunctionID's provided here cannot be used to resolve to their metadata
-    //       tokens since LCG methods have no metadata.
+    //       tokens since dynamic methods have no metadata.
     //
-    // Documentation Note: ilHeader is only valid during the callback
+    // Documentation Note: pILHeader is only valid during the callback
 
-    HRESULT DynamicMethodJITCompilationStarted(FunctionID functionId, LPCBYTE ilHeader);
+    HRESULT DynamicMethodJITCompilationStarted(
+        [in] FunctionID functionId,
+        [in] BOOL       fIsSafeToBlock,
+        [in] LPCBYTE    pILHeader,
+        [in] ULONG      cbILHeader);
 
-    HRESULT DynamicMethodJITCompilationFinished(FunctionID functionId);
+    HRESULT DynamicMethodJITCompilationFinished(
+        [in] FunctionID functionId,
+        [in] HRESULT    hrStatus,
+        [in] BOOL       fIsSafeToBlock);
 }
 
 
@@ -3833,23 +3840,23 @@ interface ICorProfilerInfo8 : ICorProfilerInfo7
     /*
     * Maps a managed code instruction pointer to a FunctionID.
     *
-    * GetFunctionFromIP2 fails for methods without metadata, this method works for
-    * both metadata and metadata-less methods and is a superset of GetFunctionFromIP2
+    * GetFunctionFromIP2 fails for dynamic methods, this method works for
+    * both dynamic and non-dynamic methods. It is a superset of GetFunctionFromIP2
     */
     HRESULT GetFunctionFromIP3([in] LPCBYTE ip,
                                [out] FunctionID *functionId,
                                [out] ReJITID * pReJitId);
 
     /*
-    * Retrieves informaiton about metadata-less methods
+    * Retrieves informaiton about dynamic methods
     *
-    * Certain methods like IL Stubs or DynamicMethod do not have
+    * Certain methods like IL Stubs or LCG do not have
     * associated metadata that can be retrieved using the IMetaDataImport APIs.
     *
     * Such methods can be encountered by profilers through instruction pointers
-    * or by listening to ICorProfilerCallback::JITCompilationStartedNoMetadata
+    * or by listening to ICorProfilerCallback::DynamicMethodJITCompilationStarted
     *
-    * This API can be used to retrieve information about metadata less methods
+    * This API can be used to retrieve information about dynamic methods
     * including a friendly name if available.
     */
     HRESULT GetDynamicFunctionInfo( [in]  FunctionID              functionId,
