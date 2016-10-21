@@ -29,7 +29,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.Int32ToObject(unchecked(-(Int32)obj)));
+                    frame.Push(ScriptingRuntimeHelpers.Int32ToObject(unchecked(-(int)obj)));
                 }
                 return +1;
             }
@@ -46,7 +46,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(unchecked((Int16)(-(Int16)obj)));
+                    frame.Push(unchecked((short)(-(short)obj)));
                 }
                 return +1;
             }
@@ -63,7 +63,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(unchecked((Int64)(-(Int64)obj)));
+                    frame.Push(unchecked((long)(-(long)obj)));
                 }
                 return +1;
             }
@@ -80,7 +80,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(unchecked((Single)(-(Single)obj)));
+                    frame.Push(unchecked((float)(-(float)obj)));
                 }
                 return +1;
             }
@@ -97,7 +97,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(unchecked((Double)(-(Double)obj)));
+                    frame.Push(unchecked((double)(-(double)obj)));
                 }
                 return +1;
             }
@@ -141,7 +141,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(ScriptingRuntimeHelpers.Int32ToObject(checked(-(Int32)obj)));
+                    frame.Push(ScriptingRuntimeHelpers.Int32ToObject(checked(-(int)obj)));
                 }
                 return +1;
             }
@@ -158,7 +158,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(checked((Int16)(-(Int16)obj)));
+                    frame.Push(checked((short)(-(short)obj)));
                 }
                 return +1;
             }
@@ -175,7 +175,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(checked((Int64)(-(Int64)obj)));
+                    frame.Push(checked((long)(-(long)obj)));
                 }
                 return +1;
             }
@@ -191,7 +191,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(checked((Single)(-(Single)obj)));
+                    frame.Push(checked((float)(-(float)obj)));
                 }
                 return +1;
             }
@@ -208,7 +208,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(checked((Double)(-(Double)obj)));
+                    frame.Push(checked((double)(-(double)obj)));
                 }
                 return +1;
             }

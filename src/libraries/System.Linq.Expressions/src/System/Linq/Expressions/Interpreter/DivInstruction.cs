@@ -30,7 +30,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = ScriptingRuntimeHelpers.Int32ToObject((Int32)l / (Int32)r);
+                    frame.Data[frame.StackIndex - 2] = ScriptingRuntimeHelpers.Int32ToObject((int)l / (int)r);
                 }
                 frame.StackIndex--;
                 return 1;
@@ -49,7 +49,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = (Int16)((Int16)l / (Int16)r);
+                    frame.Data[frame.StackIndex - 2] = (short)((short)l / (short)r);
                 }
                 frame.StackIndex--;
                 return 1;
@@ -68,7 +68,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = (Int64)((Int64)l / (Int64)r);
+                    frame.Data[frame.StackIndex - 2] = (long)((long)l / (long)r);
                 }
                 frame.StackIndex--;
                 return 1;
@@ -87,7 +87,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = (UInt16)((UInt16)l / (UInt16)r);
+                    frame.Data[frame.StackIndex - 2] = (ushort)((ushort)l / (ushort)r);
                 }
                 frame.StackIndex--;
                 return 1;
@@ -106,7 +106,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = (UInt32)((UInt32)l / (UInt32)r);
+                    frame.Data[frame.StackIndex - 2] = (uint)((uint)l / (uint)r);
                 }
                 frame.StackIndex--;
                 return 1;
@@ -125,7 +125,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = (UInt64)((UInt64)l / (UInt64)r);
+                    frame.Data[frame.StackIndex - 2] = (ulong)((ulong)l / (ulong)r);
                 }
                 frame.StackIndex--;
                 return 1;
@@ -144,7 +144,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = (Single)((Single)l / (Single)r);
+                    frame.Data[frame.StackIndex - 2] = (float)((float)l / (float)r);
                 }
                 frame.StackIndex--;
                 return 1;
@@ -163,7 +163,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = (Double)l / (Double)r;
+                    frame.Data[frame.StackIndex - 2] = (double)l / (double)r;
                 }
                 frame.StackIndex--;
                 return 1;
@@ -212,7 +212,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = ScriptingRuntimeHelpers.Int32ToObject((Int32)l % (Int32)r);
+                    frame.Data[frame.StackIndex - 2] = ScriptingRuntimeHelpers.Int32ToObject((int)l % (int)r);
                 }
                 frame.StackIndex--;
                 return 1;
@@ -231,7 +231,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = (Int16)((Int16)l % (Int16)r);
+                    frame.Data[frame.StackIndex - 2] = (short)((short)l % (short)r);
                 }
                 frame.StackIndex--;
                 return 1;
@@ -250,7 +250,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = (Int64)((Int64)l % (Int64)r);
+                    frame.Data[frame.StackIndex - 2] = (long)((long)l % (long)r);
                 }
                 frame.StackIndex--;
                 return 1;
@@ -269,7 +269,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = (UInt16)((UInt16)l % (UInt16)r);
+                    frame.Data[frame.StackIndex - 2] = (ushort)((ushort)l % (ushort)r);
                 }
                 frame.StackIndex--;
                 return 1;
@@ -288,7 +288,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = (UInt32)((UInt32)l % (UInt32)r);
+                    frame.Data[frame.StackIndex - 2] = (uint)((uint)l % (uint)r);
                 }
                 frame.StackIndex--;
                 return 1;
@@ -307,7 +307,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = (UInt64)((UInt64)l % (UInt64)r);
+                    frame.Data[frame.StackIndex - 2] = (ulong)((ulong)l % (ulong)r);
                 }
                 frame.StackIndex--;
                 return 1;
@@ -326,7 +326,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = (Single)((Single)l % (Single)r);
+                    frame.Data[frame.StackIndex - 2] = (float)((float)l % (float)r);
                 }
                 frame.StackIndex--;
                 return 1;
@@ -345,7 +345,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = (Double)l % (Double)r;
+                    frame.Data[frame.StackIndex - 2] = (double)l % (double)r;
                 }
                 frame.StackIndex--;
                 return 1;

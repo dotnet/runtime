@@ -220,7 +220,7 @@ namespace System.Linq.Expressions
                 Out("ref ");
             }
             string name = node.Name;
-            if (String.IsNullOrEmpty(name))
+            if (string.IsNullOrEmpty(name))
             {
                 Out("Param_" + GetParamId(node));
             }
@@ -307,7 +307,7 @@ namespace System.Linq.Expressions
 
         protected internal override Expression VisitDebugInfo(DebugInfoExpression node)
         {
-            string s = String.Format(
+            string s = string.Format(
                 CultureInfo.CurrentCulture,
                 "<DebugInfo({0}: {1}, {2}, {3}, {4})>",
                 node.Document.FileName,
@@ -741,7 +741,7 @@ namespace System.Linq.Expressions
 
         private void DumpLabel(LabelTarget target)
         {
-            if (!String.IsNullOrEmpty(target.Name))
+            if (!string.IsNullOrEmpty(target.Name))
             {
                 Out(target.Name);
             }
