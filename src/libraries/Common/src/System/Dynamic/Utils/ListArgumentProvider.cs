@@ -19,7 +19,7 @@ namespace System.Dynamic.Utils
     /// optimization.  See IArgumentProvider for more general information on the Expression
     /// tree optimizations being used here.
     /// </summary>
-    internal class ListArgumentProvider : IList<Expression>
+    internal sealed class ListArgumentProvider : IList<Expression>
     {
         private readonly IArgumentProvider _provider;
         private readonly Expression _arg0;
