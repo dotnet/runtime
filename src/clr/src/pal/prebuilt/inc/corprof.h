@@ -5,7 +5,7 @@
 /* this ALWAYS GENERATED file contains the definitions for the interfaces */
 
 
- /* File created by MIDL compiler version 8.00.0613 */
+ /* File created by MIDL compiler version 8.01.0620 */
 /* @@MIDL_FILE_HEADING(  ) */
 
 #pragma warning( disable: 4049 )  /* more than 64k source lines */
@@ -5843,11 +5843,15 @@ EXTERN_C const IID IID_ICorProfilerCallback8;
     {
     public:
         virtual HRESULT STDMETHODCALLTYPE DynamicMethodJITCompilationStarted( 
-            FunctionID functionId,
-            LPCBYTE ilHeader) = 0;
+            /* [in] */ FunctionID functionId,
+            /* [in] */ BOOL fIsSafeToBlock,
+            /* [in] */ LPCBYTE pILHeader,
+            /* [in] */ ULONG cbILHeader) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE DynamicMethodJITCompilationFinished( 
-            FunctionID functionId) = 0;
+            /* [in] */ FunctionID functionId,
+            /* [in] */ HRESULT hrStatus,
+            /* [in] */ BOOL fIsSafeToBlock) = 0;
         
     };
     
@@ -6282,12 +6286,16 @@ EXTERN_C const IID IID_ICorProfilerCallback8;
         
         HRESULT ( STDMETHODCALLTYPE *DynamicMethodJITCompilationStarted )( 
             ICorProfilerCallback8 * This,
-            FunctionID functionId,
-            LPCBYTE ilHeader);
+            /* [in] */ FunctionID functionId,
+            /* [in] */ BOOL fIsSafeToBlock,
+            /* [in] */ LPCBYTE pILHeader,
+            /* [in] */ ULONG cbILHeader);
         
         HRESULT ( STDMETHODCALLTYPE *DynamicMethodJITCompilationFinished )( 
             ICorProfilerCallback8 * This,
-            FunctionID functionId);
+            /* [in] */ FunctionID functionId,
+            /* [in] */ HRESULT hrStatus,
+            /* [in] */ BOOL fIsSafeToBlock);
         
         END_INTERFACE
     } ICorProfilerCallback8Vtbl;
@@ -6586,11 +6594,11 @@ EXTERN_C const IID IID_ICorProfilerCallback8;
     ( (This)->lpVtbl -> ModuleInMemorySymbolsUpdated(This,moduleId) ) 
 
 
-#define ICorProfilerCallback8_DynamicMethodJITCompilationStarted(This,functionId,ilHeader)	\
-    ( (This)->lpVtbl -> DynamicMethodJITCompilationStarted(This,functionId,ilHeader) ) 
+#define ICorProfilerCallback8_DynamicMethodJITCompilationStarted(This,functionId,fIsSafeToBlock,pILHeader,cbILHeader)	\
+    ( (This)->lpVtbl -> DynamicMethodJITCompilationStarted(This,functionId,fIsSafeToBlock,pILHeader,cbILHeader) ) 
 
-#define ICorProfilerCallback8_DynamicMethodJITCompilationFinished(This,functionId)	\
-    ( (This)->lpVtbl -> DynamicMethodJITCompilationFinished(This,functionId) ) 
+#define ICorProfilerCallback8_DynamicMethodJITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock)	\
+    ( (This)->lpVtbl -> DynamicMethodJITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock) ) 
 
 #endif /* COBJMACROS */
 
