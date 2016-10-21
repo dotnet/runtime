@@ -305,7 +305,7 @@ namespace System.IO
                     // want us to do this.
                     if (_writePos > 0)
                     {
-                        FlushWrite(!disposing);
+                        FlushWriteBuffer(!disposing);
                     }
                 }
             }
@@ -332,40 +332,12 @@ namespace System.IO
             }
         }
 
-        private void FlushInternalBuffer()
-        {
-            if (_writePos > 0)
-            {
-                FlushWrite(false);
-            }
-            else if (_readPos < _readLength && CanSeek)
-            {
-                FlushRead();
-            }
-        }
-
         private void FlushOSBuffer()
         {
             if (!Interop.mincore.FlushFileBuffers(_fileHandle))
             {
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             }
-        }
-
-        // Reading is done by blocks from the file, but someone could read
-        // 1 byte from the buffer then write.  At that point, the OS's file
-        // pointer is out of sync with the stream's position.  All write 
-        // functions should call this function to preserve the position in the file.
-        private void FlushRead()
-        {
-            Debug.Assert(_writePos == 0, "FileStream: Write buffer must be empty in FlushRead!");
-            if (_readPos - _readLength != 0)
-            {
-                Debug.Assert(CanSeek, "FileStream will lose buffered read data now.");
-                SeekCore(_readPos - _readLength, SeekOrigin.Current);
-            }
-            _readPos = 0;
-            _readLength = 0;
         }
 
         // Returns a task that flushes the internal write buffer
@@ -391,8 +363,9 @@ namespace System.IO
         // Writes are buffered.  Anytime the buffer fills up 
         // (_writePos + delta > _bufferSize) or the buffer switches to reading
         // and there is left over data (_writePos > 0), this function must be called.
-        private void FlushWrite(bool calledFromFinalizer)
+        private void FlushWriteBuffer(bool calledFromFinalizer = false)
         {
+            if (_writePos == 0) return;
             Debug.Assert(_readPos == 0 && _readLength == 0, "FileStream: Read buffer must be empty in FlushWrite!");
 
             if (_useAsyncIO)
@@ -429,11 +402,11 @@ namespace System.IO
             // Handle buffering updates.
             if (_writePos > 0)
             {
-                FlushWrite(false);
+                FlushWriteBuffer();
             }
             else if (_readPos < _readLength)
             {
-                FlushRead();
+                FlushReadBuffer();
             }
             _readPos = 0;
             _readLength = 0;
@@ -477,7 +450,11 @@ namespace System.IO
         public override int Read(byte[] array, int offset, int count)
         {
             ValidateReadWriteArgs(array, offset, count);
+            return ReadCore(array, offset, count);
+        }
 
+        private int ReadCore(byte[] array, int offset, int count)
+        {
             Debug.Assert((_readPos == 0 && _readLength == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLength),
                 "We're either reading or writing, but not both.");
 
@@ -488,16 +465,16 @@ namespace System.IO
             if (n == 0)
             {
                 if (!CanRead) throw Error.GetReadNotSupported();
-                if (_writePos > 0) FlushWrite(false);
+                if (_writePos > 0) FlushWriteBuffer();
                 if (!CanSeek || (count >= _bufferLength))
                 {
-                    n = ReadCore(array, offset, count);
+                    n = ReadNative(array, offset, count);
                     // Throw away read buffer.
                     _readPos = 0;
                     _readLength = 0;
                     return n;
                 }
-                n = ReadCore(GetBuffer(), 0, _bufferLength);
+                n = ReadNative(GetBuffer(), 0, _bufferLength);
                 if (n == 0) return 0;
                 isBlocked = n < _bufferLength;
                 _readPos = 0;
@@ -528,7 +505,7 @@ namespace System.IO
                 if (n < count && !isBlocked)
                 {
                     Debug.Assert(_readPos == _readLength, "Read buffer should be empty!");
-                    int moreBytesRead = ReadCore(array, offset + n, count - n);
+                    int moreBytesRead = ReadNative(array, offset + n, count - n);
                     n += moreBytesRead;
                     // We've just made our buffer inconsistent with our position 
                     // pointer.  We must throw away the read buffer.
@@ -540,19 +517,23 @@ namespace System.IO
             return n;
         }
 
-        private unsafe int ReadCore(byte[] buffer, int offset, int count)
+        [Conditional("DEBUG")]
+        private void AssertCanRead(byte[] buffer, int offset, int count)
         {
-            Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
-            Debug.Assert(CanRead, "_parent.CanRead");
-
+            Debug.Assert(!_fileHandle.IsClosed, "!_fileHandle.IsClosed");
+            Debug.Assert(CanRead, "CanRead");
             Debug.Assert(buffer != null, "buffer != null");
             Debug.Assert(_writePos == 0, "_writePos == 0");
             Debug.Assert(offset >= 0, "offset is negative");
             Debug.Assert(count >= 0, "count is negative");
+        }
+
+        private unsafe int ReadNative(byte[] buffer, int offset, int count)
+        {
+            AssertCanRead(buffer, offset, count);
+
             if (_useAsyncIO)
-            {
-                return ReadInternalCoreAsync(buffer, offset, count, 0, CancellationToken.None).GetAwaiter().GetResult();
-            }
+                return ReadNativeAsync(buffer, offset, count, 0, CancellationToken.None).GetAwaiter().GetResult();
 
             // Make sure we are reading from the right spot
             VerifyOSHandlePosition();
@@ -570,12 +551,12 @@ namespace System.IO
                 else
                 {
                     if (errorCode == ERROR_INVALID_PARAMETER)
-                        throw new ArgumentException(SR.Arg_HandleNotSync, "handle");
+                        throw new ArgumentException(SR.Arg_HandleNotSync, "_fileHandle");
 
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode);
                 }
             }
-            Debug.Assert(r >= 0, "FileStream's ReadCore is likely broken.");
+            Debug.Assert(r >= 0, "FileStream's ReadNative is likely broken.");
             _filePosition += r;
 
             return r;
@@ -597,7 +578,7 @@ namespace System.IO
             // position, then a read for the number of bytes we have in our buffer.
             if (_writePos > 0)
             {
-                FlushWrite(false);
+                FlushWriteBuffer();
             }
             else if (origin == SeekOrigin.Current)
             {
@@ -704,7 +685,7 @@ namespace System.IO
             {
                 // Ensure we can write to the stream, and ready buffer for writing.
                 if (!CanWrite) throw Error.GetWriteNotSupported();
-                if (_readPos < _readLength) FlushRead();
+                if (_readPos < _readLength) FlushReadBuffer();
                 _readPos = 0;
                 _readLength = 0;
             }
@@ -846,14 +827,14 @@ namespace System.IO
                 else
                 {
                     Debug.Assert(_writePos == 0, "Win32FileStream must not have buffered write data here!  Pipes should be unidirectional.");
-                    return ReadInternalCoreAsync(array, offset, numBytes, 0, cancellationToken);
+                    return ReadNativeAsync(array, offset, numBytes, 0, cancellationToken);
                 }
             }
 
             Debug.Assert(!_isPipe, "Should not be a pipe.");
 
             // Handle buffering.
-            if (_writePos > 0) FlushWrite(false);
+            if (_writePos > 0) FlushWriteBuffer();
             if (_readPos == _readLength)
             {
                 // I can't see how to handle buffering of async requests when 
@@ -869,7 +850,7 @@ namespace System.IO
 
                 if (numBytes < _bufferLength)
                 {
-                    Task<int> readTask = ReadInternalCoreAsync(GetBuffer(), 0, _bufferLength, 0, cancellationToken);
+                    Task<int> readTask = ReadNativeAsync(GetBuffer(), 0, _bufferLength, 0, cancellationToken);
                     _readLength = readTask.GetAwaiter().GetResult();
                     int n = _readLength;
                     if (n > numBytes) n = numBytes;
@@ -885,7 +866,7 @@ namespace System.IO
                     // with our read buffer.  Throw away the read buffer's contents.
                     _readPos = 0;
                     _readLength = 0;
-                    return ReadInternalCoreAsync(array, offset, numBytes, 0, cancellationToken);
+                    return ReadNativeAsync(array, offset, numBytes, 0, cancellationToken);
                 }
             }
             else
@@ -909,20 +890,15 @@ namespace System.IO
                     // Throw away read buffer.
                     _readPos = 0;
                     _readLength = 0;
-                    return ReadInternalCoreAsync(array, offset + n, numBytes - n, n, cancellationToken);
+                    return ReadNativeAsync(array, offset + n, numBytes - n, n, cancellationToken);
                 }
             }
         }
 
-        unsafe private Task<int> ReadInternalCoreAsync(byte[] bytes, int offset, int numBytes, int numBufferedBytesRead, CancellationToken cancellationToken)
+        unsafe private Task<int> ReadNativeAsync(byte[] bytes, int offset, int numBytes, int numBufferedBytesRead, CancellationToken cancellationToken)
         {
-            Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
-            Debug.Assert(CanRead, "_parent.CanRead");
-            Debug.Assert(bytes != null, "bytes != null");
-            Debug.Assert(_writePos == 0, "_writePos == 0");
-            Debug.Assert(_useAsyncIO, "ReadInternalCoreAsync doesn't work on synchronous file streams!");
-            Debug.Assert(offset >= 0, "offset is negative");
-            Debug.Assert(numBytes >= 0, "numBytes is negative");
+            AssertCanRead(bytes, offset, numBytes);
+            Debug.Assert(_useAsyncIO, "ReadNativeAsync doesn't work on synchronous file streams!");
 
             // Create and store async stream class library specific data in the async result
 
@@ -1031,22 +1007,7 @@ namespace System.IO
         // or -1 if reading from the end of the stream.
         public override int ReadByte()
         {
-            if (_fileHandle.IsClosed) throw Error.GetFileNotOpen();
-            if (_readLength == 0 && !CanRead) throw Error.GetReadNotSupported();
-            Debug.Assert((_readPos == 0 && _readLength == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLength), "We're either reading or writing, but not both.");
-            if (_readPos == _readLength)
-            {
-                if (_writePos > 0) FlushWrite(false);
-                Debug.Assert(_bufferLength > 0, "_bufferSize > 0");
-                _readLength = ReadCore(GetBuffer(), 0, _bufferLength);
-                _readPos = 0;
-            }
-            if (_readPos == _readLength)
-                return -1;
-
-            int result = GetBuffer()[_readPos];
-            _readPos++;
-            return result;
+            return ReadByteCore();
         }
 
         private Task WriteAsyncInternal(byte[] array, int offset, int numBytes, CancellationToken cancellationToken)
@@ -1071,7 +1032,7 @@ namespace System.IO
                 {
                     if (_readPos < _readLength)
                     {
-                        FlushRead();
+                        FlushReadBuffer();
                     }
                     _readPos = 0;
                     _readLength = 0;
@@ -1270,20 +1231,7 @@ namespace System.IO
 
         public override void WriteByte(byte value)
         {
-            if (_fileHandle.IsClosed) throw Error.GetFileNotOpen();
-            if (_writePos == 0)
-            {
-                if (!CanWrite) throw Error.GetWriteNotSupported();
-                if (_readPos < _readLength) FlushRead();
-                _readPos = 0;
-                _readLength = 0;
-                Debug.Assert(_bufferLength > 0, "_bufferSize > 0");
-            }
-            if (_writePos == _bufferLength)
-                FlushWrite(false);
-
-            GetBuffer()[_writePos] = value;
-            _writePos++;
+            WriteByteCore(value);
         }
 
         // Windows API definitions, from winbase.h and others
@@ -1304,7 +1252,6 @@ namespace System.IO
         private const int ERROR_HANDLE_EOF = 38;
         private const int ERROR_INVALID_PARAMETER = 87;
         private const int ERROR_IO_PENDING = 997;
-
 
         // __ConsoleStream also uses this code. 
         private unsafe int ReadFileNative(SafeFileHandle handle, byte[] bytes, int offset, int count, NativeOverlapped* overlapped, out int errorCode)

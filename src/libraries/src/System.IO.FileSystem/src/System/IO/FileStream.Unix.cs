@@ -260,46 +260,15 @@ namespace System.IO
             }
         }
 
-        /// <summary>
-        /// Flushes the internal read/write buffer for this stream.  If write data has been buffered,
-        /// that data is written out to the underlying file.  Or if data has been buffered for 
-        /// reading from the stream, the data is dumped and our position in the underlying file 
-        /// is rewound as necessary.  This does not flush the OS buffer.
-        /// </summary>
-        private void FlushInternalBuffer()
-        {
-            VerifyBufferInvariants();
-            if (_writePos > 0)
-            {
-                FlushWriteBuffer();
-            }
-            else if (_readPos < _readLength && CanSeek)
-            {
-                FlushReadBuffer();
-            }
-        }
-
         /// <summary>Writes any data in the write buffer to the underlying stream and resets the buffer.</summary>
         private void FlushWriteBuffer()
         {
-            VerifyBufferInvariants();
+            AssertBufferInvariants();
             if (_writePos > 0)
             {
                 WriteNative(GetBuffer(), 0, _writePos);
                 _writePos = 0;
             }
-        }
-
-        /// <summary>Dumps any read data in the buffer and rewinds our position in the stream, accordingly, as necessary.</summary>
-        private void FlushReadBuffer()
-        {
-            VerifyBufferInvariants();
-            int rewind = _readPos - _readLength;
-            if (rewind != 0)
-            {
-                SeekCore(rewind, SeekOrigin.Current);
-            }
-            _readPos = _readLength = 0;
         }
 
         /// <summary>Asynchronously clears all buffers for this stream, causing any buffered data to be written to the underlying device.</summary>
@@ -611,38 +580,6 @@ namespace System.IO
             }
         }
 
-        private int ReadByteCore()
-        {
-            PrepareForReading();
-
-            byte[] buffer = GetBuffer();
-            if (_readPos == _readLength)
-            {
-                _readLength = ReadNative(buffer, 0, _bufferLength);
-                _readPos = 0;
-                if (_readLength == 0)
-                {
-                    return -1;
-                }
-            }
-
-            return buffer[_readPos++];
-        }
-
-        /// <summary>Validates that we're ready to read from the stream.</summary>
-        private void PrepareForReading()
-        {
-            if (_fileHandle.IsClosed)
-            {
-                throw Error.GetFileNotOpen();
-            }
-            if (_readLength == 0 && !CanRead)
-            {
-                throw Error.GetReadNotSupported();
-            }
-            VerifyBufferInvariants();
-        }
-
         /// <summary>Writes a block of bytes to the file stream.</summary>
         /// <param name="array">The buffer containing data to write to the stream.</param>
         /// <param name="offset">The zero-based byte offset in array from which to begin copying bytes to the stream.</param>
@@ -843,41 +780,6 @@ namespace System.IO
             else
             {
                 WriteByteCore(value);
-            }
-        }
-
-        private void WriteByteCore(byte value)
-        {
-            PrepareForWriting();
-
-            // Flush the write buffer if it's full
-            if (_writePos == _bufferLength)
-            {
-                FlushWriteBuffer();
-            }
-
-            // We now have space in the buffer. Store the byte.
-            GetBuffer()[_writePos++] = value;
-        }
-
-        /// <summary>
-        /// Validates that we're ready to write to the stream,
-        /// including flushing a read buffer if necessary.
-        /// </summary>
-        private void PrepareForWriting()
-        {
-            if (_fileHandle.IsClosed)
-            {
-                throw Error.GetFileNotOpen();
-            }
-
-            // Make sure we're good to write.  We only need to do this if there's nothing already
-            // in our write buffer, since if there is something in the buffer, we've already done 
-            // this checking and flushing.
-            if (_writePos == 0)
-            {
-                if (!CanWrite) throw Error.GetWriteNotSupported();
-                FlushReadBuffer();
             }
         }
 
