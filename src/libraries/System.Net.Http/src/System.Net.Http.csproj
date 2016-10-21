@@ -134,10 +134,6 @@
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap101' ">
     <Compile Include="System\Net\Http\HttpClientHandler.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' != 'true' Or '$(TargetGroup)' != 'net46' ">
-    <!-- TODO #5715: Must be moved to the Common/System/Net folder -->
-    <Compile Include="Internal\ICloneable.cs" />
-  </ItemGroup>
   <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == '' ">
     <DefineConstants>$(DefineConstants);HTTP_DLL</DefineConstants>
   </PropertyGroup>

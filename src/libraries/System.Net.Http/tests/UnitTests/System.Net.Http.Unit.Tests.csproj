@@ -344,6 +344,9 @@
     <Compile Include="..\..\src\Internal\ICloneable.cs">
       <Link>ProductionCode\Internal\ICloneable.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\SerializableAttribute.cs">
+      <Link>Common\System\SerializableAttribute.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
