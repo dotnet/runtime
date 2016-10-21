@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Microsoft.CSharp;
 using Microsoft.VisualBasic;
 using Xunit;
@@ -15,10 +16,10 @@ namespace System.CodeDom.Compiler.Tests
         [Fact]
         public void GetAllCompilerInfo_ReturnsMinimumOfCSharpAndVB()
         {
-            CompilerInfo[] compilerInfos = CodeDomProvider.GetAllCompilerInfo();
+            Type[] compilerInfos = CodeDomProvider.GetAllCompilerInfo().Select(provider => provider.CodeDomProviderType).ToArray();
             Assert.True(compilerInfos.Length >= 2);
-            Assert.Equal(typeof(CSharpCodeProvider), compilerInfos[0].CodeDomProviderType);
-            Assert.Equal(typeof(VBCodeProvider), compilerInfos[1].CodeDomProviderType);
+            Assert.Contains(typeof(CSharpCodeProvider), compilerInfos);
+            Assert.Contains(typeof(VBCodeProvider), compilerInfos);
         }
 
         [Fact]
@@ -63,23 +64,35 @@ namespace System.CodeDom.Compiler.Tests
             Assert.Throws<ArgumentNullException>("type", () => new CustomProvider().GetConverter(null));
         }
 
-        public static IEnumerable<object[]> CreateProvider_TestData()
+        public static IEnumerable<object[]> CreateProvider_String_TestData()
         {
-            yield return new object[] { "c#", null, "cs" };
-            yield return new object[] { "  c#  ", null, "cs" };
-            yield return new object[] { "cs", null, "cs" };
-            yield return new object[] { "csharp", null, "cs" };
-            yield return new object[] { "CsHaRp", null, "cs" };
+            yield return new object[] { "c#", "cs" };
+            yield return new object[] { "  c#  ", "cs" };
+            yield return new object[] { "cs", "cs" };
+            yield return new object[] { "csharp", "cs" };
+            yield return new object[] { "CsHaRp", "cs" };
+
+            yield return new object[] { "vb", "vb" };
+            yield return new object[] { "vbs", "vb" };
+            yield return new object[] { "visualbasic", "vb" };
+            yield return new object[] { "vbscript", "vb" };
+            yield return new object[] { "VBSCRIPT", "vb" };
+        }
+
+        [Theory]
+        [MemberData(nameof(CreateProvider_String_TestData))]
+        public void CreateProvider_String(string language, string expectedFileExtension)
+        {
+            CodeDomProvider provider = CodeDomProvider.CreateProvider(language);
+            Assert.Equal(expectedFileExtension, provider.FileExtension);
+        }
+
+        public static IEnumerable<object[]> CreateProvider_String_Dictionary_TestData()
+        {
             yield return new object[] { "cs", new Dictionary<string, string>(), "cs" };
             yield return new object[] { "cs", new Dictionary<string, string>() { { "option", "value" } }, "cs" };
             yield return new object[] { "cs", new Dictionary<string, string>() { { "option1", "value1" }, { "option2", "value2" } }, "cs" };
             yield return new object[] { "cs", new Dictionary<string, string>() { { "option", null } }, "cs" };
-
-            yield return new object[] { "vb", null, "vb" };
-            yield return new object[] { "vbs", null, "vb" };
-            yield return new object[] { "visualbasic", null, "vb" };
-            yield return new object[] { "vbscript", null, "vb" };
-            yield return new object[] { "VBSCRIPT", null, "vb" };
             yield return new object[] { "vb", new Dictionary<string, string>(), "vb" };
             yield return new object[] { "vb", new Dictionary<string, string>() { { "option", "value" } }, "vb" };
             yield return new object[] { "vb", new Dictionary<string, string>() { { "option1", "value1" }, { "option2", "value2" } }, "vb" };
@@ -87,21 +100,11 @@ namespace System.CodeDom.Compiler.Tests
         }
 
         [Theory]
-        [MemberData(nameof(CreateProvider_TestData))]
-        public void CreateProvider(string language, Dictionary<string, string> providerOptions, string expectedFileExtension)
+        [MemberData(nameof(CreateProvider_String_Dictionary_TestData))]
+        public void CreateProvider_String_Dictionary(string language, Dictionary<string, string> providerOptions, string expectedFileExtension)
         {
-            if (providerOptions == null)
-            {
-                // Use CreateProvider(string)
-                CodeDomProvider provider1 = CodeDomProvider.CreateProvider(language);
-                Assert.Equal(expectedFileExtension, provider1.FileExtension);
-            }
-            else
-            {
-                // Use CreateProvider(string, IDictionary<string, string>)
-                CodeDomProvider provider2 = CodeDomProvider.CreateProvider(language, providerOptions);
-                Assert.Equal(expectedFileExtension, provider2.FileExtension);
-            }
+            CodeDomProvider provider = CodeDomProvider.CreateProvider(language, providerOptions);
+            Assert.Equal(expectedFileExtension, provider.FileExtension);
         }
 
         [Fact]
