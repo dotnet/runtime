@@ -5041,7 +5041,7 @@ namespace System.Reflection
     {
         public static System.Reflection.TypeInfo GetTypeInfo(this System.Type type) { throw null; }
     }
-    public partial class InvalidFilterCriteriaException : Exception
+    public partial class InvalidFilterCriteriaException : ApplicationException
     {
         public InvalidFilterCriteriaException() { }
         public InvalidFilterCriteriaException(string message) { }
@@ -5474,19 +5474,19 @@ namespace System.Reflection
         public static System.Collections.Generic.IEnumerable<System.Reflection.PropertyInfo> GetRuntimeProperties(this System.Type type) { throw null; }
         public static System.Reflection.PropertyInfo GetRuntimeProperty(this System.Type type, string name) { throw null; }
     }
-    public partial class TargetException : System.Exception
+    public partial class TargetException : System.ApplicationException
     {
         public TargetException() { }
         public TargetException(string message) { }
         public TargetException(string message, Exception inner) { }
         protected TargetException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
-    public sealed partial class TargetInvocationException : System.Exception
+    public sealed partial class TargetInvocationException : System.ApplicationException
     {
         public TargetInvocationException(System.Exception inner) { }
         public TargetInvocationException(string message, System.Exception inner) { }
     }
-    public sealed partial class TargetParameterCountException : System.Exception
+    public sealed partial class TargetParameterCountException : System.ApplicationException
     {
         public TargetParameterCountException() { }
         public TargetParameterCountException(string message) { }
