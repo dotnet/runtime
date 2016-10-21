@@ -173,7 +173,7 @@ namespace System.Linq.Expressions.Interpreter
         public static Instruction Create(Type type)
         {
             Debug.Assert(!type.GetTypeInfo().IsEnum);
-            switch (System.Dynamic.Utils.TypeExtensions.GetTypeCode(TypeUtils.GetNonNullableType(type)))
+            switch (TypeUtils.GetNonNullableType(type).GetTypeCode())
             {
                 case TypeCode.Int16: return s_int16 ?? (s_int16 = new DivInt16());
                 case TypeCode.Int32: return s_int32 ?? (s_int32 = new DivInt32());
@@ -355,7 +355,7 @@ namespace System.Linq.Expressions.Interpreter
         public static Instruction Create(Type type)
         {
             Debug.Assert(!type.GetTypeInfo().IsEnum);
-            switch (System.Dynamic.Utils.TypeExtensions.GetTypeCode(TypeUtils.GetNonNullableType(type)))
+            switch (TypeUtils.GetNonNullableType(type).GetTypeCode())
             {
                 case TypeCode.Int16: return s_int16 ?? (s_int16 = new ModuloInt16());
                 case TypeCode.Int32: return s_int32 ?? (s_int32 = new ModuloInt32());

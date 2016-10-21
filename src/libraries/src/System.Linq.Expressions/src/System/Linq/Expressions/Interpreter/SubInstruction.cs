@@ -172,7 +172,7 @@ namespace System.Linq.Expressions.Interpreter
         public static Instruction Create(Type type)
         {
             Debug.Assert(TypeUtils.IsArithmetic(type));
-            switch (System.Dynamic.Utils.TypeExtensions.GetTypeCode(TypeUtils.GetNonNullableType(type)))
+            switch (TypeUtils.GetNonNullableType(type).GetTypeCode())
             {
                 case TypeCode.Int16: return s_int16 ?? (s_int16 = new SubInt16());
                 case TypeCode.Int32: return s_int32 ?? (s_int32 = new SubInt32());
@@ -315,7 +315,7 @@ namespace System.Linq.Expressions.Interpreter
         public static Instruction Create(Type type)
         {
             Debug.Assert(TypeUtils.IsArithmetic(type));
-            switch (System.Dynamic.Utils.TypeExtensions.GetTypeCode(TypeUtils.GetNonNullableType(type)))
+            switch (TypeUtils.GetNonNullableType(type).GetTypeCode())
             {
                 case TypeCode.Int16: return s_int16 ?? (s_int16 = new SubOvfInt16());
                 case TypeCode.Int32: return s_int32 ?? (s_int32 = new SubOvfInt32());

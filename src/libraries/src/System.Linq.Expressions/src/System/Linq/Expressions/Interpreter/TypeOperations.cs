@@ -395,7 +395,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             if (!t.GetTypeInfo().IsEnum)
             {
-                switch (System.Dynamic.Utils.TypeExtensions.GetTypeCode(t))
+                switch (t.GetTypeCode())
                 {
                     case TypeCode.Boolean: return s_boolean ?? (s_boolean = new CastInstructionT<Boolean>());
                     case TypeCode.Byte: return s_byte ?? (s_byte = new CastInstructionT<Byte>());
