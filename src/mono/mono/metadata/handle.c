@@ -163,8 +163,10 @@ mono_handle_stack_scan (HandleStack *stack, GcScanFunc func, gpointer gc_data)
 
 	while (cur) {
 		int i;
-		for (i = 0; i < cur->size; ++i)
-			func ((gpointer*)&cur->objects [i], gc_data);
+		for (i = 0; i < cur->size; ++i) {
+			if (cur->objects [i] != NULL)
+				func ((gpointer*)&cur->objects [i], gc_data);
+		}
 		if (cur == last)
 			break;
 		cur = cur->next;
@@ -185,7 +187,7 @@ mono_stack_mark_record_size (MonoThreadInfo *info, HandleStackMark *stackmark, c
 	}
 
 	if (size > THIS_IS_AN_OK_NUMBER_OF_HANDLES)
-		printf ("%s USED %d handles\n", func_name, size);
+		g_warning ("%s USED %d handles\n", func_name, size);
 }
 
 /*
