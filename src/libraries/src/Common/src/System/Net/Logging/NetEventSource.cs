@@ -257,6 +257,30 @@ namespace System.Net
             }
         }
 
+        // TODO: Issue #12685
+        [NonEvent]
+        internal static void PrintInfo(ComponentType componentType, object obj, string msg)
+        {
+        }
+
+        // TODO: Issue #12685
+        [NonEvent]
+        internal static void PrintInfo(ComponentType componentType, object obj, string method, string msg)
+        {
+        }
+
+        // TODO: Issue #12685
+        [NonEvent]
+        internal static void PrintWarning(ComponentType componentType, string msg)
+        {
+        }
+
+        // TODO: Issue #12685
+        [NonEvent]
+        internal static void Associate(ComponentType componentType, object obj1, object obj2)
+        {
+        }
+
         public class Keywords
         {
             public const EventKeywords Default = (EventKeywords)0x0001;
