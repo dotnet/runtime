@@ -377,7 +377,7 @@ namespace System.IO
             // If the buffer is already flushed, don't spin up the OS write
             if (_writePos == 0) return Task.CompletedTask;
 
-            Task flushTask = WriteInternalCoreAsync(_buffer, 0, _writePos, cancellationToken);
+            Task flushTask = WriteInternalCoreAsync(GetBuffer(), 0, _writePos, cancellationToken);
             _writePos = 0;
 
             // Update the active buffer operation
@@ -418,7 +418,7 @@ namespace System.IO
             }
             else
             {
-                WriteCore(_buffer, 0, _writePos);
+                WriteCore(GetBuffer(), 0, _writePos);
             }
 
             _writePos = 0;
@@ -497,8 +497,7 @@ namespace System.IO
                     _readLength = 0;
                     return n;
                 }
-                EnsureBufferAllocated();
-                n = ReadCore(_buffer, 0, _bufferLength);
+                n = ReadCore(GetBuffer(), 0, _bufferLength);
                 if (n == 0) return 0;
                 isBlocked = n < _bufferLength;
                 _readPos = 0;
@@ -506,7 +505,7 @@ namespace System.IO
             }
             // Now copy min of count or numBytesAvailable (i.e. near EOF) to array.
             if (n > count) n = count;
-            Buffer.BlockCopy(_buffer, _readPos, array, offset, n);
+            Buffer.BlockCopy(GetBuffer(), _readPos, array, offset, n);
             _readPos += n;
 
             // We may have read less than the number of bytes the user asked 
@@ -636,7 +635,7 @@ namespace System.IO
                     if (_readPos > 0)
                     {
                         //Console.WriteLine("Seek: seeked for 0, adjusting buffer back by: "+_readPos+"  _readLen: "+_readLen);
-                        Buffer.BlockCopy(_buffer, _readPos, _buffer, 0, _readLength - _readPos);
+                        Buffer.BlockCopy(GetBuffer(), _readPos, GetBuffer(), 0, _readLength - _readPos);
                         _readLength -= _readPos;
                         _readPos = 0;
                     }
@@ -649,7 +648,7 @@ namespace System.IO
                 {
                     int diff = (int)(pos - oldPos);
                     //Console.WriteLine("Seek: diff was "+diff+", readpos was "+_readPos+"  adjusting buffer - shrinking by "+ (_readPos + diff));
-                    Buffer.BlockCopy(_buffer, _readPos + diff, _buffer, 0, _readLength - (_readPos + diff));
+                    Buffer.BlockCopy(GetBuffer(), _readPos + diff, GetBuffer(), 0, _readLength - (_readPos + diff));
                     _readLength -= (_readPos + diff);
                     _readPos = 0;
                     if (_readLength > 0)
@@ -688,24 +687,13 @@ namespace System.IO
             return ret;
         }
 
-        private void EnsureBufferAllocated()
+        partial void OnBufferAllocated()
         {
-            if (_buffer == null)
-            {
-                AllocateBuffer();
-            }
-        }
-
-        private void AllocateBuffer()
-        {
-            Debug.Assert(_buffer == null);
+            Debug.Assert(_buffer != null);
             Debug.Assert(_preallocatedOverlapped == null);
 
-            _buffer = new byte[_bufferLength];
             if (_useAsyncIO)
-            {
                 _preallocatedOverlapped = new PreAllocatedOverlapped(s_ioCallback, this, _buffer);
-            }
         }
 
         public override void Write(byte[] array, int offset, int count)
@@ -736,7 +724,7 @@ namespace System.IO
                 {
                     if (numBytes > count)
                         numBytes = count;
-                    Buffer.BlockCopy(array, offset, _buffer, _writePos, numBytes);
+                    Buffer.BlockCopy(array, offset, GetBuffer(), _writePos, numBytes);
                     _writePos += numBytes;
                     if (count == numBytes) return;
                     offset += numBytes;
@@ -747,11 +735,11 @@ namespace System.IO
 
                 if (_useAsyncIO)
                 {
-                    WriteInternalCoreAsync(_buffer, 0, _writePos, CancellationToken.None).GetAwaiter().GetResult();
+                    WriteInternalCoreAsync(GetBuffer(), 0, _writePos, CancellationToken.None).GetAwaiter().GetResult();
                 }
                 else
                 {
-                    WriteCore(_buffer, 0, _writePos);
+                    WriteCore(GetBuffer(), 0, _writePos);
                 }
                 _writePos = 0;
             }
@@ -763,10 +751,12 @@ namespace System.IO
                 return;
             }
             else if (count == 0)
+            {
                 return;  // Don't allocate a buffer then call memcpy for 0 bytes.
-            EnsureBufferAllocated();
+            }
+
             // Copy remaining bytes into buffer, to write at a later date.
-            Buffer.BlockCopy(array, offset, _buffer, _writePos, count);
+            Buffer.BlockCopy(array, offset, GetBuffer(), _writePos, count);
             _writePos = count;
             return;
         }
@@ -847,7 +837,7 @@ namespace System.IO
                 {
                     int n = _readLength - _readPos;
                     if (n > numBytes) n = numBytes;
-                    Buffer.BlockCopy(_buffer, _readPos, array, offset, n);
+                    Buffer.BlockCopy(GetBuffer(), _readPos, array, offset, n);
                     _readPos += n;
 
                     // Return a completed task
@@ -879,12 +869,11 @@ namespace System.IO
 
                 if (numBytes < _bufferLength)
                 {
-                    EnsureBufferAllocated();
-                    Task<int> readTask = ReadInternalCoreAsync(_buffer, 0, _bufferLength, 0, cancellationToken);
+                    Task<int> readTask = ReadInternalCoreAsync(GetBuffer(), 0, _bufferLength, 0, cancellationToken);
                     _readLength = readTask.GetAwaiter().GetResult();
                     int n = _readLength;
                     if (n > numBytes) n = numBytes;
-                    Buffer.BlockCopy(_buffer, 0, array, offset, n);
+                    Buffer.BlockCopy(GetBuffer(), 0, array, offset, n);
                     _readPos = n;
 
                     // Return a completed task (recycling the one above if possible)
@@ -903,7 +892,7 @@ namespace System.IO
             {
                 int n = _readLength - _readPos;
                 if (n > numBytes) n = numBytes;
-                Buffer.BlockCopy(_buffer, _readPos, array, offset, n);
+                Buffer.BlockCopy(GetBuffer(), _readPos, array, offset, n);
                 _readPos += n;
 
                 if (n >= numBytes)
@@ -1049,14 +1038,13 @@ namespace System.IO
             {
                 if (_writePos > 0) FlushWrite(false);
                 Debug.Assert(_bufferLength > 0, "_bufferSize > 0");
-                EnsureBufferAllocated();
-                _readLength = ReadCore(_buffer, 0, _bufferLength);
+                _readLength = ReadCore(GetBuffer(), 0, _bufferLength);
                 _readPos = 0;
             }
             if (_readPos == _readLength)
                 return -1;
 
-            int result = _buffer[_readPos];
+            int result = GetBuffer()[_readPos];
             _readPos++;
             return result;
         }
@@ -1100,9 +1088,7 @@ namespace System.IO
                 // In that case, just store it in the buffer.
                 if (numBytes < _bufferLength && !HasActiveBufferOperation && numBytes <= remainingBuffer)
                 {
-                    EnsureBufferAllocated();
-
-                    Buffer.BlockCopy(array, offset, _buffer, _writePos, numBytes);
+                    Buffer.BlockCopy(array, offset, GetBuffer(), _writePos, numBytes);
                     _writePos += numBytes;
                     writeDataStoredInBuffer = true;
 
@@ -1292,12 +1278,11 @@ namespace System.IO
                 _readPos = 0;
                 _readLength = 0;
                 Debug.Assert(_bufferLength > 0, "_bufferSize > 0");
-                EnsureBufferAllocated();
             }
             if (_writePos == _bufferLength)
                 FlushWrite(false);
 
-            _buffer[_writePos] = value;
+            GetBuffer()[_writePos] = value;
             _writePos++;
         }
 
@@ -1486,12 +1471,12 @@ namespace System.IO
 
             // Typically CopyToAsync would be invoked as the only "read" on the stream, but it's possible some reading is
             // done and then the CopyToAsync is issued.  For that case, see if we have any data available in the buffer.
-            if (_buffer != null)
+            if (GetBuffer() != null)
             {
                 int bufferedBytes = _readLength - _readPos;
                 if (bufferedBytes > 0)
                 {
-                    await destination.WriteAsync(_buffer, _readPos, bufferedBytes, cancellationToken).ConfigureAwait(false);
+                    await destination.WriteAsync(GetBuffer(), _readPos, bufferedBytes, cancellationToken).ConfigureAwait(false);
                     _readPos = _readLength = 0;
                 }
             }

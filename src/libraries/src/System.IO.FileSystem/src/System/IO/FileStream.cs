@@ -482,6 +482,25 @@ namespace System.IO
 
         internal virtual bool IsClosed => _fileHandle.IsClosed;
 
+        /// <summary>
+        /// Gets the array used for buffering reading and writing.  
+        /// If the array hasn't been allocated, this will lazily allocate it.
+        /// </summary>
+        /// <returns>The buffer.</returns>
+        private byte[] GetBuffer()
+        {
+            Debug.Assert(_buffer == null || _buffer.Length == _bufferLength);
+            if (_buffer == null)
+            {
+                _buffer = new byte[_bufferLength];
+                OnBufferAllocated();
+            }
+
+            return _buffer;
+        }
+
+        partial void OnBufferAllocated();
+
         ~FileStream()
         {
             // Preserved for compatibility since FileStream has defined a 

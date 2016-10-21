@@ -108,17 +108,6 @@ namespace System.IO
                 SeekCore(0, SeekOrigin.Current);
         }
 
-        /// <summary>
-        /// Gets the array used for buffering reading and writing.  
-        /// If the array hasn't been allocated, this will lazily allocate it.
-        /// </summary>
-        /// <returns>The buffer.</returns>
-        private byte[] GetBuffer()
-        {
-            Debug.Assert(_buffer == null || _buffer.Length == _bufferLength);
-            return _buffer ?? (_buffer = new byte[_bufferLength]);
-        }
-
         /// <summary>Translates the FileMode, FileAccess, and FileOptions values into flags to be passed when opening the file.</summary>
         /// <param name="mode">The FileMode provided to the stream's constructor.</param>
         /// <param name="access">The FileAccess provided to the stream's constructor</param>
