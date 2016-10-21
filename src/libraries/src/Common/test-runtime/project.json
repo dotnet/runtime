@@ -295,6 +295,43 @@
         "System.Reflection.Emit.Lightweight": "4.4.0-beta-24624-01"
       }
     },
+    "netcoreapp1.1": {
+      "dependencies": {
+        "Microsoft.Win32.Registry": "4.4.0-beta-24619-02",
+        "Microsoft.Win32.Registry.AccessControl": "4.4.0-beta-24619-02",
+        "System.Diagnostics.Process": "4.4.0-beta-24619-02",
+        "System.IO.FileSystem.AccessControl": "4.4.0-beta-24619-02",
+        "System.IO.FileSystem.DriveInfo": "4.4.0-beta-24619-02",
+        "System.IO.FileSystem.Watcher": "4.4.0-beta-24619-02",
+        "System.IO.IsolatedStorage": {
+          "version": "4.4.0-beta-24619-02",
+          "include": "compile"
+        },
+        "System.IO.Pipes": "4.4.0-beta-24619-02",
+        "System.IO.Pipes.AccessControl": "4.4.0-beta-24619-02",
+        "System.Net.Http.WinHttpHandler": "4.4.0-beta-24619-02",
+        "System.Net.Ping": "4.4.0-beta-24619-02",
+        "System.Net.Security": "4.4.0-beta-24619-02",
+        "System.Runtime.CompilerServices.VisualC": "4.4.0-beta-24619-02",
+        "System.Security.AccessControl": "4.4.0-beta-24619-02",
+        "System.Security.Cryptography.Csp": "4.4.0-beta-24619-02",
+        "System.Threading.AccessControl": "4.4.0-beta-24619-02",
+        "System.Threading.Thread": "4.4.0-beta-24619-02",
+        "System.Threading.ThreadPool": "4.4.0-beta-24619-02",
+        "System.ServiceProcess.ServiceController": "4.4.0-beta-24619-02",
+        "System.Security.Cryptography.OpenSsl": "4.4.0-beta-24619-02",
+        "System.Net.WebProxy": "4.4.0-beta-24619-02",
+        "System.Net.WebClient": "4.4.0-beta-24619-02",
+        "System.Net.Mime": "4.4.0-beta-24610-02",
+        "System.Runtime.Serialization.Formatters": "4.4.0-beta-24619-02",
+        "System.Security.Permissions": "4.4.0-beta-24619-02",
+        "System.Transactions": "4.4.0-beta-24619-02",
+        "System.Runtime.Loader": "4.4.0-beta-24619-02",
+        "System.Reflection.Emit": "4.4.0-beta-24619-02",
+        "System.Reflection.Emit.ILGeneration": "4.4.0-beta-24619-02",
+        "System.Reflection.Emit.Lightweight": "4.4.0-beta-24619-02"
+      }
+    },
     "uap10.0": {
       "dependencies": {
         "System.IO.IsolatedStorage": "4.4.0-beta-24624-01",
