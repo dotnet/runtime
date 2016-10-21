@@ -13,7 +13,7 @@ using System.Security;
 
 namespace System.Text
 {
-    // SBCSCodePageEncoding
+    [Serializable]
     internal class SBCSCodePageEncoding : BaseCodePageEncoding
     {
         // Pointers to our memory section parts
