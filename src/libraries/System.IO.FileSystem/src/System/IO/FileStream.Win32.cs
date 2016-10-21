@@ -296,8 +296,7 @@ namespace System.IO
                 Debug.Assert((_readPos == 0 && _readLength == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLength), "We're either reading or writing, but not both.");
 
                 // Verify that internal position is in sync with the handle
-                if (_exposedHandle)
-                    VerifyOSHandlePosition();
+                VerifyOSHandlePosition();
 
                 // Compensate for buffer that we read from the handle (_readLen) Vs what the user
                 // read so far from the internal buffer (_readPos). Of course add any unwritten  
@@ -480,8 +479,7 @@ namespace System.IO
             Debug.Assert(value >= 0, "value >= 0");
             long origPos = _filePosition;
 
-            if (_exposedHandle)
-                VerifyOSHandlePosition();
+            VerifyOSHandlePosition();
             if (_filePosition != value)
                 SeekCore(value, SeekOrigin.Begin);
             if (!Interop.mincore.SetEndOfFile(_fileHandle))
@@ -587,8 +585,7 @@ namespace System.IO
             }
 
             // Make sure we are reading from the right spot
-            if (_exposedHandle)
-                VerifyOSHandlePosition();
+            VerifyOSHandlePosition();
 
             int errorCode = 0;
             int r = ReadFileNative(_fileHandle, buffer, offset, count, null, out errorCode);
@@ -641,8 +638,7 @@ namespace System.IO
             }
 
             // Verify that internal position is in sync with the handle
-            if (_exposedHandle)
-                VerifyOSHandlePosition();
+            VerifyOSHandlePosition();
 
             long oldPos = _filePosition + (_readPos - _readLength);
             long pos = SeekCore(offset, origin);
@@ -740,33 +736,6 @@ namespace System.IO
             }
         }
 
-        // Checks the position of the OS's handle equals what we expect it to.
-        // This will fail if someone else moved the Win32FileStream's handle or if
-        // our position updating code is incorrect.
-        private void VerifyOSHandlePosition()
-        {
-            if (!CanSeek)
-                return;
-
-            // SeekCore will override the current _pos, so save it now
-            long oldPos = _filePosition;
-            long curPos = SeekCore(0, SeekOrigin.Current);
-
-            if (curPos != oldPos)
-            {
-                // For reads, this is non-fatal but we still could have returned corrupted 
-                // data in some cases. So discard the internal buffer. Potential MDA 
-                _readPos = 0;
-                _readLength = 0;
-                if (_writePos > 0)
-                {
-                    // Discard the buffer and let the user know!
-                    _writePos = 0;
-                    throw new IOException(SR.IO_FileStreamHandlePosition);
-                }
-            }
-        }
-
         public override void Write(byte[] array, int offset, int count)
         {
             ValidateReadWriteArgs(array, offset, count);
@@ -846,8 +815,7 @@ namespace System.IO
             }
 
             // Make sure we are writing to the position that we think we are
-            if (_exposedHandle)
-                VerifyOSHandlePosition();
+            VerifyOSHandlePosition();
 
             int errorCode = 0;
             int r = WriteFileNative(_fileHandle, buffer, offset, count, null, out errorCode);
@@ -1006,8 +974,7 @@ namespace System.IO
                 long len = Length;
 
                 // Make sure we are reading from the position that we think we are
-                if (_exposedHandle)
-                    VerifyOSHandlePosition();
+                VerifyOSHandlePosition();
 
                 if (_filePosition + numBytes > len)
                 {
@@ -1257,8 +1224,7 @@ namespace System.IO
                 //Console.WriteLine("WriteInternalCoreAsync - Calculating end pos.  pos: "+pos+"  len: "+len+"  numBytes: "+numBytes);
 
                 // Make sure we are writing to the position that we think we are
-                if (_exposedHandle)
-                    VerifyOSHandlePosition();
+                VerifyOSHandlePosition();
 
                 if (_filePosition + numBytes > len)
                 {
@@ -1568,10 +1534,7 @@ namespace System.IO
             bool canSeek = CanSeek;
             if (canSeek)
             {
-                if (_exposedHandle)
-                {
-                    VerifyOSHandlePosition();
-                }
+                VerifyOSHandlePosition();
                 readAwaitable._position = _filePosition;
             }
 
