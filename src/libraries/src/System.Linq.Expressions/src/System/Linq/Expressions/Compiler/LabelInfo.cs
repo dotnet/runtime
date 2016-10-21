@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Reflection.Emit;
 
-
 namespace System.Linq.Expressions.Compiler
 {
     /// <summary>
