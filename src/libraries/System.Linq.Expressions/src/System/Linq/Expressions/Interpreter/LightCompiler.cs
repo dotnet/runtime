@@ -250,11 +250,11 @@ namespace System.Linq.Expressions.Interpreter
         {
             if (IsClear)
             {
-                return String.Format(CultureInfo.InvariantCulture, "{0}: clear", Index);
+                return string.Format(CultureInfo.InvariantCulture, "{0}: clear", Index);
             }
             else
             {
-                return String.Format(CultureInfo.InvariantCulture, "{0}: [{1}-{2}] '{3}'", Index, StartLine, EndLine, FileName);
+                return string.Format(CultureInfo.InvariantCulture, "{0}: [{1}-{2}] '{3}'", Index, StartLine, EndLine, FileName);
             }
         }
     }
@@ -3050,7 +3050,7 @@ namespace System.Linq.Expressions.Interpreter
                     break;
             }
             Debug.Assert(_instructions.CurrentStackDepth == startingStackDepth + (expr.Type == typeof(void) ? 0 : 1),
-                String.Format("{0} vs {1} for {2}", _instructions.CurrentStackDepth, startingStackDepth + (expr.Type == typeof(void) ? 0 : 1), expr.NodeType));
+                string.Format("{0} vs {1} for {2}", _instructions.CurrentStackDepth, startingStackDepth + (expr.Type == typeof(void) ? 0 : 1), expr.NodeType));
         }
 
         public void Compile(Expression expr)

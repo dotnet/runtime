@@ -24,7 +24,7 @@ namespace System
             }
         }
 
-        internal static Exception ByDesignWithMessage(String message)
+        internal static Exception ByDesignWithMessage(string message)
         {
             return new NotImplementedException(message);
         }

@@ -29,7 +29,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push((SByte)(((SByte)value) >> ((int)shift)));
+                    frame.Push((sbyte)(((sbyte)value) >> ((int)shift)));
                 }
                 return +1;
             }
@@ -47,7 +47,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push((Int16)(((Int16)value) >> ((int)shift)));
+                    frame.Push((short)(((short)value) >> ((int)shift)));
                 }
                 return +1;
             }
@@ -65,7 +65,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(((Int32)value) >> ((int)shift));
+                    frame.Push(((int)value) >> ((int)shift));
                 }
                 return +1;
             }
@@ -83,7 +83,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(((Int64)value) >> ((int)shift));
+                    frame.Push(((long)value) >> ((int)shift));
                 }
                 return +1;
             }
@@ -101,7 +101,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push((Byte)(((Byte)value) >> ((int)shift)));
+                    frame.Push((byte)(((byte)value) >> ((int)shift)));
                 }
                 return +1;
             }
@@ -119,7 +119,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push((UInt16)(((UInt16)value) >> ((int)shift)));
+                    frame.Push((ushort)(((ushort)value) >> ((int)shift)));
                 }
                 return +1;
             }
@@ -137,7 +137,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(((UInt32)value) >> ((int)shift));
+                    frame.Push(((uint)value) >> ((int)shift));
                 }
                 return +1;
             }
@@ -155,7 +155,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push(((UInt64)value) >> ((int)shift));
+                    frame.Push(((ulong)value) >> ((int)shift));
                 }
                 return +1;
             }
