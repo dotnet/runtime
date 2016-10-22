@@ -213,7 +213,7 @@ namespace System.Linq.Expressions.Interpreter
         internal Dictionary<ParameterExpression, LocalVariable> CopyLocals()
         {
             var res = new Dictionary<ParameterExpression, LocalVariable>(_variables.Count);
-            foreach (var keyValue in _variables)
+            foreach (KeyValuePair<ParameterExpression, VariableScope> keyValue in _variables)
             {
                 res[keyValue.Key] = keyValue.Value.Variable;
             }

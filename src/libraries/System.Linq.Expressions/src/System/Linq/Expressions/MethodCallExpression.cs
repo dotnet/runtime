@@ -1155,7 +1155,7 @@ namespace System.Linq.Expressions
             int count = 0;
             MethodInfo method = null;
 
-            foreach (var mi in type.GetMethods(flags))
+            foreach (MethodInfo mi in type.GetMethods(flags))
             {
                 if (mi.Name.Equals(methodName, StringComparison.OrdinalIgnoreCase))
                 {

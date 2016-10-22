@@ -102,7 +102,7 @@ namespace System.Dynamic.Utils
 
         public static IEnumerable<MethodInfo> GetStaticMethods(this Type type)
         {
-            foreach (var method in type.GetRuntimeMethods())
+            foreach (MethodInfo method in type.GetRuntimeMethods())
             {
                 if (method.IsStatic)
                 {

@@ -108,7 +108,7 @@ namespace System.Linq.Expressions.Interpreter
 
             if (_handlers != null)
             {
-                foreach (var handler in _handlers)
+                foreach (ExceptionHandler handler in _handlers)
                 {
                     handler.SetParent(this);
                 }
@@ -314,7 +314,7 @@ namespace System.Linq.Expressions.Interpreter
         public LightDelegateCreator CompileTop(LambdaExpression node)
         {
             //Console.WriteLine(node.DebugView);
-            foreach (var p in node.Parameters)
+            foreach (ParameterExpression p in node.Parameters)
             {
                 LocalDefinition local = _locals.DefineLocal(p, 0);
                 _instructions.EmitInitializeParameter(local.Index);
@@ -539,7 +539,7 @@ namespace System.Linq.Expressions.Interpreter
                 // variables.
                 locals = new LocalDefinition[variables.Count];
                 int localCnt = 0;
-                foreach (var variable in variables)
+                foreach (ParameterExpression variable in variables)
                 {
                     LocalDefinition local = _locals.DefineLocal(variable, start);
                     locals[localCnt++] = local;
@@ -562,7 +562,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private void CompileBlockEnd(LocalDefinition[] locals)
         {
-            foreach (var local in locals)
+            foreach (LocalDefinition local in locals)
             {
                 _locals.UndefineLocal(local, _instructions.Count);
             }
@@ -1561,9 +1561,9 @@ namespace System.Linq.Expressions.Interpreter
 
             LabelTarget doneLabel = Expression.Label(node.Type, "done");
 
-            foreach (var @case in node.Cases)
+            foreach (SwitchCase @case in node.Cases)
             {
-                foreach (var val in @case.TestValues)
+                foreach (Expression val in @case.TestValues)
                 {
                     //  temp == val ? 
                     //          goto(Body) doneLabel: 
@@ -1881,7 +1881,7 @@ namespace System.Linq.Expressions.Interpreter
         private HybridReferenceDictionary<LabelTarget, BranchLabel> GetBranchMapping()
         {
             var newLabelMapping = new HybridReferenceDictionary<LabelTarget, BranchLabel>(_treeLabels.Count);
-            foreach (var kvp in _treeLabels)
+            foreach (KeyValuePair<LabelTarget, LabelInfo> kvp in _treeLabels)
             {
                 kvp.Value.ValidateFinish();
                 newLabelMapping[kvp.Key] = kvp.Value.GetLabel(this);
@@ -1984,7 +1984,7 @@ namespace System.Linq.Expressions.Interpreter
                 if (node.Handlers.Count > 0)
                 {
                     exHandlers = new List<ExceptionHandler>();
-                    foreach (var handler in node.Handlers)
+                    foreach (CatchBlock handler in node.Handlers)
                     {
                         ParameterExpression parameter = handler.Variable ?? Expression.Parameter(handler.Test);
 
@@ -2174,7 +2174,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     _instructions.EmitByRefCall(method, parameters, updaters.ToArray());
 
-                    foreach (var updater in updaters)
+                    foreach (ByRefUpdater updater in updaters)
                     {
                         updater.UndefineTemps(_instructions, _locals);
                     }
@@ -2494,7 +2494,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             var node = (NewArrayExpression)expr;
 
-            foreach (var arg in node.Expressions)
+            foreach (Expression arg in node.Expressions)
             {
                 Compile(arg);
             }
@@ -2539,7 +2539,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             // Generates IRuntimeVariables for all requested variables
             var node = (RuntimeVariablesExpression)expr;
-            foreach (var variable in node.Variables)
+            foreach (ParameterExpression variable in node.Variables)
             {
                 EnsureAvailableForClosure(variable);
                 CompileGetBoxedVariable(variable);
@@ -2667,7 +2667,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 ElementInit initializer = initializers[i];
                 _instructions.EmitDup();
-                foreach (var arg in initializer.Arguments)
+                foreach (Expression arg in initializer.Arguments)
                 {
                     Compile(arg);
                 }
@@ -2688,7 +2688,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private void CompileMemberInit(ReadOnlyCollection<MemberBinding> bindings)
         {
-            foreach (var binding in bindings)
+            foreach (MemberBinding binding in bindings)
             {
                 switch (binding.BindingType)
                 {
@@ -2744,7 +2744,7 @@ namespace System.Linq.Expressions.Interpreter
 
             var mapping = new Dictionary<ParameterExpression, LocalVariable>();
 
-            foreach (var local in visitor._hoistedParameters)
+            foreach (ParameterExpression local in visitor._hoistedParameters)
             {
                 EnsureAvailableForClosure(local);
                 mapping[local] = ResolveLocal(local);
@@ -2806,7 +2806,7 @@ namespace System.Linq.Expressions.Interpreter
 
             private void PushParameters(ICollection<ParameterExpression> parameters)
             {
-                foreach (var param in parameters)
+                foreach (ParameterExpression param in parameters)
                 {
                     int count;
                     if (_definedParameters.TryGetValue(param, out count))
@@ -2822,7 +2822,7 @@ namespace System.Linq.Expressions.Interpreter
 
             private void PopParameters(ICollection<ParameterExpression> parameters)
             {
-                foreach (var param in parameters)
+                foreach (ParameterExpression param in parameters)
                 {
                     int count = _definedParameters[param];
                     if (count == 0)
