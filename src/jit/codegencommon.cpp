@@ -8997,7 +8997,7 @@ void CodeGen::genFnProlog()
         // LEA EAX, &<VARARGS HANDLE> + EAX
         getEmitter()->emitIns_R_ARR(INS_lea, EA_PTRSIZE, REG_EAX, genFramePointerReg(), REG_EAX, offset);
 
-        if (varDsc->lvRegister)
+        if (varDsc->lvIsInReg())
         {
             if (varDsc->lvRegNum != REG_EAX)
             {
