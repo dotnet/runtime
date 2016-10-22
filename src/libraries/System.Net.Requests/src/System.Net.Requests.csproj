@@ -23,21 +23,16 @@
   <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
     <Compile Include="System\Net\AuthenticationManager.cs" />
     <Compile Include="System\Net\Authorization.cs" />
-    <Compile Include="System\Net\BindIPEndPoint.cs" />
     <Compile Include="System\Net\FileWebRequest.cs" />
     <Compile Include="System\Net\FileWebResponse.cs" />
     <Compile Include="System\Net\HttpRequestHeader.cs" />
     <Compile Include="System\Net\HttpWebRequest.cs" />
     <Compile Include="System\Net\HttpWebResponse.cs" />
     <Compile Include="System\Net\IAuthenticationModule.cs" />
-    <Compile Include="System\Net\ICertificatePolicy.cs" />
     <Compile Include="System\Net\ICredentialPolicy.cs" />
     <Compile Include="System\Net\IWebRequestCreate.cs" />
     <Compile Include="System\Net\ProtocolViolationException.cs" />
     <Compile Include="System\Net\RequestStream.cs" />
-    <Compile Include="System\Net\SecurityProtocolType.cs" />
-    <Compile Include="System\Net\ServicePoint.cs" />
-    <Compile Include="System\Net\ServicePointManager.cs" />
     <Compile Include="System\Net\SystemWebProxy.cs" />
     <Compile Include="System\Net\TaskExtensions.cs" />
     <Compile Include="System\Net\WebException.cs" />
@@ -137,6 +132,9 @@
   <ItemGroup>
     <!-- TODO: Remove this reference once packages are updated -->
     <ProjectReference Include="..\..\System.Net.Primitives\ref\System.Net.Primitives.csproj">
+      <UndefineProperties>TargetGroup;OSGroup</UndefineProperties>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Net.ServicePoint\ref\System.Net.ServicePoint.csproj">
       <UndefineProperties>TargetGroup;OSGroup</UndefineProperties>
     </ProjectReference>
   </ItemGroup>

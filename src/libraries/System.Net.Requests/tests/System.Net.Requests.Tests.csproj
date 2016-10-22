@@ -38,7 +38,6 @@
     <Compile Include="AuthenticationManagerTest.cs" />
     <Compile Include="FileWebRequestTest.cs" />
     <Compile Include="HttpRequestCachePolicyTest.cs" />
-    <Compile Include="ServicePointManagerTest.cs" />
     <Compile Include="HttpWebRequestHeaderTest.cs" />
     <Compile Include="HttpWebResponseHeaderTest.cs" />
     <Compile Include="FtpWebRequestTest.cs" />
@@ -52,6 +51,7 @@
   <ItemGroup>
     <!-- TODO: Remove this reference once packages are updated -->
     <ProjectReference Include="..\..\System.Net.Primitives\pkg\System.Net.Primitives.pkgproj" />
+    <ProjectReference Include="..\..\System.Net.ServicePoint\pkg\System.Net.ServicePoint.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
