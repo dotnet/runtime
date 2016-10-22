@@ -98,6 +98,7 @@ public:
         , m_HasSimd(false)
         , m_LooksLikeWrapperMethod(false)
         , m_MethodIsMostlyLoadStore(false)
+        , m_CallsiteIsInTryRegion(false)
     {
         // empty
     }
@@ -165,6 +166,7 @@ protected:
     bool                    m_HasSimd : 1;
     bool                    m_LooksLikeWrapperMethod : 1;
     bool                    m_MethodIsMostlyLoadStore : 1;
+    bool                    m_CallsiteIsInTryRegion : 1;
 };
 
 // EnhancedLegacyPolicy extends the legacy policy by rejecting

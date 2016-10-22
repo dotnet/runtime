@@ -4664,6 +4664,7 @@ private:
     void fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* result);
     void fgInsertInlineeBlocks(InlineInfo* pInlineInfo);
     GenTreePtr fgInlinePrependStatements(InlineInfo* inlineInfo);
+    void fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* block, GenTreePtr stmt);
 
 #if FEATURE_MULTIREG_RET
     GenTreePtr fgGetStructAsStructPtr(GenTreePtr tree);
