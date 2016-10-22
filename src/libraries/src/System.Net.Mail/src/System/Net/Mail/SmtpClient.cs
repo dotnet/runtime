@@ -55,6 +55,7 @@ namespace System.Net.Mail
         private const int DefaultPort = 25;
         internal string clientDomain = null;
         private bool _disposed = false;
+        private ServicePoint _servicePoint;
         // (async only) For when only some recipients fail.  We still send the e-mail to the others.
         private SmtpFailedRecipientException _failedRecipientException;
         // ports above this limit are invalid
@@ -221,6 +222,7 @@ namespace System.Net.Mail
                 if (value != _host)
                 {
                     _host = value;
+                    _servicePoint = null;
                 }
             }
         }
@@ -251,6 +253,7 @@ namespace System.Net.Mail
                 if (value != _port)
                 {
                     _port = value;
+                    _servicePoint = null;
                 }
             }
         }
@@ -308,6 +311,25 @@ namespace System.Net.Mail
                 }
 
                 _transport.Timeout = value;
+            }
+        }
+
+        public ServicePoint ServicePoint
+        {
+            get
+            {
+                CheckHostAndPort();
+                if (_servicePoint == null)
+                {
+                    // This differs from desktop, where it uses an internal overload of FindServicePoint that just
+                    // takes a string host and an int port, bypassing the need for a Uri. We workaround that here by
+                    // creating an http Uri, simply for the purposes of getting an appropriate ServicePoint instance.
+                    // This has some subtle impact on behavior, e.g. the returned ServicePoint's Address property will
+                    // be usable, whereas in desktop it throws an exception that "This property is not supported for
+                    // protocols that do not use URI."
+                    _servicePoint = ServicePointManager.FindServicePoint(new Uri("http://" + _host + ":" + _port));
+                }
+                return _servicePoint;
             }
         }
 
