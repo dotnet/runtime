@@ -1743,7 +1743,7 @@ typedef struct {
 	guint8          *thunks;
 	/* Offset between the start of code and the thunks area */
 	int              thunks_offset;
-	guint32          exception_type;	/* MONO_EXCEPTION_* */
+	MonoExceptionType exception_type;	/* MONO_EXCEPTION_* */
 	guint32          exception_data;
 	char*            exception_message;
 	gpointer         exception_ptr;

@@ -194,7 +194,7 @@ struct _MonoEvent {
 };
 
 /* type of exception being "on hold" for later processing (see exception_type) */
-enum {
+typedef enum {
 	MONO_EXCEPTION_NONE = 0,
 	MONO_EXCEPTION_INVALID_PROGRAM = 3,
 	MONO_EXCEPTION_UNVERIFIABLE_IL = 4,
@@ -211,7 +211,7 @@ enum {
 	MONO_EXCEPTION_INLINE_FAILED = 15,
 	MONO_EXCEPTION_MONO_ERROR = 16,
 	/* add other exception type */
-};
+} MonoExceptionType;
 
 /* This struct collects the info needed for the runtime use of a class,
  * like the vtables for a domain, the GC descriptor, etc.

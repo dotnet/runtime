@@ -7076,11 +7076,11 @@ emit_init_local (MonoCompile *cfg, int local, MonoType *type, gboolean init)
 /*
  * inline_method:
  *
- *   Return the cost of inlining CMETHOD.
+ * Return the cost of inlining CMETHOD, or zero if it should not be inlined.
  */
 static int
 inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **sp,
-			   guchar *ip, guint real_offset, gboolean inline_always)
+	       guchar *ip, guint real_offset, gboolean inline_always)
 {
 	MonoError error;
 	MonoInst *ins, *rvar = NULL;
@@ -8151,7 +8151,22 @@ emit_setret (MonoCompile *cfg, MonoInst *val)
 /*
  * mono_method_to_ir:
  *
- *   Translate the .net IL into linear IR.
+ * Translate the .net IL into linear IR.
+ *
+ * @start_bblock: if not NULL, the starting basic block, used during inlining.
+ * @end_bblock: if not NULL, the ending basic block, used during inlining.
+ * @return_var: if not NULL, the place where the return value is stored, used during inlining.   
+ * @inline_args: if not NULL, contains the arguments to the inline call
+ * @inline_offset: if not zero, the real offset from the inline call, or zero otherwise.
+ * @is_virtual_call: whether this method is being called as a result of a call to callvirt
+ *
+ * This method is used to turn ECMA IL into Mono's internal Linear IR
+ * reprensetation.  It is used both for entire methods, as well as
+ * inlining existing methods.  In the former case, the @start_bblock,
+ * @end_bblock, @return_var, @inline_args are all set to NULL, and the
+ * inline_offset is set to zero.
+ * 
+ * Returns: the inline cost, or -1 if there was an error processing this method.
  */
 int
 mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_bblock, MonoBasicBlock *end_bblock, 
