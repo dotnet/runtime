@@ -6832,15 +6832,29 @@ HMODULE NDirect::LoadLibraryModuleViaHost(NDirectMethodDesc * pMD, AppDomain* pD
     CLRPrivBinderCoreCLR *pTPABinder = pDomain->GetTPABinderContext();
     Assembly* pAssembly = pMD->GetMethodTable()->GetAssembly();
    
-    PTR_ICLRPrivBinder pBindingContext = pAssembly->GetManifestFile()->GetBindingContext();
+    PEFile *pManifestFile = pAssembly->GetManifestFile();
+    PTR_ICLRPrivBinder pBindingContext = pManifestFile->GetBindingContext();
 
     //Step 0: Check if  the assembly was bound using TPA. 
     //        The Binding Context can be null or an overridden TPA context
     if (pBindingContext == NULL)
     {
-        return NULL;
+        pBindingContext = nullptr;
+
+        // If the assembly does not have a binder associated with it explicitly, then check if it is
+        // a dynamic assembly, or not, since they can have a fallback load context associated with them.
+        if (pManifestFile->IsDynamic())
+        {
+            pBindingContext = pManifestFile->GetFallbackLoadContextBinder();
+        } 
     }
-    
+
+    // If we do not have any binder associated, then return to the default resolution mechanism.
+    if (pBindingContext == nullptr)
+    {
+        return NULL;
+    }    
+
     UINT_PTR assemblyBinderID = 0;
     IfFailThrow(pBindingContext->GetBinderID(&assemblyBinderID));
         
