@@ -99,8 +99,12 @@ namespace System.Net.NetworkInformation
                     s_availabilityChangedSubscribers -= value;
                     if (s_availabilityChangedSubscribers == null)
                     {
-                        s_availabilityTimer.Dispose();
-                        s_availabilityTimer = null;
+                        if (s_availabilityTimer != null)
+                        {
+                            s_availabilityTimer.Dispose();
+                            s_availabilityTimer = null;
+                        }
+
                         if (s_addressChangedSubscribers == null)
                         {
                             CloseSocket();
