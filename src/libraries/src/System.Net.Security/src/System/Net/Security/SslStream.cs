@@ -525,21 +525,8 @@ namespace System.Net.Security
         // Returns:
         // 
         //     A Task<int> representing the read.
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int size, CancellationToken cancellationToken)
-        {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled<int>(cancellationToken);
-            }
-
-            return Task.Factory.FromAsync(
-                (bufferArg, offsetArg, sizeArg, callback, state) => ((SslStream)state).BeginRead(bufferArg, offsetArg, sizeArg, callback, state),
-                iar => ((SslStream)iar.AsyncState).EndRead(iar),
-                buffer,
-                offset,
-                size,
-                this);
-        }
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int size, CancellationToken cancellationToken) =>
+            base.ReadAsync(buffer, offset, size, cancellationToken);
 
         // WriteAsync - provide async write functionality.
         // 
@@ -556,20 +543,7 @@ namespace System.Net.Security
         // Returns:
         // 
         //     A Task representing the write.
-        public override Task WriteAsync(byte[] buffer, int offset, int size, CancellationToken cancellationToken)
-        {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled<int>(cancellationToken);
-            }
-
-            return Task.Factory.FromAsync(
-                (bufferArg, offsetArg, sizeArg, callback, state) => ((SslStream)state).BeginWrite(bufferArg, offsetArg, sizeArg, callback, state),
-                iar => ((SslStream)iar.AsyncState).EndWrite(iar),
-                buffer,
-                offset,
-                size,
-                this);
-        }
+        public override Task WriteAsync(byte[] buffer, int offset, int size, CancellationToken cancellationToken) =>
+            base.WriteAsync(buffer, offset, size, cancellationToken);
     }
 }
