@@ -293,6 +293,7 @@ namespace System.Net.NetworkInformation
     {
         public NetworkInformationException() { }
         public NetworkInformationException(int errorCode) { }
+        protected NetworkInformationException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
     public abstract partial class NetworkInterface
     {

@@ -45,6 +45,7 @@ using System;
 
 namespace System.Text
 {
+    [Serializable]
     internal class EUCJPEncoding : DBCSCodePageEncoding
     {
         // This pretends to be CP 932 as far as memory tables are concerned.

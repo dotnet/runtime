@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.IO;
+using System.Runtime.Serialization;
 
 namespace System.Security.Claims
 {
@@ -13,6 +14,7 @@ namespace System.Security.Claims
     /// A Claim consists of a Type, Value, a Subject and an Issuer.
     /// Additional properties, ValueType, Properties and OriginalIssuer help understand the claim when making decisions.
     /// </summary>
+    [Serializable]
     public class Claim
     {
         private enum SerializationMask
@@ -28,10 +30,12 @@ namespace System.Security.Claims
             UserData = 128,
         }
 
+        [NonSerialized]
         private byte[] _userSerializationData;
         private string _issuer;
         private string _originalIssuer;
         private Dictionary<string, string> _properties = new Dictionary<string, string>();
+        [NonSerialized]
         private ClaimsIdentity _subject;
         private string _type;
         private string _value;

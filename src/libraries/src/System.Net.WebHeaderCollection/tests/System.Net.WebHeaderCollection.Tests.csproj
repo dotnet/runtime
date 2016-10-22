@@ -15,6 +15,13 @@
     <Compile Include="WebHeaderCollectionTest.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
+    <Compile Include="WebHeaderCollectionTest.netstandard17.cs" />
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
+      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
+    </Compile>
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.Net.WebHeaderCollection.pkgproj">
       <Project>{5EE76DCC-9FD5-47FD-AB45-BD0F0857740F}</Project>
