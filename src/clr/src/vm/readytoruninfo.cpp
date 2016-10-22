@@ -636,6 +636,22 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, BOOL fFixups /*=TRUE*/)
             return NULL;
     }
 
+#ifndef CROSSGEN_COMPILE
+#ifdef PROFILING_SUPPORTED
+        BOOL fShouldSearchCache = TRUE;
+        {
+            BEGIN_PIN_PROFILER(CORProfilerTrackCacheSearches());
+            g_profControlBlock.pProfInterface->
+                JITCachedFunctionSearchStarted((FunctionID)pMD, &fShouldSearchCache);
+            END_PIN_PROFILER();
+        }
+        if (!fShouldSearchCache)
+        {
+            return NULL;
+        }
+#endif // PROFILING_SUPPORTED
+#endif // CROSSGEN_COMPILE
+
     uint id;
     offset = m_nativeReader.DecodeUnsigned(offset, &id);
 
@@ -670,6 +686,17 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, BOOL fFixups /*=TRUE*/)
         if (m_entryPointToMethodDescMap.LookupValue(PCODEToPINSTR(pEntryPoint), (LPVOID)PCODEToPINSTR(pEntryPoint)) == (LPVOID)INVALIDENTRY)
             m_entryPointToMethodDescMap.InsertValue(PCODEToPINSTR(pEntryPoint), pMD);
     }
+
+#ifndef CROSSGEN_COMPILE
+#ifdef PROFILING_SUPPORTED
+        {
+            BEGIN_PIN_PROFILER(CORProfilerTrackCacheSearches());
+            g_profControlBlock.pProfInterface->
+                JITCachedFunctionSearchFinished((FunctionID)pMD, COR_PRF_CACHED_FUNCTION_FOUND);
+            END_PIN_PROFILER();
+        }
+#endif // PROFILING_SUPPORTED
+#endif // CROSSGEN_COMPILE
 
     if (g_pDebugInterface != NULL)
     {
