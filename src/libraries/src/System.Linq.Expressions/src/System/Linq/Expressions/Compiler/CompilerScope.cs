@@ -99,7 +99,7 @@ namespace System.Linq.Expressions.Compiler
             IList<ParameterExpression> variables = GetVariables(node);
 
             Definitions = new Dictionary<ParameterExpression, VariableStorageKind>(variables.Count);
-            foreach (var v in variables)
+            foreach (ParameterExpression v in variables)
             {
                 Definitions.Add(v, VariableStorageKind.Local);
             }
@@ -174,7 +174,7 @@ namespace System.Linq.Expressions.Compiler
                 // Find what array each variable is on & its index
                 var indexes = new ArrayBuilder<long>(vars.Count);
 
-                foreach (var variable in vars)
+                foreach (ParameterExpression variable in vars)
                 {
                     // For each variable, find what array it's defined on
                     ulong parents = 0;
@@ -364,7 +364,7 @@ namespace System.Linq.Expressions.Compiler
                 return;
             }
 
-            foreach (var refCount in ReferenceCount)
+            foreach (KeyValuePair<ParameterExpression, int> refCount in ReferenceCount)
             {
                 if (ShouldCache(refCount.Key, refCount.Value))
                 {
@@ -470,7 +470,7 @@ namespace System.Linq.Expressions.Compiler
                 yield return param;
             }
 
-            foreach (var scope in MergedScopes)
+            foreach (BlockExpression scope in MergedScopes)
             {
                 foreach (ParameterExpression param in scope.Variables)
                 {

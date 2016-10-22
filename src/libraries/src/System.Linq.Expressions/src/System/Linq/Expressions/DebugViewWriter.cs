@@ -1074,7 +1074,7 @@ namespace System.Linq.Expressions
 
         protected override SwitchCase VisitSwitchCase(SwitchCase node)
         {
-            foreach (var test in node.TestValues)
+            foreach (Expression test in node.TestValues)
             {
                 Out(".Case (");
                 Visit(test);

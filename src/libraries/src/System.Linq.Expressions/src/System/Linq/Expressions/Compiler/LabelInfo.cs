@@ -110,7 +110,7 @@ namespace System.Linq.Expressions.Compiler
             // Once defined, validate all jumps
             if (_definitions.Count == 1)
             {
-                foreach (var r in _references)
+                foreach (LabelScopeInfo r in _references)
                 {
                     ValidateJump(r);
                 }
