@@ -6828,13 +6828,13 @@ GenTreeCall* Compiler::gtNewCallNode(
 #endif // LEGACY_BACKEND
 
 #ifdef FEATURE_READYTORUN_COMPILER
-    node->gtCall.gtEntryPoint.addr = nullptr;
+    node->gtEntryPoint.addr = nullptr;
 #endif
 
 #if defined(DEBUG) || defined(INLINE_DATA)
     // These get updated after call node is built.
-    node->gtCall.gtInlineObservation = InlineObservation::CALLEE_UNUSED_INITIAL;
-    node->gtCall.gtRawILOffset       = BAD_IL_OFFSET;
+    node->gtInlineObservation = InlineObservation::CALLEE_UNUSED_INITIAL;
+    node->gtRawILOffset       = BAD_IL_OFFSET;
 #endif
 
     // Spec: Managed Retval sequence points needs to be generated while generating debug info for debuggable code.
@@ -6870,6 +6870,22 @@ GenTreeCall* Compiler::gtNewCallNode(
 
     // Initialize spill flags of gtOtherRegs
     node->ClearOtherRegFlags();
+
+#if defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)
+    // Initialize the multi-reg long return info if necessary
+    if (varTypeIsLong(node))
+    {
+        // The return type will remain as the incoming long type
+        node->gtReturnType = node->gtType;
+
+        // Initialize Return type descriptor of call node
+        ReturnTypeDesc* retTypeDesc = node->GetReturnTypeDesc();
+        retTypeDesc->InitializeLongReturnType(this);
+
+        // must be a long returned in two registers
+        assert(retTypeDesc->GetReturnRegCount() == 2);
+    }
+#endif // defined(_TARGET_X86_) && !defined(_LEGACY_BACKEND_)
 
     return node;
 }
