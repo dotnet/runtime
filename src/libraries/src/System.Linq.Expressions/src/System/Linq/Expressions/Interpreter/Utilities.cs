@@ -124,7 +124,7 @@ namespace System.Linq.Expressions.Interpreter
             switch (type.GetTypeCode())
             {
                 case TypeCode.Boolean:
-                    result = ScriptingRuntimeHelpers.False;
+                    result = False;
                     break;
                 case TypeCode.SByte:
                     result = default(sbyte);
@@ -139,7 +139,7 @@ namespace System.Linq.Expressions.Interpreter
                     result = default(short);
                     break;
                 case TypeCode.Int32:
-                    result = ScriptingRuntimeHelpers.Int32_0;
+                    result = Int32_0;
                     break;
                 case TypeCode.Int64:
                     result = default(long);
@@ -158,8 +158,8 @@ namespace System.Linq.Expressions.Interpreter
                     return default(float);
                 case TypeCode.Double:
                     return default(double);
-                //            case TypeCode.DBNull: 
-                //                  return default(DBNull); 
+                //case TypeCode.DBNull: 
+                //    return default(DBNull); 
                 case TypeCode.DateTime:
                     return default(DateTime);
                 case TypeCode.Decimal:

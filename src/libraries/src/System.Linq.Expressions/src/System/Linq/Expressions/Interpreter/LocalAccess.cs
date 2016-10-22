@@ -451,6 +451,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int ProducedStack => 1;
         public override int ConsumedStack => _count;
+        public override string InstructionName => "GetRuntimeVariables";
 
         public override int Run(InterpretedFrame frame)
         {
@@ -463,9 +464,8 @@ namespace System.Linq.Expressions.Interpreter
             return +1;
         }
 
-        public override string InstructionName => "GetRuntimeVariables";
-
         public override string ToString() => "GetRuntimeVariables()";
     }
+
     #endregion
 }

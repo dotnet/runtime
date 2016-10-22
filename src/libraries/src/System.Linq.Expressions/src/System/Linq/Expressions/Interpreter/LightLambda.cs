@@ -324,7 +324,6 @@ namespace System.Linq.Expressions.Interpreter
                 body = Expression.Convert(Expression.Invoke(dlgExpr, argsParam), method.ReturnType);
             }
 
-
             if (hasByRef)
             {
                 List<Expression> updates = new List<Expression>();
@@ -385,7 +384,6 @@ namespace System.Linq.Expressions.Interpreter
             }
 #endif
         }
-
 
         private InterpretedFrame MakeFrame()
         {
