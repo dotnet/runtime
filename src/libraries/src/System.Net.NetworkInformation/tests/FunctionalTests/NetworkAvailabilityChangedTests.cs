@@ -6,25 +6,61 @@ using Xunit;
 
 namespace System.Net.NetworkInformation.Tests
 {
-    public class NetworkAvailabilityChangedTests
+    // Partial class used for both NetworkAddressChanged and NetworkAvailabilityChanged
+    // so that the tests for each don't run concurrently
+    public partial class NetworkChangedTests
     {
+        private readonly NetworkAvailabilityChangedEventHandler _availabilityHandler = delegate { };
+
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/308
         public void NetworkAvailabilityChanged_AddRemove_Success()
         {
-            NetworkAvailabilityChangedEventHandler handler = NetworkChange_NetworkAvailabilityChanged;
-            NetworkChange.NetworkAvailabilityChanged += handler;
-            NetworkChange.NetworkAvailabilityChanged -= handler;
+            NetworkChange.NetworkAvailabilityChanged += _availabilityHandler;
+            NetworkChange.NetworkAvailabilityChanged -= _availabilityHandler;
         }
 
         [Fact]
         public void NetworkAvailabilityChanged_JustRemove_Success()
         {
-            NetworkAvailabilityChangedEventHandler handler = NetworkChange_NetworkAvailabilityChanged;
-            NetworkChange.NetworkAvailabilityChanged -= handler;
+            NetworkChange.NetworkAvailabilityChanged -= _availabilityHandler;
         }
 
-        private void NetworkChange_NetworkAvailabilityChanged(object sender, NetworkAvailabilityEventArgs e)
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/308
+        public void NetworkAddressChanged_AddAndRemove_NetworkAvailabilityChanged_JustRemove_Success()
         {
+            NetworkChange.NetworkAddressChanged += _addressHandler;
+            NetworkChange.NetworkAvailabilityChanged -= _availabilityHandler;
+            NetworkChange.NetworkAddressChanged -= _addressHandler;
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/308
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void NetworkAvailabilityChanged_NetworkAddressChanged_AddAndRemove_Success(bool addAddressFirst, bool removeAddressFirst)
+        {
+            if (addAddressFirst)
+            {
+                NetworkChange.NetworkAddressChanged += _addressHandler;
+                NetworkChange.NetworkAvailabilityChanged += _availabilityHandler;
+            }
+            else
+            {
+                NetworkChange.NetworkAvailabilityChanged += _availabilityHandler;
+                NetworkChange.NetworkAddressChanged += _addressHandler;
+            }
+
+            if (removeAddressFirst)
+            {
+                NetworkChange.NetworkAddressChanged -= _addressHandler;
+                NetworkChange.NetworkAvailabilityChanged -= _availabilityHandler;
+            }
+            else
+            {
+                NetworkChange.NetworkAvailabilityChanged -= _availabilityHandler;
+                NetworkChange.NetworkAddressChanged -= _addressHandler;
+            }
         }
     }
 }
