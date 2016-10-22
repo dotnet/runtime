@@ -2785,8 +2785,6 @@ protected:
 
     GenTreePtr impFixupCallStructReturn(GenTreePtr call, CORINFO_CLASS_HANDLE retClsHnd);
 
-    GenTreePtr impInitCallLongReturn(GenTreePtr call);
-
     GenTreePtr impFixupStructReturnType(GenTreePtr op, CORINFO_CLASS_HANDLE retClsHnd);
 
 #ifdef DEBUG
