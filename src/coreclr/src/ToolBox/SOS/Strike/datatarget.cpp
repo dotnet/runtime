@@ -85,7 +85,7 @@ DataTarget::GetPointerSize(
     *size = 8;
 #elif defined(SOS_TARGET_ARM)
     *size = 4;
-#elif
+#else
   #error Unsupported architecture
 #endif
 
