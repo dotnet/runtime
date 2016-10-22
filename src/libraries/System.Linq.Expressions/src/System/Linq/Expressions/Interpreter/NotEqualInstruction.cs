@@ -19,7 +19,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private NotEqualInstruction() { }
 
-        internal sealed class NotEqualBoolean : NotEqualInstruction
+        private sealed class NotEqualBoolean : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -41,7 +41,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class NotEqualSByte : NotEqualInstruction
+        private sealed class NotEqualSByte : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -63,7 +63,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class NotEqualInt16 : NotEqualInstruction
+        private sealed class NotEqualInt16 : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -85,7 +85,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class NotEqualChar : NotEqualInstruction
+        private sealed class NotEqualChar : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -107,7 +107,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class NotEqualInt32 : NotEqualInstruction
+        private sealed class NotEqualInt32 : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -129,7 +129,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class NotEqualInt64 : NotEqualInstruction
+        private sealed class NotEqualInt64 : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -151,7 +151,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class NotEqualByte : NotEqualInstruction
+        private sealed class NotEqualByte : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -173,7 +173,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class NotEqualUInt16 : NotEqualInstruction
+        private sealed class NotEqualUInt16 : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -195,7 +195,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class NotEqualUInt32 : NotEqualInstruction
+        private sealed class NotEqualUInt32 : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -217,7 +217,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class NotEqualUInt64 : NotEqualInstruction
+        private sealed class NotEqualUInt64 : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -239,7 +239,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class NotEqualSingle : NotEqualInstruction
+        private sealed class NotEqualSingle : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -261,7 +261,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class NotEqualDouble : NotEqualInstruction
+        private sealed class NotEqualDouble : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -283,7 +283,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class NotEqualReference : NotEqualInstruction
+        private sealed class NotEqualReference : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -293,7 +293,7 @@ namespace System.Linq.Expressions.Interpreter
         }
 
 
-        internal sealed class NotEqualBooleanLiftedToNull : NotEqualInstruction
+        private sealed class NotEqualBooleanLiftedToNull : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -311,7 +311,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class NotEqualSByteLiftedToNull : NotEqualInstruction
+        private sealed class NotEqualSByteLiftedToNull : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -329,7 +329,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class NotEqualInt16LiftedToNull : NotEqualInstruction
+        private sealed class NotEqualInt16LiftedToNull : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -347,7 +347,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class NotEqualCharLiftedToNull : NotEqualInstruction
+        private sealed class NotEqualCharLiftedToNull : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -365,7 +365,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class NotEqualInt32LiftedToNull : NotEqualInstruction
+        private sealed class NotEqualInt32LiftedToNull : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -383,7 +383,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class NotEqualInt64LiftedToNull : NotEqualInstruction
+        private sealed class NotEqualInt64LiftedToNull : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -401,7 +401,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class NotEqualByteLiftedToNull : NotEqualInstruction
+        private sealed class NotEqualByteLiftedToNull : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -419,7 +419,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class NotEqualUInt16LiftedToNull : NotEqualInstruction
+        private sealed class NotEqualUInt16LiftedToNull : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -437,7 +437,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class NotEqualUInt32LiftedToNull : NotEqualInstruction
+        private sealed class NotEqualUInt32LiftedToNull : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -455,7 +455,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class NotEqualUInt64LiftedToNull : NotEqualInstruction
+        private sealed class NotEqualUInt64LiftedToNull : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -473,7 +473,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class NotEqualSingleLiftedToNull : NotEqualInstruction
+        private sealed class NotEqualSingleLiftedToNull : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -491,7 +491,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class NotEqualDoubleLiftedToNull : NotEqualInstruction
+        private sealed class NotEqualDoubleLiftedToNull : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -509,7 +509,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class NotEqualReferenceLiftedToNull : NotEqualInstruction
+        private sealed class NotEqualReferenceLiftedToNull : NotEqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {

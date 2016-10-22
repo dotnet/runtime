@@ -19,7 +19,7 @@ namespace System.Linq.Expressions.Interpreter
         
         private EqualInstruction() { }
 
-        internal sealed class EqualBoolean : EqualInstruction
+        private sealed class EqualBoolean : EqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -41,7 +41,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class EqualSByte : EqualInstruction
+        private sealed class EqualSByte : EqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -63,7 +63,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class EqualInt16 : EqualInstruction
+        private sealed class EqualInt16 : EqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -85,7 +85,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class EqualChar : EqualInstruction
+        private sealed class EqualChar : EqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -107,7 +107,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class EqualInt32 : EqualInstruction
+        private sealed class EqualInt32 : EqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -129,7 +129,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class EqualInt64 : EqualInstruction
+        private sealed class EqualInt64 : EqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -151,7 +151,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class EqualByte : EqualInstruction
+        private sealed class EqualByte : EqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -173,7 +173,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class EqualUInt16 : EqualInstruction
+        private sealed class EqualUInt16 : EqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -195,7 +195,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class EqualUInt32 : EqualInstruction
+        private sealed class EqualUInt32 : EqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -217,7 +217,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class EqualUInt64 : EqualInstruction
+        private sealed class EqualUInt64 : EqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -239,7 +239,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class EqualSingle : EqualInstruction
+        private sealed class EqualSingle : EqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -261,7 +261,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class EqualDouble : EqualInstruction
+        private sealed class EqualDouble : EqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -283,7 +283,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class EqualReference : EqualInstruction
+        private sealed class EqualReference : EqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -292,7 +292,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class EqualBooleanLiftedToNull : EqualInstruction
+        private sealed class EqualBooleanLiftedToNull : EqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -310,7 +310,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class EqualSByteLiftedToNull : EqualInstruction
+        private sealed class EqualSByteLiftedToNull : EqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -328,7 +328,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class EqualInt16LiftedToNull : EqualInstruction
+        private sealed class EqualInt16LiftedToNull : EqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -346,7 +346,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class EqualCharLiftedToNull : EqualInstruction
+        private sealed class EqualCharLiftedToNull : EqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -364,7 +364,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class EqualInt32LiftedToNull : EqualInstruction
+        private sealed class EqualInt32LiftedToNull : EqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -382,7 +382,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class EqualInt64LiftedToNull : EqualInstruction
+        private sealed class EqualInt64LiftedToNull : EqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -400,7 +400,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class EqualByteLiftedToNull : EqualInstruction
+        private sealed class EqualByteLiftedToNull : EqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -418,7 +418,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class EqualUInt16LiftedToNull : EqualInstruction
+        private sealed class EqualUInt16LiftedToNull : EqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -436,7 +436,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class EqualUInt32LiftedToNull : EqualInstruction
+        private sealed class EqualUInt32LiftedToNull : EqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -454,7 +454,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class EqualUInt64LiftedToNull : EqualInstruction
+        private sealed class EqualUInt64LiftedToNull : EqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -472,7 +472,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class EqualSingleLiftedToNull : EqualInstruction
+        private sealed class EqualSingleLiftedToNull : EqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -490,7 +490,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class EqualDoubleLiftedToNull : EqualInstruction
+        private sealed class EqualDoubleLiftedToNull : EqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -509,7 +509,7 @@ namespace System.Linq.Expressions.Interpreter
         }
 
 
-        internal sealed class EqualReferenceLiftedToNull : EqualInstruction
+        private sealed class EqualReferenceLiftedToNull : EqualInstruction
         {
             public override int Run(InterpretedFrame frame)
             {

@@ -24,7 +24,7 @@ namespace System.Linq.Expressions.Interpreter
             _nullValue = nullValue;
         }
 
-        internal sealed class LessThanSByte : LessThanInstruction
+        private sealed class LessThanSByte : LessThanInstruction
         {
             public LessThanSByte(object nullValue)
                 : base(nullValue)
@@ -47,7 +47,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class LessThanInt16 : LessThanInstruction
+        private sealed class LessThanInt16 : LessThanInstruction
         {
             public LessThanInt16(object nullValue)
                 : base(nullValue)
@@ -70,7 +70,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class LessThanChar : LessThanInstruction
+        private sealed class LessThanChar : LessThanInstruction
         {
             public LessThanChar(object nullValue)
                 : base(nullValue)
@@ -93,7 +93,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class LessThanInt32 : LessThanInstruction
+        private sealed class LessThanInt32 : LessThanInstruction
         {
             public LessThanInt32(object nullValue)
                 : base(nullValue)
@@ -116,7 +116,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class LessThanInt64 : LessThanInstruction
+        private sealed class LessThanInt64 : LessThanInstruction
         {
             public LessThanInt64(object nullValue)
                 : base(nullValue)
@@ -139,7 +139,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class LessThanByte : LessThanInstruction
+        private sealed class LessThanByte : LessThanInstruction
         {
             public LessThanByte(object nullValue)
                 : base(nullValue)
@@ -162,7 +162,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class LessThanUInt16 : LessThanInstruction
+        private sealed class LessThanUInt16 : LessThanInstruction
         {
             public LessThanUInt16(object nullValue)
                 : base(nullValue)
@@ -185,7 +185,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class LessThanUInt32 : LessThanInstruction
+        private sealed class LessThanUInt32 : LessThanInstruction
         {
             public LessThanUInt32(object nullValue)
                 : base(nullValue)
@@ -208,7 +208,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class LessThanUInt64 : LessThanInstruction
+        private sealed class LessThanUInt64 : LessThanInstruction
         {
             public LessThanUInt64(object nullValue)
                 : base(nullValue)
@@ -231,7 +231,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class LessThanSingle : LessThanInstruction
+        private sealed class LessThanSingle : LessThanInstruction
         {
             public LessThanSingle(object nullValue)
                 : base(nullValue)
@@ -254,7 +254,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class LessThanDouble : LessThanInstruction
+        private sealed class LessThanDouble : LessThanInstruction
         {
             public LessThanDouble(object nullValue)
                 : base(nullValue)
@@ -337,7 +337,7 @@ namespace System.Linq.Expressions.Interpreter
             _nullValue = nullValue;
         }
 
-        internal sealed class LessThanOrEqualSByte : LessThanOrEqualInstruction
+        private sealed class LessThanOrEqualSByte : LessThanOrEqualInstruction
         {
             public LessThanOrEqualSByte(object nullValue)
                 : base(nullValue)
@@ -360,7 +360,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class LessThanOrEqualInt16 : LessThanOrEqualInstruction
+        private sealed class LessThanOrEqualInt16 : LessThanOrEqualInstruction
         {
             public LessThanOrEqualInt16(object nullValue)
                 : base(nullValue)
@@ -383,7 +383,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class LessThanOrEqualChar : LessThanOrEqualInstruction
+        private sealed class LessThanOrEqualChar : LessThanOrEqualInstruction
         {
             public LessThanOrEqualChar(object nullValue)
                 : base(nullValue)
@@ -406,7 +406,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class LessThanOrEqualInt32 : LessThanOrEqualInstruction
+        private sealed class LessThanOrEqualInt32 : LessThanOrEqualInstruction
         {
             public LessThanOrEqualInt32(object nullValue)
                 : base(nullValue)
@@ -429,7 +429,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class LessThanOrEqualInt64 : LessThanOrEqualInstruction
+        private sealed class LessThanOrEqualInt64 : LessThanOrEqualInstruction
         {
             public LessThanOrEqualInt64(object nullValue)
                 : base(nullValue)
@@ -452,7 +452,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class LessThanOrEqualByte : LessThanOrEqualInstruction
+        private sealed class LessThanOrEqualByte : LessThanOrEqualInstruction
         {
             public LessThanOrEqualByte(object nullValue)
                 : base(nullValue)
@@ -475,7 +475,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class LessThanOrEqualUInt16 : LessThanOrEqualInstruction
+        private sealed class LessThanOrEqualUInt16 : LessThanOrEqualInstruction
         {
             public LessThanOrEqualUInt16(object nullValue)
                 : base(nullValue)
@@ -498,7 +498,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class LessThanOrEqualUInt32 : LessThanOrEqualInstruction
+        private sealed class LessThanOrEqualUInt32 : LessThanOrEqualInstruction
         {
             public LessThanOrEqualUInt32(object nullValue)
                 : base(nullValue)
@@ -521,7 +521,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class LessThanOrEqualUInt64 : LessThanOrEqualInstruction
+        private sealed class LessThanOrEqualUInt64 : LessThanOrEqualInstruction
         {
             public LessThanOrEqualUInt64(object nullValue)
                 : base(nullValue)
@@ -544,7 +544,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class LessThanOrEqualSingle : LessThanOrEqualInstruction
+        private sealed class LessThanOrEqualSingle : LessThanOrEqualInstruction
         {
             public LessThanOrEqualSingle(object nullValue)
                 : base(nullValue)
@@ -567,7 +567,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class LessThanOrEqualDouble : LessThanOrEqualInstruction
+        private sealed class LessThanOrEqualDouble : LessThanOrEqualInstruction
         {
             public LessThanOrEqualDouble(object nullValue)
                 : base(nullValue)

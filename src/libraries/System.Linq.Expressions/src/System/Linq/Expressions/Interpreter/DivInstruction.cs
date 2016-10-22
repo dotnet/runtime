@@ -18,7 +18,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private DivInstruction() { }
 
-        internal sealed class DivInt32 : DivInstruction
+        private sealed class DivInt32 : DivInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -37,7 +37,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class DivInt16 : DivInstruction
+        private sealed class DivInt16 : DivInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -56,7 +56,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class DivInt64 : DivInstruction
+        private sealed class DivInt64 : DivInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -75,7 +75,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class DivUInt16 : DivInstruction
+        private sealed class DivUInt16 : DivInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -94,7 +94,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class DivUInt32 : DivInstruction
+        private sealed class DivUInt32 : DivInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -113,7 +113,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class DivUInt64 : DivInstruction
+        private sealed class DivUInt64 : DivInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -132,7 +132,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class DivSingle : DivInstruction
+        private sealed class DivSingle : DivInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -151,7 +151,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class DivDouble : DivInstruction
+        private sealed class DivDouble : DivInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -200,7 +200,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private ModuloInstruction() { }
 
-        internal sealed class ModuloInt32 : ModuloInstruction
+        private sealed class ModuloInt32 : ModuloInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -219,7 +219,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class ModuloInt16 : ModuloInstruction
+        private sealed class ModuloInt16 : ModuloInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -238,7 +238,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class ModuloInt64 : ModuloInstruction
+        private sealed class ModuloInt64 : ModuloInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -257,7 +257,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class ModuloUInt16 : ModuloInstruction
+        private sealed class ModuloUInt16 : ModuloInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -276,7 +276,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class ModuloUInt32 : ModuloInstruction
+        private sealed class ModuloUInt32 : ModuloInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -295,7 +295,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class ModuloUInt64 : ModuloInstruction
+        private sealed class ModuloUInt64 : ModuloInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -314,7 +314,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class ModuloSingle : ModuloInstruction
+        private sealed class ModuloSingle : ModuloInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -333,7 +333,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class ModuloDouble : ModuloInstruction
+        private sealed class ModuloDouble : ModuloInstruction
         {
             public override int Run(InterpretedFrame frame)
             {

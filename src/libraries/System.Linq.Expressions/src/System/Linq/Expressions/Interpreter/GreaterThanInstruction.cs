@@ -23,7 +23,7 @@ namespace System.Linq.Expressions.Interpreter
             _nullValue = nullValue;
         }
 
-        internal sealed class GreaterThanSByte : GreaterThanInstruction
+        private sealed class GreaterThanSByte : GreaterThanInstruction
         {
             public GreaterThanSByte(object nullValue)
                 : base(nullValue)
@@ -46,7 +46,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class GreaterThanInt16 : GreaterThanInstruction
+        private sealed class GreaterThanInt16 : GreaterThanInstruction
         {
             public GreaterThanInt16(object nullValue)
                 : base(nullValue)
@@ -69,7 +69,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class GreaterThanChar : GreaterThanInstruction
+        private sealed class GreaterThanChar : GreaterThanInstruction
         {
             public GreaterThanChar(object nullValue)
                 : base(nullValue)
@@ -92,7 +92,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class GreaterThanInt32 : GreaterThanInstruction
+        private sealed class GreaterThanInt32 : GreaterThanInstruction
         {
             public GreaterThanInt32(object nullValue)
                 : base(nullValue)
@@ -115,7 +115,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class GreaterThanInt64 : GreaterThanInstruction
+        private sealed class GreaterThanInt64 : GreaterThanInstruction
         {
             public GreaterThanInt64(object nullValue)
                 : base(nullValue)
@@ -138,7 +138,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class GreaterThanByte : GreaterThanInstruction
+        private sealed class GreaterThanByte : GreaterThanInstruction
         {
             public GreaterThanByte(object nullValue)
                 : base(nullValue)
@@ -161,7 +161,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class GreaterThanUInt16 : GreaterThanInstruction
+        private sealed class GreaterThanUInt16 : GreaterThanInstruction
         {
             public GreaterThanUInt16(object nullValue)
                 : base(nullValue)
@@ -184,7 +184,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class GreaterThanUInt32 : GreaterThanInstruction
+        private sealed class GreaterThanUInt32 : GreaterThanInstruction
         {
             public GreaterThanUInt32(object nullValue)
                 : base(nullValue)
@@ -207,7 +207,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class GreaterThanUInt64 : GreaterThanInstruction
+        private sealed class GreaterThanUInt64 : GreaterThanInstruction
         {
             public GreaterThanUInt64(object nullValue)
                 : base(nullValue)
@@ -230,7 +230,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class GreaterThanSingle : GreaterThanInstruction
+        private sealed class GreaterThanSingle : GreaterThanInstruction
         {
             public GreaterThanSingle(object nullValue)
                 : base(nullValue)
@@ -253,7 +253,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class GreaterThanDouble : GreaterThanInstruction
+        private sealed class GreaterThanDouble : GreaterThanInstruction
         {
             public GreaterThanDouble(object nullValue)
                 : base(nullValue)
@@ -339,7 +339,7 @@ namespace System.Linq.Expressions.Interpreter
             _nullValue = nullValue;
         }
 
-        internal sealed class GreaterThanOrEqualSByte : GreaterThanOrEqualInstruction
+        private sealed class GreaterThanOrEqualSByte : GreaterThanOrEqualInstruction
         {
             public GreaterThanOrEqualSByte(object nullValue)
                 : base(nullValue)
@@ -362,7 +362,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class GreaterThanOrEqualInt16 : GreaterThanOrEqualInstruction
+        private sealed class GreaterThanOrEqualInt16 : GreaterThanOrEqualInstruction
         {
             public GreaterThanOrEqualInt16(object nullValue)
                 : base(nullValue)
@@ -385,7 +385,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class GreaterThanOrEqualChar : GreaterThanOrEqualInstruction
+        private sealed class GreaterThanOrEqualChar : GreaterThanOrEqualInstruction
         {
             public GreaterThanOrEqualChar(object nullValue)
                 : base(nullValue)
@@ -408,7 +408,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class GreaterThanOrEqualInt32 : GreaterThanOrEqualInstruction
+        private sealed class GreaterThanOrEqualInt32 : GreaterThanOrEqualInstruction
         {
             public GreaterThanOrEqualInt32(object nullValue)
                 : base(nullValue)
@@ -431,7 +431,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class GreaterThanOrEqualInt64 : GreaterThanOrEqualInstruction
+        private sealed class GreaterThanOrEqualInt64 : GreaterThanOrEqualInstruction
         {
             public GreaterThanOrEqualInt64(object nullValue)
                 : base(nullValue)
@@ -454,7 +454,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class GreaterThanOrEqualByte : GreaterThanOrEqualInstruction
+        private sealed class GreaterThanOrEqualByte : GreaterThanOrEqualInstruction
         {
             public GreaterThanOrEqualByte(object nullValue)
                 : base(nullValue)
@@ -477,7 +477,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class GreaterThanOrEqualUInt16 : GreaterThanOrEqualInstruction
+        private sealed class GreaterThanOrEqualUInt16 : GreaterThanOrEqualInstruction
         {
             public GreaterThanOrEqualUInt16(object nullValue)
                 : base(nullValue)
@@ -500,7 +500,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class GreaterThanOrEqualUInt32 : GreaterThanOrEqualInstruction
+        private sealed class GreaterThanOrEqualUInt32 : GreaterThanOrEqualInstruction
         {
             public GreaterThanOrEqualUInt32(object nullValue)
                 : base(nullValue)
@@ -523,7 +523,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class GreaterThanOrEqualUInt64 : GreaterThanOrEqualInstruction
+        private sealed class GreaterThanOrEqualUInt64 : GreaterThanOrEqualInstruction
         {
             public GreaterThanOrEqualUInt64(object nullValue)
                 : base(nullValue)
@@ -546,7 +546,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class GreaterThanOrEqualSingle : GreaterThanOrEqualInstruction
+        private sealed class GreaterThanOrEqualSingle : GreaterThanOrEqualInstruction
         {
             public GreaterThanOrEqualSingle(object nullValue)
                 : base(nullValue)
@@ -569,7 +569,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class GreaterThanOrEqualDouble : GreaterThanOrEqualInstruction
+        private sealed class GreaterThanOrEqualDouble : GreaterThanOrEqualInstruction
         {
             public GreaterThanOrEqualDouble(object nullValue)
                 : base(nullValue)

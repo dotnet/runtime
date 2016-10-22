@@ -17,7 +17,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private AddInstruction() { }
 
-        internal sealed class AddInt32 : AddInstruction
+        private sealed class AddInt32 : AddInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -36,7 +36,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class AddInt16 : AddInstruction
+        private sealed class AddInt16 : AddInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -55,7 +55,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class AddInt64 : AddInstruction
+        private sealed class AddInt64 : AddInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -74,7 +74,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class AddUInt16 : AddInstruction
+        private sealed class AddUInt16 : AddInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -93,7 +93,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class AddUInt32 : AddInstruction
+        private sealed class AddUInt32 : AddInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -112,7 +112,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class AddUInt64 : AddInstruction
+        private sealed class AddUInt64 : AddInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -131,7 +131,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class AddSingle : AddInstruction
+        private sealed class AddSingle : AddInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -150,7 +150,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class AddDouble : AddInstruction
+        private sealed class AddDouble : AddInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -198,7 +198,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private AddOvfInstruction() { }
 
-        internal sealed class AddOvfInt32 : AddOvfInstruction
+        private sealed class AddOvfInt32 : AddOvfInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -217,7 +217,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class AddOvfInt16 : AddOvfInstruction
+        private sealed class AddOvfInt16 : AddOvfInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -236,7 +236,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class AddOvfInt64 : AddOvfInstruction
+        private sealed class AddOvfInt64 : AddOvfInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -255,7 +255,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class AddOvfUInt16 : AddOvfInstruction
+        private sealed class AddOvfUInt16 : AddOvfInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -274,7 +274,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class AddOvfUInt32 : AddOvfInstruction
+        private sealed class AddOvfUInt32 : AddOvfInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -293,7 +293,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class AddOvfUInt64 : AddOvfInstruction
+        private sealed class AddOvfUInt64 : AddOvfInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
