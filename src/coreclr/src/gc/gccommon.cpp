@@ -156,6 +156,7 @@ IGCHeap* InitializeGarbageCollector(IGCToCLR* clrToGC)
     assert(clrToGC != nullptr);
     g_theGCToCLR = clrToGC;
 #else
+    UNREFERENCED_PARAMETER(clrToGC);
     assert(clrToGC == nullptr);
 #endif
 
