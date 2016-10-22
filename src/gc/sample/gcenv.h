@@ -186,8 +186,6 @@ public:
     int     GetGCTrimCommit()               const { return 0; }
     int     GetGCLOHCompactionMode()        const { return 0; }
 
-    bool    GetGCAllowVeryLargeObjects()   const { return false; }
-
     bool    GetGCConservative()             const { return true; }
 };
 
