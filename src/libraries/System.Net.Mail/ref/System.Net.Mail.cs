@@ -189,6 +189,7 @@ namespace System.Net.Mail
         public void SendAsync(System.Net.Mail.MailMessage message, object userToken) { }
         public void SendAsync(string from, string recipients, string subject, string body, object userToken) { }
         public void SendAsyncCancel() { }
+        public System.Net.ServicePoint ServicePoint { get { throw null; } }
         public System.Threading.Tasks.Task SendMailAsync(System.Net.Mail.MailMessage message) { throw null; }
         public System.Threading.Tasks.Task SendMailAsync(string from, string recipients, string subject, string body) { throw null; }
     }
