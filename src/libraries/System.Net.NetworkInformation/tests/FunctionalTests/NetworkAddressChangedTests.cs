@@ -6,26 +6,23 @@ using Xunit;
 
 namespace System.Net.NetworkInformation.Tests
 {
-    public class NetworkAddressChangedTests
+    // Partial class used for both NetworkAddressChanged and NetworkAvailabilityChanged
+    // so that the tests for each don't run concurrently
+    public partial class NetworkChangedTests
     {
+        private readonly NetworkAddressChangedEventHandler _addressHandler = delegate { };
+
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/308
         public void NetworkAddressChanged_AddRemove_Success()
         {
-            NetworkAddressChangedEventHandler handler = NetworkChange_NetworkAddressChanged;
-            NetworkChange.NetworkAddressChanged += handler;
-            NetworkChange.NetworkAddressChanged -= handler;
+            NetworkChange.NetworkAddressChanged += _addressHandler;
+            NetworkChange.NetworkAddressChanged -= _addressHandler;
         }
 
         [Fact]
         public void NetworkAddressChanged_JustRemove_Success()
         {
-            NetworkAddressChangedEventHandler handler = NetworkChange_NetworkAddressChanged;
-            NetworkChange.NetworkAddressChanged -= handler;
+            NetworkChange.NetworkAddressChanged -= _addressHandler;
         }
-
-        private void NetworkChange_NetworkAddressChanged(object sender, EventArgs e)
-        {
-        }
-
     }
 }
