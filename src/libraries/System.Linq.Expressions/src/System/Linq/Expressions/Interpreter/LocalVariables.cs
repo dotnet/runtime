@@ -108,7 +108,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public LocalDefinition DefineLocal(ParameterExpression variable, int start)
         {
-            var result = new LocalVariable(_localCount++, false);
+            var result = new LocalVariable(_localCount++, closure: false);
             _maxLocalCount = Math.Max(_localCount, _maxLocalCount);
 
             VariableScope existing, newScope;
@@ -123,7 +123,7 @@ namespace System.Linq.Expressions.Interpreter
             }
             else
             {
-                newScope = new VariableScope(result, start, null);
+                newScope = new VariableScope(result, start, parent: null);
             }
 
             _variables[variable] = newScope;
@@ -245,7 +245,7 @@ namespace System.Linq.Expressions.Interpreter
         }
 
         /// <summary>
-        /// Tracks where a variable is defined and what range of instructions it's used in
+        /// Tracks where a variable is defined and what range of instructions it's used in.
         /// </summary>
         private sealed class VariableScope
         {

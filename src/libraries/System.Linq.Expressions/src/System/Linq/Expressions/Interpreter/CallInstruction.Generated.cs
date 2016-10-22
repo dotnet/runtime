@@ -13,10 +13,13 @@ namespace System.Linq.Expressions.Interpreter
 {
     internal partial class CallInstruction
     {
+#if FEATURE_DLG_INVOKE
         private const int MaxHelpers = 3;
-        private const int MaxArgs = 3;
+#endif
 
 #if FEATURE_FAST_CREATE
+        private const int MaxArgs = 3;
+
         /// <summary>
         /// Fast creation works if we have a known primitive types for the entire
         /// method signature.  If we have any non-primitive types then FastCreate
