@@ -8,6 +8,7 @@ using System.Collections;
 using System.Globalization;
 using System.Resources;
 using System.Threading;
+using System.Runtime.Serialization;
 
 namespace System.Text
 {
@@ -20,7 +21,7 @@ namespace System.Text
     // encodings.
     // So if you change the wrappers in this class, you must change the wrappers in the other classes
     // as well because they should have the same behavior.
-    //
+    [Serializable]
     internal abstract class EncodingNLS : Encoding
     {
         private string _encodingName;
@@ -576,6 +577,64 @@ namespace System.Text
                     }
                 }
                 return _webName;
+            }
+        }
+
+        [Serializable]
+        protected sealed class CodePageEncodingSurrogate : ISerializable, IObjectReference
+        {
+            internal const string CodePageKey = "CodePage";
+            internal const string IsReadOnlyKey = "IsReadOnly";
+            internal const string EncoderFallbackKey = "EncoderFallback";
+            internal const string DecoderFallbackKey = "DecoderFallback";
+
+            private readonly int _codePage;
+            private readonly bool _isReadOnly;
+            private readonly EncoderFallback _encoderFallback;
+            private readonly DecoderFallback _decoderFallback;
+
+            internal CodePageEncodingSurrogate(SerializationInfo info, StreamingContext context)
+            {
+                if (info == null)
+                {
+                    throw new ArgumentNullException(nameof(info));
+                }
+
+                _codePage = (int)info.GetValue(CodePageKey, typeof(int));
+                _isReadOnly = (bool)info.GetValue(IsReadOnlyKey, typeof(bool));
+                _encoderFallback = (EncoderFallback)info.GetValue(EncoderFallbackKey, typeof(EncoderFallback));
+                _decoderFallback = (DecoderFallback)info.GetValue(DecoderFallbackKey, typeof(DecoderFallback));
+            }
+
+            internal static void SerializeEncoding(Encoding e, SerializationInfo info, StreamingContext context)
+            {
+                if (info == null)
+                {
+                    throw new ArgumentNullException(nameof(info));
+                }
+
+                info.AddValue(CodePageKey, e.CodePage);
+                info.AddValue(IsReadOnlyKey, e.IsReadOnly);
+                info.AddValue(EncoderFallbackKey, e.EncoderFallback);
+                info.AddValue(DecoderFallbackKey, e.DecoderFallback);
+            }
+
+            public object GetRealObject(StreamingContext context)
+            {
+                Encoding realEncoding = GetEncoding(_codePage);
+                if (!_isReadOnly)
+                {
+                    realEncoding = (Encoding)realEncoding.Clone();
+                    realEncoding.EncoderFallback = _encoderFallback;
+                    realEncoding.DecoderFallback = _decoderFallback;
+                }
+                return realEncoding;
+            }
+
+            void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+            {
+                // This should never be called.  If it is, there's a bug in the formatter being used.
+                throw new NotSupportedException();
             }
         }
     }
