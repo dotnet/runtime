@@ -167,7 +167,7 @@ namespace System.Net.NetworkInformation
                 addressBytes = new byte[16];
             }
 
-            Debug.Assert(prefixLength < (addressBytes.Length * 8));
+            Debug.Assert(prefixLength <= (addressBytes.Length * 8));
 
             // Enable bits one at a time from left/high to right/low.
             for (int bit = 0; bit < prefixLength; bit++)
