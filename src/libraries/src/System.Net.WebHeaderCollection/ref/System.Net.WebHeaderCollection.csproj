@@ -7,7 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Net.WebHeaderCollection.cs" />
-    <Compile Include="System.Net.WebHeaderCollection.Manual.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
