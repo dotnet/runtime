@@ -8,13 +8,13 @@ using Xunit;
 namespace System.Globalization.Tests
 {
     /// <summary>
-    /// According to the ToASCII algorithm, if the UseSTD3ASCIIRules flag is set, 
-    /// then perform these checks: 
+    /// According to the ToASCII algorithm, if the UseSTD3ASCIIRules flag is set,
+    /// then perform these checks:
     ///
-    ///	(a) Verify the absence of non-LDH ASCII code points; that is, the absence 
+    ///	(a) Verify the absence of non-LDH ASCII code points; that is, the absence
     ///      of 0..2C, 2E..2F, 3A..40, 5B..60, and 7B..7F.
     ///
-    /// (b) Verify the absence of leading and trailing hyphen-minus; that is, the 
+    /// (b) Verify the absence of leading and trailing hyphen-minus; that is, the
     ///      absence of U+002D at the beginning and end of the sequence.
     ///
     /// By default this flag should not be set.
@@ -61,10 +61,9 @@ namespace System.Globalization.Tests
                 Assert.Equal(unicode, idnStd3False.GetAscii(unicode));
             }
 
-            Exception exception = Record.Exception(() => idnStd3True.GetAscii(unicode));
-            Assert.True(exception is ArgumentException);
+            ArgumentException ae = Assert.Throws<ArgumentException>(() => idnStd3True.GetAscii(unicode));
             // sometimes the desktop returns "Unicode" instead of "unicode" for the parameter name.
-            Assert.True(((ArgumentException) exception).ParamName.Equals("unicode", StringComparison.OrdinalIgnoreCase));
+            Assert.Equal("unicode", ae.ParamName, ignoreCase: true);
         }
 
         [Fact]
