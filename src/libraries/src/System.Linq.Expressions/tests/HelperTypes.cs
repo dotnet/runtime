@@ -289,7 +289,7 @@ namespace System.Linq.Expressions.Tests
         public static void StaticMethod() { }
     }
     
-    public class InvalidTypes : IEnumerable<object[]>
+    public class InvalidTypesData : IEnumerable<object[]>
     {
         private static readonly object[] GenericTypeDefinition = new object[] { typeof(GenericClass<>) };
         private static readonly object[] ContainsGenericParameters = new object[] { typeof(GenericClass<>).MakeGenericType(typeof(GenericClass<>)) };
