@@ -762,7 +762,7 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
         // using an actual binder. As a result, we will assume the same binding/loadcontext information for the dynamic assembly as its
         // caller/creator to ensure that any assembly loads triggered by the dynamic assembly are resolved using the intended load context.
         //
-        // If the creator assembly has a HostAssembly associated with it, then use it for binding. Otherwise, ithe creator is dynamic
+        // If the creator assembly has a HostAssembly associated with it, then use it for binding. Otherwise, the creator is dynamic
         // and will have a fallback load context binder associated with it.
         ICLRPrivBinder *pFallbackLoadContextBinder = nullptr;
         
