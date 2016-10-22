@@ -7499,10 +7499,6 @@ DONE_CALL:
             {
                 call = impFixupCallStructReturn(call, sig->retTypeClass);
             }
-            else if (varTypeIsLong(callRetTyp))
-            {
-                call = impInitCallLongReturn(call);
-            }
 
             if ((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0)
             {
@@ -7781,42 +7777,6 @@ GenTreePtr Compiler::impFixupCallStructReturn(GenTreePtr call, CORINFO_CLASS_HAN
     }
 
 #endif // not FEATURE_UNIX_AMD64_STRUCT_PASSING
-
-    return call;
-}
-
-//-------------------------------------------------------------------------------------
-//  impInitCallLongReturn:
-//     Initialize the ReturnTypDesc for a call that returns a TYP_LONG
-//
-//  Arguments:
-//    call       -  GT_CALL GenTree node
-//
-//  Return Value:
-//    Returns new GenTree node after initializing the ReturnTypeDesc of call node
-//
-GenTreePtr Compiler::impInitCallLongReturn(GenTreePtr call)
-{
-    assert(call->gtOper == GT_CALL);
-
-#if defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)
-    // LEGACY_BACKEND does not use multi reg returns for calls with long return types
-
-    if (varTypeIsLong(call))
-    {
-        GenTreeCall* callNode = call->AsCall();
-
-        // The return type will remain as the incoming long type
-        callNode->gtReturnType = call->gtType;
-
-        // Initialize Return type descriptor of call node
-        ReturnTypeDesc* retTypeDesc = callNode->GetReturnTypeDesc();
-        retTypeDesc->InitializeLongReturnType(this);
-
-        // must be a long returned in two registers
-        assert(retTypeDesc->GetReturnRegCount() == 2);
-    }
-#endif // _TARGET_X86_ && !LEGACY_BACKEND
 
     return call;
 }
