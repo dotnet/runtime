@@ -21,24 +21,24 @@ namespace System.Net
         {
         }
 
-        public void Add(Uri uriPrefix, string authenticationType, NetworkCredential credential)
+        public void Add(Uri uriPrefix, string authType, NetworkCredential cred)
         {
             if (uriPrefix == null)
             {
                 throw new ArgumentNullException(nameof(uriPrefix));
             }
-            if (authenticationType == null)
+            if (authType == null)
             {
-                throw new ArgumentNullException(nameof(authenticationType));
+                throw new ArgumentNullException(nameof(authType));
             }
 
             ++_version;
 
-            var key = new CredentialKey(uriPrefix, authenticationType);
+            var key = new CredentialKey(uriPrefix, authType);
 
             if (GlobalLog.IsEnabled)
             {
-                GlobalLog.Print("CredentialCache::Add() Adding key:[" + key.ToString() + "], cred:[" + credential.Domain + "],[" + credential.UserName + "]");
+                GlobalLog.Print("CredentialCache::Add() Adding key:[" + key.ToString() + "], cred:[" + cred.Domain + "],[" + cred.UserName + "]");
             }
 
             if (_cache == null)
@@ -46,7 +46,7 @@ namespace System.Net
                 _cache = new Dictionary<CredentialKey, NetworkCredential>();
             }
 
-            _cache.Add(key, credential);
+            _cache.Add(key, cred);
         }
 
         public void Add(string host, int port, string authenticationType, NetworkCredential credential)
@@ -88,9 +88,9 @@ namespace System.Net
             _cacheForHosts.Add(key, credential);
         }
 
-        public void Remove(Uri uriPrefix, string authenticationType)
+        public void Remove(Uri uriPrefix, string authType)
         {
-            if (uriPrefix == null || authenticationType == null)
+            if (uriPrefix == null || authType == null)
             {
                 // These couldn't possibly have been inserted into
                 // the cache because of the test in Add().
@@ -109,7 +109,7 @@ namespace System.Net
 
             ++_version;
 
-            var key = new CredentialKey(uriPrefix, authenticationType);
+            var key = new CredentialKey(uriPrefix, authType);
 
             if (GlobalLog.IsEnabled)
             {
@@ -155,20 +155,20 @@ namespace System.Net
             _cacheForHosts.Remove(key);
         }
 
-        public NetworkCredential GetCredential(Uri uriPrefix, string authenticationType)
+        public NetworkCredential GetCredential(Uri uriPrefix, string authType)
         {
             if (uriPrefix == null)
             {
                 throw new ArgumentNullException(nameof(uriPrefix));
             }
-            if (authenticationType == null)
+            if (authType == null)
             {
-                throw new ArgumentNullException(nameof(authenticationType));
+                throw new ArgumentNullException(nameof(authType));
             }
 
             if (GlobalLog.IsEnabled)
             {
-                GlobalLog.Print("CredentialCache::GetCredential(uriPrefix=\"" + uriPrefix + "\", authType=\"" + authenticationType + "\")");
+                GlobalLog.Print("CredentialCache::GetCredential(uriPrefix=\"" + uriPrefix + "\", authType=\"" + authType + "\")");
             }
 
             if (_cache == null)
@@ -190,7 +190,7 @@ namespace System.Net
                 CredentialKey key = pair.Key;
 
                 // Determine if this credential is applicable to the current Uri/AuthType
-                if (key.Match(uriPrefix, authenticationType))
+                if (key.Match(uriPrefix, authType))
                 {
                     int prefixLen = key.UriPrefixLength;
 
