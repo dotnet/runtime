@@ -19,6 +19,7 @@ namespace System.Linq.Expressions
     public sealed class MemberMemberBinding : MemberBinding
     {
         private ReadOnlyCollection<MemberBinding> _bindings;
+
         internal MemberMemberBinding(MemberInfo member, ReadOnlyCollection<MemberBinding> bindings)
 #pragma warning disable 618
             : base(MemberBindingType.MemberBinding, member)
@@ -30,10 +31,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the bindings that describe how to initialize the members of a member. 
         /// </summary>
-        public ReadOnlyCollection<MemberBinding> Bindings
-        {
-            get { return _bindings; }
-        }
+        public ReadOnlyCollection<MemberBinding> Bindings => _bindings;
 
         /// <summary>
         /// Creates a new expression that is like this one, but using the
@@ -51,7 +49,6 @@ namespace System.Linq.Expressions
             return Expression.MemberBind(Member, bindings);
         }
     }
-
 
     public partial class Expression
     {

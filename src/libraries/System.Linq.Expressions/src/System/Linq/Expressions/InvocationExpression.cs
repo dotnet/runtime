@@ -30,36 +30,24 @@ namespace System.Linq.Expressions
         /// Gets the static type of the expression that this <see cref="Expression" /> represents.
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        public sealed override Type Type
-        {
-            get { return _returnType; }
-        }
+        public sealed override Type Type => _returnType;
 
         /// <summary>
         /// Returns the node type of this Expression. Extension nodes should return
         /// ExpressionType.Extension when overriding this method.
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> of the expression.</returns>
-        public sealed override ExpressionType NodeType
-        {
-            get { return ExpressionType.Invoke; }
-        }
+        public sealed override ExpressionType NodeType => ExpressionType.Invoke;
 
         /// <summary>
         /// Gets the delegate or lambda expression to be applied.
         /// </summary>
-        public Expression Expression
-        {
-            get { return _lambda; }
-        }
+        public Expression Expression => _lambda;
 
         /// <summary>
         /// Gets the arguments that the delegate or lambda expression is applied to.
         /// </summary>
-        public ReadOnlyCollection<Expression> Arguments
-        {
-            get { return GetOrMakeArguments(); }
-        }
+        public ReadOnlyCollection<Expression> Arguments => GetOrMakeArguments();
 
         /// <summary>
         /// Creates a new expression that is like this one, but using the
@@ -142,18 +130,9 @@ namespace System.Linq.Expressions
             return ReturnReadOnly(ref _arguments);
         }
 
-        public override Expression GetArgument(int index)
-        {
-            return _arguments[index];
-        }
+        public override Expression GetArgument(int index) => _arguments[index];
 
-        public override int ArgumentCount
-        {
-            get
-            {
-                return _arguments.Count;
-            }
-        }
+        public override int ArgumentCount => _arguments.Count;
 
         internal override InvocationExpression Rewrite(Expression lambda, Expression[] arguments)
         {
@@ -181,13 +160,7 @@ namespace System.Linq.Expressions
             throw new InvalidOperationException();
         }
 
-        public override int ArgumentCount
-        {
-            get
-            {
-                return 0;
-            }
-        }
+        public override int ArgumentCount => 0;
 
         internal override InvocationExpression Rewrite(Expression lambda, Expression[] arguments)
         {
@@ -222,13 +195,7 @@ namespace System.Linq.Expressions
             }
         }
 
-        public override int ArgumentCount
-        {
-            get
-            {
-                return 1;
-            }
-        }
+        public override int ArgumentCount => 1;
 
         internal override InvocationExpression Rewrite(Expression lambda, Expression[] arguments)
         {
@@ -270,13 +237,7 @@ namespace System.Linq.Expressions
             }
         }
 
-        public override int ArgumentCount
-        {
-            get
-            {
-                return 2;
-            }
-        }
+        public override int ArgumentCount => 2;
 
         internal override InvocationExpression Rewrite(Expression lambda, Expression[] arguments)
         {
@@ -321,13 +282,7 @@ namespace System.Linq.Expressions
             }
         }
 
-        public override int ArgumentCount
-        {
-            get
-            {
-                return 3;
-            }
-        }
+        public override int ArgumentCount => 3;
 
         internal override InvocationExpression Rewrite(Expression lambda, Expression[] arguments)
         {
@@ -375,13 +330,7 @@ namespace System.Linq.Expressions
             }
         }
 
-        public override int ArgumentCount
-        {
-            get
-            {
-                return 4;
-            }
-        }
+        public override int ArgumentCount => 4;
 
         internal override InvocationExpression Rewrite(Expression lambda, Expression[] arguments)
         {
@@ -432,13 +381,7 @@ namespace System.Linq.Expressions
             }
         }
 
-        public override int ArgumentCount
-        {
-            get
-            {
-                return 5;
-            }
-        }
+        public override int ArgumentCount => 5;
 
         internal override InvocationExpression Rewrite(Expression lambda, Expression[] arguments)
         {

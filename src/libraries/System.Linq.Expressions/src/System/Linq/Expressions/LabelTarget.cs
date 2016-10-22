@@ -24,20 +24,14 @@ namespace System.Linq.Expressions
         /// Gets the name of the label.
         /// </summary>
         /// <remarks>The label's name is provided for information purposes only.</remarks>
-        public string Name
-        {
-            get { return _name; }
-        }
+        public string Name => _name;
 
         /// <summary>
         /// The type of value that is passed when jumping to the label
         /// (or System.Void if no value should be passed).
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1721:PropertyNamesShouldNotMatchGetMethods")]
-        public Type Type
-        {
-            get { return _type; }
-        }
+        public Type Type => _type;
 
         /// <summary>
         /// Returns a <see cref="String"/> that represents the current <see cref="Object"/>. 
