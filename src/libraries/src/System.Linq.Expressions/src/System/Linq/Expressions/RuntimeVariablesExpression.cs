@@ -29,28 +29,19 @@ namespace System.Linq.Expressions
         /// Gets the static type of the expression that this <see cref="Expression" /> represents.
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        public sealed override Type Type
-        {
-            get { return typeof(IRuntimeVariables); }
-        }
+        public sealed override Type Type => typeof(IRuntimeVariables);
 
         /// <summary>
         /// Returns the node type of this Expression. Extension nodes should return
         /// ExpressionType.Extension when overriding this method.
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> of the expression.</returns>
-        public sealed override ExpressionType NodeType
-        {
-            get { return ExpressionType.RuntimeVariables; }
-        }
+        public sealed override ExpressionType NodeType => ExpressionType.RuntimeVariables;
 
         /// <summary>
         /// The variables or parameters to which to provide runtime access.
         /// </summary>
-        public ReadOnlyCollection<ParameterExpression> Variables
-        {
-            get { return _variables; }
-        }
+        public ReadOnlyCollection<ParameterExpression> Variables => _variables;
 
         /// <summary>
         /// Dispatches to the specific visit method for this node type.

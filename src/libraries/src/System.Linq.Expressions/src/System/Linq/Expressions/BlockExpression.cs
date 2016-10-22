@@ -20,21 +20,12 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the expressions in this block.
         /// </summary>
-        public ReadOnlyCollection<Expression> Expressions
-        {
-            get { return GetOrMakeExpressions(); }
-        }
+        public ReadOnlyCollection<Expression> Expressions => GetOrMakeExpressions();
 
         /// <summary>
         /// Gets the variables defined in this block.
         /// </summary>
-        public ReadOnlyCollection<ParameterExpression> Variables
-        {
-            get
-            {
-                return GetOrMakeVariables();
-            }
-        }
+        public ReadOnlyCollection<ParameterExpression> Variables => GetOrMakeVariables();
 
         /// <summary>
         /// Gets the last expression in this block.
@@ -65,19 +56,13 @@ namespace System.Linq.Expressions
         /// ExpressionType.Extension when overriding this method.
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> of the expression.</returns>
-        public sealed override ExpressionType NodeType
-        {
-            get { return ExpressionType.Block; }
-        }
+        public sealed override ExpressionType NodeType => ExpressionType.Block;
 
         /// <summary>
         /// Gets the static type of the expression that this <see cref="Expression" /> represents.
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        public override Type Type
-        {
-            get { return GetExpression(ExpressionCount - 1).Type; }
-        }
+        public override Type Type => GetExpression(ExpressionCount - 1).Type;
 
         /// <summary>
         /// Creates a new expression that is like this one, but using the
@@ -193,13 +178,7 @@ namespace System.Linq.Expressions
             }
         }
 
-        internal override int ExpressionCount
-        {
-            get
-            {
-                return 2;
-            }
-        }
+        internal override int ExpressionCount => 2;
 
         internal override ReadOnlyCollection<Expression> GetOrMakeExpressions()
         {
@@ -239,13 +218,7 @@ namespace System.Linq.Expressions
             }
         }
 
-        internal override int ExpressionCount
-        {
-            get
-            {
-                return 3;
-            }
-        }
+        internal override int ExpressionCount => 3;
 
         internal override ReadOnlyCollection<Expression> GetOrMakeExpressions()
         {
@@ -287,13 +260,7 @@ namespace System.Linq.Expressions
             }
         }
 
-        internal override int ExpressionCount
-        {
-            get
-            {
-                return 4;
-            }
-        }
+        internal override int ExpressionCount => 4;
 
         internal override ReadOnlyCollection<Expression> GetOrMakeExpressions()
         {
@@ -337,13 +304,7 @@ namespace System.Linq.Expressions
             }
         }
 
-        internal override int ExpressionCount
-        {
-            get
-            {
-                return 5;
-            }
-        }
+        internal override int ExpressionCount => 5;
 
         internal override ReadOnlyCollection<Expression> GetOrMakeExpressions()
         {
@@ -378,13 +339,7 @@ namespace System.Linq.Expressions
             return _expressions[index];
         }
 
-        internal override int ExpressionCount
-        {
-            get
-            {
-                return _expressions.Count;
-            }
-        }
+        internal override int ExpressionCount => _expressions.Count;
 
         internal override ReadOnlyCollection<Expression> GetOrMakeExpressions()
         {
@@ -414,13 +369,7 @@ namespace System.Linq.Expressions
             return ReturnReadOnly(ref _variables);
         }
 
-        protected IList<ParameterExpression> VariablesList
-        {
-            get
-            {
-                return _variables;
-            }
-        }
+        protected IList<ParameterExpression> VariablesList => _variables;
 
         // Used for rewrite of the nodes to either reuse existing set of variables if not rewritten.
         internal IList<ParameterExpression> ReuseOrValidateVariables(ReadOnlyCollection<ParameterExpression> variables)
@@ -462,13 +411,7 @@ namespace System.Linq.Expressions
             }
         }
 
-        internal override int ExpressionCount
-        {
-            get
-            {
-                return 1;
-            }
-        }
+        internal override int ExpressionCount => 1;
 
         internal override ReadOnlyCollection<Expression> GetOrMakeExpressions()
         {
@@ -500,23 +443,14 @@ namespace System.Linq.Expressions
             _body = body;
         }
 
-        protected IList<Expression> Body
-        {
-            get { return _body; }
-        }
+        protected IList<Expression> Body => _body;
 
         internal override Expression GetExpression(int index)
         {
             return _body[index];
         }
 
-        internal override int ExpressionCount
-        {
-            get
-            {
-                return _body.Count;
-            }
-        }
+        internal override int ExpressionCount => _body.Count;
 
         internal override ReadOnlyCollection<Expression> GetOrMakeExpressions()
         {
@@ -548,10 +482,7 @@ namespace System.Linq.Expressions
             _type = type;
         }
 
-        public sealed override Type Type
-        {
-            get { return _type; }
-        }
+        public sealed override Type Type => _type;
 
         internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args)
         {
@@ -673,10 +604,7 @@ namespace System.Linq.Expressions
             }
         }
 
-        public int Count
-        {
-            get { return _block.ExpressionCount; }
-        }
+        public int Count => _block.ExpressionCount;
 
         [ExcludeFromCodeCoverage] // Unreachable
         public bool IsReadOnly
@@ -715,6 +643,7 @@ namespace System.Linq.Expressions
         {
             return GetEnumerator();
         }
+
         #endregion
     }
 
@@ -735,6 +664,7 @@ namespace System.Linq.Expressions
 
             return new Block2(arg0, arg1);
         }
+
         /// <summary>
         /// Creates a <see cref="BlockExpression"/> that contains three expressions and has no variables.
         /// </summary>

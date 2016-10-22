@@ -28,36 +28,24 @@ namespace System.Linq.Expressions
         /// Gets the static type of the expression that this <see cref="Expression" /> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        public sealed override Type Type
-        {
-            get { return _target.Type; }
-        }
+        public sealed override Type Type => _target.Type;
 
         /// <summary>
         /// Returns the node type of this <see cref="Expression" />. (Inherited from <see cref="Expression" />.)
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
-        public sealed override ExpressionType NodeType
-        {
-            get { return ExpressionType.Label; }
-        }
+        public sealed override ExpressionType NodeType => ExpressionType.Label;
 
         /// <summary>
         /// The <see cref="LabelTarget"/> which this label is associated with.
         /// </summary>
-        public LabelTarget Target
-        {
-            get { return _target; }
-        }
+        public LabelTarget Target => _target;
 
         /// <summary>
         /// The value of the <see cref="LabelExpression"/> when the label is reached through
         /// normal control flow (e.g. is not jumped to).
         /// </summary>
-        public Expression DefaultValue
-        {
-            get { return _defaultValue; }
-        }
+        public Expression DefaultValue => _defaultValue;
 
         /// <summary>
         /// Dispatches to the specific visit method for this node type.

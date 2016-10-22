@@ -20,18 +20,12 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the field or property to be accessed.
         /// </summary>
-        public MemberInfo Member
-        {
-            get { return GetMember(); }
-        }
+        public MemberInfo Member => GetMember();
 
         /// <summary>
         /// Gets the containing object of the field or property.
         /// </summary>
-        public Expression Expression
-        {
-            get { return _expression; }
-        }
+        public Expression Expression => _expression;
 
         // param order: factories args in order, then other args
         internal MemberExpression(Expression expression)
@@ -61,10 +55,7 @@ namespace System.Linq.Expressions
         /// Returns the node type of this <see cref="Expression" />. (Inherited from <see cref="Expression" />.)
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
-        public sealed override ExpressionType NodeType
-        {
-            get { return ExpressionType.MemberAccess; }
-        }
+        public sealed override ExpressionType NodeType => ExpressionType.MemberAccess;
 
         [ExcludeFromCodeCoverage] // Unreachable
         internal virtual MemberInfo GetMember()
@@ -107,15 +98,9 @@ namespace System.Linq.Expressions
             _field = member;
         }
 
-        internal override MemberInfo GetMember()
-        {
-            return _field;
-        }
+        internal override MemberInfo GetMember() => _field;
 
-        public sealed override Type Type
-        {
-            get { return _field.FieldType; }
-        }
+        public sealed override Type Type => _field.FieldType;
     }
 
     internal sealed class PropertyExpression : MemberExpression
@@ -127,15 +112,9 @@ namespace System.Linq.Expressions
             _property = member;
         }
 
-        internal override MemberInfo GetMember()
-        {
-            return _property;
-        }
+        internal override MemberInfo GetMember() => _property;
 
-        public sealed override Type Type
-        {
-            get { return _property.PropertyType; }
-        }
+        public sealed override Type Type => _property.PropertyType;
     }
 
     public partial class Expression
@@ -219,6 +198,7 @@ namespace System.Linq.Expressions
             }
             return Expression.Field(expression, fi);
         }
+
         #endregion
 
         #region Property

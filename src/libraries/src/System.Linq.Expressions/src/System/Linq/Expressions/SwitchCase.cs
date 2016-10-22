@@ -27,18 +27,12 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the values of this case. This case is selected for execution when the <see cref="SwitchExpression.SwitchValue"/> matches any of these values.
         /// </summary>
-        public ReadOnlyCollection<Expression> TestValues
-        {
-            get { return _testValues; }
-        }
+        public ReadOnlyCollection<Expression> TestValues => _testValues;
 
         /// <summary>
         /// Gets the body of this case.
         /// </summary>
-        public Expression Body
-        {
-            get { return _body; }
-        }
+        public Expression Body => _body;
 
         /// <summary>
         /// Returns a <see cref="String"/> that represents the current <see cref="Object"/>. 

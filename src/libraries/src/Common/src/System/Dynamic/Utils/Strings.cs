@@ -9,24 +9,12 @@ namespace System.Dynamic.Utils
         /// <summary>
         /// A string like "Invalid argument value"
         /// </summary>
-        internal static string InvalidArgumentValue
-        {
-            get
-            {
-                return SR.InvalidArgumentValue;
-            }
-        }
+        internal static string InvalidArgumentValue => SR.InvalidArgumentValue;
 
         /// <summary>
         /// A string like "Non-empty collection required"
         /// </summary>
-        internal static string NonEmptyCollectionRequired
-        {
-            get
-            {
-                return SR.NonEmptyCollectionRequired;
-            }
-        }
+        internal static string NonEmptyCollectionRequired => SR.NonEmptyCollectionRequired;
 
         /// <summary>
         /// A string like "The value null is not of type '{0}' and cannot be used in this collection."
@@ -63,35 +51,17 @@ namespace System.Dynamic.Utils
         /// <summary>
         /// A string like "Collection was modified; enumeration operation may not execute."
         /// </summary>
-        internal static string CollectionModifiedWhileEnumerating
-        {
-            get
-            {
-                return SR.CollectionModifiedWhileEnumerating;
-            }
-        }
+        internal static string CollectionModifiedWhileEnumerating => SR.CollectionModifiedWhileEnumerating;
 
         /// <summary>
         /// A string like "Enumeration has either not started or has already finished."
         /// </summary>
-        internal static string EnumerationIsDone
-        {
-            get
-            {
-                return SR.EnumerationIsDone;
-            }
-        }
+        internal static string EnumerationIsDone => SR.EnumerationIsDone;
 
         /// <summary>
         /// A string like "Expression must be readable"
         /// </summary>
-        internal static string ExpressionMustBeReadable
-        {
-            get
-            {
-                return SR.ExpressionMustBeReadable;
-            }
-        }
+        internal static string ExpressionMustBeReadable => SR.ExpressionMustBeReadable;
 
         /// <summary>
         /// A string like "Expression of type '{0}' cannot be used for parameter of type '{1}' of method '{2}'"
@@ -127,23 +97,11 @@ namespace System.Dynamic.Utils
         /// <summary>
         /// A string like "Incorrect number of arguments supplied for lambda invocation"
         /// </summary>
-        internal static string IncorrectNumberOfLambdaArguments
-        {
-            get
-            {
-                return SR.IncorrectNumberOfLambdaArguments;
-            }
-        }
+        internal static string IncorrectNumberOfLambdaArguments => SR.IncorrectNumberOfLambdaArguments;
 
         /// <summary>
         /// A string like "Incorrect number of arguments for constructor"
         /// </summary>
-        internal static string IncorrectNumberOfConstructorArguments
-        {
-            get
-            {
-                return SR.IncorrectNumberOfConstructorArguments;
-            }
-        }
+        internal static string IncorrectNumberOfConstructorArguments => SR.IncorrectNumberOfConstructorArguments;
     }
 }

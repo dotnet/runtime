@@ -42,10 +42,7 @@ namespace System.Linq.Expressions
         /// Returns the node type of this <see cref="Expression" />. (Inherited from <see cref="Expression" />.)
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
-        public sealed override ExpressionType NodeType
-        {
-            get { return ExpressionType.Index; }
-        }
+        public sealed override ExpressionType NodeType => ExpressionType.Index;
 
         /// <summary>
         /// Gets the static type of the expression that this <see cref="Expression" /> represents. (Inherited from <see cref="Expression"/>.)
@@ -66,18 +63,12 @@ namespace System.Linq.Expressions
         /// <summary>
         /// An object to index.
         /// </summary>
-        public Expression Object
-        {
-            get { return _instance; }
-        }
+        public Expression Object => _instance;
 
         /// <summary>
         /// Gets the <see cref="PropertyInfo"/> for the property if the expression represents an indexed property, returns null otherwise.
         /// </summary>
-        public PropertyInfo Indexer
-        {
-            get { return _indexer; }
-        }
+        public PropertyInfo Indexer => _indexer;
 
         /// <summary>
         /// Gets the arguments to be used to index the property or array.
@@ -104,18 +95,9 @@ namespace System.Linq.Expressions
             return Expression.MakeIndex(@object, Indexer, arguments);
         }
 
-        public Expression GetArgument(int index)
-        {
-            return _arguments[index];
-        }
+        public Expression GetArgument(int index) => _arguments[index];
 
-        public int ArgumentCount
-        {
-            get
-            {
-                return _arguments.Count;
-            }
-        }
+        public int ArgumentCount => _arguments.Count;
 
         /// <summary>
         /// Dispatches to the specific visit method for this node type.
@@ -209,6 +191,7 @@ namespace System.Linq.Expressions
         #endregion
 
         #region Property
+
         /// <summary>
         /// Creates an <see cref="IndexExpression"/> representing the access to an indexed property.
         /// </summary>
@@ -225,6 +208,7 @@ namespace System.Linq.Expressions
         }
 
         #region methods for finding a PropertyInfo by its name
+
         /// <summary>
         /// The method finds the instance property with the specified name in a type. The property's type signature needs to be compatible with
         /// the arguments if it is a indexer. If the arguments is null or empty, we get a normal property.
@@ -330,6 +314,7 @@ namespace System.Linq.Expressions
             }
             return true;
         }
+
         #endregion
 
         /// <summary>
@@ -485,6 +470,7 @@ namespace System.Linq.Expressions
                 throw Error.IncorrectNumberOfMethodCallArguments(method, paramName);
             }
         }
+
         #endregion
     }
 }

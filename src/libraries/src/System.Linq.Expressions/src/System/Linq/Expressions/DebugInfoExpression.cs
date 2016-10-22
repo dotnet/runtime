@@ -28,19 +28,13 @@ namespace System.Linq.Expressions
         /// Gets the static type of the expression that this <see cref="Expression" /> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        public sealed override Type Type
-        {
-            get { return typeof(void); }
-        }
+        public sealed override Type Type => typeof(void);
 
         /// <summary>
         /// Returns the node type of this <see cref="Expression" />. (Inherited from <see cref="Expression" />.)
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
-        public sealed override ExpressionType NodeType
-        {
-            get { return ExpressionType.DebugInfo; }
-        }
+        public sealed override ExpressionType NodeType => ExpressionType.DebugInfo;
 
         /// <summary>
         /// Gets the start line of this <see cref="DebugInfoExpression" />.
@@ -81,10 +75,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the <see cref="SymbolDocumentInfo"/> that represents the source file.
         /// </summary>
-        public SymbolDocumentInfo Document
-        {
-            get { return _document; }
-        }
+        public SymbolDocumentInfo Document => _document;
 
         /// <summary>
         /// Gets the value to indicate if the <see cref="DebugInfoExpression"/> is for clearing a sequence point.
@@ -119,45 +110,15 @@ namespace System.Linq.Expressions
             _endColumn = endColumn;
         }
 
-        public override int StartLine
-        {
-            get
-            {
-                return _startLine;
-            }
-        }
+        public override int StartLine => _startLine;
 
-        public override int StartColumn
-        {
-            get
-            {
-                return _startColumn;
-            }
-        }
+        public override int StartColumn => _startColumn;
 
-        public override int EndLine
-        {
-            get
-            {
-                return _endLine;
-            }
-        }
+        public override int EndLine => _endLine;
 
-        public override int EndColumn
-        {
-            get
-            {
-                return _endColumn;
-            }
-        }
+        public override int EndColumn => _endColumn;
 
-        public override bool IsClear
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public override bool IsClear => false;
 
         protected internal override Expression Accept(ExpressionVisitor visitor)
         {
@@ -172,45 +133,15 @@ namespace System.Linq.Expressions
         {
         }
 
-        public override bool IsClear
-        {
-            get
-            {
-                return true;
-            }
-        }
+        public override bool IsClear => true;
 
-        public override int StartLine
-        {
-            get
-            {
-                return 0xfeefee;
-            }
-        }
+        public override int StartLine => 0xfeefee;
 
-        public override int StartColumn
-        {
-            get
-            {
-                return 0;
-            }
-        }
+        public override int StartColumn => 0;
 
-        public override int EndLine
-        {
-            get
-            {
-                return 0xfeefee;
-            }
-        }
+        public override int EndLine => 0xfeefee;
 
-        public override int EndColumn
-        {
-            get
-            {
-                return 0;
-            }
-        }
+        public override int EndColumn => 0;
     }
     #endregion
 

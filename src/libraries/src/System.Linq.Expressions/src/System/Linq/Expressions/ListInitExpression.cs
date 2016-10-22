@@ -34,46 +34,28 @@ namespace System.Linq.Expressions
         /// Returns the node type of this <see cref="Expression"/>. (Inherited from <see cref="Expression" />.)
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
-        public sealed override ExpressionType NodeType
-        {
-            get { return ExpressionType.ListInit; }
-        }
+        public sealed override ExpressionType NodeType => ExpressionType.ListInit;
 
         /// <summary>
         /// Gets the static type of the expression that this <see cref="Expression" /> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        public sealed override Type Type
-        {
-            get { return _newExpression.Type; }
-        }
+        public sealed override Type Type => _newExpression.Type;
 
         /// <summary>
         /// Gets a value that indicates whether the expression tree node can be reduced. 
         /// </summary>
-        public override bool CanReduce
-        {
-            get
-            {
-                return true;
-            }
-        }
+        public override bool CanReduce => true;
 
         /// <summary>
         /// Gets the expression that contains a call to the constructor of a collection type. 
         /// </summary>
-        public NewExpression NewExpression
-        {
-            get { return _newExpression; }
-        }
+        public NewExpression NewExpression => _newExpression;
 
         /// <summary>
         /// Gets the element initializers that are used to initialize a collection. 
         /// </summary>
-        public ReadOnlyCollection<ElementInit> Initializers
-        {
-            get { return _initializers; }
-        }
+        public ReadOnlyCollection<ElementInit> Initializers => _initializers;
 
         /// <summary>
         /// Dispatches to the specific visit method for this node type.
@@ -112,7 +94,6 @@ namespace System.Linq.Expressions
             return Expression.ListInit(newExpression, initializers);
         }
     }
-
 
     public partial class Expression
     {

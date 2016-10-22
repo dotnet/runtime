@@ -16,6 +16,7 @@ namespace System.Linq.Expressions
     public sealed class MemberListBinding : MemberBinding
     {
         private ReadOnlyCollection<ElementInit> _initializers;
+
         internal MemberListBinding(MemberInfo member, ReadOnlyCollection<ElementInit> initializers)
 #pragma warning disable 618
             : base(MemberBindingType.ListBinding, member)
@@ -27,10 +28,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the element initializers for initializing a collection member of a newly created object.
         /// </summary>
-        public ReadOnlyCollection<ElementInit> Initializers
-        {
-            get { return _initializers; }
-        }
+        public ReadOnlyCollection<ElementInit> Initializers => _initializers;
 
         /// <summary>
         /// Creates a new expression that is like this one, but using the
@@ -48,7 +46,6 @@ namespace System.Linq.Expressions
             return Expression.ListBind(Member, initializers);
         }
     }
-
 
     public partial class Expression
     {

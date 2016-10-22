@@ -29,45 +29,27 @@ namespace System.Linq.Expressions
         /// Gets the static type of the expression that this <see cref="Expression" /> represents.
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        public sealed override Type Type
-        {
-            get { return _newExpression.Type; }
-        }
+        public sealed override Type Type => _newExpression.Type;
 
         /// <summary>
         /// Gets a value that indicates whether the expression tree node can be reduced. 
         /// </summary>
-        public override bool CanReduce
-        {
-            get
-            {
-                return true;
-            }
-        }
+        public override bool CanReduce => true;
 
         /// <summary>
         /// Returns the node type of this Expression. Extension nodes should return
         /// ExpressionType.Extension when overriding this method.
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> of the expression.</returns>
-        public sealed override ExpressionType NodeType
-        {
-            get { return ExpressionType.MemberInit; }
-        }
+        public sealed override ExpressionType NodeType => ExpressionType.MemberInit;
 
         ///<summary>Gets the expression that represents the constructor call.</summary>
         ///<returns>A <see cref="T:System.Linq.Expressions.NewExpression" /> that represents the constructor call.</returns>
-        public NewExpression NewExpression
-        {
-            get { return _newExpression; }
-        }
+        public NewExpression NewExpression => _newExpression;
 
         ///<summary>Gets the bindings that describe how to initialize the members of the newly created object.</summary>
         ///<returns>A <see cref="T:System.Collections.ObjectModel.ReadOnlyCollection`1" /> of <see cref="T:System.Linq.Expressions.MemberBinding" /> objects which describe how to initialize the members.</returns>
-        public ReadOnlyCollection<MemberBinding> Bindings
-        {
-            get { return _bindings; }
-        }
+        public ReadOnlyCollection<MemberBinding> Bindings => _bindings;
 
         /// <summary>
         /// Dispatches to the specific visit method for this node type.

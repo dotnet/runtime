@@ -33,44 +33,29 @@ namespace System.Linq.Expressions
         /// Returns the node type of this <see cref="Expression" />. (Inherited from <see cref="Expression" />.)
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
-        public sealed override ExpressionType NodeType
-        {
-            get { return ExpressionType.Call; }
-        }
+        public sealed override ExpressionType NodeType => ExpressionType.Call;
 
         /// <summary>
         /// Gets the static type of the expression that this <see cref="Expression" /> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        public sealed override Type Type
-        {
-            get { return _method.ReturnType; }
-        }
+        public sealed override Type Type => _method.ReturnType;
 
         /// <summary>
         /// Gets the <see cref="MethodInfo" /> for the method to be called.
         /// </summary>
-        public MethodInfo Method
-        {
-            get { return _method; }
-        }
+        public MethodInfo Method => _method;
 
         /// <summary>
         /// Gets the <see cref="Expression" /> that represents the instance 
         /// for instance method calls or null for static method calls.
         /// </summary>
-        public Expression Object
-        {
-            get { return GetInstance(); }
-        }
+        public Expression Object => GetInstance();
 
         /// <summary>
         /// Gets a collection of expressions that represent arguments to the method call.
         /// </summary>
-        public ReadOnlyCollection<Expression> Arguments
-        {
-            get { return GetOrMakeArguments(); }
-        }
+        public ReadOnlyCollection<Expression> Arguments => GetOrMakeArguments();
 
         /// <summary>
         /// Creates a new expression that is like this one, but using the
@@ -130,6 +115,7 @@ namespace System.Linq.Expressions
         {
             get { throw ContractUtils.Unreachable; }
         }
+
         #endregion
     }
 
@@ -147,10 +133,7 @@ namespace System.Linq.Expressions
             _instance = instance;
         }
 
-        internal override Expression GetInstance()
-        {
-            return _instance;
-        }
+        internal override Expression GetInstance() => _instance;
     }
 
     internal sealed class MethodCallExpressionN : MethodCallExpression, IArgumentProvider
@@ -163,18 +146,9 @@ namespace System.Linq.Expressions
             _arguments = args;
         }
 
-        public override Expression GetArgument(int index)
-        {
-            return _arguments[index];
-        }
+        public override Expression GetArgument(int index) => _arguments[index];
 
-        public override int ArgumentCount
-        {
-            get
-            {
-                return _arguments.Count;
-            }
-        }
+        public override int ArgumentCount => _arguments.Count;
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
@@ -200,18 +174,9 @@ namespace System.Linq.Expressions
             _arguments = args;
         }
 
-        public override Expression GetArgument(int index)
-        {
-            return _arguments[index];
-        }
+        public override Expression GetArgument(int index) => _arguments[index];
 
-        public override int ArgumentCount
-        {
-            get
-            {
-                return _arguments.Count;
-            }
-        }
+        public override int ArgumentCount => _arguments.Count;
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
@@ -239,13 +204,7 @@ namespace System.Linq.Expressions
             throw new InvalidOperationException();
         }
 
-        public override int ArgumentCount
-        {
-            get
-            {
-                return 0;
-            }
-        }
+        public override int ArgumentCount => 0;
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
@@ -280,13 +239,7 @@ namespace System.Linq.Expressions
             }
         }
 
-        public override int ArgumentCount
-        {
-            get
-            {
-                return 1;
-            }
-        }
+        public override int ArgumentCount => 1;
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
@@ -329,13 +282,7 @@ namespace System.Linq.Expressions
             }
         }
 
-        public override int ArgumentCount
-        {
-            get
-            {
-                return 2;
-            }
-        }
+        public override int ArgumentCount => 2;
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
@@ -379,13 +326,7 @@ namespace System.Linq.Expressions
             }
         }
 
-        public override int ArgumentCount
-        {
-            get
-            {
-                return 3;
-            }
-        }
+        public override int ArgumentCount => 3;
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
@@ -431,13 +372,7 @@ namespace System.Linq.Expressions
             }
         }
 
-        public override int ArgumentCount
-        {
-            get
-            {
-                return 4;
-            }
-        }
+        public override int ArgumentCount => 4;
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
@@ -485,13 +420,7 @@ namespace System.Linq.Expressions
             }
         }
 
-        public override int ArgumentCount
-        {
-            get
-            {
-                return 5;
-            }
-        }
+        public override int ArgumentCount => 5;
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
@@ -524,13 +453,7 @@ namespace System.Linq.Expressions
             throw new InvalidOperationException();
         }
 
-        public override int ArgumentCount
-        {
-            get
-            {
-                return 0;
-            }
-        }
+        public override int ArgumentCount => 0;
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
@@ -565,13 +488,7 @@ namespace System.Linq.Expressions
             }
         }
 
-        public override int ArgumentCount
-        {
-            get
-            {
-                return 1;
-            }
-        }
+        public override int ArgumentCount => 1;
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
@@ -613,13 +530,7 @@ namespace System.Linq.Expressions
             }
         }
 
-        public override int ArgumentCount
-        {
-            get
-            {
-                return 2;
-            }
-        }
+        public override int ArgumentCount => 2;
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
@@ -663,13 +574,7 @@ namespace System.Linq.Expressions
             }
         }
 
-        public override int ArgumentCount
-        {
-            get
-            {
-                return 3;
-            }
-        }
+        public override int ArgumentCount => 3;
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
@@ -1234,7 +1139,6 @@ namespace System.Linq.Expressions
             return null;
         }
 
-
         #endregion
 
         #region ArrayIndex
@@ -1287,7 +1191,7 @@ namespace System.Linq.Expressions
             MethodInfo mi = array.Type.GetMethod("Get", BindingFlags.Public | BindingFlags.Instance);
             return Call(array, mi, indexList);
         }
-        #endregion
 
+        #endregion
     }
 }
