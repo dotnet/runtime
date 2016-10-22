@@ -76,9 +76,7 @@ bool emitter::IsThreeOperandBinaryAVXInstruction(instruction ins)
             ins == INS_paddw || ins == INS_paddd || ins == INS_paddq || ins == INS_psubb || ins == INS_psubw ||
             ins == INS_psubd || ins == INS_psubq || ins == INS_pmuludq || ins == INS_pxor || ins == INS_pmaxub ||
             ins == INS_pminub || ins == INS_pmaxsw || ins == INS_pminsw || ins == INS_insertps ||
-            ins == INS_vinsertf128 || ins == INS_punpckldq
-
-            );
+            ins == INS_vinsertf128 || ins == INS_punpckldq || ins == INS_phaddd);
 }
 
 // Returns true if the AVX instruction is a move operator that requires 3 operands.
@@ -105,7 +103,7 @@ bool Is4ByteAVXInstruction(instruction ins)
     return (ins == INS_dpps || ins == INS_dppd || ins == INS_insertps || ins == INS_pcmpeqq || ins == INS_pcmpgtq ||
             ins == INS_vbroadcastss || ins == INS_vbroadcastsd || ins == INS_vpbroadcastb || ins == INS_vpbroadcastw ||
             ins == INS_vpbroadcastd || ins == INS_vpbroadcastq || ins == INS_vextractf128 || ins == INS_vinsertf128 ||
-            ins == INS_pmulld || ins == INS_ptest);
+            ins == INS_pmulld || ins == INS_ptest || ins == INS_phaddd);
 #else
     return false;
 #endif
