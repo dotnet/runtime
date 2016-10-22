@@ -45,6 +45,14 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentException>("type", () => Expression.Parameter(typeof(void), "var"));
         }
 
+        [Theory]
+        [ClassData(typeof(InvalidTypesData))]
+        public void OpenGenericType_ThrowsArgumentException(Type type)
+        {
+            Assert.Throws<ArgumentException>("type", () => Expression.Parameter(type));
+            Assert.Throws<ArgumentException>("type", () => Expression.Parameter(type, "name"));
+        }
+
         [Fact]
         public void NullType()
         {
