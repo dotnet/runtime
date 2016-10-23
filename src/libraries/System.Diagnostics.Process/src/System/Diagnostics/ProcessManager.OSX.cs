@@ -102,7 +102,7 @@ namespace System.Diagnostics
         /// <summary>Gets an array of module infos for the specified process.</summary>
         /// <param name="processId">The ID of the process whose modules should be enumerated.</param>
         /// <returns>The array of modules.</returns>
-        internal static ModuleInfo[] GetModuleInfos(int processId)
+        internal static ProcessModuleCollection GetModules(int processId)
         {
             // We don't have a good way of getting all of the modules of the particular process,
             // but we can at least get the path to the executable file for the process, and
@@ -113,19 +113,19 @@ namespace System.Diagnostics
                 string exePath = Interop.libproc.proc_pidpath(processId);
                 if (!string.IsNullOrEmpty(exePath))
                 {
-                    return new ModuleInfo[1]
+                    return new ProcessModuleCollection(1)
                     {
-                        new ModuleInfo()
+                        new ProcessModule()
                         {
-                            _fileName = exePath,
-                            _baseName = Path.GetFileName(exePath),
+                            FileName = exePath,
+                            ModuleName = Path.GetFileName(exePath)
                         }
                     };
                 }
             }
             catch { } // eat all errors
 
-            return Array.Empty<ModuleInfo>();
+            return new ProcessModuleCollection(0);
         }
 
         // ----------------------------------
