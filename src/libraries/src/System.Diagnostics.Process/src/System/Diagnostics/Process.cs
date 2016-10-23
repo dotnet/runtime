@@ -295,14 +295,7 @@ namespace System.Diagnostics
                 if (_modules == null)
                 {
                     EnsureState(State.HaveId | State.IsLocal);
-                    ModuleInfo[] moduleInfos = ProcessManager.GetModuleInfos(_processId);
-                    ProcessModule[] newModulesArray = new ProcessModule[moduleInfos.Length];
-                    for (int i = 0; i < moduleInfos.Length; i++)
-                    {
-                        newModulesArray[i] = new ProcessModule(moduleInfos[i]);
-                    }
-                    ProcessModuleCollection newModules = new ProcessModuleCollection(newModulesArray);
-                    _modules = newModules;
+                    _modules = ProcessManager.GetModules(_processId);
                 }
                 return _modules;
             }
