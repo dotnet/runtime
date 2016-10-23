@@ -6,7 +6,7 @@ namespace System.Net
 {
     internal static class GlobalSSPI
     {
-        internal static SSPIInterface SSPIAuth = new SSPIAuthType();
-        internal static SSPIInterface SSPISecureChannel = new SSPISecureChannelType();
+        internal static readonly SSPIInterface SSPIAuth = new SSPIAuthType();
+        internal static readonly SSPIInterface SSPISecureChannel = new SSPISecureChannelType();
     }
 }
