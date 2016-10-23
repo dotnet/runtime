@@ -2729,6 +2729,11 @@
     },
     "runtime.win10-arm64.runtime.native.System.IO.Compression": {
       "BaselineVersion": "4.4.0"
+    },
+    "System.Net.ServicePoint": {
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.4.0"
+      }
     }
   },
   "ModulesToPackages": {
