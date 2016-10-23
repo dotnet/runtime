@@ -16,6 +16,8 @@ namespace System
         public static bool IsWindows7 { get; } = IsWindows && GetWindowsVersion() == 6 && GetWindowsMinorVersion() == 1;
         public static bool IsOSX { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
         public static bool IsNetBSD { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
+        public static bool IsOpenSUSE { get; } = IsDistroAndVersion("opensuse");
+        public static bool IsUbuntu { get; } = IsDistroAndVersion("ubuntu");
         public static bool IsNotWindowsNanoServer { get; } = (IsWindows &&
             File.Exists(Path.Combine(Environment.GetEnvironmentVariable("windir"), "regedit.exe")));
         public static bool IsWindows10Version1607OrGreater { get; } = IsWindows &&
@@ -50,17 +52,24 @@ namespace System
         }
 
         public static bool IsDebian8 { get; } = IsDistroAndVersion("debian", "8");
+        public static bool IsUbuntu1404 { get; } = IsDistroAndVersion("ubuntu", "14.04");
         public static bool IsUbuntu1510 { get; } = IsDistroAndVersion("ubuntu", "15.10");
         public static bool IsUbuntu1604 { get; } = IsDistroAndVersion("ubuntu", "16.04");
         public static bool IsUbuntu1610 { get; } = IsDistroAndVersion("ubuntu", "16.10");
         public static bool IsFedora23 { get; } = IsDistroAndVersion("fedora", "23");
 
-        private static bool IsDistroAndVersion(string distroId, string versionId)
+        /// <summary>
+        /// Get whether the OS platform matches the given Linux distro and optional version.
+        /// </summary>
+        /// <param name="distroId">The distribution id.</param>
+        /// <param name="versionId">The distro version.  If omitted, compares the distro only.</param>
+        /// <returns>Whether the OS platform matches the given Linux distro and optional version.</returns>
+        private static bool IsDistroAndVersion(string distroId, string versionId = null)
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
                 IdVersionPair v = ParseOsReleaseFile();
-                if (v.Id == distroId && v.VersionId == versionId)
+                if (v.Id == distroId && (versionId == null || v.VersionId == versionId))
                 {
                     return true;
                 }
