@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -9,24 +9,11 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.7_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netstandard1.7_Release|AnyCPU' " />
   <ItemGroup>
-    <Compile Include="AlternateViewCollectionTest.cs" />
-    <Compile Include="AlternateViewTest.cs" />
-    <Compile Include="AttachmentCollectionTest.cs" />
-    <Compile Include="AttachmentTest.cs" />
-    <Compile Include="ContentDispositionTest.cs" />
-    <Compile Include="ContentTypeTest.cs" />
-    <Compile Include="LinkedResourceCollectionTest.cs" />
-    <Compile Include="LinkedResourceTest.cs" />
-    <Compile Include="MailAddressCollectionTest.cs" />
-    <Compile Include="MailAddressTest.cs" />
-    <Compile Include="MailMessageTest.cs" />
-    <Compile Include="SmtpClientTest.cs" />
-    <Compile Include="SmtpExceptionTest.cs" />
-    <Compile Include="SmtpServer.cs" />
+    <Compile Include="ServicePointManagerTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\pkg\System.Net.Mail.pkgproj">
-      <Name>System.Net.Mail</Name>
+    <ProjectReference Include="..\pkg\System.Net.ServicePoint.pkgproj">
+      <Name>System.Net.ServicePoint</Name>
       <Project>{53D09AF4-0C13-4197-B8AD-9746F0374E88}</Project>
     </ProjectReference>
   </ItemGroup>
@@ -35,8 +22,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- TODO: Remove this reference once packages are updated -->
-    <ProjectReference Include="..\..\..\System.Net.Requests\pkg\System.Net.Requests.pkgproj" />
-    <ProjectReference Include="..\..\..\System.Net.ServicePoint\pkg\System.Net.ServicePoint.pkgproj" />
+    <ProjectReference Include="..\..\System.Net.Requests\pkg\System.Net.Requests.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

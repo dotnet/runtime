@@ -202,6 +202,7 @@ namespace System.Net
         private bool _passive = true;
         private bool _binary = true;
         private string _connectionGroupName;
+        private ServicePoint _servicePoint;
 
         private bool _async;
         private bool _aborted;
@@ -494,7 +495,11 @@ namespace System.Net
         {
             get
             {
-                return ServicePointManager.FindServicePoint(_uri);
+                if (_servicePoint == null)
+                {
+                    _servicePoint = ServicePointManager.FindServicePoint(_uri);
+                }
+                return _servicePoint;
             }
         }
 
