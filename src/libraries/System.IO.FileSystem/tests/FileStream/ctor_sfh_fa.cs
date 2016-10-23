@@ -141,6 +141,7 @@ namespace System.IO.Tests
             {
                 Assert.False(dfs.CanReadCalled);
                 Assert.False(dfs.CanWriteCalled);
+                Assert.False(dfs.CanSeekCalled);
             }
         }
 
@@ -150,6 +151,7 @@ namespace System.IO.Tests
 
             public bool CanReadCalled { get; set; }
             public bool CanWriteCalled { get; set; }
+            public bool CanSeekCalled { get; set; }
 
             public override bool CanRead
             {
@@ -166,6 +168,15 @@ namespace System.IO.Tests
                 {
                     CanWriteCalled = true;
                     return base.CanWrite;
+                }
+            }
+
+            public override bool CanSeek
+            {
+                get
+                {
+                    CanSeekCalled = true;
+                    return base.CanSeek;
                 }
             }
         }
