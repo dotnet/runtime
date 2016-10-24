@@ -5,6 +5,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
+using System.Diagnostics;
 
 namespace System.IO
 {
@@ -400,6 +401,206 @@ namespace System.IO
                 if (_fileHandle.IsClosed) throw Error.GetFileNotOpen();
                 if (!CanSeek) throw Error.GetSeekNotSupported();
                 return GetLengthInternal();
+            }
+        }
+
+        /// <summary>
+        /// Verify that the actual position of the OS's handle equals what we expect it to.
+        /// This will fail if someone else moved the UnixFileStream's handle or if
+        /// our position updating code is incorrect.
+        /// </summary>
+        private void VerifyOSHandlePosition()
+        {
+            bool verifyPosition = _exposedHandle; // in release, only verify if we've given out the handle such that someone else could be manipulating it
+#if DEBUG
+            verifyPosition = true; // in debug, always make sure our position matches what the OS says it should be
+#endif
+            if (verifyPosition && CanSeek)
+            {
+                long oldPos = _filePosition; // SeekCore will override the current _position, so save it now
+                long curPos = SeekCore(0, SeekOrigin.Current);
+                if (oldPos != curPos)
+                {
+                    // For reads, this is non-fatal but we still could have returned corrupted 
+                    // data in some cases, so discard the internal buffer. For writes, 
+                    // this is a problem; discard the buffer and error out.
+                    _readPos = _readLength = 0;
+                    if (_writePos > 0)
+                    {
+                        _writePos = 0;
+                        throw new IOException(SR.IO_FileStreamHandlePosition);
+                    }
+                }
+            }
+        }
+
+        /// <summary>Verifies that state relating to the read/write buffer is consistent.</summary>
+        [Conditional("DEBUG")]
+        private void AssertBufferInvariants()
+        {
+            // Read buffer values must be in range: 0 <= _bufferReadPos <= _bufferReadLength <= _bufferLength
+            Debug.Assert(0 <= _readPos && _readPos <= _readLength && _readLength <= _bufferLength);
+
+            // Write buffer values must be in range: 0 <= _bufferWritePos <= _bufferLength
+            Debug.Assert(0 <= _writePos && _writePos <= _bufferLength);
+
+            // Read buffering and write buffering can't both be active
+            Debug.Assert((_readPos == 0 && _readLength == 0) || _writePos == 0);
+        }
+
+        /// <summary>Validates that we're ready to read from the stream.</summary>
+        private void PrepareForReading()
+        {
+            if (_fileHandle.IsClosed)
+                throw Error.GetFileNotOpen();
+            if (_readLength == 0 && !CanRead)
+                throw Error.GetReadNotSupported();
+
+            AssertBufferInvariants();
+        }
+
+        /// <summary>Gets or sets the position within the current stream</summary>
+        public override long Position
+        {
+            get
+            {
+                if (_fileHandle.IsClosed)
+                    throw Error.GetFileNotOpen();
+
+                if (!CanSeek)
+                    throw Error.GetSeekNotSupported();
+
+                AssertBufferInvariants();
+                VerifyOSHandlePosition();
+
+                // We may have read data into our buffer from the handle, such that the handle position
+                // is artificially further along than the consumer's view of the stream's position.
+                // Thus, when reading, our position is really starting from the handle position negatively
+                // offset by the number of bytes in the buffer and positively offset by the number of
+                // bytes into that buffer we've read.  When writing, both the read length and position
+                // must be zero, and our position is just the handle position offset positive by how many
+                // bytes we've written into the buffer.
+                return (_filePosition - _readLength) + _readPos + _writePos;
+            }
+            set
+            {
+                if (value < 0)
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
+
+                Seek(value, SeekOrigin.Begin);
+            }
+        }
+
+        internal virtual bool IsClosed => _fileHandle.IsClosed;
+
+        /// <summary>
+        /// Gets the array used for buffering reading and writing.  
+        /// If the array hasn't been allocated, this will lazily allocate it.
+        /// </summary>
+        /// <returns>The buffer.</returns>
+        private byte[] GetBuffer()
+        {
+            Debug.Assert(_buffer == null || _buffer.Length == _bufferLength);
+            if (_buffer == null)
+            {
+                _buffer = new byte[_bufferLength];
+                OnBufferAllocated();
+            }
+
+            return _buffer;
+        }
+
+        partial void OnBufferAllocated();
+
+        /// <summary>
+        /// Flushes the internal read/write buffer for this stream.  If write data has been buffered,
+        /// that data is written out to the underlying file.  Or if data has been buffered for 
+        /// reading from the stream, the data is dumped and our position in the underlying file 
+        /// is rewound as necessary.  This does not flush the OS buffer.
+        /// </summary>
+        private void FlushInternalBuffer()
+        {
+            AssertBufferInvariants();
+            if (_writePos > 0)
+            {
+                FlushWriteBuffer();
+            }
+            else if (_readPos < _readLength && CanSeek)
+            {
+                FlushReadBuffer();
+            }
+        }
+
+        /// <summary>Dumps any read data in the buffer and rewinds our position in the stream, accordingly, as necessary.</summary>
+        private void FlushReadBuffer()
+        {
+            // Reading is done by blocks from the file, but someone could read
+            // 1 byte from the buffer then write.  At that point, the OS's file
+            // pointer is out of sync with the stream's position.  All write 
+            // functions should call this function to preserve the position in the file.
+
+            AssertBufferInvariants();
+            Debug.Assert(_writePos == 0, "FileStream: Write buffer must be empty in FlushReadBuffer!");
+
+            int rewind = _readPos - _readLength;
+            if (rewind != 0)
+            {
+                Debug.Assert(CanSeek, "FileStream will lose buffered read data now.");
+                SeekCore(rewind, SeekOrigin.Current);
+            }
+            _readPos = _readLength = 0;
+        }
+
+        private int ReadByteCore()
+        {
+            PrepareForReading();
+
+            byte[] buffer = GetBuffer();
+            if (_readPos == _readLength)
+            {
+                FlushWriteBuffer();
+                Debug.Assert(_bufferLength > 0, "_bufferSize > 0");
+
+                _readLength = ReadNative(buffer, 0, _bufferLength);
+                _readPos = 0;
+                if (_readLength == 0)
+                {
+                    return -1;
+                }
+            }
+
+            return buffer[_readPos++];
+        }
+
+        private void WriteByteCore(byte value)
+        {
+            PrepareForWriting();
+
+            // Flush the write buffer if it's full
+            if (_writePos == _bufferLength)
+                FlushWriteBuffer();
+
+            // We now have space in the buffer. Store the byte.
+            GetBuffer()[_writePos++] = value;
+        }
+
+        /// <summary>
+        /// Validates that we're ready to write to the stream,
+        /// including flushing a read buffer if necessary.
+        /// </summary>
+        private void PrepareForWriting()
+        {
+            if (_fileHandle.IsClosed)
+                throw Error.GetFileNotOpen();
+
+            // Make sure we're good to write.  We only need to do this if there's nothing already
+            // in our write buffer, since if there is something in the buffer, we've already done 
+            // this checking and flushing.
+            if (_writePos == 0)
+            {
+                if (!CanWrite) throw Error.GetWriteNotSupported();
+                FlushReadBuffer();
+                Debug.Assert(_bufferLength > 0, "_bufferSize > 0");
             }
         }
 
