@@ -5,7 +5,7 @@
     <PackageTargetRuntime>win10-$(PackagePlatform)-aot</PackageTargetRuntime>
   </PropertyGroup>
   <ItemGroup>
-    <NativeFile Include="$(WinNativePath)\clrcompression.dll">
+    <NativeFile Include="$(WinNativeAOTPath)\clrcompression.dll">
       <TargetPath>runtimes/win10-$(PackagePlatform)-aot/lib/netcore50</TargetPath>
     </NativeFile>
   </ItemGroup>
