@@ -77,35 +77,41 @@
     </TraversalBuildDependsOn>
   </PropertyGroup>
 
+  <!-- Create a collection of all project.json files for dependency updates. -->
+  <ItemGroup>
+    <ProjectJsonFiles Condition="'$(ExcludeNonTestRestores)' != 'true'" Include="$(SourceDir)**/project.json" />
+    <ProjectJsonFiles Condition="'$(ExcludeNonTestRestores)' != 'true'" Include="$(ProjectDir)pkg/**/project.json" />
+    <ProjectJsonFiles Include="$(MSBuildThisFileDirectory)layout/**/project.json" />
+    <!-- Additional generated ProjectJsonFiles are added in the build.proj target AddGeneratedProjectJsons -->
+  </ItemGroup>
+  
   <ItemGroup>
     <TestProjectJsons Include="$(MSBuildThisFileDirectory)src/Common/test-runtime/project.json" />
   </ItemGroup>
 
   <UsingTask TaskName="GatherDirectoriesToRestore" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" />
-
-  <!-- Create a collection of all project.json files for dependency updates. -->
-  <ItemGroup>
-    <ProjectJsonFiles Include="$(SourceDir)**/project.json" />
-    <ProjectJsonFiles Include="$(MSBuildThisFileDirectory)pkg/**/project.json" />
+  
     <ProjectJsonFiles Include="$(MSBuildThisFileDirectory)layout/**/project.json" />
-    <ProjectJsonFiles Condition="'$(BuildTestsAgainstPackages)' == 'true'" Include="$(GeneratedProjectJsonDir)/**/project.json" />
-  </ItemGroup>
-
   <Target Name="BatchRestorePackages" DependsOnTargets="AddGeneratedProjectJsons;VerifyDependencies">
     <MakeDir Directories="$(PackagesDir)" Condition="!Exists('$(PackagesDir)')" />
 
     <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages..." />
-
+<Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] KARTHIKDEBUG '$(PackagesDir)'" />
     <IsRestoreRequired ProjectJsons="@(ProjectJsonFiles)" PackagesFolder="$(PackagesDir)">
       <Output TaskParameter="RestoreRequired" PropertyName="RestoreRequired" />
     </IsRestoreRequired>
 
+    <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] $(DnuRestoreCommand) @(TestProjectJsons->'&quot;%(Identity)&quot;', ' ')" />
+    
     <!-- This is to restore the test-runtime project.json up front which contains the latest packages to be tested to avoid download contention within nuget. -->
     <Exec Command="$(DnuRestoreCommand) @(TestProjectJsons->'&quot;%(Identity)&quot;', ' ')"
-          Condition="'$(RestoreRequired)' == 'true'"
+          Condition="'$(RestoreRequired)' == 'true' and '$(BuildTestsAgainstPackages)' != 'true'"
           StandardOutputImportance="Low"
           CustomErrorRegularExpression="(^Unable to locate .*)|(^Updating the invalid lock file with .*)"
           ContinueOnError="ErrorAndContinue" />
+          
+    <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] $(DnuRestoreCommand) @(DnuRestoreDir->'&quot;%(Identity)&quot;', ' ')" />
+    
 
     <Exec Command="$(DnuRestoreCommand) @(DnuRestoreDir->'&quot;%(Identity)&quot;', ' ')"
           Condition="'$(RestoreRequired)' == 'true'"
@@ -138,14 +144,14 @@
       <_PackagesDropsForCommonProjectJson Include="$(PackagesDrops)" />
     </ItemGroup>
 
-    <AddDependenciesToProjectJson AdditionalDependencies="@(ExternalDependencies)"
+    <AddDependenciesToProjectJson AdditionalDependencies="@(_InjectProjectReferenceDependency)"
                                   PackagesDrops="@(_PackagesDropsForCommonProjectJson)"
                                   PackageNameRegex="$(PackageNameRegex)"
                                   VersionsFiles="@(_VersionsFiles)"
                                   ProjectJson="$(CommonTestProjectJson)"
                                   OutputProjectJson="$(CommonOutputTestProjectJson)"
                                   UseNewestAvailablePackages="$(UseNewestAvailablePackages)"
-                                   />
+                                  />
   </Target>
 
   <!-- Evaluate our test projects (in src\tests.builds) -->

@@ -210,6 +210,12 @@
       "values": [],
       "defaultValue": ""
     },
+    "RestoreForTestsAgainstPackagesOnly": {
+      "description": "MsBuild target that restores the packages.",
+      "valueType": "property",
+      "values": ["true", "false"],
+      "defaultValue": "true"
+    },
     "GenerateVersionHeader": {
       "description": "MsBuild target that generates the version header.",
       "valueType": "target",
@@ -403,7 +409,6 @@
         }
       },
       "defaultValues": {
-	    "defaultAlias": "b",
         "toolName": "msbuild",
         "settings": {
           "MsBuildLogging":"/flp:v=normal;LogFile=clean.log"
@@ -471,7 +476,7 @@
           }
         },
         "t": {
-          "description": "Generates project.jsons for test projects, restores packages, builds product and then builds tests against the generated project.json files.",
+          "description": "Generates project.jsons for test projects, restores packages.",
           "settings": {
             "RestoreDuringBuild":  true,
             "BuildTestsAgainstPackages": true,
@@ -517,7 +522,7 @@
         }
       },
       "defaultValues": {
-	  	"defaultAlias": "p",
+        "defaultAlias": "p",
         "toolName": "msbuild",
         "settings": {
           "MsBuildLogging":"/flp:v=normal;LogFile=sync.log"
