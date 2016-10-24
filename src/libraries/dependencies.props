@@ -26,7 +26,7 @@
 
   <!-- Full package version strings that are used in other parts of the build. -->
   <PropertyGroup>
-    <AppXRunnerVersion>1.0.3-prerelease-00903-02</AppXRunnerVersion>
+    <AppXRunnerVersion>1.0.3-prerelease-00921-01</AppXRunnerVersion>
     <XunitPerfAnalysisPackageVersion>1.0.0-alpha-build0040</XunitPerfAnalysisPackageVersion>
   </PropertyGroup>
 
@@ -103,13 +103,9 @@
     <StaticDependency Include="@(XUnitDependency)">
       <Version>2.2.0-beta2-build3300</Version>
     </StaticDependency>
-
-    <StaticDependency Include="Microsoft.xunit.netcore.extensions">
-      <Version>1.0.0-prerelease-00830-02</Version>
-    </StaticDependency>
    
-    <StaticDependency Include="Microsoft.DotNet.BuildTools.TestSuite">
-      <Version>1.0.0-prerelease-00920-01</Version>
+    <StaticDependency Include="Microsoft.xunit.netcore.extensions;Microsoft.DotNet.BuildTools.TestSuite">
+      <Version>1.0.0-prerelease-00921-01</Version>
     </StaticDependency>
 
     <PerformancePackDependency Include="Microsoft.DotNet.xunit.performance" />
