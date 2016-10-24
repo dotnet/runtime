@@ -96,6 +96,20 @@ namespace System
         public CannotUnloadAppDomainException(string message, System.Exception innerException) { }
     }
 
+    public sealed class ApplicationId
+    {
+        public ApplicationId(byte[] publicKeyToken, string name, Version version, string processorArchitecture, string culture) { }
+        public string Culture { get { throw null; } }
+        public string Name { get { throw null; } }
+        public string ProcessorArchitecture { get { throw null; } }
+        public byte[] PublicKeyToken { get { throw null; } }
+        public Version Version { get { throw null; } }
+        public ApplicationId Copy() { throw null; }
+        public override bool Equals(object o) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public override string ToString() { throw null; }
+    }
+
     [Flags]
     public enum Base64FormattingOptions
     {
