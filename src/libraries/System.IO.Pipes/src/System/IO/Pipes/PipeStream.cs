@@ -96,7 +96,7 @@ namespace System.IO.Pipes
         // the pipe is in a connected state already, it should also set the IsConnected (protected) property.
         // This method may also be called to uninitialize a handle, setting it to null.
         [SecuritySafeCritical]
-        internal void InitializeHandle(SafePipeHandle handle, bool isExposed, bool isAsync)
+        protected void InitializeHandle(SafePipeHandle handle, bool isExposed, bool isAsync)
         {
             if (isAsync && handle != null)
             {
@@ -391,7 +391,7 @@ namespace System.IO.Pipes
             }
         }
 
-        internal bool IsHandleExposed
+        protected bool IsHandleExposed
         {
             get
             {
@@ -458,8 +458,7 @@ namespace System.IO.Pipes
 
         // anonymous pipe ends and named pipe server can get/set properties when broken 
         // or connected. Named client overrides
-        [SecurityCritical]
-        internal virtual void CheckPipePropertyOperations()
+        protected internal virtual void CheckPipePropertyOperations()
         {
             if (CheckOperationsRequiresSetHandle && _handle == null)
             {
@@ -475,9 +474,7 @@ namespace System.IO.Pipes
 
         // Reads can be done in Connected and Broken. In the latter,
         // read returns 0 bytes
-        [SecurityCritical]
-        [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Consistent with security model")]
-        internal void CheckReadOperations()
+        protected internal void CheckReadOperations()
         {
             // Invalid operation
             if (_state == PipeState.WaitingToConnect)
@@ -501,9 +498,7 @@ namespace System.IO.Pipes
         }
 
         // Writes can only be done in connected state
-        [SecurityCritical]
-        [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Consistent with security model")]
-        internal void CheckWriteOperations()
+        protected internal void CheckWriteOperations()
         {
             // Invalid operation
             if (_state == PipeState.WaitingToConnect)

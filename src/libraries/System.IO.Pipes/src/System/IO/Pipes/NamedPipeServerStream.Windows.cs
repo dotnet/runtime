@@ -6,7 +6,9 @@ using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Security;
+using System.Security.Permissions;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -157,12 +159,9 @@ namespace System.IO.Pipes
         // ---- PAL layer ends here ----
         // -----------------------------
 
-#if RunAs
         // This method calls a delegate while impersonating the client. Note that we will not have
         // access to the client's security token until it has written at least once to the pipe 
         // (and has set its impersonationLevel argument appropriately). 
-        [SecurityCritical]
-        [SecurityPermissionAttribute(SecurityAction.Demand, Flags = SecurityPermissionFlag.ControlPrincipal)]
         public void RunAsClient(PipeStreamImpersonationWorker impersonationWorker)
         {
             CheckWriteOperations();
@@ -185,7 +184,6 @@ namespace System.IO.Pipes
         private static RuntimeHelpers.TryCode tryCode = new RuntimeHelpers.TryCode(ImpersonateAndTryCode);
         private static RuntimeHelpers.CleanupCode cleanupCode = new RuntimeHelpers.CleanupCode(RevertImpersonationOnBackout);
 
-        [SecurityCritical]
         private static void ImpersonateAndTryCode(Object helper)
         {
             ExecuteHelper execHelper = (ExecuteHelper)helper;
@@ -194,7 +192,7 @@ namespace System.IO.Pipes
             try { }
             finally
             {
-                if (UnsafeNativeMethods.ImpersonateNamedPipeClient(execHelper._handle))
+                if (Interop.mincore.ImpersonateNamedPipeClient(execHelper._handle))
                 {
                     execHelper._mustRevert = true;
                 }
@@ -211,15 +209,13 @@ namespace System.IO.Pipes
             }
         }
 
-        [SecurityCritical]
-        [PrePrepareMethod]
         private static void RevertImpersonationOnBackout(Object helper, bool exceptionThrown)
         {
             ExecuteHelper execHelper = (ExecuteHelper)helper;
 
             if (execHelper._mustRevert)
             {
-                if (!UnsafeNativeMethods.RevertToSelf())
+                if (!Interop.mincore.RevertToSelf())
                 {
                     execHelper._revertImpersonateErrorCode = Marshal.GetLastWin32Error();
                 }
@@ -241,10 +237,8 @@ namespace System.IO.Pipes
                 _handle = handle;
             }
         }
-#endif
 
         // Async version of WaitForConnection.  See the comments above for more info.
-        [SecurityCritical]
         private unsafe Task WaitForConnectionCoreAsync(CancellationToken cancellationToken)
         {
             CheckConnectOperationsServerWithHandle();

@@ -4,6 +4,7 @@
 
 #include "pal_config.h"
 #include "pal_networking.h"
+#include "pal_io.h"
 #include "pal_utilities.h"
 
 #include <stdlib.h>
@@ -2717,23 +2718,10 @@ static char* GetNameFromUid(uid_t uid)
 
 extern "C" char* SystemNative_GetPeerUserName(intptr_t socket)
 {
-    int fd = ToFileDescriptor(socket);
-#ifdef SO_PEERCRED
-    struct ucred creds;
-    socklen_t len = sizeof(creds);
-    return getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &creds, &len) == 0 ?
-        GetNameFromUid(creds.uid) :
-        nullptr;
-#elif HAVE_GETPEEREID
-    uid_t euid, egid;
-    return getpeereid(fd, &euid, &egid) == 0 ?
+    uid_t euid;
+    return SystemNative_GetPeerID(socket, &euid) == 0 ?
         GetNameFromUid(euid) :
         nullptr;
-#else
-    (void)fd;
-    errno = ENOTSUP;
-    return nullptr;
-#endif
 }
 
 extern "C" void SystemNative_GetDomainSocketSizes(int32_t* pathOffset, int32_t* pathSize, int32_t* addressSize)

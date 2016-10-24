@@ -7,6 +7,7 @@
 #include "pal_types.h"
 #include <stdio.h>
 #include <dirent.h>
+#include <sys/types.h>
 
 /**
  * File status returned by Stat or FStat.
@@ -682,3 +683,11 @@ extern "C" int32_t SystemNative_INotifyRemoveWatch(intptr_t fd, int32_t wd);
 * Returns the result absolute path on success or null on error with errno set appropriately.
 */
 extern "C" char* SystemNative_RealPath(const char* path);
+
+/**
+* Attempts to retrieve the ID of the process at the end of the given socket
+*
+* Returns 0 on success, or -1 if an error occurred (in which case, errno is set appropriately).
+*/
+extern "C" int32_t SystemNative_GetPeerID(intptr_t socket, uid_t* euid);
+

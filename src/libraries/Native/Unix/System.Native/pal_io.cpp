@@ -20,6 +20,7 @@
 #include <sys/types.h>
 #include <sys/file.h>
 #include <sys/ioctl.h>
+#include <sys/socket.h>
 #include <syslog.h>
 #include <termios.h>
 #include <unistd.h>
@@ -1127,6 +1128,29 @@ extern "C" int32_t SystemNative_INotifyRemoveWatch(intptr_t fd, int32_t wd)
     return inotify_rm_watch(ToFileDescriptor(fd), wd);
 #else
     (void)fd, (void)wd;
+    errno = ENOTSUP;
+    return -1;
+#endif
+}
+
+extern "C" int32_t SystemNative_GetPeerID(intptr_t socket, uid_t* euid)
+{
+    int fd = ToFileDescriptor(socket);
+#ifdef SO_PEERCRED
+    struct ucred creds;
+    socklen_t len = sizeof(creds);
+    if (getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &creds, &len) == 0)
+    {
+        *euid = creds.uid;
+        return 0;
+    }
+    return -1;
+#elif HAVE_GETPEEREID
+    uid_t egid;
+    return getpeereid(fd, euid, &egid);
+#else
+    (void)fd;
+    (void)*euid;
     errno = ENOTSUP;
     return -1;
 #endif
