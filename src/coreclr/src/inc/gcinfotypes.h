@@ -8,47 +8,10 @@
 
 #include "gcinfo.h"
 
-// This file is included when building an "alt jit".  In that case, we are doing a cross-compile:
-// we may be building the ARM jit on x86, for example.  We generally make that work by conditionalizing on
-// a _TARGET_XXX_ variable that we explicitly set in the build, rather than the _XXX_ variable implicitly
-// set by the compiler.  But this file is *also* included by the runtime, and needs in that case to be
-// conditionalized by the actual platform we're compiling for.  We solve this by:
-//    1) conditionalizing on _TARGET_XXX_ in this file,
-//    2) having a _TARGET_SET_ variable so we know whether we're in a compilation for JIT in which some
-//       _TARGET_XXX_ has already been set, and
-//    3) if _TARGET_SET_ is not set, set the _TARGET_XXX_ variable appropriate for the current _XXX_.
-// 
-#ifndef _TARGET_SET_
-
-//#ifdef _X86_
-//#define _TARGET_X86_
-//#endif
-
-//#ifdef _AMD64_
-//#define _TARGET_AMD64_
-//#endif
-
-//#ifdef _ARM_
-//#define _TARGET_ARM_
-//#endif
-
-#endif // _TARGET_SET_
-
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
 #define PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-#endif
 
-#ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-//
-// The EH vector mechanism is not completely worked out, 
-//   so it's temporarily disabled. We rely on fully-interruptible instead.
-//
-#define DISABLE_EH_VECTORS
-#endif
-
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
 #define FIXED_STACK_PARAMETER_SCRATCH_AREA
-#endif
+
 
 #define BITS_PER_SIZE_T ((int)sizeof(size_t)*8)
 
