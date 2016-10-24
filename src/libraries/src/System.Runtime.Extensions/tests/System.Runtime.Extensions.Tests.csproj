@@ -34,6 +34,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netcoreapp1.1_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'netcoreapp1.1_Release|AnyCPU' " />
   <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7' or '$(TargetGroup)'=='netcoreapp1.1'">
+    <Compile Include="System\ApplicationIdTests.cs" />
     <Compile Include="System\IO\PathTests.netstandard1.7.cs" />
     <Compile Include="System\Convert.netstandard1.7.cs" />
     <Compile Include="System\EnvironmentTests.cs" />

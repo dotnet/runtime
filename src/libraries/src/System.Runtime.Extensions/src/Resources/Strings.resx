@@ -120,6 +120,9 @@
   <data name="Argument_AddingDuplicate" xml:space="preserve">
     <value>An item with the same key has already been added. Key: {0}</value>
   </data>
+  <data name="Argument_EmptyApplicationName" xml:space="preserve">
+    <value>ApplicationId cannot have an empty string for the name.</value>
+  </data>
   <data name="Argument_FrameworkNameMissingVersion" xml:space="preserve">
     <value>FrameworkName version component is missing.</value>
   </data>
