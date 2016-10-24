@@ -8,21 +8,10 @@
 
 #include "gcinfo.h"
 
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
 #define PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-#endif
 
-#ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-//
-// The EH vector mechanism is not completely worked out, 
-//   so it's temporarily disabled. We rely on fully-interruptible instead.
-//
-#define DISABLE_EH_VECTORS
-#endif
-
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
 #define FIXED_STACK_PARAMETER_SCRATCH_AREA
-#endif
+
 
 #define BITS_PER_SIZE_T ((int)sizeof(size_t)*8)
 

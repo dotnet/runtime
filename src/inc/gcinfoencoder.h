@@ -110,7 +110,6 @@ struct GcInfoSize
     size_t NumRanges;
     size_t NumRegs;
     size_t NumStack;
-    size_t NumEh;
     size_t NumTransitions;
     size_t SizeOfCode;
 
@@ -134,7 +133,6 @@ struct GcInfoSize
     size_t RegSlotSize;
     size_t StackSlotSize;
     size_t CallSiteStateSize;
-    size_t NumEhSize;
     size_t EhPosSize;
     size_t EhStateSize;
     size_t ChunkPtrSize;
