@@ -23,26 +23,17 @@ namespace System.Linq.Expressions
         /// <summary>
         /// The source file name.
         /// </summary>
-        public string FileName
-        {
-            get { return _fileName; }
-        }
+        public string FileName => _fileName;
 
         /// <summary>
         /// Returns the language's unique identifier, if any.
         /// </summary>
-        public virtual Guid Language
-        {
-            get { return Guid.Empty; }
-        }
+        public virtual Guid Language => Guid.Empty;
 
         /// <summary>
         /// Returns the language vendor's unique identifier, if any.
         /// </summary>
-        public virtual Guid LanguageVendor
-        {
-            get { return Guid.Empty; }
-        }
+        public virtual Guid LanguageVendor => Guid.Empty;
 
         internal static readonly Guid DocumentType_Text = new Guid(0x5a869d0b, 0x6611, 0x11d3, 0xbd, 0x2a, 0, 0, 0xf8, 8, 0x49, 0xbd);
 
@@ -50,10 +41,7 @@ namespace System.Linq.Expressions
         /// Returns the document type's unique identifier, if any.
         /// Defaults to the guid for a text file.
         /// </summary>
-        public virtual Guid DocumentType
-        {
-            get { return DocumentType_Text; }
-        }
+        public virtual Guid DocumentType => DocumentType_Text;
     }
 
     internal sealed class SymbolDocumentWithGuids : SymbolDocumentInfo
@@ -85,20 +73,11 @@ namespace System.Linq.Expressions
             _documentType = documentType;
         }
 
-        public override Guid Language
-        {
-            get { return _language; }
-        }
+        public override Guid Language => _language;
 
-        public override Guid LanguageVendor
-        {
-            get { return _vendor; }
-        }
+        public override Guid LanguageVendor => _vendor;
 
-        public override Guid DocumentType
-        {
-            get { return _documentType; }
-        }
+        public override Guid DocumentType => _documentType;
     }
 
     public partial class Expression

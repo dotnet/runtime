@@ -32,56 +32,32 @@ namespace System.Linq.Expressions
         /// Gets the static type of the expression that this <see cref="Expression" /> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        public override Type Type
-        {
-            get { return _constructor.DeclaringType; }
-        }
+        public override Type Type => _constructor.DeclaringType;
 
         /// <summary>
         /// Returns the node type of this <see cref="Expression" />. (Inherited from <see cref="Expression" />.)
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
-        public sealed override ExpressionType NodeType
-        {
-            get { return ExpressionType.New; }
-        }
+        public sealed override ExpressionType NodeType => ExpressionType.New;
 
         /// <summary>
         /// Gets the called constructor.
         /// </summary>
-        public ConstructorInfo Constructor
-        {
-            get { return _constructor; }
-        }
+        public ConstructorInfo Constructor => _constructor;
 
         /// <summary>
         /// Gets the arguments to the constructor.
         /// </summary>
-        public ReadOnlyCollection<Expression> Arguments
-        {
-            get { return ReturnReadOnly(ref _arguments); }
-        }
+        public ReadOnlyCollection<Expression> Arguments => ReturnReadOnly(ref _arguments);
 
-        public Expression GetArgument(int index)
-        {
-            return _arguments[index];
-        }
+        public Expression GetArgument(int index) => _arguments[index];
 
-        public int ArgumentCount
-        {
-            get
-            {
-                return _arguments.Count;
-            }
-        }
+        public int ArgumentCount => _arguments.Count;
 
         /// <summary>
         /// Gets the members that can retrieve the values of the fields that were initialized with constructor arguments.
         /// </summary>
-        public ReadOnlyCollection<MemberInfo> Members
-        {
-            get { return _members; }
-        }
+        public ReadOnlyCollection<MemberInfo> Members => _members;
 
         /// <summary>
         /// Dispatches to the specific visit method for this node type.
@@ -122,10 +98,7 @@ namespace System.Linq.Expressions
             _valueType = type;
         }
 
-        public sealed override Type Type
-        {
-            get { return _valueType; }
-        }
+        public sealed override Type Type => _valueType;
     }
 
     public partial class Expression
@@ -139,8 +112,7 @@ namespace System.Linq.Expressions
         {
             return New(constructor, (IEnumerable<Expression>)null);
         }
-
-
+        
         /// <summary>
         /// Creates a new <see cref="NewExpression"/> that represents calling the specified constructor that takes no arguments. 
         /// </summary>
@@ -151,8 +123,7 @@ namespace System.Linq.Expressions
         {
             return New(constructor, (IEnumerable<Expression>)arguments);
         }
-
-
+        
         /// <summary>
         /// Creates a new <see cref="NewExpression"/> that represents calling the specified constructor that takes no arguments. 
         /// </summary>
@@ -170,8 +141,7 @@ namespace System.Linq.Expressions
 
             return new NewExpression(constructor, argList, null);
         }
-
-
+        
         /// <summary>
         /// Creates a new <see cref="NewExpression"/> that represents calling the specified constructor with the specified arguments. The members that access the constructor initialized fields are specified. 
         /// </summary>
@@ -191,7 +161,6 @@ namespace System.Linq.Expressions
             return new NewExpression(constructor, argList, memberList);
         }
 
-
         /// <summary>
         /// Creates a new <see cref="NewExpression"/> that represents calling the specified constructor with the specified arguments. The members that access the constructor initialized fields are specified. 
         /// </summary>
@@ -203,8 +172,7 @@ namespace System.Linq.Expressions
         {
             return New(constructor, arguments, (IEnumerable<MemberInfo>)members);
         }
-
-
+        
         /// <summary>
         /// Creates a <see cref="NewExpression"/> that represents calling the parameterless constructor of the specified type. 
         /// </summary>
@@ -229,9 +197,7 @@ namespace System.Linq.Expressions
             }
             return new NewValueTypeExpression(type, EmptyReadOnlyCollection<Expression>.Instance, null);
         }
-
-
-
+        
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private static void ValidateNewArgs(ConstructorInfo constructor, ref ReadOnlyCollection<Expression> arguments, ref ReadOnlyCollection<MemberInfo> members)
         {
@@ -324,7 +290,6 @@ namespace System.Linq.Expressions
                 throw Error.IncorrectNumberOfMembersForGivenConstructor();
             }
         }
-
 
         private static void ValidateAnonymousTypeMember(ref MemberInfo member, out Type memberType, string paramName, int index)
         {

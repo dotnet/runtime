@@ -43,18 +43,12 @@ namespace System.Linq.Expressions
         /// ExpressionType.Extension when overriding this method.
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> of the expression.</returns>
-        public sealed override ExpressionType NodeType
-        {
-            get { return ExpressionType.Constant; }
-        }
+        public sealed override ExpressionType NodeType => ExpressionType.Constant;
 
         /// <summary>
         /// Gets the value of the constant expression.
         /// </summary>
-        public object Value
-        {
-            get { return _value; }
-        }
+        public object Value => _value;
 
         /// <summary>
         /// Dispatches to the specific visit method for this node type.
@@ -75,10 +69,7 @@ namespace System.Linq.Expressions
             _type = type;
         }
 
-        public sealed override Type Type
-        {
-            get { return _type; }
-        }
+        public sealed override Type Type => _type;
     }
 
     public partial class Expression

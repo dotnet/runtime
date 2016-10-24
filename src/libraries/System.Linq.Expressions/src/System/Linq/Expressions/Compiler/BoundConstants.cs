@@ -71,10 +71,7 @@ namespace System.Linq.Expressions.Compiler
         /// </summary>
         private readonly Dictionary<TypedConstant, LocalBuilder> _cache = new Dictionary<TypedConstant, LocalBuilder>();
 
-        internal int Count
-        {
-            get { return _values.Count; }
-        }
+        internal int Count => _values.Count;
 
         internal object[] ToArray()
         {

@@ -105,10 +105,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Returns number of elements in the ReadOnlyCollectionBuilder.
         /// </summary>
-        public int Count
-        {
-            get { return _size; }
-        }
+        public int Count => _size;
 
         #region IList<T> Members
 
@@ -255,10 +252,7 @@ namespace System.Runtime.CompilerServices
             Array.Copy(_items, 0, array, arrayIndex, _size);
         }
 
-        bool ICollection<T>.IsReadOnly
-        {
-            get { return false; }
-        }
+        bool ICollection<T>.IsReadOnly => false;
 
         /// <summary>
         /// Removes the first occurrence of a specific object from the <see cref="ReadOnlyCollectionBuilder{T}"/>.
@@ -305,10 +299,7 @@ namespace System.Runtime.CompilerServices
 
         #region IList Members
 
-        bool System.Collections.IList.IsReadOnly
-        {
-            get { return false; }
-        }
+        bool System.Collections.IList.IsReadOnly => false;
 
         int System.Collections.IList.Add(object value)
         {
@@ -355,10 +346,7 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        bool System.Collections.IList.IsFixedSize
-        {
-            get { return false; }
-        }
+        bool System.Collections.IList.IsFixedSize => false;
 
         void System.Collections.IList.Remove(object value)
         {
@@ -400,10 +388,7 @@ namespace System.Runtime.CompilerServices
             Array.Copy(_items, 0, array, index, _size);
         }
 
-        bool System.Collections.ICollection.IsSynchronized
-        {
-            get { return false; }
-        }
+        bool System.Collections.ICollection.IsSynchronized => false;
 
         object System.Collections.ICollection.SyncRoot
         {
@@ -530,10 +515,7 @@ namespace System.Runtime.CompilerServices
 
             #region IEnumerator<T> Members
 
-            public T Current
-            {
-                get { return _current; }
-            }
+            public T Current => _current;
 
             #endregion
 

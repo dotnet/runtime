@@ -30,37 +30,22 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets a reference to the <see cref="Exception"/> object caught by this handler.
         /// </summary>
-        public ParameterExpression Variable
-        {
-            get { return _var; }
-        }
+        public ParameterExpression Variable => _var;
 
         /// <summary>
         /// Gets the type of <see cref="Exception"/> this handler catches.
         /// </summary>
-        public Type Test
-        {
-            get { return _test; }
-        }
+        public Type Test => _test;
 
         /// <summary>
         /// Gets the body of the catch block.
         /// </summary>
-        public Expression Body
-        {
-            get { return _body; }
-        }
+        public Expression Body => _body;
 
         /// <summary>
         /// Gets the body of the <see cref="CatchBlock"/>'s filter.
         /// </summary>
-        public Expression Filter
-        {
-            get
-            {
-                return _filter;
-            }
-        }
+        public Expression Filter => _filter;
 
         /// <summary>
         /// Returns a <see cref="String"/> that represents the current <see cref="Object"/>. 

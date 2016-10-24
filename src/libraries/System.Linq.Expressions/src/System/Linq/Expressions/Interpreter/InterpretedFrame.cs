@@ -127,10 +127,7 @@ namespace System.Linq.Expressions.Interpreter
 
         #region Stack Trace
 
-        public InterpretedFrame Parent
-        {
-            get { return _parent; }
-        }
+        public InterpretedFrame Parent => _parent;
 
         public static bool IsInterpretedFrame(MethodBase method)
         {

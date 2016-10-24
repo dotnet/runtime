@@ -45,41 +45,28 @@ namespace System.Linq.Expressions
         /// ExpressionType.Extension when overriding this method.
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> of the expression.</returns>
-        public sealed override ExpressionType NodeType
-        {
-            get { return ExpressionType.Conditional; }
-        }
+        public sealed override ExpressionType NodeType => ExpressionType.Conditional;
 
         /// <summary>
         /// Gets the static type of the expression that this <see cref="Expression" /> represents.
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        public override Type Type
-        {
-            get { return IfTrue.Type; }
-        }
+        public override Type Type => IfTrue.Type;
 
         /// <summary>
         /// Gets the test of the conditional operation.
         /// </summary>
-        public Expression Test
-        {
-            get { return _test; }
-        }
+        public Expression Test => _test;
+
         /// <summary>
         /// Gets the expression to execute if the test evaluates to true.
         /// </summary>
-        public Expression IfTrue
-        {
-            get { return _true; }
-        }
+        public Expression IfTrue => _true;
+
         /// <summary>
         /// Gets the expression to execute if the test evaluates to false.
         /// </summary>
-        public Expression IfFalse
-        {
-            get { return GetFalse(); }
-        }
+        public Expression IfFalse => GetFalse();
 
         internal virtual Expression GetFalse()
         {
@@ -124,10 +111,7 @@ namespace System.Linq.Expressions
             _false = ifFalse;
         }
 
-        internal override Expression GetFalse()
-        {
-            return _false;
-        }
+        internal override Expression GetFalse() => _false;
     }
 
     internal sealed class FullConditionalExpressionWithType : FullConditionalExpression
@@ -140,10 +124,7 @@ namespace System.Linq.Expressions
             _type = type;
         }
 
-        public sealed override Type Type
-        {
-            get { return _type; }
-        }
+        public sealed override Type Type => _type;
     }
 
     public partial class Expression
@@ -174,8 +155,7 @@ namespace System.Linq.Expressions
 
             return ConditionalExpression.Make(test, ifTrue, ifFalse, ifTrue.Type);
         }
-
-
+        
         /// <summary>
         /// Creates a <see cref="ConditionalExpression"/>.
         /// </summary>

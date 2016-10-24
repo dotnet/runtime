@@ -30,36 +30,24 @@ namespace System.Linq.Expressions
         /// Gets the static type of the expression that this <see cref="Expression" /> represents.
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        public sealed override Type Type
-        {
-            get { return typeof(bool); }
-        }
+        public sealed override Type Type => typeof(bool);
 
         /// <summary>
         /// Returns the node type of this Expression. Extension nodes should return
         /// ExpressionType.Extension when overriding this method.
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> of the expression.</returns>
-        public sealed override ExpressionType NodeType
-        {
-            get { return _nodeKind; }
-        }
+        public sealed override ExpressionType NodeType => _nodeKind;
 
         /// <summary>
         /// Gets the expression operand of a type test operation.
         /// </summary>
-        public Expression Expression
-        {
-            get { return _expression; }
-        }
+        public Expression Expression => _expression;
 
         /// <summary>
         /// Gets the type operand of a type test operation.
         /// </summary>
-        public Type TypeOperand
-        {
-            get { return _typeOperand; }
-        }
+        public Type TypeOperand => _typeOperand;
 
         #region Reduce TypeEqual
 

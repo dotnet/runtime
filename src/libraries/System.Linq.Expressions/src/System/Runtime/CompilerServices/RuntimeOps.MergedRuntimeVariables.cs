@@ -26,10 +26,7 @@ namespace System.Runtime.CompilerServices
                 _indexes = indexes;
             }
 
-            public int Count
-            {
-                get { return _indexes.Length; }
-            }
+            public int Count => _indexes.Length;
 
             public object this[int index]
             {

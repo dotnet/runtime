@@ -113,10 +113,7 @@ namespace System.Linq.Expressions
         /// Indicates that the node can be reduced to a simpler node. If this 
         /// returns true, Reduce() can be called to produce the reduced form.
         /// </summary>
-        public virtual bool CanReduce
-        {
-            get { return false; }
-        }
+        public virtual bool CanReduce => false;
 
         /// <summary>
         /// Reduces this node to a simpler expression. If CanReduce returns
@@ -205,7 +202,6 @@ namespace System.Linq.Expressions
             return node;
         }
 
-
         /// <summary>
         /// Creates a <see cref="String"/> representation of the Expression.
         /// </summary>
@@ -248,6 +244,7 @@ namespace System.Linq.Expressions
         {
             return ExpressionUtils.ReturnReadOnly<T>(ref collection);
         }
+
         /// <summary>
         /// Helper used for ensuring we only return 1 instance of a ReadOnlyCollection of T.
         /// 

@@ -32,37 +32,25 @@ namespace System.Linq.Expressions
         /// Gets the static type of the expression that this <see cref="Expression" /> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        public sealed override Type Type
-        {
-            get { return _type; }
-        }
+        public sealed override Type Type => _type;
 
         /// <summary>
         /// Returns the node type of this <see cref="Expression" />. (Inherited from <see cref="Expression" />.)
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
-        public sealed override ExpressionType NodeType
-        {
-            get { return _nodeType; }
-        }
+        public sealed override ExpressionType NodeType => _nodeType;
 
         /// <summary>
         /// Gets the operand of the unary operation.
         /// </summary>
         /// <returns> An <see cref="ExpressionType"/> that represents the operand of the unary operation.</returns>
-        public Expression Operand
-        {
-            get { return _operand; }
-        }
+        public Expression Operand => _operand;
 
         /// <summary>
         /// Gets the implementing method for the unary operation.
         /// </summary>
         /// <returns>The <see cref="MethodInfo"/> that represents the implementing method.</returns>
-        public MethodInfo Method
-        {
-            get { return _method; }
-        }
+        public MethodInfo Method => _method;
 
         /// <summary>
         /// Gets a value that indicates whether the expression tree node represents a lifted call to an operator.

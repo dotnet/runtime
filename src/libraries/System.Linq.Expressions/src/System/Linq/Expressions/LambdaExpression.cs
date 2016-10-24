@@ -47,61 +47,40 @@ namespace System.Linq.Expressions
         /// Gets the static type of the expression that this <see cref="Expression" /> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        public sealed override Type Type
-        {
-            get { return _delegateType; }
-        }
+        public sealed override Type Type => _delegateType;
 
         /// <summary>
         /// Returns the node type of this <see cref="Expression" />. (Inherited from <see cref="Expression" />.)
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
-        public sealed override ExpressionType NodeType
-        {
-            get { return ExpressionType.Lambda; }
-        }
+        public sealed override ExpressionType NodeType => ExpressionType.Lambda;
 
         /// <summary>
         /// Gets the parameters of the lambda expression. 
         /// </summary>
-        public ReadOnlyCollection<ParameterExpression> Parameters
-        {
-            get { return _parameters; }
-        }
+        public ReadOnlyCollection<ParameterExpression> Parameters => _parameters;
 
         /// <summary>
         /// Gets the name of the lambda expression. 
         /// </summary>
         /// <remarks>Used for debugging purposes.</remarks>
-        public string Name
-        {
-            get { return _name; }
-        }
+        public string Name => _name;
 
         /// <summary>
         /// Gets the body of the lambda expression. 
         /// </summary>
-        public Expression Body
-        {
-            get { return _body; }
-        }
+        public Expression Body => _body;
 
         /// <summary>
         /// Gets the return type of the lambda expression. 
         /// </summary>
-        public Type ReturnType
-        {
-            get { return Type.GetMethod("Invoke").ReturnType; }
-        }
+        public Type ReturnType => Type.GetMethod("Invoke").ReturnType;
 
         /// <summary>
         /// Gets the value that indicates if the lambda expression will be compiled with
         /// tail call optimization. 
         /// </summary>
-        public bool TailCall
-        {
-            get { return _tailCall; }
-        }
+        public bool TailCall => _tailCall;
 
         /// <summary>
         /// Produces a delegate that represents the lambda expression.
@@ -366,8 +345,7 @@ namespace System.Linq.Expressions
             ValidateLambdaArgs(typeof(TDelegate), ref body, parameterList, nameof(TDelegate));
             return new Expression<TDelegate>(body, name, tailCall, parameterList);
         }
-
-
+        
         /// <summary>
         /// Creates a LambdaExpression by first constructing a delegate type. 
         /// </summary>

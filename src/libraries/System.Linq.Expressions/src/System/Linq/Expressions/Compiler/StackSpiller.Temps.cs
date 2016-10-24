@@ -35,10 +35,7 @@ namespace System.Linq.Expressions.Compiler
             /// </summary>
             private List<ParameterExpression> _temps = new List<ParameterExpression>();
 
-            internal List<ParameterExpression> Temps
-            {
-                get { return _temps; }
-            }
+            internal List<ParameterExpression> Temps => _temps;
 
             internal ParameterExpression Temp(Type type)
             {
@@ -267,15 +264,9 @@ namespace System.Linq.Expressions.Compiler
                 return true;
             }
 
-            internal bool Rewrite
-            {
-                get { return _action != RewriteAction.None; }
-            }
+            internal bool Rewrite => _action != RewriteAction.None;
 
-            internal RewriteAction Action
-            {
-                get { return _action; }
-            }
+            internal RewriteAction Action => _action;
 
             internal Result Finish(Expression expr)
             {
