@@ -441,6 +441,10 @@ PCODE MethodDesc::MakeJitWorker(COR_ILMETHOD_DECODER* ILHeader, DWORD flags, DWO
                     COR_ILMETHOD *pilHeader = GetILHeader(TRUE);
                     new (ILHeader) COR_ILMETHOD_DECODER(pilHeader, GetMDImport(), NULL);
                 }
+                else
+                {
+                    g_profControlBlock.pProfInterface->DynamicMethodJITCompilationStarted((FunctionID) this, TRUE, (LPCBYTE)ILHeader, ILHeader->GetSize());
+                }
                 END_PIN_PROFILER();
             }
 #endif // PROFILING_SUPPORTED
@@ -592,6 +596,10 @@ GotNewCode:
                         JITCompilationFinished((FunctionID) this,
                                                 pEntry->m_hrResultCode, 
                                                 TRUE);
+                }
+                else
+                {
+                    g_profControlBlock.pProfInterface->DynamicMethodJITCompilationFinished((FunctionID) this, pEntry->m_hrResultCode, TRUE);
                 }
                 END_PIN_PROFILER();
             }

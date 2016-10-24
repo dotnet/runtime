@@ -585,6 +585,10 @@ COM_METHOD ProfToEEInterfaceImpl::QueryInterface(REFIID id, void ** pInterface)
     {
         *pInterface = static_cast<ICorProfilerInfo7 *>(this);
     }
+    else if (id == IID_ICorProfilerInfo8)
+    {
+        *pInterface = static_cast<ICorProfilerInfo8 *>(this);
+    }
     else if (id == IID_IUnknown)
     {
         *pInterface = static_cast<IUnknown *>(static_cast<ICorProfilerInfo *>(this));
@@ -1959,7 +1963,7 @@ HRESULT GetFunctionInfoInternal(LPCBYTE ip, EECodeInfo * pCodeInfo)
 }
 
 
-HRESULT GetFunctionFromIPInternal(LPCBYTE ip, EECodeInfo * pCodeInfo)
+HRESULT GetFunctionFromIPInternal(LPCBYTE ip, EECodeInfo * pCodeInfo, BOOL failOnNoMetadata)
 {
     CONTRACTL
     {
@@ -1979,11 +1983,14 @@ HRESULT GetFunctionFromIPInternal(LPCBYTE ip, EECodeInfo * pCodeInfo)
     {
         return hr;
     }
-    
-    // never return a method that the user of the profiler API cannot use
-    if (pCodeInfo->GetMethodDesc()->IsNoMetadata())
+
+    if (failOnNoMetadata)
     {
-        return E_FAIL;
+        // never return a method that the user of the profiler API cannot use
+        if (pCodeInfo->GetMethodDesc()->IsNoMetadata())
+        {
+            return E_FAIL;
+        }
     }
 
     return S_OK;
@@ -2043,7 +2050,7 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionFromIP(LPCBYTE ip, FunctionID * pFunct
 
     EECodeInfo codeInfo;
 
-    hr = GetFunctionFromIPInternal(ip, &codeInfo);
+    hr = GetFunctionFromIPInternal(ip, &codeInfo, /* failOnNoMetadata */ TRUE);
     if (FAILED(hr))
     {
         return hr;
@@ -2096,7 +2103,7 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionFromIP2(LPCBYTE ip, FunctionID * pFunc
 
     EECodeInfo codeInfo;
 
-    hr = GetFunctionFromIPInternal(ip, &codeInfo);
+    hr = GetFunctionFromIPInternal(ip, &codeInfo, /* failOnNoMetadata */ TRUE);
     if (FAILED(hr))
     {
         return hr;
@@ -6369,6 +6376,294 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionInfo2(FunctionID funcId,
     }
 
     return S_OK;
+}
+
+/*
+* IsFunctionDynamic
+*
+* This function takes a functionId that maybe of a metadata-less method like an IL Stub
+* or LCG method and returns true in the pHasNoMetadata if it is indeed a metadata-less
+* method.
+*
+* Parameters:
+*   functionId - The function that is being requested.
+*   isDynamic - An optional parameter for returning if the function has metadata or not.
+*
+* Returns:
+*   S_OK if successful.
+*/
+HRESULT ProfToEEInterfaceImpl::IsFunctionDynamic(FunctionID functionId, BOOL *isDynamic)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+
+        // Generics::GetExactInstantiationsOfMethodAndItsClassFromCallInformation eventually
+        // reads metadata which causes us to take a reader lock.  However, see
+        // code:#DisableLockOnAsyncCalls
+        DISABLED(CAN_TAKE_LOCK);
+
+        // Asynchronous functions can be called at arbitrary times when runtime 
+        // is holding locks that cannot be reentered without causing deadlock.
+        // This contract detects any attempts to reenter locks held at the time 
+        // this function was called.  
+        CANNOT_RETAKE_LOCK;
+
+        SO_NOT_MAINLINE;
+
+        PRECONDITION(CheckPointer(isDynamic, NULL_OK));
+    }
+    CONTRACTL_END;
+
+    // See code:#DisableLockOnAsyncCalls
+    PERMANENT_CONTRACT_VIOLATION(TakesLockViolation, ReasonProfilerAsyncCannotRetakeLock);
+
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(kP2EEAllowableAfterAttach,
+        (LF_CORPROF,
+            LL_INFO1000,
+            "**PROF: IsFunctionDynamic 0x%p.\n",
+            functionId));
+
+    //
+    // Verify parameters.
+    //
+
+    if (functionId == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    MethodDesc *pMethDesc = FunctionIdToMethodDesc(functionId);
+
+    if (pMethDesc == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    // it's not safe to examine a methoddesc that has not been restored so do not do so
+    if (!pMethDesc->IsRestored())
+        return CORPROF_E_DATAINCOMPLETE;
+
+    //
+    // Fill in the pHasNoMetadata, if desired.
+    //
+    if (isDynamic != NULL)
+    {
+        *isDynamic = pMethDesc->IsNoMetadata();
+    }
+
+    return S_OK;
+}
+
+/*
+* GetFunctionFromIP3
+*
+* This function takes an IP and determines if it is a managed function returning its
+* FunctionID. This method is different from GetFunctionFromIP in that will return
+* FunctionIDs even if they have no associated metadata.
+*
+* Parameters:
+*   ip - The instruction pointer.
+*   pFunctionId - An optional parameter for returning the FunctionID.
+*   pReJitId - The ReJIT id.
+*
+* Returns:
+*   S_OK if successful.
+*/
+HRESULT ProfToEEInterfaceImpl::GetFunctionFromIP3(LPCBYTE ip, FunctionID * pFunctionId, ReJITID * pReJitId)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+
+        // Grabbing the rejitid requires entering the rejit manager's hash table & lock,
+        // which can switch us to preemptive mode and trigger GCs
+        GC_TRIGGERS;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+
+        // Grabbing the rejitid requires entering the rejit manager's hash table & lock,
+        CAN_TAKE_LOCK;
+
+        SO_NOT_MAINLINE;
+    }
+    CONTRACTL_END;
+
+    // See code:#DisableLockOnAsyncCalls
+    PERMANENT_CONTRACT_VIOLATION(TakesLockViolation, ReasonProfilerAsyncCannotRetakeLock);
+
+    PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(
+        kP2EEAllowableAfterAttach | kP2EETriggers,
+        (LF_CORPROF,
+            LL_INFO1000,
+            "**PROF: GetFunctionFromIP3 0x%p.\n",
+            ip));
+
+    HRESULT hr = S_OK;
+
+    EECodeInfo codeInfo;
+
+    hr = GetFunctionFromIPInternal(ip, &codeInfo, /* failOnNoMetadata */ FALSE);
+    if (FAILED(hr))
+    {
+        return hr;
+    }
+
+    if (pFunctionId)
+    {
+        *pFunctionId = MethodDescToFunctionID(codeInfo.GetMethodDesc());
+    }
+
+    if (pReJitId != NULL)
+    {
+        MethodDesc * pMD = codeInfo.GetMethodDesc();
+        *pReJitId = pMD->GetReJitManager()->GetReJitId(pMD, codeInfo.GetStartAddress());
+    }
+
+    return S_OK;
+}
+
+/*
+* GetDynamicFunctionInfo
+*
+* This function takes a functionId that maybe of a metadata-less method like an IL Stub
+* or LCG method and gives information about it without failing like GetFunctionInfo.
+*
+* Parameters:
+*   functionId - The function that is being requested.
+*   pModuleId - An optional parameter for returning the module of the function.
+*   ppvSig -  An optional parameter for returning the signature of the function.
+*   pbSig - An optional parameter for returning the size of the signature of the function.
+*   cchName - A parameter for indicating the size of buffer for the wszName parameter.
+*   pcchName - An optional parameter for returning the true size of the wszName parameter.
+*   wszName - A parameter to the caller allocated buffer of size cchName
+*
+* Returns:
+*   S_OK if successful.
+*/
+HRESULT ProfToEEInterfaceImpl::GetDynamicFunctionInfo(FunctionID functionId,
+                                                      ModuleID *pModuleId,
+                                                      PCCOR_SIGNATURE* ppvSig,
+                                                      ULONG* pbSig,
+                                                      ULONG cchName,
+                                                      ULONG *pcchName,
+            __out_ecount_part_opt(cchName, *pcchName) WCHAR wszName[])
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+
+        // Generics::GetExactInstantiationsOfMethodAndItsClassFromCallInformation eventually
+        // reads metadata which causes us to take a reader lock.  However, see
+        // code:#DisableLockOnAsyncCalls
+        DISABLED(CAN_TAKE_LOCK);
+
+        // Asynchronous functions can be called at arbitrary times when runtime 
+        // is holding locks that cannot be reentered without causing deadlock.
+        // This contract detects any attempts to reenter locks held at the time 
+        // this function was called.  
+        CANNOT_RETAKE_LOCK;
+
+        SO_NOT_MAINLINE;
+
+        PRECONDITION(CheckPointer(pModuleId, NULL_OK));
+        PRECONDITION(CheckPointer(ppvSig, NULL_OK));
+        PRECONDITION(CheckPointer(pbSig,  NULL_OK));
+        PRECONDITION(CheckPointer(pcchName, NULL_OK));
+    }
+    CONTRACTL_END;
+
+    // See code:#DisableLockOnAsyncCalls
+    PERMANENT_CONTRACT_VIOLATION(TakesLockViolation, ReasonProfilerAsyncCannotRetakeLock);
+
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(kP2EEAllowableAfterAttach,
+        (LF_CORPROF,
+            LL_INFO1000,
+            "**PROF: GetDynamicFunctionInfo 0x%p.\n",
+            functionId));
+
+    //
+    // Verify parameters.
+    //
+
+    if (functionId == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    MethodDesc *pMethDesc = FunctionIdToMethodDesc(functionId);
+
+    if (pMethDesc == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    // it's not safe to examine a methoddesc that has not been restored so do not do so
+    if (!pMethDesc->IsRestored())
+        return CORPROF_E_DATAINCOMPLETE;
+
+
+    if (!pMethDesc->IsNoMetadata())
+        return E_INVALIDARG;
+
+    //
+    // Fill in the ModuleId, if desired.
+    //
+    if (pModuleId != NULL)
+    {
+        *pModuleId = (ModuleID)pMethDesc->GetModule();
+    }
+
+    //
+    // Fill in the ppvSig and pbSig, if desired
+    //
+    if (ppvSig != NULL && pbSig != NULL)
+    {
+        pMethDesc->GetSig(ppvSig, pbSig);
+    }
+
+    HRESULT hr = S_OK;
+
+    EX_TRY
+    {
+        if (wszName != NULL)
+            *wszName = 0;
+        if (pcchName != NULL)
+            *pcchName = 0;
+
+        StackSString ss;
+        ss.SetUTF8(pMethDesc->GetName());
+        ss.Normalize();
+        LPCWSTR methodName = ss.GetUnicode();
+
+        ULONG trueLen = (ULONG)(wcslen(methodName) + 1);
+
+        // Return name of method as required.
+        if (wszName && cchName > 0)
+        {
+            if (cchName < trueLen)
+            {
+                hr = HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
+            }
+            else
+            {
+                wcsncpy_s(wszName, cchName, methodName, trueLen);
+            }
+        }
+
+        // If they request the actual length of the name
+        if (pcchName)
+            *pcchName = trueLen;
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return (hr);
 }
 
 /*
