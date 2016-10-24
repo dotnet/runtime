@@ -130,14 +130,7 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_tcplistener_mustbestopped);
             }
 
-            if (allowed)
-            {
-                _serverSocket.SetIPProtectionLevel(IPProtectionLevel.Unrestricted);
-            }
-            else
-            {
-                _serverSocket.SetIPProtectionLevel(IPProtectionLevel.EdgeRestricted);
-            }
+            _serverSocket.SetIPProtectionLevel(allowed ? IPProtectionLevel.Unrestricted : IPProtectionLevel.EdgeRestricted);
         }
 
         // Starts listening to network requests.

@@ -297,24 +297,19 @@ namespace System.Net.Sockets.Tests
         [OuterLoop] // TODO: Issue #11345
         [Theory]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [InlineData(IPProtectionLevel.EdgeRestricted)]
-        [InlineData(IPProtectionLevel.Restricted)]
-        [InlineData(IPProtectionLevel.Unrestricted)]
-        public void SetIPProtectionLevel_Windows(IPProtectionLevel level)
+        [InlineData(IPProtectionLevel.EdgeRestricted, AddressFamily.InterNetwork, SocketOptionLevel.IP)]
+        [InlineData(IPProtectionLevel.Restricted, AddressFamily.InterNetwork, SocketOptionLevel.IP)]
+        [InlineData(IPProtectionLevel.Unrestricted, AddressFamily.InterNetwork, SocketOptionLevel.IP)]
+        [InlineData(IPProtectionLevel.EdgeRestricted, AddressFamily.InterNetworkV6, SocketOptionLevel.IPv6)]
+        [InlineData(IPProtectionLevel.Restricted, AddressFamily.InterNetworkV6, SocketOptionLevel.IPv6)]
+        [InlineData(IPProtectionLevel.Unrestricted, AddressFamily.InterNetworkV6, SocketOptionLevel.IPv6)]
+        public void SetIPProtectionLevel_Windows(IPProtectionLevel level, AddressFamily family, SocketOptionLevel optionLevel)
         {
-            using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            using (var socket = new Socket(family, SocketType.Stream, ProtocolType.Tcp))
             {
                 socket.SetIPProtectionLevel(level);
 
-                int result = (int)socket.GetSocketOption(SocketOptionLevel.IP, SocketOptionName.IPProtectionLevel);
-                Assert.Equal(result, (int)level);
-            }
-
-            using (var socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp))
-            {
-                socket.SetIPProtectionLevel(level);
-
-                int result = (int)socket.GetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPProtectionLevel);
+                int result = (int)socket.GetSocketOption(optionLevel, SocketOptionName.IPProtectionLevel);
                 Assert.Equal(result, (int)level);
             }
         }
@@ -322,34 +317,29 @@ namespace System.Net.Sockets.Tests
         [OuterLoop] // TODO: Issue #11345
         [Theory]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [InlineData(IPProtectionLevel.EdgeRestricted)]
-        [InlineData(IPProtectionLevel.Restricted)]
-        [InlineData(IPProtectionLevel.Unrestricted)]
-        public void SetIPProtectionLevel_Unix(IPProtectionLevel level)
+        [InlineData(IPProtectionLevel.EdgeRestricted, AddressFamily.InterNetwork)]
+        [InlineData(IPProtectionLevel.Restricted, AddressFamily.InterNetwork)]
+        [InlineData(IPProtectionLevel.Unrestricted, AddressFamily.InterNetwork)]
+        [InlineData(IPProtectionLevel.EdgeRestricted, AddressFamily.InterNetworkV6)]
+        [InlineData(IPProtectionLevel.Restricted, AddressFamily.InterNetworkV6)]
+        [InlineData(IPProtectionLevel.Unrestricted, AddressFamily.InterNetworkV6)]
+        public void SetIPProtectionLevel_Unix(IPProtectionLevel level, AddressFamily family)
         {
-            using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                Assert.Throws<PlatformNotSupportedException>(() => socket.SetIPProtectionLevel(level));
-            }
-
-            using (var socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp))
+            using (var socket = new Socket(family, SocketType.Stream, ProtocolType.Tcp))
             {
                 Assert.Throws<PlatformNotSupportedException>(() => socket.SetIPProtectionLevel(level));
             }
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [Fact]
-        public void SetIPProtectionLevel_ArgumentException()
+        [Theory]
+        [InlineData(AddressFamily.InterNetwork)]
+        [InlineData(AddressFamily.InterNetworkV6)]
+        public void SetIPProtectionLevel_ArgumentException(AddressFamily family)
         {
-            using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            using (var socket = new Socket(family, SocketType.Stream, ProtocolType.Tcp))
             {
-                Assert.Throws<ArgumentException>(() => socket.SetIPProtectionLevel(IPProtectionLevel.Unspecified));
-            }
-
-            using (var socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp))
-            {
-                Assert.Throws<ArgumentException>(() => socket.SetIPProtectionLevel(IPProtectionLevel.Unspecified));
+                Assert.Throws<ArgumentException>("level", () => socket.SetIPProtectionLevel(IPProtectionLevel.Unspecified));
             }
         }
     }

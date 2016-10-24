@@ -196,14 +196,7 @@ namespace System.Net.Sockets
 
         public void AllowNatTraversal(bool allowed)
         {
-            if (allowed)
-            {
-                _clientSocket.SetIPProtectionLevel(IPProtectionLevel.Unrestricted);
-            }
-            else
-            {
-                _clientSocket.SetIPProtectionLevel(IPProtectionLevel.EdgeRestricted);
-            }
+            _clientSocket.SetIPProtectionLevel(allowed ? IPProtectionLevel.Unrestricted : IPProtectionLevel.EdgeRestricted);
         }
 
         private bool _cleanedUp = false;
