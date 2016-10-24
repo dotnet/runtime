@@ -153,10 +153,6 @@ enum ICodeManagerFlags
     #define MAX_PREDECODED_SLOTS 64
 #endif
 
-#if defined(FEATURE_PAL) && !defined(STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY)
-#define STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY
-#endif
-
 
 
 enum GcInfoDecoderFlags
@@ -286,8 +282,6 @@ public:
     
     __forceinline void SetCurrentPos( size_t pos )
     {
-        STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY; // note: this will set only the host instance, not the target instance
-
         size_t adjPos = pos + m_InitialRelPos;
         m_pCurrent = m_pBuffer + adjPos / BITS_PER_SIZE_T;
         m_RelPos = (int)(adjPos % BITS_PER_SIZE_T);
