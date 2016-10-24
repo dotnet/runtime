@@ -10500,7 +10500,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		mini_llvm_init ();
 
 		if (acfg->aot_opts.asm_only && !acfg->aot_opts.llvm_outfile) {
-			aot_printerrf (acfg, "Compiling with LLVM and the asm-only option requires the llvm-outputfile= option.");
+			aot_printerrf (acfg, "Compiling with LLVM and the asm-only option requires the llvm-outfile= option.\n");
 			return 1;
 		}
 	}
