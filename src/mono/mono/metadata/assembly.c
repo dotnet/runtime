@@ -570,7 +570,7 @@ mono_assembly_getrootdir (void)
  * Returns: a string with the directory, this string should be freed by
  * the caller.
  */
-G_CONST_RETURN gchar *
+gchar *
 mono_native_getrootdir (void)
 {
 	gchar* fullpath = g_build_path (G_DIR_SEPARATOR_S, mono_assembly_getrootdir (), mono_config_get_reloc_lib_dir(), NULL);
