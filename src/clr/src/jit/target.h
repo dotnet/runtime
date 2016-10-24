@@ -6,11 +6,6 @@
 #ifndef _TARGET_H_
 #define _TARGET_H_
 
-// Inform includers that we're in a context in which a target has been set.
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM_)
-#define _TARGET_SET_
-#endif
-
 // If the UNIX_AMD64_ABI is defined make sure that _TARGET_AMD64_ is also defined.
 #if defined(UNIX_AMD64_ABI)
 #if !defined(_TARGET_AMD64_)
