@@ -372,10 +372,26 @@ namespace System.IO {
                 }
 
                 Contract.Assert(byteBuffer != null, "expected byteBuffer to be non-null");
-                unsafe {
-                    fixed (byte* pBytes = byteBuffer)
-                    fixed (char* pChars = buffer) {
-                        charsRead = m_decoder.GetChars(pBytes + position, numBytes, pChars + index, charsRemaining, false);
+
+                checked
+                {
+                    if (position < 0 || numBytes < 0 || position + numBytes > byteBuffer.Length)
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(byteCount));
+                    }
+                    if (index < 0 || charsRemaining < 0 || index + charsRemaining > buffer.Length)
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(charsRemaining));
+                    }
+                    unsafe
+                    {
+                        fixed (byte* pBytes = byteBuffer)
+                        {
+                            fixed (char* pChars = buffer)
+                            {
+                                charsRead = m_decoder.GetChars(pBytes + position, numBytes, pChars + index, charsRemaining, false);
+                            }
+                        }
                     }
                 }
 
