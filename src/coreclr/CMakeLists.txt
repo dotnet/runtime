@@ -282,10 +282,8 @@ if (WIN32)
     endforeach (Definition)
   endforeach (Config)
 
-  if(NOT CLR_CMAKE_PLATFORM_ARCH_ARM64)
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /guard:cf")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /guard:cf")
-  endif (NOT CLR_CMAKE_PLATFORM_ARCH_ARM64)
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /guard:cf")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /guard:cf")
 
   # Incremental linking with CFG is broken until next VS release.
   # This needs to be appended to the last for each build type to override the default flag.
