@@ -194,6 +194,18 @@ namespace System.Net.Sockets
             }
         }
 
+        public void AllowNatTraversal(bool allowed)
+        {
+            if (allowed)
+            {
+                _clientSocket.SetIPProtectionLevel(IPProtectionLevel.Unrestricted);
+            }
+            else
+            {
+                _clientSocket.SetIPProtectionLevel(IPProtectionLevel.EdgeRestricted);
+            }
+        }
+
         private bool _cleanedUp = false;
         private void FreeResources()
         {

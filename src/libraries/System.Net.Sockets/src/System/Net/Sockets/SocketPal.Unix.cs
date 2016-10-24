@@ -943,6 +943,11 @@ namespace System.Net.Sockets
             }
         }
 
+        public static void SetIPProtectionLevel(Socket socket, SocketOptionLevel optionLevel, int protectionLevel)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         public static unsafe SocketError GetSockOpt(SafeCloseSocket handle, SocketOptionLevel optionLevel, SocketOptionName optionName, out int optionValue)
         {
             if (optionLevel == SocketOptionLevel.Socket)

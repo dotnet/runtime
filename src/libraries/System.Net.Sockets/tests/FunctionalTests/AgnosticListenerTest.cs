@@ -112,6 +112,33 @@ namespace System.Net.Sockets.Tests
             listener.Stop();
         }
 
+        [OuterLoop] // TODO: Issue #11345
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void AllowNatTraversal_Windows()
+        {
+            var l = new TcpListener(IPAddress.Any, 0);
+            l.AllowNatTraversal(true);
+            Assert.Equal((int)IPProtectionLevel.Unrestricted, (int)l.Server.GetSocketOption(SocketOptionLevel.IP, SocketOptionName.IPProtectionLevel));
+
+            l = new TcpListener(IPAddress.Any, 0);
+            l.AllowNatTraversal(false);
+            Assert.Equal((int)IPProtectionLevel.EdgeRestricted, (int)l.Server.GetSocketOption(SocketOptionLevel.IP, SocketOptionName.IPProtectionLevel));
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void AllowNatTraversal_AnyUnix()
+        {
+            var l = new TcpListener(IPAddress.Any, 0);
+            Assert.Throws<PlatformNotSupportedException>(() => l.AllowNatTraversal(true));
+
+            l = new TcpListener(IPAddress.Any, 0);
+            Assert.Throws<PlatformNotSupportedException>(() => l.AllowNatTraversal(false));
+        }
+
+
         #region GC Finalizer test
         // This test assumes sequential execution of tests and that it is going to be executed after other tests
         // that used Sockets.
