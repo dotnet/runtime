@@ -14,6 +14,7 @@
 #include <signal.h>
 #include <math.h>
 #include <conio.h>
+#include <assert.h>
 
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/loader.h>
