@@ -126,7 +126,7 @@ namespace System.Linq.Expressions.Compiler
         internal void EmitCacheConstants(LambdaCompiler lc)
         {
             int count = 0;
-            foreach (var reference in _references)
+            foreach (KeyValuePair<TypedConstant, int> reference in _references)
             {
 #if FEATURE_COMPILE_TO_METHODBUILDER
                 if (!lc.CanEmitBoundConstants)
@@ -150,7 +150,7 @@ namespace System.Linq.Expressions.Compiler
             // need to clear any locals from last time.
             _cache.Clear();
 
-            foreach (var reference in _references)
+            foreach (KeyValuePair<TypedConstant, int> reference in _references)
             {
                 if (ShouldCache(reference.Value))
                 {

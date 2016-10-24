@@ -472,7 +472,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 if (args != null)
                 {
-                    foreach (var arg in _byrefArgs)
+                    foreach (ByRefUpdater arg in _byrefArgs)
                     {
                         if (arg.ArgumentIndex == -1)
                         {

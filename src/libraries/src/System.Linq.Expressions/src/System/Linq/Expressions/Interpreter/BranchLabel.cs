@@ -62,7 +62,7 @@ namespace System.Linq.Expressions.Interpreter
 
             if (_forwardBranchFixups != null)
             {
-                foreach (var branchIndex in _forwardBranchFixups)
+                foreach (int branchIndex in _forwardBranchFixups)
                 {
                     FixupBranch(instructions, branchIndex);
                 }
