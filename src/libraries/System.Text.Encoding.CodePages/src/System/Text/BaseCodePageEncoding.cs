@@ -7,6 +7,7 @@ using System.IO;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
+using System.Runtime.Serialization;
 
 namespace System.Text
 {
@@ -40,8 +41,8 @@ namespace System.Text
     //       WORD        byteReplace;    // 2 bytes = 48     // default replacement byte(s)
     //       BYTE[]      data;           // data section
     //   }
-
-    internal abstract class BaseCodePageEncoding : EncodingNLS
+    [Serializable]
+    internal abstract class BaseCodePageEncoding : EncodingNLS, ISerializable
     {
         internal const String CODE_PAGE_DATA_FILE_NAME = "codepages.nlp";
 
@@ -76,6 +77,12 @@ namespace System.Text
             // Remember number of code pages that we'll be using the table for.
             dataTableCodePage = dataCodePage;
             LoadCodePageTables();
+        }
+
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            CodePageEncodingSurrogate.SerializeEncoding(this, info, context);
+            info.SetType(typeof(CodePageEncodingSurrogate));
         }
 
         // Just a helper as we cannot use 'this' when calling 'base(...)' 

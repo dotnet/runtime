@@ -44,6 +44,8 @@ For Ubuntu 14.04, install the following packages:
 
 `sudo apt-get install libunwind8 libicu52 curl`
 
+For Ubuntu 16.x you may need to replace libicu52 with libicu57.
+
 In addition to the above packages, the runtime versions of the packages listed
 in the native section should also be installed (this happens automatically on
 most systems when you install the development packages).

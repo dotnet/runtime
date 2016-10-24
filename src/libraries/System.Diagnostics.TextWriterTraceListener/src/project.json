@@ -3,18 +3,15 @@
     "netstandard1.3": {
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.1",
-        "System.Diagnostics.Tools": "4.0.0",
+        "System.Diagnostics.Tools": "4.0.1",
         "System.Diagnostics.TraceSource": "4.0.0",
-        "System.Globalization": "4.0.10",
-        "System.IO": "4.0.10",
-        "System.Resources.ResourceManager": "4.0.0",
-        "System.Runtime": "4.0.20",
-        "System.Threading": "4.0.10",
-        "System.Threading.Tasks": "4.0.10"
-      },
-      "imports": [
-        "dotnet5.4"
-      ]
+        "System.Globalization": "4.0.11",
+        "System.IO": "4.1.0",
+        "System.Resources.ResourceManager": "4.0.1",
+        "System.Runtime": "4.1.0",
+        "System.Threading": "4.0.11",
+        "System.Threading.Tasks": "4.0.11"
+      }
     },
     "net46": {
       "dependencies": {

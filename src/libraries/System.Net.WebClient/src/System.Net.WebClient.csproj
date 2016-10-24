@@ -33,5 +33,14 @@
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- TODO: Remove these reference once packages are updated -->
+    <ProjectReference Include="..\..\System.Net.Primitives\ref\System.Net.Primitives.csproj">
+      <UndefineProperties>TargetGroup;OSGroup</UndefineProperties>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Net.Requests\ref\System.Net.Requests.csproj">
+      <UndefineProperties>TargetGroup;OSGroup</UndefineProperties>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

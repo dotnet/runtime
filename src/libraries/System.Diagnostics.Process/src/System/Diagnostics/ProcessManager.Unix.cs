@@ -78,6 +78,9 @@ namespace System.Diagnostics
                 throw new PlatformNotSupportedException(SR.RemoteMachinesNotSupported);
             }
         }
-
+        public static IntPtr GetMainWindowHandle(int processId)
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 }

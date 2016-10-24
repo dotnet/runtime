@@ -8,6 +8,7 @@ using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using System.Security.Principal;
 
 namespace System.Security.Claims
@@ -15,8 +16,19 @@ namespace System.Security.Claims
     /// <summary>
     /// An Identity that is represented by a set of claims.
     /// </summary>
+    [Serializable]
     public class ClaimsIdentity : IIdentity
     {
+        private const string PreFix = "System.Security.ClaimsIdentity.";
+        private const string ActorKey = PreFix + "actor";
+        private const string AuthenticationTypeKey = PreFix + "authenticationType";
+        private const string BootstrapContextKey = PreFix + "bootstrapContext";
+        private const string ClaimsKey = PreFix + "claims";
+        private const string LabelKey = PreFix + "label";
+        private const string NameClaimTypeKey = PreFix + "nameClaimType";
+        private const string RoleClaimTypeKey = PreFix + "roleClaimType";
+        private const string VersionKey = PreFix + "version";
+
         private enum SerializationMask
         {
             None = 0,
@@ -29,16 +41,24 @@ namespace System.Security.Claims
             Actor = 64,
             UserData = 128,
         }
+
+        [NonSerialized]
         private byte[] _userSerializationData;
 
         private ClaimsIdentity _actor;
         private string _authenticationType;
         private object _bootstrapContext;
+        [NonSerialized]
         private Collection<IEnumerable<Claim>> _externalClaims = new Collection<IEnumerable<Claim>>();
         private string _label;
+        [NonSerialized]
         private List<Claim> _instanceClaims = new List<Claim>();
+        [NonSerialized]
         private string _nameClaimType = DefaultNameClaimType;
+        [NonSerialized]
         private string _roleClaimType = DefaultRoleClaimType;
+        private string _serializedNameType;
+        private string _serializedRoleType;
 
         public const string DefaultIssuer = @"LOCAL AUTHORITY";
         public const string DefaultNameClaimType = ClaimTypes.Name;
@@ -236,6 +256,35 @@ namespace System.Security.Claims
             }
 
             SafeAddClaims(other._instanceClaims);
+        }
+
+        protected ClaimsIdentity(SerializationInfo info, StreamingContext context)
+        {
+            if (null == info)
+            {
+                throw new ArgumentNullException(nameof(info));
+            }
+
+            Deserialize(info, context, true);
+        }
+
+        /// <summary>
+        /// Initializes an instance of <see cref="Identity"/> from a serialized stream created via 
+        /// <see cref="ISerializable"/>.
+        /// </summary>
+        /// <param name="info">
+        /// The <see cref="SerializationInfo"/> to read from.
+        /// </param>
+        /// <exception cref="ArgumentNullException">Thrown is the <paramref name="info"/> is null.</exception>
+        [SecurityCritical]
+        protected ClaimsIdentity(SerializationInfo info)
+        {
+            if (null == info)
+            {
+                throw new ArgumentNullException(nameof(info));
+            }
+
+            Deserialize(info, new StreamingContext(), false);
         }
 
         /// <summary>
@@ -958,6 +1007,108 @@ namespace System.Security.Claims
             }
 
             return false;
+        }
+
+        [OnSerializing]
+        private void OnSerializingMethod(StreamingContext context)
+        {
+            if (this is ISerializable)
+            {
+                return;
+            }
+
+            _serializedNameType = _nameClaimType;
+            _serializedRoleType = _roleClaimType;
+            if (_instanceClaims != null && _instanceClaims.Count > 0)
+            {
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_Serialization); // BinaryFormatter would be needed
+            }
+        }
+
+        [OnDeserialized]
+        private void OnDeserializedMethod(StreamingContext context)
+        {
+            if (this is ISerializable)
+            {
+                return;
+            }
+
+            _nameClaimType = string.IsNullOrEmpty(_serializedNameType) ? DefaultNameClaimType : _serializedNameType;
+            _roleClaimType = string.IsNullOrEmpty(_serializedRoleType) ? DefaultRoleClaimType : _serializedRoleType;
+        }
+
+        /// <summary>
+        /// Populates the specified <see cref="SerializationInfo"/> with the serialization data for the ClaimsIdentity
+        /// </summary>
+        /// <param name="info">The serialization information stream to write to. Satisfies ISerializable contract.</param>
+        /// <param name="context">Context for serialization. Can be null.</param>
+        /// <exception cref="ArgumentNullException">Thrown if the info parameter is null.</exception>
+        protected virtual void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            if (null == info)
+            {
+                throw new ArgumentNullException(nameof(info));
+            }
+
+            const string Version = "1.0";
+            info.AddValue(VersionKey, Version);
+            if (!string.IsNullOrEmpty(_authenticationType))
+            {
+                info.AddValue(AuthenticationTypeKey, _authenticationType);
+            }
+
+            info.AddValue(NameClaimTypeKey, _nameClaimType);
+            info.AddValue(RoleClaimTypeKey, _roleClaimType);
+
+            if (!string.IsNullOrEmpty(_label))
+            {
+                info.AddValue(LabelKey, _label);
+            }
+
+            // actor
+            if (_actor != null || _bootstrapContext != null || (_instanceClaims != null && _instanceClaims.Count > 0))
+            {
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_Serialization); // BinaryFormatter needed
+            }
+        }
+
+        private void Deserialize(SerializationInfo info, StreamingContext context, bool useContext)
+        {
+            if (null == info)
+            {
+                throw new ArgumentNullException(nameof(info));
+            }
+
+            SerializationInfoEnumerator enumerator = info.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                switch (enumerator.Name)
+                {
+                    case VersionKey:
+                        string version = info.GetString(VersionKey);
+                        break;
+
+                    case AuthenticationTypeKey:
+                        _authenticationType = info.GetString(AuthenticationTypeKey);
+                        break;
+
+                    case NameClaimTypeKey:
+                        _nameClaimType = info.GetString(NameClaimTypeKey);
+                        break;
+
+                    case RoleClaimTypeKey:
+                        _roleClaimType = info.GetString(RoleClaimTypeKey);
+                        break;
+
+                    case LabelKey:
+                        _label = info.GetString(LabelKey);
+                        break;
+
+                    default:
+                        // Ignore other fields for forward compatability.
+                        break;
+                }
+            }
         }
     }
 }
