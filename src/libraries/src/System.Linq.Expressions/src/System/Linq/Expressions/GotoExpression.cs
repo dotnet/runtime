@@ -53,44 +53,29 @@ namespace System.Linq.Expressions
         /// Gets the static type of the expression that this <see cref="Expression" /> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        public sealed override Type Type
-        {
-            get { return _type; }
-        }
+        public sealed override Type Type => _type;
 
         /// <summary>
         /// Returns the node type of this <see cref="Expression" />. (Inherited from <see cref="Expression" />.)
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
-        public sealed override ExpressionType NodeType
-        {
-            get { return ExpressionType.Goto; }
-        }
+        public sealed override ExpressionType NodeType => ExpressionType.Goto;
 
         /// <summary>
         /// The value passed to the target, or null if the target is of type
         /// System.Void.
         /// </summary>
-        public Expression Value
-        {
-            get { return _value; }
-        }
+        public Expression Value => _value;
 
         /// <summary>
         /// The target label where this node jumps to.
         /// </summary>
-        public LabelTarget Target
-        {
-            get { return _target; }
-        }
+        public LabelTarget Target => _target;
 
         /// <summary>
         /// The kind of the goto. For information purposes only.
         /// </summary>
-        public GotoExpressionKind Kind
-        {
-            get { return _kind; }
-        }
+        public GotoExpressionKind Kind => _kind;
 
         /// <summary>
         /// Dispatches to the specific visit method for this node type.

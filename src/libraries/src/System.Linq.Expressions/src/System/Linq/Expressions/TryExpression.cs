@@ -41,51 +41,33 @@ namespace System.Linq.Expressions
         /// Gets the static type of the expression that this <see cref="Expression" /> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        public sealed override Type Type
-        {
-            get { return _type; }
-        }
+        public sealed override Type Type => _type;
 
         /// <summary>
         /// Returns the node type of this <see cref="Expression" />. (Inherited from <see cref="Expression" />.)
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
-        public sealed override ExpressionType NodeType
-        {
-            get { return ExpressionType.Try; }
-        }
+        public sealed override ExpressionType NodeType => ExpressionType.Try;
 
         /// <summary>
         /// Gets the <see cref="Expression"/> representing the body of the try block.
         /// </summary>
-        public Expression Body
-        {
-            get { return _body; }
-        }
+        public Expression Body => _body;
 
         /// <summary>
         /// Gets the collection of <see cref="CatchBlock"/>s associated with the try block.
         /// </summary>
-        public ReadOnlyCollection<CatchBlock> Handlers
-        {
-            get { return _handlers; }
-        }
+        public ReadOnlyCollection<CatchBlock> Handlers => _handlers;
 
         /// <summary>
         /// Gets the <see cref="Expression"/> representing the finally block.
         /// </summary>
-        public Expression Finally
-        {
-            get { return _finally; }
-        }
+        public Expression Finally => _finally;
 
         /// <summary>
         /// Gets the <see cref="Expression"/> representing the fault block.
         /// </summary>
-        public Expression Fault
-        {
-            get { return _fault; }
-        }
+        public Expression Fault => _fault;
 
         /// <summary>
         /// Dispatches to the specific visit method for this node type.

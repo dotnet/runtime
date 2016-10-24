@@ -27,44 +27,29 @@ namespace System.Linq.Expressions
         /// Gets the static type of the expression that this <see cref="Expression" /> represents.
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        public sealed override Type Type
-        {
-            get { return _break == null ? typeof(void) : _break.Type; }
-        }
+        public sealed override Type Type => _break == null ? typeof(void) : _break.Type;
 
         /// <summary>
         /// Returns the node type of this Expression. Extension nodes should return
         /// ExpressionType.Extension when overriding this method.
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> of the expression.</returns>
-        public sealed override ExpressionType NodeType
-        {
-            get { return ExpressionType.Loop; }
-        }
+        public sealed override ExpressionType NodeType => ExpressionType.Loop;
 
         /// <summary>
         /// Gets the <see cref="Expression"/> that is the body of the loop.
         /// </summary>
-        public Expression Body
-        {
-            get { return _body; }
-        }
+        public Expression Body => _body;
 
         /// <summary>
         /// Gets the <see cref="LabelTarget"/> that is used by the loop body as a break statement target.
         /// </summary>
-        public LabelTarget BreakLabel
-        {
-            get { return _break; }
-        }
+        public LabelTarget BreakLabel => _break;
 
         /// <summary>
         /// Gets the <see cref="LabelTarget"/> that is used by the loop body as a continue statement target.
         /// </summary>
-        public LabelTarget ContinueLabel
-        {
-            get { return _continue; }
-        }
+        public LabelTarget ContinueLabel => _continue;
 
         /// <summary>
         /// Dispatches to the specific visit method for this node type.

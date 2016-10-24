@@ -76,43 +76,25 @@ namespace System.Linq.Expressions
         /// Gets the static type of the expression that this <see cref="Expression" /> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        public override Type Type
-        {
-            get { return typeof(object); }
-        }
+        public override Type Type => typeof(object);
 
         /// <summary>
         /// Returns the node type of this <see cref="Expression" />. (Inherited from <see cref="Expression" />.)
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
-        public sealed override ExpressionType NodeType
-        {
-            get { return ExpressionType.Parameter; }
-        }
+        public sealed override ExpressionType NodeType => ExpressionType.Parameter;
 
         /// <summary>
         /// The Name of the parameter or variable.
         /// </summary>
-        public string Name
-        {
-            get { return _name; }
-        }
+        public string Name => _name;
 
         /// <summary>
         /// Indicates that this ParameterExpression is to be treated as a ByRef parameter.
         /// </summary>
-        public bool IsByRef
-        {
-            get
-            {
-                return GetIsByRef();
-            }
-        }
+        public bool IsByRef => GetIsByRef();
 
-        internal virtual bool GetIsByRef()
-        {
-            return false;
-        }
+        internal virtual bool GetIsByRef() => false;
 
         /// <summary>
         /// Dispatches to the specific visit method for this node type.
@@ -135,10 +117,7 @@ namespace System.Linq.Expressions
         {
         }
 
-        internal override bool GetIsByRef()
-        {
-            return true;
-        }
+        internal override bool GetIsByRef() => true;
     }
 
     /// <summary>
@@ -155,10 +134,7 @@ namespace System.Linq.Expressions
             _paramType = type;
         }
 
-        public sealed override Type Type
-        {
-            get { return _paramType; }
-        }
+        public sealed override Type Type => _paramType;
     }
 
     /// <summary>
@@ -172,10 +148,7 @@ namespace System.Linq.Expressions
         {
         }
 
-        public sealed override Type Type
-        {
-            get { return typeof(T); }
-        }
+        public sealed override Type Type => typeof(T);
     }
 
     public partial class Expression

@@ -22,34 +22,20 @@ namespace System.Linq.Expressions
             _addMethod = addMethod;
             _arguments = arguments;
         }
+
         /// <summary>
         /// Gets the <see cref="MethodInfo"/> used to add elements to the object.
         /// </summary>
-        public MethodInfo AddMethod
-        {
-            get { return _addMethod; }
-        }
+        public MethodInfo AddMethod => _addMethod;
 
         /// <summary>
         /// Gets the list of elements to be added to the object.
         /// </summary>
-        public ReadOnlyCollection<Expression> Arguments
-        {
-            get { return _arguments; }
-        }
+        public ReadOnlyCollection<Expression> Arguments => _arguments;
 
-        public Expression GetArgument(int index)
-        {
-            return _arguments[index];
-        }
+        public Expression GetArgument(int index) => _arguments[index];
 
-        public int ArgumentCount
-        {
-            get
-            {
-                return _arguments.Count;
-            }
-        }
+        public int ArgumentCount => _arguments.Count;
 
         /// <summary>
         /// Creates a <see cref="String"/> representation of the node.
@@ -76,8 +62,7 @@ namespace System.Linq.Expressions
             return Expression.ElementInit(AddMethod, arguments);
         }
     }
-
-
+    
     public partial class Expression
     {
         /// <summary>

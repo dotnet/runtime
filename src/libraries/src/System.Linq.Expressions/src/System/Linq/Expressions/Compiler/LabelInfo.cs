@@ -65,20 +65,14 @@ namespace System.Linq.Expressions.Compiler
             _canReturn = canReturn;
         }
 
-        internal bool CanReturn
-        {
-            get { return _canReturn; }
-        }
+        internal bool CanReturn => _canReturn;
 
         /// <summary>
         /// Indicates if it is legal to emit a "branch" instruction based on
         /// currently available information. Call the Reference method before 
         /// using this property.
         /// </summary>
-        internal bool CanBranch
-        {
-            get { return _opCode != OpCodes.Leave; }
-        }
+        internal bool CanBranch => _opCode != OpCodes.Leave;
 
         internal void Reference(LabelScopeInfo block)
         {

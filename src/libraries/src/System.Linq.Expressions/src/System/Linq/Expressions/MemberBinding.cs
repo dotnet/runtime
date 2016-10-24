@@ -48,18 +48,12 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the type of binding that is represented.
         /// </summary>
-        public MemberBindingType BindingType
-        {
-            get { return _type; }
-        }
+        public MemberBindingType BindingType => _type;
 
         /// <summary>
         /// Gets the field or property to be initialized.
         /// </summary>
-        public MemberInfo Member
-        {
-            get { return _member; }
-        }
+        public MemberInfo Member => _member;
 
         /// <summary>
         /// Returns a <see cref="String"/> that represents the current <see cref="Object"/>. 

@@ -42,18 +42,12 @@ namespace System.Linq.Expressions
         /// Gets the static type of the expression that this <see cref="Expression" /> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        public sealed override Type Type
-        {
-            get { return _type; }
-        }
+        public sealed override Type Type => _type;
 
         /// <summary>
         /// Gets the bounds of the array if the value of the <see cref="P:NodeType"/> property is NewArrayBounds, or the values to initialize the elements of the new array if the value of the <see cref="P:NodeType"/> property is NewArrayInit. 
         /// </summary>
-        public ReadOnlyCollection<Expression> Expressions
-        {
-            get { return _expressions; }
-        }
+        public ReadOnlyCollection<Expression> Expressions => _expressions;
 
         /// <summary>
         /// Dispatches to the specific visit method for this node type.
@@ -96,10 +90,7 @@ namespace System.Linq.Expressions
         /// Returns the node type of this <see cref="Expression" />. (Inherited from <see cref="Expression" />.)
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
-        public sealed override ExpressionType NodeType
-        {
-            get { return ExpressionType.NewArrayInit; }
-        }
+        public sealed override ExpressionType NodeType => ExpressionType.NewArrayInit;
     }
 
     internal sealed class NewArrayBoundsExpression : NewArrayExpression
@@ -113,16 +104,12 @@ namespace System.Linq.Expressions
         /// Returns the node type of this <see cref="Expression" />. (Inherited from <see cref="Expression" />.)
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
-        public sealed override ExpressionType NodeType
-        {
-            get { return ExpressionType.NewArrayBounds; }
-        }
+        public sealed override ExpressionType NodeType => ExpressionType.NewArrayBounds;
     }
 
     public partial class Expression
     {
         #region NewArrayInit
-
 
         /// <summary>
         /// Creates a new array expression of the specified type from the provided initializers.
@@ -201,7 +188,6 @@ namespace System.Linq.Expressions
 
         #region NewArrayBounds
 
-
         /// <summary>
         /// Creates a <see cref="NewArrayExpression"/> that represents creating an array that has a specified rank. 
         /// </summary>
@@ -212,7 +198,6 @@ namespace System.Linq.Expressions
         {
             return NewArrayBounds(type, (IEnumerable<Expression>)bounds);
         }
-
 
         /// <summary>
         /// Creates a <see cref="NewArrayExpression"/> that represents creating an array that has a specified rank. 
@@ -270,7 +255,7 @@ namespace System.Linq.Expressions
 
             return NewArrayExpression.Make(ExpressionType.NewArrayBounds, arrayType, bounds.ToReadOnly());
         }
-        #endregion
 
+        #endregion
     }
 }
