@@ -17,7 +17,7 @@
 #endif
 
 #ifndef GCINFODECODER_CONTRACT
-#define GCINFODECODER_CONTRACT(contract) contract
+#define GCINFODECODER_CONTRACT LIMITED_METHOD_CONTRACT
 #endif // !GCINFODECODER_CONTRACT
 
 
@@ -1430,10 +1430,7 @@ void GcInfoDecoder::ReportRegisterToGC(  // AMD64
                                 GCEnumCallback  pCallBack,
                                 LPVOID          hCallBack)
 {
-    GCINFODECODER_CONTRACT(CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END);
+    GCINFODECODER_CONTRACT;
 
     _ASSERTE(regNum >= 0 && regNum <= 16);
     _ASSERTE(regNum != 4);  // rsp
@@ -1567,10 +1564,7 @@ void GcInfoDecoder::ReportRegisterToGC(  // ARM
                                 GCEnumCallback  pCallBack,
                                 LPVOID          hCallBack)
 {
-    GCINFODECODER_CONTRACT(CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END);
+    GCINFODECODER_CONTRACT;
 
     _ASSERTE(regNum >= 0 && regNum <= 14);
     _ASSERTE(regNum != 13);  // sp
@@ -1661,10 +1655,7 @@ void GcInfoDecoder::ReportRegisterToGC( // ARM64
                                 GCEnumCallback  pCallBack,
                                 LPVOID          hCallBack)
 {
-    GCINFODECODER_CONTRACT(CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END);
+    GCINFODECODER_CONTRACT;
 
     _ASSERTE(regNum >= 0 && regNum <= 30);
     _ASSERTE(regNum != 18);
@@ -1821,10 +1812,7 @@ void GcInfoDecoder::ReportStackSlotToGC(
                                 GCEnumCallback  pCallBack,
                                 LPVOID          hCallBack)
 {
-    GCINFODECODER_CONTRACT(CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END);
+    GCINFODECODER_CONTRACT;
 
     OBJECTREF* pObjRef = GetStackSlot(spOffset, spBase, pRD);
     _ASSERTE( IS_ALIGNED( pObjRef, sizeof( Object* ) ) );
