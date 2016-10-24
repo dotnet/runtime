@@ -112,7 +112,7 @@ inline BOOL IS_ALIGNED( void* val, size_t alignment )
 #ifndef _EETWAIN_H
 
 typedef void (*GCEnumCallback)(
-    LPVOID          hCallback,      // callback data
+    void *          hCallback,      // callback data
     OBJECTREF*      pObject,        // address of obect-reference we are reporting
     uint32_t        flags           // is this a pinned and/or interior pointer
 );
@@ -442,16 +442,16 @@ public:
     // This is used for gccoverage
     bool IsSafePoint(UINT32 codeOffset);
 
-    typedef void EnumerateSafePointsCallback (UINT32 offset, LPVOID hCallback);
-    void EnumerateSafePoints(EnumerateSafePointsCallback *pCallback, LPVOID hCallback);
+    typedef void EnumerateSafePointsCallback (UINT32 offset, void * hCallback);
+    void EnumerateSafePoints(EnumerateSafePointsCallback * pCallback, void * hCallback);
 
 #endif
     // Returns true to stop enumerating.
-    typedef bool EnumerateInterruptibleRangesCallback (UINT32 startOffset, UINT32 stopOffset, LPVOID hCallback);
+    typedef bool EnumerateInterruptibleRangesCallback (UINT32 startOffset, UINT32 stopOffset, void * hCallback);
 
     void EnumerateInterruptibleRanges (
                 EnumerateInterruptibleRangesCallback *pCallback,
-                LPVOID                                hCallback);
+                void *                                hCallback);
 
     //------------------------------------------------------------------------
     // GC lifetime information
@@ -462,7 +462,7 @@ public:
                 bool                reportScratchSlots,
                 unsigned            flags,
                 GCEnumCallback      pCallBack,
-                LPVOID              hCallBack
+                void *              hCallBack
                 );
 
     // Public for the gc info dumper
@@ -470,7 +470,7 @@ public:
                 PREGDISPLAY         pRD,
                 unsigned            flags,
                 GCEnumCallback      pCallBack,
-                LPVOID              hCallBack
+                void *              hCallBack
                 );
 
     //------------------------------------------------------------------------
@@ -539,7 +539,7 @@ private:
 #endif
     UINT32 m_Version;
 
-    static bool SetIsInterruptibleCB (UINT32 startOffset, UINT32 stopOffset, LPVOID hCallback);
+    static bool SetIsInterruptibleCB (UINT32 startOffset, UINT32 stopOffset, void * hCallback);
 
     OBJECTREF* GetRegisterSlot(
                         int             regNum,
@@ -571,7 +571,7 @@ private:
                 PREGDISPLAY         pRD,
                 unsigned            flags,
                 GCEnumCallback      pCallBack,
-                LPVOID              hCallBack
+                void *              hCallBack
                 );
 
     void ReportRegisterToGC(
@@ -580,7 +580,7 @@ private:
                                 PREGDISPLAY     pRD,
                                 unsigned        flags,
                                 GCEnumCallback  pCallBack,
-                                LPVOID          hCallBack
+                                void *          hCallBack
                                 );
 
     void ReportStackSlotToGC(
@@ -590,7 +590,7 @@ private:
                                 PREGDISPLAY     pRD,
                                 unsigned        flags,
                                 GCEnumCallback  pCallBack,
-                                LPVOID          hCallBack
+                                void *          hCallBack
                                 );
 
 
@@ -601,7 +601,7 @@ private:
                     bool                reportScratchSlots,
                     unsigned            inputFlags,
                     GCEnumCallback      pCallBack,
-                    LPVOID              hCallBack
+                    void *              hCallBack
                     )
     {
         _ASSERTE(slotIndex < slotDecoder.GetNumSlots());
