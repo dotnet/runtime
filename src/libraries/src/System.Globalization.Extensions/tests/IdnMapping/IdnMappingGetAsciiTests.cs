@@ -87,19 +87,18 @@ namespace System.Globalization.Tests
         [Fact]
         public void TestGetAsciiWithDot()
         {
-            string dot = ".";
-            IdnMapping mapping = new IdnMapping();
-            if (PlatformDetection.IsWindows ||
-                PlatformDetection.IsOSX ||
-                PlatformDetection.IsOpenSUSE ||
-                (PlatformDetection.IsUbuntu && !PlatformDetection.IsUbuntu1404))
+            string result = "";
+            Exception ex = Record.Exception(()=> result = new IdnMapping().GetAscii("."));
+            if (ex == null)
             {
-                Assert.Throws<ArgumentException>("unicode", () => mapping.GetAscii(dot));
+                // Windows and OSX always throw exception. some versions of Linux succeed and others throw exception
+                Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+                Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
+                Assert.Equal(result, ".");
             }
             else
             {
-                string result = mapping.GetAscii(dot);
-                Assert.Equal(dot, result);
+                Assert.True(ex is ArgumentException);
             }
         }
 
