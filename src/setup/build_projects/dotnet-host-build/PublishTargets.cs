@@ -230,6 +230,7 @@ namespace Microsoft.DotNet.Host.Build
             nameof(PublishTargets.PublishDotnetDebToolPackage),
             nameof(PublishTargets.PublishDebFilesToDebianRepo),
             nameof(PublishTargets.PublishCoreHostPackages),
+            nameof(PublishTargets.PublishManagedPackages),
             nameof(PublishTargets.PublishSharedFrameworkVersionBadge))]
         public static BuildTargetResult PublishArtifacts(BuildTargetContext c) => c.Success();
 
@@ -274,6 +275,22 @@ namespace Microsoft.DotNet.Host.Build
                 var hostBlob = $"{Channel}/Binaries/{SharedFrameworkNugetVersion}/{Path.GetFileName(file)}";
                 AzurePublisherTool.PublishFile(hostBlob, file);
                 Console.WriteLine($"Publishing package {hostBlob} to Azure.");
+            }
+
+            return c.Success();
+        }
+
+        [Target]
+        public static BuildTargetResult PublishManagedPackages(BuildTargetContext c)
+        {
+            if (EnvVars.Signed)
+            {
+                foreach (var file in Directory.GetFiles(Dirs.Packages, "*.nupkg"))
+                {
+                    var hostBlob = $"{Channel}/Binaries/{SharedFrameworkNugetVersion}/{Path.GetFileName(file)}";
+                    AzurePublisherTool.PublishFile(hostBlob, file);
+                    Console.WriteLine($"Publishing package {hostBlob} to Azure.");
+                }
             }
 
             return c.Success();
