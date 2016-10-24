@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.21005.1
+# Visual Studio 14
+VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.Pipes", "src\System.IO.Pipes.csproj", "{16EE5522-F387-4C9E-9EF2-B5134B043F37}"
 EndProject
@@ -24,10 +24,10 @@ Global
 		Windows_Release|Any CPU = Windows_Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{16EE5522-F387-4C9E-9EF2-B5134B043F37}.Debug|Any CPU.ActiveCfg = net46_Debug|Any CPU
-		{16EE5522-F387-4C9E-9EF2-B5134B043F37}.Debug|Any CPU.Build.0 = net46_Debug|Any CPU
-		{16EE5522-F387-4C9E-9EF2-B5134B043F37}.Release|Any CPU.ActiveCfg = net46_Release|Any CPU
-		{16EE5522-F387-4C9E-9EF2-B5134B043F37}.Release|Any CPU.Build.0 = net46_Release|Any CPU
+		{16EE5522-F387-4C9E-9EF2-B5134B043F37}.Debug|Any CPU.ActiveCfg = net463_Debug|Any CPU
+		{16EE5522-F387-4C9E-9EF2-B5134B043F37}.Debug|Any CPU.Build.0 = net463_Debug|Any CPU
+		{16EE5522-F387-4C9E-9EF2-B5134B043F37}.Release|Any CPU.ActiveCfg = net463_Release|Any CPU
+		{16EE5522-F387-4C9E-9EF2-B5134B043F37}.Release|Any CPU.Build.0 = net463_Release|Any CPU
 		{16EE5522-F387-4C9E-9EF2-B5134B043F37}.Unix_Debug|Any CPU.ActiveCfg = Unix_Debug|Any CPU
 		{16EE5522-F387-4C9E-9EF2-B5134B043F37}.Unix_Debug|Any CPU.Build.0 = Unix_Debug|Any CPU
 		{16EE5522-F387-4C9E-9EF2-B5134B043F37}.Unix_Release|Any CPU.ActiveCfg = Unix_Release|Any CPU

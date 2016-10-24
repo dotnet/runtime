@@ -60,6 +60,7 @@ namespace System.IO.Pipes
     }
     public sealed partial class NamedPipeServerStream : System.IO.Pipes.PipeStream
     {
+        public const int MaxAllowedServerInstances = -1;
         public NamedPipeServerStream(System.IO.Pipes.PipeDirection direction, bool isAsync, bool isConnected, Microsoft.Win32.SafeHandles.SafePipeHandle safePipeHandle) : base(default(System.IO.Pipes.PipeDirection), default(int)) { }
         public NamedPipeServerStream(string pipeName) : base(default(System.IO.Pipes.PipeDirection), default(int)) { }
         public NamedPipeServerStream(string pipeName, System.IO.Pipes.PipeDirection direction) : base(default(System.IO.Pipes.PipeDirection), default(int)) { }
@@ -70,6 +71,7 @@ namespace System.IO.Pipes
         public void Disconnect() { }
         ~NamedPipeServerStream() { }
         public string GetImpersonationUserName() { throw null; }
+        public void RunAsClient(System.IO.Pipes.PipeStreamImpersonationWorker impersonationWorker) { }
         public void WaitForConnection() { }
         public System.Threading.Tasks.Task WaitForConnectionAsync() { throw null; }
         public System.Threading.Tasks.Task WaitForConnectionAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
@@ -104,16 +106,22 @@ namespace System.IO.Pipes
         public virtual System.IO.Pipes.PipeTransmissionMode ReadMode { get { throw null; } set { } }
         public Microsoft.Win32.SafeHandles.SafePipeHandle SafePipeHandle { get { throw null; } }
         public virtual System.IO.Pipes.PipeTransmissionMode TransmissionMode { get { throw null; } }
+        protected internal virtual void CheckPipePropertyOperations() { }
+        protected internal void CheckReadOperations() { }
+        protected internal void CheckWriteOperations() { }
+        protected bool IsHandleExposed { get { throw null; } }
         protected override void Dispose(bool disposing) { }
         public override void Flush() { }
         public override int Read(byte[] buffer, int offset, int count) { throw null; }
         public override int ReadByte() { throw null; }
         public override long Seek(long offset, System.IO.SeekOrigin origin) { throw null; }
+        protected void InitializeHandle(Microsoft.Win32.SafeHandles.SafePipeHandle handle, bool isExposed, bool isAsync) { }
         public override void SetLength(long value) { }
         public void WaitForPipeDrain() { }
         public override void Write(byte[] buffer, int offset, int count) { }
         public override void WriteByte(byte value) { }
     }
+    public delegate void PipeStreamImpersonationWorker();
     public enum PipeTransmissionMode
     {
         Byte = 0,

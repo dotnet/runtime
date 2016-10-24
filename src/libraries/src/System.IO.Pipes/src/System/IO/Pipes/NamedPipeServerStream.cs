@@ -16,7 +16,7 @@ namespace System.IO.Pipes
     public sealed partial class NamedPipeServerStream : PipeStream
     {
         // Use the maximum number of server instances that the system resources allow
-        private const int MaxAllowedServerInstances = -1;
+        public const int MaxAllowedServerInstances = -1;
 
         [SecuritySafeCritical]
         public NamedPipeServerStream(String pipeName)
@@ -45,13 +45,13 @@ namespace System.IO.Pipes
         [SecuritySafeCritical]
         public NamedPipeServerStream(String pipeName, PipeDirection direction, int maxNumberOfServerInstances, PipeTransmissionMode transmissionMode, PipeOptions options)
             : this(pipeName, direction, maxNumberOfServerInstances, transmissionMode, options, 0, 0, HandleInheritability.None)
-        { 
+        {
         }
 
         [SecuritySafeCritical]
         public NamedPipeServerStream(String pipeName, PipeDirection direction, int maxNumberOfServerInstances, PipeTransmissionMode transmissionMode, PipeOptions options, int inBufferSize, int outBufferSize)
             : this(pipeName, direction, maxNumberOfServerInstances, transmissionMode, options, inBufferSize, outBufferSize, HandleInheritability.None)
-        { 
+        {
         }
 
         /// <summary>
@@ -137,7 +137,7 @@ namespace System.IO.Pipes
                 throw new ArgumentException(SR.Argument_InvalidHandle, nameof(safePipeHandle));
             }
             ValidateHandleIsPipe(safePipeHandle);
-            
+
             InitializeHandle(safePipeHandle, true, isAsync);
 
             if (isConnected)
@@ -202,9 +202,7 @@ namespace System.IO.Pipes
         }
     }
 
-#if RunAs
     // Users will use this delegate to specify a method to call while impersonating the client 
     // (see NamedPipeServerStream.RunAsClient).
     public delegate void PipeStreamImpersonationWorker();
-#endif
 }
