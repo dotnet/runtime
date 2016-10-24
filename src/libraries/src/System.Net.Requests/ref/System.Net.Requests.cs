@@ -32,7 +32,6 @@ namespace System.Net
         public string[] ProtectionRealm { get { throw null; } set { } }
         public bool MutuallyAuthenticated { get { throw null; } set { } }
     }
-    public delegate System.Net.IPEndPoint BindIPEndPoint(System.Net.ServicePoint servicePoint, System.Net.IPEndPoint remoteEndPoint, int retryCount);
     public class FileWebRequest : WebRequest, System.Runtime.Serialization.ISerializable
     {
         internal FileWebRequest() { }
@@ -72,6 +71,49 @@ namespace System.Net
         public override void Close() { throw null; }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         protected override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
+        public override System.IO.Stream GetResponseStream() { throw null; }
+    }
+    public sealed class FtpWebRequest : WebRequest
+    {
+        internal FtpWebRequest() { }
+        public System.Security.Cryptography.X509Certificates.X509CertificateCollection ClientCertificates { get { throw null; } set { } }
+        public override string ConnectionGroupName { get { throw null; } set { } }
+        public override long ContentLength { get { throw null; } set { } }
+        public long ContentOffset { get { throw null; } set { } }
+        public override string ContentType { get { throw null; } set { } }
+        public override System.Net.ICredentials Credentials { get { throw null; } set { } }
+        public override System.Net.WebHeaderCollection Headers { get { throw null; } }
+        public override string Method { get { throw null; } set { } }
+        public override bool PreAuthenticate { get { throw null; } set { } }
+        public override System.Net.IWebProxy Proxy { get { throw null; } set { } }
+        public string RenameTo { get { throw null; } set { } }
+        public override int Timeout { get { throw null; } set { } }
+        public bool EnableSsl { get { throw null; } set { } }
+        public bool UsePassive { get { throw null; } set { } }
+        public bool UseBinary { get { throw null; } set { } }
+        public bool KeepAlive { get { throw null; } set { } }
+        public int ReadWriteTimeout { get { throw null; } set { } }
+        public System.Net.ServicePoint ServicePoint { get { throw null; } }
+        public static new System.Net.Cache.RequestCachePolicy DefaultCachePolicy { get { throw null; } set { } }
+        public override System.Uri RequestUri { get { throw null; } }
+        public override bool UseDefaultCredentials { get { throw null; } set { } }
+        public override void Abort() { throw null; }
+        public override System.IAsyncResult BeginGetRequestStream(System.AsyncCallback callback, object state) { throw null; }
+        public override System.IAsyncResult BeginGetResponse(System.AsyncCallback callback, object state) { throw null; }
+        public override System.IO.Stream EndGetRequestStream(System.IAsyncResult asyncResult) { throw null; }
+        public override System.Net.WebResponse EndGetResponse(System.IAsyncResult asyncResult) { throw null; }
+        public override System.IO.Stream GetRequestStream() { throw null; }
+        public override System.Net.WebResponse GetResponse() { throw null; }
+    }
+    public class FtpWebResponse : WebResponse
+    {
+        internal FtpWebResponse() { }
+        public override long ContentLength { get { throw null; } }
+        public override string ContentType { get { throw null; } }
+        public override WebHeaderCollection Headers { get { throw null; } }
+        public override bool SupportsHeaders { get { throw null; } }
+        public override Uri ResponseUri { get { throw null; } }
+        public override void Close() { throw null; }
         public override System.IO.Stream GetResponseStream() { throw null; }
     }
     public partial class HttpWebRequest : System.Net.WebRequest
@@ -160,10 +202,6 @@ namespace System.Net
         System.Net.Authorization PreAuthenticate(System.Net.WebRequest request, System.Net.ICredentials credentials);
         bool CanPreAuthenticate { get; }
         string AuthenticationType { get; }
-    }
-    public interface ICertificatePolicy
-    {
-        bool CheckValidationResult(System.Net.ServicePoint srvPoint, System.Security.Cryptography.X509Certificates.X509Certificate certificate, System.Net.WebRequest request, int certificateProblem);
     }
     public interface ICredentialPolicy
     {
@@ -310,62 +348,6 @@ namespace System.Net
         public virtual System.IO.Stream GetResponseStream() { throw null; }
         protected virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
-    }
-
-    [Flags]
-    public enum SecurityProtocolType
-    {
-#pragma warning disable CS0618
-        Ssl3 = System.Security.Authentication.SslProtocols.Ssl3,
-#pragma warning restore CS0618
-        Tls = System.Security.Authentication.SslProtocols.Tls,
-        Tls11 = System.Security.Authentication.SslProtocols.Tls11,
-        Tls12 = System.Security.Authentication.SslProtocols.Tls12,
-    }
-    public class ServicePoint
-    {
-        internal ServicePoint() { }
-        public System.Net.BindIPEndPoint BindIPEndPointDelegate { get { throw null; } set { } }
-        public int ConnectionLeaseTimeout { get { throw null; } set { } }
-        public System.Uri Address { get { throw null; } }
-        public int MaxIdleTime { get { throw null; } set { } }
-        public bool UseNagleAlgorithm { get { throw null; } set { } }
-        public int ReceiveBufferSize { get { throw null; } set { } }
-        public bool Expect100Continue { get { throw null; } set { } }
-        public System.DateTime IdleSince { get { throw null; } }
-        public virtual System.Version ProtocolVersion { get { throw null; } }
-        public string ConnectionName { get { throw null; } }
-        public bool CloseConnectionGroup(string connectionGroupName) { throw null; }
-        public int ConnectionLimit { get { throw null; } set { } }
-        public int CurrentConnections { get { throw null; } }
-        public System.Security.Cryptography.X509Certificates.X509Certificate Certificate { get { throw null; } }
-        public System.Security.Cryptography.X509Certificates.X509Certificate ClientCertificate { get { throw null; } }
-        public bool SupportsPipelining { get { throw null; } }
-        public void SetTcpKeepAlive(bool enabled, int keepAliveTime, int keepAliveInterval) { throw null; }
-    }
-    public class ServicePointManager
-    {
-        public const int DefaultNonPersistentConnectionLimit = 4;
-        public const int DefaultPersistentConnectionLimit = 2;
-        private ServicePointManager() { }
-        public static System.Net.SecurityProtocolType SecurityProtocol { get { throw null; } set { } }
-        public static int MaxServicePoints { get { throw null; } set { } }
-        public static int DefaultConnectionLimit { get { throw null; } set { } }
-        public static int MaxServicePointIdleTime { get { throw null; } set { } }
-        public static bool UseNagleAlgorithm { get { throw null; } set { } }
-        public static bool Expect100Continue { get { throw null; } set { } }
-        public static bool EnableDnsRoundRobin { get { throw null; } set { } }
-        public static int DnsRefreshTimeout { get { throw null; } set { } }
-        [Obsolete("CertificatePolicy is obsoleted for this type, please use ServerCertificateValidationCallback instead. http://go.microsoft.com/fwlink/?linkid=14202")]
-        public static System.Net.ICertificatePolicy CertificatePolicy { get { throw null; } set { } }
-        public static System.Net.Security.RemoteCertificateValidationCallback ServerCertificateValidationCallback { get { throw null; } set { } }
-        public static bool ReusePort { get { throw null; } set { } }
-        public static bool CheckCertificateRevocationList { get { throw null; } set { } }
-        public static System.Net.Security.EncryptionPolicy EncryptionPolicy { get { throw null; } }
-        public static System.Net.ServicePoint FindServicePoint(System.Uri address) { throw null; }
-        public static System.Net.ServicePoint FindServicePoint(string uriString, System.Net.IWebProxy proxy) { throw null; }
-        public static System.Net.ServicePoint FindServicePoint(System.Uri address, System.Net.IWebProxy proxy) { throw null; }
-        public static void SetTcpKeepAlive(bool enabled, int keepAliveTime, int keepAliveInterval) { throw null; }
     }
 }
 namespace System.Net.Cache

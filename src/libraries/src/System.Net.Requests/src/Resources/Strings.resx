@@ -231,4 +231,115 @@
   <data name="net_WebHeaderInvalidNonAsciiChars" xml:space="preserve">
     <value>Specified value has invalid non-ASCII characters.</value>
   </data>
+  <data name="net_timeout" xml:space="preserve">
+    <value>The operation has timed out.</value>
+  </data>
+  <data name="net_completed_result" xml:space="preserve">
+    <value>This operation cannot be performed on a completed asynchronous result object.</value>
+  </data>
+  <data name="net_PropertyNotSupportedException" xml:space="preserve">
+    <value>This property is not supported by this class.</value>
+  </data>
+  <data name="net_securityprotocolnotsupported" xml:space="preserve">
+    <value>This operation cannot be performed on a completed asynchronous result object.</value>
+  </data>
+  <data name="net_InvalidStatusCode" xml:space="preserve">
+    <value>The server returned a status code outside the valid range of 100-599.</value>
+  </data>
+  <data name="net_io_timeout_use_gt_zero" xml:space="preserve">
+    <value>Timeout can be only be set to 'System.Threading.Timeout.Infinite' or a value > 0.</value>
+  </data>
+  <data name="net_ftp_servererror" xml:space="preserve">
+    <value>The remote server returned an error: {0}.</value>
+  </data>
+  <data name="net_ftp_active_address_different" xml:space="preserve">
+    <value>The data connection was made from an address that is different than the address to which the FTP connection was made.</value>
+  </data>
+  <data name="net_ftp_invalid_method_name" xml:space="preserve">
+    <value>FTP Method names cannot be null or empty.</value>
+  </data>
+  <data name="net_ftp_invalid_renameto" xml:space="preserve">
+    <value>The RenameTo filename cannot be null or empty.</value>
+  </data>
+  <data name="net_ftp_invalid_response_filename" xml:space="preserve">
+    <value>The server returned the filename ({0}) which is not valid.</value>
+  </data>
+  <data name="net_ftp_invalid_status_response" xml:space="preserve">
+    <value>The status response ({0}) is not expected in response to '{1}' command.</value>
+  </data>
+  <data name="net_ftp_invalid_uri" xml:space="preserve">
+    <value>The requested URI is invalid for this FTP command.</value>
+  </data>
+  <data name="net_ftp_no_defaultcreds" xml:space="preserve">
+    <value>Default credentials are not supported on an FTP request.</value>
+  </data>
+  <data name="net_ftp_response_invalid_format" xml:space="preserve">
+    <value>The response string '{0}' has invalid format.</value>
+  </data>
+  <data name="net_ftp_server_failed_passive" xml:space="preserve">
+    <value>The server failed the passive mode request with status response ({0}).</value>
+  </data>
+  <data name="net_ftp_unsupported_method" xml:space="preserve">
+    <value>This method is not supported.</value>
+  </data>
+  <data name="net_ftp_protocolerror" xml:space="preserve">
+    <value>The underlying connection was closed: The server committed a protocol violation</value>
+  </data>
+  <data name="net_ftp_receivefailure" xml:space="preserve">
+    <value>The underlying connection was closed: An unexpected error occurred on a receive</value>
+  </data>
+  <data name="net_webstatus_NameResolutionFailure" xml:space="preserve">
+    <value>The remote name could not be resolved</value>
+  </data>
+  <data name="net_webstatus_ConnectFailure" xml:space="preserve">
+    <value>Unable to connect to the remote server</value>
+  </data>
+  <data name="net_ftpstatuscode_ServiceNotAvailable" xml:space="preserve">
+    <value>Service not available, closing control connection.</value>
+  </data>
+  <data name="net_ftpstatuscode_CantOpenData" xml:space="preserve">
+    <value>Can't open data connection</value>
+  </data>
+  <data name="net_ftpstatuscode_ConnectionClosed" xml:space="preserve">
+    <value>Connection closed; transfer aborted</value>
+  </data>
+  <data name="net_ftpstatuscode_ActionNotTakenFileUnavailableOrBusy" xml:space="preserve">
+    <value>File unavailable (e.g., file busy)</value>
+  </data>
+  <data name="net_ftpstatuscode_ActionAbortedLocalProcessingError" xml:space="preserve">
+    <value>Local error in processing</value>
+  </data>
+  <data name="net_ftpstatuscode_ActionNotTakenInsufficientSpace" xml:space="preserve">
+    <value>Insufficient storage space in system</value>
+  </data>
+  <data name="net_ftpstatuscode_CommandSyntaxError" xml:space="preserve">
+    <value>Syntax error, command unrecognized</value>
+  </data>
+  <data name="net_ftpstatuscode_ArgumentSyntaxError" xml:space="preserve">
+    <value>Syntax error in parameters or arguments</value>
+  </data>
+  <data name="net_ftpstatuscode_CommandNotImplemented" xml:space="preserve">
+    <value>Command not implemented</value>
+  </data>
+  <data name="net_ftpstatuscode_BadCommandSequence" xml:space="preserve">
+    <value>Bad sequence of commands</value>
+  </data>
+  <data name="net_ftpstatuscode_NotLoggedIn" xml:space="preserve">
+    <value>Not logged in</value>
+  </data>
+  <data name="net_ftpstatuscode_AccountNeeded" xml:space="preserve">
+    <value>Need account for storing files</value>
+  </data>
+  <data name="net_ftpstatuscode_ActionNotTakenFileUnavailable" xml:space="preserve">
+    <value>File unavailable (e.g., file not found, no access)</value>
+  </data>
+  <data name="net_ftpstatuscode_ActionAbortedUnknownPageType" xml:space="preserve">
+    <value>Page type unknown</value>
+  </data>
+  <data name="net_ftpstatuscode_FileActionAborted" xml:space="preserve">
+    <value>Exceeded storage allocation (for current directory or data set)</value>
+  </data>
+  <data name="net_ftpstatuscode_ActionNotTakenFilenameNotAllowed" xml:space="preserve">
+    <value>File name not allowed</value>
+  </data>
 </root>

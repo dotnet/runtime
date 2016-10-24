@@ -173,7 +173,20 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Func<T1, T2, T3, T4, T5, T6, T7, 
 CannotRemoveBaseTypeOrInterface : Type 'System.Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, TResult>' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, TResult>' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, TResult>' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
+MembersMustExist : Member 'System.GC.CancelFullGCNotification()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.GC.Collect(System.Int32, System.GCCollectionMode, System.Boolean, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.GC.EndNoGCRegion()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.GC.GetGeneration(System.WeakReference)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.GC.RegisterForFullGCNotification(System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.GC.TryStartNoGCRegion(System.Int64)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.GC.TryStartNoGCRegion(System.Int64, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.GC.TryStartNoGCRegion(System.Int64, System.Int64)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.GC.TryStartNoGCRegion(System.Int64, System.Int64, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.GC.WaitForFullGCApproach()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.GC.WaitForFullGCApproach(System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.GC.WaitForFullGCComplete()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.GC.WaitForFullGCComplete(System.Int32)' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.GCNotificationStatus' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Guid.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Guid.ToString(System.String, System.IFormatProvider)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IndexOutOfRangeException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
@@ -459,14 +472,19 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.AmbiguousMatchExceptio
 MembersMustExist : Member 'System.Reflection.AssemblyName.KeyPair.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.AssemblyName.KeyPair.set(System.Reflection.StrongNameKeyPair)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.CustomAttributeFormatException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.InvalidFilterCriteriaException' does not inherit from base type 'System.ApplicationException' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.MemberFilter' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.ModuleResolveEventHandler' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
 TypesMustExist : Type 'System.Reflection.ObfuscateAssemblyAttribute' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Reflection.ObfuscationAttribute' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.ReflectionTypeLoadException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
 TypesMustExist : Type 'System.Reflection.StrongNameKeyPair' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.TargetException' does not inherit from base type 'System.ApplicationException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.TargetInvocationException' does not inherit from base type 'System.ApplicationException' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.TargetParameterCountException' does not inherit from base type 'System.ApplicationException' in the implementation but it does in the contract.
 TypesMustExist : Type 'System.Reflection.TypeDelegator' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.TypeFilter' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
+MembersMustExist : Member 'System.Runtime.GCLatencyMode System.Runtime.GCLatencyMode.NoGCRegion' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.MemoryFailPoint' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.CompilerServices.CompilerGlobalScopeAttribute' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.CompilerServices.ConditionalWeakTable<TKey, TValue>.CreateValueCallback' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
@@ -580,4 +598,4 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.Task' does not im
 MembersMustExist : Member 'System.Threading.Tasks.Task.Dispose()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.Tasks.Task.Dispose(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.Task<TResult>' does not implement interface 'System.IDisposable' in the implementation but it does in the contract.
-Total Issues: 581
+Total Issues: 599

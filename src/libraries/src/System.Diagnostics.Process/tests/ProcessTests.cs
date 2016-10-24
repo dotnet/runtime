@@ -13,7 +13,7 @@ using Xunit.NetCore.Extensions;
 
 namespace System.Diagnostics.Tests
 {
-    public class ProcessTests : ProcessTestBase
+    public partial class ProcessTests : ProcessTestBase
     {
         private class FinalizingProcess : Process
         {

@@ -9,7 +9,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Net.NetworkInformation.cs" />
-    <Compile Include="System.Net.NetworkInformation.Manual.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

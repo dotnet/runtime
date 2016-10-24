@@ -10,7 +10,7 @@
     },
     "portable-net40+sl4+win8+wp8": {
       "dependencies": {
-        "Microsoft.TargetingPack.Portable.v4.0.Profile36": "1.0.0" 
+        "Microsoft.TargetingPack.Portable.v4.0.Profile36": "1.0.0"
       }
     }
   }

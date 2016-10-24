@@ -94,15 +94,6 @@ namespace System.Net
             set { s_dnsRefreshTimeout = Math.Max(-1, value); }
         }
 
-        [Obsolete("CertificatePolicy is obsoleted for this type, please use ServerCertificateValidationCallback instead. http://go.microsoft.com/fwlink/?linkid=14202")]
-        public static ICertificatePolicy CertificatePolicy { get; set; } = new DefaultCertPolicy();
-
-        private sealed class DefaultCertPolicy : ICertificatePolicy
-        {
-            public bool CheckValidationResult(ServicePoint srvPoint, X509Certificate certificate, WebRequest request, int certificateProblem) =>
-                certificateProblem == 0;
-        }
-
         public static RemoteCertificateValidationCallback ServerCertificateValidationCallback { get; set; }
 
         public static bool ReusePort { get; set; }

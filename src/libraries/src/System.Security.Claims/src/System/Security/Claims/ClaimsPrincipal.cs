@@ -5,7 +5,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.IO;
-using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using System.Security.Principal;
 
 namespace System.Security.Claims
@@ -13,6 +13,7 @@ namespace System.Security.Claims
     /// <summary>
     /// Concrete IPrincipal supporting multiple claims-based identities
     /// </summary>
+    [Serializable]
     public class ClaimsPrincipal : IPrincipal
     {
         private enum SerializationMask
@@ -22,11 +23,21 @@ namespace System.Security.Claims
             UserData = 2
         }
 
+        [NonSerialized]
         private List<ClaimsIdentity> _identities = new List<ClaimsIdentity>();
+        [NonSerialized]
         private byte[] _userSerializationData;
 
         private static Func<IEnumerable<ClaimsIdentity>, ClaimsIdentity> s_identitySelector = SelectPrimaryIdentity;
         private static Func<ClaimsPrincipal> s_principalSelector = ClaimsPrincipalSelector;
+
+        protected ClaimsPrincipal(SerializationInfo info, StreamingContext context)
+        {
+            if (null == info)
+            {
+                throw new ArgumentNullException(nameof(info));
+            }
+        }
 
         /// <summary>
         /// This method iterates through the collection of ClaimsIdentities and chooses an identity as the primary.
@@ -607,6 +618,32 @@ namespace System.Security.Claims
 
             writer.Flush();
         }
+
+        [OnSerializing]
+        private void OnSerializingMethod(StreamingContext context)
+        {
+            if (this is ISerializable)
+            {
+                return;
+            }
+
+            if (_identities.Count > 0)
+            {
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_Serialization); // BinaryFormatter and WindowsIdentity would be needed
+            }
+        }
+
+        protected virtual void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            if (null == info)
+            {
+                throw new ArgumentNullException(nameof(info));
+            }
+
+            if (_identities.Count > 0)
+            {
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_Serialization); // BinaryFormatter and WindowsIdentity would be needed
+            }
+        }
     }
 }
-

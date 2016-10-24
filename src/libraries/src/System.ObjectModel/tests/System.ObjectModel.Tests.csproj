@@ -41,6 +41,7 @@
     <Compile Include="ObservableCollection\ObservableCollection_ConstructorAndPropertyTests.cs" />
     <Compile Include="ObservableCollection\ObservableCollection_ConstructorAndPropertyTests.netstandard1.7.cs" Condition="'$(TargetGroup)'==''" />
     <Compile Include="ObservableCollection\ObservableCollection_MethodsTest.cs" />
+    <Compile Include="ObservableCollection\ObservableCollection_ReentrancyTests.cs" />
     <Compile Include="ReadOnlyDictionary\ReadOnlyDictionaryTests.cs" />
     <Compile Include="ReadOnlyObservableCollection\ReadOnlyObservableCollection_EventsTests.cs" />
     <Compile Include="ReadOnlyObservableCollection\ReadOnlyObservableCollectionTests.cs" />

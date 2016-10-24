@@ -5,6 +5,7 @@
 using System.ComponentModel;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 
 namespace System.Net.NetworkInformation
 {
@@ -13,6 +14,7 @@ namespace System.Net.NetworkInformation
     ///       Provides NetworkInformation exceptions to the application.
     ///    </para>
     /// </devdoc>
+    [Serializable]
     public class NetworkInformationException : Win32Exception
     {
         /// <devdoc>
@@ -30,6 +32,10 @@ namespace System.Net.NetworkInformation
         ///    </para>
         /// </devdoc>
         public NetworkInformationException(int errorCode) : base(errorCode)
+        {
+        }
+
+        protected NetworkInformationException(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext)
         {
         }
 

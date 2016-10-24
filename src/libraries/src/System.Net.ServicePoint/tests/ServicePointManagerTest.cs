@@ -17,24 +17,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        public static void CertificatePolicy_Roundtrips()
-        {
-#pragma warning disable CS0618 // obsolete warnings
-            ICertificatePolicy cp = ServicePointManager.CertificatePolicy;
-            Assert.NotNull(cp);
-
-            Assert.True(cp.CheckValidationResult(null, null, null, 0));
-            Assert.False(cp.CheckValidationResult(null, null, null, 1));
-
-            ServicePointManager.CertificatePolicy = null;
-            Assert.Null(ServicePointManager.CertificatePolicy);
-
-            ServicePointManager.CertificatePolicy = cp;
-            Assert.Same(cp, ServicePointManager.CertificatePolicy);
-#pragma warning restore CS0619
-        }
-
-        [Fact]
         public static void CheckCertificateRevocationList_Roundtrips()
         {
             Assert.False(ServicePointManager.CheckCertificateRevocationList);
