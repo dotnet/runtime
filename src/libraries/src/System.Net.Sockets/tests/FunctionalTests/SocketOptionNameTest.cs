@@ -47,7 +47,7 @@ namespace System.Net.Sockets.Tests
         public void ReuseUnicastPort_CreateSocketGetOption_SocketsReuseUnicastPortSupport_OptionIsZero()
         {
             var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            
+
             var optionValue = (int)socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort);
             Assert.Equal(0, optionValue);
         }
@@ -131,7 +131,7 @@ namespace System.Net.Sockets.Tests
             int port;
 
             using (Socket receiveSocket = CreateBoundUdpSocket(out port),
-                          sendSocket    = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+                          sendSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
             {
                 receiveSocket.ReceiveTimeout = 1000;
                 receiveSocket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, new MulticastOption(multicastAddress, interfaceIndex));
@@ -292,6 +292,65 @@ namespace System.Net.Sockets.Tests
         public void ReuseAddress_Windows(bool? exclusiveAddressUse, bool? firstSocketReuseAddress, bool? secondSocketReuseAddress, bool expectFailure)
         {
             ReuseAddress(exclusiveAddressUse, firstSocketReuseAddress, secondSocketReuseAddress, expectFailure);
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData(IPProtectionLevel.EdgeRestricted)]
+        [InlineData(IPProtectionLevel.Restricted)]
+        [InlineData(IPProtectionLevel.Unrestricted)]
+        public void SetIPProtectionLevel_Windows(IPProtectionLevel level)
+        {
+            using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                socket.SetIPProtectionLevel(level);
+
+                int result = (int)socket.GetSocketOption(SocketOptionLevel.IP, SocketOptionName.IPProtectionLevel);
+                Assert.Equal(result, (int)level);
+            }
+
+            using (var socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp))
+            {
+                socket.SetIPProtectionLevel(level);
+
+                int result = (int)socket.GetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPProtectionLevel);
+                Assert.Equal(result, (int)level);
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Theory]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [InlineData(IPProtectionLevel.EdgeRestricted)]
+        [InlineData(IPProtectionLevel.Restricted)]
+        [InlineData(IPProtectionLevel.Unrestricted)]
+        public void SetIPProtectionLevel_Unix(IPProtectionLevel level)
+        {
+            using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => socket.SetIPProtectionLevel(level));
+            }
+
+            using (var socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp))
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => socket.SetIPProtectionLevel(level));
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Fact]
+        public void SetIPProtectionLevel_ArgumentException()
+        {
+            using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                Assert.Throws<ArgumentException>(() => socket.SetIPProtectionLevel(IPProtectionLevel.Unspecified));
+            }
+
+            using (var socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp))
+            {
+                Assert.Throws<ArgumentException>(() => socket.SetIPProtectionLevel(IPProtectionLevel.Unspecified));
+            }
         }
     }
 }
