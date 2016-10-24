@@ -140,6 +140,7 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
             }
         }
 
+        [ActiveIssue(12926)]
         [Theory, MemberData(nameof(RC2TestData))]
         public static void RC2RoundTrip(CipherMode cipherMode, PaddingMode paddingMode, string key, string iv, string textHex, string expectedDecrypted, string expectedEncrypted)
         {
@@ -163,6 +164,7 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
             }
         }
 
+        [ActiveIssue(12926)]
         [Fact]
         public static void RC2ReuseEncryptorDecryptor()
         {
@@ -204,6 +206,7 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
             }
         }
 
+        [ActiveIssue(12926)]
         [Fact]
         public static void RC2ExplicitEncryptorDecryptor_WithIV()
         {
@@ -223,6 +226,7 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
             }
         }
 
+        [ActiveIssue(12926)]
         [Fact]
         public static void RC2ExplicitEncryptorDecryptor_NoIV()
         {
