@@ -1352,6 +1352,7 @@ void GcInfoEncoder::Build()
     // Find out which slots are really used
     ///////////////////////////////////////////////////////////////////
 
+    couldBeLive.ClearAll();
     
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
     if(m_NumCallSites)
