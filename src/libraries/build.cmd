@@ -6,8 +6,16 @@ if /I [%1] == [-?] goto Usage
 :Build
 call %~dp0build-native.cmd %*
 if NOT [%ERRORLEVEL%]==[0] exit /b 1
-call %~dp0build-managed.cmd %*
-exit /b %ERRORLEVEL%
+call %~dp0sync.cmd
+if NOT [%ERRORLEVEL%]==[0] exit /b 1
+call %~dp0build-managed.cmd -binaries %*
+if NOT [%ERRORLEVEL%]==[0] exit /b 1
+call %~dp0build-managed.cmd -packages %*
+if NOT [%ERRORLEVEL%]==[0] exit /b 1
+call %~dp0sync.cmd -t -RestoreForTestsAgainstPackagesOnly
+if NOT [%ERRORLEVEL%]==[0] exit /b 1
+call build-tests.cmd -BuildTestsAgainstPackages %*
+if NOT [%ERRORLEVEL%]==[0] exit /b 1
 
 :Usage
 echo.
