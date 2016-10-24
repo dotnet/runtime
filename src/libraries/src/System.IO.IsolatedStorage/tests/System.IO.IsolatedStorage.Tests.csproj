@@ -67,5 +67,9 @@
     <Compile Include="System\IO\IsolatedStorage\TestHelper.cs" />
     <Compile Include="System\IO\IsolatedStorage\RemoveTests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- TODO: Remove this reference once packages are updated -->
+    <ProjectReference Include="..\..\System.IO.FileSystem\pkg\System.IO.FileSystem.pkgproj" />
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
