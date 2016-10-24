@@ -117,6 +117,29 @@ namespace System.Net.Mail.Tests
             }
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [Fact]
+        public void ServicePoint_NetCoreApp_AddressIsAccessible()
+        {
+            using (var smtp = new SmtpClient("localhost", 25))
+            {
+                Assert.Equal("mailto", smtp.ServicePoint.Address.Scheme);
+                Assert.Equal("localhost", smtp.ServicePoint.Address.Host);
+                Assert.Equal(25, smtp.ServicePoint.Address.Port);
+            }
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp)]
+        [Fact]
+        public void ServicePoint_NetFramework_AddressIsInaccessible()
+        {
+            using (var smtp = new SmtpClient("localhost", 25))
+            {
+                ServicePoint sp = smtp.ServicePoint;
+                Assert.Throws<NotSupportedException>(() => sp.Address);
+            }
+        }
+
         [Fact]
         public void ServicePoint_ReflectsHostAndPortChange()
         {
