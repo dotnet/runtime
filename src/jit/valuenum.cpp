@@ -7167,9 +7167,11 @@ VNFunc Compiler::fgValueNumberHelperMethVNFunc(CorInfoHelpFunc helpFunc)
         case CORINFO_HELP_READYTORUN_STATIC_BASE:
             vnf = VNF_ReadyToRunStaticBase;
             break;
+#if COR_JIT_EE_VERSION > 460
         case CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE:
             vnf = VNF_ReadyToRunGenericStaticBase;
             break;
+#endif // COR_JIT_EE_VERSION > 460
         case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_DYNAMICCLASS:
             vnf = VNF_GetsharedGcstaticBaseDynamicclass;
             break;
