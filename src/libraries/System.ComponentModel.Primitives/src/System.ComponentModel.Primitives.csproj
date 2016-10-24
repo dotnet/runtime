@@ -14,6 +14,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45_Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)'==''">
+    <Compile Include="System\ComponentModel\ISynchronizeInvoke.cs" />
     <Compile Include="System\ComponentModel\BrowsableAttribute.cs" />
     <Compile Include="System\ComponentModel\CategoryAttribute.cs" />
     <Compile Include="System\ComponentModel\ComponentCollection.cs" />
