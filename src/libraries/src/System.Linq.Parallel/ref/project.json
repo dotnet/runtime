@@ -1,16 +1,12 @@
 {
   "dependencies": {
-    "System.Runtime": "4.0.0",
-    "System.Collections.Concurrent": "4.0.0",
-    "System.Linq": "4.0.0",
-    "System.Collections": "4.0.0",
-    "System.Threading.Tasks": "4.0.0"
+    "System.Runtime": "4.1.0",
+    "System.Collections.Concurrent": "4.0.12",
+    "System.Linq": "4.1.0",
+    "System.Collections": "4.0.11",
+    "System.Threading.Tasks": "4.0.11"
   },
   "frameworks": {
-    "netstandard1.1": {
-      "imports": [
-        "dotnet5.2"
-      ]
-    }
+    "netstandard1.1": {}
   }
 }

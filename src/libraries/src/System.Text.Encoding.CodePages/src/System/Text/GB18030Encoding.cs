@@ -101,6 +101,7 @@ namespace System.Text
     **
     ==============================================================================*/
 
+    [Serializable]
     internal sealed class GB18030Encoding : DBCSCodePageEncoding
     {
         // This is the table of 4 byte conversions.
@@ -791,6 +792,7 @@ namespace System.Text
             return new GB18030Decoder(this);
         }
 
+        [Serializable]
         internal sealed class GB18030Decoder : DecoderNLS
         {
             internal short bLeftOver1 = -1;

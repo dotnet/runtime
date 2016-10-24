@@ -6,6 +6,7 @@ using System.Text;
 using System;
 using System.Globalization;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
 
 namespace System.Text
 {
@@ -20,8 +21,8 @@ namespace System.Text
     // class are typically obtained through calls to the GetDecoder method
     // of Encoding objects.
     //
-
-    internal class DecoderNLS : Decoder
+    [Serializable]
+    internal class DecoderNLS : Decoder, ISerializable
     {
         // Remember our encoding
         protected EncodingNLS m_encoding;
@@ -43,6 +44,49 @@ namespace System.Text
         {
             m_encoding = null;
             Reset();
+        }
+
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            info.AddValue(DecoderNLSSurrogate.EncodingKey, m_encoding);
+            info.AddValue(DecoderNLSSurrogate.DecoderFallbackKey, m_fallback);
+            info.SetType(typeof(DecoderNLSSurrogate));
+        }
+
+        [Serializable]
+        internal sealed class DecoderNLSSurrogate : IObjectReference, ISerializable
+        {
+            internal const string EncodingKey = "Encoding";
+            internal const string DecoderFallbackKey = "DecoderFallback";
+
+            private readonly Encoding _encoding;
+            private readonly DecoderFallback _fallback;
+
+            internal DecoderNLSSurrogate(SerializationInfo info, StreamingContext context)
+            {
+                if (info == null)
+                {
+                    throw new ArgumentNullException(nameof(info));
+                }
+                _encoding = (Encoding)info.GetValue(EncodingKey, typeof(Encoding));
+                _fallback = (DecoderFallback)info.GetValue(DecoderFallbackKey, typeof(DecoderFallback));
+            }
+
+            public object GetRealObject(StreamingContext context)
+            {
+                Decoder decoder = _encoding.GetDecoder();
+                if (_fallback != null)
+                {
+                    decoder.Fallback = _fallback;
+                }
+                return decoder;
+            }
+
+            public void GetObjectData(SerializationInfo info, StreamingContext context)
+            {
+                // This should never be called.  If it is, there's a bug in the formatter being used.
+                throw new NotSupportedException();
+            }
         }
 
         internal new DecoderFallback Fallback

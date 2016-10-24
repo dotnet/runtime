@@ -1,13 +1,9 @@
 {
   "dependencies": {
-    "System.Runtime": "4.0.0",
-    "System.Runtime.Handles": "4.0.0"
+    "System.Runtime": "4.1.0",
+    "System.Runtime.Handles": "4.0.1"
   },
   "frameworks": {
-    "netstandard1.3": {
-      "imports": [
-        "dotnet5.4"
-      ]
-    }
+    "netstandard1.3": {}
   }
 }

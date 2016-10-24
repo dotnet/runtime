@@ -945,6 +945,14 @@
     ]
   },
   {
+    "Name": "System.Net.ServicePoint",
+    "Description": "Provides types related to the management of network connections.",
+    "CommonTypes": [
+      "System.Net.ServicePoint",
+      "System.Net.ServicePointManager"
+    ]
+  },
+  {
     "Name": "System.Net.Sockets",
     "Description": "Provides classes such as Socket, TcpClient and UdpClient, which enable developers to send and receive data over the network.",
     "CommonTypes": [

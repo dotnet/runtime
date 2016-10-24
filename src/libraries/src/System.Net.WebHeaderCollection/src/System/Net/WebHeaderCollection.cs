@@ -5,6 +5,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
+using System.Runtime.Serialization;
 using System.Text;
 
 namespace System.Net
@@ -16,7 +18,8 @@ namespace System.Net
         WebResponse,
     }
 
-    public sealed class WebHeaderCollection : IEnumerable
+    [Serializable]
+    public class WebHeaderCollection : IEnumerable, ISerializable
     {
         private const int ApproxAveHeaderLineSize = 30;
         private const int ApproxHighAvgNumHeaders = 16;
@@ -221,7 +224,39 @@ namespace System.Net
 
         public WebHeaderCollection()
         {
-        }     
+        }
+
+        protected WebHeaderCollection(SerializationInfo serializationInfo, StreamingContext streamingContext)
+        {
+            int count = serializationInfo.GetInt32("Count");
+            for (int i = 0; i < count; i++)
+            {
+                string headerName = serializationInfo.GetString(i.ToString(NumberFormatInfo.InvariantInfo));
+                string headerValue = serializationInfo.GetString((i + count).ToString(NumberFormatInfo.InvariantInfo));
+                this[headerName] = headerValue;
+            }
+        }
+
+        public virtual void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
+        {
+            serializationInfo.AddValue("Count", Count);
+            if (_entriesList != null)
+            {
+                int i = 0;
+                foreach (string key in _entriesList)
+                {
+                    string val = _entriesDictionary[key];
+                    serializationInfo.AddValue(i.ToString(NumberFormatInfo.InvariantInfo), key);
+                    serializationInfo.AddValue((i + Count).ToString(NumberFormatInfo.InvariantInfo), val);
+                    i++;
+                }
+            }
+        }
+
+        void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
+        {
+            GetObjectData(serializationInfo, streamingContext);
+        }
 
         public int Count => _entriesList != null ? _entriesList.Count : 0;
 
