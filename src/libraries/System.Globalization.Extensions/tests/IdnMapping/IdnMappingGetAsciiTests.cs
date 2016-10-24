@@ -98,7 +98,7 @@ namespace System.Globalization.Tests
             }
             else
             {
-                Assert.True(ex is ArgumentException);
+                Assert.IsType<ArgumentException>(ex);                
             }
         }
 
