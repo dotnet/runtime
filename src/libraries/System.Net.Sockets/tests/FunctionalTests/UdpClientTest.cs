@@ -119,36 +119,29 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [Fact]
+        [Theory]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void AllowNatTraversal_Windows()
+        [InlineData(true, IPProtectionLevel.Unrestricted)]
+        [InlineData(false, IPProtectionLevel.EdgeRestricted)]
+        public void AllowNatTraversal_Windows(bool allow, IPProtectionLevel resultLevel)
         {
             using (var c = new UdpClient())
             {
-                c.AllowNatTraversal(true);
-                Assert.Equal((int)IPProtectionLevel.Unrestricted, (int)c.Client.GetSocketOption(SocketOptionLevel.IP, SocketOptionName.IPProtectionLevel));
-            }
-
-            using (var c = new UdpClient())
-            {
-                c.AllowNatTraversal(false);
-                Assert.Equal((int)IPProtectionLevel.EdgeRestricted, (int)c.Client.GetSocketOption(SocketOptionLevel.IP, SocketOptionName.IPProtectionLevel));
+                c.AllowNatTraversal(allow);
+                Assert.Equal((int)resultLevel, (int)c.Client.GetSocketOption(SocketOptionLevel.IP, SocketOptionName.IPProtectionLevel));
             }
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [Fact]
+        [Theory]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void AllowNatTraversal_AnyUnix()
+        [InlineData(true)]
+        [InlineData(false)]
+        public void AllowNatTraversal_AnyUnix(bool allow)
         {
             using (var c = new UdpClient())
             {
-                Assert.Throws<PlatformNotSupportedException>(() => c.AllowNatTraversal(true));
-            }
-
-            using (var c = new UdpClient())
-            {
-                Assert.Throws<PlatformNotSupportedException>(() => c.AllowNatTraversal(false));
+                Assert.Throws<PlatformNotSupportedException>(() => c.AllowNatTraversal(allow));
             }
         }
     }

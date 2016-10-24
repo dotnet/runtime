@@ -113,29 +113,26 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [Fact]
+        [Theory]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void AllowNatTraversal_Windows()
+        [InlineData(true, IPProtectionLevel.Unrestricted)]
+        [InlineData(false, IPProtectionLevel.EdgeRestricted)]
+        public void AllowNatTraversal_Windows(bool allow, IPProtectionLevel resultLevel)
         {
             var l = new TcpListener(IPAddress.Any, 0);
-            l.AllowNatTraversal(true);
-            Assert.Equal((int)IPProtectionLevel.Unrestricted, (int)l.Server.GetSocketOption(SocketOptionLevel.IP, SocketOptionName.IPProtectionLevel));
-
-            l = new TcpListener(IPAddress.Any, 0);
-            l.AllowNatTraversal(false);
-            Assert.Equal((int)IPProtectionLevel.EdgeRestricted, (int)l.Server.GetSocketOption(SocketOptionLevel.IP, SocketOptionName.IPProtectionLevel));
+            l.AllowNatTraversal(allow);
+            Assert.Equal((int)resultLevel, (int)l.Server.GetSocketOption(SocketOptionLevel.IP, SocketOptionName.IPProtectionLevel));
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [Fact]
+        [Theory]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void AllowNatTraversal_AnyUnix()
+        [InlineData(true)]
+        [InlineData(false)]
+        public void AllowNatTraversal_AnyUnix(bool allow)
         {
             var l = new TcpListener(IPAddress.Any, 0);
-            Assert.Throws<PlatformNotSupportedException>(() => l.AllowNatTraversal(true));
-
-            l = new TcpListener(IPAddress.Any, 0);
-            Assert.Throws<PlatformNotSupportedException>(() => l.AllowNatTraversal(false));
+            Assert.Throws<PlatformNotSupportedException>(() => l.AllowNatTraversal(allow));
         }
 
 
