@@ -375,22 +375,20 @@ namespace System.IO {
 
                 checked
                 {
-                    if (position < 0 || numBytes < 0 || position + numBytes > byteBuffer.Length)
+                    if (position < 0 || numBytes < 0 || position > byteBuffer.Length - numBytes)
                     {
-                        throw new ArgumentOutOfRangeException(nameof(byteCount));
+                        throw new ArgumentOutOfRangeException(nameof(numBytes));
                     }
-                    if (index < 0 || charsRemaining < 0 || index + charsRemaining > buffer.Length)
+                    if (index < 0 || charsRemaining < 0 || index > buffer.Length - charsRemaining)
                     {
                         throw new ArgumentOutOfRangeException(nameof(charsRemaining));
                     }
                     unsafe
                     {
                         fixed (byte* pBytes = byteBuffer)
+                        fixed (char* pChars = buffer)
                         {
-                            fixed (char* pChars = buffer)
-                            {
-                                charsRead = m_decoder.GetChars(pBytes + position, numBytes, pChars + index, charsRemaining, false);
-                            }
+                            charsRead = m_decoder.GetChars(pBytes + position, numBytes, pChars + index, charsRemaining, flush: false);
                         }
                     }
                 }

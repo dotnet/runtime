@@ -194,7 +194,7 @@ namespace System.IO {
             Contract.Assert(_encoding.GetMaxByteCount(1) <= 16, "_encoding.GetMaxByteCount(1) <= 16)");
             int numBytes = 0;
             fixed(byte * pBytes = _buffer) {
-                numBytes = _encoder.GetBytes(&ch, 1, pBytes, _buffer.Length, true);
+                numBytes = _encoder.GetBytes(&ch, 1, pBytes, _buffer.Length, flush: true);
             }
             OutStream.Write(_buffer, 0, numBytes);
         }
@@ -387,7 +387,7 @@ namespace System.IO {
 
                     checked
                     {
-                        if (charStart < 0 || charCount < 0 || charStart + charCount > value.Length)
+                        if (charStart < 0 || charCount < 0 || charStart > value.Length - charCount)
                         {
                             throw new ArgumentOutOfRangeException(nameof(charCount));
                         }
