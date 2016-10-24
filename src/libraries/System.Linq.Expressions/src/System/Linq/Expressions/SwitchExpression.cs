@@ -237,7 +237,7 @@ namespace System.Linq.Expressions
                 }
 
                 ParameterInfo rightParam = pms[1];
-                foreach (var c in caseList)
+                foreach (SwitchCase c in caseList)
                 {
                     ContractUtils.RequiresNotNull(c, nameof(cases));
                     ValidateSwitchCaseType(c.Body, customType, resultType, nameof(cases));
@@ -272,7 +272,7 @@ namespace System.Linq.Expressions
                 // When comparison method is not present, all the test values must have
                 // the same type. Use the first test value's type as the baseline.
                 Expression firstTestValue = caseList[0].TestValues[0];
-                foreach (var c in caseList)
+                foreach (SwitchCase c in caseList)
                 {
                     ContractUtils.RequiresNotNull(c, nameof(cases));
                     ValidateSwitchCaseType(c.Body, customType, resultType, nameof(cases));

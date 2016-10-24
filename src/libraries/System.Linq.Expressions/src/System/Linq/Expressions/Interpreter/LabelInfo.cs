@@ -72,7 +72,7 @@ namespace System.Linq.Expressions.Interpreter
             // Once defined, validate all jumps
             if (HasDefinitions && !HasMultipleDefinitions)
             {
-                foreach (var r in _references)
+                foreach (LabelScopeInfo r in _references)
                 {
                     ValidateJump(r);
                 }

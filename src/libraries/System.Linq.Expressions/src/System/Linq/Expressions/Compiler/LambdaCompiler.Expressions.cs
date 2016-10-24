@@ -434,7 +434,7 @@ namespace System.Linq.Expressions.Compiler
 
         private static bool MethodHasByRefParameter(MethodInfo mi)
         {
-            foreach (var pi in mi.GetParametersCached())
+            foreach (ParameterInfo pi in mi.GetParametersCached())
             {
                 if (pi.IsByRefParameter())
                 {

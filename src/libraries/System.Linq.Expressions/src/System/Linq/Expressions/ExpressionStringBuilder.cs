@@ -593,7 +593,7 @@ namespace System.Linq.Expressions
         protected internal override Expression VisitBlock(BlockExpression node)
         {
             Out('{');
-            foreach (var v in node.Variables)
+            foreach (ParameterExpression v in node.Variables)
             {
                 Out("var ");
                 Visit(v);

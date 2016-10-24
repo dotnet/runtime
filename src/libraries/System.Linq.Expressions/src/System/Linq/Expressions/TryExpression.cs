@@ -212,7 +212,7 @@ namespace System.Linq.Expressions
                     {
                         throw Error.ArgumentTypesMustMatch();
                     }
-                    foreach (var cb in handlers)
+                    foreach (CatchBlock cb in handlers)
                     {
                         if (!TypeUtils.AreReferenceAssignable(type, cb.Body.Type))
                         {
