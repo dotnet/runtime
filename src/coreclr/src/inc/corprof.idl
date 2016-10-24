@@ -60,6 +60,10 @@ cpp_quote("#endif")
 typedef const BYTE *LPCBYTE;
 typedef BYTE *LPBYTE;
 
+typedef BYTE COR_SIGNATURE;
+typedef COR_SIGNATURE* PCOR_SIGNATURE;
+typedef const COR_SIGNATURE* PCCOR_SIGNATURE;
+
 #endif
 
 
@@ -2375,6 +2379,36 @@ interface ICorProfilerCallback7 : ICorProfilerCallback6
 }
 
 
+[
+    object,
+    uuid(5BED9B15-C079-4D47-BFE2-215A140C07E0),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerCallback8 : ICorProfilerCallback7
+{
+    // This event is triggered whenever a dynamic method is jit compiled.
+    // These include various IL Stubs and LCG Methods.
+    // The goal is to provide profiler writers with enough information to identify
+    // it to users as beyond unknown code addresses.
+    // Note: FunctionID's provided here cannot be used to resolve to their metadata
+    //       tokens since dynamic methods have no metadata.
+    //
+    // Documentation Note: pILHeader is only valid during the callback
+
+    HRESULT DynamicMethodJITCompilationStarted(
+        [in] FunctionID functionId,
+        [in] BOOL       fIsSafeToBlock,
+        [in] LPCBYTE    pILHeader,
+        [in] ULONG      cbILHeader);
+
+    HRESULT DynamicMethodJITCompilationFinished(
+        [in] FunctionID functionId,
+        [in] HRESULT    hrStatus,
+        [in] BOOL       fIsSafeToBlock);
+}
+
+
 /*
  * COR_PRF_CODEGEN_FLAGS controls various flags and hooks for a specific
  * method.  A combination of COR_PRF_CODEGEN_FLAGS is provided by the
@@ -3779,6 +3813,59 @@ interface ICorProfilerInfo7 : ICorProfilerInfo6
         [in] DWORD countSymbolBytes,
         [out] DWORD* pCountSymbolBytesRead);
 
+};
+
+[
+    object,
+    uuid(C5AC80A6-782E-4716-8044-39598C60CFBF),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerInfo8 : ICorProfilerInfo7
+{
+    /*
+    * Determines if a function has associated metadata 
+    *
+    * Certain methods like IL Stubs or LCG Methods do not have
+    * associated metadata that can be retrieved using the IMetaDataImport APIs.
+    *
+    * Such methods can be encountered by profilers through instruction pointers
+    * or by listening to ICorProfilerCallback::DynamicMethodJITCompilationStarted
+    *
+    * This API can be used to determine whether a FunctionID is dynamic.
+    */
+    HRESULT IsFunctionDynamic( [in]  FunctionID  functionId,
+                               [out] BOOL        *isDynamic);
+
+    /*
+    * Maps a managed code instruction pointer to a FunctionID.
+    *
+    * GetFunctionFromIP2 fails for dynamic methods, this method works for
+    * both dynamic and non-dynamic methods. It is a superset of GetFunctionFromIP2
+    */
+    HRESULT GetFunctionFromIP3([in] LPCBYTE ip,
+                               [out] FunctionID *functionId,
+                               [out] ReJITID * pReJitId);
+
+    /*
+    * Retrieves informaiton about dynamic methods
+    *
+    * Certain methods like IL Stubs or LCG do not have
+    * associated metadata that can be retrieved using the IMetaDataImport APIs.
+    *
+    * Such methods can be encountered by profilers through instruction pointers
+    * or by listening to ICorProfilerCallback::DynamicMethodJITCompilationStarted
+    *
+    * This API can be used to retrieve information about dynamic methods
+    * including a friendly name if available.
+    */
+    HRESULT GetDynamicFunctionInfo( [in]  FunctionID              functionId,
+                                    [out] ModuleID                *moduleId,
+                                    [out] PCCOR_SIGNATURE         *ppvSig,
+                                    [out] ULONG                   *pbSig,
+                                    [in]  ULONG                   cchName,
+                                    [out] ULONG                   *pcchName,
+                                    [out] WCHAR                    wszName[]);
 };
 
 /*
