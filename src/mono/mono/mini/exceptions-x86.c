@@ -536,7 +536,7 @@ mono_x86_resume_unwind (mgreg_t *regs, MonoObject *exc,
 static guint8*
 get_throw_trampoline (const char *name, gboolean rethrow, gboolean llvm, gboolean corlib, gboolean llvm_abs, gboolean resume_unwind, MonoTrampInfo **info, gboolean aot)
 {
-	guint8 *start, *code;
+	guint8 *start, *code, *labels [16];
 	int i, stack_size, stack_offset, arg_offsets [5], regs_offset;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
@@ -604,6 +604,18 @@ get_throw_trampoline (const char *name, gboolean rethrow, gboolean llvm, gboolea
 	/* Save ESP */
 	x86_lea_membase (code, X86_EAX, X86_ESP, stack_offset);
 	x86_mov_membase_reg (code, X86_ESP, regs_offset + (X86_ESP * 4), X86_EAX, 4);
+
+	/* Clear fp stack */
+	labels [0] = code;
+	x86_fnstsw (code);
+	x86_shift_reg_imm (code, X86_SHR, X86_EAX, 11);
+	x86_alu_reg_imm (code, X86_AND, X86_EAX, 7);
+	x86_alu_reg_imm (code, X86_CMP, X86_EAX, 0);
+	labels [1] = code;
+	x86_branch8 (code, X86_CC_EQ, 0, FALSE);
+	x86_fstp (code, 0);
+	x86_jump_code (code, labels [0]);
+	mono_x86_patch (labels [1], code);
 
 	/* Set arg1 == regs */
 	x86_lea_membase (code, X86_EAX, X86_ESP, regs_offset);

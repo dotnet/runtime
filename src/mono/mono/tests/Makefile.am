@@ -789,7 +789,8 @@ TEST_IL_SRC_UNIVERSAL=			\
 	delegate-with-null-target.il	\
 	bug-318677.il	\
 	gsharing-valuetype-layout.il	\
-	invalid_generic_instantiation.il
+	invalid_generic_instantiation.il \
+	bug-45841-fpstack-exceptions.il
 
 if INSTALL_MOBILE_STATIC
 TEST_IL_SRC= \
