@@ -1274,6 +1274,7 @@ mini_usage (void)
 #ifdef HOST_WIN32
 	        "    --mixed-mode           Enable mixed-mode image support.\n"
 #endif
+		"    --handlers             Install custom handlers, use --help-handlers for details.\n"
 	  );
 }
 
@@ -1556,6 +1557,10 @@ switch_arch (char* argv[], const char* target_arch)
 }
 
 #endif
+
+#define MONO_HANDLERS_ARGUMENT "--handlers="
+#define MONO_HANDLERS_ARGUMENT_LEN G_N_ELEMENTS(MONO_HANDLERS_ARGUMENT)-1
+
 /**
  * mono_main:
  * @argc: number of arguments in the argv array
@@ -1908,6 +1913,15 @@ mono_main (int argc, char* argv[])
 		} else if (strcmp (argv [i], "--nacl-null-checks-off") == 0){
 			nacl_null_checks_off = TRUE;
 #endif
+		} else if (strncmp (argv [i], MONO_HANDLERS_ARGUMENT, MONO_HANDLERS_ARGUMENT_LEN) == 0) {
+			//Install specific custom handlers.
+			if (!mono_runtime_install_custom_handlers (argv[i] + MONO_HANDLERS_ARGUMENT_LEN)) {
+				fprintf (stderr, "error: " MONO_HANDLERS_ARGUMENT ", one or more unknown handlers: '%s'\n", argv [i]);
+				return 1;
+			}
+		} else if (strcmp (argv [i], "--help-handlers") == 0) {
+			mono_runtime_install_custom_handlers_usage ();
+			return 0;
 		} else if (argv [i][0] == '-' && argv [i][1] == '-' && mini_parse_debug_option (argv [i] + 2)) {
 		} else {
 			fprintf (stderr, "Unknown command line option: '%s'\n", argv [i]);
