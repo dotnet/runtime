@@ -1,16 +1,13 @@
 {
   "dependencies": {
     "System.IO.Pipes": "4.0.0",
-    "System.Runtime": "4.0.0",
-    "System.Runtime.InteropServices": "4.0.0",
+    "System.Runtime": "4.1.0",
+    "System.Runtime.Handles": "4.0.1",
+    "System.Runtime.InteropServices": "4.1.0",
     "System.Security.AccessControl": "4.0.0",
     "System.Security.Principal.Windows": "4.0.0"
   },
   "frameworks": {
-    "netstandard1.3": {
-      "imports": [
-        "dotnet5.4"
-      ]
-    }
+    "netstandard1.3": {}
   }
 }

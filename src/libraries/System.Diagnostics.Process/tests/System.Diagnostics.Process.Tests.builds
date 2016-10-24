@@ -2,10 +2,17 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <Project Include="System.Diagnostics.Process.Tests.csproj" />
+    <Project Include="System.Diagnostics.Process.Tests.csproj">
+      <TestTFMs>net463;netcoreapp1.1</TestTFMs>
+    </Project>
+    <Project Include="System.Diagnostics.Process.Tests.csproj">
+      <TargetGroup>netstandard1.4</TargetGroup>
+      <TestTFMs>netcoreapp1.0</TestTFMs>
+    </Project>
     <Project Include="System.Diagnostics.Process.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
-      <TestTFMs>net461;net462;net463</TestTFMs>
+      <TargetGroup>netstandard1.4</TargetGroup>
+      <TestTFMs>net461;net462</TestTFMs>
     </Project>
     <Project Include="Performance\System.Diagnostics.Process.Performance.Tests.csproj" />
   </ItemGroup>

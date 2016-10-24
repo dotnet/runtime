@@ -49,6 +49,8 @@ namespace System.Security.Claims
         public ClaimsIdentity(System.Security.Principal.IIdentity identity, System.Collections.Generic.IEnumerable<System.Security.Claims.Claim> claims, string authenticationType, string nameType, string roleType) { }
         public ClaimsIdentity(string authenticationType) { }
         public ClaimsIdentity(string authenticationType, string nameType, string roleType) { }
+        protected ClaimsIdentity(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        protected ClaimsIdentity(System.Runtime.Serialization.SerializationInfo info) { }
         public System.Security.Claims.ClaimsIdentity Actor { get { throw null; } set { } }
         public virtual string AuthenticationType { get { throw null; } }
         public object BootstrapContext { get { throw null; }[System.Security.SecurityCriticalAttribute]set { } }
@@ -69,6 +71,7 @@ namespace System.Security.Claims
         public virtual System.Collections.Generic.IEnumerable<System.Security.Claims.Claim> FindAll(string type) { throw null; }
         public virtual System.Security.Claims.Claim FindFirst(System.Predicate<System.Security.Claims.Claim> match) { throw null; }
         public virtual System.Security.Claims.Claim FindFirst(string type) { throw null; }
+        protected virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public virtual bool HasClaim(System.Predicate<System.Security.Claims.Claim> match) { throw null; }
         public virtual bool HasClaim(string type, string value) { throw null; }
         [System.Security.SecurityCriticalAttribute]
@@ -85,6 +88,7 @@ namespace System.Security.Claims
         public ClaimsPrincipal(System.IO.BinaryReader reader) { }
         public ClaimsPrincipal(System.Security.Principal.IIdentity identity) { }
         public ClaimsPrincipal(System.Security.Principal.IPrincipal principal) { }
+        protected ClaimsPrincipal(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public virtual System.Collections.Generic.IEnumerable<System.Security.Claims.Claim> Claims { get { throw null; } }
         public static System.Func<System.Security.Claims.ClaimsPrincipal> ClaimsPrincipalSelector { get { throw null; }[System.Security.SecurityCriticalAttribute]set { } }
         public static System.Security.Claims.ClaimsPrincipal Current { get { throw null; } }
@@ -98,6 +102,7 @@ namespace System.Security.Claims
         public virtual void AddIdentity(System.Security.Claims.ClaimsIdentity identity) { }
         public virtual System.Security.Claims.ClaimsPrincipal Clone() { throw null; }
         protected virtual System.Security.Claims.ClaimsIdentity CreateClaimsIdentity(System.IO.BinaryReader reader) { throw null; }
+        protected virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public virtual System.Collections.Generic.IEnumerable<System.Security.Claims.Claim> FindAll(System.Predicate<System.Security.Claims.Claim> match) { throw null; }
         public virtual System.Collections.Generic.IEnumerable<System.Security.Claims.Claim> FindAll(string type) { throw null; }
         public virtual System.Security.Claims.Claim FindFirst(System.Predicate<System.Security.Claims.Claim> match) { throw null; }

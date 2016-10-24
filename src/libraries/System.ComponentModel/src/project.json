@@ -2,11 +2,8 @@
   "frameworks": {
     "netstandard1.3": {
       "dependencies": {
-        "System.Runtime": "4.0.20"
-      },
-      "imports": [
-        "dotnet5.4"
-      ]
+        "System.Runtime": "4.1.0"
+      }
     },
     "net46": {
       "dependencies": {

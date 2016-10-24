@@ -125,10 +125,13 @@ namespace System.CodeDom.Compiler.Tests
         [InlineData("")]
         [InlineData(".cs")]
         [InlineData("no-such-language")]
-        public void CreateProvider_NoSuchLanguage_ThrowsKeyNotFoundException(string language)
+        public void CreateProvider_NoSuchLanguage_ThrowsConfigurationErrorsException(string language)
         {
-            Assert.Throws<KeyNotFoundException>(() => CodeDomProvider.CreateProvider(language));
-            Assert.Throws<KeyNotFoundException>(() => CodeDomProvider.CreateProvider(language, new Dictionary<string, string>()));
+            Exception ex1 = Assert.ThrowsAny<Exception>(() => CodeDomProvider.CreateProvider(language));
+            Assert.Equal("ConfigurationErrorsException", ex1.GetType().Name);
+
+            Exception ex2 = Assert.ThrowsAny<Exception>(() => CodeDomProvider.CreateProvider(language, new Dictionary<string, string>()));
+            Assert.Equal("ConfigurationErrorsException", ex2.GetType().Name);
         }
 
         [Theory]
@@ -142,6 +145,9 @@ namespace System.CodeDom.Compiler.Tests
         [InlineData("visualbasic", true)]
         [InlineData("vbscript", true)]
         [InlineData("VB", true)]
+        [InlineData("", false)]
+        [InlineData(".cs", false)]
+        [InlineData("no-such-language", false)]
         public void IsDefinedLanguage_ReturnsExpected(string language, bool expected)
         {
             Assert.Equal(expected, CodeDomProvider.IsDefinedLanguage(language));
@@ -151,15 +157,6 @@ namespace System.CodeDom.Compiler.Tests
         public void IsDefinedLanguage_NullLanguage_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("language", () => CodeDomProvider.IsDefinedLanguage(null));
-        }
-
-        [Theory]
-        [InlineData("")]
-        [InlineData(".cs")]
-        [InlineData("no-such-language")]
-        public void IsDefinedLanguage_NoSuchLanguage_ThrowsKeyNotFoundException(string language)
-        {
-            Assert.Throws<KeyNotFoundException>(() => CodeDomProvider.IsDefinedLanguage(language));
         }
 
         [Theory]
@@ -186,9 +183,10 @@ namespace System.CodeDom.Compiler.Tests
         [InlineData("")]
         [InlineData("c#")]
         [InlineData("no-such-extension")]
-        public void GetLanguageFromExtension_NoSuchExtension_ThrowsKeyNotFoundException(string extension)
+        public void GetLanguageFromExtension_NoSuchExtension_ThrowsConfigurationErrorsException(string extension)
         {
-            Assert.Throws<KeyNotFoundException>(() => CodeDomProvider.GetLanguageFromExtension(extension));
+            Exception ex = Assert.ThrowsAny<Exception>(() => CodeDomProvider.GetLanguageFromExtension(extension));
+            Assert.Equal("ConfigurationErrorsException", ex.GetType().Name);
         }
 
         [Theory]
@@ -199,6 +197,9 @@ namespace System.CodeDom.Compiler.Tests
         [InlineData("vb", true)]
         [InlineData(".vb", true)]
         [InlineData("VB", true)]
+        [InlineData("", false)]
+        [InlineData("c#", false)]
+        [InlineData("no-such-extension", false)]
         public void IsDefinedExtension_ReturnsExpected(string extension, bool expected)
         {
             Assert.Equal(expected, CodeDomProvider.IsDefinedExtension(extension));
@@ -208,15 +209,6 @@ namespace System.CodeDom.Compiler.Tests
         public void IsDefinedExtension_NullExtension_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("extension", () => CodeDomProvider.IsDefinedExtension(null));
-        }
-
-        [Theory]
-        [InlineData("")]
-        [InlineData("c#")]
-        [InlineData("no-such-extension")]
-        public void IsDefinedExtension_NoSuchExtension_ThrowsKeyNotFoundException(string extension)
-        {
-            Assert.Throws<KeyNotFoundException>(() => CodeDomProvider.IsDefinedExtension(extension));
         }
 
         [Theory]
@@ -247,7 +239,8 @@ namespace System.CodeDom.Compiler.Tests
         [InlineData("no-such-extension")]
         public void GetCompilerInfo_NoSuchExtension_ThrowsKeyNotFoundException(string language)
         {
-            Assert.Throws<KeyNotFoundException>(() => CodeDomProvider.GetCompilerInfo(language));
+            Exception ex = Assert.ThrowsAny<Exception>(() => CodeDomProvider.GetCompilerInfo(language));
+            Assert.Equal("ConfigurationErrorsException", ex.GetType().Name);
         }
 
         [Fact]

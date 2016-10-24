@@ -2,17 +2,16 @@
   "frameworks": {
     "netstandard1.3": {
       "dependencies": {
-        "System.Collections": "4.0.10",
-        "System.Diagnostics.Debug": "4.0.10",
-        "System.IO.Compression": "4.0.0",
-        "System.IO.FileSystem": "4.0.0",
-        "System.IO.FileSystem.Primitives": "4.0.0",
-        "System.Runtime": "4.0.0",
-        "System.Xml.ReaderWriter": "4.0.0"
-      },
-      "imports": [
-        "dotnet5.4"
-      ]
+        "System.Collections": "4.0.11",
+        "System.Diagnostics.Debug": "4.0.11",
+        "System.IO.Compression": "4.1.0",
+        "System.IO.FileSystem": "4.0.1",
+        "System.IO.FileSystem.Primitives": "4.0.1",
+        "System.Runtime": "4.1.0",
+        "System.Runtime.Extensions": "4.1.0",
+        "System.Resources.ResourceManager": "4.0.1",
+        "System.Xml.ReaderWriter": "4.0.11"
+      }
     },
     "net46": {
       "dependencies": {

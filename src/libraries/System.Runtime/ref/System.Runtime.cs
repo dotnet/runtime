@@ -1204,19 +1204,31 @@ namespace System
         public static int MaxGeneration { get { throw null; } }
         [System.Security.SecurityCriticalAttribute]
         public static void AddMemoryPressure(long bytesAllocated) { }
+        public static void CancelFullGCNotification() { }
         public static void Collect() { }
         public static void Collect(int generation) { }
         public static void Collect(int generation, System.GCCollectionMode mode) { }
         public static void Collect(int generation, System.GCCollectionMode mode, bool blocking) { }
         public static void Collect(int generation, System.GCCollectionMode mode, bool blocking, bool compacting) { }
         public static int CollectionCount(int generation) { throw null; }
+        public static void EndNoGCRegion() { }
         public static int GetGeneration(object obj) { throw null; }
+        public static int GetGeneration(System.WeakReference wo) { throw null; }
         public static long GetTotalMemory(bool forceFullCollection) { throw null; }
         public static void KeepAlive(object obj) { }
+        public static void RegisterForFullGCNotification(int maxGenerationThreshold, int largeObjectHeapThreshold) { }
         [System.Security.SecurityCriticalAttribute]
         public static void RemoveMemoryPressure(long bytesAllocated) { }
         public static void ReRegisterForFinalize(object obj) { }
         public static void SuppressFinalize(object obj) { }
+        public static bool TryStartNoGCRegion(long totalSize) { throw null; }
+        public static bool TryStartNoGCRegion(long totalSize, bool disallowFullBlockingGC) { throw null; }
+        public static bool TryStartNoGCRegion(long totalSize, long lohSize) { throw null; }
+        public static bool TryStartNoGCRegion(long totalSize, long lohSize, bool disallowFullBlockingGC) { throw null; }
+        public static System.GCNotificationStatus WaitForFullGCApproach() { throw null; }
+        public static System.GCNotificationStatus WaitForFullGCApproach(int millisecondsTimeout) { throw null; }
+        public static System.GCNotificationStatus WaitForFullGCComplete() { throw null; }
+        public static System.GCNotificationStatus WaitForFullGCComplete(int millisecondsTimeout) { throw null; }
         public static void WaitForPendingFinalizers() { }
 #if netcoreapp11
         public static long GetAllocatedBytesForCurrentThread() { return default(long); }
@@ -1227,6 +1239,14 @@ namespace System
         Default = 0,
         Forced = 1,
         Optimized = 2,
+    }
+    public enum GCNotificationStatus
+    {
+        Canceled = 2,
+        Failed = 1,
+        NotApplicable = 4,
+        Succeeded = 0,
+        Timeout = 3,
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct Guid : System.IComparable, System.IComparable<System.Guid>, System.IEquatable<System.Guid>, System.IFormattable
@@ -5041,7 +5061,7 @@ namespace System.Reflection
     {
         public static System.Reflection.TypeInfo GetTypeInfo(this System.Type type) { throw null; }
     }
-    public partial class InvalidFilterCriteriaException : Exception
+    public partial class InvalidFilterCriteriaException : ApplicationException
     {
         public InvalidFilterCriteriaException() { }
         public InvalidFilterCriteriaException(string message) { }
@@ -5474,19 +5494,19 @@ namespace System.Reflection
         public static System.Collections.Generic.IEnumerable<System.Reflection.PropertyInfo> GetRuntimeProperties(this System.Type type) { throw null; }
         public static System.Reflection.PropertyInfo GetRuntimeProperty(this System.Type type, string name) { throw null; }
     }
-    public partial class TargetException : System.Exception
+    public partial class TargetException : System.ApplicationException
     {
         public TargetException() { }
         public TargetException(string message) { }
         public TargetException(string message, Exception inner) { }
         protected TargetException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
-    public sealed partial class TargetInvocationException : System.Exception
+    public sealed partial class TargetInvocationException : System.ApplicationException
     {
         public TargetInvocationException(System.Exception inner) { }
         public TargetInvocationException(string message, System.Exception inner) { }
     }
-    public sealed partial class TargetParameterCountException : System.Exception
+    public sealed partial class TargetParameterCountException : System.ApplicationException
     {
         public TargetParameterCountException() { }
         public TargetParameterCountException(string message) { }
@@ -5625,6 +5645,7 @@ namespace System.Runtime
         Interactive = 1,
         LowLatency = 2,
         SustainedLowLatency = 3,
+        NoGCRegion = 4
     }
     public static partial class GCSettings
     {

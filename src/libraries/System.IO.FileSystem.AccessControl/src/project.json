@@ -2,24 +2,21 @@
   "frameworks": {
     "netstandard1.3": {
       "dependencies": {
-        "System.Collections": "4.0.0.0",
-        "System.Diagnostics.Contracts": "4.0.0.0",
-        "System.Diagnostics.Debug": "4.0.0.0",
-        "System.IO": "4.0.10.0",
-        "System.IO.FileSystem": "4.0.0.0",
-        "System.IO.FileSystem.Primitives": "4.0.0.0",
-        "System.Resources.ResourceManager": "4.0.0.0",
-        "System.Runtime": "4.0.20.0",
-        "System.Runtime.Extensions": "4.0.10.0",
-        "System.Runtime.Handles": "4.0.0.0",
-        "System.Runtime.InteropServices": "4.0.20.0",
+        "System.Collections": "4.0.11",
+        "System.Diagnostics.Contracts": "4.0.1",
+        "System.Diagnostics.Debug": "4.0.11",
+        "System.IO": "4.1.0",
+        "System.IO.FileSystem": "4.0.1",
+        "System.IO.FileSystem.Primitives": "4.0.1",
+        "System.Resources.ResourceManager": "4.0.1",
+        "System.Runtime": "4.1.0",
+        "System.Runtime.Extensions": "4.1.0",
+        "System.Runtime.Handles": "4.0.1",
+        "System.Runtime.InteropServices": "4.1.0",
         "System.Security.AccessControl": "4.0.0",
-        "System.Security.Principal": "4.0.0.0",
+        "System.Security.Principal": "4.0.1",
         "System.Security.Principal.Windows": "4.0.0"
-      },
-      "imports": [
-        "dotnet5.4"
-      ]
+      }
     },
     "net46": {
       "dependencies": {

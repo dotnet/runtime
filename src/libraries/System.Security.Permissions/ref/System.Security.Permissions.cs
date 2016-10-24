@@ -2,6 +2,37 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+namespace System.Net.NetworkInformation
+{
+    [Flags]
+    public enum NetworkInformationAccess
+    {
+        None = 0,
+        Read = 1,
+        Ping = 4
+    };
+    public sealed class NetworkInformationPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
+    {
+        public NetworkInformationPermission(System.Security.Permissions.PermissionState state) { }
+        public NetworkInformationPermission(NetworkInformationAccess access) { }
+        public NetworkInformationAccess Access { get { throw null; } }
+        public void AddPermission(NetworkInformationAccess access) { }
+        public bool IsUnrestricted() { throw null; }
+        public override System.Security.IPermission Copy() { throw null; }
+        public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
+        public override System.Security.IPermission Intersect(System.Security.IPermission target) { throw null; }
+        public override bool IsSubsetOf(System.Security.IPermission target) { throw null; }
+        public override void FromXml(System.Security.SecurityElement securityElement) { }
+        public override System.Security.SecurityElement ToXml() { throw null; }
+    }
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Assembly, AllowMultiple = true, Inherited = false)]
+    public sealed class NetworkInformationPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
+    {
+        public NetworkInformationPermissionAttribute(System.Security.Permissions.SecurityAction action) : base(action) { }
+        public string Access { get { throw null; } set { } }
+        public override System.Security.IPermission CreatePermission() { throw null; }
+    }
+}
 namespace System.Security {
   public abstract partial class CodeAccessPermission : System.Security.IPermission, System.Security.ISecurityEncodable, System.Security.IStackWalk {
     protected CodeAccessPermission() { }

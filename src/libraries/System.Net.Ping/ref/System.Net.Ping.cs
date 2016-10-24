@@ -39,6 +39,7 @@ namespace System.Net.NetworkInformation
     {
         public Ping() { }
         public event System.Net.NetworkInformation.PingCompletedEventHandler PingCompleted { add { } remove { } }
+        protected override void Dispose(bool disposing) { }
         protected void OnPingCompleted(System.Net.NetworkInformation.PingCompletedEventArgs e) { }
         public PingReply Send(string hostNameOrAddress) { throw null; }
         public PingReply Send(string hostNameOrAddress, int timeout) { throw null; }
