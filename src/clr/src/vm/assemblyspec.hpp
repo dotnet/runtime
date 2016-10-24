@@ -682,6 +682,20 @@ class AssemblySpecBindingCache
         WRAPPER_NO_CONTRACT;
         return pSpec->Hash();
     }
+    
+#if defined(FEATURE_CORECLR) && !defined(DACCESS_COMPILE)    
+    void GetAllAssemblies(SetSHash<PTR_DomainAssembly>& assemblyList)
+    {
+        PtrHashMap::PtrIterator i = m_map.begin();
+        while (!i.end())
+        {
+            AssemblyBinding *b = (AssemblyBinding*) i.GetValue();
+            if(!b->IsError() && b->GetAssembly() != NULL)
+                assemblyList.AddOrReplace(b->GetAssembly());
+            ++i;
+        }
+    }
+#endif // defined(FEATURE_CORECLR) && !defined(DACCESS_COMPILE)
 
     static BOOL CompareSpecs(UPTR u1, UPTR u2);
 };
