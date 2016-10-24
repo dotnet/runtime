@@ -9857,7 +9857,7 @@ void LinearScan::dumpLsraStats(FILE* file)
         unsigned resolutionMovCount = blockInfo[block->bbNum].resolutionMovCount;
         unsigned splitEdgeCount     = blockInfo[block->bbNum].splitEdgeCount;
 
-        if (spillCount != 0 || copyRegCount != 0 || resolutionMovCount != 0)
+        if (spillCount != 0 || copyRegCount != 0 || resolutionMovCount != 0 || splitEdgeCount != 0)
         {
             fprintf(file, "BB%02u [%8d]: ", block->bbNum, block->bbWeight);
             fprintf(file, "SpillCount = %d, ResolutionMovs = %d, SplitEdges = %d, CopyReg = %d\n", spillCount,
