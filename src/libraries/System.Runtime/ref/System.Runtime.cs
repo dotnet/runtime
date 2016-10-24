@@ -3157,6 +3157,7 @@ namespace System.Runtime.InteropServices
         public ExternalException(string message, int errorCode) { }
         protected ExternalException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public virtual int ErrorCode { get; }
+        public override string ToString() { throw null; }
     }
     [System.Security.SecurityCriticalAttribute]
     public abstract partial class SafeHandle : System.Runtime.ConstrainedExecution.CriticalFinalizerObject, System.IDisposable

@@ -18,7 +18,7 @@ namespace System.Runtime.InteropServices
             Assert.True(Directory.Exists(RuntimeEnvironment.GetRuntimeDirectory()));
             Assert.True(!String.IsNullOrEmpty(RuntimeEnvironment.GetSystemVersion()));
         }
-                
+
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void RuntimeEnvironmentNegTest()
@@ -32,7 +32,6 @@ namespace System.Runtime.InteropServices
             Guid guid;
             Assert.Throws<PlatformNotSupportedException>(() => RuntimeEnvironment.GetRuntimeInterfaceAsObject(guid, guid));
             Assert.Throws<PlatformNotSupportedException>(() => RuntimeEnvironment.GetRuntimeInterfaceAsIntPtr(guid, guid));
-
         }
     }
 }

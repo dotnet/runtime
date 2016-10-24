@@ -33,10 +33,21 @@
     <Compile Include="System\Runtime\InteropServices\ComTypes\statdata.cs" />
     <Compile Include="System\Runtime\InteropServices\ComTypes\stgmedium.cs" />
     <Compile Include="System\Runtime\InteropServices\ComTypes\tymed.cs" />
-    <Compile Include="System\Runtime\CompilerServices\Attributes.cs" />
+    <Compile Include="System\Runtime\InteropServices\AssemblyRegistrationFlags.cs" />
+    <Compile Include="System\Runtime\InteropServices\ExporterEventKind.cs" />
+    <Compile Include="System\Runtime\InteropServices\RegistrationClassContext.cs" />
+    <Compile Include="System\Runtime\InteropServices\RegistrationConnectionType.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot'">
     <Compile Include="MissingTypes.uap101aot.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
+    <Compile Include="System\Runtime\CompilerServices\Attributes.cs" />
+    <Compile Include="System\Runtime\InteropServices\Attributes.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\IDataObject.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\IEnumSTATDATA.cs" />
+    <Compile Include="System\Runtime\InteropServices\ICustomFactory.cs" />
+    <Compile Include="System\Runtime\InteropServices\ICustomMarshaler.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="mscorlib" />

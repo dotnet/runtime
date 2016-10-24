@@ -9,12 +9,9 @@ namespace System.IO
     public class UnmanagedMemoryStream { }
 }
 
-namespace System.Runtime.CompilerServices
-{
-    public interface IUnknownConstantAttribute {}
-}
-
 namespace System.Runtime.InteropServices
 {
+    public class AllowReversePInvokeCallsAttribute { }
+    public struct HandleRef { }
     public class RuntimeEnvironment {}
 }

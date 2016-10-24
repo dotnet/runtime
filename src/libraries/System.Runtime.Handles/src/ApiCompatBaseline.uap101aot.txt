@@ -1,0 +1,3 @@
+Compat issues with assembly System.Runtime.Handles:
+CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.CriticalHandle' does not inherit from base type 'System.Runtime.ConstrainedExecution.CriticalFinalizerObject' in the implementation but it does in the contract.
+Total Issues: 1
