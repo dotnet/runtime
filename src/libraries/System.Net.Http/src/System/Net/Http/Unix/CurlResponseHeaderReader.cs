@@ -43,7 +43,7 @@ namespace System.Net.Http
 
             // Parse status code.
             int statusCode = _span.ReadInt(ref index);
-            CheckResponseMsgFormat(statusCode >= 100 && statusCode < 600);
+            CheckResponseMsgFormat(statusCode >= 100 && statusCode < 1000);
 
             bool foundSpace = _span.SkipSpace(ref index);
             CheckResponseMsgFormat(index <= _span.Length);
