@@ -68,7 +68,7 @@
     }
 #endif // !LOG_PIPTR
 
-bool GcInfoDecoder::SetIsInterruptibleCB (UINT32 startOffset, UINT32 stopOffset, LPVOID hCallback)
+bool GcInfoDecoder::SetIsInterruptibleCB (UINT32 startOffset, UINT32 stopOffset, void * hCallback)
 {
     GcInfoDecoder *pThis = (GcInfoDecoder*)hCallback;
 
@@ -426,14 +426,14 @@ UINT32 GcInfoDecoder::FindSafePoint(UINT32 breakOffset)
     return result;
 }
 
-void GcInfoDecoder::EnumerateSafePoints(EnumerateSafePointsCallback *pCallback, LPVOID hCallback)
+void GcInfoDecoder::EnumerateSafePoints(EnumerateSafePointsCallback *pCallback, void * hCallback)
 {
     if(m_NumSafePoints == 0)
         return;
 
     const UINT32 numBitsPerOffset = CeilOfLog2(NORMALIZE_CODE_OFFSET(m_CodeLength));
 
-    for(UINT i = 0; i < m_NumSafePoints; i++)
+    for(UINT32 i = 0; i < m_NumSafePoints; i++)
     {
         UINT32 normOffset = (UINT32)m_Reader.Read(numBitsPerOffset);
         UINT32 offset = DENORMALIZE_CODE_OFFSET(normOffset) + 2;
@@ -450,7 +450,7 @@ void GcInfoDecoder::EnumerateSafePoints(EnumerateSafePointsCallback *pCallback, 
 
 void GcInfoDecoder::EnumerateInterruptibleRanges (
             EnumerateInterruptibleRangesCallback *pCallback,
-            LPVOID                                hCallback)
+            void *                                hCallback)
 {
     // If no info is found for the call site, we default to fully-interruptbile
     LOG((LF_GCROOTS, LL_INFO1000000, "No GC info found for call site at offset %x. Defaulting to fully-interruptible information.\n", (int) m_InstructionOffset));
@@ -581,7 +581,7 @@ bool GcInfoDecoder::EnumerateLiveSlots(
                 bool                reportScratchSlots,
                 unsigned            inputFlags,
                 GCEnumCallback      pCallBack,
-                LPVOID              hCallBack
+                void *              hCallBack
                 )
 {
 
@@ -983,7 +983,7 @@ void GcInfoDecoder::EnumerateUntrackedSlots(
                 PREGDISPLAY         pRD,
                 unsigned            inputFlags,
                 GCEnumCallback      pCallBack,
-                LPVOID              hCallBack
+                void *              hCallBack
                 )
 {
     _ASSERTE(GC_SLOT_INTERIOR == GC_CALL_INTERIOR);
@@ -1017,7 +1017,7 @@ void GcInfoDecoder::ReportUntrackedSlots(
                 PREGDISPLAY         pRD,
                 unsigned            inputFlags,
                 GCEnumCallback      pCallBack,
-                LPVOID              hCallBack
+                void *              hCallBack
                 )
 {
     for(UINT32 slotIndex = slotDecoder.GetNumTracked(); slotIndex < slotDecoder.GetNumSlots(); slotIndex++)
@@ -1428,7 +1428,7 @@ void GcInfoDecoder::ReportRegisterToGC(  // AMD64
                                 PREGDISPLAY     pRD,
                                 unsigned        flags,
                                 GCEnumCallback  pCallBack,
-                                LPVOID          hCallBack)
+                                void *          hCallBack)
 {
     GCINFODECODER_CONTRACT;
 
@@ -1562,7 +1562,7 @@ void GcInfoDecoder::ReportRegisterToGC(  // ARM
                                 PREGDISPLAY     pRD,
                                 unsigned        flags,
                                 GCEnumCallback  pCallBack,
-                                LPVOID          hCallBack)
+                                void *          hCallBack)
 {
     GCINFODECODER_CONTRACT;
 
@@ -1653,7 +1653,7 @@ void GcInfoDecoder::ReportRegisterToGC( // ARM64
                                 PREGDISPLAY     pRD,
                                 unsigned        flags,
                                 GCEnumCallback  pCallBack,
-                                LPVOID          hCallBack)
+                                void *          hCallBack)
 {
     GCINFODECODER_CONTRACT;
 
@@ -1731,7 +1731,7 @@ void GcInfoDecoder::ReportRegisterToGC(
                                 PREGDISPLAY     pRD,
                                 unsigned        flags,
                                 GCEnumCallback  pCallBack,
-                                LPVOID          hCallBack)
+                                void *          hCallBack)
 {
     _ASSERTE( !"NYI" );
 }
@@ -1810,7 +1810,7 @@ void GcInfoDecoder::ReportStackSlotToGC(
                                 PREGDISPLAY     pRD,
                                 unsigned        flags,
                                 GCEnumCallback  pCallBack,
-                                LPVOID          hCallBack)
+                                void *          hCallBack)
 {
     GCINFODECODER_CONTRACT;
 
