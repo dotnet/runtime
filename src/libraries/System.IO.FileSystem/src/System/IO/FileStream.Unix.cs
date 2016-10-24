@@ -104,7 +104,7 @@ namespace System.IO
             if (_useAsyncIO)
                 _asyncState = new AsyncState();
 
-            if (CanSeek)
+            if (CanSeekCore) // use non-virtual CanSeekCore rather than CanSeek to avoid making virtual call during ctor
                 SeekCore(0, SeekOrigin.Current);
         }
 
@@ -184,7 +184,11 @@ namespace System.IO
         }
 
         /// <summary>Gets a value indicating whether the current stream supports seeking.</summary>
-        public override bool CanSeek
+        public override bool CanSeek => CanSeekCore;
+
+        /// <summary>Gets a value indicating whether the current stream supports seeking.</summary>
+        /// <remarks>Separated out of CanSeek to enable making non-virtual call to this logic.</remarks>
+        private bool CanSeekCore
         {
             get
             {
@@ -1070,7 +1074,7 @@ namespace System.IO
         /// <returns>The new position in the stream.</returns>
         private long SeekCore(long offset, SeekOrigin origin)
         {
-            Debug.Assert(!_fileHandle.IsClosed && CanSeek);
+            Debug.Assert(!_fileHandle.IsClosed && (GetType() != typeof(FileStream) || CanSeek)); // verify that we can seek, but only if CanSeek won't be a virtual call (which could happen in the ctor)
             Debug.Assert(origin >= SeekOrigin.Begin && origin <= SeekOrigin.End);
 
             long pos = CheckFileCall(Interop.Sys.LSeek(_fileHandle, offset, (Interop.Sys.SeekWhence)(int)origin)); // SeekOrigin values are the same as Interop.libc.SeekWhence values

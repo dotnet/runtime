@@ -244,11 +244,11 @@ namespace System.IO
             // has been a write on the other end.  We'll just have to deal with it,
             // For the read end of a pipe, you can mess up and 
             // accidentally read synchronously from an async pipe.
-            if (CanRead)
+            if ((_access & FileAccess.Read) != 0) // don't use the virtual CanRead or CanWrite, as this may be used in the ctor
             {
                 r = Interop.mincore.ReadFile(_fileHandle, bytes, 0, out numBytesReadWritten, IntPtr.Zero);
             }
-            else if (CanWrite)
+            else if ((_access & FileAccess.Write) != 0) // don't use the virtual CanRead or CanWrite, as this may be used in the ctor
             {
                 r = Interop.mincore.WriteFile(_fileHandle, bytes, 0, out numBytesReadWritten, IntPtr.Zero);
             }
