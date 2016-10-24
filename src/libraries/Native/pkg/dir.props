@@ -27,6 +27,7 @@
     <!-- common properties that point to output of native build.  Can be overriden in case of 
          a coordinating build that produces all packages from OS-specific native builds -->
     <BuildNativePath Condition="'$(BuildNativePath)' == ''">$(BinDir)$(OSGroupPath).$(PackagePlatform).$(ConfigurationGroup)\Native\</BuildNativePath>
+    <WinNativeAOTPath Condition="'$(WinNativeAOTPath)' == ''">$(BinDir)$(OSGroupPath).$(PackagePlatform).$(ConfigurationGroup)\Native_aot\</WinNativeAOTPath>
     <WinNativePath Condition="'$(WinNativePath)' == ''">$(BuildNativePath)</WinNativePath>
     <RHELNativePath Condition="'$(RHELNativePath)' == ''">$(BuildNativePath)</RHELNativePath>
     <DebianNativePath Condition="'$(DebianNativePath)' == ''">$(BuildNativePath)</DebianNativePath>

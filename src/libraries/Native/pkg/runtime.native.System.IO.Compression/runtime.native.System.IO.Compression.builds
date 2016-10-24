@@ -63,6 +63,22 @@
       <OSGroup>Windows_NT</OSGroup>
       <Platform>arm64</Platform>
     </Project>
+    <Project Include="win_aot\runtime.native.System.IO.Compression.pkgproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <Platform>x86</Platform>
+    </Project>
+    <Project Include="win_aot\runtime.native.System.IO.Compression.pkgproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <Platform>amd64</Platform>
+    </Project>
+    <Project Include="win_aot\runtime.native.System.IO.Compression.pkgproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <Platform>arm</Platform>
+    </Project>
+    <Project Include="win_aot\runtime.native.System.IO.Compression.pkgproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <Platform>arm64</Platform>
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>

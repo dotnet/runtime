@@ -28,8 +28,6 @@
   <PropertyGroup>
     <AppXRunnerVersion>1.0.3-prerelease-00903-02</AppXRunnerVersion>
     <XunitPerfAnalysisPackageVersion>1.0.0-alpha-build0040</XunitPerfAnalysisPackageVersion>
-    <RuntimeWin7RuntimeNativeSystemDataSqlClientSniVersion>4.0.1</RuntimeWin7RuntimeNativeSystemDataSqlClientSniVersion>
-    <RuntimeWin10RuntimeNativeSystemIOCompressionVersion>4.0.1</RuntimeWin10RuntimeNativeSystemIOCompressionVersion>
   </PropertyGroup>
 
   <!-- Package dependency verification/auto-upgrade configuration. -->
