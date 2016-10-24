@@ -1,0 +1,10 @@
+user32.dll!EnumWindows
+user32.dll!GetWindow
+user32.dll!GetWindowThreadProcessId
+user32.dll!IsWindowVisible
+user32.dll!GetWindowLong
+user32.dll!GetWindowTextLength
+user32.dll!GetWindowText
+user32.dll!PostMessage
+user32.dll!SendMessageTimeout
+user32.dll!WaitForInputIdle

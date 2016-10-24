@@ -53,6 +53,36 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.EnumWindows.cs">
+      <Link>Common\Interop\Windows\Interop.EnumWindows.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.GetWindowTextLength.cs">
+      <Link>Common\Interop\Windows\Interop.GetWindowTextLength.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.SendMessageTimeout.cs">
+      <Link>Common\Interop\Windows\Interop.SendMessageTimeout.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.GetWindowText.cs">
+      <Link>Common\Interop\Windows\Interop.GetWindowText.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.GetWindow.cs">
+      <Link>Common\Interop\Windows\Interop.GetWindow.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.PostMessage.cs">
+      <Link>Common\Interop\Windows\Interop.PostMessage.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.GetWindowLong.cs">
+      <Link>Common\Interop\Windows\Interop.GetWindowLong.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.WaitForInputIdle.cs">
+      <Link>Common\Interop\Windows\Interop.WaitForInputIdle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.IsWindowVisible.cs">
+      <Link>Common\Interop\Windows\Interop.IsWindowVisible.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.GetWindowThreadProcessId.cs">
+      <Link>Common\Interop\Windows\Interop.GetWindowThreadProcessId.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CloseHandle.cs">
       <Link>Common\Interop\Windows\Interop.CloseHandle.cs</Link>
     </Compile>
@@ -328,6 +358,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
+
+    <!-- TODO: Replace this reference with package reference -->
+    <ProjectReference Include="..\..\System.ComponentModel.Primitives\ref\System.ComponentModel.Primitives.csproj">
+      <UndefineProperties>%(ProjectReference.UndefineProperties);OSGroup</UndefineProperties>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

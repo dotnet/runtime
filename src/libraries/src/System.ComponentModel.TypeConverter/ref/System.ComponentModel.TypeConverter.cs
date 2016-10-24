@@ -311,13 +311,6 @@ namespace System.ComponentModel
         void BeginInit();
         void EndInit();
     }
-    public partial interface ISynchronizeInvoke
-    {
-        bool InvokeRequired { get; }
-        System.IAsyncResult BeginInvoke(System.Delegate method, object[] args);
-        object EndInvoke(System.IAsyncResult result);
-        object Invoke(System.Delegate method, object[] args);
-    }
     public partial interface ITypeDescriptorContext : System.IServiceProvider
     {
         System.ComponentModel.IContainer Container { get; }
