@@ -11,6 +11,7 @@ namespace System.Runtime.InteropServices.Tests
 {
     public class COMExceptionTests
     {
+        [ActiveIssue(12467)]
         [Fact]
         public void SerializationRoundTrip()
         {

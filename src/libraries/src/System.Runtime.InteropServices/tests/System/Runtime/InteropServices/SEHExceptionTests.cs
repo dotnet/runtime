@@ -11,6 +11,7 @@ namespace System.Runtime.InteropServices.Tests
 {
     public class SEHExceptionTests
     {
+        [ActiveIssue(12467)]
         [Fact]
         public void SerializationRoundTrip()
         {
