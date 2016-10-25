@@ -8,9 +8,6 @@
   <ItemGroup>
     <Compile Include="System.ComponentModel.cs" />
     <Compile Include="System.ComponentModel.TypeConverter.cs" />
-
-    <!-- TODO: Replace this reference with package reference -->
-    <ProjectReference Include="..\..\System.ComponentModel.Primitives\ref\System.ComponentModel.Primitives.csproj"/>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

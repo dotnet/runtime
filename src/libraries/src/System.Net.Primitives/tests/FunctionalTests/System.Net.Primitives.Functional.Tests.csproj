@@ -44,10 +44,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <!-- TODO: Remove this reference once packages are updated -->
-    <ProjectReference Include="..\..\..\System.Net.Requests\pkg\System.Net.Requests.pkgproj" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\..\pkg\System.Net.Primitives.pkgproj">
       <Project>{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}</Project>
       <Name>System.Net.Primitives</Name>

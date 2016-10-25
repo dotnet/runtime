@@ -15,9 +15,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\pkg\System.Data.SqlClient.pkgproj" />
-    
-    <!-- TODO: Remove Common reference once packages are updated -->
-    <ProjectReference Include="..\..\..\System.Data.Common\pkg\System.Data.Common.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DataCommon\CheckConnStrSetupFactAttribute.cs" />

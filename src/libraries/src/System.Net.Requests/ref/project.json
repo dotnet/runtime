@@ -4,6 +4,7 @@
     "System.IO": "4.4.0-beta-24625-01",
     "System.Net.Primitives": "4.4.0-beta-24625-01",
     "System.Net.Security": "4.4.0-beta-24625-01",
+    "System.Net.ServicePoint": "4.4.0-beta-24625-01",
     "System.Net.WebHeaderCollection": "4.4.0-beta-24625-01",
     "System.Runtime": "4.4.0-beta-24625-01",
     "System.Security.Cryptography.X509Certificates": "4.4.0-beta-24625-01",

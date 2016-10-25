@@ -358,11 +358,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
-
-    <!-- TODO: Replace this reference with package reference -->
-    <ProjectReference Include="..\..\System.ComponentModel.Primitives\ref\System.ComponentModel.Primitives.csproj">
-      <UndefineProperties>%(ProjectReference.UndefineProperties);OSGroup</UndefineProperties>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

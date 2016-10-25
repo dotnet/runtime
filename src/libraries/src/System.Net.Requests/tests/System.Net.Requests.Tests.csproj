@@ -48,10 +48,5 @@
       <Project>{5EE76DCC-9FD5-47FD-AB45-BD0F0857740F}</Project>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <!-- TODO: Remove this reference once packages are updated -->
-    <ProjectReference Include="..\..\System.Net.Primitives\pkg\System.Net.Primitives.pkgproj" />
-    <ProjectReference Include="..\..\System.Net.ServicePoint\pkg\System.Net.ServicePoint.pkgproj" />
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
