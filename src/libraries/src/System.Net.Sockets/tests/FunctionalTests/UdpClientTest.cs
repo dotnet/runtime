@@ -117,5 +117,32 @@ namespace System.Net.Sockets.Tests
             udpService.EndSend(ar);
             _waitHandle.Set();
         }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData(true, IPProtectionLevel.Unrestricted)]
+        [InlineData(false, IPProtectionLevel.EdgeRestricted)]
+        public void AllowNatTraversal_Windows(bool allow, IPProtectionLevel resultLevel)
+        {
+            using (var c = new UdpClient())
+            {
+                c.AllowNatTraversal(allow);
+                Assert.Equal((int)resultLevel, (int)c.Client.GetSocketOption(SocketOptionLevel.IP, SocketOptionName.IPProtectionLevel));
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Theory]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void AllowNatTraversal_AnyUnix(bool allow)
+        {
+            using (var c = new UdpClient())
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => c.AllowNatTraversal(allow));
+            }
+        }
     }
 }

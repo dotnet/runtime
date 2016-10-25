@@ -320,6 +320,7 @@ namespace System.Net.Sockets
         public int SendTo(byte[] buffer, System.Net.EndPoint remoteEP) { throw null; }
         public int SendTo(byte[] buffer, System.Net.Sockets.SocketFlags socketFlags, System.Net.EndPoint remoteEP) { throw null; }
         public bool SendToAsync(System.Net.Sockets.SocketAsyncEventArgs e) { throw null; }
+        public void SetIPProtectionLevel(System.Net.Sockets.IPProtectionLevel level) { throw null; }
         public void SetSocketOption(System.Net.Sockets.SocketOptionLevel optionLevel, System.Net.Sockets.SocketOptionName optionName, bool optionValue) { }
         public void SetSocketOption(System.Net.Sockets.SocketOptionLevel optionLevel, System.Net.Sockets.SocketOptionName optionName, byte[] optionValue) { }
         public void SetSocketOption(System.Net.Sockets.SocketOptionLevel optionLevel, System.Net.Sockets.SocketOptionName optionName, int optionValue) { }
@@ -569,6 +570,7 @@ namespace System.Net.Sockets
         public void Start() { }
         public void Start(int backlog) { }
         public void Stop() { }
+        public void AllowNatTraversal(bool allow) { throw null; }
         public static TcpListener Create(int port) { throw null; }
     }
 
@@ -624,6 +626,7 @@ namespace System.Net.Sockets
         public System.Threading.Tasks.Task<int> SendAsync(byte[] datagram, int bytes) { throw null; }
         public System.Threading.Tasks.Task<int> SendAsync(byte[] datagram, int bytes, System.Net.IPEndPoint endPoint) { throw null; }
         public System.Threading.Tasks.Task<int> SendAsync(byte[] datagram, int bytes, string hostname, int port) { throw null; }
+        public void AllowNatTraversal(bool allow) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct UdpReceiveResult : System.IEquatable<System.Net.Sockets.UdpReceiveResult>

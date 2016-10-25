@@ -492,6 +492,11 @@ namespace System.Net.Sockets
             return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
         }
 
+        public static void SetIPProtectionLevel(Socket socket, SocketOptionLevel optionLevel, int protectionLevel)
+        {
+            socket.SetSocketOption(optionLevel, SocketOptionName.IPProtectionLevel, protectionLevel);
+        }
+
         public static SocketError GetSockOpt(SafeCloseSocket handle, SocketOptionLevel optionLevel, SocketOptionName optionName, out int optionValue)
         {
             int optionLength = 4; // sizeof(int)

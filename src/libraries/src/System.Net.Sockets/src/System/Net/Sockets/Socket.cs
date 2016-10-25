@@ -2276,6 +2276,27 @@ namespace System.Net.Sockets
             return optionValue;
         }
 
+        public void SetIPProtectionLevel(IPProtectionLevel level)
+        {
+            if (level == IPProtectionLevel.Unspecified)
+            {
+                throw new ArgumentException(SR.Format(SR.net_sockets_invalid_optionValue_all), nameof(level));
+            }
+
+            if (_addressFamily == AddressFamily.InterNetworkV6)
+            {
+                SocketPal.SetIPProtectionLevel(this, SocketOptionLevel.IPv6, (int)level);
+            }
+            else if (_addressFamily == AddressFamily.InterNetwork)
+            {
+                SocketPal.SetIPProtectionLevel(this, SocketOptionLevel.IP, (int)level);
+            }
+            else
+            {
+                throw new NotSupportedException(SR.net_invalidversion);
+            }
+        }
+
         // Determines the status of the socket.
         public bool Poll(int microSeconds, SelectMode mode)
         {
