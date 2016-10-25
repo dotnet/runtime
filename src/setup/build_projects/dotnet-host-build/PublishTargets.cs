@@ -190,6 +190,7 @@ namespace Microsoft.DotNet.Host.Build
                  { "sharedfx_Debian_x64", false },
                  { "sharedfx_CentOS_x64", false },
                  { "sharedfx_Fedora_23_x64", false },
+                 { "sharedfx_Fedora_24_x64", false },
                  { "sharedfx_openSUSE_13_2_x64", false },
                  { "sharedfx_openSUSE_42_1_x64", false }
              };
