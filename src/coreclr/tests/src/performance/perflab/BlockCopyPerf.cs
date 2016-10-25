@@ -7,7 +7,7 @@ using Xunit;
 
 public class BlockCopyPerf
 {
-    [Benchmark]
+    [Benchmark(InnerIterationCount=1000000)]
     [InlineData(0)]
     [InlineData(10)]
     [InlineData(100)]
@@ -19,6 +19,7 @@ public class BlockCopyPerf
 
         foreach (var iteration in Benchmark.Iterations)
             using (iteration.StartMeasurement())
-                Buffer.BlockCopy(bytes, 0, bytes, numElements, numElements);
+                for(int i=0; i<Benchmark.InnerIterationCount; i++)
+                    Buffer.BlockCopy(bytes, 0, bytes, numElements, numElements);
     }
 }
