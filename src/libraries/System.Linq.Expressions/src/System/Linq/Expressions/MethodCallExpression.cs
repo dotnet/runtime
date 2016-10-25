@@ -17,17 +17,12 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(MethodCallExpressionProxy))]
     public class MethodCallExpression : Expression, IArgumentProvider
     {
-        private readonly MethodInfo _method;
-
         internal MethodCallExpression(MethodInfo method)
         {
-            _method = method;
+            Method = method;
         }
 
-        internal virtual Expression GetInstance()
-        {
-            return null;
-        }
+        internal virtual Expression GetInstance() => null;
 
         /// <summary>
         /// Returns the node type of this <see cref="Expression"/>. (Inherited from <see cref="Expression"/>.)
@@ -39,12 +34,12 @@ namespace System.Linq.Expressions
         /// Gets the static type of the expression that this <see cref="Expression"/> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="System.Type"/> that represents the static type of the expression.</returns>
-        public sealed override Type Type => _method.ReturnType;
+        public sealed override Type Type => Method.ReturnType;
 
         /// <summary>
         /// Gets the <see cref="MethodInfo"/> for the method to be called.
         /// </summary>
-        public MethodInfo Method => _method;
+        public MethodInfo Method { get; }
 
         /// <summary>
         /// Gets the <see cref="Expression"/> that represents the instance 

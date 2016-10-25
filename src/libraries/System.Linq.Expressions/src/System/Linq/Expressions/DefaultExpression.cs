@@ -13,18 +13,16 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(DefaultExpressionProxy))]
     public sealed class DefaultExpression : Expression
     {
-        private readonly Type _type;
-
         internal DefaultExpression(Type type)
         {
-            _type = type;
+            Type = type;
         }
 
         /// <summary>
         /// Gets the static type of the expression that this <see cref="Expression"/> represents.
         /// </summary>
         /// <returns>The <see cref="System.Type"/> that represents the static type of the expression.</returns>
-        public sealed override Type Type => _type;
+        public sealed override Type Type { get; }
 
         /// <summary>
         /// Returns the node type of this Expression. Extension nodes should return

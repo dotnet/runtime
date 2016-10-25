@@ -18,20 +18,18 @@ namespace System.Linq.Expressions
     /// </remarks>
     public sealed class MemberMemberBinding : MemberBinding
     {
-        private ReadOnlyCollection<MemberBinding> _bindings;
-
         internal MemberMemberBinding(MemberInfo member, ReadOnlyCollection<MemberBinding> bindings)
 #pragma warning disable 618
             : base(MemberBindingType.MemberBinding, member)
         {
 #pragma warning restore 618
-            _bindings = bindings;
+            Bindings = bindings;
         }
 
         /// <summary>
         /// Gets the bindings that describe how to initialize the members of a member. 
         /// </summary>
-        public ReadOnlyCollection<MemberBinding> Bindings => _bindings;
+        public ReadOnlyCollection<MemberBinding> Bindings { get; }
 
         /// <summary>
         /// Creates a new expression that is like this one, but using the

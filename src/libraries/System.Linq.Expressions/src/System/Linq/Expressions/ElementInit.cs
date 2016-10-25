@@ -14,36 +14,33 @@ namespace System.Linq.Expressions
     /// </summary>
     public sealed class ElementInit : IArgumentProvider
     {
-        private MethodInfo _addMethod;
-        private ReadOnlyCollection<Expression> _arguments;
-
         internal ElementInit(MethodInfo addMethod, ReadOnlyCollection<Expression> arguments)
         {
-            _addMethod = addMethod;
-            _arguments = arguments;
+            AddMethod = addMethod;
+            Arguments = arguments;
         }
 
         /// <summary>
         /// Gets the <see cref="MethodInfo"/> used to add elements to the object.
         /// </summary>
-        public MethodInfo AddMethod => _addMethod;
+        public MethodInfo AddMethod { get; }
 
         /// <summary>
         /// Gets the list of elements to be added to the object.
         /// </summary>
-        public ReadOnlyCollection<Expression> Arguments => _arguments;
+        public ReadOnlyCollection<Expression> Arguments { get; }
 
         /// <summary>
         /// Gets the argument expression with the specified <paramref name="index"/>.
         /// </summary>
         /// <param name="index">The index of the argument expression to get.</param>
         /// <returns>The expression representing the argument at the specified <paramref name="index"/>.</returns>
-        public Expression GetArgument(int index) => _arguments[index];
+        public Expression GetArgument(int index) => Arguments[index];
 
         /// <summary>
         /// Gets the number of argument expressions of the node.
         /// </summary>
-        public int ArgumentCount => _arguments.Count;
+        public int ArgumentCount => Arguments.Count;
 
         /// <summary>
         /// Creates a <see cref="String"/> representation of the node.

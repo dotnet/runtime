@@ -15,42 +15,37 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(UnaryExpressionProxy))]
     public sealed class UnaryExpression : Expression
     {
-        private readonly Expression _operand;
-        private readonly MethodInfo _method;
-        private readonly ExpressionType _nodeType;
-        private readonly Type _type;
-
         internal UnaryExpression(ExpressionType nodeType, Expression expression, Type type, MethodInfo method)
         {
-            _operand = expression;
-            _method = method;
-            _nodeType = nodeType;
-            _type = type;
+            Operand = expression;
+            Method = method;
+            NodeType = nodeType;
+            Type = type;
         }
 
         /// <summary>
         /// Gets the static type of the expression that this <see cref="Expression"/> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="System.Type"/> that represents the static type of the expression.</returns>
-        public sealed override Type Type => _type;
+        public sealed override Type Type { get; }
 
         /// <summary>
         /// Returns the node type of this <see cref="Expression"/>. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
-        public sealed override ExpressionType NodeType => _nodeType;
+        public sealed override ExpressionType NodeType { get; }
 
         /// <summary>
         /// Gets the operand of the unary operation.
         /// </summary>
         /// <returns> An <see cref="ExpressionType"/> that represents the operand of the unary operation.</returns>
-        public Expression Operand => _operand;
+        public Expression Operand { get; }
 
         /// <summary>
         /// Gets the implementing method for the unary operation.
         /// </summary>
         /// <returns>The <see cref="MethodInfo"/> that represents the implementing method.</returns>
-        public MethodInfo Method => _method;
+        public MethodInfo Method { get; }
 
         /// <summary>
         /// Gets a value that indicates whether the expression tree node represents a lifted call to an operator.
@@ -64,12 +59,12 @@ namespace System.Linq.Expressions
                 {
                     return false;
                 }
-                bool operandIsNullable = TypeUtils.IsNullableType(_operand.Type);
+                bool operandIsNullable = TypeUtils.IsNullableType(Operand.Type);
                 bool resultIsNullable = TypeUtils.IsNullableType(this.Type);
-                if (_method != null)
+                if (Method != null)
                 {
-                    return (operandIsNullable && !TypeUtils.AreEquivalent(_method.GetParametersCached()[0].ParameterType, _operand.Type)) ||
-                           (resultIsNullable && !TypeUtils.AreEquivalent(_method.ReturnType, this.Type));
+                    return (operandIsNullable && !TypeUtils.AreEquivalent(Method.GetParametersCached()[0].ParameterType, Operand.Type)) ||
+                           (resultIsNullable && !TypeUtils.AreEquivalent(Method.ReturnType, this.Type));
                 }
                 return operandIsNullable || resultIsNullable;
             }
@@ -102,7 +97,7 @@ namespace System.Linq.Expressions
         {
             get
             {
-                switch (_nodeType)
+                switch (NodeType)
                 {
                     case ExpressionType.PreIncrementAssign:
                     case ExpressionType.PreDecrementAssign:
@@ -125,14 +120,14 @@ namespace System.Linq.Expressions
         {
             if (CanReduce)
             {
-                switch (_operand.NodeType)
+                switch (Operand.NodeType)
                 {
                     case ExpressionType.Index:
                         return ReduceIndex();
                     case ExpressionType.MemberAccess:
                         return ReduceMember();
                     default:
-                        Debug.Assert(_operand.NodeType == ExpressionType.Parameter);
+                        Debug.Assert(Operand.NodeType == ExpressionType.Parameter);
                         return ReduceVariable();
                 }
             }
@@ -141,22 +136,22 @@ namespace System.Linq.Expressions
 
         private bool IsPrefix
         {
-            get { return _nodeType == ExpressionType.PreIncrementAssign || _nodeType == ExpressionType.PreDecrementAssign; }
+            get { return NodeType == ExpressionType.PreIncrementAssign || NodeType == ExpressionType.PreDecrementAssign; }
         }
 
         private UnaryExpression FunctionalOp(Expression operand)
         {
             ExpressionType functional;
-            if (_nodeType == ExpressionType.PreIncrementAssign || _nodeType == ExpressionType.PostIncrementAssign)
+            if (NodeType == ExpressionType.PreIncrementAssign || NodeType == ExpressionType.PostIncrementAssign)
             {
                 functional = ExpressionType.Increment;
             }
             else
             {
-                Debug.Assert(_nodeType == ExpressionType.PreDecrementAssign || _nodeType == ExpressionType.PostDecrementAssign);
+                Debug.Assert(NodeType == ExpressionType.PreDecrementAssign || NodeType == ExpressionType.PostDecrementAssign);
                 functional = ExpressionType.Decrement;
             }
-            return new UnaryExpression(functional, operand, operand.Type, _method);
+            return new UnaryExpression(functional, operand, operand.Type, Method);
         }
 
         private Expression ReduceVariable()
@@ -166,25 +161,25 @@ namespace System.Linq.Expressions
                 // (op) var
                 // ... is reduced into ...
                 // var = op(var)
-                return Assign(_operand, FunctionalOp(_operand));
+                return Assign(Operand, FunctionalOp(Operand));
             }
             // var (op)
             // ... is reduced into ...
             // temp = var
             // var = op(var)
             // temp
-            ParameterExpression temp = Parameter(_operand.Type, null);
+            ParameterExpression temp = Parameter(Operand.Type, null);
             return Block(
                 new[] { temp },
-                Assign(temp, _operand),
-                Assign(_operand, FunctionalOp(temp)),
+                Assign(temp, Operand),
+                Assign(Operand, FunctionalOp(temp)),
                 temp
             );
         }
 
         private Expression ReduceMember()
         {
-            var member = (MemberExpression)_operand;
+            var member = (MemberExpression)Operand;
             if (member.Expression == null)
             {
                 //static member, reduce the same as variable
@@ -241,7 +236,7 @@ namespace System.Linq.Expressions
             // tempValue
 
             bool prefix = IsPrefix;
-            var index = (IndexExpression)_operand;
+            var index = (IndexExpression)Operand;
             int count = index.ArgumentCount;
             var block = new Expression[count + (prefix ? 2 : 4)];
             var temps = new ParameterExpression[count + (prefix ? 1 : 2)];

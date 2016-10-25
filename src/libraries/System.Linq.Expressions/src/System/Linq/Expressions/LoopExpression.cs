@@ -12,22 +12,18 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(LoopExpressionProxy))]
     public sealed class LoopExpression : Expression
     {
-        private readonly Expression _body;
-        private readonly LabelTarget _break;
-        private readonly LabelTarget _continue;
-
         internal LoopExpression(Expression body, LabelTarget @break, LabelTarget @continue)
         {
-            _body = body;
-            _break = @break;
-            _continue = @continue;
+            Body = body;
+            BreakLabel = @break;
+            ContinueLabel = @continue;
         }
 
         /// <summary>
         /// Gets the static type of the expression that this <see cref="Expression"/> represents.
         /// </summary>
         /// <returns>The <see cref="System.Type"/> that represents the static type of the expression.</returns>
-        public sealed override Type Type => _break == null ? typeof(void) : _break.Type;
+        public sealed override Type Type => BreakLabel == null ? typeof(void) : BreakLabel.Type;
 
         /// <summary>
         /// Returns the node type of this Expression. Extension nodes should return
@@ -39,17 +35,17 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the <see cref="Expression"/> that is the body of the loop.
         /// </summary>
-        public Expression Body => _body;
+        public Expression Body { get; }
 
         /// <summary>
         /// Gets the <see cref="LabelTarget"/> that is used by the loop body as a break statement target.
         /// </summary>
-        public LabelTarget BreakLabel => _break;
+        public LabelTarget BreakLabel { get; }
 
         /// <summary>
         /// Gets the <see cref="LabelTarget"/> that is used by the loop body as a continue statement target.
         /// </summary>
-        public LabelTarget ContinueLabel => _continue;
+        public LabelTarget ContinueLabel { get; }
 
         /// <summary>
         /// Dispatches to the specific visit method for this node type.

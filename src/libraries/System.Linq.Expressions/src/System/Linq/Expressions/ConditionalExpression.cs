@@ -15,13 +15,10 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(ConditionalExpressionProxy))]
     public class ConditionalExpression : Expression
     {
-        private readonly Expression _test;
-        private readonly Expression _true;
-
         internal ConditionalExpression(Expression test, Expression ifTrue)
         {
-            _test = test;
-            _true = ifTrue;
+            Test = test;
+            IfTrue = ifTrue;
         }
 
         internal static ConditionalExpression Make(Expression test, Expression ifTrue, Expression ifFalse, Type type)
@@ -56,12 +53,12 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the test of the conditional operation.
         /// </summary>
-        public Expression Test => _test;
+        public Expression Test { get; }
 
         /// <summary>
         /// Gets the expression to execute if the test evaluates to true.
         /// </summary>
-        public Expression IfTrue => _true;
+        public Expression IfTrue { get; }
 
         /// <summary>
         /// Gets the expression to execute if the test evaluates to false.
@@ -116,15 +113,13 @@ namespace System.Linq.Expressions
 
     internal sealed class FullConditionalExpressionWithType : FullConditionalExpression
     {
-        private readonly Type _type;
-
         internal FullConditionalExpressionWithType(Expression test, Expression ifTrue, Expression ifFalse, Type type)
             : base(test, ifTrue, ifFalse)
         {
-            _type = type;
+            Type = type;
         }
 
-        public sealed override Type Type => _type;
+        public sealed override Type Type { get; }
     }
 
     public partial class Expression

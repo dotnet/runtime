@@ -30,9 +30,6 @@ namespace System.Linq.Expressions
     /// </summary>
     public abstract class MemberBinding
     {
-        private MemberBindingType _type;
-        private MemberInfo _member;
-
         /// <summary>
         /// Initializes an instance of <see cref="MemberBinding"/> class.
         /// </summary>
@@ -41,19 +38,19 @@ namespace System.Linq.Expressions
         [Obsolete("Do not use this constructor. It will be removed in future releases.")]
         protected MemberBinding(MemberBindingType type, MemberInfo member)
         {
-            _type = type;
-            _member = member;
+            BindingType = type;
+            Member = member;
         }
 
         /// <summary>
         /// Gets the type of binding that is represented.
         /// </summary>
-        public MemberBindingType BindingType => _type;
+        public MemberBindingType BindingType { get; }
 
         /// <summary>
         /// Gets the field or property to be initialized.
         /// </summary>
-        public MemberInfo Member => _member;
+        public MemberInfo Member { get; }
 
         /// <summary>
         /// Returns a <see cref="String"/> that represents the current <see cref="Object"/>. 

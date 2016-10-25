@@ -16,20 +16,17 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(MemberInitExpressionProxy))]
     public sealed class MemberInitExpression : Expression
     {
-        private readonly NewExpression _newExpression;
-        private readonly ReadOnlyCollection<MemberBinding> _bindings;
-
         internal MemberInitExpression(NewExpression newExpression, ReadOnlyCollection<MemberBinding> bindings)
         {
-            _newExpression = newExpression;
-            _bindings = bindings;
+            NewExpression = newExpression;
+            Bindings = bindings;
         }
 
         /// <summary>
         /// Gets the static type of the expression that this <see cref="Expression"/> represents.
         /// </summary>
         /// <returns>The <see cref="System.Type"/> that represents the static type of the expression.</returns>
-        public sealed override Type Type => _newExpression.Type;
+        public sealed override Type Type => NewExpression.Type;
 
         /// <summary>
         /// Gets a value that indicates whether the expression tree node can be reduced. 
@@ -45,11 +42,11 @@ namespace System.Linq.Expressions
 
         /// <summary>Gets the expression that represents the constructor call.</summary>
         /// <returns>A <see cref="Expressions.NewExpression"/> that represents the constructor call.</returns>
-        public NewExpression NewExpression => _newExpression;
+        public NewExpression NewExpression { get; }
 
         /// <summary>Gets the bindings that describe how to initialize the members of the newly created object.</summary>
         /// <returns>A <see cref="ReadOnlyCollection{T}"/> of <see cref="MemberBinding"/> objects which describe how to initialize the members.</returns>
-        public ReadOnlyCollection<MemberBinding> Bindings => _bindings;
+        public ReadOnlyCollection<MemberBinding> Bindings { get; }
 
         /// <summary>
         /// Dispatches to the specific visit method for this node type.
@@ -68,7 +65,7 @@ namespace System.Linq.Expressions
         /// <returns>The reduced expression.</returns>
         public override Expression Reduce()
         {
-            return ReduceMemberInit(_newExpression, _bindings, true);
+            return ReduceMemberInit(NewExpression, Bindings, true);
         }
 
         internal static Expression ReduceMemberInit(Expression objExpression, ReadOnlyCollection<MemberBinding> bindings, bool keepOnStack)
