@@ -25,19 +25,19 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Gets the static type of the expression that this <see cref="Expression" /> represents. (Inherited from <see cref="Expression"/>.)
+        /// Gets the static type of the expression that this <see cref="Expression"/> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
-        /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
+        /// <returns>The <see cref="System.Type"/> that represents the static type of the expression.</returns>
         public sealed override Type Type => typeof(void);
 
         /// <summary>
-        /// Returns the node type of this <see cref="Expression" />. (Inherited from <see cref="Expression" />.)
+        /// Returns the node type of this <see cref="Expression"/>. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
         public sealed override ExpressionType NodeType => ExpressionType.DebugInfo;
 
         /// <summary>
-        /// Gets the start line of this <see cref="DebugInfoExpression" />.
+        /// Gets the start line of this <see cref="DebugInfoExpression"/>.
         /// </summary>
         [ExcludeFromCodeCoverage] // Unreachable
         public virtual int StartLine
@@ -46,7 +46,7 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Gets the start column of this <see cref="DebugInfoExpression" />.
+        /// Gets the start column of this <see cref="DebugInfoExpression"/>.
         /// </summary>
         [ExcludeFromCodeCoverage] // Unreachable
         public virtual int StartColumn
@@ -55,7 +55,7 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Gets the end line of this <see cref="DebugInfoExpression" />.
+        /// Gets the end line of this <see cref="DebugInfoExpression"/>.
         /// </summary>
         [ExcludeFromCodeCoverage] // Unreachable
         public virtual int EndLine
@@ -64,7 +64,7 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Gets the end column of this <see cref="DebugInfoExpression" />.
+        /// Gets the end column of this <see cref="DebugInfoExpression"/>.
         /// </summary>
         [ExcludeFromCodeCoverage] // Unreachable
         public virtual int EndColumn
@@ -151,10 +151,10 @@ namespace System.Linq.Expressions
         /// Creates a <see cref="DebugInfoExpression"/> with the specified span.
         /// </summary>
         /// <param name="document">The <see cref="SymbolDocumentInfo"/> that represents the source file.</param>
-        /// <param name="startLine">The start line of this <see cref="DebugInfoExpression" />. Must be greater than 0.</param>
-        /// <param name="startColumn">The start column of this <see cref="DebugInfoExpression" />. Must be greater than 0.</param>
-        /// <param name="endLine">The end line of this <see cref="DebugInfoExpression" />. Must be greater or equal than the start line.</param>
-        /// <param name="endColumn">The end column of this <see cref="DebugInfoExpression" />. If the end line is the same as the start line, it must be greater or equal than the start column. In any case, must be greater than 0.</param>
+        /// <param name="startLine">The start line of this <see cref="DebugInfoExpression"/>. Must be greater than 0.</param>
+        /// <param name="startColumn">The start column of this <see cref="DebugInfoExpression"/>. Must be greater than 0.</param>
+        /// <param name="endLine">The end line of this <see cref="DebugInfoExpression"/>. Must be greater or equal than the start line.</param>
+        /// <param name="endColumn">The end column of this <see cref="DebugInfoExpression"/>. If the end line is the same as the start line, it must be greater or equal than the start column. In any case, must be greater than 0.</param>
         /// <returns>An instance of <see cref="DebugInfoExpression"/>.</returns>
         public static DebugInfoExpression DebugInfo(SymbolDocumentInfo document, int startLine, int startColumn, int endLine, int endColumn)
         {

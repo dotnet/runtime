@@ -32,9 +32,9 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Gets the static type of the expression that this <see cref="Expression" /> represents.
+        /// Gets the static type of the expression that this <see cref="Expression"/> represents.
         /// </summary>
-        /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
+        /// <returns>The <see cref="System.Type"/> that represents the static type of the expression.</returns>
         public sealed override Type Type => _type;
 
         /// <summary>
@@ -90,9 +90,9 @@ namespace System.Linq.Expressions
         /// supplied children. If all of the children are the same, it will
         /// return this expression.
         /// </summary>
-        /// <param name="switchValue">The <see cref="SwitchValue" /> property of the result.</param>
-        /// <param name="cases">The <see cref="Cases" /> property of the result.</param>
-        /// <param name="defaultBody">The <see cref="DefaultBody" /> property of the result.</param>
+        /// <param name="switchValue">The <see cref="SwitchValue"/> property of the result.</param>
+        /// <param name="cases">The <see cref="Cases"/> property of the result.</param>
+        /// <param name="defaultBody">The <see cref="DefaultBody"/> property of the result.</param>
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public SwitchExpression Update(Expression switchValue, IEnumerable<SwitchCase> cases, Expression defaultBody)
         {

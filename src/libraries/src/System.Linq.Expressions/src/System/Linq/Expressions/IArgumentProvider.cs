@@ -5,10 +5,10 @@
 namespace System.Linq.Expressions
 {
     /// <summary>
-    /// Provides an internal interface for accessing the arguments that multiple tree
-    /// nodes (DynamicExpression, ElementInit, MethodCallExpression, InvocationExpression, NewExpression,
-    /// and InexExpression).
-    /// 
+    /// Interface for accessing the arguments of multiple tree nodes (DynamicExpression, ElementInit,
+    /// MethodCallExpression, InvocationExpression, NewExpression, and IndexExpression).
+    /// </summary>
+    /// <remarks>
     /// This enables two optimizations which reduce the size of the trees.  The first is it enables
     /// the nodes to hold onto an IList of T instead of a ReadOnlyCollection.  This saves the cost
     /// of allocating the ReadOnlyCollection for each node.  The second is that it enables specialized
@@ -35,10 +35,19 @@ namespace System.Linq.Expressions
     /// users can rely on object identity to tell if the node has changed.  Storing the readonly collection in 
     /// an overloaded field enables us to both reduce memory usage as well as maintain compatibility and an 
     /// easy to use external API.
-    /// </summary>
+    /// </remarks>
     public interface IArgumentProvider
     {
+        /// <summary>
+        /// Gets the argument expression with the specified <paramref name="index"/>.
+        /// </summary>
+        /// <param name="index">The index of the argument expression to get.</param>
+        /// <returns>The expression representing the argument at the specified <paramref name="index"/>.</returns>
         Expression GetArgument(int index);
+
+        /// <summary>
+        /// Gets the number of argument expressions of the node.
+        /// </summary>
         int ArgumentCount
         {
             get;

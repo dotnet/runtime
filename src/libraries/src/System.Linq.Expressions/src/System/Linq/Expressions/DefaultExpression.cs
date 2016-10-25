@@ -21,9 +21,9 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Gets the static type of the expression that this <see cref="Expression" /> represents.
+        /// Gets the static type of the expression that this <see cref="Expression"/> represents.
         /// </summary>
-        /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
+        /// <returns>The <see cref="System.Type"/> that represents the static type of the expression.</returns>
         public sealed override Type Type => _type;
 
         /// <summary>
@@ -45,11 +45,11 @@ namespace System.Linq.Expressions
     public partial class Expression
     {
         /// <summary>
-        /// Creates an empty expression that has <see cref="System.Void"/> type.
+        /// Creates an empty expression that has <see cref="Void"/> type.
         /// </summary>
         /// <returns>
-        /// A <see cref="DefaultExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to 
-        /// <see cref="F:ExpressionType.Default"/> and the <see cref="P:Expression.Type"/> property set to <see cref="System.Void"/>.
+        /// A <see cref="DefaultExpression"/> that has the <see cref="NodeType"/> property equal to 
+        /// <see cref="ExpressionType.Default"/> and the <see cref="Type"/> property set to <see cref="Void"/>.
         /// </returns>
         public static DefaultExpression Empty()
         {
@@ -57,12 +57,12 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Creates a <see cref="DefaultExpression"/> that has the <see cref="P:Expression.Type"/> property set to the specified type.
+        /// Creates a <see cref="DefaultExpression"/> that has the <see cref="Type"/> property set to the specified type.
         /// </summary>
-        /// <param name="type">A <see cref="System.Type"/> to set the <see cref="P:Expression.Type"/> property equal to.</param>
+        /// <param name="type">A <see cref="Type"/> to set the <see cref="Type"/> property equal to.</param>
         /// <returns>
-        /// A <see cref="DefaultExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to 
-        /// <see cref="F:ExpressionType.Default"/> and the <see cref="P:Expression.Type"/> property set to the specified type.
+        /// A <see cref="DefaultExpression"/> that has the <see cref="NodeType"/> property equal to 
+        /// <see cref="ExpressionType.Default"/> and the <see cref="Type"/> property set to the specified type.
         /// </returns>
         public static DefaultExpression Default(Type type)
         {

@@ -32,7 +32,7 @@ namespace System.Linq.Expressions
         /// supplied children. If all of the children are the same, it will
         /// return this expression.
         /// </summary>
-        /// <param name="expression">The <see cref="Expression" /> property of the result.</param>
+        /// <param name="expression">The <see cref="Expression"/> property of the result.</param>
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public MemberAssignment Update(Expression expression)
         {

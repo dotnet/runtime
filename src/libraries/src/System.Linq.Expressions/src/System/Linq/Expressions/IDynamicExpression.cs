@@ -4,10 +4,13 @@
 
 namespace System.Linq.Expressions
 {
+    /// <summary>
+    /// Interface implemented by expression nodes that represent a dynamically bound operation.
+    /// </summary>
     public interface IDynamicExpression : IArgumentProvider
     {
         /// <summary>
-        /// Gets the type of the delegate used by the CallSite />.
+        /// Gets the type of the delegate used by the CallSite.
         /// </summary>
         Type DelegateType { get; }
 
