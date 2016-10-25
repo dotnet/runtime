@@ -8,13 +8,11 @@
     <ProjectGuid>{F9DF2357-81B4-4317-908E-512DA9395583}</ProjectGuid>
     <RootNamespace>System.Console</RootNamespace>
     <AssemblyName>System.Console</AssemblyName>
-    <AssemblyVersion Condition="'$(TargetGroup)'=='netstandard1.3' OR '$(TargetGroup)'=='net46' OR '$(TargetGroup)'=='netcore50'">4.0.1.0</AssemblyVersion>
-    <ContractProject Condition="'$(AssemblyVersion)'=='4.0.1.0'">../ref/4.0.0/System.Console.depproj</ContractProject>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.3'">
+  <ItemGroup Condition="'$(TargetGroup)'!='net463'">
     <AdditionalFiles Include="$(ToolsDir)PinvokeAnalyzer_OneCoreApis.txt" />
   </ItemGroup>
   <!-- Help VS understand available configurations -->
@@ -22,17 +20,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_netstandard1.3_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_netstandard1.3_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netstandard1.3_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netstandard1.3_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' != 'net46' AND '$(TargetGroup)' != 'net463'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
     <Compile Include="System\Console.cs" />
     <Compile Include="System\ConsoleCancelEventArgs.cs" />
     <Compile Include="System\ConsoleColor.cs" />
@@ -51,12 +41,13 @@
       <Link>Common\System\IO\EncodingHelper.cs</Link>
     </Compile>
   </ItemGroup>
-  <!-- Windows : UAP -->
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'netcore50' ">
+  <!-- Windows : UAP 
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'uap101aot' ">
     <Compile Include="System\ConsolePal.Uap.cs" />
-  </ItemGroup>
+  </ItemGroup> 
+  -->
   <!-- Windows : Win32 -->
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And ('$(TargetGroup)' == '' OR '$(TargetGroup)'=='netstandard1.3')">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' == ''">
     <Compile Include="System\ConsolePal.Windows.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
@@ -168,7 +159,7 @@
     </Compile>
   </ItemGroup>
   <!-- Unix -->
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' And ('$(TargetGroup)' == '' OR '$(TargetGroup)'=='netstandard1.3')">
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' And '$(TargetGroup)' == ''"> 
     <Compile Include="System\ConsolePal.Unix.cs" />
     <Compile Include="System\TermInfo.cs" />
     <Compile Include="System\IO\StdInReader.cs" />
@@ -264,12 +255,7 @@
       <Link>Common\Interop\Unix\Interop.StdinReady.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.3' Or '$(TargetGroup)' == 'netcore50'">
-    <Compile Include="$(CommonPath)\System\SerializableAttribute.cs">
-      <Link>Common\System\SerializableAttribute.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'net463'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="mscorlib" />
   </ItemGroup>
   <ItemGroup>
