@@ -2397,7 +2397,7 @@ verify_typeref_table (VerifyContext *ctx)
 }
 
 /*bits 9,11,14,15,19,21,24-31 */
-#define INVALID_TYPEDEF_FLAG_BITS ((1 << 6) | (1 << 9) | (1 << 14) | (1 << 15) | (1 << 19) | (1 << 21) | 0xFF000000)
+#define INVALID_TYPEDEF_FLAG_BITS ((1 << 6) | (1 << 9) | (1 << 15) | (1 << 19) | (1 << 21) | 0xFF000000)
 static void
 verify_typedef_table (VerifyContext *ctx)
 {
