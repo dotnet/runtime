@@ -757,7 +757,7 @@ void CodeGen::genCodeForBinary(GenTree* treeNode)
     }
     // now we know there are 3 different operands so attempt to use LEA
     else if (oper == GT_ADD && !varTypeIsFloating(treeNode) && !treeNode->gtOverflowEx() // LEA does not set flags
-             && (op2->isContainedIntOrIImmed() || !op2->isContained()))
+             && (op2->isContainedIntOrIImmed() || !op2->isContained()) && !treeNode->gtSetFlags())
     {
         if (op2->isContainedIntOrIImmed())
         {
@@ -5971,17 +5971,49 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
     var_types  op2Type   = op2->TypeGet();
     regNumber  targetReg = treeNode->gtRegNum;
 
+    // Case of op1 == 0 or op1 != 0:
+    // Optimize generation of 'test' instruction if op1 sets flags.
+    //
+    // Note that if LSRA has inserted any GT_RELOAD/GT_COPY before
+    // op1, it will not modify the flags set by codegen of op1.
+    // Similarly op1 could also be reg-optional at its use and
+    // it was spilled after producing its result in a register.
+    // Spill code too will not modify the flags set by op1.
+    GenTree* realOp1 = op1->gtSkipReloadOrCopy();
+    if (realOp1->gtSetFlags())
+    {
+        // op1 must set ZF and SF flags
+        assert(realOp1->gtSetZSFlags());
+
+        // Must be (in)equality against zero.
+        assert(tree->OperGet() == GT_EQ || tree->OperGet() == GT_NE);
+        assert(op2->IsIntegralConst(0));
+        assert(op2->isContained());
+
+        // Just consume the operands
+        genConsumeOperands(tree);
+
+        // No need to generate test instruction since
+        // op1 sets flags
+
+        // Are we evaluating this into a register?
+        if (targetReg != REG_NA)
+        {
+            genSetRegToCond(targetReg, tree);
+            genProduceReg(tree);
+        }
+
+        return;
+    }
+
 #ifdef FEATURE_SIMD
     // If we have GT_JTRUE(GT_EQ/NE(GT_SIMD((in)Equality, v1, v2), true/false)),
     // then we don't need to generate code for GT_EQ/GT_NE, since SIMD (in)Equality intrinsic
     // would set or clear Zero flag.
-    //
-    // Is treeNode == or != that doesn't need to materialize result into a register?
-    if ((tree->OperGet() == GT_EQ || tree->OperGet() == GT_NE) && (targetReg == REG_NA))
+    if ((targetReg == REG_NA) && (tree->OperGet() == GT_EQ || tree->OperGet() == GT_NE))
     {
-        // Is it a SIMD (in)Equality that doesn't need to
-        // materialize result into a register?
-        if (op1->gtRegNum == REG_NA && op1->IsSIMDEqualityOrInequality())
+        // Is it a SIMD (in)Equality that doesn't need to materialize result into a register?
+        if ((op1->gtRegNum == REG_NA) && op1->IsSIMDEqualityOrInequality())
         {
             // Must be comparing against true or false.
             assert(op2->IsIntegralConst(0) || op2->IsIntegralConst(1));
