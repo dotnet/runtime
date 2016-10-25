@@ -15,7 +15,7 @@
 #include "atomic.h"
 
 void
-mono_os_event_init (MonoOSEvent *event, gboolean manual, gboolean initial, MonoOSEventFreeCb free_cb)
+mono_os_event_init (MonoOSEvent *event, gboolean manual, gboolean initial)
 {
 	g_assert (event);
 

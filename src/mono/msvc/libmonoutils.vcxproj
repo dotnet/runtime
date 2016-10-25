@@ -122,6 +122,7 @@
     <ClCompile Include="..\mono\utils\mono-uri.c" />
     <ClCompile Include="..\mono\utils\mono-value-hash.c" />
     <ClCompile Include="..\mono\utils\monobitset.c" />
+    <ClCompile Include="..\mono\utils\os-event-win32.c" />
     <ClCompile Include="..\mono\utils\strenc.c" />
     <ClCompile Include="..\mono\utils\atomic.c" />
     <ClCompile Include="..\mono\utils\mono-hwcap.c" />
@@ -196,6 +197,7 @@
     <ClInclude Include="..\mono\utils\mono-uri.h" />
     <ClInclude Include="..\mono\utils\mono-value-hash.h" />
     <ClInclude Include="..\mono\utils\monobitset.h" />
+    <ClInclude Include="..\mono\utils\os-event.h" />
     <ClInclude Include="..\mono\utils\strenc.h" />
     <ClInclude Include="..\mono\utils\valgrind.h" />
     <ClInclude Include="..\mono\utils\atomic.h" />
