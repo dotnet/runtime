@@ -21,13 +21,10 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(ListInitExpressionProxy))]
     public sealed class ListInitExpression : Expression
     {
-        private readonly NewExpression _newExpression;
-        private readonly ReadOnlyCollection<ElementInit> _initializers;
-
         internal ListInitExpression(NewExpression newExpression, ReadOnlyCollection<ElementInit> initializers)
         {
-            _newExpression = newExpression;
-            _initializers = initializers;
+            NewExpression = newExpression;
+            Initializers = initializers;
         }
 
         /// <summary>
@@ -40,7 +37,7 @@ namespace System.Linq.Expressions
         /// Gets the static type of the expression that this <see cref="Expression"/> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="System.Type"/> that represents the static type of the expression.</returns>
-        public sealed override Type Type => _newExpression.Type;
+        public sealed override Type Type => NewExpression.Type;
 
         /// <summary>
         /// Gets a value that indicates whether the expression tree node can be reduced. 
@@ -50,12 +47,12 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the expression that contains a call to the constructor of a collection type. 
         /// </summary>
-        public NewExpression NewExpression => _newExpression;
+        public NewExpression NewExpression { get; }
 
         /// <summary>
         /// Gets the element initializers that are used to initialize a collection. 
         /// </summary>
-        public ReadOnlyCollection<ElementInit> Initializers => _initializers;
+        public ReadOnlyCollection<ElementInit> Initializers { get; }
 
         /// <summary>
         /// Dispatches to the specific visit method for this node type.
@@ -74,7 +71,7 @@ namespace System.Linq.Expressions
         /// <returns>The reduced expression.</returns>
         public override Expression Reduce()
         {
-            return MemberInitExpression.ReduceListInit(_newExpression, _initializers, true);
+            return MemberInitExpression.ReduceListInit(NewExpression, Initializers, true);
         }
 
         /// <summary>

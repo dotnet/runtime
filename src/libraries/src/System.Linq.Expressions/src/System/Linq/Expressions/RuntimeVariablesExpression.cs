@@ -18,11 +18,9 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(RuntimeVariablesExpressionProxy))]
     public sealed class RuntimeVariablesExpression : Expression
     {
-        private readonly ReadOnlyCollection<ParameterExpression> _variables;
-
         internal RuntimeVariablesExpression(ReadOnlyCollection<ParameterExpression> variables)
         {
-            _variables = variables;
+            Variables = variables;
         }
 
         /// <summary>
@@ -41,7 +39,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// The variables or parameters to which to provide runtime access.
         /// </summary>
-        public ReadOnlyCollection<ParameterExpression> Variables => _variables;
+        public ReadOnlyCollection<ParameterExpression> Variables { get; }
 
         /// <summary>
         /// Dispatches to the specific visit method for this node type.

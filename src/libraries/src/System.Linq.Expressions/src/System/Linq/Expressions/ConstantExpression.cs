@@ -14,11 +14,9 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(ConstantExpressionProxy))]
     public class ConstantExpression : Expression
     {
-        private readonly object _value;
-
         internal ConstantExpression(object value)
         {
-            _value = value;
+            Value = value;
         }
 
         /// <summary>
@@ -29,12 +27,12 @@ namespace System.Linq.Expressions
         {
             get
             {
-                if (_value == null)
+                if (Value == null)
                 {
                     return typeof(object);
                 }
 
-                return _value.GetType();
+                return Value.GetType();
             }
         }
 
@@ -48,7 +46,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the value of the constant expression.
         /// </summary>
-        public object Value => _value;
+        public object Value { get; }
 
         /// <summary>
         /// Dispatches to the specific visit method for this node type.
@@ -61,15 +59,13 @@ namespace System.Linq.Expressions
 
     internal class TypedConstantExpression : ConstantExpression
     {
-        private readonly Type _type;
-
         internal TypedConstantExpression(object value, Type type)
             : base(value)
         {
-            _type = type;
+            Type = type;
         }
 
-        public sealed override Type Type => _type;
+        public sealed override Type Type { get; }
     }
 
     public partial class Expression

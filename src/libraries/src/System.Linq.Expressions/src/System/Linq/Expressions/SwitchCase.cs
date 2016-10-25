@@ -15,24 +15,21 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(Expression.SwitchCaseProxy))]
     public sealed class SwitchCase
     {
-        private readonly ReadOnlyCollection<Expression> _testValues;
-        private readonly Expression _body;
-
         internal SwitchCase(Expression body, ReadOnlyCollection<Expression> testValues)
         {
-            _body = body;
-            _testValues = testValues;
+            Body = body;
+            TestValues = testValues;
         }
 
         /// <summary>
         /// Gets the values of this case. This case is selected for execution when the <see cref="SwitchExpression.SwitchValue"/> matches any of these values.
         /// </summary>
-        public ReadOnlyCollection<Expression> TestValues => _testValues;
+        public ReadOnlyCollection<Expression> TestValues { get; }
 
         /// <summary>
         /// Gets the body of this case.
         /// </summary>
-        public Expression Body => _body;
+        public Expression Body { get; }
 
         /// <summary>
         /// Returns a <see cref="String"/> that represents the current <see cref="Object"/>. 

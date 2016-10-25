@@ -16,13 +16,10 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(BinaryExpressionProxy))]
     public class BinaryExpression : Expression
     {
-        private readonly Expression _left;
-        private readonly Expression _right;
-
         internal BinaryExpression(Expression left, Expression right)
         {
-            _left = left;
-            _right = right;
+            Left = left;
+            Right = right;
         }
 
         /// <summary>
@@ -63,12 +60,12 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the right operand of the binary operation.
         /// </summary>
-        public Expression Right => _right;
+        public Expression Right { get; }
 
         /// <summary>
         /// Gets the left operand of the binary operation.
         /// </summary>
-        public Expression Left => _left;
+        public Expression Left { get; }
 
         /// <summary>
         /// Gets the implementing method for the binary operation.
@@ -123,7 +120,7 @@ namespace System.Linq.Expressions
             // Only reduce OpAssignment expressions.
             if (IsOpAssignment(NodeType))
             {
-                switch (_left.NodeType)
+                switch (Left.NodeType)
                 {
                     case ExpressionType.MemberAccess:
                         return ReduceMember();
@@ -183,18 +180,18 @@ namespace System.Linq.Expressions
             // ... is reduced into ...
             // v = v (op) r
             ExpressionType op = GetBinaryOpFromAssignmentOp(NodeType);
-            Expression r = Expression.MakeBinary(op, _left, _right, false, Method);
+            Expression r = Expression.MakeBinary(op, Left, Right, false, Method);
             LambdaExpression conversion = GetConversion();
             if (conversion != null)
             {
                 r = Expression.Invoke(conversion, r);
             }
-            return Expression.Assign(_left, r);
+            return Expression.Assign(Left, r);
         }
 
         private Expression ReduceMember()
         {
-            MemberExpression member = (MemberExpression)_left;
+            MemberExpression member = (MemberExpression)Left;
 
             if (member.Expression == null)
             {
@@ -216,7 +213,7 @@ namespace System.Linq.Expressions
 
                 // 2. temp2 = temp1.b (op) r
                 ExpressionType op = GetBinaryOpFromAssignmentOp(NodeType);
-                Expression e2 = Expression.MakeBinary(op, Expression.MakeMemberAccess(temp1, member.Member), _right, false, Method);
+                Expression e2 = Expression.MakeBinary(op, Expression.MakeMemberAccess(temp1, member.Member), Right, false, Method);
                 LambdaExpression conversion = GetConversion();
                 if (conversion != null)
                 {
@@ -251,7 +248,7 @@ namespace System.Linq.Expressions
             // tempValue = tempObj[tempArg0, ... tempArgN] (op) r
             // tempObj[tempArg0, ... tempArgN] = tempValue
 
-            var index = (IndexExpression)_left;
+            var index = (IndexExpression)Left;
 
             var vars = new ArrayBuilder<ParameterExpression>(index.ArgumentCount + 2);
             var exprs = new ArrayBuilder<Expression>(index.ArgumentCount + 3);
@@ -275,7 +272,7 @@ namespace System.Linq.Expressions
 
             // tempValue = tempObj[tempArg0, ... tempArgN] (op) r
             ExpressionType binaryOp = GetBinaryOpFromAssignmentOp(NodeType);
-            Expression op = Expression.MakeBinary(binaryOp, tempIndex, _right, false, Method);
+            Expression op = Expression.MakeBinary(binaryOp, tempIndex, Right, false, Method);
             LambdaExpression conversion = GetConversion();
             if (conversion != null)
             {
@@ -309,11 +306,11 @@ namespace System.Linq.Expressions
                 {
                     return false;
                 }
-                if (TypeUtils.IsNullableType(_left.Type))
+                if (TypeUtils.IsNullableType(Left.Type))
                 {
                     MethodInfo method = GetMethod();
                     return method == null ||
-                        !TypeUtils.AreEquivalent(method.GetParametersCached()[0].ParameterType.GetNonRefType(), _left.Type);
+                        !TypeUtils.AreEquivalent(method.GetParametersCached()[0].ParameterType.GetNonRefType(), Left.Type);
                 }
                 return false;
             }
@@ -355,8 +352,8 @@ namespace System.Linq.Expressions
         {
             get
             {
-                Type left = _left.Type;
-                Type right = _right.Type;
+                Type left = Left.Type;
+                Type right = Right.Type;
                 MethodInfo method = GetMethod();
                 ExpressionType kind = NodeType;
 
@@ -373,8 +370,8 @@ namespace System.Linq.Expressions
         {
             get
             {
-                Type left = _left.Type;
-                Type right = _right.Type;
+                Type left = Left.Type;
+                Type right = Right.Type;
                 MethodInfo method = GetMethod();
                 ExpressionType kind = NodeType;
 
@@ -416,7 +413,7 @@ namespace System.Linq.Expressions
         {
             Debug.Assert(IsLiftedLogical);
 
-            ParameterExpression left = Parameter(_left.Type, "left");
+            ParameterExpression left = Parameter(Left.Type, "left");
             ParameterExpression right = Parameter(Right.Type, "right");
             string opName = NodeType == ExpressionType.AndAlso ? "op_False" : "op_True";
             MethodInfo opTrueFalse = TypeUtils.GetBooleanOperator(Method.DeclaringType, opName);
@@ -424,7 +421,7 @@ namespace System.Linq.Expressions
 
             return Block(
                 new[] { left },
-                Assign(left, _left),
+                Assign(left, Left),
                 Condition(
                     Property(left, "HasValue"),
                     Condition(
@@ -432,7 +429,7 @@ namespace System.Linq.Expressions
                         left,
                         Block(
                             new[] { right },
-                            Assign(right, _right),
+                            Assign(right, Right),
                             Condition(
                                 Property(right, "HasValue"),
                                 Convert(
@@ -457,17 +454,15 @@ namespace System.Linq.Expressions
     // && || == != > < >= <=
     internal sealed class LogicalBinaryExpression : BinaryExpression
     {
-        private readonly ExpressionType _nodeType;
-
         internal LogicalBinaryExpression(ExpressionType nodeType, Expression left, Expression right)
             : base(left, right)
         {
-            _nodeType = nodeType;
+            NodeType = nodeType;
         }
 
         public sealed override Type Type => typeof(bool);
 
-        public sealed override ExpressionType NodeType => _nodeType;
+        public sealed override ExpressionType NodeType { get; }
     }
 
     // Optimized assignment node, only holds onto children
@@ -523,19 +518,16 @@ namespace System.Linq.Expressions
     // If needed, it can be optimized even more (often Type == left.Type)
     internal class SimpleBinaryExpression : BinaryExpression
     {
-        private readonly ExpressionType _nodeType;
-        private readonly Type _type;
-
         internal SimpleBinaryExpression(ExpressionType nodeType, Expression left, Expression right, Type type)
             : base(left, right)
         {
-            _nodeType = nodeType;
-            _type = type;
+            NodeType = nodeType;
+            Type = type;
         }
 
-        public sealed override ExpressionType NodeType => _nodeType;
+        public sealed override ExpressionType NodeType { get; }
 
-        public sealed override Type Type => _type;
+        public sealed override Type Type { get; }
     }
 
     // Class that handles binary expressions with a method

@@ -16,13 +16,10 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(NewArrayExpressionProxy))]
     public class NewArrayExpression : Expression
     {
-        private readonly ReadOnlyCollection<Expression> _expressions;
-        private readonly Type _type;
-
         internal NewArrayExpression(Type type, ReadOnlyCollection<Expression> expressions)
         {
-            _expressions = expressions;
-            _type = type;
+            Expressions = expressions;
+            Type = type;
         }
 
         internal static NewArrayExpression Make(ExpressionType nodeType, Type type, ReadOnlyCollection<Expression> expressions)
@@ -42,12 +39,12 @@ namespace System.Linq.Expressions
         /// Gets the static type of the expression that this <see cref="Expression"/> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="System.Type"/> that represents the static type of the expression.</returns>
-        public sealed override Type Type => _type;
+        public sealed override Type Type { get; }
 
         /// <summary>
         /// Gets the bounds of the array if the value of the <see cref="ExpressionType"/> property is NewArrayBounds, or the values to initialize the elements of the new array if the value of the <see cref="Expression.NodeType"/> property is NewArrayInit. 
         /// </summary>
-        public ReadOnlyCollection<Expression> Expressions => _expressions;
+        public ReadOnlyCollection<Expression> Expressions { get; }
 
         /// <summary>
         /// Dispatches to the specific visit method for this node type.

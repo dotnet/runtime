@@ -12,18 +12,16 @@ namespace System.Linq.Expressions
     /// </summary>
     public class SymbolDocumentInfo
     {
-        private readonly string _fileName;
-
         internal SymbolDocumentInfo(string fileName)
         {
             ContractUtils.RequiresNotNull(fileName, nameof(fileName));
-            _fileName = fileName;
+            FileName = fileName;
         }
 
         /// <summary>
         /// The source file name.
         /// </summary>
-        public string FileName => _fileName;
+        public string FileName { get; }
 
         /// <summary>
         /// Returns the language's unique identifier, if any.
@@ -46,38 +44,34 @@ namespace System.Linq.Expressions
 
     internal sealed class SymbolDocumentWithGuids : SymbolDocumentInfo
     {
-        private readonly Guid _language;
-        private readonly Guid _vendor;
-        private readonly Guid _documentType;
-
         internal SymbolDocumentWithGuids(string fileName, ref Guid language)
             : base(fileName)
         {
-            _language = language;
-            _documentType = SymbolDocumentInfo.DocumentType_Text;
+            Language = language;
+            DocumentType = DocumentType_Text;
         }
 
         internal SymbolDocumentWithGuids(string fileName, ref Guid language, ref Guid vendor)
             : base(fileName)
         {
-            _language = language;
-            _vendor = vendor;
-            _documentType = SymbolDocumentInfo.DocumentType_Text;
+            Language = language;
+            LanguageVendor = vendor;
+            DocumentType = DocumentType_Text;
         }
 
         internal SymbolDocumentWithGuids(string fileName, ref Guid language, ref Guid vendor, ref Guid documentType)
             : base(fileName)
         {
-            _language = language;
-            _vendor = vendor;
-            _documentType = documentType;
+            Language = language;
+            LanguageVendor = vendor;
+            DocumentType = documentType;
         }
 
-        public override Guid Language => _language;
+        public override Guid Language { get; }
 
-        public override Guid LanguageVendor => _vendor;
+        public override Guid LanguageVendor { get; }
 
-        public override Guid DocumentType => _documentType;
+        public override Guid DocumentType { get; }
     }
 
     public partial class Expression
