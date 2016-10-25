@@ -8,7 +8,7 @@
     <ProjectGuid>{10D52320-17B7-476E-BBD2-A1064DD38CBF}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Xml.XPath.XDocument.Tests</AssemblyName>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
     <RootNamespace>System.Xml.XPath.XDocument.Tests</RootNamespace>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
@@ -208,6 +208,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\..\System.Xml.XPath.XDocument\pkg\System.Xml.XPath.XDocument.pkgproj" />
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
