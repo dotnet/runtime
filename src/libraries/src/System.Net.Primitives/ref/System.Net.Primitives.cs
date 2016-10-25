@@ -48,12 +48,15 @@ namespace System.Net
         public CookieCollection() { }
         public int Count { get { throw null; } }
         public System.Net.Cookie this[string name] { get { throw null; } }
-        bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
-        object System.Collections.ICollection.SyncRoot { get { throw null; } }
+        public System.Net.Cookie this[int index] { get { throw null; } }
+        public bool IsSynchronized { get { throw null; } }
+        public object SyncRoot { get { throw null; } }
         public void Add(System.Net.Cookie cookie) { }
         public void Add(System.Net.CookieCollection cookies) { }
         public System.Collections.IEnumerator GetEnumerator() { throw null; }
-        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
+        public void CopyTo(System.Array array, int index) { }
+        public void CopyTo(Cookie[] array, int index) { }
+        public bool IsReadOnly { get { throw null; } }
     }
     public partial class CookieContainer
     {
@@ -70,6 +73,10 @@ namespace System.Net
         public string GetCookieHeader(System.Uri uri) { throw null; }
         public System.Net.CookieCollection GetCookies(System.Uri uri) { throw null; }
         public void SetCookies(System.Uri uri, string cookieHeader) { }
+        public CookieContainer(int capacity) { }
+        public CookieContainer(int capacity, int perDomainCapacity, int maxCookieSize) { }
+        public void Add(CookieCollection cookies) { }
+        public void Add(Cookie cookie) { }
     }
     public partial class CookieException : System.FormatException, System.Runtime.Serialization.ISerializable
     {
