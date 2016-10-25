@@ -47,7 +47,7 @@ namespace System.Net.Sockets.Tests
         public void ReuseUnicastPort_CreateSocketGetOption_SocketsReuseUnicastPortSupport_OptionIsZero()
         {
             var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            
+
             var optionValue = (int)socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort);
             Assert.Equal(0, optionValue);
         }
@@ -131,7 +131,7 @@ namespace System.Net.Sockets.Tests
             int port;
 
             using (Socket receiveSocket = CreateBoundUdpSocket(out port),
-                          sendSocket    = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+                          sendSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
             {
                 receiveSocket.ReceiveTimeout = 1000;
                 receiveSocket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, new MulticastOption(multicastAddress, interfaceIndex));
@@ -292,6 +292,55 @@ namespace System.Net.Sockets.Tests
         public void ReuseAddress_Windows(bool? exclusiveAddressUse, bool? firstSocketReuseAddress, bool? secondSocketReuseAddress, bool expectFailure)
         {
             ReuseAddress(exclusiveAddressUse, firstSocketReuseAddress, secondSocketReuseAddress, expectFailure);
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData(IPProtectionLevel.EdgeRestricted, AddressFamily.InterNetwork, SocketOptionLevel.IP)]
+        [InlineData(IPProtectionLevel.Restricted, AddressFamily.InterNetwork, SocketOptionLevel.IP)]
+        [InlineData(IPProtectionLevel.Unrestricted, AddressFamily.InterNetwork, SocketOptionLevel.IP)]
+        [InlineData(IPProtectionLevel.EdgeRestricted, AddressFamily.InterNetworkV6, SocketOptionLevel.IPv6)]
+        [InlineData(IPProtectionLevel.Restricted, AddressFamily.InterNetworkV6, SocketOptionLevel.IPv6)]
+        [InlineData(IPProtectionLevel.Unrestricted, AddressFamily.InterNetworkV6, SocketOptionLevel.IPv6)]
+        public void SetIPProtectionLevel_Windows(IPProtectionLevel level, AddressFamily family, SocketOptionLevel optionLevel)
+        {
+            using (var socket = new Socket(family, SocketType.Stream, ProtocolType.Tcp))
+            {
+                socket.SetIPProtectionLevel(level);
+
+                int result = (int)socket.GetSocketOption(optionLevel, SocketOptionName.IPProtectionLevel);
+                Assert.Equal(result, (int)level);
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Theory]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [InlineData(IPProtectionLevel.EdgeRestricted, AddressFamily.InterNetwork)]
+        [InlineData(IPProtectionLevel.Restricted, AddressFamily.InterNetwork)]
+        [InlineData(IPProtectionLevel.Unrestricted, AddressFamily.InterNetwork)]
+        [InlineData(IPProtectionLevel.EdgeRestricted, AddressFamily.InterNetworkV6)]
+        [InlineData(IPProtectionLevel.Restricted, AddressFamily.InterNetworkV6)]
+        [InlineData(IPProtectionLevel.Unrestricted, AddressFamily.InterNetworkV6)]
+        public void SetIPProtectionLevel_Unix(IPProtectionLevel level, AddressFamily family)
+        {
+            using (var socket = new Socket(family, SocketType.Stream, ProtocolType.Tcp))
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => socket.SetIPProtectionLevel(level));
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Theory]
+        [InlineData(AddressFamily.InterNetwork)]
+        [InlineData(AddressFamily.InterNetworkV6)]
+        public void SetIPProtectionLevel_ArgumentException(AddressFamily family)
+        {
+            using (var socket = new Socket(family, SocketType.Stream, ProtocolType.Tcp))
+            {
+                Assert.Throws<ArgumentException>("level", () => socket.SetIPProtectionLevel(IPProtectionLevel.Unspecified));
+            }
         }
     }
 }

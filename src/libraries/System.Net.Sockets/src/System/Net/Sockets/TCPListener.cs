@@ -123,6 +123,16 @@ namespace System.Net.Sockets
             }
         }
 
+        public void AllowNatTraversal(bool allowed)
+        {
+            if (_active)
+            {
+                throw new InvalidOperationException(SR.net_tcplistener_mustbestopped);
+            }
+
+            _serverSocket.SetIPProtectionLevel(allowed ? IPProtectionLevel.Unrestricted : IPProtectionLevel.EdgeRestricted);
+        }
+
         // Starts listening to network requests.
         public void Start()
         {
