@@ -20,9 +20,5 @@
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
-  <ItemGroup>
-    <!-- TODO: Remove this reference once packages are updated -->
-    <ProjectReference Include="..\..\System.Net.Requests\pkg\System.Net.Requests.pkgproj" />
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

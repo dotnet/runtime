@@ -130,9 +130,5 @@
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
-  <!-- ToDo: Remove this P2P reference once packages are updated -->
-  <ItemGroup Condition="'$(TargetGroup)'==''">
-    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

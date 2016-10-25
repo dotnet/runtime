@@ -2,6 +2,7 @@
   "dependencies": {
     "System.ComponentModel.EventBasedAsync": "4.4.0-beta-24625-01",
     "System.Net.Primitives": "4.4.0-beta-24625-01",
+    "System.Net.ServicePoint": "4.4.0-beta-24625-01",
     "System.Collections.Specialized": "4.4.0-beta-24625-01",
     "System.IO": "4.4.0-beta-24625-01",
     "System.Runtime": "4.4.0-beta-24625-01",
