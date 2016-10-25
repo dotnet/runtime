@@ -13,9 +13,5 @@
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
-  <ItemGroup>
-    <!-- ToDo: Remove this reference once prerelease gets updated again -->
-    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
