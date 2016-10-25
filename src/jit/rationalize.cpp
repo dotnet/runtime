@@ -865,12 +865,18 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, ArrayStack<G
     }
 
     // Do some extra processing on top-level nodes to remove unused local reads.
-    if (use.IsDummyUse() && node->OperIsLocalRead())
+    if (node->OperIsLocalRead())
     {
-        assert((node->gtFlags & GTF_ALL_EFFECT) == 0);
-
-        comp->lvaDecRefCnts(node);
-        BlockRange().Remove(node);
+        if (use.IsDummyUse())
+        {
+            comp->lvaDecRefCnts(node);
+            BlockRange().Remove(node);
+        }
+        else
+        {
+            // Local reads are side-effect-free; clear any flags leftover from frontend transformations.
+            node->gtFlags &= ~GTF_ALL_EFFECT;
+        }
     }
 
     assert(isLateArg == ((use.Def()->gtFlags & GTF_LATE_ARG) != 0));
