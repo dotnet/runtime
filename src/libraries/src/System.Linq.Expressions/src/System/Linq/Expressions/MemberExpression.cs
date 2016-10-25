@@ -15,8 +15,6 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(MemberExpressionProxy))]
     public class MemberExpression : Expression
     {
-        private readonly Expression _expression;
-
         /// <summary>
         /// Gets the field or property to be accessed.
         /// </summary>
@@ -25,12 +23,12 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the containing object of the field or property.
         /// </summary>
-        public Expression Expression => _expression;
+        public Expression Expression { get; }
 
         // param order: factories args in order, then other args
         internal MemberExpression(Expression expression)
         {
-            _expression = expression;
+            Expression = expression;
         }
 
         internal static PropertyExpression Make(Expression expression, PropertyInfo property)

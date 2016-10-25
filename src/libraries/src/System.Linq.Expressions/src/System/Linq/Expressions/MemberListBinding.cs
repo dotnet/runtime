@@ -15,20 +15,18 @@ namespace System.Linq.Expressions
     /// </summary>
     public sealed class MemberListBinding : MemberBinding
     {
-        private ReadOnlyCollection<ElementInit> _initializers;
-
         internal MemberListBinding(MemberInfo member, ReadOnlyCollection<ElementInit> initializers)
 #pragma warning disable 618
             : base(MemberBindingType.ListBinding, member)
         {
 #pragma warning restore 618
-            _initializers = initializers;
+            Initializers = initializers;
         }
 
         /// <summary>
         /// Gets the element initializers for initializing a collection member of a newly created object.
         /// </summary>
-        public ReadOnlyCollection<ElementInit> Initializers => _initializers;
+        public ReadOnlyCollection<ElementInit> Initializers { get; }
 
         /// <summary>
         /// Creates a new expression that is like this one, but using the

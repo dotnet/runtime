@@ -14,38 +14,33 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(Expression.CatchBlockProxy))]
     public sealed class CatchBlock
     {
-        private readonly Type _test;
-        private readonly ParameterExpression _var;
-        private readonly Expression _body;
-        private readonly Expression _filter;
-
         internal CatchBlock(Type test, ParameterExpression variable, Expression body, Expression filter)
         {
-            _test = test;
-            _var = variable;
-            _body = body;
-            _filter = filter;
+            Test = test;
+            Variable = variable;
+            Body = body;
+            Filter = filter;
         }
 
         /// <summary>
         /// Gets a reference to the <see cref="Exception"/> object caught by this handler.
         /// </summary>
-        public ParameterExpression Variable => _var;
+        public ParameterExpression Variable { get; }
 
         /// <summary>
         /// Gets the type of <see cref="Exception"/> this handler catches.
         /// </summary>
-        public Type Test => _test;
+        public Type Test { get; }
 
         /// <summary>
         /// Gets the body of the catch block.
         /// </summary>
-        public Expression Body => _body;
+        public Expression Body { get; }
 
         /// <summary>
         /// Gets the body of the <see cref="CatchBlock"/>'s filter.
         /// </summary>
-        public Expression Filter => _filter;
+        public Expression Filter { get; }
 
         /// <summary>
         /// Returns a <see cref="String"/> that represents the current <see cref="Object"/>. 

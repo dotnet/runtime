@@ -22,26 +22,20 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(TryExpressionProxy))]
     public sealed class TryExpression : Expression
     {
-        private readonly Type _type;
-        private readonly Expression _body;
-        private readonly ReadOnlyCollection<CatchBlock> _handlers;
-        private readonly Expression _finally;
-        private readonly Expression _fault;
-
         internal TryExpression(Type type, Expression body, Expression @finally, Expression fault, ReadOnlyCollection<CatchBlock> handlers)
         {
-            _type = type;
-            _body = body;
-            _handlers = handlers;
-            _finally = @finally;
-            _fault = fault;
+            Type = type;
+            Body = body;
+            Handlers = handlers;
+            Finally = @finally;
+            Fault = fault;
         }
 
         /// <summary>
         /// Gets the static type of the expression that this <see cref="Expression"/> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="System.Type"/> that represents the static type of the expression.</returns>
-        public sealed override Type Type => _type;
+        public sealed override Type Type { get; }
 
         /// <summary>
         /// Returns the node type of this <see cref="Expression"/>. (Inherited from <see cref="Expression"/>.)
@@ -52,22 +46,22 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the <see cref="Expression"/> representing the body of the try block.
         /// </summary>
-        public Expression Body => _body;
+        public Expression Body { get; }
 
         /// <summary>
         /// Gets the collection of <see cref="CatchBlock"/>s associated with the try block.
         /// </summary>
-        public ReadOnlyCollection<CatchBlock> Handlers => _handlers;
+        public ReadOnlyCollection<CatchBlock> Handlers { get; }
 
         /// <summary>
         /// Gets the <see cref="Expression"/> representing the finally block.
         /// </summary>
-        public Expression Finally => _finally;
+        public Expression Finally { get; }
 
         /// <summary>
         /// Gets the <see cref="Expression"/> representing the fault block.
         /// </summary>
-        public Expression Fault => _fault;
+        public Expression Fault { get; }
 
         /// <summary>
         /// Dispatches to the specific visit method for this node type.

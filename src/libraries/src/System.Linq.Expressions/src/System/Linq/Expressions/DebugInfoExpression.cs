@@ -17,11 +17,9 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(DebugInfoExpressionProxy))]
     public class DebugInfoExpression : Expression
     {
-        private readonly SymbolDocumentInfo _document;
-
         internal DebugInfoExpression(SymbolDocumentInfo document)
         {
-            _document = document;
+            Document = document;
         }
 
         /// <summary>
@@ -75,7 +73,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the <see cref="SymbolDocumentInfo"/> that represents the source file.
         /// </summary>
-        public SymbolDocumentInfo Document => _document;
+        public SymbolDocumentInfo Document { get; }
 
         /// <summary>
         /// Gets the value to indicate if the <see cref="DebugInfoExpression"/> is for clearing a sequence point.

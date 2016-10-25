@@ -17,20 +17,17 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(InvocationExpressionProxy))]
     public class InvocationExpression : Expression, IArgumentProvider
     {
-        private readonly Expression _lambda;
-        private readonly Type _returnType;
-
-        internal InvocationExpression(Expression lambda, Type returnType)
+        internal InvocationExpression(Expression expression, Type returnType)
         {
-            _lambda = lambda;
-            _returnType = returnType;
+            Expression = expression;
+            Type = returnType;
         }
 
         /// <summary>
         /// Gets the static type of the expression that this <see cref="Expression"/> represents.
         /// </summary>
         /// <returns>The <see cref="System.Type"/> that represents the static type of the expression.</returns>
-        public sealed override Type Type => _returnType;
+        public sealed override Type Type { get; }
 
         /// <summary>
         /// Returns the node type of this Expression. Extension nodes should return
@@ -42,7 +39,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the delegate or lambda expression to be applied.
         /// </summary>
-        public Expression Expression => _lambda;
+        public Expression Expression { get; }
 
         /// <summary>
         /// Gets the arguments that the delegate or lambda expression is applied to.
@@ -114,9 +111,9 @@ namespace System.Linq.Expressions
         {
             get
             {
-                return (_lambda.NodeType == ExpressionType.Quote)
-                    ? (LambdaExpression)((UnaryExpression)_lambda).Operand
-                    : (_lambda as LambdaExpression);
+                return (Expression.NodeType == ExpressionType.Quote)
+                    ? (LambdaExpression)((UnaryExpression)Expression).Operand
+                    : (Expression as LambdaExpression);
             }
         }
     }
