@@ -4413,9 +4413,13 @@ fi
       echo "AOT_BUILD_FLAGS=$AOT_BUILD_FLAGS" >> $srcdir/$mcsdir/build/config.make
     fi
 
-	if test "x$enable_dynamic_btls" = "xyes"; then
-	   echo "DYNAMIC_BTLS=1" >> $srcdir/$mcsdir/build/config.make
-	fi
+    if test "x$enable_btls" = "xyes"; then
+      echo "HAVE_BTLS=1" >> $srcdir/$mcsdir/build/config.make
+      if test "x$enable_dynamic_btls" = "xyes"; then
+        echo "HAVE_DYNAMIC_BTLS=1" >> $srcdir/$mcsdir/build/config.make
+      fi
+    fi
+
   fi
 
 )
