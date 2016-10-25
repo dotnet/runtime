@@ -9,7 +9,7 @@ class PCLReferenceAssembliesPackage(Package):
         Package.__init__(self,
                          name='PortableReferenceAssemblies',
                          version='2014-04-14',
-                         sources=['http://storage.bos.xamarin.com/bot-provisioning/PortableReferenceAssemblies-2014-04-14.zip'])
+                         sources=['http://xamarin-storage/bot-provisioning/PortableReferenceAssemblies-2014-04-14.zip'])
 
     def build(self):
         pass
