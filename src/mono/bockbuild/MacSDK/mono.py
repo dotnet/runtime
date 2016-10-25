@@ -92,7 +92,7 @@ class MonoMasterPackage(Package):
             (xbuild_dir, new_xbuild_tv_dir))
 
     def deploy(self):
-        if self.profile.arch == 'darwin-universal':
+        if bockbuild.cmd_options.arch == 'darwin-universal':
             os.symlink('mono-sgen64', '%s/bin/mono64' % self.staged_profile)
             os.symlink('mono-sgen32', '%s/bin/mono32' % self.staged_profile)
 

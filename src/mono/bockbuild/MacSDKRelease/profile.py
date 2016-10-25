@@ -53,7 +53,7 @@ class MonoXamarinPackageProfile(MonoReleaseProfile):
             output), os.path.basename(output).replace('.pkg', '.UNSIGNED.pkg'))
         shutil.move(output, output_unsigned)
 
-        if not self.cmd_options.release_build:
+        if not bockbuild.cmd_options.release_build:
             return output_unsigned
 
         productsign = "/usr/bin/productsign"
