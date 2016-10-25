@@ -15,15 +15,11 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(TypeBinaryExpressionProxy))]
     public sealed class TypeBinaryExpression : Expression
     {
-        private readonly Expression _expression;
-        private readonly Type _typeOperand;
-        private readonly ExpressionType _nodeKind;
-
-        internal TypeBinaryExpression(Expression expression, Type typeOperand, ExpressionType nodeKind)
+        internal TypeBinaryExpression(Expression expression, Type typeOperand, ExpressionType nodeType)
         {
-            _expression = expression;
-            _typeOperand = typeOperand;
-            _nodeKind = nodeKind;
+            Expression = expression;
+            TypeOperand = typeOperand;
+            NodeType = nodeType;
         }
 
         /// <summary>
@@ -37,17 +33,17 @@ namespace System.Linq.Expressions
         /// ExpressionType.Extension when overriding this method.
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> of the expression.</returns>
-        public sealed override ExpressionType NodeType => _nodeKind;
+        public sealed override ExpressionType NodeType { get; }
 
         /// <summary>
         /// Gets the expression operand of a type test operation.
         /// </summary>
-        public Expression Expression => _expression;
+        public Expression Expression { get; }
 
         /// <summary>
         /// Gets the type operand of a type test operation.
         /// </summary>
-        public Type TypeOperand => _typeOperand;
+        public Type TypeOperand { get; }
 
         #region Reduce TypeEqual
 
@@ -62,7 +58,7 @@ namespace System.Linq.Expressions
                     // If the expression type is a a nullable type, it will match if
                     // the value is not null and the type operand
                     // either matches or is its type argument (T to its T?).
-                    if (cType.GetNonNullableType() != _typeOperand.GetNonNullableType())
+                    if (cType.GetNonNullableType() != TypeOperand.GetNonNullableType())
                     {
                         return Expression.Block(Expression, Expression.Constant(false));
                     }
@@ -75,7 +71,7 @@ namespace System.Linq.Expressions
                 {
                     // For other value types (including Void), we can
                     // determine the result now
-                    return Expression.Block(Expression, Expression.Constant(cType == _typeOperand.GetNonNullableType()));
+                    return Expression.Block(Expression, Expression.Constant(cType == TypeOperand.GetNonNullableType()));
                 }
             }
 
@@ -114,7 +110,7 @@ namespace System.Linq.Expressions
             // causing it to always return false.
             // We workaround this optimization by generating different, less optimal IL
             // if TypeOperand is an interface.
-            if (_typeOperand.GetTypeInfo().IsInterface)
+            if (TypeOperand.GetTypeInfo().IsInterface)
             {
                 ParameterExpression temp = Expression.Parameter(typeof(Type));
                 getType = Expression.Block(new[] { temp }, Expression.Assign(temp, getType), temp);
@@ -127,7 +123,7 @@ namespace System.Linq.Expressions
                 Expression.ReferenceNotEqual(value, Expression.Constant(null)),
                 Expression.ReferenceEqual(
                     getType,
-                    Expression.Constant(_typeOperand.GetNonNullableType(), typeof(Type))
+                    Expression.Constant(TypeOperand.GetNonNullableType(), typeof(Type))
                 )
             );
         }
@@ -142,7 +138,7 @@ namespace System.Linq.Expressions
             }
             else
             {
-                return Expression.Constant(_typeOperand.GetNonNullableType() == ce.Value.GetType());
+                return Expression.Constant(TypeOperand.GetNonNullableType() == ce.Value.GetType());
             }
         }
 

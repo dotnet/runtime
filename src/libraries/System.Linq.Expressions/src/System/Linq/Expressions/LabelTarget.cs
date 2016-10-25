@@ -11,27 +11,24 @@ namespace System.Linq.Expressions
     /// </summary>
     public sealed class LabelTarget
     {
-        private readonly Type _type;
-        private readonly string _name;
-
         internal LabelTarget(Type type, string name)
         {
-            _type = type;
-            _name = name;
+            Type = type;
+            Name = name;
         }
 
         /// <summary>
         /// Gets the name of the label.
         /// </summary>
         /// <remarks>The label's name is provided for information purposes only.</remarks>
-        public string Name => _name;
+        public string Name { get; }
 
         /// <summary>
         /// The type of value that is passed when jumping to the label
         /// (or System.Void if no value should be passed).
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1721:PropertyNamesShouldNotMatchGetMethods")]
-        public Type Type => _type;
+        public Type Type { get; }
 
         /// <summary>
         /// Returns a <see cref="String"/> that represents the current <see cref="Object"/>. 
@@ -39,7 +36,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="String"/> that represents the current <see cref="Object"/>.</returns>
         public override string ToString()
         {
-            return string.IsNullOrEmpty(this.Name) ? "UnamedLabel" : this.Name;
+            return string.IsNullOrEmpty(Name) ? "UnamedLabel" : Name;
         }
     }
 

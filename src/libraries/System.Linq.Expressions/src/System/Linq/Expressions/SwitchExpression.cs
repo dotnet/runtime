@@ -16,26 +16,20 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(SwitchExpressionProxy))]
     public sealed class SwitchExpression : Expression
     {
-        private readonly Type _type;
-        private readonly Expression _switchValue;
-        private readonly ReadOnlyCollection<SwitchCase> _cases;
-        private readonly Expression _defaultBody;
-        private readonly MethodInfo _comparison;
-
         internal SwitchExpression(Type type, Expression switchValue, Expression defaultBody, MethodInfo comparison, ReadOnlyCollection<SwitchCase> cases)
         {
-            _type = type;
-            _switchValue = switchValue;
-            _defaultBody = defaultBody;
-            _comparison = comparison;
-            _cases = cases;
+            Type = type;
+            SwitchValue = switchValue;
+            DefaultBody = defaultBody;
+            Comparison = comparison;
+            Cases = cases;
         }
 
         /// <summary>
         /// Gets the static type of the expression that this <see cref="Expression"/> represents.
         /// </summary>
         /// <returns>The <see cref="System.Type"/> that represents the static type of the expression.</returns>
-        public sealed override Type Type => _type;
+        public sealed override Type Type { get; }
 
         /// <summary>
         /// Returns the node type of this Expression. Extension nodes should return
@@ -47,22 +41,22 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the test for the switch.
         /// </summary>
-        public Expression SwitchValue => _switchValue;
+        public Expression SwitchValue { get; }
 
         /// <summary>
         /// Gets the collection of <see cref="SwitchCase"/> objects for the switch.
         /// </summary>
-        public ReadOnlyCollection<SwitchCase> Cases => _cases;
+        public ReadOnlyCollection<SwitchCase> Cases { get; }
 
         /// <summary>
         /// Gets the test for the switch.
         /// </summary>
-        public Expression DefaultBody => _defaultBody;
+        public Expression DefaultBody { get; }
 
         /// <summary>
         /// Gets the equality comparison method, if any.
         /// </summary>
-        public MethodInfo Comparison => _comparison;
+        public MethodInfo Comparison { get; }
 
         /// <summary>
         /// Dispatches to the specific visit method for this node type.
@@ -76,10 +70,10 @@ namespace System.Linq.Expressions
         {
             get
             {
-                if (_switchValue.Type.IsNullableType())
+                if (SwitchValue.Type.IsNullableType())
                 {
-                    return (_comparison == null) ||
-                        !TypeUtils.AreEquivalent(_switchValue.Type, _comparison.GetParametersCached()[0].ParameterType.GetNonRefType());
+                    return (Comparison == null) ||
+                        !TypeUtils.AreEquivalent(SwitchValue.Type, Comparison.GetParametersCached()[0].ParameterType.GetNonRefType());
                 }
                 return false;
             }

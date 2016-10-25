@@ -17,22 +17,20 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(NewExpressionProxy))]
     public class NewExpression : Expression, IArgumentProvider
     {
-        private readonly ConstructorInfo _constructor;
         private IList<Expression> _arguments;
-        private readonly ReadOnlyCollection<MemberInfo> _members;
 
         internal NewExpression(ConstructorInfo constructor, IList<Expression> arguments, ReadOnlyCollection<MemberInfo> members)
         {
-            _constructor = constructor;
+            Constructor = constructor;
             _arguments = arguments;
-            _members = members;
+            Members = members;
         }
 
         /// <summary>
         /// Gets the static type of the expression that this <see cref="Expression"/> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="System.Type"/> that represents the static type of the expression.</returns>
-        public override Type Type => _constructor.DeclaringType;
+        public override Type Type => Constructor.DeclaringType;
 
         /// <summary>
         /// Returns the node type of this <see cref="Expression"/>. (Inherited from <see cref="Expression"/>.)
@@ -43,7 +41,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the called constructor.
         /// </summary>
-        public ConstructorInfo Constructor => _constructor;
+        public ConstructorInfo Constructor { get; }
 
         /// <summary>
         /// Gets the arguments to the constructor.
@@ -65,7 +63,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the members that can retrieve the values of the fields that were initialized with constructor arguments.
         /// </summary>
-        public ReadOnlyCollection<MemberInfo> Members => _members;
+        public ReadOnlyCollection<MemberInfo> Members { get; }
 
         /// <summary>
         /// Dispatches to the specific visit method for this node type.
@@ -98,15 +96,13 @@ namespace System.Linq.Expressions
 
     internal sealed class NewValueTypeExpression : NewExpression
     {
-        private readonly Type _valueType;
-
         internal NewValueTypeExpression(Type type, ReadOnlyCollection<Expression> arguments, ReadOnlyCollection<MemberInfo> members)
             : base(null, arguments, members)
         {
-            _valueType = type;
+            Type = type;
         }
 
-        public sealed override Type Type => _valueType;
+        public sealed override Type Type { get; }
     }
 
     public partial class Expression

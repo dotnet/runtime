@@ -36,24 +36,19 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(GotoExpressionProxy))]
     public sealed class GotoExpression : Expression
     {
-        private readonly GotoExpressionKind _kind;
-        private readonly Expression _value;
-        private readonly LabelTarget _target;
-        private readonly Type _type;
-
         internal GotoExpression(GotoExpressionKind kind, LabelTarget target, Expression value, Type type)
         {
-            _kind = kind;
-            _value = value;
-            _target = target;
-            _type = type;
+            Kind = kind;
+            Value = value;
+            Target = target;
+            Type = type;
         }
 
         /// <summary>
         /// Gets the static type of the expression that this <see cref="Expression"/> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="System.Type"/> that represents the static type of the expression.</returns>
-        public sealed override Type Type => _type;
+        public sealed override Type Type { get; }
 
         /// <summary>
         /// Returns the node type of this <see cref="Expression"/>. (Inherited from <see cref="Expression"/>.)
@@ -65,17 +60,17 @@ namespace System.Linq.Expressions
         /// The value passed to the target, or null if the target is of type
         /// System.Void.
         /// </summary>
-        public Expression Value => _value;
+        public Expression Value { get; }
 
         /// <summary>
         /// The target label where this node jumps to.
         /// </summary>
-        public LabelTarget Target => _target;
+        public LabelTarget Target { get; }
 
         /// <summary>
         /// The kind of the goto. For information purposes only.
         /// </summary>
-        public GotoExpressionKind Kind => _kind;
+        public GotoExpressionKind Kind { get; }
 
         /// <summary>
         /// Dispatches to the specific visit method for this node type.

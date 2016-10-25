@@ -15,20 +15,17 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(LabelExpressionProxy))]
     public sealed class LabelExpression : Expression
     {
-        private readonly Expression _defaultValue;
-        private readonly LabelTarget _target;
-
         internal LabelExpression(LabelTarget label, Expression defaultValue)
         {
-            _target = label;
-            _defaultValue = defaultValue;
+            Target = label;
+            DefaultValue = defaultValue;
         }
 
         /// <summary>
         /// Gets the static type of the expression that this <see cref="Expression"/> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="System.Type"/> that represents the static type of the expression.</returns>
-        public sealed override Type Type => _target.Type;
+        public sealed override Type Type => Target.Type;
 
         /// <summary>
         /// Returns the node type of this <see cref="Expression"/>. (Inherited from <see cref="Expression"/>.)
@@ -39,13 +36,13 @@ namespace System.Linq.Expressions
         /// <summary>
         /// The <see cref="LabelTarget"/> which this label is associated with.
         /// </summary>
-        public LabelTarget Target => _target;
+        public LabelTarget Target { get; }
 
         /// <summary>
         /// The value of the <see cref="LabelExpression"/> when the label is reached through
         /// normal control flow (e.g. is not jumped to).
         /// </summary>
-        public Expression DefaultValue => _defaultValue;
+        public Expression DefaultValue { get; }
 
         /// <summary>
         /// Dispatches to the specific visit method for this node type.

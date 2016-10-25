@@ -14,11 +14,9 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(ParameterExpressionProxy))]
     public class ParameterExpression : Expression
     {
-        private readonly string _name;
-
         internal ParameterExpression(string name)
         {
-            _name = name;
+            Name = name;
         }
 
         internal static ParameterExpression Make(Type type, string name, bool isByRef)
@@ -87,7 +85,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// The Name of the parameter or variable.
         /// </summary>
-        public string Name => _name;
+        public string Name { get; }
 
         /// <summary>
         /// Indicates that this <see cref="ParameterExpression"/> is to be treated as a ByRef parameter.
@@ -126,15 +124,13 @@ namespace System.Linq.Expressions
     /// </summary>
     internal class TypedParameterExpression : ParameterExpression
     {
-        private readonly Type _paramType;
-
         internal TypedParameterExpression(Type type, string name)
             : base(name)
         {
-            _paramType = type;
+            Type = type;
         }
 
-        public sealed override Type Type => _paramType;
+        public sealed override Type Type { get; }
     }
 
     /// <summary>

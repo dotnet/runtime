@@ -18,8 +18,6 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(IndexExpressionProxy))]
     public sealed class IndexExpression : Expression, IArgumentProvider
     {
-        private readonly Expression _instance;
-        private readonly PropertyInfo _indexer;
         private IList<Expression> _arguments;
 
         internal IndexExpression(
@@ -33,8 +31,8 @@ namespace System.Linq.Expressions
                 Debug.Assert(instance.Type.GetArrayRank() == arguments.Count);
             }
 
-            _instance = instance;
-            _indexer = indexer;
+            Object = instance;
+            Indexer = indexer;
             _arguments = arguments;
         }
 
@@ -52,23 +50,23 @@ namespace System.Linq.Expressions
         {
             get
             {
-                if (_indexer != null)
+                if (Indexer != null)
                 {
-                    return _indexer.PropertyType;
+                    return Indexer.PropertyType;
                 }
-                return _instance.Type.GetElementType();
+                return Object.Type.GetElementType();
             }
         }
 
         /// <summary>
         /// An object to index.
         /// </summary>
-        public Expression Object => _instance;
+        public Expression Object { get; }
 
         /// <summary>
         /// Gets the <see cref="PropertyInfo"/> for the property if the expression represents an indexed property, returns null otherwise.
         /// </summary>
-        public PropertyInfo Indexer => _indexer;
+        public PropertyInfo Indexer { get; }
 
         /// <summary>
         /// Gets the arguments to be used to index the property or array.
@@ -120,7 +118,7 @@ namespace System.Linq.Expressions
             Debug.Assert(instance != null);
             Debug.Assert(arguments == null || arguments.Length == _arguments.Count);
 
-            return Expression.MakeIndex(instance, _indexer, arguments ?? _arguments);
+            return Expression.MakeIndex(instance, Indexer, arguments ?? _arguments);
         }
     }
 
