@@ -204,6 +204,9 @@ GenTreePtr Compiler::fgMorphCast(GenTreePtr tree)
                 {
                     case TYP_INT:
 #ifdef _TARGET_X86_ // there is no rounding convert to integer instruction on ARM or x64 so skip this
+#ifdef LEGACY_BACKEND
+                        // the RyuJIT backend does not use the x87 FPU and therefore
+                        // does not support folding the cast conv.i4(round.d(d))
                         if ((oper->gtOper == GT_INTRINSIC) &&
                             (oper->gtIntrinsic.gtIntrinsicId == CORINFO_INTRINSIC_Round))
                         {
@@ -212,7 +215,9 @@ GenTreePtr Compiler::fgMorphCast(GenTreePtr tree)
                             return fgMorphTree(oper);
                         }
                         // if SSE2 is not enabled, we need the helper
-                        else if (!opts.compCanUseSSE2)
+                        else
+#endif // LEGACY_BACKEND
+                            if (!opts.compCanUseSSE2)
                         {
                             return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2INT, oper);
                         }
