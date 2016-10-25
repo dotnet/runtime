@@ -650,9 +650,11 @@ FCFuncStart(gCustomAttributeEncodedArgument)
     FCFuncElement("ParseAttributeArguments", Attribute::ParseAttributeArguments)
 FCFuncEnd()
 
+#ifdef FEATURE_CAS_POLICY
 FCFuncStart(gPseudoCustomAttribute)
     FCFuncElement("_GetSecurityAttributes", COMCustomAttribute::GetSecurityAttributes)
 FCFuncEnd()
+#endif
 
 FCFuncStart(gCOMCustomAttributeFuncs)
     FCFuncElement("_ParseAttributeUsageAttribute", COMCustomAttribute::ParseAttributeUsageAttribute)
@@ -2325,7 +2327,9 @@ FCClassElement("PolicyManager", "System.Security", gPolicyManagerFuncs)
 FCClassElement("ProfileOptimization", "System.Runtime", gProfileOptimizationFuncs)
 #endif  // defined(FEATURE_MULTICOREJIT) && !defined(FEATURE_CORECLR)
 
+#ifdef FEATURE_CAS_POLICY
 FCClassElement("PseudoCustomAttribute", "System.Reflection", gPseudoCustomAttribute)
+#endif
 #ifdef FEATURE_CORECLR
 FCClassElement("PunkSafeHandle", "System.Reflection.Emit", gSymWrapperCodePunkSafeHandleFuncs)
 #endif

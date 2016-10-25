@@ -75,6 +75,7 @@ OBJECTREF PsetCacheEntry::CreateManagedPsetObject(DWORD dwAction, bool createEmp
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
+#ifdef FEATURE_CAS_POLICY
     OBJECTREF orRet;
 
     orRet = GetManagedPsetObject();
@@ -106,7 +107,6 @@ OBJECTREF PsetCacheEntry::CreateManagedPsetObject(DWORD dwAction, bool createEmp
         
     } else {
 
-#ifdef FEATURE_CAS_POLICY
         SecurityAttributes::XmlToPermissionSet(m_pKey->m_pbPset,
                                                m_pKey->m_cbPset,  
                                                &gc.pset, 
@@ -115,10 +115,6 @@ OBJECTREF PsetCacheEntry::CreateManagedPsetObject(DWORD dwAction, bool createEmp
                                                0, 
                                                &gc.orNonCasPset, 
                                                &gc.orNonCasEncoding);
-#else
-        // The v1.x serialized permission set format is not supported on CoreCLR
-        COMPlusThrowHR(CORSECATTR_E_BAD_ATTRIBUTE);
-#endif //FEATURE_CAS_POLICY
     }
 
     StoreFirstObjectInHandle(m_handle, gc.pset);
@@ -135,6 +131,9 @@ OBJECTREF PsetCacheEntry::CreateManagedPsetObject(DWORD dwAction, bool createEmp
 
     orRet = GetManagedPsetObject();
     return orRet;
+#else
+    return NULL;
+#endif
 }
 #endif // CROSSGEN_COMPILE
 

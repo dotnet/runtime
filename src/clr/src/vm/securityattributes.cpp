@@ -304,9 +304,7 @@ void SecurityAttributes::EncodePermissionSet(IN OBJECTREF* pRef,
                                             ppbData,
                                             pcbData);
 }
-#endif // FEATURE_CAS_POLICY
 
-#ifdef FEATURE_CAS_POLICY
 static void SetupRestrictSecAttributes()
 {
     CONTRACTL {
@@ -334,7 +332,6 @@ static void SetupRestrictSecAttributes()
     }
     EX_END_CATCH(RethrowTerminalExceptions)
 }
-#endif // FEATURE_CAS_POLICY
 
 Assembly* SecurityAttributes::LoadAssemblyFromToken(IMetaDataAssemblyImport *pImport, mdAssemblyRef tkAssemblyRef)
 {
@@ -1182,7 +1179,6 @@ void SecurityAttributes::AttrSetBlobToPermissionSets(
         COMPlusThrowHR(hr);
 }
 
-#ifdef FEATURE_CAS_POLICY
 HRESULT SecurityAttributes::TranslateSecurityAttributesHelper(
                             CORSEC_ATTRSET    *pAttrSet,
                             BYTE          **ppbOutput,
@@ -1255,7 +1251,6 @@ HRESULT SecurityAttributes::TranslateSecurityAttributesHelper(
     EX_CATCH_HRESULT(hr);
     return hr;
 }
-#endif // FEATURE_CAS_POLICY
 
 // Call into managed code to group permissions into a PermissionSet and serialize it to XML
 void SecurityAttributes::AttrArrayToPermissionSet(OBJECTREF* attrArray,
@@ -1354,7 +1349,7 @@ void SecurityAttributes::AttrArrayToPermissionSet(OBJECTREF* attrArray,
 
     GCPROTECT_END();
 }
-
+#endif // FEATURE_CAS_POLICY
 
 //
 // This is a public exported method
