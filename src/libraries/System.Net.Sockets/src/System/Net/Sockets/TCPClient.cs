@@ -101,7 +101,7 @@ namespace System.Net.Sockets
                 NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, nameof(BeginConnect), address);
             }
 
-            IAsyncResult result = Client.BeginConnect(address, port, requestCallback, state);
+            IAsyncResult result = BeginConnectCore(address, port, requestCallback, state);
 
             if (NetEventSource.Log.IsEnabled())
             {
