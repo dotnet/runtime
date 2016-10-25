@@ -2431,6 +2431,9 @@ public:
                                  LPCWSTR wszCodeBase);
 
 #ifndef DACCESS_COMPILE // needs AssemblySpec
+
+    void GetCacheAssemblyList(SetSHash<PTR_DomainAssembly>& assemblyList);
+
     //****************************************************************************************
     // Returns and Inserts assemblies into a lookup cache based on the binding information
     // in the AssemblySpec. There can be many AssemblySpecs to a single assembly.
