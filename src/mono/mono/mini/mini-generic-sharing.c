@@ -3450,8 +3450,10 @@ mini_get_shared_method_full (MonoMethod *method, gboolean all_vt, gboolean is_gs
 	if (method->wrapper_type == MONO_WRAPPER_DELEGATE_INVOKE) {
 		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
 
-		if (info->subtype == WRAPPER_SUBTYPE_NONE)
-			return mono_marshal_get_delegate_invoke (mini_get_shared_method_full (info->d.delegate_invoke.method, all_vt, is_gsharedvt), NULL);
+		if (info->subtype == WRAPPER_SUBTYPE_NONE) {
+			MonoMethod *m = mono_marshal_get_delegate_invoke (mini_get_shared_method_full (info->d.delegate_invoke.method, all_vt, is_gsharedvt), NULL);
+			return m;
+		}
 	}
 
 	if (method->is_generic || (method->klass->generic_container && !method->is_inflated)) {

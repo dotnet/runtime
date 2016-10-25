@@ -2877,12 +2877,23 @@ cache_generic_delegate_wrapper (GHashTable *cache, MonoMethod *orig_method, Mono
 {
 	MonoError error;
 	MonoMethod *inst, *res;
+	WrapperInfo *ginfo, *info;
 
 	/*
 	 * We use the same cache for the generic definition and the instances.
 	 */
 	inst = mono_class_inflate_generic_method_checked (def, ctx, &error);
 	g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+
+	ginfo = mono_marshal_get_wrapper_info (def);
+	if (ginfo) {
+		info = (WrapperInfo *)mono_image_alloc0 (def->klass->image, sizeof (WrapperInfo));
+		info->subtype = ginfo->subtype;
+		if (info->subtype == WRAPPER_SUBTYPE_NONE) {
+			info->d.delegate_invoke.method = mono_class_inflate_generic_method_checked (ginfo->d.delegate_invoke.method, ctx, &error);
+			mono_error_assert_ok (&error);
+		}
+	}
 
 	mono_memory_barrier ();
 	mono_marshal_lock ();
@@ -3554,7 +3565,7 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 #endif /* DISABLE_JIT */
 
 	info = mono_wrapper_info_create (mb, subtype);
-	info->d.delegate_invoke.method = orig_method;
+	info->d.delegate_invoke.method = method;
 
 	if (ctx) {
 		MonoMethod *def;
