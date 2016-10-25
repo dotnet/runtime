@@ -14,12 +14,12 @@ namespace System.Linq
     public interface IQueryable : IEnumerable
     {
         /// <summary>
-        /// Gets the expression tree that is associated with the instance of IQueryable.
+        /// Gets the expression tree that is associated with the instance of <see cref="IQueryable"/>.
         /// </summary>
         Expression Expression { get; }
 
         /// <summary>
-        /// Gets the type of the element(s) that are returned when the expression tree associated with this instance of IQueryable is executed.
+        /// Gets the type of the element(s) that are returned when the expression tree associated with this instance of <see cref="IQueryable"/> is executed.
         /// </summary>
         Type ElementType { get; }
 
@@ -41,7 +41,7 @@ namespace System.Linq
     /// Defines methods to create and execute queries that are described by an <see cref="IQueryable"/> object.
     /// </summary>
     /// <remarks>
-    /// The IQueryProvider interface is intended for implementation by query providers.
+    /// The <see cref="IQueryProvider"/> interface is intended for implementation by query providers.
     /// </remarks>
     public interface IQueryProvider
     {
@@ -62,7 +62,7 @@ namespace System.Linq
         /// <param name="expression">An expression tree that represents a LINQ query.</param>
         /// <returns>An <see cref="IQueryable{T}"/> that can evaluate the query represented by the specified expression tree.</returns>
         /// <remarks>
-        /// The CreateQuery{TElement} method is used to create new <see cref="IQueryable{T}"/> objects, given an expression tree. The query that is represented by the returned object is associated with a specific LINQ provider.
+        /// The <see cref="CreateQuery{TElement}"/> method is used to create new <see cref="IQueryable{T}"/> objects, given an expression tree. The query that is represented by the returned object is associated with a specific LINQ provider.
         /// Most of the Queryable standard query operator methods that return enumerable results call this method.They pass it a <see cref="MethodCallExpression"/> that represents a LINQ query.
         /// </remarks>
         IQueryable<TElement> CreateQuery<TElement>(Expression expression);
@@ -73,7 +73,7 @@ namespace System.Linq
         /// <param name="expression">An expression tree that represents a LINQ query.</param>
         /// <returns>The value that results from executing the specified query.</returns>
         /// <remarks>
-        /// The Execute method executes queries that return a single value (instead of an enumerable sequence of values). Expression trees that represent queries that return enumerable results are executed when their associated <see cref="IQueryable"/> object is enumerated.
+        /// The <see cref="Execute"/> method executes queries that return a single value (instead of an enumerable sequence of values). Expression trees that represent queries that return enumerable results are executed when their associated <see cref="IQueryable"/> object is enumerated.
         /// </remarks>
         object Execute(Expression expression);
 
@@ -84,8 +84,8 @@ namespace System.Linq
         /// <param name="expression">An expression tree that represents a LINQ query.</param>
         /// <returns>The value that results from executing the specified query.</returns>
         /// <remarks>
-        /// The Execute{TResult} method executes queries that return a single value (instead of an enumerable sequence of values). Expression trees that represent queries that return enumerable results are executed when the <see cref="IQueryable{T}"/> object that contains the expression tree is enumerated.
-        /// The Queryable standard query operator methods that return singleton results call Execute{TResult}.They pass it a <see cref="MethodCallExpression"/> that represents a LINQ query.
+        /// The <see cref="Execute{TElement}"/> method executes queries that return a single value (instead of an enumerable sequence of values). Expression trees that represent queries that return enumerable results are executed when the <see cref="IQueryable{T}"/> object that contains the expression tree is enumerated.
+        /// The Queryable standard query operator methods that return singleton results call <see cref="Execute{TElement}"/>. They pass it a <see cref="MethodCallExpression"/> that represents a LINQ query.
         /// </remarks>
         TResult Execute<TResult>(Expression expression);
     }
