@@ -12,7 +12,7 @@ internal delegate int SerializeDelegate();
 
 public class DelegatePerf
 {
-    [Benchmark]
+    [Benchmark(InnerIterationCount=200000)]
     public void DelegateInvoke()
     {
         DelegateLong dl = new DelegateLong(this.Invocable1);
@@ -22,10 +22,11 @@ public class DelegatePerf
 
         foreach (var iteration in Benchmark.Iterations)
             using (iteration.StartMeasurement())
-                ret = dl(obj, 100, 100);
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    ret = dl(obj, 100, 100);
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=1000)]
     public void MulticastDelegateCombineInvoke()
     {
         MultiDelegate md = null;
@@ -46,23 +47,26 @@ public class DelegatePerf
 
             using (iteration.StartMeasurement())
             {
-                md = (MultiDelegate)Delegate.Combine(md1, md);
-                md = (MultiDelegate)Delegate.Combine(md2, md);
-                md = (MultiDelegate)Delegate.Combine(md3, md);
-                md = (MultiDelegate)Delegate.Combine(md4, md);
-                md = (MultiDelegate)Delegate.Combine(md5, md);
-                md = (MultiDelegate)Delegate.Combine(md6, md);
-                md = (MultiDelegate)Delegate.Combine(md7, md);
-                md = (MultiDelegate)Delegate.Combine(md8, md);
-                md = (MultiDelegate)Delegate.Combine(md9, md);
-                md = (MultiDelegate)Delegate.Combine(md10, md);
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                {
+                    md = (MultiDelegate)Delegate.Combine(md1, md);
+                    md = (MultiDelegate)Delegate.Combine(md2, md);
+                    md = (MultiDelegate)Delegate.Combine(md3, md);
+                    md = (MultiDelegate)Delegate.Combine(md4, md);
+                    md = (MultiDelegate)Delegate.Combine(md5, md);
+                    md = (MultiDelegate)Delegate.Combine(md6, md);
+                    md = (MultiDelegate)Delegate.Combine(md7, md);
+                    md = (MultiDelegate)Delegate.Combine(md8, md);
+                    md = (MultiDelegate)Delegate.Combine(md9, md);
+                    md = (MultiDelegate)Delegate.Combine(md10, md);
+                }
             }
         }
 
         md(obj, 100, 100);
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=10000)]
     [InlineData(100)]
     [InlineData(1000)]
     public void MulticastDelegateInvoke(int length)
@@ -75,7 +79,8 @@ public class DelegatePerf
 
         foreach (var iteration in Benchmark.Iterations)
             using (iteration.StartMeasurement())
-                md(obj, 100, 100);
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    md(obj, 100, 100);
     }
 
     internal virtual long Invocable1(Object obj, long x, long y)
