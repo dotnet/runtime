@@ -221,6 +221,9 @@ namespace System.Net.Sockets
         private IAsyncResult BeginConnectCore(string host, int port, AsyncCallback requestCallback, object state) =>
             TaskToApm.Begin(ConnectAsyncCore(host, port), requestCallback, state);
 
+        private IAsyncResult BeginConnectCore(IPAddress address, int port, AsyncCallback requestCallback, object state) =>
+            TaskToApm.Begin(ConnectAsyncCore(address, port), requestCallback, state);
+
         private IAsyncResult BeginConnectCore(IPAddress[] addresses, int port, AsyncCallback requestCallback, object state) =>
             TaskToApm.Begin(ConnectAsyncCore(addresses, port), requestCallback, state);
 

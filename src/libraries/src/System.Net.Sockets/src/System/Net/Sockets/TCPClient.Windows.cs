@@ -93,6 +93,9 @@ namespace System.Net.Sockets
         private IAsyncResult BeginConnectCore(string host, int port, AsyncCallback requestCallback, object state) =>
             Client.BeginConnect(host, port, requestCallback, state);
 
+        private IAsyncResult BeginConnectCore(IPAddress address, int port, AsyncCallback requestCallback, object state) =>
+            Client.BeginConnect(address, port, requestCallback, state);
+
         private IAsyncResult BeginConnectCore(IPAddress[] addresses, int port, AsyncCallback requestCallback, object state) =>
             Client.BeginConnect(addresses, port, requestCallback, state);
 
