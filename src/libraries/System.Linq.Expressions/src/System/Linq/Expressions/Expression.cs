@@ -240,7 +240,7 @@ namespace System.Linq.Expressions
         /// Ultimately this saves us from having to allocate a ReadOnlyCollection for our
         /// data types because the compiler is capable of going directly to the IList of T.
         /// </summary>
-        internal static ReadOnlyCollection<T> ReturnReadOnly<T>(ref IList<T> collection)
+        internal static ReadOnlyCollection<T> ReturnReadOnly<T>(ref IReadOnlyList<T> collection)
         {
             return ExpressionUtils.ReturnReadOnly<T>(ref collection);
         }

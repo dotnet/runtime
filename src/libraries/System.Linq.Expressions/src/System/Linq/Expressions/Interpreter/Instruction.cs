@@ -25,7 +25,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override string ToString() => InstructionName + "()";
 
-        public virtual string ToDebugString(int instructionIndex, object cookie, Func<int, int> labelIndexer, IList<object> objects) => ToString();
+        public virtual string ToDebugString(int instructionIndex, object cookie, Func<int, int> labelIndexer, IReadOnlyList<object> objects) => ToString();
 
         public virtual object GetDebugCookie(LightCompiler compiler) => null;
 

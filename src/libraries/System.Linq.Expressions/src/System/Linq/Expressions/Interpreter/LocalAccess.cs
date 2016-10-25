@@ -23,7 +23,7 @@ namespace System.Linq.Expressions.Interpreter
             _index = index;
         }
 
-        public override string ToDebugString(int instructionIndex, object cookie, Func<int, int> labelIndexer, IList<object> objects)
+        public override string ToDebugString(int instructionIndex, object cookie, Func<int, int> labelIndexer, IReadOnlyList<object> objects)
         {
             return cookie == null ?
                 InstructionName + "(" + _index + ")" :

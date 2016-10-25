@@ -323,9 +323,9 @@ namespace System.Linq.Expressions
 
     internal class BlockN : BlockExpression
     {
-        private IList<Expression> _expressions;         // either the original IList<Expression> or a ReadOnlyCollection if the user has accessed it.
+        private IReadOnlyList<Expression> _expressions;         // either the original IList<Expression> or a ReadOnlyCollection if the user has accessed it.
 
-        internal BlockN(IList<Expression> expressions)
+        internal BlockN(IReadOnlyList<Expression> expressions)
         {
             Debug.Assert(expressions.Count != 0);
 
@@ -357,9 +357,9 @@ namespace System.Linq.Expressions
 
     internal class ScopeExpression : BlockExpression
     {
-        private IList<ParameterExpression> _variables;      // list of variables or ReadOnlyCollection if the user has accessed the readonly collection
+        private IReadOnlyList<ParameterExpression> _variables;      // list of variables or ReadOnlyCollection if the user has accessed the readonly collection
 
-        internal ScopeExpression(IList<ParameterExpression> variables)
+        internal ScopeExpression(IReadOnlyList<ParameterExpression> variables)
         {
             _variables = variables;
         }
@@ -369,10 +369,10 @@ namespace System.Linq.Expressions
             return ReturnReadOnly(ref _variables);
         }
 
-        protected IList<ParameterExpression> VariablesList => _variables;
+        protected IReadOnlyList<ParameterExpression> VariablesList => _variables;
 
         // Used for rewrite of the nodes to either reuse existing set of variables if not rewritten.
-        internal IList<ParameterExpression> ReuseOrValidateVariables(ReadOnlyCollection<ParameterExpression> variables)
+        internal IReadOnlyList<ParameterExpression> ReuseOrValidateVariables(ReadOnlyCollection<ParameterExpression> variables)
         {
             if (variables != null && variables != VariablesList)
             {
@@ -391,12 +391,12 @@ namespace System.Linq.Expressions
     {
         private object _body;
 
-        internal Scope1(IList<ParameterExpression> variables, Expression body)
+        internal Scope1(IReadOnlyList<ParameterExpression> variables, Expression body)
             : this(variables, (object)body)
         {
         }
 
-        private Scope1(IList<ParameterExpression> variables, object body)
+        private Scope1(IReadOnlyList<ParameterExpression> variables, object body)
             : base(variables)
         {
             _body = body;
@@ -435,20 +435,17 @@ namespace System.Linq.Expressions
 
     internal class ScopeN : ScopeExpression
     {
-        private IList<Expression> _body;
+        private IReadOnlyList<Expression> _body;
 
-        internal ScopeN(IList<ParameterExpression> variables, IList<Expression> body)
+        internal ScopeN(IReadOnlyList<ParameterExpression> variables, IReadOnlyList<Expression> body)
             : base(variables)
         {
             _body = body;
         }
 
-        protected IList<Expression> Body { get;}
+        protected IReadOnlyList<Expression> Body => _body;
 
-        internal override Expression GetExpression(int index)
-        {
-            return _body[index];
-        }
+        internal override Expression GetExpression(int index) => _body[index];
 
         internal override int ExpressionCount => _body.Count;
 
@@ -474,7 +471,7 @@ namespace System.Linq.Expressions
 
     internal sealed class ScopeWithType : ScopeN
     {
-        internal ScopeWithType(IList<ParameterExpression> variables, IList<Expression> expressions, Type type)
+        internal ScopeWithType(IReadOnlyList<ParameterExpression> variables, IReadOnlyList<Expression> expressions, Type type)
             : base(variables, expressions)
         {
             Type = type;
@@ -920,7 +917,7 @@ namespace System.Linq.Expressions
                 case 4: return new Block4(expressions[0], expressions[1], expressions[2], expressions[3]);
                 case 5: return new Block5(expressions[0], expressions[1], expressions[2], expressions[3], expressions[4]);
                 default:
-                    return new BlockN(expressions as ReadOnlyCollection<Expression> ?? (IList<Expression>)expressions.ToArray());
+                    return new BlockN(expressions as ReadOnlyCollection<Expression> ?? (IReadOnlyList<Expression>)expressions.ToArray());
             }
         }
     }

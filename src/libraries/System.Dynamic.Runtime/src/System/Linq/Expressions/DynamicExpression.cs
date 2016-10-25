@@ -478,9 +478,9 @@ namespace System.Linq.Expressions
 
     internal class DynamicExpressionN : DynamicExpression, IArgumentProvider
     {
-        private IList<Expression> _arguments;       // storage for the original IList or readonly collection.  See IArgumentProvider for more info.
+        private IReadOnlyList<Expression> _arguments;       // storage for the original IList or readonly collection.  See IArgumentProvider for more info.
 
-        internal DynamicExpressionN(Type delegateType, CallSiteBinder binder, IList<Expression> arguments)
+        internal DynamicExpressionN(Type delegateType, CallSiteBinder binder, IReadOnlyList<Expression> arguments)
             : base(delegateType, binder)
         {
             _arguments = arguments;
@@ -516,7 +516,7 @@ namespace System.Linq.Expressions
     {
         private readonly Type _returnType;
 
-        internal TypedDynamicExpressionN(Type returnType, Type delegateType, CallSiteBinder binder, IList<Expression> arguments)
+        internal TypedDynamicExpressionN(Type returnType, Type delegateType, CallSiteBinder binder, IReadOnlyList<Expression> arguments)
             : base(delegateType, binder, arguments)
         {
             Debug.Assert(delegateType.GetMethod("Invoke").GetReturnType() == returnType);

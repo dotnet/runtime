@@ -17,9 +17,9 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(NewExpressionProxy))]
     public class NewExpression : Expression, IArgumentProvider
     {
-        private IList<Expression> _arguments;
+        private IReadOnlyList<Expression> _arguments;
 
-        internal NewExpression(ConstructorInfo constructor, IList<Expression> arguments, ReadOnlyCollection<MemberInfo> members)
+        internal NewExpression(ConstructorInfo constructor, IReadOnlyList<Expression> arguments, ReadOnlyCollection<MemberInfo> members)
         {
             Constructor = constructor;
             _arguments = arguments;

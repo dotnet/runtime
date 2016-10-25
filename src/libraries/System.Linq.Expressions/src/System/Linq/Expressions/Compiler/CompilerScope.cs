@@ -96,7 +96,7 @@ namespace System.Linq.Expressions.Compiler
         {
             Node = node;
             IsMethod = isMethod;
-            IList<ParameterExpression> variables = GetVariables(node);
+            IReadOnlyList<ParameterExpression> variables = GetVariables(node);
 
             Definitions = new Dictionary<ParameterExpression, VariableStorageKind>(variables.Count);
             foreach (ParameterExpression v in variables)
@@ -479,7 +479,7 @@ namespace System.Linq.Expressions.Compiler
             }
         }
 
-        private static IList<ParameterExpression> GetVariables(object scope)
+        private static IReadOnlyList<ParameterExpression> GetVariables(object scope)
         {
             var lambda = scope as LambdaExpression;
             if (lambda != null)

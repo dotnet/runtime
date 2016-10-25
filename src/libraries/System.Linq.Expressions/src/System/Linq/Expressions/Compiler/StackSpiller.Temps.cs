@@ -363,7 +363,7 @@ namespace System.Linq.Expressions.Compiler
         /// </summary>
         private static Expression MakeBlock(params Expression[] expressions)
         {
-            return MakeBlock((IList<Expression>)expressions);
+            return MakeBlock((IReadOnlyList<Expression>)expressions);
         }
 
         /// <summary>
@@ -371,7 +371,7 @@ namespace System.Linq.Expressions.Compiler
         /// This should not be used for rewriting BlockExpression itself, or
         /// anything else that supports jumping.
         /// </summary>
-        private static Expression MakeBlock(IList<Expression> expressions)
+        private static Expression MakeBlock(IReadOnlyList<Expression> expressions)
         {
             return new SpilledExpressionBlock(expressions);
         }
@@ -383,7 +383,7 @@ namespace System.Linq.Expressions.Compiler
     /// </summary>
     internal sealed class SpilledExpressionBlock : BlockN
     {
-        internal SpilledExpressionBlock(IList<Expression> expressions)
+        internal SpilledExpressionBlock(IReadOnlyList<Expression> expressions)
             : base(expressions)
         {
         }

@@ -232,17 +232,17 @@ namespace System.Linq.Expressions
 
         #region The AST Output
 
-        private void VisitExpressions<T>(char open, IList<T> expressions) where T : Expression
+        private void VisitExpressions<T>(char open, IReadOnlyList<T> expressions) where T : Expression
         {
             VisitExpressions<T>(open, ',', expressions);
         }
 
-        private void VisitExpressions<T>(char open, char separator, IList<T> expressions) where T : Expression
+        private void VisitExpressions<T>(char open, char separator, IReadOnlyList<T> expressions) where T : Expression
         {
             VisitExpressions(open, separator, expressions, e => Visit(e));
         }
 
-        private void VisitDeclarations(IList<ParameterExpression> expressions)
+        private void VisitDeclarations(IReadOnlyList<ParameterExpression> expressions)
         {
             VisitExpressions('(', ',', expressions, variable =>
             {
@@ -256,7 +256,7 @@ namespace System.Linq.Expressions
             });
         }
 
-        private void VisitExpressions<T>(char open, char separator, IList<T> expressions, Action<T> visit)
+        private void VisitExpressions<T>(char open, char separator, IReadOnlyList<T> expressions, Action<T> visit)
         {
             Out(open.ToString());
 

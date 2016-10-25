@@ -14,9 +14,9 @@ namespace System.Dynamic.Utils
 {
     internal static class ExpressionUtils
     {
-        public static ReadOnlyCollection<T> ReturnReadOnly<T>(ref IList<T> collection)
+        public static ReadOnlyCollection<T> ReturnReadOnly<T>(ref IReadOnlyList<T> collection)
         {
-            IList<T> value = collection;
+            IReadOnlyList<T> value = collection;
 
             // if it's already read-only just return it.
             ReadOnlyCollection<T> res = value as ReadOnlyCollection<T>;
@@ -26,7 +26,7 @@ namespace System.Dynamic.Utils
             }
 
             // otherwise make sure only readonly collection every gets exposed
-            Interlocked.CompareExchange<IList<T>>(
+            Interlocked.CompareExchange<IReadOnlyList<T>>(
                 ref collection,
                 value.ToReadOnly(),
                 value

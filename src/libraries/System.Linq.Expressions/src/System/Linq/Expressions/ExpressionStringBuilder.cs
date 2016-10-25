@@ -115,12 +115,12 @@ namespace System.Linq.Expressions
             return esb.ToString();
         }
 
-        private void VisitExpressions<T>(char open, IList<T> expressions, char close) where T : Expression
+        private void VisitExpressions<T>(char open, IReadOnlyList<T> expressions, char close) where T : Expression
         {
             VisitExpressions(open, expressions, close, ", ");
         }
 
-        private void VisitExpressions<T>(char open, IList<T> expressions, char close, string seperator) where T : Expression
+        private void VisitExpressions<T>(char open, IReadOnlyList<T> expressions, char close, string seperator) where T : Expression
         {
             Out(open);
             if (expressions != null)

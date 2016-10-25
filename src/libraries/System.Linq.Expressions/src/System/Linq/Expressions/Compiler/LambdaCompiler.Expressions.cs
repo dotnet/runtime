@@ -925,7 +925,7 @@ namespace System.Linq.Expressions.Compiler
             throw Error.ExtensionNotReduced();
         }
 
-#region ListInit, MemberInit
+        #region ListInit, MemberInit
 
         private void EmitListInitExpression(Expression expr)
         {
@@ -1115,14 +1115,14 @@ namespace System.Linq.Expressions.Compiler
             throw Error.MemberNotFieldOrProperty(member, nameof(member));
         }
 
-#endregion
+        #endregion
 
-#region Expression helpers
+        #region Expression helpers
 
-        internal static void ValidateLift(IList<ParameterExpression> variables, IList<Expression> arguments)
+        internal static void ValidateLift(IReadOnlyList<ParameterExpression> variables, IReadOnlyList<Expression> arguments)
         {
-            System.Diagnostics.Debug.Assert(variables != null);
-            System.Diagnostics.Debug.Assert(arguments != null);
+            Debug.Assert(variables != null);
+            Debug.Assert(arguments != null);
 
             if (variables.Count != arguments.Count)
             {
@@ -1314,6 +1314,6 @@ namespace System.Linq.Expressions.Compiler
             }
         }
 
-#endregion
+        #endregion
     }
 }
