@@ -156,7 +156,14 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
 
     // Create the call node
     GenTreeCall* call = comp->gtNewCallNode(CT_USER_FUNC, callHnd, tree->gtType, args);
-    call              = comp->fgMorphArgs(call);
+
+#if DEBUG
+    CORINFO_SIG_INFO sig;
+    comp->eeGetMethodSig(callHnd, &sig);
+    assert(JITtype2varType(sig.retType) == tree->gtType);
+#endif // DEBUG
+
+    call = comp->fgMorphArgs(call);
     // Determine if this call has changed any codegen requirements.
     comp->fgCheckArgCnt();
 
