@@ -152,7 +152,7 @@ and `bin'. You can specify
 
 Example:
 
-monoliner -d ../../libs -a program.exe
+monolinker -d ../../libs -a program.exe
 
 8) Adding custom steps to the linker.
 
