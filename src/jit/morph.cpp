@@ -14339,7 +14339,15 @@ GenTreePtr Compiler::fgRecognizeAndMorphBitwiseRotation(GenTreePtr tree)
                 tree->gtOp.gtOp1 = rotatedValue;
                 tree->gtOp.gtOp2 = rotateIndex;
                 tree->ChangeOper(rotateOp);
-                noway_assert(inputTreeEffects == ((rotatedValue->gtFlags | rotateIndex->gtFlags) & GTF_ALL_EFFECT));
+
+                unsigned childFlags = 0;
+                for (GenTree* op : tree->Operands())
+                {
+                    childFlags |= (op->gtFlags & GTF_ALL_EFFECT);
+                }
+
+                // The parent's flags should be a superset of its operands' flags
+                noway_assert((inputTreeEffects & childFlags) == childFlags);
             }
             else
             {
