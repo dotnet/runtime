@@ -789,7 +789,7 @@ PCCOR_SIGNATURE PrettyPrintType(
                         {   
                             //if (sizes[i] != 0 || lowerBounds[i] != 0)   
                             {   
-                                if (lowerBounds[i] == 0 && i < numSizes)    
+                                if (i < numSizes && lowerBounds[i] == 0)
                                     appendStrNum(out, sizes[i]);    
                                 else    
                                 {   
