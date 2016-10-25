@@ -56,345 +56,375 @@ public class GetMember
         s_t20 = typeof(Class20).GetTypeInfo();
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=1000)]
     public static void GetField()
     {
         foreach (var iteration in Benchmark.Iterations)
         {
             using (iteration.StartMeasurement())
             {
-                s_t1.GetDeclaredField("f1");
-                s_t1.GetDeclaredField("f2");
-                s_t1.GetDeclaredField("f3");
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                {
+                    s_t1.GetDeclaredField("f1");
+                    s_t1.GetDeclaredField("f2");
+                    s_t1.GetDeclaredField("f3");
+                }
             }
         }
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=1000)]
     public static void GetMethod1()
     {
         foreach (var iteration in Benchmark.Iterations)
         {
             using (iteration.StartMeasurement())
             {
-                s_t1.GetDeclaredMethod("m1");
-                s_t1.GetDeclaredMethod("m2");
-                s_t1.GetDeclaredMethod("m3");
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                {
+                    s_t1.GetDeclaredMethod("m1");
+                    s_t1.GetDeclaredMethod("m2");
+                    s_t1.GetDeclaredMethod("m3");
+                }
             }
         }
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=1000)]
     public static void GetMethod2()
     {
         foreach (var iteration in Benchmark.Iterations)
         {
             using (iteration.StartMeasurement())
             {
-                s_t1.GetDeclaredMethod("m1");
-                s_t1.GetDeclaredMethod("m2");
-                s_t1.GetDeclaredMethod("m3");
-                s_t2.GetDeclaredMethod("m1");
-                s_t2.GetDeclaredMethod("m2");
-                s_t2.GetDeclaredMethod("m3");
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                {
+                    s_t1.GetDeclaredMethod("m1");
+                    s_t1.GetDeclaredMethod("m2");
+                    s_t1.GetDeclaredMethod("m3");
+                    s_t2.GetDeclaredMethod("m1");
+                    s_t2.GetDeclaredMethod("m2");
+                    s_t2.GetDeclaredMethod("m3");
+                }
             }
         }
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=1000)]
     public static void GetMethod3()
     {
         foreach (var iteration in Benchmark.Iterations)
         {
             using (iteration.StartMeasurement())
             {
-                s_t1.GetDeclaredMethod("m1");
-                s_t1.GetDeclaredMethod("m2"); //TODO: check if we can really get the method
-                s_t1.GetDeclaredMethod("m3");
-                s_t2.GetDeclaredMethod("m1");
-                s_t2.GetDeclaredMethod("m2");
-                s_t2.GetDeclaredMethod("m3");
-                s_t3.GetDeclaredMethod("m1");
-                s_t3.GetDeclaredMethod("m2");
-                s_t3.GetDeclaredMethod("m3");
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                {
+                    s_t1.GetDeclaredMethod("m1");
+                    s_t1.GetDeclaredMethod("m2"); //TODO: check if we can really get the method
+                    s_t1.GetDeclaredMethod("m3");
+                    s_t2.GetDeclaredMethod("m1");
+                    s_t2.GetDeclaredMethod("m2");
+                    s_t2.GetDeclaredMethod("m3");
+                    s_t3.GetDeclaredMethod("m1");
+                    s_t3.GetDeclaredMethod("m2");
+                    s_t3.GetDeclaredMethod("m3");
+                }
             }
         }
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=1000)]
     public static void GetMethod4()
     {
         foreach (var iteration in Benchmark.Iterations)
         {
             using (iteration.StartMeasurement())
             {
-                s_t1.GetDeclaredMethod("m1");
-                s_t1.GetDeclaredMethod("m2"); //TODO: check if we can really get the method
-                s_t1.GetDeclaredMethod("m3");
-                s_t2.GetDeclaredMethod("m1");
-                s_t2.GetDeclaredMethod("m2");
-                s_t2.GetDeclaredMethod("m3");
-                s_t3.GetDeclaredMethod("m1");
-                s_t3.GetDeclaredMethod("m2");
-                s_t3.GetDeclaredMethod("m3");
-                s_t4.GetDeclaredMethod("m1");
-                s_t4.GetDeclaredMethod("m2");
-                s_t4.GetDeclaredMethod("m3");
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                {
+                    s_t1.GetDeclaredMethod("m1");
+                    s_t1.GetDeclaredMethod("m2"); //TODO: check if we can really get the method
+                    s_t1.GetDeclaredMethod("m3");
+                    s_t2.GetDeclaredMethod("m1");
+                    s_t2.GetDeclaredMethod("m2");
+                    s_t2.GetDeclaredMethod("m3");
+                    s_t3.GetDeclaredMethod("m1");
+                    s_t3.GetDeclaredMethod("m2");
+                    s_t3.GetDeclaredMethod("m3");
+                    s_t4.GetDeclaredMethod("m1");
+                    s_t4.GetDeclaredMethod("m2");
+                    s_t4.GetDeclaredMethod("m3");
+                }
             }
         }
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=1000)]
     public static void GetMethod5()
     {
         foreach (var iteration in Benchmark.Iterations)
         {
             using (iteration.StartMeasurement())
             {
-                s_t1.GetDeclaredMethod("m1");
-                s_t1.GetDeclaredMethod("m2");
-                s_t1.GetDeclaredMethod("m3");
-                s_t2.GetDeclaredMethod("m1");
-                s_t2.GetDeclaredMethod("m2");
-                s_t2.GetDeclaredMethod("m3");
-                s_t3.GetDeclaredMethod("m1");
-                s_t3.GetDeclaredMethod("m2");
-                s_t3.GetDeclaredMethod("m3");
-                s_t4.GetDeclaredMethod("m1");
-                s_t4.GetDeclaredMethod("m2");
-                s_t4.GetDeclaredMethod("m3");
-                s_t5.GetDeclaredMethod("m1");
-                s_t5.GetDeclaredMethod("m2");
-                s_t5.GetDeclaredMethod("m3");
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                {
+                    s_t1.GetDeclaredMethod("m1");
+                    s_t1.GetDeclaredMethod("m2");
+                    s_t1.GetDeclaredMethod("m3");
+                    s_t2.GetDeclaredMethod("m1");
+                    s_t2.GetDeclaredMethod("m2");
+                    s_t2.GetDeclaredMethod("m3");
+                    s_t3.GetDeclaredMethod("m1");
+                    s_t3.GetDeclaredMethod("m2");
+                    s_t3.GetDeclaredMethod("m3");
+                    s_t4.GetDeclaredMethod("m1");
+                    s_t4.GetDeclaredMethod("m2");
+                    s_t4.GetDeclaredMethod("m3");
+                    s_t5.GetDeclaredMethod("m1");
+                    s_t5.GetDeclaredMethod("m2");
+                    s_t5.GetDeclaredMethod("m3");
+                }
             }
         }
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=1000)]
     public static void GetMethod10()
     {
         foreach (var iteration in Benchmark.Iterations)
         {
             using (iteration.StartMeasurement())
             {
-                s_t1.GetDeclaredMethod("m1");
-                s_t1.GetDeclaredMethod("m2");
-                s_t1.GetDeclaredMethod("m3");
-                s_t2.GetDeclaredMethod("m1");
-                s_t2.GetDeclaredMethod("m2");
-                s_t2.GetDeclaredMethod("m3");
-                s_t3.GetDeclaredMethod("m1");
-                s_t3.GetDeclaredMethod("m2");
-                s_t3.GetDeclaredMethod("m3");
-                s_t4.GetDeclaredMethod("m1");
-                s_t4.GetDeclaredMethod("m2");
-                s_t4.GetDeclaredMethod("m3");
-                s_t5.GetDeclaredMethod("m1");
-                s_t5.GetDeclaredMethod("m2");
-                s_t5.GetDeclaredMethod("m3");
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                {
+                    s_t1.GetDeclaredMethod("m1");
+                    s_t1.GetDeclaredMethod("m2");
+                    s_t1.GetDeclaredMethod("m3");
+                    s_t2.GetDeclaredMethod("m1");
+                    s_t2.GetDeclaredMethod("m2");
+                    s_t2.GetDeclaredMethod("m3");
+                    s_t3.GetDeclaredMethod("m1");
+                    s_t3.GetDeclaredMethod("m2");
+                    s_t3.GetDeclaredMethod("m3");
+                    s_t4.GetDeclaredMethod("m1");
+                    s_t4.GetDeclaredMethod("m2");
+                    s_t4.GetDeclaredMethod("m3");
+                    s_t5.GetDeclaredMethod("m1");
+                    s_t5.GetDeclaredMethod("m2");
+                    s_t5.GetDeclaredMethod("m3");
 
-                s_t6.GetDeclaredMethod("m1");
-                s_t6.GetDeclaredMethod("m2");
-                s_t6.GetDeclaredMethod("m3");
-                s_t7.GetDeclaredMethod("m1");
-                s_t7.GetDeclaredMethod("m2");
-                s_t7.GetDeclaredMethod("m3");
-                s_t8.GetDeclaredMethod("m1");
-                s_t8.GetDeclaredMethod("m2");
-                s_t8.GetDeclaredMethod("m3");
-                s_t9.GetDeclaredMethod("m1");
-                s_t9.GetDeclaredMethod("m2");
-                s_t9.GetDeclaredMethod("m3");
-                s_t10.GetDeclaredMethod("m1");
-                s_t10.GetDeclaredMethod("m2");
-                s_t10.GetDeclaredMethod("m3");
+                    s_t6.GetDeclaredMethod("m1");
+                    s_t6.GetDeclaredMethod("m2");
+                    s_t6.GetDeclaredMethod("m3");
+                    s_t7.GetDeclaredMethod("m1");
+                    s_t7.GetDeclaredMethod("m2");
+                    s_t7.GetDeclaredMethod("m3");
+                    s_t8.GetDeclaredMethod("m1");
+                    s_t8.GetDeclaredMethod("m2");
+                    s_t8.GetDeclaredMethod("m3");
+                    s_t9.GetDeclaredMethod("m1");
+                    s_t9.GetDeclaredMethod("m2");
+                    s_t9.GetDeclaredMethod("m3");
+                    s_t10.GetDeclaredMethod("m1");
+                    s_t10.GetDeclaredMethod("m2");
+                    s_t10.GetDeclaredMethod("m3");
+                }
             }
         }
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=1000)]
     public static void GetMethod12()
     {
         foreach (var iteration in Benchmark.Iterations)
         {
             using (iteration.StartMeasurement())
             {
-                s_t1.GetDeclaredMethod("m1");
-                s_t1.GetDeclaredMethod("m2");
-                s_t1.GetDeclaredMethod("m3");
-                s_t2.GetDeclaredMethod("m1");
-                s_t2.GetDeclaredMethod("m2");
-                s_t2.GetDeclaredMethod("m3");
-                s_t3.GetDeclaredMethod("m1");
-                s_t3.GetDeclaredMethod("m2");
-                s_t3.GetDeclaredMethod("m3");
-                s_t4.GetDeclaredMethod("m1");
-                s_t4.GetDeclaredMethod("m2");
-                s_t4.GetDeclaredMethod("m3");
-                s_t5.GetDeclaredMethod("m1");
-                s_t5.GetDeclaredMethod("m2");
-                s_t5.GetDeclaredMethod("m3");
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                {
+                    s_t1.GetDeclaredMethod("m1");
+                    s_t1.GetDeclaredMethod("m2");
+                    s_t1.GetDeclaredMethod("m3");
+                    s_t2.GetDeclaredMethod("m1");
+                    s_t2.GetDeclaredMethod("m2");
+                    s_t2.GetDeclaredMethod("m3");
+                    s_t3.GetDeclaredMethod("m1");
+                    s_t3.GetDeclaredMethod("m2");
+                    s_t3.GetDeclaredMethod("m3");
+                    s_t4.GetDeclaredMethod("m1");
+                    s_t4.GetDeclaredMethod("m2");
+                    s_t4.GetDeclaredMethod("m3");
+                    s_t5.GetDeclaredMethod("m1");
+                    s_t5.GetDeclaredMethod("m2");
+                    s_t5.GetDeclaredMethod("m3");
 
-                s_t6.GetDeclaredMethod("m1");
-                s_t6.GetDeclaredMethod("m2");
-                s_t6.GetDeclaredMethod("m3");
-                s_t7.GetDeclaredMethod("m1");
-                s_t7.GetDeclaredMethod("m2");
-                s_t7.GetDeclaredMethod("m3");
-                s_t8.GetDeclaredMethod("m1");
-                s_t8.GetDeclaredMethod("m2");
-                s_t8.GetDeclaredMethod("m3");
-                s_t9.GetDeclaredMethod("m1");
-                s_t9.GetDeclaredMethod("m2");
-                s_t9.GetDeclaredMethod("m3");
-                s_t10.GetDeclaredMethod("m1");
-                s_t10.GetDeclaredMethod("m2");
-                s_t10.GetDeclaredMethod("m3");
+                    s_t6.GetDeclaredMethod("m1");
+                    s_t6.GetDeclaredMethod("m2");
+                    s_t6.GetDeclaredMethod("m3");
+                    s_t7.GetDeclaredMethod("m1");
+                    s_t7.GetDeclaredMethod("m2");
+                    s_t7.GetDeclaredMethod("m3");
+                    s_t8.GetDeclaredMethod("m1");
+                    s_t8.GetDeclaredMethod("m2");
+                    s_t8.GetDeclaredMethod("m3");
+                    s_t9.GetDeclaredMethod("m1");
+                    s_t9.GetDeclaredMethod("m2");
+                    s_t9.GetDeclaredMethod("m3");
+                    s_t10.GetDeclaredMethod("m1");
+                    s_t10.GetDeclaredMethod("m2");
+                    s_t10.GetDeclaredMethod("m3");
 
-                s_t11.GetDeclaredMethod("m1");
-                s_t11.GetDeclaredMethod("m2");
-                s_t11.GetDeclaredMethod("m3");
-                s_t12.GetDeclaredMethod("m1");
-                s_t12.GetDeclaredMethod("m2");
-                s_t12.GetDeclaredMethod("m3");
+                    s_t11.GetDeclaredMethod("m1");
+                    s_t11.GetDeclaredMethod("m2");
+                    s_t11.GetDeclaredMethod("m3");
+                    s_t12.GetDeclaredMethod("m1");
+                    s_t12.GetDeclaredMethod("m2");
+                    s_t12.GetDeclaredMethod("m3");
+                }
             }
         }
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=1000)]
     public static void GetMethod15()
     {
         foreach (var iteration in Benchmark.Iterations)
         {
             using (iteration.StartMeasurement())
             {
-                s_t1.GetDeclaredMethod("m1");
-                s_t1.GetDeclaredMethod("m2");
-                s_t1.GetDeclaredMethod("m3");
-                s_t2.GetDeclaredMethod("m1");
-                s_t2.GetDeclaredMethod("m2");
-                s_t2.GetDeclaredMethod("m3");
-                s_t3.GetDeclaredMethod("m1");
-                s_t3.GetDeclaredMethod("m2");
-                s_t3.GetDeclaredMethod("m3");
-                s_t4.GetDeclaredMethod("m1");
-                s_t4.GetDeclaredMethod("m2");
-                s_t4.GetDeclaredMethod("m3");
-                s_t5.GetDeclaredMethod("m1");
-                s_t5.GetDeclaredMethod("m2");
-                s_t5.GetDeclaredMethod("m3");
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                {
+                    s_t1.GetDeclaredMethod("m1");
+                    s_t1.GetDeclaredMethod("m2");
+                    s_t1.GetDeclaredMethod("m3");
+                    s_t2.GetDeclaredMethod("m1");
+                    s_t2.GetDeclaredMethod("m2");
+                    s_t2.GetDeclaredMethod("m3");
+                    s_t3.GetDeclaredMethod("m1");
+                    s_t3.GetDeclaredMethod("m2");
+                    s_t3.GetDeclaredMethod("m3");
+                    s_t4.GetDeclaredMethod("m1");
+                    s_t4.GetDeclaredMethod("m2");
+                    s_t4.GetDeclaredMethod("m3");
+                    s_t5.GetDeclaredMethod("m1");
+                    s_t5.GetDeclaredMethod("m2");
+                    s_t5.GetDeclaredMethod("m3");
 
-                s_t6.GetDeclaredMethod("m1");
-                s_t6.GetDeclaredMethod("m2");
-                s_t6.GetDeclaredMethod("m3");
-                s_t7.GetDeclaredMethod("m1");
-                s_t7.GetDeclaredMethod("m2");
-                s_t7.GetDeclaredMethod("m3");
-                s_t8.GetDeclaredMethod("m1");
-                s_t8.GetDeclaredMethod("m2");
-                s_t8.GetDeclaredMethod("m3");
-                s_t9.GetDeclaredMethod("m1");
-                s_t9.GetDeclaredMethod("m2");
-                s_t9.GetDeclaredMethod("m3");
-                s_t10.GetDeclaredMethod("m1");
-                s_t10.GetDeclaredMethod("m2");
-                s_t10.GetDeclaredMethod("m3");
+                    s_t6.GetDeclaredMethod("m1");
+                    s_t6.GetDeclaredMethod("m2");
+                    s_t6.GetDeclaredMethod("m3");
+                    s_t7.GetDeclaredMethod("m1");
+                    s_t7.GetDeclaredMethod("m2");
+                    s_t7.GetDeclaredMethod("m3");
+                    s_t8.GetDeclaredMethod("m1");
+                    s_t8.GetDeclaredMethod("m2");
+                    s_t8.GetDeclaredMethod("m3");
+                    s_t9.GetDeclaredMethod("m1");
+                    s_t9.GetDeclaredMethod("m2");
+                    s_t9.GetDeclaredMethod("m3");
+                    s_t10.GetDeclaredMethod("m1");
+                    s_t10.GetDeclaredMethod("m2");
+                    s_t10.GetDeclaredMethod("m3");
 
-                s_t11.GetDeclaredMethod("m1");
-                s_t11.GetDeclaredMethod("m2");
-                s_t11.GetDeclaredMethod("m3");
-                s_t12.GetDeclaredMethod("m1");
-                s_t12.GetDeclaredMethod("m2");
-                s_t12.GetDeclaredMethod("m3");
-                s_t13.GetDeclaredMethod("m1");
-                s_t13.GetDeclaredMethod("m2");
-                s_t13.GetDeclaredMethod("m3");
-                s_t14.GetDeclaredMethod("m1");
-                s_t14.GetDeclaredMethod("m2");
-                s_t14.GetDeclaredMethod("m3");
-                s_t15.GetDeclaredMethod("m1");
-                s_t15.GetDeclaredMethod("m2");
-                s_t15.GetDeclaredMethod("m3");
+                    s_t11.GetDeclaredMethod("m1");
+                    s_t11.GetDeclaredMethod("m2");
+                    s_t11.GetDeclaredMethod("m3");
+                    s_t12.GetDeclaredMethod("m1");
+                    s_t12.GetDeclaredMethod("m2");
+                    s_t12.GetDeclaredMethod("m3");
+                    s_t13.GetDeclaredMethod("m1");
+                    s_t13.GetDeclaredMethod("m2");
+                    s_t13.GetDeclaredMethod("m3");
+                    s_t14.GetDeclaredMethod("m1");
+                    s_t14.GetDeclaredMethod("m2");
+                    s_t14.GetDeclaredMethod("m3");
+                    s_t15.GetDeclaredMethod("m1");
+                    s_t15.GetDeclaredMethod("m2");
+                    s_t15.GetDeclaredMethod("m3");
+                }
             }
         }
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=1000)]
     public static void GetMethod20()
     {
         foreach (var iteration in Benchmark.Iterations)
         {
             using (iteration.StartMeasurement())
             {
-                s_t1.GetDeclaredMethod("m1");
-                s_t1.GetDeclaredMethod("m2");
-                s_t1.GetDeclaredMethod("m3");
-                s_t2.GetDeclaredMethod("m1");
-                s_t2.GetDeclaredMethod("m2");
-                s_t2.GetDeclaredMethod("m3");
-                s_t3.GetDeclaredMethod("m1");
-                s_t3.GetDeclaredMethod("m2");
-                s_t3.GetDeclaredMethod("m3");
-                s_t4.GetDeclaredMethod("m1");
-                s_t4.GetDeclaredMethod("m2");
-                s_t4.GetDeclaredMethod("m3");
-                s_t5.GetDeclaredMethod("m1");
-                s_t5.GetDeclaredMethod("m2");
-                s_t5.GetDeclaredMethod("m3");
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                {
+                    s_t1.GetDeclaredMethod("m1");
+                    s_t1.GetDeclaredMethod("m2");
+                    s_t1.GetDeclaredMethod("m3");
+                    s_t2.GetDeclaredMethod("m1");
+                    s_t2.GetDeclaredMethod("m2");
+                    s_t2.GetDeclaredMethod("m3");
+                    s_t3.GetDeclaredMethod("m1");
+                    s_t3.GetDeclaredMethod("m2");
+                    s_t3.GetDeclaredMethod("m3");
+                    s_t4.GetDeclaredMethod("m1");
+                    s_t4.GetDeclaredMethod("m2");
+                    s_t4.GetDeclaredMethod("m3");
+                    s_t5.GetDeclaredMethod("m1");
+                    s_t5.GetDeclaredMethod("m2");
+                    s_t5.GetDeclaredMethod("m3");
 
-                s_t6.GetDeclaredMethod("m1");
-                s_t6.GetDeclaredMethod("m2");
-                s_t6.GetDeclaredMethod("m3");
-                s_t7.GetDeclaredMethod("m1");
-                s_t7.GetDeclaredMethod("m2");
-                s_t7.GetDeclaredMethod("m3");
-                s_t8.GetDeclaredMethod("m1");
-                s_t8.GetDeclaredMethod("m2");
-                s_t8.GetDeclaredMethod("m3");
-                s_t9.GetDeclaredMethod("m1");
-                s_t9.GetDeclaredMethod("m2");
-                s_t9.GetDeclaredMethod("m3");
-                s_t10.GetDeclaredMethod("m1");
-                s_t10.GetDeclaredMethod("m2");
-                s_t10.GetDeclaredMethod("m3");
+                    s_t6.GetDeclaredMethod("m1");
+                    s_t6.GetDeclaredMethod("m2");
+                    s_t6.GetDeclaredMethod("m3");
+                    s_t7.GetDeclaredMethod("m1");
+                    s_t7.GetDeclaredMethod("m2");
+                    s_t7.GetDeclaredMethod("m3");
+                    s_t8.GetDeclaredMethod("m1");
+                    s_t8.GetDeclaredMethod("m2");
+                    s_t8.GetDeclaredMethod("m3");
+                    s_t9.GetDeclaredMethod("m1");
+                    s_t9.GetDeclaredMethod("m2");
+                    s_t9.GetDeclaredMethod("m3");
+                    s_t10.GetDeclaredMethod("m1");
+                    s_t10.GetDeclaredMethod("m2");
+                    s_t10.GetDeclaredMethod("m3");
 
-                s_t11.GetDeclaredMethod("m1");
-                s_t11.GetDeclaredMethod("m2");
-                s_t11.GetDeclaredMethod("m3");
-                s_t12.GetDeclaredMethod("m1");
-                s_t12.GetDeclaredMethod("m2");
-                s_t12.GetDeclaredMethod("m3");
-                s_t13.GetDeclaredMethod("m1");
-                s_t13.GetDeclaredMethod("m2");
-                s_t13.GetDeclaredMethod("m3");
-                s_t14.GetDeclaredMethod("m1");
-                s_t14.GetDeclaredMethod("m2");
-                s_t14.GetDeclaredMethod("m3");
-                s_t15.GetDeclaredMethod("m1");
-                s_t15.GetDeclaredMethod("m2");
-                s_t15.GetDeclaredMethod("m3");
+                    s_t11.GetDeclaredMethod("m1");
+                    s_t11.GetDeclaredMethod("m2");
+                    s_t11.GetDeclaredMethod("m3");
+                    s_t12.GetDeclaredMethod("m1");
+                    s_t12.GetDeclaredMethod("m2");
+                    s_t12.GetDeclaredMethod("m3");
+                    s_t13.GetDeclaredMethod("m1");
+                    s_t13.GetDeclaredMethod("m2");
+                    s_t13.GetDeclaredMethod("m3");
+                    s_t14.GetDeclaredMethod("m1");
+                    s_t14.GetDeclaredMethod("m2");
+                    s_t14.GetDeclaredMethod("m3");
+                    s_t15.GetDeclaredMethod("m1");
+                    s_t15.GetDeclaredMethod("m2");
+                    s_t15.GetDeclaredMethod("m3");
 
-                s_t16.GetDeclaredMethod("m1");
-                s_t16.GetDeclaredMethod("m2");
-                s_t16.GetDeclaredMethod("m3");
-                s_t17.GetDeclaredMethod("m1");
-                s_t17.GetDeclaredMethod("m2");
-                s_t17.GetDeclaredMethod("m3");
-                s_t18.GetDeclaredMethod("m1");
-                s_t18.GetDeclaredMethod("m2");
-                s_t18.GetDeclaredMethod("m3");
-                s_t19.GetDeclaredMethod("m1");
-                s_t19.GetDeclaredMethod("m2");
-                s_t19.GetDeclaredMethod("m3");
-                s_t20.GetDeclaredMethod("m1");
-                s_t20.GetDeclaredMethod("m2");
-                s_t20.GetDeclaredMethod("m3");
+                    s_t16.GetDeclaredMethod("m1");
+                    s_t16.GetDeclaredMethod("m2");
+                    s_t16.GetDeclaredMethod("m3");
+                    s_t17.GetDeclaredMethod("m1");
+                    s_t17.GetDeclaredMethod("m2");
+                    s_t17.GetDeclaredMethod("m3");
+                    s_t18.GetDeclaredMethod("m1");
+                    s_t18.GetDeclaredMethod("m2");
+                    s_t18.GetDeclaredMethod("m3");
+                    s_t19.GetDeclaredMethod("m1");
+                    s_t19.GetDeclaredMethod("m2");
+                    s_t19.GetDeclaredMethod("m3");
+                    s_t20.GetDeclaredMethod("m1");
+                    s_t20.GetDeclaredMethod("m2");
+                    s_t20.GetDeclaredMethod("m3");
+                }
             }
         }
     }
 
     /*
-    [Benchmark]
+    [Benchmark(InnerIterationCount=1000)]
     public static void GetConstructor()
     {
         foreach (var iteration in Benchmark.Iterations)
@@ -420,7 +450,7 @@ public class GetMember
         }
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=1000)]
     public static void GetProperty()
     {
         foreach (var iteration in Benchmark.Iterations)
@@ -458,7 +488,7 @@ public class GetMember
         }
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=1000)]
     public static void GetEvent()
     {
         foreach (var iteration in Benchmark.Iterations)

@@ -19,7 +19,7 @@ public enum Color
 
 public class EnumPerf
 {
-    [Benchmark]
+    [Benchmark(InnerIterationCount=300000)]
     [InlineData(Color.Red)]
     public static void EnumCompareTo(Color color)
     {
@@ -27,10 +27,11 @@ public class EnumPerf
 
         foreach (var iteration in Benchmark.Iterations)
             using (iteration.StartMeasurement())
-                color.CompareTo(white);
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    color.CompareTo(white);
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=300000)]
     public static Type ObjectGetType()
     {
         Type tmp = null;
@@ -38,12 +39,13 @@ public class EnumPerf
 
         foreach (var iteration in Benchmark.Iterations)
             using (iteration.StartMeasurement())
-                tmp = black.GetType();
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    tmp = black.GetType();
 
         return tmp;
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=300000)]
     public static Type ObjectGetTypeNoBoxing()
     {
         Type tmp = null;
@@ -51,12 +53,13 @@ public class EnumPerf
 
         foreach (var iteration in Benchmark.Iterations)
             using (iteration.StartMeasurement())
-                tmp = black.GetType();
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    tmp = black.GetType();
 
         return tmp;
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=300000)]
     public static bool EnumEquals()
     {
         Color black = Color.Black;
@@ -65,7 +68,8 @@ public class EnumPerf
 
         foreach (var iteration in Benchmark.Iterations)
             using (iteration.StartMeasurement())
-                tmp = black.Equals(white);
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    tmp = black.Equals(white);
 
         return tmp;
     }
