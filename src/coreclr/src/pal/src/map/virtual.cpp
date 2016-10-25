@@ -1096,6 +1096,7 @@ VIRTUALCommitMemory(
         }
 
         StartBoundary = pInformation->startBoundary + runStart * VIRTUAL_PAGE_SIZE;
+        pRetVal = (void *)StartBoundary;
         MemSize = runLength * VIRTUAL_PAGE_SIZE;
 
         if (allocationType != MEM_COMMIT)
