@@ -83,6 +83,17 @@ namespace System.Runtime.Loader
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void LoadFromPath(IntPtr ptrNativeAssemblyLoadContext, string ilPath, string niPath, ObjectHandleOnStack retAssembly);
+
+        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [SuppressUnmanagedCodeSecurity]
+        private static extern void GetLoadedAssembliesInternal(ObjectHandleOnStack assemblies);
+        
+        public static Assembly[] GetLoadedAssemblies()
+        {
+            Assembly[] assemblies = null;
+            GetLoadedAssembliesInternal(JitHelpers.GetObjectHandleOnStack(ref assemblies));
+            return assemblies;
+        }
         
         // These are helpers that can be used by AssemblyLoadContext derivations.
         // They are used to load assemblies in DefaultContext.

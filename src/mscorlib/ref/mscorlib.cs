@@ -11860,6 +11860,7 @@ namespace System.Runtime.Loader
         public event System.Action<System.Runtime.Loader.AssemblyLoadContext> Unloading { add { } remove { } }
         public static System.Reflection.AssemblyName GetAssemblyName(string assemblyPath) { throw null; }
         public static System.Runtime.Loader.AssemblyLoadContext GetLoadContext(System.Reflection.Assembly assembly) { throw null; }
+        public static System.Reflection.Assembly[] GetLoadedAssemblies() { throw null; }
         protected abstract System.Reflection.Assembly Load(System.Reflection.AssemblyName assemblyName);
         public System.Reflection.Assembly LoadFromAssemblyName(System.Reflection.AssemblyName assemblyName) { throw null; }
         public System.Reflection.Assembly LoadFromAssemblyPath(string assemblyPath) { throw null; }
