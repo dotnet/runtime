@@ -911,7 +911,23 @@ namespace System
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
     }
+    public abstract partial class ContextBoundObject : System.MarshalByRefObject
+    {
+        protected ContextBoundObject() { }
+    }
+    public partial class ContextMarshalException : System.SystemException
+    {
+        public ContextMarshalException() { }
+        protected ContextMarshalException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public ContextMarshalException(string message) { }
+        public ContextMarshalException(string message, System.Exception inner) { }
+    }
+    public partial class ContextStaticAttribute : System.Attribute
+    {
+        public ContextStaticAttribute() { }
+    }
 }
+
 namespace System.Diagnostics
 {
     public partial class Stopwatch
@@ -973,6 +989,14 @@ namespace System.Net
         public static byte[] UrlDecodeToBytes(byte[] encodedValue, int offset, int count) { throw null; }
         public static string UrlEncode(string value) { throw null; }
         public static byte[] UrlEncodeToBytes(byte[] value, int offset, int count) { throw null; }
+    }
+}
+namespace  System.Reflection
+{
+    public class AssemblyNameProxy : System.MarshalByRefObject
+    {
+        public AssemblyNameProxy() { }
+        public System.Reflection.AssemblyName GetAssemblyName(System.String assemblyFile) { throw null; }
     }
 }
 namespace System.Runtime.Versioning
