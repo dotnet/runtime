@@ -98,6 +98,7 @@ UnlockFile
 UnmapViewOfFile
 VirtualAlloc
 VirtualFree
+GlobalMemoryStatusEx
 VirtualQuery
 WideCharToMultiByte
 WriteFile

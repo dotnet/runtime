@@ -172,7 +172,7 @@ GetSystemInfo(
 #ifdef VM_MAXUSER_ADDRESS
     lpSystemInfo->lpMaximumApplicationAddress = (PVOID) VM_MAXUSER_ADDRESS;
 #elif defined(__sun__) || defined(_AIX) || defined(__hppa__) || ( defined (_IA64_) && defined (_HPUX_) ) || defined(__linux__)
-    lpSystemInfo->lpMaximumApplicationAddress = (PVOID) -1;
+    lpSystemInfo->lpMaximumApplicationAddress = (PVOID) (1ull << 47);
 #elif defined(USERLIMIT)
     lpSystemInfo->lpMaximumApplicationAddress = (PVOID) USERLIMIT;
 #elif defined(_WIN64)
