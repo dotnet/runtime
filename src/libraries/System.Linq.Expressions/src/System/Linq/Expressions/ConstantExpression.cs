@@ -22,9 +22,9 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Gets the static type of the expression that this <see cref="Expression" /> represents.
+        /// Gets the static type of the expression that this <see cref="Expression"/> represents.
         /// </summary>
-        /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
+        /// <returns>The <see cref="System.Type"/> that represents the static type of the expression.</returns>
         public override Type Type
         {
             get
@@ -75,12 +75,12 @@ namespace System.Linq.Expressions
     public partial class Expression
     {
         /// <summary>
-        /// Creates a <see cref="ConstantExpression"/> that has the <see cref="P:ConstantExpression.Value"/> property set to the specified value. .
+        /// Creates a <see cref="ConstantExpression"/> that has the <see cref="ConstantExpression.Value"/> property set to the specified value. .
         /// </summary>
-        /// <param name="value">An <see cref="System.Object"/> to set the <see cref="P:ConstantExpression.Value"/> property equal to.</param>
+        /// <param name="value">An <see cref="Object"/> to set the <see cref="ConstantExpression.Value"/> property equal to.</param>
         /// <returns>
-        /// A <see cref="ConstantExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to 
-        /// <see cref="F:ExpressionType.Constant"/> and the <see cref="P:Expression.Value"/> property set to the specified value.
+        /// A <see cref="ConstantExpression"/> that has the <see cref="NodeType"/> property equal to 
+        /// <see cref="ExpressionType.Constant"/> and the <see cref="ConstantExpression.Value"/> property set to the specified value.
         /// </returns>
         public static ConstantExpression Constant(object value)
         {
@@ -88,15 +88,15 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Creates a <see cref="ConstantExpression"/> that has the <see cref="P:ConstantExpression.Value"/> 
-        /// and <see cref="P:ConstantExpression.Type"/> properties set to the specified values. .
+        /// Creates a <see cref="ConstantExpression"/> that has the <see cref="ConstantExpression.Value"/> 
+        /// and <see cref="ConstantExpression.Type"/> properties set to the specified values. .
         /// </summary>
-        /// <param name="value">An <see cref="System.Object"/> to set the <see cref="P:ConstantExpression.Value"/> property equal to.</param>
-        /// <param name="type">A <see cref="System.Type"/> to set the <see cref="P:Expression.Type"/> property equal to.</param>
+        /// <param name="value">An <see cref="Object"/> to set the <see cref="ConstantExpression.Value"/> property equal to.</param>
+        /// <param name="type">A <see cref="Type"/> to set the <see cref="Type"/> property equal to.</param>
         /// <returns>
-        /// A <see cref="ConstantExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to 
-        /// <see cref="F:ExpressionType.Constant"/> and the <see cref="P:ConstantExpression.Value"/> and 
-        /// <see cref="P:Expression.Type"/> properties set to the specified values.
+        /// A <see cref="ConstantExpression"/> that has the <see cref="NodeType"/> property equal to 
+        /// <see cref="ExpressionType.Constant"/> and the <see cref="ConstantExpression.Value"/> and 
+        /// <see cref="Type"/> properties set to the specified values.
         /// </returns>
         public static ConstantExpression Constant(object value, Type type)
         {

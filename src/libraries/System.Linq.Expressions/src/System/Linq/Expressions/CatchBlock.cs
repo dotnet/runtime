@@ -9,7 +9,7 @@ namespace System.Linq.Expressions
 {
     /// <summary>
     /// Represents a catch statement in a try block. 
-    /// This must have the same return type (i.e., the type of <see cref="P:CatchBlock.Body"/>) as the try block it is associated with.
+    /// This must have the same return type (i.e., the type of <see cref="Body"/>) as the try block it is associated with.
     /// </summary>
     [DebuggerTypeProxy(typeof(Expression.CatchBlockProxy))]
     public sealed class CatchBlock
@@ -50,7 +50,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Returns a <see cref="String"/> that represents the current <see cref="Object"/>. 
         /// </summary>
-        /// <returns>A <see cref="String"/> that represents the current <see cref="Object"/>. </returns>
+        /// <returns>A <see cref="String"/> that represents the current <see cref="Object"/>.</returns>
         public override string ToString()
         {
             return ExpressionStringBuilder.CatchBlockToString(this);
@@ -61,9 +61,9 @@ namespace System.Linq.Expressions
         /// supplied children. If all of the children are the same, it will
         /// return this expression.
         /// </summary>
-        /// <param name="variable">The <see cref="Variable" /> property of the result.</param>
-        /// <param name="filter">The <see cref="Filter" /> property of the result.</param>
-        /// <param name="body">The <see cref="Body" /> property of the result.</param>
+        /// <param name="variable">The <see cref="Variable"/> property of the result.</param>
+        /// <param name="filter">The <see cref="Filter"/> property of the result.</param>
+        /// <param name="body">The <see cref="Body"/> property of the result.</param>
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public CatchBlock Update(ParameterExpression variable, Expression filter, Expression body)
         {

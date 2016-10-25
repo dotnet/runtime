@@ -20,7 +20,7 @@ namespace System.Linq.Expressions
         /// </summary>
         MemberBinding,
         /// <summary>
-        /// A binding that represents initializing a member of type <see cref="System.Collections.IList"/> or <see cref="System.Collections.Generic.ICollection{T}"/> from a list of elements.
+        /// A binding that represents initializing a member of type <see cref="Collections.IList"/> or <see cref="Collections.Generic.ICollection{T}"/> from a list of elements.
         /// </summary>
         ListBinding
     }
@@ -58,7 +58,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Returns a <see cref="String"/> that represents the current <see cref="Object"/>. 
         /// </summary>
-        /// <returns>A <see cref="String"/> that represents the current <see cref="Object"/>. </returns>
+        /// <returns>A <see cref="String"/> that represents the current <see cref="Object"/>.</returns>
         public override string ToString()
         {
             return ExpressionStringBuilder.MemberBindingToString(this);

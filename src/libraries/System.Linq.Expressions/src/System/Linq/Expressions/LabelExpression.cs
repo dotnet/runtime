@@ -9,7 +9,7 @@ namespace System.Linq.Expressions
     /// <summary>
     /// Represents a label, which can be placed in any <see cref="Expression"/> context. If
     /// it is jumped to, it will get the value provided by the corresponding
-    /// <see cref="GotoExpression"/>. Otherwise, it gets the value in <see cref="LabelExpression.DefaultValue"/>. If the
+    /// <see cref="GotoExpression"/>. Otherwise, it gets the value in <see cref="DefaultValue"/>. If the
     /// <see cref="Type"/> equals System.Void, no value should be provided.
     /// </summary>
     [DebuggerTypeProxy(typeof(LabelExpressionProxy))]
@@ -25,13 +25,13 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Gets the static type of the expression that this <see cref="Expression" /> represents. (Inherited from <see cref="Expression"/>.)
+        /// Gets the static type of the expression that this <see cref="Expression"/> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
-        /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
+        /// <returns>The <see cref="System.Type"/> that represents the static type of the expression.</returns>
         public sealed override Type Type => _target.Type;
 
         /// <summary>
-        /// Returns the node type of this <see cref="Expression" />. (Inherited from <see cref="Expression" />.)
+        /// Returns the node type of this <see cref="Expression"/>. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
         public sealed override ExpressionType NodeType => ExpressionType.Label;
@@ -60,8 +60,8 @@ namespace System.Linq.Expressions
         /// supplied children. If all of the children are the same, it will
         /// return this expression.
         /// </summary>
-        /// <param name="target">The <see cref="Target" /> property of the result.</param>
-        /// <param name="defaultValue">The <see cref="DefaultValue" /> property of the result.</param>
+        /// <param name="target">The <see cref="Target"/> property of the result.</param>
+        /// <param name="defaultValue">The <see cref="DefaultValue"/> property of the result.</param>
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public LabelExpression Update(LabelTarget target, Expression defaultValue)
         {

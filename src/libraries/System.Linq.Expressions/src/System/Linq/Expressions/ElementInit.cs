@@ -33,8 +33,16 @@ namespace System.Linq.Expressions
         /// </summary>
         public ReadOnlyCollection<Expression> Arguments => _arguments;
 
+        /// <summary>
+        /// Gets the argument expression with the specified <paramref name="index"/>.
+        /// </summary>
+        /// <param name="index">The index of the argument expression to get.</param>
+        /// <returns>The expression representing the argument at the specified <paramref name="index"/>.</returns>
         public Expression GetArgument(int index) => _arguments[index];
 
+        /// <summary>
+        /// Gets the number of argument expressions of the node.
+        /// </summary>
         public int ArgumentCount => _arguments.Count;
 
         /// <summary>
@@ -51,7 +59,7 @@ namespace System.Linq.Expressions
         /// supplied children. If all of the children are the same, it will
         /// return this expression.
         /// </summary>
-        /// <param name="arguments">The <see cref="Arguments" /> property of the result.</param>
+        /// <param name="arguments">The <see cref="Arguments"/> property of the result.</param>
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public ElementInit Update(IEnumerable<Expression> arguments)
         {
@@ -66,22 +74,22 @@ namespace System.Linq.Expressions
     public partial class Expression
     {
         /// <summary>
-        /// Creates an <see cref="T:ElementInit">ElementInit</see> expression that represents the initialization of a list.
+        /// Creates an <see cref="Expressions.ElementInit" /> expression that represents the initialization of a list.
         /// </summary>
         /// <param name="addMethod">The <see cref="MethodInfo"/> for the list's Add method.</param>
         /// <param name="arguments">An array containing the Expressions to be used to initialize the list.</param>
-        /// <returns>The created <see cref="T:ElementInit">ElementInit</see> expression.</returns>
+        /// <returns>The created <see cref="Expressions.ElementInit" /> expression.</returns>
         public static ElementInit ElementInit(MethodInfo addMethod, params Expression[] arguments)
         {
             return ElementInit(addMethod, arguments as IEnumerable<Expression>);
         }
 
         /// <summary>
-        /// Creates an <see cref="T:ElementInit">ElementInit</see> expression that represents the initialization of a list.
+        /// Creates an <see cref="Expressions.ElementInit" /> expression that represents the initialization of a list.
         /// </summary>
         /// <param name="addMethod">The <see cref="MethodInfo"/> for the list's Add method.</param>
         /// <param name="arguments">An <see cref="IEnumerable{T}"/> containing <see cref="Expression"/> elements to initialize the list.</param>
-        /// <returns>The created <see cref="T:ElementInit">ElementInit</see> expression.</returns>
+        /// <returns>The created <see cref="Expressions.ElementInit" /> expression.</returns>
         public static ElementInit ElementInit(MethodInfo addMethod, IEnumerable<Expression> arguments)
         {
             ContractUtils.RequiresNotNull(addMethod, nameof(addMethod));

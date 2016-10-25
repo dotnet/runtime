@@ -9,7 +9,7 @@ using System.Dynamic.Utils;
 namespace System.Runtime.CompilerServices
 {
     /// <summary>
-    /// The builder for read only collection.
+    /// Builder for read only collections.
     /// </summary>
     /// <typeparam name="T">The type of the collection element.</typeparam>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
@@ -24,7 +24,7 @@ namespace System.Runtime.CompilerServices
         private Object _syncRoot;
 
         /// <summary>
-        /// Constructs a ReadOnlyCollectionBuilder.
+        /// Constructs a <see cref="ReadOnlyCollectionBuilder{T}"/>.
         /// </summary>
         public ReadOnlyCollectionBuilder()
         {
@@ -32,10 +32,11 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// Constructs a ReadOnlyCollectionBuilder with a given initial capacity.
+        /// Constructs a <see cref="ReadOnlyCollectionBuilder{T}"/> with a given initial capacity.
         /// The contents are empty but builder will have reserved room for the given
         /// number of elements before any reallocations are required.
-        /// </summary> 
+        /// </summary>
+        /// <param name="capacity">Initial capacity of the builder.</param>
         public ReadOnlyCollectionBuilder(int capacity)
         {
             ContractUtils.Requires(capacity >= 0, nameof(capacity));
@@ -43,9 +44,9 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// Constructs a ReadOnlyCollectionBuilder, copying contents of the given collection.
+        /// Constructs a <see cref="ReadOnlyCollectionBuilder{T}"/>, copying contents of the given collection.
         /// </summary>
-        /// <param name="collection"></param>
+        /// <param name="collection">The collection whose elements to copy to the builder.</param>
         public ReadOnlyCollectionBuilder(IEnumerable<T> collection)
         {
             ContractUtils.Requires(collection != null, nameof(collection));
@@ -74,7 +75,7 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// Gets and sets the capacity of this ReadOnlyCollectionBuilder
+        /// Gets and sets the capacity of this <see cref="ReadOnlyCollectionBuilder{T}"/>.
         /// </summary>
         public int Capacity
         {
@@ -103,7 +104,7 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// Returns number of elements in the ReadOnlyCollectionBuilder.
+        /// Returns number of elements in the <see cref="ReadOnlyCollectionBuilder{T}"/>.
         /// </summary>
         public int Count => _size;
 
