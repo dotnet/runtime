@@ -906,6 +906,7 @@ FCIMPL5(VOID, COMCustomAttribute::ParseAttributeUsageAttribute, PVOID pData, ULO
 }
 FCIMPLEND
 
+#ifdef FEATURE_CAS_POLICY
 FCIMPL4(VOID, COMCustomAttribute::GetSecurityAttributes, ReflectModuleBaseObject *pModuleUNSAFE, DWORD tkToken, CLR_BOOL fAssembly, PTRARRAYREF* ppArray)
 {
     FCALL_CONTRACT;
@@ -991,6 +992,7 @@ FCIMPL4(VOID, COMCustomAttribute::GetSecurityAttributes, ReflectModuleBaseObject
     HELPER_METHOD_FRAME_END();
 }
 FCIMPLEND
+#endif // FEATURE_CAS_POLICY
 
 FCIMPL7(void, COMCustomAttribute::GetPropertyOrFieldData, ReflectModuleBaseObject *pModuleUNSAFE, BYTE** ppBlobStart, BYTE* pBlobEnd, STRINGREF* pName, CLR_BOOL* pbIsProperty, OBJECTREF* pType, OBJECTREF* value)
 {
