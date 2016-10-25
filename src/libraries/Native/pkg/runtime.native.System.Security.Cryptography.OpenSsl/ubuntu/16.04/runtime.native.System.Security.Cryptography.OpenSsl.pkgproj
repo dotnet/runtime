@@ -2,7 +2,7 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <PackageTargetRuntime>ubuntu.16.04-$(PackagePlatform)</PackageTargetRuntime>
+    <IdPrefix>runtime.ubuntu.16.04-$(PackagePlatform).</IdPrefix>
     <!-- only build for x64 -->
     <PackagePlatforms>x64;</PackagePlatforms>
   </PropertyGroup>
