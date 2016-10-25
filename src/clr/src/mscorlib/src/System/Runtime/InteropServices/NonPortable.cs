@@ -31,6 +31,18 @@ namespace System.Runtime.InteropServices
         {
             throw new PlatformNotSupportedException();
         }
+        
+        [System.Security.SecurityCriticalAttribute]
+        public static Object GetTypedObjectForIUnknown(System.IntPtr pUnk, System.Type t)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        [System.Security.SecurityCritical]  // auto-generated_required
+        public static System.IntPtr GetHINSTANCE(System.Reflection.Module m)
+        {
+            return (System.IntPtr) (-1);
+        }           
 
         [System.Security.SecurityCriticalAttribute]
         public static System.IntPtr CreateAggregatedObject<T>(System.IntPtr pOuter, T o)

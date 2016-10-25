@@ -1072,6 +1072,7 @@ namespace System.Runtime.InteropServices
             DestroyStructure(ptr, typeof(T));
         }
 
+#if FEATURE_COMINTEROP
         //====================================================================
         // Returns the HInstance for this module.  Returns -1 if the module 
         // doesn't have an HInstance.  In Memory (Dynamic) Modules won't have 
@@ -1103,6 +1104,7 @@ namespace System.Runtime.InteropServices
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurity]
         private extern static IntPtr GetHINSTANCE(RuntimeModule m);
 
+#endif // FEATURE_COMINTEROP
         //====================================================================
         // Throws a CLR exception based on the HRESULT.
         //====================================================================
@@ -1737,6 +1739,7 @@ namespace System.Runtime.InteropServices
         //====================================================================
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern IntPtr /* IUnknown* */ GetRawIUnknownForComObjectNoAddRef(Object o);
+#endif // FEATURE_COMINTEROP
 
         //====================================================================
         // return the IDispatch* for an Object
@@ -1744,9 +1747,14 @@ namespace System.Runtime.InteropServices
         [System.Security.SecurityCritical]  // auto-generated_required
         public static IntPtr /* IDispatch */ GetIDispatchForObject(Object o)
         {
+#if FEATURE_CORECLR
+            throw new PlatformNotSupportedException();
+#else         
             return GetIDispatchForObjectNative(o, false);
+#endif // FEATURE_CORECLR            
         }
-
+        
+#if FEATURE_COMINTEROP
         //====================================================================
         // return the IDispatch* for an Object if the current context
         // is the one where the RCW was first seen. Will return null 
@@ -2083,6 +2091,7 @@ namespace System.Runtime.InteropServices
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void InternalFinalReleaseComObject(Object o);
+#endif // FEATURE_COMINTEROP
 
         //====================================================================
         // This method retrieves data from the COM object.
@@ -2090,6 +2099,9 @@ namespace System.Runtime.InteropServices
         [System.Security.SecurityCritical]  // auto-generated_required
         public static Object GetComObjectData(Object obj, Object key)
         {
+#if FEATURE_CORECLR
+            throw new PlatformNotSupportedException();
+#else        
             // Validate that the arguments aren't null.
             if (obj == null)
                 throw new ArgumentNullException("obj");
@@ -2116,6 +2128,7 @@ namespace System.Runtime.InteropServices
 
             // Retrieve the data from the __ComObject.
             return comObj.GetData(key);
+#endif // FEATURE_CORECLR            
         }
 
         //====================================================================
@@ -2127,6 +2140,9 @@ namespace System.Runtime.InteropServices
         [System.Security.SecurityCritical]  // auto-generated_required
         public static bool SetComObjectData(Object obj, Object key, Object data)
         {
+#if FEATURE_CORECLR
+            throw new PlatformNotSupportedException();
+#else          
             // Validate that the arguments aren't null. The data can validly be null.
             if (obj == null)
                 throw new ArgumentNullException("obj");
@@ -2153,8 +2169,10 @@ namespace System.Runtime.InteropServices
 
             // Retrieve the data from the __ComObject.
             return comObj.SetData(key, data);
+#endif // FEATURE_CORECLR            
         }
 
+#if FEATURE_COMINTEROP
         //====================================================================
         // This method takes the given COM object and wraps it in an object
         // of the specified type. The type must be derived from __ComObject.
@@ -2340,6 +2358,7 @@ namespace System.Runtime.InteropServices
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern int InternalGetComSlotForMethodInfo(IRuntimeMethodInfo m);
+#endif // FEATURE_COMINTEROP
 
         //====================================================================
         // This method generates a GUID for the specified type. If the type
@@ -2350,6 +2369,10 @@ namespace System.Runtime.InteropServices
         [System.Security.SecurityCritical]  // auto-generated_required
         public static Guid GenerateGuidForType(Type type)
         {
+#if FEATURE_CORECLR
+            throw new PlatformNotSupportedException();
+        }
+#else
             Guid result = new Guid ();
             FCallGenerateGuidForType (ref result, type);
             return result;
@@ -2358,6 +2381,7 @@ namespace System.Runtime.InteropServices
         // The full assembly name is used to compute the GUID, so this should be SxS-safe
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void FCallGenerateGuidForType(ref Guid result, Type type);
+#endif // FEATURE_CORECLR            
 
         //====================================================================
         // This method generates a PROGID for the specified type. If the type
@@ -2368,6 +2392,9 @@ namespace System.Runtime.InteropServices
         [System.Security.SecurityCritical]  // auto-generated_required
         public static String GenerateProgIdForType(Type type)
         {
+#if FEATURE_CORECLR
+            throw new PlatformNotSupportedException();
+#else
             if (type == null)
                 throw new ArgumentNullException("type");
             if (type.IsImport)
@@ -2402,8 +2429,10 @@ namespace System.Runtime.InteropServices
 
             // If there is no prog ID attribute then use the full name of the type as the prog id.
             return type.FullName;
+#endif // FEATURE_CORECLR            
         }
 
+#if FEATURE_COMINTEROP
         //====================================================================
         // This method binds to the specified moniker.
         //====================================================================
