@@ -130,95 +130,123 @@ namespace System.Net.Security
             return AcquireCredentialsHandle(direction, secureCredential);
         }
 
-        public static SecurityStatusPal EncryptMessage(SafeDeleteContext securityContext, byte[] input, int offset, int size, int headerSize, int trailerSize, ref byte[] output, out int resultSize)
+        public static unsafe SecurityStatusPal EncryptMessage(SafeDeleteContext securityContext, byte[] input, int offset, int size, int headerSize, int trailerSize, ref byte[] output, out int resultSize)
         {
             // Ensure that there is sufficient space for the message output.
+            int bufferSizeNeeded;
             try
             {
-                int bufferSizeNeeded = checked(size + headerSize + trailerSize);
-
-                if (output == null || output.Length < bufferSizeNeeded)
-                {
-                    output = new byte[bufferSizeNeeded];
-                }
+                bufferSizeNeeded = checked(size + headerSize + trailerSize);
             }
-            catch (Exception e)
-            {
-                if (!ExceptionCheck.IsFatal(e))
-                {
-                    if (GlobalLog.IsEnabled)
-                    {
-                        GlobalLog.Assert("SslStreamPal.Windows: SecureChannel#" + LoggingHash.HashString(securityContext) + "::Encrypt", "Arguments out of range.");
-                    }
-
-                    Debug.Fail("SslStreamPal.Windows: SecureChannel#" + LoggingHash.HashString(securityContext) + "::Encrypt", "Arguments out of range.");
-                }
-
-                throw;
-            }
-
-            byte[] writeBuffer = output;
-
-            // Copy the input into the output buffer to prepare for SCHANNEL's expectations
-            Buffer.BlockCopy(input, offset, writeBuffer, headerSize, size);
-
-            // Encryption using SCHANNEL requires 4 buffers: header, payload, trailer, empty.
-            SecurityBuffer[] securityBuffer = new SecurityBuffer[4];
-
-            securityBuffer[0] = new SecurityBuffer(writeBuffer, 0, headerSize, SecurityBufferType.SECBUFFER_STREAM_HEADER);
-            securityBuffer[1] = new SecurityBuffer(writeBuffer, headerSize, size, SecurityBufferType.SECBUFFER_DATA);
-            securityBuffer[2] = new SecurityBuffer(writeBuffer, headerSize + size, trailerSize, SecurityBufferType.SECBUFFER_STREAM_TRAILER);
-            securityBuffer[3] = new SecurityBuffer(null, SecurityBufferType.SECBUFFER_EMPTY);
-
-            int errorCode = SSPIWrapper.EncryptMessage(GlobalSSPI.SSPISecureChannel, securityContext, securityBuffer, 0);
-
-            if (errorCode != 0)
+            catch
             {
                 if (GlobalLog.IsEnabled)
                 {
-                    GlobalLog.Print("SslStreamPal.Windows: SecureChannel#" + LoggingHash.HashString(securityContext) + "::Encrypt ERROR" + errorCode.ToString("x"));
+                    GlobalLog.Assert("SslStreamPal.Windows: SecureChannel#" + LoggingHash.HashString(securityContext) + "::Encrypt", "Arguments out of range.");
                 }
-                resultSize = 0;
+                Debug.Fail("SslStreamPal.Windows: SecureChannel#" + LoggingHash.HashString(securityContext) + "::Encrypt", "Arguments out of range.");
+                throw;
             }
-            else
+            if (output == null || output.Length < bufferSizeNeeded)
             {
-                // The full buffer may not be used.
-                resultSize = securityBuffer[0].size + securityBuffer[1].size + securityBuffer[2].size;
+                output = new byte[bufferSizeNeeded];
             }
 
-            return SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);
+            // Copy the input into the output buffer to prepare for SCHANNEL's expectations
+            Buffer.BlockCopy(input, offset, output, headerSize, size);
+
+            const int NumSecBuffers = 4; // header + data + trailer + empty
+            var unmanagedBuffer = stackalloc Interop.SspiCli.SecBuffer[NumSecBuffers];
+            var sdcInOut = new Interop.SspiCli.SecBufferDesc(NumSecBuffers);
+            sdcInOut.pBuffers = unmanagedBuffer;
+            fixed (byte* outputPtr = output)
+            {
+                Interop.SspiCli.SecBuffer* headerSecBuffer = &unmanagedBuffer[0];
+                headerSecBuffer->BufferType = SecurityBufferType.SECBUFFER_STREAM_HEADER;
+                headerSecBuffer->pvBuffer = (IntPtr)outputPtr;
+                headerSecBuffer->cbBuffer = headerSize;
+
+                Interop.SspiCli.SecBuffer* dataSecBuffer = &unmanagedBuffer[1];
+                dataSecBuffer->BufferType = SecurityBufferType.SECBUFFER_DATA;
+                dataSecBuffer->pvBuffer = (IntPtr)(outputPtr + headerSize);
+                dataSecBuffer->cbBuffer = size;
+
+                Interop.SspiCli.SecBuffer* trailerSecBuffer = &unmanagedBuffer[2];
+                trailerSecBuffer->BufferType = SecurityBufferType.SECBUFFER_STREAM_TRAILER;
+                trailerSecBuffer->pvBuffer = (IntPtr)(outputPtr + headerSize + size);
+                trailerSecBuffer->cbBuffer = trailerSize;
+
+                Interop.SspiCli.SecBuffer* emptySecBuffer = &unmanagedBuffer[3];
+                emptySecBuffer->BufferType = SecurityBufferType.SECBUFFER_EMPTY;
+                emptySecBuffer->cbBuffer = 0;
+                emptySecBuffer->pvBuffer = IntPtr.Zero;
+
+                int errorCode = GlobalSSPI.SSPISecureChannel.EncryptMessage(securityContext, sdcInOut, 0);
+
+                if (errorCode != 0)
+                {
+                    if (GlobalLog.IsEnabled)
+                    {
+                        GlobalLog.Print("SslStreamPal.Windows: SecureChannel#" + LoggingHash.HashString(securityContext) + "::Encrypt ERROR" + errorCode.ToString("x"));
+                    }
+
+                    resultSize = 0;
+                    return SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);
+                }
+
+                Debug.Assert(headerSecBuffer->cbBuffer >= 0 && dataSecBuffer->cbBuffer >= 0 && trailerSecBuffer->cbBuffer >= 0);
+                Debug.Assert(checked(headerSecBuffer->cbBuffer + dataSecBuffer->cbBuffer + trailerSecBuffer->cbBuffer) <= output.Length);
+
+                resultSize = checked(headerSecBuffer->cbBuffer + dataSecBuffer->cbBuffer + trailerSecBuffer->cbBuffer);
+                return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
+            }
         }
 
-        public static SecurityStatusPal DecryptMessage(SafeDeleteContext securityContext, byte[] buffer, ref int offset, ref int count)
+        public static unsafe SecurityStatusPal DecryptMessage(SafeDeleteContext securityContext, byte[] buffer, ref int offset, ref int count)
         {
-            // Decryption using SCHANNEL requires four buffers.
-            SecurityBuffer[] decspc = new SecurityBuffer[4];
-            decspc[0] = new SecurityBuffer(buffer, offset, count, SecurityBufferType.SECBUFFER_DATA);
-            decspc[1] = new SecurityBuffer(null, SecurityBufferType.SECBUFFER_EMPTY);
-            decspc[2] = new SecurityBuffer(null, SecurityBufferType.SECBUFFER_EMPTY);
-            decspc[3] = new SecurityBuffer(null, SecurityBufferType.SECBUFFER_EMPTY);
-
-            Interop.SECURITY_STATUS errorCode = (Interop.SECURITY_STATUS)SSPIWrapper.DecryptMessage(
-                GlobalSSPI.SSPISecureChannel,
-                securityContext,
-                decspc,
-                0);
-
-            count = 0;
-            for (int i = 0; i < decspc.Length; i++)
+            const int NumSecBuffers = 4; // data + empty + empty + empty
+            var unmanagedBuffer = stackalloc Interop.SspiCli.SecBuffer[NumSecBuffers];
+            var sdcInOut = new Interop.SspiCli.SecBufferDesc(NumSecBuffers);
+            sdcInOut.pBuffers = unmanagedBuffer;
+            fixed (byte* bufferPtr = buffer)
             {
-                // Successfully decoded data and placed it at the following position in the buffer,
-                if ((errorCode == Interop.SECURITY_STATUS.OK && decspc[i].type == SecurityBufferType.SECBUFFER_DATA)
-                    // or we failed to decode the data, here is the encoded data.
-                    || (errorCode != Interop.SECURITY_STATUS.OK && decspc[i].type == SecurityBufferType.SECBUFFER_EXTRA))
-                {
-                    offset = decspc[i].offset;
-                    count = decspc[i].size;
-                    break;
-                }
-            }
+                Interop.SspiCli.SecBuffer* dataBuffer = &unmanagedBuffer[0];
+                dataBuffer->BufferType = SecurityBufferType.SECBUFFER_DATA;
+                dataBuffer->pvBuffer = (IntPtr)bufferPtr + offset;
+                dataBuffer->cbBuffer = count;
 
-            return SecurityStatusAdapterPal.GetSecurityStatusPalFromInterop(errorCode);
+                for (int i = 1; i < NumSecBuffers; i++)
+                {
+                    Interop.SspiCli.SecBuffer* emptyBuffer = &unmanagedBuffer[i];
+                    emptyBuffer->BufferType = SecurityBufferType.SECBUFFER_EMPTY;
+                    emptyBuffer->pvBuffer = IntPtr.Zero;
+                    emptyBuffer->cbBuffer = 0;
+                }
+
+                Interop.SECURITY_STATUS errorCode = (Interop.SECURITY_STATUS)GlobalSSPI.SSPISecureChannel.DecryptMessage(securityContext, sdcInOut, 0);
+
+                // Decrypt may repopulate the sec buffers, likely with header + data + trailer + empty.
+                // We need to find the data.
+                count = 0;
+                for (int i = 0; i < NumSecBuffers; i++)
+                {
+                    // Successfully decoded data and placed it at the following position in the buffer,
+                    if ((errorCode == Interop.SECURITY_STATUS.OK && unmanagedBuffer[i].BufferType == SecurityBufferType.SECBUFFER_DATA)
+                        // or we failed to decode the data, here is the encoded data.
+                        || (errorCode != Interop.SECURITY_STATUS.OK && unmanagedBuffer[i].BufferType == SecurityBufferType.SECBUFFER_EXTRA))
+                    {
+                        offset = (int)((byte*)unmanagedBuffer[i].pvBuffer - bufferPtr);
+                        count = unmanagedBuffer[i].cbBuffer;
+
+                        Debug.Assert(offset >= 0 && count >= 0, $"Expected offset and count greater than 0, got {offset} and {count}");
+                        Debug.Assert(checked(offset + count) <= buffer.Length, $"Expected offset+count <= buffer.Length, got {offset}+{count}>={buffer.Length}");
+
+                        break;
+                    }
+                }
+
+                return SecurityStatusAdapterPal.GetSecurityStatusPalFromInterop(errorCode);
+            }
         }
 
         public static SecurityStatusPal ApplyAlertToken(ref SafeFreeCredentials credentialsHandle, SafeDeleteContext securityContext, TlsAlertType alertType, TlsAlertMessage alertMessage)
