@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 
 public static class StackWalk
 {
-    [Benchmark]
+    [Benchmark(InnerIterationCount=1000)]
     public static void Walk()
     {
         A(5);
@@ -68,7 +68,8 @@ public static class StackWalk
     {
         foreach (var iteration in Benchmark.Iterations)
             using (iteration.StartMeasurement())
-                GC.Collect(0);
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    GC.Collect(0);
 
         return 55;
     }
