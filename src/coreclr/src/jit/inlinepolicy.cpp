@@ -106,7 +106,7 @@ InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
 void LegalPolicy::NoteFatal(InlineObservation obs)
 {
     // As a safeguard, all fatal impact must be
-    // reported via noteFatal.
+    // reported via NoteFatal.
     assert(InlGetImpact(obs) == InlineImpact::FATAL);
     NoteInternal(obs);
     assert(InlDecisionIsFailure(m_Decision));
@@ -243,7 +243,7 @@ void LegacyPolicy::NoteBool(InlineObservation obs, bool value)
     InlineImpact impact = InlGetImpact(obs);
 
     // As a safeguard, all fatal impact must be
-    // reported via noteFatal.
+    // reported via NoteFatal.
     assert(impact != InlineImpact::FATAL);
 
     // Handle most information here
@@ -847,6 +847,16 @@ int LegacyPolicy::CodeSizeEstimate()
 
 void EnhancedLegacyPolicy::NoteBool(InlineObservation obs, bool value)
 {
+
+#ifdef DEBUG
+    // Check the impact
+    InlineImpact impact = InlGetImpact(obs);
+
+    // As a safeguard, all fatal impact must be
+    // reported via NoteFatal.
+    assert(impact != InlineImpact::FATAL);
+#endif // DEBUG
+
     switch (obs)
     {
         case InlineObservation::CALLEE_DOES_NOT_RETURN:
@@ -1001,7 +1011,7 @@ void RandomPolicy::NoteBool(InlineObservation obs, bool value)
     InlineImpact impact = InlGetImpact(obs);
 
     // As a safeguard, all fatal impact must be
-    // reported via noteFatal.
+    // reported via NoteFatal.
     assert(impact != InlineImpact::FATAL);
 
     // Handle most information here
