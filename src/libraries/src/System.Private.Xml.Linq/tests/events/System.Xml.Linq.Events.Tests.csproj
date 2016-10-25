@@ -30,6 +30,7 @@
       <Project>{52666206-b6c9-49fa-a1d7-d0a0c68807b0}</Project>
       <Name>XDocument.Common</Name>
     </ProjectReference>
+    <ProjectReference Include="..\XDocument.Test.ModuleCore\XDocument.Test.ModuleCore.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
