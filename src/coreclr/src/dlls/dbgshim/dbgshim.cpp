@@ -433,7 +433,7 @@ public:
         DWORD arrayLength = 0;
 
         // Wake up runtime(s)
-        HRESULT hr = InternalEnumerateCLRs(&handleArray, &stringArray, &arrayLength);
+        HRESULT hr = EnumerateCLRs(m_processId, &handleArray, &stringArray, &arrayLength);
         if (SUCCEEDED(hr))
         {
             WakeRuntimes(handleArray, arrayLength);
