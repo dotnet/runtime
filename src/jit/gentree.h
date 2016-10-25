@@ -768,15 +768,15 @@ public:
 #ifdef LEGACY_BACKEND
 #define GTF_SPILLED_OPER 0x00000100 // op1 has been spilled
 #define GTF_SPILLED_OP2 0x00000200  // op2 has been spilled
-#else
+#else                               // !LEGACY_BACKEND
 #define GTF_NOREG_AT_USE 0x00000100 // tree node is in memory at the point of use
-#endif                              // LEGACY_BACKEND
+#endif                              // !LEGACY_BACKEND
 
 #define GTF_ZSF_SET 0x00000400 // the zero(ZF) and sign(SF) flags set to the operand
-#if FEATURE_SET_FLAGS
+
 #define GTF_SET_FLAGS 0x00000800 // Requires that codegen for this node set the flags
                                  // Use gtSetFlags() to check this flags
-#endif
+
 #define GTF_IND_NONFAULTING 0x00000800 // An indir that cannot fault.  GTF_SET_FLAGS is not used on indirs
 
 #define GTF_MAKE_CSE 0x00002000   // Hoisted Expression: try hard to make this into CSE  (see optPerformHoistExpr)
@@ -1844,6 +1844,14 @@ public:
     bool gtOverflowEx() const;
     bool gtSetFlags() const;
     bool gtRequestSetFlags();
+
+    // Returns true if the codegen of this tree node
+    // sets ZF and SF flags.
+    bool gtSetZSFlags() const
+    {
+        return (gtFlags & GTF_ZSF_SET) != 0;
+    }
+
 #ifdef DEBUG
     bool       gtIsValid64RsltMul();
     static int gtDispFlags(unsigned flags, unsigned debugFlags);
