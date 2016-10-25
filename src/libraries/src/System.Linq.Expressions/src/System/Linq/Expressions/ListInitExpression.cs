@@ -177,7 +177,7 @@ namespace System.Linq.Expressions
         /// </returns>
         /// <remarks>
         /// The <see cref="Type"/> property of <paramref name="newExpression"/> must represent a type that implements <see cref="Collections.IEnumerable"/>. 
-        /// The <see cref="Type"/> property of the resulting <see cref="ListInitExpression"/> is equal to newExpression.Type. 
+        /// The <see cref="Type"/> property of the resulting <see cref="ListInitExpression"/> is equal to <paramref name="newExpression"/>.Type.
         /// </remarks>
         public static ListInitExpression ListInit(NewExpression newExpression, params ElementInit[] initializers)
         {
@@ -192,7 +192,7 @@ namespace System.Linq.Expressions
         /// <returns>An <see cref="IEnumerable{T}"/> that contains <see cref="Expressions.ElementInit"/> objects to use to populate the <see cref="ListInitExpression.Initializers"/> collection.</returns>
         /// <remarks>
         /// The <see cref="Type"/> property of <paramref name="newExpression"/> must represent a type that implements <see cref="Collections.IEnumerable"/>. 
-        /// The <see cref="Type"/> property of the resulting <see cref="ListInitExpression"/> is equal to newExpression.Type. 
+        /// The <see cref="Type"/> property of the resulting <see cref="ListInitExpression"/> is equal to <paramref name="newExpression"/>.Type.
         /// </remarks>
         public static ListInitExpression ListInit(NewExpression newExpression, IEnumerable<ElementInit> initializers)
         {
