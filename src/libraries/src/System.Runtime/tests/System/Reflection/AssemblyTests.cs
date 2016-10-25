@@ -110,7 +110,6 @@ namespace System.Reflection.Tests
             Assert.Throws<ArgumentException>(() => Assembly.Load(emptyCName));
         }
 
-        [ActiveIssue(12818)]
         [Fact]
         public static void AssemblyLoadFromBytes()
         {
@@ -122,7 +121,6 @@ namespace System.Reflection.Tests
             Assert.Equal(assembly.FullName, loadedAssembly.FullName);
         }
 
-        [ActiveIssue(12818)]
         [Fact]
         public static void AssemblyLoadFromBytesNeg()
         {
