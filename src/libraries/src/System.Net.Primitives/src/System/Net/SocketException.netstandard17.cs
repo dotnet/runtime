@@ -18,5 +18,7 @@ namespace System.Net.Sockets
                 GlobalLog.Print("SocketException::.ctor(serialized) " + NativeErrorCode.ToString() + ":" + Message);
             }
         }
+
+        public override int ErrorCode => base.NativeErrorCode;
     }
 }
