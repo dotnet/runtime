@@ -10,17 +10,17 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <CoreFxCurrentRef>84668561131d56a74d4220dda63e6453e0c65db3</CoreFxCurrentRef>
-    <CoreClrCurrentRef>cefe09e56fa083ba470f624c6429217d8445d81b</CoreClrCurrentRef>
-    <ExternalCurrentRef>43ba6daa90c341491c7ffb65207e20cec1b66794</ExternalCurrentRef>
+    <CoreFxCurrentRef>d06586e86a06eb566a8671d13710f0d5da83a0d7</CoreFxCurrentRef>
+    <CoreClrCurrentRef>d06586e86a06eb566a8671d13710f0d5da83a0d7</CoreClrCurrentRef>
+    <ExternalCurrentRef>d06586e86a06eb566a8671d13710f0d5da83a0d7</ExternalCurrentRef>
     <ProjectNTfsCurrentRef>f981c5e06d00accf1063a87ba2e9791752a4f6b1</ProjectNTfsCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>beta-24624-01</CoreFxExpectedPrerelease>
-    <CoreClrExpectedPrerelease>beta-24620-03</CoreClrExpectedPrerelease>
-    <ExternalExpectedPrerelease>beta-24617-00</ExternalExpectedPrerelease>
+    <CoreFxExpectedPrerelease>beta-24625-01</CoreFxExpectedPrerelease>
+    <CoreClrExpectedPrerelease>beta-24625-02</CoreClrExpectedPrerelease>
+    <ExternalExpectedPrerelease>beta-24625-00</ExternalExpectedPrerelease>
     <ProjectNTfsExpectedPrerelease>beta-24607-01</ProjectNTfsExpectedPrerelease>
   </PropertyGroup>
 
