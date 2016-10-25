@@ -357,6 +357,7 @@ namespace Internal.Cryptography.Pal
             return reader.ReadOctetString();
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 is required for Compat")]
         public byte[] ComputeCapiSha1OfPublicKey(PublicKey key)
         {
             // The CapiSha1 value is the SHA-1 of the SubjectPublicKeyInfo field, inclusive
