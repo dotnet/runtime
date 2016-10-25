@@ -780,7 +780,7 @@ dnl
 TEST_PROFILE=default
 enable_llvm_default=no
 
-INVARIANT_AOT_OPTIONS=nimt-trampolines=900,ntrampolines=8000,nrgctx-fetch-trampolines=256,ngsharedvt-trampolines=2800
+INVARIANT_AOT_OPTIONS=nimt-trampolines=2000,ntrampolines=8000,nrgctx-fetch-trampolines=256,ngsharedvt-trampolines=2800
 
 if test x$cross_compiling = xyes -o x$enable_mcs_build = xno; then
    DISABLE_MCS_DOCS_default=yes
