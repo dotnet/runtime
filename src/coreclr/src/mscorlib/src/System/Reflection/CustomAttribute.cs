@@ -2089,6 +2089,7 @@ namespace System.Reflection
         #endregion
 
         #region FCalls
+#if FEATURE_CAS_POLICY
         [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         unsafe private static extern void _GetSecurityAttributes(RuntimeModule module, int token, bool assembly, out object[] securityAttributes);
@@ -2097,6 +2098,12 @@ namespace System.Reflection
         {
             _GetSecurityAttributes(module.GetNativeHandle(), token, assembly, out securityAttributes);
         }
+#else
+        internal static void GetSecurityAttributes(RuntimeModule module, int token, bool assembly, out object[] securityAttributes)
+        {
+            securityAttributes = null;
+        }
+#endif
         #endregion
 
         #region Static Constructor
@@ -2142,9 +2149,9 @@ namespace System.Reflection
             //AllowMultiple is true for TypeForwardedToAttribute
             //Contract.Assert(usage.AllowMultiple == false, "Pseudo CA Error");
         }
-        #endregion
+#endregion
 
-        #region Internal Static
+#region Internal Static
         internal static bool IsSecurityAttribute(RuntimeType type)
         {
 #pragma warning disable 618
@@ -2522,6 +2529,6 @@ namespace System.Reflection
         {
             return false;
         }
-        #endregion
+#endregion
     }
 }
