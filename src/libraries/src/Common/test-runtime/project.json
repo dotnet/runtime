@@ -5,9 +5,9 @@
     "ReportGenerator": "2.4.3",
     "Microsoft.NETCore.TestHost": "1.2.0-beta-24625-02",
     "Microsoft.NETCore.Runtime.CoreCLR": "1.2.0-beta-24625-02",
-    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00921-01",
+    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00925-01",
     "xunit.console.netcore": "1.0.3-prerelease-00921-01",
-    "Microsoft.xunit.netcore.extensions": "1.0.0-prerelease-00921-01",
+    "Microsoft.xunit.netcore.extensions": "1.0.0-prerelease-00925-01",
     "perf": {
       "target": "project",
       "include": "compile,runtime"
