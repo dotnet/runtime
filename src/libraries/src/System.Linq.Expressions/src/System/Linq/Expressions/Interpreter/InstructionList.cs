@@ -106,8 +106,8 @@ namespace System.Linq.Expressions.Interpreter
                     );
             }
 
-            internal static InstructionView[] GetInstructionViews(IList<Instruction> instructions, IList<object> objects,
-                Func<int, int> labelIndexer, IList<KeyValuePair<int, object>> debugCookies)
+            internal static InstructionView[] GetInstructionViews(IReadOnlyList<Instruction> instructions, IReadOnlyList<object> objects,
+                Func<int, int> labelIndexer, IReadOnlyList<KeyValuePair<int, object>> debugCookies)
             {
                 var result = new List<InstructionView>();
                 int index = 0;

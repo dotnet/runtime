@@ -122,9 +122,9 @@ namespace System.Linq.Expressions
 
     internal sealed class InvocationExpressionN : InvocationExpression
     {
-        private IList<Expression> _arguments;
+        private IReadOnlyList<Expression> _arguments;
 
-        public InvocationExpressionN(Expression lambda, IList<Expression> arguments, Type returnType)
+        public InvocationExpressionN(Expression lambda, IReadOnlyList<Expression> arguments, Type returnType)
             : base(lambda, returnType)
         {
             _arguments = arguments;

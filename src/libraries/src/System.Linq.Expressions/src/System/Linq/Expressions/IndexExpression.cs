@@ -18,12 +18,12 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(IndexExpressionProxy))]
     public sealed class IndexExpression : Expression, IArgumentProvider
     {
-        private IList<Expression> _arguments;
+        private IReadOnlyList<Expression> _arguments;
 
         internal IndexExpression(
             Expression instance,
             PropertyInfo indexer,
-            IList<Expression> arguments)
+            IReadOnlyList<Expression> arguments)
         {
             if (indexer == null)
             {
