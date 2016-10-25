@@ -6,14 +6,14 @@
        Use the property below to control this behavior
   -->
   <PropertyGroup>
-    <DisableProjectNTfsAutoUpgrade Condition="'$(DisableProjectNTfsAutoUpgrade)'==''">true</DisableProjectNTfsAutoUpgrade>
+    <DisableProjectNTfsAutoUpgrade Condition="'$(DisableProjectNTfsAutoUpgrade)'==''">false</DisableProjectNTfsAutoUpgrade>
   </PropertyGroup>
 
   <PropertyGroup>
     <CoreFxCurrentRef>d06586e86a06eb566a8671d13710f0d5da83a0d7</CoreFxCurrentRef>
     <CoreClrCurrentRef>d06586e86a06eb566a8671d13710f0d5da83a0d7</CoreClrCurrentRef>
     <ExternalCurrentRef>d06586e86a06eb566a8671d13710f0d5da83a0d7</ExternalCurrentRef>
-    <ProjectNTfsCurrentRef>f981c5e06d00accf1063a87ba2e9791752a4f6b1</ProjectNTfsCurrentRef>
+    <ProjectNTfsCurrentRef>b347d05cef00bd4b4d129b1d470cd653d9e97a7b</ProjectNTfsCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
@@ -21,7 +21,7 @@
     <CoreFxExpectedPrerelease>beta-24625-01</CoreFxExpectedPrerelease>
     <CoreClrExpectedPrerelease>beta-24625-02</CoreClrExpectedPrerelease>
     <ExternalExpectedPrerelease>beta-24625-00</ExternalExpectedPrerelease>
-    <ProjectNTfsExpectedPrerelease>beta-24607-01</ProjectNTfsExpectedPrerelease>
+    <ProjectNTfsExpectedPrerelease>beta-24625-00</ProjectNTfsExpectedPrerelease>
   </PropertyGroup>
 
   <!-- Full package version strings that are used in other parts of the build. -->
