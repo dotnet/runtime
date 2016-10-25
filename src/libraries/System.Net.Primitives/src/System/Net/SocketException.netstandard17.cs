@@ -15,8 +15,10 @@ namespace System.Net.Sockets
         {
             if (GlobalLog.IsEnabled)
             {
-                GlobalLog.Print("SocketException::.ctor(serialized) " + NativeErrorCode.ToString() + ":" + Message);
+                GlobalLog.Print($"SocketException::.ctor(serialized, SocketErrorCode={SocketErrorCode}):{Message}");
             }
         }
+
+        public override int ErrorCode => base.NativeErrorCode;
     }
 }
