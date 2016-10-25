@@ -4699,7 +4699,7 @@
     </project>
     <project dir="tools/mkbundle" library="mkbundle-net_4_x">
       <boot></boot>
-      <flags>/codepage:65001 -resource:template.c -resource:template_z.c -resource:template_main.c -d:STATIC,NO_SYMBOL_WRITER,NO_AUTHENTICODE -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll -debug -optimize /noconfig -r:System.Xml -r:System -r:System.Core</flags>
+      <flags>/codepage:65001 -resource:template.c -resource:template_z.c -resource:template_main.c -d:STATIC,NO_SYMBOL_WRITER,NO_AUTHENTICODE -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll -debug -optimize /noconfig -r:System.Xml -r:System -r:System.Core -r:System.IO.Compression.FileSystem</flags>
       <output>mkbundle.exe</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_x/mkbundle.exe</library_output>
