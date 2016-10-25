@@ -1756,13 +1756,14 @@ void Compiler::lvaPromoteLongVars()
     {
         return;
     }
+
     // The lvaTable might grow as we grab temps. Make a local copy here.
     unsigned startLvaCount = lvaCount;
     for (unsigned lclNum = 0; lclNum < startLvaCount; lclNum++)
     {
         LclVarDsc* varDsc = &lvaTable[lclNum];
         if (!varTypeIsLong(varDsc) || varDsc->lvDoNotEnregister || varDsc->lvIsMultiRegArgOrRet() ||
-            (varDsc->lvRefCnt == 0) || varDsc->lvIsStructField)
+            (varDsc->lvRefCnt == 0) || varDsc->lvIsStructField || (fgNoStructPromotion && varDsc->lvIsParam))
         {
             continue;
         }
