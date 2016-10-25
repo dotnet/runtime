@@ -156,7 +156,7 @@ INLINE_OBSERVATION(TOO_MANY_LOCALS,           bool,   "too many locals",        
 
 // ------ Call Site Performance ------- 
 
-INLINE_OBSERVATION(RARE_GC_STRUCT,            bool,   "rarely called, has gc struct",  FATAL,       CALLSITE)
+INLINE_OBSERVATION(RARE_GC_STRUCT,            bool,   "rarely called, has gc struct",  INFORMATION, CALLSITE)
 
 // ------ Call Site Information ------- 
 
