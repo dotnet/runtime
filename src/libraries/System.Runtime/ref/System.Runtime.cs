@@ -4538,11 +4538,15 @@ namespace System.Reflection
         public virtual System.Collections.Generic.IEnumerable<System.Type> ExportedTypes { get { throw null; } }
         public virtual MethodInfo EntryPoint { get { throw null; } }
         public virtual string FullName { get { throw null; } }
+        public virtual bool GlobalAssemblyCache { get { throw null; } }
+        public virtual long HostContext { get { throw null; } }
         public virtual bool IsDynamic { get { throw null; } }
+        public bool IsFullyTrusted { get { throw null; } }
         public virtual System.Reflection.Module ManifestModule { get { throw null; } }
         public virtual event ModuleResolveEventHandler ModuleResolve { add { } remove { } }
         public virtual System.Collections.Generic.IEnumerable<System.Reflection.Module> Modules { get; }
         public virtual bool ReflectionOnly { get { throw null; } }
+        public virtual System.Security.SecurityRuleSet SecurityRuleSet { get { throw null; } }
         public override bool Equals(object o) { throw null; }
         public static bool operator ==(System.Reflection.Assembly left, System.Reflection.Assembly right) { throw null; }
         public static bool operator !=(System.Reflection.Assembly left, System.Reflection.Assembly right) { throw null; }
@@ -4565,12 +4569,20 @@ namespace System.Reflection
         public static System.Reflection.Assembly Load(byte[] rawAssembly, byte[] rawSymbolStore) { throw null; }
         public static System.Reflection.Assembly Load(System.Reflection.AssemblyName assemblyRef) { throw null; }
         public static System.Reflection.Assembly Load(string assemblyString) { throw null; }
+        public static System.Reflection.Assembly LoadFile(String path) { throw null; }
+        public static System.Reflection.Assembly LoadFrom(String path) { throw null; }
+        public static Assembly LoadFrom(string assemblyFile, byte[] hashValue, System.Configuration.Assemblies.AssemblyHashAlgorithm hashAlgorithm) { throw null; }
+        public System.Reflection.Module LoadModule(String moduleName, byte[] rawModule) { throw null; }
+        public System.Reflection.Module LoadModule(String moduleName, byte[] rawModule, byte[] rawSymbolStore) { throw null; }
+        [ObsoleteAttribute("This method has been deprecated. Please use Assembly.Load() instead.")]
+        public static Assembly LoadWithPartialName(string partialName) { throw null; }
         public static System.Reflection.Assembly GetEntryAssembly() { throw null; }
         public static System.Reflection.Assembly GetExecutingAssembly() { throw null; }
         public System.Reflection.Module[] GetLoadedModules() { throw null; }
         public virtual System.Reflection.Module[] GetLoadedModules(bool getResourceModules) { throw null; }
         public virtual string Location { get { throw null; } }
         public override string ToString() { throw null; }
+        public static Assembly UnsafeLoadFrom(string assemblyFile) { throw null; }
         public virtual string CodeBase { get { throw null; } }
         public virtual string ImageRuntimeVersion { get { throw null; } }
         public object CreateInstance(string typeName) { throw null; }
