@@ -21,6 +21,7 @@ namespace System.Security.Cryptography
         {
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "This is the implementaton of SHA1")]
         public static SHA1 Create()
         {
             return new Implementation();
