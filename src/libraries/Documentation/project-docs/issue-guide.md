@@ -1,4 +1,4 @@
-Issue Guide
+﻿Issue Guide
 ===========
 
 This page outlines how the CoreFx team thinks about and handles issues.  For us, issues on GitHub represent actionable work that should be done at some future point.  It may be as simple as a small product or test bug or as large as the work tracking the design of a new feature.  However, it should be work that falls under the charter of CoreFx, which is a collection of foundational libraries that make up the .NET Core development stack.  We will keep issues open even if the CoreFx team internally has no plans to address them in an upcoming release, as long as we consider the issue to fall under our purview.
@@ -86,7 +86,7 @@ Areas are tracked by labels area-* (e.g. area-System.Collections), or Infrastruc
 | [System.Threading](https://github.com/dotnet/corefx/labels/area-System.Threading)             | @kouvel, @alexperovich |  | Triaged |
 | [System.Transactions](https://github.com/dotnet/corefx/labels/area-System.Transactions)       |  |  |  |
 | [System.Xml](https://github.com/dotnet/corefx/labels/area-System.Xml)                         | @sepidehMS, @krwq  | | Triaged |
-| [System](https://github.com/dotnet/corefx/labels/area-System)                                 |  | Issues without clear contract association (corss-contract, or potentially new contracts) |  |
+| [System](https://github.com/dotnet/corefx/labels/area-System)                                 |  | Issues without clear contract association (cross-contract, or potentially new contracts) |  |
 | **Microsoft contract assemblies** | | |  |
 | [Microsoft.CSharp](https://github.com/dotnet/corefx/labels/area-Microsoft.CSharp)             |  |  |  |
 | [Microsoft.VisualBasic](https://github.com/dotnet/corefx/labels/area-Microsoft.VisualBasic)   |  |  |  |
