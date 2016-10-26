@@ -1532,7 +1532,7 @@ namespace System.Reflection.Emit {
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
             if (attributeRuntimeType == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),"caType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),nameof(attributeType));
 
             return CustomAttribute.IsDefined(m_bakedRuntimeType, attributeRuntimeType, inherit);
         }
