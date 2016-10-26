@@ -327,6 +327,9 @@ static char*
 get_plt_entry_debug_sym (MonoAotCompile *acfg, MonoJumpInfo *ji, GHashTable *cache);
 
 static void
+add_gsharedvt_wrappers (MonoAotCompile *acfg, MonoMethodSignature *sig, gboolean gsharedvt_in, gboolean gsharedvt_out);
+
+static void
 aot_printf (MonoAotCompile *acfg, const gchar *format, ...)
 {
 	FILE *output;
@@ -4132,6 +4135,13 @@ add_wrappers (MonoAotCompile *acfg)
 		if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
 			(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)) {
 			add_method (acfg, mono_marshal_get_native_wrapper (method, TRUE, TRUE));
+		}
+
+		if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
+			if (acfg->aot_opts.llvm_only) {
+				/* The wrappers have a different signature (hasthis is not set) so need to add this too */
+				add_gsharedvt_wrappers (acfg, mono_method_signature (method), FALSE, TRUE);
+			}
 		}
 	}
  
