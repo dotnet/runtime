@@ -10,36 +10,12 @@ using Xunit;
 
 namespace System.IO.Compression.Tests
 {
-    public class DeflateStreamTests_NS17 : DeflateStreamTests
+    public sealed class BeginEndDeflateStreamTests : DeflateStreamAsyncTestsBase
     {
+        public override Task<int> ReadAsync(DeflateStream unzip, byte[] buffer, int offset, int count) =>
+            Task<int>.Factory.FromAsync<byte[], int, int>(unzip.BeginRead, unzip.EndRead, buffer, offset, count, null);
 
-        [Fact]
-        public static async void BeginEndReadTest()
-        {
-            byte[] buffer = new byte[32];
-            string testFilePath = gzTestFile("GZTestDocument.pdf.gz");
-            using (var readStream = await ManualSyncMemoryStream.GetStreamFromFileAsync(testFilePath, false, true))
-            using (var unzip = new DeflateStream(readStream, CompressionMode.Decompress, true))
-            {
-                IAsyncResult result = unzip.BeginRead(new byte[1], 0, 1, (ar) => { }, new object());
-                readStream.manualResetEvent.Set();
-                unzip.EndRead(result);
-            }
-        }
-
-        [Fact]
-        public  static async void BeginEndWriteTest()
-        {
-            byte[] buffer = new byte[32];
-            string testFilePath = gzTestFile("GZTestDocument.pdf.gz");
-            using (var readStream = await ManualSyncMemoryStream.GetStreamFromFileAsync(testFilePath, false, true))
-            using (var unzip = new DeflateStream(readStream, CompressionMode.Compress, true))
-            {
-                IAsyncResult result = unzip.BeginWrite(new byte[1], 0, 1, (ar) => { }, new object());
-                readStream.manualResetEvent.Set();
-                unzip.EndWrite(result);
-            }
-        }
-
+        public override Task WriteAsync(DeflateStream unzip, byte[] buffer, int offset, int count) =>
+            Task.Factory.FromAsync<byte[], int, int>(unzip.BeginWrite, unzip.EndWrite, buffer, offset, count, null);
     }
 }
