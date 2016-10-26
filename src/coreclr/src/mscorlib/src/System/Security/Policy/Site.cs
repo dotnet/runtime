@@ -26,7 +26,7 @@ namespace System.Security.Policy
         public Site(String name)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             Contract.EndContractBlock();
 
             m_name = new SiteString( name );

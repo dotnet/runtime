@@ -417,7 +417,7 @@ namespace System
         public static int Compare(String strA, String strB, CultureInfo culture, CompareOptions options) {
             if (culture == null)
             {
-                throw new ArgumentNullException("culture");
+                throw new ArgumentNullException(nameof(culture));
             }
             Contract.EndContractBlock();
 
@@ -511,7 +511,7 @@ namespace System
         {
             if (culture == null)
             {
-                throw new ArgumentNullException("culture");
+                throw new ArgumentNullException(nameof(culture));
             }
             Contract.EndContractBlock();
 
@@ -728,7 +728,7 @@ namespace System
         [ComVisible(false)]
         public Boolean EndsWith(String value, StringComparison comparisonType) {
             if( (Object)value == null) {
-                throw new ArgumentNullException("value");                                
+                throw new ArgumentNullException(nameof(value));                                
             }
 
             if( comparisonType < StringComparison.CurrentCulture || comparisonType > StringComparison.OrdinalIgnoreCase) {
@@ -774,7 +774,7 @@ namespace System
         [Pure]
         public Boolean EndsWith(String value, Boolean ignoreCase, CultureInfo culture) {
             if (null==value) {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
             Contract.EndContractBlock();
             
@@ -1073,7 +1073,7 @@ namespace System
         [Pure]
         public Boolean StartsWith(String value) {
             if ((Object)value == null) {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
             Contract.EndContractBlock();
             return StartsWith(value, StringComparison.CurrentCulture);
@@ -1084,7 +1084,7 @@ namespace System
         [ComVisible(false)]
         public Boolean StartsWith(String value, StringComparison comparisonType) {
             if( (Object)value == null) {
-                throw new ArgumentNullException("value");                                
+                throw new ArgumentNullException(nameof(value));                                
             }
 
             if( comparisonType < StringComparison.CurrentCulture || comparisonType > StringComparison.OrdinalIgnoreCase) {
@@ -1140,7 +1140,7 @@ namespace System
         [Pure]
         public Boolean StartsWith(String value, Boolean ignoreCase, CultureInfo culture) {
             if (null==value) {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
             Contract.EndContractBlock();
 

@@ -331,7 +331,7 @@ namespace System {
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static void SuppressFinalize(Object obj) {
             if (obj == null)
-                throw new ArgumentNullException("obj");
+                throw new ArgumentNullException(nameof(obj));
             Contract.EndContractBlock();
             _SuppressFinalize(obj);
         }
@@ -347,7 +347,7 @@ namespace System {
         [System.Security.SecuritySafeCritical]  // auto-generated
         public static void ReRegisterForFinalize(Object obj) {
             if (obj == null)
-                throw new ArgumentNullException("obj");
+                throw new ArgumentNullException(nameof(obj));
             Contract.EndContractBlock();
             _ReRegisterForFinalize(obj);
         }

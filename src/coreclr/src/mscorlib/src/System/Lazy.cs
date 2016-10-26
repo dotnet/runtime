@@ -207,7 +207,7 @@ namespace System
         public Lazy(Func<T> valueFactory, LazyThreadSafetyMode mode)
         {
             if (valueFactory == null)
-                throw new ArgumentNullException("valueFactory");
+                throw new ArgumentNullException(nameof(valueFactory));
 
             m_threadSafeObj = GetObjectFromMode(mode);
             m_valueFactory = valueFactory;

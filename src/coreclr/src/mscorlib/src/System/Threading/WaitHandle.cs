@@ -277,7 +277,7 @@ namespace System.Threading
         {
             if (waitHandles == null)
             {
-                throw new ArgumentNullException("waitHandles", Environment.GetResourceString("ArgumentNull_Waithandles"));
+                throw new ArgumentNullException(nameof(waitHandles), Environment.GetResourceString("ArgumentNull_Waithandles"));
             }
             if(waitHandles.Length == 0)
             {
@@ -293,7 +293,7 @@ namespace System.Threading
 #if FEATURE_CORECLR
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyWaithandleArray"));
 #else
-                throw new ArgumentNullException("waitHandles", Environment.GetResourceString("Argument_EmptyWaithandleArray"));
+                throw new ArgumentNullException(nameof(waitHandles), Environment.GetResourceString("Argument_EmptyWaithandleArray"));
 #endif
             }
             if (waitHandles.Length > MAX_WAITHANDLES)
@@ -390,7 +390,7 @@ namespace System.Threading
         {
             if (waitHandles==null)
             {
-                throw new ArgumentNullException("waitHandles", Environment.GetResourceString("ArgumentNull_Waithandles"));
+                throw new ArgumentNullException(nameof(waitHandles), Environment.GetResourceString("ArgumentNull_Waithandles"));
             }
             if(waitHandles.Length == 0)
             {
@@ -534,11 +534,11 @@ namespace System.Threading
 #else
             if(null == toSignal)
             {
-                throw new ArgumentNullException("toSignal");
+                throw new ArgumentNullException(nameof(toSignal));
             }
             if(null == toWaitOn)
             {
-                throw new ArgumentNullException("toWaitOn");
+                throw new ArgumentNullException(nameof(toWaitOn));
             }
             if (-1 > millisecondsTimeout)
             {

@@ -177,7 +177,7 @@ namespace System.Security
         static internal void ValidateElement( SecurityElement elem, IPermission perm )
         {
             if (elem == null)
-                throw new ArgumentNullException( "elem" );
+                throw new ArgumentNullException( nameof(elem) );
             Contract.EndContractBlock();
                 
             if (!XMLUtil.IsPermissionElement( perm, elem ))

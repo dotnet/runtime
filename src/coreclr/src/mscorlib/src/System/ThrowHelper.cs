@@ -10,7 +10,7 @@ namespace System {
     // The old way to throw an exception generates quite a lot IL code and assembly code.
     // Following is an example:
     //     C# source
-    //          throw new ArgumentNullException("key", Environment.GetResourceString("ArgumentNull_Key"));
+    //          throw new ArgumentNullException(nameof(key), Environment.GetResourceString("ArgumentNull_Key"));
     //     IL code:
     //          IL_0003:  ldstr      "key"
     //          IL_0008:  ldstr      "ArgumentNull_Key"

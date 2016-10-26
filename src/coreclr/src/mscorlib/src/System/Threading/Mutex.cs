@@ -321,7 +321,7 @@ namespace System.Threading
         {
             if (name == null)
             {
-                throw new ArgumentNullException("name", Environment.GetResourceString("ArgumentNull_WithParamName"));
+                throw new ArgumentNullException(nameof(name), Environment.GetResourceString("ArgumentNull_WithParamName"));
             }
 
             if(name.Length  == 0)
@@ -477,7 +477,7 @@ namespace System.Threading
         public void SetAccessControl(MutexSecurity mutexSecurity)
         {
             if (mutexSecurity == null)
-                throw new ArgumentNullException("mutexSecurity");
+                throw new ArgumentNullException(nameof(mutexSecurity));
             Contract.EndContractBlock();
 
             mutexSecurity.Persist(safeWaitHandle);

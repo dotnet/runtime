@@ -216,7 +216,7 @@ namespace System.Threading
 #else
             if (name == null)
             {
-                throw new ArgumentNullException("name", Environment.GetResourceString("ArgumentNull_WithParamName"));
+                throw new ArgumentNullException(nameof(name), Environment.GetResourceString("ArgumentNull_WithParamName"));
             }
 
             if(name.Length  == 0)
@@ -286,7 +286,7 @@ namespace System.Threading
         public void SetAccessControl(EventWaitHandleSecurity eventSecurity)
         {
             if (eventSecurity == null)
-                throw new ArgumentNullException("eventSecurity");
+                throw new ArgumentNullException(nameof(eventSecurity));
             Contract.EndContractBlock();
 
             eventSecurity.Persist(safeWaitHandle);

@@ -138,7 +138,7 @@ namespace System.Threading
             throw new PlatformNotSupportedException(Environment.GetResourceString("PlatformNotSupported_NamedSynchronizationPrimitives"));
 #else
             if (name == null)
-                throw new ArgumentNullException("name", Environment.GetResourceString("ArgumentNull_WithParamName"));
+                throw new ArgumentNullException(nameof(name), Environment.GetResourceString("ArgumentNull_WithParamName"));
             if (name.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "name");
             if (name.Length > Path.MaxPath)

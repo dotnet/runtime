@@ -83,7 +83,7 @@ namespace System.Security.Policy {
 
         public ApplicationTrust(PermissionSet defaultGrantSet, IEnumerable<StrongName> fullTrustAssemblies) {
             if (fullTrustAssemblies == null) {
-                throw new ArgumentNullException("fullTrustAssemblies");
+                throw new ArgumentNullException(nameof(fullTrustAssemblies));
             }
 
             InitDefaultGrantSet(defaultGrantSet);
@@ -104,7 +104,7 @@ namespace System.Security.Policy {
         // IEnumerable virtual dispatches on startup when there are no fullTrustAssemblies (CoreCLR)
         private void InitDefaultGrantSet(PermissionSet defaultGrantSet) {
             if (defaultGrantSet == null) {
-                throw new ArgumentNullException("defaultGrantSet");
+                throw new ArgumentNullException(nameof(defaultGrantSet));
             }
 
             // Creating a PolicyStatement copies the incoming permission set, so we don't have to worry
@@ -120,7 +120,7 @@ namespace System.Security.Policy {
             }
             set {
                 if (value == null)
-                    throw new ArgumentNullException("value", Environment.GetResourceString("Argument_InvalidAppId"));
+                    throw new ArgumentNullException(nameof(value), Environment.GetResourceString("Argument_InvalidAppId"));
                 Contract.EndContractBlock();
                 m_appId = value;
             }
@@ -223,7 +223,7 @@ namespace System.Security.Policy {
 
         public void FromXml (SecurityElement element) {
             if (element == null)
-                throw new ArgumentNullException("element");
+                throw new ArgumentNullException(nameof(element));
             if (String.Compare(element.Tag, "ApplicationTrust", StringComparison.Ordinal) != 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidXML"));
 
@@ -455,7 +455,7 @@ namespace System.Security.Policy {
         [System.Security.SecurityCritical]  // auto-generated
         public int Add (ApplicationTrust trust) {
             if (trust == null)
-                throw new ArgumentNullException("trust");
+                throw new ArgumentNullException(nameof(trust));
             if (trust.ApplicationIdentity == null)
                 throw new ArgumentException(Environment.GetResourceString("Argument_ApplicationTrustShouldHaveIdentity"));
             Contract.EndContractBlock();
@@ -472,7 +472,7 @@ namespace System.Security.Policy {
         [System.Security.SecurityCritical]  // auto-generated
         public void AddRange (ApplicationTrust[] trusts) {
             if (trusts == null)
-                throw new ArgumentNullException("trusts");
+                throw new ArgumentNullException(nameof(trusts));
             Contract.EndContractBlock();
 
             int i=0;
@@ -491,7 +491,7 @@ namespace System.Security.Policy {
         [System.Security.SecurityCritical]  // auto-generated
         public void AddRange (ApplicationTrustCollection trusts) {
             if (trusts == null)
-                throw new ArgumentNullException("trusts");
+                throw new ArgumentNullException(nameof(trusts));
             Contract.EndContractBlock();
 
             int i = 0;
@@ -527,7 +527,7 @@ namespace System.Security.Policy {
         [System.Security.SecurityCritical]  // auto-generated
         public void Remove (ApplicationTrust trust) {
             if (trust == null)
-                throw new ArgumentNullException("trust");
+                throw new ArgumentNullException(nameof(trust));
             if (trust.ApplicationIdentity == null)
                 throw new ArgumentException(Environment.GetResourceString("Argument_ApplicationTrustShouldHaveIdentity"));
             Contract.EndContractBlock();
@@ -543,7 +543,7 @@ namespace System.Security.Policy {
         [System.Security.SecurityCritical]  // auto-generated
         public void RemoveRange (ApplicationTrust[] trusts) {
             if (trusts == null)
-                throw new ArgumentNullException("trusts");
+                throw new ArgumentNullException(nameof(trusts));
             Contract.EndContractBlock();
 
             int i=0;
@@ -562,7 +562,7 @@ namespace System.Security.Policy {
         [System.Security.SecurityCritical]  // auto-generated
         public void RemoveRange (ApplicationTrustCollection trusts) {
             if (trusts == null)
-                throw new ArgumentNullException("trusts");
+                throw new ArgumentNullException(nameof(trusts));
             Contract.EndContractBlock();
 
             int i = 0;
@@ -610,7 +610,7 @@ namespace System.Security.Policy {
         [System.Security.SecuritySafeCritical] // overrides public transparent member
         void ICollection.CopyTo(Array array, int index) {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             if (array.Rank != 1)
                 throw new ArgumentException(Environment.GetResourceString("Arg_RankMultiDimNotSupported"));
             if (index < 0 || index >= array.Length)

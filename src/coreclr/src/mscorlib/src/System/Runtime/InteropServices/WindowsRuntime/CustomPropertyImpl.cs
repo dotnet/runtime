@@ -29,7 +29,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         public CustomPropertyImpl(PropertyInfo propertyInfo)
         {
             if (propertyInfo == null)
-                throw new ArgumentNullException("propertyInfo");
+                throw new ArgumentNullException(nameof(propertyInfo));
 
             m_property = propertyInfo;
         }

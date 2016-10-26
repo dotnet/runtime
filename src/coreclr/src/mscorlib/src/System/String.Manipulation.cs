@@ -114,7 +114,7 @@ namespace System
         {
             if (args == null)
             {
-                throw new ArgumentNullException("args");
+                throw new ArgumentNullException(nameof(args));
             }
             Contract.Ensures(Contract.Result<String>() != null);
             Contract.EndContractBlock();
@@ -181,7 +181,7 @@ namespace System
         public static string Concat<T>(IEnumerable<T> values)
         {
             if (values == null)
-                throw new ArgumentNullException("values");
+                throw new ArgumentNullException(nameof(values));
             Contract.Ensures(Contract.Result<String>() != null);
             Contract.EndContractBlock();
 
@@ -232,7 +232,7 @@ namespace System
         public static string Concat(IEnumerable<string> values)
         {
             if (values == null)
-                throw new ArgumentNullException("values");
+                throw new ArgumentNullException(nameof(values));
             Contract.Ensures(Contract.Result<String>() != null);
             Contract.EndContractBlock();
 
@@ -369,7 +369,7 @@ namespace System
         [System.Security.SecuritySafeCritical]
         public static String Concat(params String[] values) {
             if (values == null)
-                throw new ArgumentNullException("values");
+                throw new ArgumentNullException(nameof(values));
             Contract.Ensures(Contract.Result<String>() != null);
             Contract.EndContractBlock();
 
@@ -456,7 +456,7 @@ namespace System
             {
                 // To preserve the original exception behavior, throw an exception about format if both
                 // args and format are null. The actual null check for format is in FormatHelper.
-                throw new ArgumentNullException((format == null) ? "format" : "args");
+                throw new ArgumentNullException((format == null) ? nameof(format) : nameof(args));
             }
             Contract.Ensures(Contract.Result<String>() != null);
             Contract.EndContractBlock();
@@ -484,7 +484,7 @@ namespace System
             {
                 // To preserve the original exception behavior, throw an exception about format if both
                 // args and format are null. The actual null check for format is in FormatHelper.
-                throw new ArgumentNullException((format == null) ? "format" : "args");
+                throw new ArgumentNullException((format == null) ? nameof(format) : nameof(args));
             }
             Contract.Ensures(Contract.Result<String>() != null);
             Contract.EndContractBlock();
@@ -494,7 +494,7 @@ namespace System
         
         private static String FormatHelper(IFormatProvider provider, String format, ParamsArray args) {
             if (format == null)
-                throw new ArgumentNullException("format");
+                throw new ArgumentNullException(nameof(format));
             
             return StringBuilderCache.GetStringAndRelease(
                 StringBuilderCache
@@ -506,7 +506,7 @@ namespace System
         public String Insert(int startIndex, String value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             if (startIndex < 0 || startIndex > this.Length)
                 throw new ArgumentOutOfRangeException("startIndex");
             Contract.Ensures(Contract.Result<String>() != null);
@@ -546,7 +546,7 @@ namespace System
         //
         public static String Join(String separator, params String[] value) {
             if (value==null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             Contract.EndContractBlock();
             return Join(separator, value, 0, value.Length);
         }
@@ -555,7 +555,7 @@ namespace System
         public static string Join(string separator, params object[] values)
         {
             if (values == null)
-                throw new ArgumentNullException("values");
+                throw new ArgumentNullException(nameof(values));
             Contract.EndContractBlock();
 
             if (values.Length == 0 || values[0] == null)
@@ -588,7 +588,7 @@ namespace System
         public static String Join<T>(String separator, IEnumerable<T> values)
         {
             if (values == null)
-                throw new ArgumentNullException("values");
+                throw new ArgumentNullException(nameof(values));
             Contract.Ensures(Contract.Result<String>() != null);
             Contract.EndContractBlock();
 
@@ -638,7 +638,7 @@ namespace System
         [ComVisible(false)]
         public static String Join(String separator, IEnumerable<String> values) {
             if (values == null)
-                throw new ArgumentNullException("values");
+                throw new ArgumentNullException(nameof(values));
             Contract.Ensures(Contract.Result<String>() != null);
             Contract.EndContractBlock();
 
@@ -671,7 +671,7 @@ namespace System
         public unsafe static String Join(String separator, String[] value, int startIndex, int count) {
             //Range check the array
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             if (startIndex < 0)
                 throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_StartIndex"));
@@ -935,7 +935,7 @@ namespace System
         public String Replace(String oldValue, String newValue)
         {
             if (oldValue == null)
-                throw new ArgumentNullException("oldValue");
+                throw new ArgumentNullException(nameof(oldValue));
             // Note that if newValue is null, we treat it like String.Empty.
             Contract.Ensures(Contract.Result<String>() != null);
             Contract.EndContractBlock();
@@ -1412,7 +1412,7 @@ namespace System
         public String ToLower(CultureInfo culture) {
             if (culture == null)
             {
-                throw new ArgumentNullException("culture");
+                throw new ArgumentNullException(nameof(culture));
             }
             Contract.Ensures(Contract.Result<String>() != null);
             Contract.EndContractBlock();
@@ -1441,7 +1441,7 @@ namespace System
         public String ToUpper(CultureInfo culture) {
             if (culture == null)
             {
-                throw new ArgumentNullException("culture");
+                throw new ArgumentNullException(nameof(culture));
             }
             Contract.Ensures(Contract.Result<String>() != null);
             Contract.EndContractBlock();

@@ -141,7 +141,7 @@ namespace System.Runtime.InteropServices
         unsafe public static String PtrToStringAnsi(IntPtr ptr, int len)
         {
             if (ptr == IntPtr.Zero)
-                throw new ArgumentNullException("ptr");
+                throw new ArgumentNullException(nameof(ptr));
             if (len < 0)
                 throw new ArgumentException("len");
 
@@ -152,7 +152,7 @@ namespace System.Runtime.InteropServices
         unsafe public static String PtrToStringUni(IntPtr ptr, int len)
         {
             if (ptr == IntPtr.Zero)
-                throw new ArgumentNullException("ptr");
+                throw new ArgumentNullException(nameof(ptr));
             if (len < 0)
                 throw new ArgumentException("len");
 
@@ -227,7 +227,7 @@ namespace System.Runtime.InteropServices
         public static int SizeOf(Object structure)
         {
             if (structure == null)
-                throw new ArgumentNullException("structure");
+                throw new ArgumentNullException(nameof(structure));
             // we never had a check for generics here
             Contract.EndContractBlock();
 
@@ -243,7 +243,7 @@ namespace System.Runtime.InteropServices
         public static int SizeOf(Type t)
         {
             if (t == null)
-                throw new ArgumentNullException("t");
+                throw new ArgumentNullException(nameof(t));
             if (!(t is RuntimeType))
                 throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeType"), "t");
             if (t.IsGenericType)
@@ -302,7 +302,7 @@ namespace System.Runtime.InteropServices
         public static IntPtr OffsetOf(Type t, String fieldName)
         {
             if (t == null)
-                throw new ArgumentNullException("t");
+                throw new ArgumentNullException(nameof(t));
             Contract.EndContractBlock();
             
             FieldInfo f = t.GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -915,7 +915,7 @@ namespace System.Runtime.InteropServices
         public static void Prelink(MethodInfo m)
         {
             if (m == null) 
-                throw new ArgumentNullException("m");
+                throw new ArgumentNullException(nameof(m));
             Contract.EndContractBlock();
 
             RuntimeMethodInfo rmi = m as RuntimeMethodInfo;
@@ -934,7 +934,7 @@ namespace System.Runtime.InteropServices
         public static void PrelinkAll(Type c)
         {
             if (c == null)
-                throw new ArgumentNullException("c");
+                throw new ArgumentNullException(nameof(c));
             Contract.EndContractBlock();
 
             MethodInfo[] mi = c.GetMethods();
@@ -954,7 +954,7 @@ namespace System.Runtime.InteropServices
         public static int NumParamBytes(MethodInfo m)
         {
             if (m == null) 
-                throw new ArgumentNullException("m");
+                throw new ArgumentNullException(nameof(m));
             Contract.EndContractBlock();
 
             RuntimeMethodInfo rmi = m as RuntimeMethodInfo;
@@ -1027,7 +1027,7 @@ namespace System.Runtime.InteropServices
             if (ptr == IntPtr.Zero) return null;
 
             if (structureType == null)
-                throw new ArgumentNullException("structureType");
+                throw new ArgumentNullException(nameof(structureType));
 
             if (structureType.IsGenericType)
                 throw new ArgumentException(Environment.GetResourceString("Argument_NeedNonGenericType"), "structureType");
@@ -1082,7 +1082,7 @@ namespace System.Runtime.InteropServices
         public static IntPtr GetHINSTANCE(Module m)
         {
             if (m == null)
-                throw new ArgumentNullException("m");
+                throw new ArgumentNullException(nameof(m));
             Contract.EndContractBlock();
 
             RuntimeModule rtModule = m as RuntimeModule;
@@ -1094,7 +1094,7 @@ namespace System.Runtime.InteropServices
             }
 
             if (rtModule == null)
-                throw new ArgumentNullException("m",Environment.GetResourceString("Argument_MustBeRuntimeModule"));
+                throw new ArgumentNullException(nameof(m),Environment.GetResourceString("Argument_MustBeRuntimeModule"));
 
             return GetHINSTANCE(rtModule.GetNativeHandle());
         }    
@@ -1358,7 +1358,7 @@ namespace System.Runtime.InteropServices
         public static String GetTypeLibName(ITypeLib typelib)
         {
             if (typelib == null)
-                throw new ArgumentNullException("typelib");
+                throw new ArgumentNullException(nameof(typelib));
             Contract.EndContractBlock();
             
             String strTypeLibName = null;
@@ -1379,7 +1379,7 @@ namespace System.Runtime.InteropServices
         internal static String GetTypeLibNameInternal(ITypeLib typelib)
         {
             if (typelib == null)
-                throw new ArgumentNullException("typelib");
+                throw new ArgumentNullException(nameof(typelib));
             Contract.EndContractBlock();
 
             // Try GUID_ManagedName first
@@ -1484,7 +1484,7 @@ namespace System.Runtime.InteropServices
         public static Guid GetTypeLibGuidForAssembly(Assembly asm)
         {
             if (asm == null)
-                throw new ArgumentNullException("asm");
+                throw new ArgumentNullException(nameof(asm));
             Contract.EndContractBlock();
 
             RuntimeAssembly rtAssembly = asm as RuntimeAssembly;
@@ -1510,7 +1510,7 @@ namespace System.Runtime.InteropServices
         public static void GetTypeLibVersionForAssembly(Assembly inputAssembly, out int majorVersion, out int minorVersion) 
         {
             if (inputAssembly == null)
-                throw new ArgumentNullException("inputAssembly");
+                throw new ArgumentNullException(nameof(inputAssembly));
             Contract.EndContractBlock();
 
             RuntimeAssembly rtAssembly = inputAssembly as RuntimeAssembly;
@@ -1537,7 +1537,7 @@ namespace System.Runtime.InteropServices
         public static String GetTypeInfoName(ITypeInfo typeInfo)
         {
             if (typeInfo == null)
-                throw new ArgumentNullException("typeInfo");
+                throw new ArgumentNullException(nameof(typeInfo));
             Contract.EndContractBlock();
             
             String strTypeLibName = null;
@@ -1558,7 +1558,7 @@ namespace System.Runtime.InteropServices
         internal static String GetTypeInfoNameInternal(ITypeInfo typeInfo, out bool hasManagedName)
         {
             if (typeInfo == null)
-                throw new ArgumentNullException("typeInfo");
+                throw new ArgumentNullException(nameof(typeInfo));
             Contract.EndContractBlock();
             
             // Try ManagedNameGuid first
@@ -2069,7 +2069,7 @@ namespace System.Runtime.InteropServices
         public static Int32 FinalReleaseComObject(Object o)
         {
             if (o == null)
-                throw new ArgumentNullException("o");
+                throw new ArgumentNullException(nameof(o));
             Contract.EndContractBlock();
 
             __ComObject co = null;
@@ -2104,9 +2104,9 @@ namespace System.Runtime.InteropServices
 #else        
             // Validate that the arguments aren't null.
             if (obj == null)
-                throw new ArgumentNullException("obj");
+                throw new ArgumentNullException(nameof(obj));
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             Contract.EndContractBlock();
 
             __ComObject comObj = null;
@@ -2145,9 +2145,9 @@ namespace System.Runtime.InteropServices
 #else          
             // Validate that the arguments aren't null. The data can validly be null.
             if (obj == null)
-                throw new ArgumentNullException("obj");
+                throw new ArgumentNullException(nameof(obj));
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             Contract.EndContractBlock();
 
             __ComObject comObj = null;
@@ -2182,7 +2182,7 @@ namespace System.Runtime.InteropServices
         {
             // Validate the arguments.
             if (t == null)
-                throw new ArgumentNullException("t");
+                throw new ArgumentNullException(nameof(t));
             if (!t.IsCOMObject)
                 throw new ArgumentException(Environment.GetResourceString("Argument_TypeNotComObject"), "t");
             if (t.IsGenericType)
@@ -2342,7 +2342,7 @@ namespace System.Runtime.InteropServices
         public static int GetComSlotForMethodInfo(MemberInfo m)
         {
             if (m== null) 
-                throw new ArgumentNullException("m");
+                throw new ArgumentNullException(nameof(m));
 
             if (!(m is RuntimeMethodInfo))
                 throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeMethodInfo"), "m");
@@ -2396,7 +2396,7 @@ namespace System.Runtime.InteropServices
             throw new PlatformNotSupportedException();
 #else
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             if (type.IsImport)
                 throw new ArgumentException(Environment.GetResourceString("Argument_TypeMustNotBeComImport"), "type");
             if (type.IsGenericType)
@@ -2644,10 +2644,10 @@ namespace System.Runtime.InteropServices
         {
             // Validate the parameters
             if (ptr == IntPtr.Zero)
-                throw new ArgumentNullException("ptr");
+                throw new ArgumentNullException(nameof(ptr));
             
             if (t == null)
-                throw new ArgumentNullException("t");
+                throw new ArgumentNullException(nameof(t));
             Contract.EndContractBlock();
             
             if ((t as RuntimeType) == null)
@@ -2676,7 +2676,7 @@ namespace System.Runtime.InteropServices
         public static IntPtr GetFunctionPointerForDelegate(Delegate d)
         {
             if (d == null)
-                throw new ArgumentNullException("d");
+                throw new ArgumentNullException(nameof(d));
             Contract.EndContractBlock();
 
             return GetFunctionPointerForDelegateInternal(d);
@@ -2697,7 +2697,7 @@ namespace System.Runtime.InteropServices
         [System.Security.SecurityCritical]  // auto-generated_required
         public static IntPtr SecureStringToBSTR(SecureString s) {
             if( s == null) {
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             }
             Contract.EndContractBlock();
             
@@ -2708,7 +2708,7 @@ namespace System.Runtime.InteropServices
         [System.Security.SecurityCritical]  // auto-generated_required
         public static IntPtr SecureStringToCoTaskMemAnsi(SecureString s) {
             if( s == null) {
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             }
             Contract.EndContractBlock();
 
@@ -2720,7 +2720,7 @@ namespace System.Runtime.InteropServices
         {
             if (s == null)
             {
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             }
             Contract.EndContractBlock();
 
@@ -2764,7 +2764,7 @@ namespace System.Runtime.InteropServices
         [System.Security.SecurityCritical]  // auto-generated_required
         public static IntPtr SecureStringToGlobalAllocAnsi(SecureString s) {
             if( s == null) {
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             }
             Contract.EndContractBlock();
 
@@ -2774,7 +2774,7 @@ namespace System.Runtime.InteropServices
         [System.Security.SecurityCritical]  // auto-generated_required
         public static IntPtr SecureStringToGlobalAllocUnicode(SecureString s) {
             if( s == null) {
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             }
             Contract.EndContractBlock();
 

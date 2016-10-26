@@ -245,7 +245,7 @@ using System.Diagnostics.Contracts;
             where T : struct
         {
             if (array == null)
-                throw new ArgumentNullException("array", Environment.GetResourceString("ArgumentNull_Buffer"));
+                throw new ArgumentNullException(nameof(array), Environment.GetResourceString("ArgumentNull_Buffer"));
             if (index < 0)
                 throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (count < 0)
@@ -317,7 +317,7 @@ using System.Diagnostics.Contracts;
             where T : struct
         {
             if (array == null)
-                throw new ArgumentNullException("array", Environment.GetResourceString("ArgumentNull_Buffer"));
+                throw new ArgumentNullException(nameof(array), Environment.GetResourceString("ArgumentNull_Buffer"));
             if (index < 0)
                 throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (count < 0)

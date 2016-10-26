@@ -62,7 +62,7 @@ namespace System.Text
         {
             // Actually this can't ever get called, CodePageEncoding is our proxy
             Contract.Assert(false, "Didn't expect to make it to DBCSCodePageEncoding serialization constructor");
-            throw new ArgumentNullException("this");
+            throw new ArgumentNullException(nameof(this));
         }
 
         // MBCS data section:

@@ -644,7 +644,7 @@ namespace Microsoft.Win32 {
         [ComVisible(false)]
         public static RegistryKey OpenRemoteBaseKey(RegistryHive hKey, String machineName, RegistryView view) {
             if (machineName==null)
-                throw new ArgumentNullException("machineName");
+                throw new ArgumentNullException(nameof(machineName));
             int index = (int)hKey & 0x0FFFFFFF;
             if (index < 0 || index >= hkeyNames.Length || ((int)hKey & 0xFFFFFFF0) != 0x80000000) {
                 throw new ArgumentException(Environment.GetResourceString("Arg_RegKeyOutOfRange"));
@@ -898,7 +898,7 @@ namespace Microsoft.Win32 {
         [ComVisible(false)]
         [SecurityPermissionAttribute(SecurityAction.Demand, Flags = SecurityPermissionFlag.UnmanagedCode)]
         public static RegistryKey FromHandle(SafeRegistryHandle handle, RegistryView view) {
-            if (handle == null) throw new ArgumentNullException("handle");
+            if (handle == null) throw new ArgumentNullException(nameof(handle));
             ValidateKeyView(view);
 
             return new RegistryKey(handle, true /* isWritable */, view);
@@ -1591,7 +1591,7 @@ namespace Microsoft.Win32 {
         public void SetAccessControl(RegistrySecurity registrySecurity) {
             EnsureWriteable();
             if (registrySecurity == null)
-                throw new ArgumentNullException("registrySecurity");
+                throw new ArgumentNullException(nameof(registrySecurity));
 
             registrySecurity.Persist(hkey, keyName);
         }

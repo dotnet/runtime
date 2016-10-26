@@ -247,7 +247,7 @@ namespace System.Security.Permissions {
 
         public int Add (KeyContainerPermissionAccessEntry accessEntry) {
             if (accessEntry == null)
-                throw new ArgumentNullException("accessEntry");
+                throw new ArgumentNullException(nameof(accessEntry));
             Contract.EndContractBlock();
 
             int index = m_list.IndexOf(accessEntry);
@@ -275,7 +275,7 @@ namespace System.Security.Permissions {
 
         public void Remove (KeyContainerPermissionAccessEntry accessEntry) {
             if (accessEntry == null)
-                throw new ArgumentNullException("accessEntry");
+                throw new ArgumentNullException(nameof(accessEntry));
             Contract.EndContractBlock();
             m_list.Remove(accessEntry);
         }
@@ -292,7 +292,7 @@ namespace System.Security.Permissions {
         /// <internalonly/>
         void ICollection.CopyTo (Array array, int index) {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             if (array.Rank != 1)
                 throw new ArgumentException(Environment.GetResourceString("Arg_RankMultiDimNotSupported"));
             if (index < 0 || index >= array.Length)
@@ -385,7 +385,7 @@ namespace System.Security.Permissions {
 
         public KeyContainerPermission (KeyContainerPermissionFlags flags, KeyContainerPermissionAccessEntry[] accessList) {
             if (accessList == null) 
-                throw new ArgumentNullException("accessList");
+                throw new ArgumentNullException(nameof(accessList));
             Contract.EndContractBlock();
 
             VerifyFlags(flags);

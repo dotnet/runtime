@@ -174,7 +174,7 @@ namespace System.Runtime.InteropServices
         [System.Security.SecuritySafeCritical]
         public bool StartsWith(string value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
             if (_length < (uint)value.Length) return false;
             return SubstringEquals(value, startIndex: 0, count: value.Length);
         }
@@ -249,7 +249,7 @@ namespace System.Runtime.InteropServices
         /// </exception>
         public void Append(StringBuffer value, uint startIndex = 0)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
             if (value.Length == 0) return;
             value.CopyTo(
                 bufferIndex: startIndex,
@@ -271,7 +271,7 @@ namespace System.Runtime.InteropServices
         /// </exception>
         public void Append(StringBuffer value, uint startIndex, uint count)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
             if (count == 0) return;
             value.CopyTo(
                 bufferIndex: startIndex,
@@ -292,7 +292,7 @@ namespace System.Runtime.InteropServices
         [System.Security.SecuritySafeCritical]
         public unsafe void CopyTo(uint bufferIndex, StringBuffer destination, uint destinationIndex, uint count)
         {
-            if (destination == null) throw new ArgumentNullException("destination");
+            if (destination == null) throw new ArgumentNullException(nameof(destination));
             if (destinationIndex > destination._length) throw new ArgumentOutOfRangeException("destinationIndex");
             if (bufferIndex >= _length) throw new ArgumentOutOfRangeException("bufferIndex");
             if (_length < checked(bufferIndex + count)) throw new ArgumentOutOfRangeException("count");
@@ -320,7 +320,7 @@ namespace System.Runtime.InteropServices
         [System.Security.SecuritySafeCritical]
         public unsafe void CopyFrom(uint bufferIndex, string source, int sourceIndex = 0, int count = -1)
         {
-            if (source == null) throw new ArgumentNullException("source");
+            if (source == null) throw new ArgumentNullException(nameof(source));
             if (bufferIndex > _length) throw new ArgumentOutOfRangeException("bufferIndex");
             if (sourceIndex < 0 || sourceIndex >= source.Length) throw new ArgumentOutOfRangeException("sourceIndex");
             if (count == -1) count = source.Length - sourceIndex;

@@ -357,7 +357,7 @@ namespace System.Security.Policy {
         internal void FromXml( SecurityElement et, PolicyLevel level, bool allowInternalOnly )
         {
             if (et == null)
-                throw new ArgumentNullException( "et" );
+                throw new ArgumentNullException( nameof(et) );
 
             if (!et.Tag.Equals( "PolicyStatement" ))
                 throw new ArgumentException( String.Format( CultureInfo.CurrentCulture, Environment.GetResourceString( "Argument_InvalidXMLElement" ),  "PolicyStatement", this.GetType().FullName ) );
@@ -434,7 +434,7 @@ namespace System.Security.Policy {
         internal void FromXml( SecurityDocument doc, int position, PolicyLevel level, bool allowInternalOnly )
         {
             if (doc == null)
-                throw new ArgumentNullException( "doc" );
+                throw new ArgumentNullException( nameof(doc) );
             Contract.EndContractBlock();
 
             if (!doc.GetTagForElement( position ).Equals( "PolicyStatement" ))

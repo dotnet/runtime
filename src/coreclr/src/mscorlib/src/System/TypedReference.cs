@@ -27,9 +27,9 @@ namespace System {
         [CLSCompliant(false)]
         public static TypedReference MakeTypedReference(Object target, FieldInfo[] flds) {
             if (target == null)
-                throw new ArgumentNullException("target");
+                throw new ArgumentNullException(nameof(target));
             if (flds == null)
-                throw new ArgumentNullException("flds");
+                throw new ArgumentNullException(nameof(flds));
             Contract.EndContractBlock();
             if (flds.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Arg_ArrayZeroError"));

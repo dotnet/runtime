@@ -21,7 +21,7 @@ namespace System.Text
         public DecoderReplacementFallback(String replacement)
         {
             if (replacement == null)
-                throw new ArgumentNullException("replacement");
+                throw new ArgumentNullException(nameof(replacement));
             Contract.EndContractBlock();
 
             // Make sure it doesn't have bad surrogate pairs

@@ -101,7 +101,7 @@ namespace System.Runtime.Loader
         {
             if (assemblyPath == null)
             {
-                throw new ArgumentNullException("assemblyPath");
+                throw new ArgumentNullException(nameof(assemblyPath));
             }
 
             if (Path.IsRelative(assemblyPath))
@@ -118,7 +118,7 @@ namespace System.Runtime.Loader
         {
             if (nativeImagePath == null)
             {
-                throw new ArgumentNullException("nativeImagePath");
+                throw new ArgumentNullException(nameof(nativeImagePath));
             }
 
             if (Path.IsRelative(nativeImagePath))
@@ -147,7 +147,7 @@ namespace System.Runtime.Loader
         {
             if (assembly == null)
             {
-                throw new ArgumentNullException("assembly");
+                throw new ArgumentNullException(nameof(assembly));
             }
             
             int iAssemblyStreamLength = (int)assembly.Length;
@@ -302,7 +302,7 @@ namespace System.Runtime.Loader
         {
             if (unmanagedDllPath == null)
             {
-                throw new ArgumentNullException("unmanagedDllPath");
+                throw new ArgumentNullException(nameof(unmanagedDllPath));
             }
             if (unmanagedDllPath.Length == 0)
             {
@@ -366,7 +366,7 @@ namespace System.Runtime.Loader
         {
             if (context == null)
             {
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
             }
             
             // Try to override the default assembly load context
@@ -389,7 +389,7 @@ namespace System.Runtime.Loader
         {
             if (assemblyPath == null)
             {
-                throw new ArgumentNullException("assemblyPath");
+                throw new ArgumentNullException(nameof(assemblyPath));
             }
             
             String fullPath = Path.GetFullPathInternal(assemblyPath);
@@ -405,7 +405,7 @@ namespace System.Runtime.Loader
         {
             if (assembly == null)
             {
-                throw new ArgumentNullException("assembly");
+                throw new ArgumentNullException(nameof(assembly));
             }
             
             AssemblyLoadContext loadContextForAssembly = null;

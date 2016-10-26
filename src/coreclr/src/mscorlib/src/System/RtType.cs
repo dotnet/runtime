@@ -1869,7 +1869,7 @@ namespace System
             ref StackCrawlMark stackMark)
         {
             if (typeName == null)
-                throw new ArgumentNullException("typeName");
+                throw new ArgumentNullException(nameof(typeName));
             Contract.EndContractBlock();
 
             return RuntimeTypeHandle.GetTypeByName(
@@ -2921,7 +2921,7 @@ namespace System
                 throw new InvalidOperationException(Environment.GetResourceString("Arg_GenericParameter"));
         
             if ((object)ifaceType == null)
-                throw new ArgumentNullException("ifaceType");
+                throw new ArgumentNullException(nameof(ifaceType));
             Contract.EndContractBlock();
 
             RuntimeType ifaceRtType = ifaceType as RuntimeType;
@@ -3446,7 +3446,7 @@ namespace System
         public override bool IsSubclassOf(Type type) 
         {
             if ((object)type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             Contract.EndContractBlock();
             RuntimeType rtType = type as RuntimeType;
             if (rtType == null)
@@ -3862,7 +3862,7 @@ namespace System
         public override bool IsEnumDefined(object value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             Contract.EndContractBlock();
 
             // Check if both of them are of the same type
@@ -3909,7 +3909,7 @@ namespace System
         public override string GetEnumName(object value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             Contract.EndContractBlock();
 
             Type valueType = value.GetType();
@@ -3943,7 +3943,7 @@ namespace System
         public override Type MakeGenericType(Type[] instantiation)
         {
             if (instantiation == null)
-                throw new ArgumentNullException("instantiation");
+                throw new ArgumentNullException(nameof(instantiation));
             Contract.EndContractBlock();
 
             RuntimeType[] instantiationRuntimeType = new RuntimeType[instantiation.Length];
@@ -4319,7 +4319,7 @@ namespace System
                 {
                     #region Non-TransparentProxy case
                     if (name == null)
-                        throw new ArgumentNullException("name");
+                        throw new ArgumentNullException(nameof(name));
 
                     bool[] isByRef = modifiers == null ? null : modifiers[0].IsByRefArray;
                     
@@ -4373,7 +4373,7 @@ namespace System
 
             #region Name
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
                 
             if (name.Length == 0 || name.Equals(@"[DISPID=0]")) 
             {
@@ -4409,7 +4409,7 @@ namespace System
                     Contract.Assert(IsSetField);
 
                     if (providedArgs == null) 
-                        throw new ArgumentNullException("providedArgs");
+                        throw new ArgumentNullException(nameof(providedArgs));
 
                     if ((bindingFlags & BindingFlags.GetProperty) != 0)
                         // "Can not specify both SetField and GetProperty."
@@ -4756,7 +4756,7 @@ namespace System
         public void GetObjectData(SerializationInfo info, StreamingContext context) 
         {
             if (info==null) 
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
 
             UnitySerializationHolder.GetUnitySerializationInfo(info, this);
@@ -4774,7 +4774,7 @@ namespace System
         public override Object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
             if ((object)attributeType == null)
-                throw new ArgumentNullException("attributeType");
+                throw new ArgumentNullException(nameof(attributeType));
             Contract.EndContractBlock();
 
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
@@ -4789,7 +4789,7 @@ namespace System
         public override bool IsDefined(Type attributeType, bool inherit)
         {
             if ((object)attributeType == null)
-                throw new ArgumentNullException("attributeType");
+                throw new ArgumentNullException(nameof(attributeType));
             Contract.EndContractBlock();
 
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;

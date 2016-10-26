@@ -77,9 +77,9 @@ namespace Microsoft.Win32 {
         internal static Variant ChangeType(Variant source, Type targetClass, short options, CultureInfo culture)
         {
             if (targetClass == null)
-                throw new ArgumentNullException("targetClass");
+                throw new ArgumentNullException(nameof(targetClass));
             if (culture == null)
-                throw new ArgumentNullException("culture");
+                throw new ArgumentNullException(nameof(culture));
             Variant result = new Variant ();
             ChangeTypeEx(ref result, ref source, 
 #if FEATURE_USE_LCID

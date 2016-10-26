@@ -26,7 +26,7 @@ namespace System.Runtime.Versioning {
         public TargetFrameworkAttribute(String frameworkName)
         {
             if (frameworkName == null)
-                throw new ArgumentNullException("frameworkName");
+                throw new ArgumentNullException(nameof(frameworkName));
             Contract.EndContractBlock();
             _frameworkName = frameworkName;
         }

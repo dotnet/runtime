@@ -49,7 +49,7 @@ namespace System.Text
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 Contract.EndContractBlock();
 
                 // Can't change fallback if buffer is wrong
@@ -131,7 +131,7 @@ namespace System.Text
         {
             // Validate input parameters
             if (bytes == null)
-                throw new ArgumentNullException("bytes",
+                throw new ArgumentNullException(nameof(bytes),
                       Environment.GetResourceString("ArgumentNull_Array"));
 
             if (count < 0)
@@ -197,7 +197,7 @@ namespace System.Text
         {
             // Validate input parameters
             if (chars == null || bytes == null)
-                throw new ArgumentNullException(chars == null ? "chars" : "bytes",
+                throw new ArgumentNullException(chars == null ? nameof(chars) : nameof(bytes),
                     Environment.GetResourceString("ArgumentNull_Array"));
 
             if (byteCount < 0 || charCount < 0)
@@ -256,7 +256,7 @@ namespace System.Text
         {
             // Validate parameters
             if (bytes == null || chars == null)
-                throw new ArgumentNullException((bytes == null ? "bytes" : "chars"),
+                throw new ArgumentNullException((bytes == null ? nameof(bytes) : nameof(chars)),
                       Environment.GetResourceString("ArgumentNull_Array"));
 
             if (byteIndex < 0 || byteCount < 0)
@@ -315,7 +315,7 @@ namespace System.Text
         {
             // Validate input parameters
             if (chars == null || bytes == null)
-                throw new ArgumentNullException(chars == null ? "chars" : "bytes",
+                throw new ArgumentNullException(chars == null ? nameof(chars) : nameof(bytes),
                     Environment.GetResourceString("ArgumentNull_Array"));
 
             if (byteCount < 0 || charCount < 0)

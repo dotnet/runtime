@@ -141,7 +141,7 @@ namespace System {
         {
             // Is the array present?
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
 
             // Is it of primitive types?
             if (!IsPrimitiveTypeArray(array))
@@ -169,7 +169,7 @@ namespace System {
         {
             // Is the array present?
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
 
             // Is it of primitive types?
             if (!IsPrimitiveTypeArray(array))
@@ -199,7 +199,7 @@ namespace System {
         {
             // Is the array present?
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
 
             // Is it of primitive types?
             if (!IsPrimitiveTypeArray(array))
