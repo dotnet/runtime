@@ -910,6 +910,7 @@ namespace Microsoft.Win32 {
         [DllImport(KERNEL32, SetLastError = true, CharSet = CharSet.Unicode, ExactSpelling = true)]
         internal static extern uint GetLongPathNameW(string lpszShortPath, SafeHandle lpszLongPath, uint cchBuffer);
 
+#if !FEATURE_CORECLR
         // Disallow access to all non-file devices from methods that take
         // a String.  This disallows DOS devices like "con:", "com1:", 
         // "lpt1:", etc.  Use this to avoid security problems, like allowing
@@ -935,7 +936,7 @@ namespace Microsoft.Win32 {
             }
 
             return handle;
-        }            
+        }
 
         [System.Security.SecurityCritical]  // auto-generated
         internal static SafeFileHandle UnsafeCreateFile(String lpFileName,
@@ -948,8 +949,8 @@ namespace Microsoft.Win32 {
                                 dwFlagsAndAttributes, hTemplateFile );
 
             return handle;
-        }            
-    
+        }
+
         // Do not use these directly, use the safe or unsafe versions above.
         // The safe version does not support devices (aka if will only open
         // files on disk), while the unsafe version give you the full semantic
@@ -959,6 +960,7 @@ namespace Microsoft.Win32 {
                     int dwDesiredAccess, System.IO.FileShare dwShareMode,
                     SECURITY_ATTRIBUTES securityAttrs, System.IO.FileMode dwCreationDisposition,
                     int dwFlagsAndAttributes, IntPtr hTemplateFile);
+#endif
 
         [DllImport(KERNEL32, SetLastError=true, CharSet=CharSet.Auto, BestFitMapping=false)]
         internal static extern SafeFileMappingHandle CreateFileMapping(SafeFileHandle hFile, IntPtr lpAttributes, uint fProtect, uint dwMaximumSizeHigh, uint dwMaximumSizeLow, String lpName);

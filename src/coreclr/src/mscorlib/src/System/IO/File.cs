@@ -36,6 +36,11 @@ namespace System.IO {
     [ComVisible(true)]
     public static class File
     {
+        internal const int GENERIC_READ = unchecked((int)0x80000000);
+        private const int GENERIC_WRITE = unchecked((int)0x40000000);
+        private const int FILE_SHARE_WRITE = 0x00000002;
+        private const int FILE_SHARE_DELETE = 0x00000004;
+
         private const int GetFileExInfoStandard = 0;
 
         public static StreamReader OpenText(String path)
@@ -156,13 +161,15 @@ namespace System.IO {
                 String fileName = destFileName;
 
                 if (errorCode != Win32Native.ERROR_FILE_EXISTS) {
+#if !FEATURE_CORECLR
                     // For a number of error codes (sharing violation, path 
                     // not found, etc) we don't know if the problem was with
                     // the source or dest file.  Try reading the source file.
-                    using(SafeFileHandle handle = Win32Native.UnsafeCreateFile(fullSourceFileName, FileStream.GENERIC_READ, FileShare.Read, null, FileMode.Open, 0, IntPtr.Zero)) {
+                    using(SafeFileHandle handle = Win32Native.UnsafeCreateFile(fullSourceFileName, GENERIC_READ, FileShare.Read, null, FileMode.Open, 0, IntPtr.Zero)) {
                         if (handle.IsInvalid)
                             fileName = sourceFileName;
                     }
+#endif // !FEATURE_CORECLR
 
                     if (errorCode == Win32Native.ERROR_ACCESS_DENIED) {
                         if (Directory.InternalExists(fullDestFileName))
@@ -397,6 +404,7 @@ namespace System.IO {
             return new FileStream(path, mode, access, share);
         }
 
+#if !FEATURE_CORECLR
         public static void SetCreationTime(String path, DateTime creationTime)
         {
             SetCreationTimeUtc(path, creationTime.ToUniversalTime());
@@ -416,6 +424,7 @@ namespace System.IO {
                 }
             }
         }
+#endif // !FEATURE_CORECLR
 
         [System.Security.SecuritySafeCritical]
         public static DateTime GetCreationTime(String path)
@@ -452,6 +461,7 @@ namespace System.IO {
             return DateTime.FromFileTimeUtc(dt);
         }
 
+#if !FEATURE_CORECLR
         public static void SetLastAccessTime(String path, DateTime lastAccessTime)
         {
             SetLastAccessTimeUtc(path, lastAccessTime.ToUniversalTime());
@@ -471,6 +481,7 @@ namespace System.IO {
                 }
             }
         }
+#endif // FEATURE_CORECLR
 
         [System.Security.SecuritySafeCritical]
         public static DateTime GetLastAccessTime(String path)
@@ -507,6 +518,7 @@ namespace System.IO {
             return DateTime.FromFileTimeUtc(dt);
         }
 
+#if !FEATURE_CORECLR
         public static void SetLastWriteTime(String path, DateTime lastWriteTime)
         {
             SetLastWriteTimeUtc(path, lastWriteTime.ToUniversalTime());
@@ -526,6 +538,7 @@ namespace System.IO {
                 }
             }
         }
+#endif // !FEATURE_CORECLR
 
         [System.Security.SecuritySafeCritical]
         public static DateTime GetLastWriteTime(String path)
@@ -581,11 +594,11 @@ namespace System.IO {
             return (FileAttributes) data.fileAttributes;
         }
 
-        #if FEATURE_CORECLR
+#if FEATURE_CORECLR
         [System.Security.SecurityCritical] 
-        #else
+#else
         [System.Security.SecuritySafeCritical]
-        #endif
+#endif
         public static void SetAttributes(String path, FileAttributes fileAttributes) 
         {
             String fullPath = Path.GetFullPathInternal(path);
@@ -1223,6 +1236,7 @@ namespace System.IO {
             return dataInitialised;
         }
 
+#if !FEATURE_CORECLR
         [System.Security.SecurityCritical]  // auto-generated
         private static FileStream OpenFile(String path, FileAccess access, out SafeFileHandle handle)
         {
@@ -1246,6 +1260,7 @@ namespace System.IO {
             }
             return fs;
         }
+#endif // !FEATURE_CORECLR
 
 
          // Defined in WinError.h
