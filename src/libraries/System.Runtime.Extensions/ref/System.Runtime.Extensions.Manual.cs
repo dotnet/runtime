@@ -14,4 +14,11 @@ namespace System
         public const double PI = 3.14159265358979323846;
         public const double E = 2.7182818284590452354;
     }
+#if netcoreapp11
+    public static partial class MathF
+    {
+        public const float PI = 3.14159265f;
+        public const float E = 2.71828183f;
+    }
+#endif
 }
