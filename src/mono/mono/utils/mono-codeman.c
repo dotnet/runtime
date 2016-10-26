@@ -329,7 +329,7 @@ new_codechunk (CodeChunk *last, int dynamic, int size)
 {
 	int minsize, flags = CODE_FLAG_MMAP;
 	int chunk_size, bsize = 0;
-	int pagesize;
+	int pagesize, valloc_granule;
 	CodeChunk *chunk;
 	void *ptr;
 
@@ -338,12 +338,13 @@ new_codechunk (CodeChunk *last, int dynamic, int size)
 #endif
 
 	pagesize = mono_pagesize ();
+	valloc_granule = mono_valloc_granule ();
 
 	if (dynamic) {
 		chunk_size = size;
 		flags = CODE_FLAG_MALLOC;
 	} else {
-		minsize = pagesize * MIN_PAGES;
+		minsize = MAX (pagesize * MIN_PAGES, valloc_granule);
 		if (size < minsize)
 			chunk_size = minsize;
 		else {
@@ -353,8 +354,8 @@ new_codechunk (CodeChunk *last, int dynamic, int size)
 			size += MIN_ALIGN - 1;
 			size &= ~(MIN_ALIGN - 1);
 			chunk_size = size;
-			chunk_size += pagesize - 1;
-			chunk_size &= ~ (pagesize - 1);
+			chunk_size += valloc_granule - 1;
+			chunk_size &= ~ (valloc_granule - 1);
 		}
 	}
 #ifdef BIND_ROOM
@@ -370,8 +371,8 @@ new_codechunk (CodeChunk *last, int dynamic, int size)
 	if (chunk_size - size < bsize) {
 		chunk_size = size + bsize;
 		if (!dynamic) {
-			chunk_size += pagesize - 1;
-			chunk_size &= ~ (pagesize - 1);
+			chunk_size += valloc_granule - 1;
+			chunk_size &= ~ (valloc_granule - 1);
 		}
 	}
 #endif
