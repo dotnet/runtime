@@ -762,7 +762,7 @@ namespace System {
             if ((decimals < 0) || (decimals > 28))
                 throw new ArgumentOutOfRangeException("decimals", Environment.GetResourceString("ArgumentOutOfRange_DecimalRound"));
             if (mode < MidpointRounding.ToEven || mode > MidpointRounding.AwayFromZero) {            
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidEnumValue", mode, "MidpointRounding"), "mode");
+                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidEnumValue", mode, nameof(MidpointRounding)), nameof(mode));
             }
             Contract.EndContractBlock();
 

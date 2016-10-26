@@ -87,12 +87,12 @@ namespace System {
         public DateTimeOffset(DateTime dateTime, TimeSpan offset) {
             if (dateTime.Kind == DateTimeKind.Local) {
                 if (offset != TimeZoneInfo.GetLocalUtcOffset(dateTime, TimeZoneInfoOptions.NoThrowOnInvalidTime)) {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_OffsetLocalMismatch"), "offset");
+                    throw new ArgumentException(Environment.GetResourceString("Argument_OffsetLocalMismatch"), nameof(offset));
                 }
             }
             else if (dateTime.Kind == DateTimeKind.Utc) {
                 if (offset != TimeSpan.Zero) {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_OffsetUtcMismatch"), "offset");
+                    throw new ArgumentException(Environment.GetResourceString("Argument_OffsetUtcMismatch"), nameof(offset));
                 }
             }
             m_offsetMinutes = ValidateOffset(offset);
@@ -739,7 +739,7 @@ namespace System {
         private static Int16 ValidateOffset(TimeSpan offset) {
             Int64 ticks = offset.Ticks;
             if (ticks % TimeSpan.TicksPerMinute != 0) {
-                throw new ArgumentException(Environment.GetResourceString("Argument_OffsetPrecision"), "offset");
+                throw new ArgumentException(Environment.GetResourceString("Argument_OffsetPrecision"), nameof(offset));
             }
             if (ticks < MinOffset || ticks > MaxOffset) {
                 throw new ArgumentOutOfRangeException("offset", Environment.GetResourceString("Argument_OffsetOutOfRange"));

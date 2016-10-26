@@ -1602,7 +1602,7 @@ namespace System.Text {
             }
             if (oldValue.Length == 0)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "oldValue");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(oldValue));
             }
 
             if (newValue == null)

@@ -538,7 +538,7 @@ namespace System.IO {
             if (destDirName==null)
                 throw new ArgumentNullException(nameof(destDirName));
             if (destDirName.Length==0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), "destDirName");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), nameof(destDirName));
             Contract.EndContractBlock();
             
 #if FEATURE_CORECLR

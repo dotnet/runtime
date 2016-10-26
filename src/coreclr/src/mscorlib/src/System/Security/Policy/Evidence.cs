@@ -357,7 +357,7 @@ namespace System.Security.Policy
             if (id == null)
                 throw new ArgumentNullException(nameof(id));
             if (!id.GetType().IsSerializable)
-                throw new ArgumentException(Environment.GetResourceString("Policy_EvidenceMustBeSerializable"), "id");
+                throw new ArgumentException(Environment.GetResourceString("Policy_EvidenceMustBeSerializable"), nameof(id));
             Contract.EndContractBlock();
 
             if (m_locked)
@@ -379,7 +379,7 @@ namespace System.Security.Policy
             if (id == null)
                 throw new ArgumentNullException(nameof(id));
             if (!id.GetType().IsSerializable)
-                throw new ArgumentException(Environment.GetResourceString("Policy_EvidenceMustBeSerializable"), "id");
+                throw new ArgumentException(Environment.GetResourceString("Policy_EvidenceMustBeSerializable"), nameof(id));
             Contract.EndContractBlock();
 
             EvidenceBase evidence = WrapLegacyEvidence(id);

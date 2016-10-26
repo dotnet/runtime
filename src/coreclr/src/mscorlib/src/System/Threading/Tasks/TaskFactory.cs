@@ -2489,7 +2489,7 @@ namespace System.Threading.Tasks
             for(int i=0; i<numTasks; i++)
             {
                 var task = tasks[i];
-                if (task == null) throw new ArgumentException(Environment.GetResourceString("Task_MultiTaskContinuation_NullTask"), "tasks");
+                if (task == null) throw new ArgumentException(Environment.GetResourceString("Task_MultiTaskContinuation_NullTask"), nameof(tasks));
 
                 if (checkArgsOnly) continue;
 
@@ -3131,7 +3131,7 @@ namespace System.Threading.Tasks
             if (tasks == null)
                 throw new ArgumentNullException(nameof(tasks));
             if (tasks.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Task_MultiTaskContinuation_EmptyTaskList"), "tasks");
+                throw new ArgumentException(Environment.GetResourceString("Task_MultiTaskContinuation_EmptyTaskList"), nameof(tasks));
             Contract.EndContractBlock();
 
             Task[] tasksCopy = new Task[tasks.Length];
@@ -3140,7 +3140,7 @@ namespace System.Threading.Tasks
                 tasksCopy[i] = tasks[i];
 
                 if (tasksCopy[i] == null)
-                    throw new ArgumentException(Environment.GetResourceString("Task_MultiTaskContinuation_NullTask"), "tasks");
+                    throw new ArgumentException(Environment.GetResourceString("Task_MultiTaskContinuation_NullTask"), nameof(tasks));
             }
 
             return tasksCopy;
@@ -3151,7 +3151,7 @@ namespace System.Threading.Tasks
             if (tasks == null)
                 throw new ArgumentNullException(nameof(tasks));
             if (tasks.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Task_MultiTaskContinuation_EmptyTaskList"), "tasks");
+                throw new ArgumentException(Environment.GetResourceString("Task_MultiTaskContinuation_EmptyTaskList"), nameof(tasks));
             Contract.EndContractBlock();
 
             Task<TResult>[] tasksCopy = new Task<TResult>[tasks.Length];
@@ -3160,7 +3160,7 @@ namespace System.Threading.Tasks
                 tasksCopy[i] = tasks[i];
 
                 if (tasksCopy[i] == null)
-                    throw new ArgumentException(Environment.GetResourceString("Task_MultiTaskContinuation_NullTask"), "tasks");
+                    throw new ArgumentException(Environment.GetResourceString("Task_MultiTaskContinuation_NullTask"), nameof(tasks));
             }
 
             return tasksCopy;

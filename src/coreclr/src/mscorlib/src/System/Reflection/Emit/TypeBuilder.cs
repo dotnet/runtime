@@ -105,13 +105,13 @@ namespace System.Reflection.Emit {
             // if we wanted to but that just complicates things so these checks are designed to prevent that scenario.
             
             if (method.IsGenericMethod && !method.IsGenericMethodDefinition)
-                throw new ArgumentException(Environment.GetResourceString("Argument_NeedGenericMethodDefinition"), "method");
+                throw new ArgumentException(Environment.GetResourceString("Argument_NeedGenericMethodDefinition"), nameof(method));
         
             if (method.DeclaringType == null || !method.DeclaringType.IsGenericTypeDefinition)
-                throw new ArgumentException(Environment.GetResourceString("Argument_MethodNeedGenericDeclaringType"), "method");
+                throw new ArgumentException(Environment.GetResourceString("Argument_MethodNeedGenericDeclaringType"), nameof(method));
         
             if (type.GetGenericTypeDefinition() != method.DeclaringType)
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidMethodDeclaringType"), "type");
+                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidMethodDeclaringType"), nameof(type));
             Contract.EndContractBlock();
 
             // The following converts from Type or TypeBuilder of G<T> to TypeBuilderInstantiation G<T>. These types
@@ -121,7 +121,7 @@ namespace System.Reflection.Emit {
                 type = type.MakeGenericType(type.GetGenericArguments());
         
             if (!(type is TypeBuilderInstantiation))
-                throw new ArgumentException(Environment.GetResourceString("Argument_NeedNonGenericType"), "type");
+                throw new ArgumentException(Environment.GetResourceString("Argument_NeedNonGenericType"), nameof(type));
 
             return MethodOnTypeBuilderInstantiation.GetMethod(method, type as TypeBuilderInstantiation);
         }
@@ -131,18 +131,18 @@ namespace System.Reflection.Emit {
                 throw new ArgumentException(Environment.GetResourceString("Argument_MustBeTypeBuilder"));
 
             if (!constructor.DeclaringType.IsGenericTypeDefinition)
-                throw new ArgumentException(Environment.GetResourceString("Argument_ConstructorNeedGenericDeclaringType"), "constructor");
+                throw new ArgumentException(Environment.GetResourceString("Argument_ConstructorNeedGenericDeclaringType"), nameof(constructor));
             Contract.EndContractBlock();
         
             if (!(type is TypeBuilderInstantiation))
-                throw new ArgumentException(Environment.GetResourceString("Argument_NeedNonGenericType"), "type");
+                throw new ArgumentException(Environment.GetResourceString("Argument_NeedNonGenericType"), nameof(type));
 
             // TypeBuilder G<T> ==> TypeBuilderInstantiation G<T>
             if (type is TypeBuilder && type.IsGenericTypeDefinition)
                 type = type.MakeGenericType(type.GetGenericArguments());
 
             if (type.GetGenericTypeDefinition() != constructor.DeclaringType)
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidConstructorDeclaringType"), "type");
+                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidConstructorDeclaringType"), nameof(type));
 
             return ConstructorOnTypeBuilderInstantiation.GetConstructor(constructor, type as TypeBuilderInstantiation);
         }
@@ -152,18 +152,18 @@ namespace System.Reflection.Emit {
                 throw new ArgumentException(Environment.GetResourceString("Argument_MustBeTypeBuilder"));
 
             if (!field.DeclaringType.IsGenericTypeDefinition)
-                throw new ArgumentException(Environment.GetResourceString("Argument_FieldNeedGenericDeclaringType"), "field");
+                throw new ArgumentException(Environment.GetResourceString("Argument_FieldNeedGenericDeclaringType"), nameof(field));
             Contract.EndContractBlock();
         
             if (!(type is TypeBuilderInstantiation))
-                throw new ArgumentException(Environment.GetResourceString("Argument_NeedNonGenericType"), "type");
+                throw new ArgumentException(Environment.GetResourceString("Argument_NeedNonGenericType"), nameof(type));
 
             // TypeBuilder G<T> ==> TypeBuilderInstantiation G<T>
             if (type is TypeBuilder && type.IsGenericTypeDefinition)
                 type = type.MakeGenericType(type.GetGenericArguments());
 
             if (type.GetGenericTypeDefinition() != field.DeclaringType)
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidFieldDeclaringType"), "type");
+                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidFieldDeclaringType"), nameof(type));
 
             return FieldOnTypeBuilderInstantiation.GetField(field, type as TypeBuilderInstantiation);
         }
@@ -598,14 +598,14 @@ namespace System.Reflection.Emit {
                 throw new ArgumentNullException(nameof(fullname));
 
             if (fullname.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "fullname");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(fullname));
 
             if (fullname[0] == '\0')
-                throw new ArgumentException(Environment.GetResourceString("Argument_IllegalName"), "fullname");
+                throw new ArgumentException(Environment.GetResourceString("Argument_IllegalName"), nameof(fullname));
 
 
             if (fullname.Length > 1023)
-                throw new ArgumentException(Environment.GetResourceString("Argument_TypeNameTooLong"), "fullname");
+                throw new ArgumentException(Environment.GetResourceString("Argument_TypeNameTooLong"), nameof(fullname));
             Contract.EndContractBlock();
 
             int i;
@@ -621,7 +621,7 @@ namespace System.Reflection.Emit {
                 // Nested Type should have nested attribute set.
                 // If we are renumbering TypeAttributes' bit, we need to change the logic here.
                 if (((attr & TypeAttributes.VisibilityMask) == TypeAttributes.Public) ||((attr & TypeAttributes.VisibilityMask) == TypeAttributes.NotPublic))
-                    throw new ArgumentException(Environment.GetResourceString("Argument_BadNestedTypeFlags"), "attr");
+                    throw new ArgumentException(Environment.GetResourceString("Argument_BadNestedTypeFlags"), nameof(attr));
             }
 
             int[] interfaceTokens = null;
@@ -744,19 +744,19 @@ namespace System.Reflection.Emit {
                 throw new ArgumentNullException(nameof(name));
 
             if (name.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(name));
 
             if (dllName == null)
                 throw new ArgumentNullException(nameof(dllName));
 
             if (dllName.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "dllName");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(dllName));
 
             if (importName == null)
                 throw new ArgumentNullException(nameof(importName));
 
             if (importName.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "importName");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(importName));
 
             if ((attributes & MethodAttributes.Abstract) != 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_BadPInvokeMethod"));
@@ -843,7 +843,7 @@ namespace System.Reflection.Emit {
                 throw new ArgumentNullException(nameof(name));
 
             if (name.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(name));
 
             if (size <= 0 || size >= 0x003f0000)
                 throw new ArgumentException(Environment.GetResourceString("Argument_BadSizeForData"));
@@ -1514,7 +1514,7 @@ namespace System.Reflection.Emit {
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
             if (attributeRuntimeType == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),"attributeType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(m_bakedRuntimeType, attributeRuntimeType, inherit);
         }
@@ -1686,7 +1686,7 @@ namespace System.Reflection.Emit {
                 throw new ArgumentNullException(nameof(name));
 
             if (name.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(name));
             Contract.Ensures(Contract.Result<MethodBuilder>() != null);
             Contract.EndContractBlock();
 
@@ -1698,10 +1698,10 @@ namespace System.Reflection.Emit {
             if (parameterTypes != null)
             {
                 if (parameterTypeOptionalCustomModifiers != null && parameterTypeOptionalCustomModifiers.Length != parameterTypes.Length)
-                    throw new ArgumentException(Environment.GetResourceString("Argument_MismatchedArrays", "parameterTypeOptionalCustomModifiers", "parameterTypes"));
+                    throw new ArgumentException(Environment.GetResourceString("Argument_MismatchedArrays", "parameterTypeOptionalCustomModifiers", nameof(parameterTypes)));
 
                 if (parameterTypeRequiredCustomModifiers != null && parameterTypeRequiredCustomModifiers.Length != parameterTypes.Length)
-                    throw new ArgumentException(Environment.GetResourceString("Argument_MismatchedArrays", "parameterTypeRequiredCustomModifiers", "parameterTypes"));
+                    throw new ArgumentException(Environment.GetResourceString("Argument_MismatchedArrays", "parameterTypeRequiredCustomModifiers", nameof(parameterTypes)));
             }
 
             ThrowIfCreated();
@@ -2153,7 +2153,7 @@ namespace System.Reflection.Emit {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(name));
             Contract.EndContractBlock();
 
             CheckContext(returnType);
@@ -2210,9 +2210,9 @@ namespace System.Reflection.Emit {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(name));
             if (name[0] == '\0')
-                throw new ArgumentException(Environment.GetResourceString("Argument_IllegalName"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_IllegalName"), nameof(name));
             Contract.EndContractBlock();
 
             int tkType;

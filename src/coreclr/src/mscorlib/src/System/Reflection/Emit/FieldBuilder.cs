@@ -37,10 +37,10 @@ namespace System.Reflection.Emit
                 throw new ArgumentNullException(nameof(fieldName));
 
             if (fieldName.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "fieldName");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(fieldName));
 
             if (fieldName[0] == '\0')
-                throw new ArgumentException(Environment.GetResourceString("Argument_IllegalName"), "fieldName");
+                throw new ArgumentException(Environment.GetResourceString("Argument_IllegalName"), nameof(fieldName));
 
             if (type == null)
                 throw new ArgumentNullException(nameof(type));

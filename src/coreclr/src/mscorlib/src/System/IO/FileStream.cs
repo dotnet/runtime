@@ -889,7 +889,7 @@ namespace System.IO {
         public FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync) {
             // To ensure we don't leak a handle, put it in a SafeFileHandle first
             if (handle.IsInvalid)
-                throw new ArgumentException(Environment.GetResourceString("Arg_InvalidHandle"), "handle");
+                throw new ArgumentException(Environment.GetResourceString("Arg_InvalidHandle"), nameof(handle));
             Contract.EndContractBlock();
 
             _handle = handle;

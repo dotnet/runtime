@@ -608,7 +608,7 @@ namespace System.IO {
                     throw new ArgumentOutOfRangeException("position", Environment.GetResourceString("ArgumentOutOfRange_PositionLessThanCapacityRequired"));
                 }
                 else {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_NotEnoughBytesToRead", typeof(T).FullName), "position");
+                    throw new ArgumentException(Environment.GetResourceString("Argument_NotEnoughBytesToRead", typeof(T).FullName), nameof(position));
                 }
             }
 
@@ -1123,7 +1123,7 @@ namespace System.IO {
                     throw new ArgumentOutOfRangeException("position", Environment.GetResourceString("ArgumentOutOfRange_PositionLessThanCapacityRequired"));
                 }
                 else {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_NotEnoughBytesToWrite", typeof(T).FullName), "position");
+                    throw new ArgumentException(Environment.GetResourceString("Argument_NotEnoughBytesToWrite", typeof(T).FullName), nameof(position));
                 }
             }
 
@@ -1225,7 +1225,7 @@ namespace System.IO {
                     throw new ArgumentOutOfRangeException("position", Environment.GetResourceString("ArgumentOutOfRange_PositionLessThanCapacityRequired"));
                 }
                 else {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_NotEnoughBytesToRead"), "position");
+                    throw new ArgumentException(Environment.GetResourceString("Argument_NotEnoughBytesToRead"), nameof(position));
                 }
             }
         }
@@ -1246,7 +1246,7 @@ namespace System.IO {
                     throw new ArgumentOutOfRangeException("position", Environment.GetResourceString("ArgumentOutOfRange_PositionLessThanCapacityRequired"));
                 }
                 else {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_NotEnoughBytesToWrite", "Byte"), "position");
+                    throw new ArgumentException(Environment.GetResourceString("Argument_NotEnoughBytesToWrite", nameof(Byte)), nameof(position));
                 }
             }
         }

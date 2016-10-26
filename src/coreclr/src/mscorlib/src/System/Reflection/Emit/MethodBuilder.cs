@@ -93,10 +93,10 @@ namespace System.Reflection.Emit
                 throw new ArgumentNullException(nameof(name));
 
             if (name.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(name));
 
             if (name[0] == '\0')
-                throw new ArgumentException(Environment.GetResourceString("Argument_IllegalName"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_IllegalName"), nameof(name));
 
             if (mod == null)
                 throw new ArgumentNullException(nameof(mod));
@@ -708,7 +708,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentNullException(nameof(names));
 
             if (names.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Arg_EmptyArray"), "names");
+                throw new ArgumentException(Environment.GetResourceString("Arg_EmptyArray"), nameof(names));
             Contract.EndContractBlock();
 
             if (m_inst != null)
@@ -1517,7 +1517,7 @@ namespace System.Reflection.Emit
             // and we can't check for valid tokens until the module is baked.
             if (kind == ExceptionHandlingClauseOptions.Clause && (exceptionTypeToken & 0x00FFFFFF) == 0)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidTypeToken", exceptionTypeToken), "exceptionTypeToken");
+                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidTypeToken", exceptionTypeToken), nameof(exceptionTypeToken));
             }
 
             Contract.EndContractBlock();

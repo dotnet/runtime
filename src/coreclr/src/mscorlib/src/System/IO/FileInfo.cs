@@ -234,7 +234,7 @@ namespace System.IO {
             if (destFileName == null)
                 throw new ArgumentNullException(nameof(destFileName), Environment.GetResourceString("ArgumentNull_FileName"));
             if (destFileName.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), "destFileName");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), nameof(destFileName));
             Contract.EndContractBlock();
 
             destFileName = File.InternalCopy(FullPath, destFileName, false, true);
@@ -255,7 +255,7 @@ namespace System.IO {
             if (destFileName == null)
                 throw new ArgumentNullException(nameof(destFileName), Environment.GetResourceString("ArgumentNull_FileName"));
             if (destFileName.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), "destFileName");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), nameof(destFileName));
             Contract.EndContractBlock();
 
             destFileName = File.InternalCopy(FullPath, destFileName, overwrite, true);
@@ -385,7 +385,7 @@ namespace System.IO {
             if (destFileName==null)
                 throw new ArgumentNullException(nameof(destFileName));
             if (destFileName.Length==0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), "destFileName");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), nameof(destFileName));
             Contract.EndContractBlock();
 
             String fullDestFileName = Path.GetFullPathInternal(destFileName);

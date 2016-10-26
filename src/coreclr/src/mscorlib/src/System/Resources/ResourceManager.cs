@@ -387,7 +387,7 @@ namespace System.Resources {
             BaseNameField = baseName;
     
             if (usingResourceSet != null && (usingResourceSet != _minResourceSet) && !(usingResourceSet.IsSubclassOf(_minResourceSet)))
-                throw new ArgumentException(Environment.GetResourceString("Arg_ResMgrNotResSet"), "usingResourceSet");
+                throw new ArgumentException(Environment.GetResourceString("Arg_ResMgrNotResSet"), nameof(usingResourceSet));
             _userResourceSet = usingResourceSet;
 
             CommonAssemblyInit();

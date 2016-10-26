@@ -39,7 +39,7 @@ namespace System {
             ParameterModifier[] modifiers, CultureInfo cultureInfo, String[] names, out Object state)
         {
             if (match == null || match.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Arg_EmptyArray"), "match");
+                throw new ArgumentException(Environment.GetResourceString("Arg_EmptyArray"), nameof(match));
             Contract.EndContractBlock();
 
             MethodBase[] candidates = (MethodBase[]) match.Clone();
@@ -524,13 +524,13 @@ namespace System {
             for (i=0;i<types.Length;i++) {
                 realTypes[i] = types[i].UnderlyingSystemType;
                 if (!(realTypes[i] is RuntimeType))
-                    throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),"types");
+                    throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),nameof(types));
             }
             types = realTypes;
             
             // We don't automatically jump out on exact match.
             if (match == null || match.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Arg_EmptyArray"), "match");
+                throw new ArgumentException(Environment.GetResourceString("Arg_EmptyArray"), nameof(match));
 
             MethodBase[] candidates = (MethodBase[]) match.Clone();
             
@@ -599,7 +599,7 @@ namespace System {
                 throw new ArgumentNullException(nameof(indexes));
             }
             if (match == null || match.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Arg_EmptyArray"), "match");
+                throw new ArgumentException(Environment.GetResourceString("Arg_EmptyArray"), nameof(match));
             Contract.EndContractBlock();
 
             PropertyInfo[] candidates = (PropertyInfo[]) match.Clone();

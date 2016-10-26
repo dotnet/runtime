@@ -91,7 +91,7 @@ namespace System.Security.Policy {
             List<StrongName> fullTrustList = new List<StrongName>();
             foreach (StrongName strongName in fullTrustAssemblies) {
                 if (strongName == null) {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_NullFullTrustAssembly"), "fullTrustAssemblies");
+                    throw new ArgumentException(Environment.GetResourceString("Argument_NullFullTrustAssembly"), nameof(fullTrustAssemblies));
                 }
 
                 fullTrustList.Add(new StrongName(strongName.PublicKey, strongName.Name, strongName.Version));

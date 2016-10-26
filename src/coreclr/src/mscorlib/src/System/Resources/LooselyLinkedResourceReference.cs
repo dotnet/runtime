@@ -40,9 +40,9 @@ namespace System.Resources {
             if (typeName == null)
                 throw new ArgumentNullException(nameof(typeName));
             if (looselyLinkedResourceName.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "looselyLinkedResourceName");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(looselyLinkedResourceName));
             if (typeName.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "typeName");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(typeName));
             Contract.EndContractBlock();
             
             _manifestResourceName = looselyLinkedResourceName;

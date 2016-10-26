@@ -1529,7 +1529,7 @@ namespace System {
             Type valueType = value.GetType();
 
             if (!(valueType.IsEnum || Type.IsIntegerType(valueType)))
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnumBaseTypeOrEnum"), "value");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnumBaseTypeOrEnum"), nameof(value));
 
             Array values = GetEnumRawConstantValues();
             int index = BinarySearch(values, value);
