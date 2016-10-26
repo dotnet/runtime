@@ -401,6 +401,55 @@ static void LogR2r(const char *msg, PEFile *pFile)
 
 #define DoLog(msg) if (s_r2rLogFile != NULL) LogR2r(msg, pFile)
 
+// Try to acquire an R2R image for exclusive use by a particular module.
+// Returns true if successful. Returns false if the image is already been used
+// by another module. Each R2R image has a space to store a pointer to the
+// module that owns it. We set this pointer unless it has already be
+// initialized to point to another Module.
+static bool AcquireImage(Module * pModule, PEImageLayout * pLayout, READYTORUN_HEADER * pHeader)
+{
+    STANDARD_VM_CONTRACT;
+
+    // First find the import sections of the image.
+    READYTORUN_IMPORT_SECTION * pImportSections = NULL;
+    READYTORUN_IMPORT_SECTION * pImportSectionsEnd = NULL;
+    READYTORUN_SECTION * pSections = (READYTORUN_SECTION*)(pHeader + 1);
+    for (DWORD i = 0; i < pHeader->NumberOfSections; i++)
+    {
+        if (pSections[i].Type == READYTORUN_SECTION_IMPORT_SECTIONS)
+        {
+            pImportSections = (READYTORUN_IMPORT_SECTION*)((PBYTE)pLayout->GetBase() + pSections[i].Section.VirtualAddress);
+            pImportSectionsEnd = (READYTORUN_IMPORT_SECTION*)((PBYTE)pImportSections + pSections[i].Section.Size);
+            break;
+        }
+    }
+
+    // Go through the import sections to find the import for the module pointer.
+    for (READYTORUN_IMPORT_SECTION * pCurSection = pImportSections; pCurSection < pImportSectionsEnd; pCurSection++)
+    {
+        // The import for the module pointer is always in an eager fixup section, so skip delayed fixup sections.
+        if ((pCurSection->Flags & READYTORUN_IMPORT_SECTION_FLAGS_EAGER) == 0)
+            continue;
+
+        // Found an eager fixup section. Check the signature of each fixup in this section.
+        PVOID *pFixups = (PVOID *)((PBYTE)pLayout->GetBase() + pCurSection->Section.VirtualAddress);
+        DWORD nFixups = pCurSection->Section.Size / sizeof(PVOID);
+        DWORD *pSignatures = (DWORD *)((PBYTE)pLayout->GetBase() + pCurSection->Signatures);
+        for (DWORD i = 0; i < nFixups; i++)
+        {
+            // See if we found the fixup for the Module pointer.
+            PBYTE pSig = (PBYTE)pLayout->GetBase() + pSignatures[i];
+            if (pSig[0] == READYTORUN_FIXUP_Helper && pSig[1] == READYTORUN_HELPER_Module)
+            {
+                Module * pPrevious = InterlockedCompareExchangeT(EnsureWritablePages((Module **)(pFixups + i)), pModule, NULL);
+                return pPrevious == NULL || pPrevious == pModule;
+            }
+        }
+    }
+
+    return false;
+}
+
 PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker *pamTracker)
 {
     STANDARD_VM_CONTRACT;
@@ -475,6 +524,12 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
     if (pHeader->MajorVersion > READYTORUN_MAJOR_VERSION)
     {
         DoLog("Ready to Run disabled - unsupported header version");
+        return NULL;
+    }
+
+    if (!AcquireImage(pModule, pLayout, pHeader))
+    {
+        DoLog("Ready to Run disabled - module already loaded in another AppDomain");
         return NULL;
     }
 
