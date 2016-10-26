@@ -70,3 +70,7 @@ clean-local:
 	-rm -rf build-static
 	-rm -rf build-shared
 
+if DYNAMIC_BTLS
+install-exec-local:
+	$(install_sh) build-shared/libmono-btls-shared.* "$(DESTDIR)/$(libdir)"
+endif
