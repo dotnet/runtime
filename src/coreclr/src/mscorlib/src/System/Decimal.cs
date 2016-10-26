@@ -264,7 +264,7 @@ namespace System {
 
         private void SetBits(int[] bits) {
             if (bits==null)
-                throw new ArgumentNullException("bits");
+                throw new ArgumentNullException(nameof(bits));
             Contract.EndContractBlock();
             if (bits.Length == 4) {
                 int f = bits[3];

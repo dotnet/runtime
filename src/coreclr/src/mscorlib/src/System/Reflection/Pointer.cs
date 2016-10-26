@@ -41,7 +41,7 @@ namespace System.Reflection {
         [System.Security.SecurityCritical]  // auto-generated
         public static unsafe Object Box(void *ptr,Type type) {
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             if (!type.IsPointer)
                 throw new ArgumentException(Environment.GetResourceString("Arg_MustBePointer"),"ptr");
             Contract.EndContractBlock();

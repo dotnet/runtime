@@ -81,7 +81,7 @@ namespace System.Runtime.CompilerServices
             private static void QueueContinuation(Action continuation, bool flowContext)
             {
                 // Validate arguments
-                if (continuation == null) throw new ArgumentNullException("continuation");
+                if (continuation == null) throw new ArgumentNullException(nameof(continuation));
                 Contract.EndContractBlock();
 
                 if (TplEtwProvider.Log.IsEnabled())

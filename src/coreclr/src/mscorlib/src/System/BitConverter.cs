@@ -358,7 +358,7 @@ namespace System {
         // Converts an array of bytes into a String.  
         public static String ToString (byte[] value, int startIndex, int length) {            
             if (value == null) {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
 
             if (startIndex < 0 || startIndex >= value.Length && startIndex > 0) {  // Don't throw for a 0 length array.
@@ -402,7 +402,7 @@ namespace System {
         // Converts an array of bytes into a String.  
         public static String ToString(byte [] value) {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             Contract.Ensures(Contract.Result<String>() != null);            
             Contract.EndContractBlock();
             return ToString(value, 0, value.Length);
@@ -411,7 +411,7 @@ namespace System {
         // Converts an array of bytes into a String.  
         public static String ToString (byte [] value, int startIndex) {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             Contract.Ensures(Contract.Result<String>() != null);
             Contract.EndContractBlock();
             return ToString(value, startIndex, value.Length - startIndex);
@@ -428,7 +428,7 @@ namespace System {
         // Converts an array of bytes into a boolean.  
         public static bool ToBoolean(byte[] value, int startIndex) {
             if (value==null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             if (startIndex < 0)
                 throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (startIndex > value.Length - 1)

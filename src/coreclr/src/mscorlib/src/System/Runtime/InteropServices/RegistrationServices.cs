@@ -96,7 +96,7 @@ namespace System.Runtime.InteropServices {
         {
             // Validate the arguments.
             if (assembly == null)
-                throw new ArgumentNullException("assembly");
+                throw new ArgumentNullException(nameof(assembly));
 
             if (assembly.ReflectionOnly)
                 throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_AsmLoadedForReflectionOnly"));
@@ -159,7 +159,7 @@ namespace System.Runtime.InteropServices {
         {
             // Validate the arguments.
             if (assembly == null)
-                throw new ArgumentNullException("assembly");
+                throw new ArgumentNullException(nameof(assembly));
 
             if (assembly.ReflectionOnly)
                 throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_AsmLoadedForReflectionOnly"));
@@ -219,7 +219,7 @@ namespace System.Runtime.InteropServices {
         {
             // Validate the arguments.
             if (assembly == null)
-                throw new ArgumentNullException("assembly");
+                throw new ArgumentNullException(nameof(assembly));
             Contract.EndContractBlock();
 
             if (!(assembly is RuntimeAssembly))
@@ -257,7 +257,7 @@ namespace System.Runtime.InteropServices {
         {
 #if FEATURE_COMINTEROP_MANAGED_ACTIVATION
             if(type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             Contract.EndContractBlock();
             if((type as RuntimeType) == null)
                 throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeType"),"type");
@@ -313,7 +313,7 @@ namespace System.Runtime.InteropServices {
         {
 #if FEATURE_COMINTEROP_MANAGED_ACTIVATION
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             Contract.EndContractBlock();
             if ((type as RuntimeType) == null)
                 throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeType"),"type");

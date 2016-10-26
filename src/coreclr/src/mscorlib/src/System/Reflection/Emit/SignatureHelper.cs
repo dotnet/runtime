@@ -199,7 +199,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentNullException("module");
 
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
 
             return new SignatureHelper(mod, type);
         }
@@ -315,7 +315,7 @@ namespace System.Reflection.Emit
                     Type t = optionalCustomModifiers[i];
 
                     if (t == null)
-                        throw new ArgumentNullException("optionalCustomModifiers");
+                        throw new ArgumentNullException(nameof(optionalCustomModifiers));
 
                     if (t.HasElementType)
                         throw new ArgumentException(Environment.GetResourceString("Argument_ArraysInvalid"), "optionalCustomModifiers");
@@ -338,7 +338,7 @@ namespace System.Reflection.Emit
                     Type t = requiredCustomModifiers[i];
 
                     if (t == null)
-                        throw new ArgumentNullException("requiredCustomModifiers");
+                        throw new ArgumentNullException(nameof(requiredCustomModifiers));
 
                     if (t.HasElementType)
                         throw new ArgumentException(Environment.GetResourceString("Argument_ArraysInvalid"), "requiredCustomModifiers");
@@ -826,7 +826,7 @@ namespace System.Reflection.Emit
         public void AddArgument(Type argument, bool pinned)
         {
             if (argument == null)
-                throw new ArgumentNullException("argument");
+                throw new ArgumentNullException(nameof(argument));
 
             IncrementArgCounts();
             AddOneArgTypeHelper(argument, pinned);
@@ -858,7 +858,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(Environment.GetResourceString("Argument_SigIsFinalized"));
     
             if (argument == null)
-                throw new ArgumentNullException("argument");
+                throw new ArgumentNullException(nameof(argument));
 
             IncrementArgCounts();
     

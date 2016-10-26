@@ -46,10 +46,10 @@ namespace System {
         protected Delegate(Object target,String method)
         {
             if (target == null)
-                throw new ArgumentNullException("target");
+                throw new ArgumentNullException(nameof(target));
             
             if (method == null)
-                throw new ArgumentNullException("method");
+                throw new ArgumentNullException(nameof(method));
             Contract.EndContractBlock();
             
             // This API existed in v1/v1.1 and only expected to create closed
@@ -71,13 +71,13 @@ namespace System {
         protected unsafe Delegate(Type target,String method)
         {
             if (target == null)
-                throw new ArgumentNullException("target");
+                throw new ArgumentNullException(nameof(target));
 
             if (target.IsGenericType && target.ContainsGenericParameters)
                 throw new ArgumentException(Environment.GetResourceString("Arg_UnboundGenParam"), "target");
 
             if (method == null)
-                throw new ArgumentNullException("method");
+                throw new ArgumentNullException(nameof(method));
             Contract.EndContractBlock();
 
             RuntimeType rtTarget = target as RuntimeType;
@@ -354,11 +354,11 @@ namespace System {
         public static Delegate CreateDelegate(Type type, Object target, String method, bool ignoreCase, bool throwOnBindFailure)
         {
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             if (target == null)
-                throw new ArgumentNullException("target");
+                throw new ArgumentNullException(nameof(target));
             if (method == null)
-                throw new ArgumentNullException("method");
+                throw new ArgumentNullException(nameof(method));
             Contract.EndContractBlock();
 
             RuntimeType rtType = type as RuntimeType;
@@ -406,13 +406,13 @@ namespace System {
         public static Delegate CreateDelegate(Type type, Type target, String method, bool ignoreCase, bool throwOnBindFailure)
         {
             if (type == null)
-                    throw new ArgumentNullException("type");
+                    throw new ArgumentNullException(nameof(type));
             if (target == null)
-                throw new ArgumentNullException("target");
+                throw new ArgumentNullException(nameof(target));
             if (target.IsGenericType && target.ContainsGenericParameters)
                 throw new ArgumentException(Environment.GetResourceString("Arg_UnboundGenParam"), "target");
             if (method == null)
-                throw new ArgumentNullException("method");
+                throw new ArgumentNullException(nameof(method));
             Contract.EndContractBlock();
 
             RuntimeType rtType = type as RuntimeType;
@@ -449,9 +449,9 @@ namespace System {
         {
             // Validate the parameters.
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             if (method == null)
-                throw new ArgumentNullException("method");
+                throw new ArgumentNullException(nameof(method));
             Contract.EndContractBlock();
 
             RuntimeType rtType = type as RuntimeType;
@@ -500,9 +500,9 @@ namespace System {
         {
             // Validate the parameters.
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             if (method == null)
-                throw new ArgumentNullException("method");
+                throw new ArgumentNullException(nameof(method));
             Contract.EndContractBlock();
 
             RuntimeType rtType = type as RuntimeType;
@@ -571,11 +571,11 @@ namespace System {
         {
             // Validate the parameters.
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             Contract.EndContractBlock();
 
             if (method.IsNullHandle())
-                throw new ArgumentNullException("method");
+                throw new ArgumentNullException(nameof(method));
 
             RuntimeType rtType = type as RuntimeType;
             if (rtType == null)
@@ -605,9 +605,9 @@ namespace System {
         {
             // Validate the parameters.
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             if (method == null)
-                throw new ArgumentNullException("method");
+                throw new ArgumentNullException(nameof(method));
 
             Contract.EndContractBlock();
 

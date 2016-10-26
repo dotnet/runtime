@@ -41,7 +41,7 @@ namespace System.IO {
         public static StreamReader OpenText(String path)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             Contract.EndContractBlock();
             return new StreamReader(path);
         }
@@ -49,7 +49,7 @@ namespace System.IO {
         public static StreamWriter CreateText(String path)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             Contract.EndContractBlock();
             return new StreamWriter(path,false);
         }
@@ -57,7 +57,7 @@ namespace System.IO {
         public static StreamWriter AppendText(String path)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             Contract.EndContractBlock();
             return new StreamWriter(path,true);
         }
@@ -74,9 +74,9 @@ namespace System.IO {
         // 
         public static void Copy(String sourceFileName, String destFileName) {
             if (sourceFileName == null)
-                throw new ArgumentNullException("sourceFileName", Environment.GetResourceString("ArgumentNull_FileName"));
+                throw new ArgumentNullException(nameof(sourceFileName), Environment.GetResourceString("ArgumentNull_FileName"));
             if (destFileName == null)
-                throw new ArgumentNullException("destFileName", Environment.GetResourceString("ArgumentNull_FileName"));
+                throw new ArgumentNullException(nameof(destFileName), Environment.GetResourceString("ArgumentNull_FileName"));
             if (sourceFileName.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), "sourceFileName");
             if (destFileName.Length == 0)
@@ -97,9 +97,9 @@ namespace System.IO {
         // 
         public static void Copy(String sourceFileName, String destFileName, bool overwrite) {
             if (sourceFileName == null)
-                throw new ArgumentNullException("sourceFileName", Environment.GetResourceString("ArgumentNull_FileName"));
+                throw new ArgumentNullException(nameof(sourceFileName), Environment.GetResourceString("ArgumentNull_FileName"));
             if (destFileName == null)
-                throw new ArgumentNullException("destFileName", Environment.GetResourceString("ArgumentNull_FileName"));
+                throw new ArgumentNullException(nameof(destFileName), Environment.GetResourceString("ArgumentNull_FileName"));
             if (sourceFileName.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), "sourceFileName");
             if (destFileName.Length == 0)
@@ -112,9 +112,9 @@ namespace System.IO {
         [System.Security.SecurityCritical]
         internal static void UnsafeCopy(String sourceFileName, String destFileName, bool overwrite) {
             if (sourceFileName == null)
-                throw new ArgumentNullException("sourceFileName", Environment.GetResourceString("ArgumentNull_FileName"));
+                throw new ArgumentNullException(nameof(sourceFileName), Environment.GetResourceString("ArgumentNull_FileName"));
             if (destFileName == null)
-                throw new ArgumentNullException("destFileName", Environment.GetResourceString("ArgumentNull_FileName"));
+                throw new ArgumentNullException(nameof(destFileName), Environment.GetResourceString("ArgumentNull_FileName"));
             if (sourceFileName.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), "sourceFileName");
             if (destFileName.Length == 0)
@@ -225,7 +225,7 @@ namespace System.IO {
         [System.Security.SecuritySafeCritical]
         public static void Delete(String path) {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             Contract.EndContractBlock();
             
             InternalDelete(path, true);
@@ -235,7 +235,7 @@ namespace System.IO {
         internal static void UnsafeDelete(String path)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             Contract.EndContractBlock();
 
             InternalDelete(path, false);
@@ -272,7 +272,7 @@ namespace System.IO {
         public static void Decrypt(String path)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             Contract.EndContractBlock();
 
             String fullPath = Path.GetFullPathInternal(path);
@@ -296,7 +296,7 @@ namespace System.IO {
         public static void Encrypt(String path)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             Contract.EndContractBlock();
 
             String fullPath = Path.GetFullPathInternal(path);
@@ -617,7 +617,7 @@ namespace System.IO {
         public static void SetAccessControl(String path, FileSecurity fileSecurity)
         {
             if (fileSecurity == null)
-                throw new ArgumentNullException("fileSecurity");
+                throw new ArgumentNullException(nameof(fileSecurity));
             Contract.EndContractBlock();
 
             String fullPath = Path.GetFullPathInternal(path);
@@ -640,7 +640,7 @@ namespace System.IO {
         public static String ReadAllText(String path)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             if (path.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyPath"));
             Contract.EndContractBlock();
@@ -652,9 +652,9 @@ namespace System.IO {
         public static String ReadAllText(String path, Encoding encoding)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             if (encoding == null)
-                throw new ArgumentNullException("encoding");
+                throw new ArgumentNullException(nameof(encoding));
             if (path.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyPath"));
             Contract.EndContractBlock();
@@ -666,7 +666,7 @@ namespace System.IO {
         internal static String UnsafeReadAllText(String path)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             if (path.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyPath"));
             Contract.EndContractBlock();
@@ -689,7 +689,7 @@ namespace System.IO {
         public static void WriteAllText(String path, String contents)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             if (path.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyPath"));
             Contract.EndContractBlock();
@@ -701,9 +701,9 @@ namespace System.IO {
         public static void WriteAllText(String path, String contents, Encoding encoding)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             if (encoding == null)
-                throw new ArgumentNullException("encoding");
+                throw new ArgumentNullException(nameof(encoding));
             if (path.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyPath"));
             Contract.EndContractBlock();
@@ -715,7 +715,7 @@ namespace System.IO {
         internal static void UnsafeWriteAllText(String path, String contents)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             if (path.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyPath"));
             Contract.EndContractBlock();
@@ -775,11 +775,11 @@ namespace System.IO {
         public static void WriteAllBytes(String path, byte[] bytes)
         {
             if (path == null)
-                throw new ArgumentNullException("path", Environment.GetResourceString("ArgumentNull_Path"));
+                throw new ArgumentNullException(nameof(path), Environment.GetResourceString("ArgumentNull_Path"));
             if (path.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyPath"));
             if (bytes == null)
-                throw new ArgumentNullException("bytes");
+                throw new ArgumentNullException(nameof(bytes));
             Contract.EndContractBlock();
 
             InternalWriteAllBytes(path, bytes, true);
@@ -789,11 +789,11 @@ namespace System.IO {
         internal static void UnsafeWriteAllBytes(String path, byte[] bytes)
         {
             if (path == null)
-                throw new ArgumentNullException("path", Environment.GetResourceString("ArgumentNull_Path"));
+                throw new ArgumentNullException(nameof(path), Environment.GetResourceString("ArgumentNull_Path"));
             if (path.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyPath"));
             if (bytes == null)
-                throw new ArgumentNullException("bytes");
+                throw new ArgumentNullException(nameof(bytes));
             Contract.EndContractBlock();
 
             InternalWriteAllBytes(path, bytes, false);
@@ -816,7 +816,7 @@ namespace System.IO {
         public static String[] ReadAllLines(String path)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             if (path.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyPath"));
             Contract.EndContractBlock();
@@ -827,9 +827,9 @@ namespace System.IO {
         public static String[] ReadAllLines(String path, Encoding encoding)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             if (encoding == null)
-                throw new ArgumentNullException("encoding");
+                throw new ArgumentNullException(nameof(encoding));
             if (path.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyPath"));
             Contract.EndContractBlock();
@@ -856,7 +856,7 @@ namespace System.IO {
         public static IEnumerable<String> ReadLines(String path)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             if (path.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyPath"), "path");
             Contract.EndContractBlock();
@@ -867,9 +867,9 @@ namespace System.IO {
         public static IEnumerable<String> ReadLines(String path, Encoding encoding)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             if (encoding == null)
-                throw new ArgumentNullException("encoding");
+                throw new ArgumentNullException(nameof(encoding));
             if (path.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyPath"), "path");
             Contract.EndContractBlock();
@@ -880,9 +880,9 @@ namespace System.IO {
         public static void WriteAllLines(String path, String[] contents)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             if (contents == null)
-                throw new ArgumentNullException("contents");
+                throw new ArgumentNullException(nameof(contents));
             if (path.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyPath"));
             Contract.EndContractBlock();
@@ -893,11 +893,11 @@ namespace System.IO {
         public static void WriteAllLines(String path, String[] contents, Encoding encoding)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             if (contents == null)
-                throw new ArgumentNullException("contents");
+                throw new ArgumentNullException(nameof(contents));
             if (encoding == null)
-                throw new ArgumentNullException("encoding");
+                throw new ArgumentNullException(nameof(encoding));
             if (path.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyPath"));
             Contract.EndContractBlock();
@@ -908,9 +908,9 @@ namespace System.IO {
         public static void WriteAllLines(String path, IEnumerable<String> contents)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             if (contents == null)
-                throw new ArgumentNullException("contents");
+                throw new ArgumentNullException(nameof(contents));
             if (path.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyPath"));
             Contract.EndContractBlock();
@@ -921,11 +921,11 @@ namespace System.IO {
         public static void WriteAllLines(String path, IEnumerable<String> contents, Encoding encoding)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             if (contents == null)
-                throw new ArgumentNullException("contents");
+                throw new ArgumentNullException(nameof(contents));
             if (encoding == null)
-                throw new ArgumentNullException("encoding");
+                throw new ArgumentNullException(nameof(encoding));
             if (path.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyPath"));
             Contract.EndContractBlock();
@@ -950,7 +950,7 @@ namespace System.IO {
         public static void AppendAllText(String path, String contents)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             if (path.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyPath"));
             Contract.EndContractBlock();
@@ -961,9 +961,9 @@ namespace System.IO {
         public static void AppendAllText(String path, String contents, Encoding encoding)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             if (encoding == null)
-                throw new ArgumentNullException("encoding");
+                throw new ArgumentNullException(nameof(encoding));
             if (path.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyPath"));
             Contract.EndContractBlock();
@@ -984,9 +984,9 @@ namespace System.IO {
         public static void AppendAllLines(String path, IEnumerable<String> contents)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             if (contents == null)
-                throw new ArgumentNullException("contents");
+                throw new ArgumentNullException(nameof(contents));
             if (path.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyPath"));
             Contract.EndContractBlock();
@@ -997,11 +997,11 @@ namespace System.IO {
         public static void AppendAllLines(String path, IEnumerable<String> contents, Encoding encoding)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             if (contents == null)
-                throw new ArgumentNullException("contents");
+                throw new ArgumentNullException(nameof(contents));
             if (encoding == null)
-                throw new ArgumentNullException("encoding");
+                throw new ArgumentNullException(nameof(encoding));
             if (path.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyPath"));
             Contract.EndContractBlock();
@@ -1030,9 +1030,9 @@ namespace System.IO {
         [System.Security.SecurityCritical]
         private static void InternalMove(String sourceFileName, String destFileName, bool checkHost) {
             if (sourceFileName == null)
-                throw new ArgumentNullException("sourceFileName", Environment.GetResourceString("ArgumentNull_FileName"));
+                throw new ArgumentNullException(nameof(sourceFileName), Environment.GetResourceString("ArgumentNull_FileName"));
             if (destFileName == null)
-                throw new ArgumentNullException("destFileName", Environment.GetResourceString("ArgumentNull_FileName"));
+                throw new ArgumentNullException(nameof(destFileName), Environment.GetResourceString("ArgumentNull_FileName"));
             if (sourceFileName.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), "sourceFileName");
             if (destFileName.Length == 0)
@@ -1067,9 +1067,9 @@ namespace System.IO {
         public static void Replace(String sourceFileName, String destinationFileName, String destinationBackupFileName)
         {
             if (sourceFileName == null)
-                throw new ArgumentNullException("sourceFileName");
+                throw new ArgumentNullException(nameof(sourceFileName));
             if (destinationFileName == null)
-                throw new ArgumentNullException("destinationFileName");
+                throw new ArgumentNullException(nameof(destinationFileName));
             Contract.EndContractBlock();
 
             InternalReplace(sourceFileName, destinationFileName, destinationBackupFileName, false);
@@ -1078,9 +1078,9 @@ namespace System.IO {
         public static void Replace(String sourceFileName, String destinationFileName, String destinationBackupFileName, bool ignoreMetadataErrors)
         {
             if (sourceFileName == null)
-                throw new ArgumentNullException("sourceFileName");
+                throw new ArgumentNullException(nameof(sourceFileName));
             if (destinationFileName == null)
-                throw new ArgumentNullException("destinationFileName");
+                throw new ArgumentNullException(nameof(destinationFileName));
             Contract.EndContractBlock();
 
             InternalReplace(sourceFileName, destinationFileName, destinationBackupFileName, ignoreMetadataErrors);

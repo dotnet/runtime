@@ -194,7 +194,7 @@ namespace System.Collections {
         }
 
         protected virtual void OnValidate(Object value) { 
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
             Contract.EndContractBlock();
         }
 

@@ -246,7 +246,7 @@ namespace System.Threading
             }
             if (condition == null)
             {
-                throw new ArgumentNullException("condition", Environment.GetResourceString("SpinWait_SpinUntil_ArgumentNull"));
+                throw new ArgumentNullException(nameof(condition), Environment.GetResourceString("SpinWait_SpinUntil_ArgumentNull"));
             }
             uint startTime = 0;
             if (millisecondsTimeout != 0 && millisecondsTimeout != Timeout.Infinite)

@@ -259,7 +259,7 @@ namespace System {
         internal static Object DefaultToType(IConvertible value, Type targetType, IFormatProvider provider) {
             Contract.Requires(value != null, "[Convert.DefaultToType]value!=null");
             if (targetType==null) {
-                throw new ArgumentNullException("targetType");
+                throw new ArgumentNullException(nameof(targetType));
             }
             Contract.EndContractBlock();
 
@@ -322,7 +322,7 @@ namespace System {
 
         public static Object ChangeType(Object value, Type conversionType, IFormatProvider provider) {
             if( conversionType == null) {
-                throw new ArgumentNullException("conversionType");
+                throw new ArgumentNullException(nameof(conversionType));
             }
             Contract.EndContractBlock();
 
@@ -575,7 +575,7 @@ namespace System {
 
         public static char ToChar(String value, IFormatProvider provider) {
             if (value == null) 
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             Contract.EndContractBlock();
          
             if (value.Length != 1) 
@@ -2155,7 +2155,7 @@ namespace System {
 
         public static String ToBase64String(byte[] inArray) {
             if (inArray==null) {
-                throw new ArgumentNullException("inArray");
+                throw new ArgumentNullException(nameof(inArray));
             }
             Contract.Ensures(Contract.Result<string>() != null);
             Contract.EndContractBlock();
@@ -2165,7 +2165,7 @@ namespace System {
         [System.Runtime.InteropServices.ComVisible(false)]
         public static String ToBase64String(byte[] inArray, Base64FormattingOptions options) {
             if (inArray==null) {
-                throw new ArgumentNullException("inArray");
+                throw new ArgumentNullException(nameof(inArray));
             }
             Contract.Ensures(Contract.Result<string>() != null);
             Contract.EndContractBlock();
@@ -2181,7 +2181,7 @@ namespace System {
         public static unsafe String ToBase64String(byte[] inArray, int offset, int length, Base64FormattingOptions options) {
             //Do data verfication
             if (inArray==null) 
-                throw new ArgumentNullException("inArray");
+                throw new ArgumentNullException(nameof(inArray));
             if (length<0)
                 throw new ArgumentOutOfRangeException("length", Environment.GetResourceString("ArgumentOutOfRange_Index"));
             if (offset<0)
@@ -2228,9 +2228,9 @@ namespace System {
         public static unsafe int ToBase64CharArray(byte[] inArray, int offsetIn, int length, char[] outArray, int offsetOut, Base64FormattingOptions options) {
             //Do data verfication
             if (inArray==null) 
-                throw new ArgumentNullException("inArray");
+                throw new ArgumentNullException(nameof(inArray));
             if (outArray==null)
-                throw new ArgumentNullException("outArray");
+                throw new ArgumentNullException(nameof(outArray));
             if (length<0)
                 throw new ArgumentOutOfRangeException("length", Environment.GetResourceString("ArgumentOutOfRange_Index"));
             if (offsetIn<0)
@@ -2372,7 +2372,7 @@ namespace System {
             // "s" is an unfortunate parameter name, but we need to keep it for backward compat.
 
             if (s == null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
 
             Contract.EndContractBlock();
 
@@ -2396,7 +2396,7 @@ namespace System {
         public static Byte[] FromBase64CharArray(Char[] inArray, Int32 offset, Int32 length) {
 
             if (inArray == null)
-                throw new ArgumentNullException("inArray");
+                throw new ArgumentNullException(nameof(inArray));
 
             if (length < 0)
                 throw new ArgumentOutOfRangeException("length", Environment.GetResourceString("ArgumentOutOfRange_Index"));

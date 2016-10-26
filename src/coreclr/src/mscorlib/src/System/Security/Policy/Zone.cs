@@ -60,7 +60,7 @@ namespace System.Security.Policy {
         public static Zone CreateFromUrl( String url )
         {
             if (url == null)
-                throw new ArgumentNullException( "url" );
+                throw new ArgumentNullException( nameof(url) );
             Contract.EndContractBlock();
 
             return new Zone( url );

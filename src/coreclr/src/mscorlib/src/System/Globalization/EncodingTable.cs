@@ -136,7 +136,7 @@ namespace System.Globalization
         internal static int GetCodePageFromName(String name)
         {   
             if (name==null) {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
             Contract.EndContractBlock();
 

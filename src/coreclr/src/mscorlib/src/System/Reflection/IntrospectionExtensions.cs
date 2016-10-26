@@ -21,7 +21,7 @@ namespace System.Reflection
     {
 	    public static TypeInfo GetTypeInfo(this Type type){
             if(type == null){
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
             var rcType=(IReflectableType)type;
             if(rcType==null){

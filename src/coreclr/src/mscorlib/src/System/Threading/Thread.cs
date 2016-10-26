@@ -229,7 +229,7 @@ namespace System.Threading {
         [System.Security.SecuritySafeCritical]  // auto-generated
         public Thread(ThreadStart start) {
             if (start == null) {
-                throw new ArgumentNullException("start");
+                throw new ArgumentNullException(nameof(start));
             }
             Contract.EndContractBlock();
             SetStartHelper((Delegate)start,0);  //0 will setup Thread with default stackSize
@@ -238,7 +238,7 @@ namespace System.Threading {
         [System.Security.SecuritySafeCritical]  // auto-generated
         public Thread(ThreadStart start, int maxStackSize) {
             if (start == null) {
-                throw new ArgumentNullException("start");
+                throw new ArgumentNullException(nameof(start));
             }
             if (0 > maxStackSize)
                 throw new ArgumentOutOfRangeException("maxStackSize",Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
@@ -248,7 +248,7 @@ namespace System.Threading {
         [System.Security.SecuritySafeCritical]  // auto-generated
         public Thread(ParameterizedThreadStart start) {
             if (start == null) {
-                throw new ArgumentNullException("start");
+                throw new ArgumentNullException(nameof(start));
             }
             Contract.EndContractBlock();
             SetStartHelper((Delegate)start, 0);
@@ -257,7 +257,7 @@ namespace System.Threading {
         [System.Security.SecuritySafeCritical]  // auto-generated
         public Thread(ParameterizedThreadStart start, int maxStackSize) {
             if (start == null) {
-                throw new ArgumentNullException("start");
+                throw new ArgumentNullException(nameof(start));
             }
             if (0 > maxStackSize)
                 throw new ArgumentOutOfRangeException("maxStackSize",Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
@@ -1046,7 +1046,7 @@ namespace System.Threading {
             [HostProtection(ExternalThreading=true)]
             set {
                 if (value == null) {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 Contract.EndContractBlock();
 
@@ -1157,7 +1157,7 @@ namespace System.Threading {
 #endif
             set {
                 if (null==value) {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 Contract.EndContractBlock();
 

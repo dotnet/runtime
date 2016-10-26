@@ -63,7 +63,7 @@ namespace System.Reflection.Emit {
         {
             if (mdBuilder == null)
             {
-                throw new ArgumentNullException("mdBuilder");
+                throw new ArgumentNullException(nameof(mdBuilder));
             }
             Contract.EndContractBlock();
 
@@ -110,9 +110,9 @@ namespace System.Reflection.Emit {
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             if (con == null)
-                throw new ArgumentNullException("con");
+                throw new ArgumentNullException(nameof(con));
             if (binaryAttribute == null)
-                throw new ArgumentNullException("binaryAttribute");
+                throw new ArgumentNullException(nameof(binaryAttribute));
             Contract.EndContractBlock();
             m_type.ThrowIfCreated();
 
@@ -130,7 +130,7 @@ namespace System.Reflection.Emit {
         {
             if (customBuilder == null)
             {
-                throw new ArgumentNullException("customBuilder");
+                throw new ArgumentNullException(nameof(customBuilder));
             }
             Contract.EndContractBlock();
             m_type.ThrowIfCreated();

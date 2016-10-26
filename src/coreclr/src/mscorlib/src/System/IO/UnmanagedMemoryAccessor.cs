@@ -62,7 +62,7 @@ namespace System.IO {
 #pragma warning restore 618
         protected void Initialize(SafeBuffer buffer, Int64 offset, Int64 capacity, FileAccess access) {
             if (buffer == null) {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
             if (offset < 0) {
                 throw new ArgumentOutOfRangeException("offset", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
@@ -624,7 +624,7 @@ namespace System.IO {
         [System.Security.SecurityCritical]  // auto-generated_required
         public int ReadArray<T>(Int64 position, T[] array, Int32 offset, Int32 count) where T : struct {
             if (array == null) {
-                throw new ArgumentNullException("array", "Buffer cannot be null.");
+                throw new ArgumentNullException(nameof(array), "Buffer cannot be null.");
             }
             if (offset < 0) {
                 throw new ArgumentOutOfRangeException("offset", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
@@ -1136,7 +1136,7 @@ namespace System.IO {
         [System.Security.SecurityCritical]  // auto-generated_required
         public void WriteArray<T>(Int64 position, T[] array, Int32 offset, Int32 count) where T : struct {
             if (array == null) {
-                throw new ArgumentNullException("array", "Buffer cannot be null.");
+                throw new ArgumentNullException(nameof(array), "Buffer cannot be null.");
             }
             if (offset < 0) {
                 throw new ArgumentOutOfRangeException("offset", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));

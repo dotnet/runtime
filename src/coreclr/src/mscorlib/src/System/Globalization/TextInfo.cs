@@ -462,7 +462,7 @@ namespace System.Globalization {
         [System.Runtime.InteropServices.ComVisible(false)]
         public static TextInfo ReadOnly(TextInfo textInfo) 
         {
-            if (textInfo == null)       { throw new ArgumentNullException("textInfo"); }
+            if (textInfo == null)       { throw new ArgumentNullException(nameof(textInfo)); }
             Contract.EndContractBlock();
             if (textInfo.IsReadOnly)    { return (textInfo); }
             
@@ -512,7 +512,7 @@ namespace System.Globalization {
             {
                 if (value == null) 
                 {
-                    throw new ArgumentNullException("value", Environment.GetResourceString("ArgumentNull_String"));
+                    throw new ArgumentNullException(nameof(value), Environment.GetResourceString("ArgumentNull_String"));
                 }
                 Contract.EndContractBlock();
                 VerifyWritable();
@@ -542,7 +542,7 @@ namespace System.Globalization {
         [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe virtual String ToLower(String str) 
         {
-            if (str == null) { throw new ArgumentNullException("str"); }
+            if (str == null) { throw new ArgumentNullException(nameof(str)); }
             Contract.EndContractBlock();
 
             return InternalChangeCaseString(this.m_dataHandle, this.m_handleOrigin, this.m_textInfoName, str, false);
@@ -581,7 +581,7 @@ namespace System.Globalization {
         [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe virtual String ToUpper(String str) 
         {
-            if (str == null) { throw new ArgumentNullException("str"); }
+            if (str == null) { throw new ArgumentNullException(nameof(str)); }
             Contract.EndContractBlock();
             return InternalChangeCaseString(this.m_dataHandle, this.m_handleOrigin, this.m_textInfoName, str, true);
         }
@@ -698,7 +698,7 @@ namespace System.Globalization {
         {
             if (str == null)  
             {
-                throw new ArgumentNullException("str");
+                throw new ArgumentNullException(nameof(str));
             }
             Contract.EndContractBlock();
             if (str.Length == 0) 
@@ -959,7 +959,7 @@ namespace System.Globalization {
             // Validate inputs
             if (str==null) 
             {
-                 throw new ArgumentNullException("str");
+                 throw new ArgumentNullException(nameof(str));
             }
             Contract.EndContractBlock();
 

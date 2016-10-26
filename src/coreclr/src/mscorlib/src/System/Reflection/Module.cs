@@ -432,16 +432,16 @@ namespace System.Reflection
             String name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             if (types == null)
-                throw new ArgumentNullException("types");
+                throw new ArgumentNullException(nameof(types));
             Contract.EndContractBlock();
 
             for (int i = 0; i < types.Length; i++)
             {
                 if (types[i] == null)
-                    throw new ArgumentNullException("types");
+                    throw new ArgumentNullException(nameof(types));
             }
 
             return GetMethodImpl(name, bindingAttr, binder, callConvention, types, modifiers);
@@ -450,16 +450,16 @@ namespace System.Reflection
         public MethodInfo GetMethod(String name, Type[] types)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             if (types == null)
-                throw new ArgumentNullException("types");
+                throw new ArgumentNullException(nameof(types));
             Contract.EndContractBlock();
 
             for (int i = 0; i < types.Length; i++)
             {
                 if (types[i] == null)
-                    throw new ArgumentNullException("types");
+                    throw new ArgumentNullException(nameof(types));
             }
 
             return GetMethodImpl(name, Module.DefaultLookup, null, CallingConventions.Any, types, null);
@@ -468,7 +468,7 @@ namespace System.Reflection
         public MethodInfo GetMethod(String name)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             Contract.EndContractBlock();
 
             return GetMethodImpl(name, Module.DefaultLookup, null, CallingConventions.Any,
@@ -1001,7 +1001,7 @@ namespace System.Reflection
         public override Object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
             if (attributeType == null)
-                throw new ArgumentNullException("attributeType");
+                throw new ArgumentNullException(nameof(attributeType));
             Contract.EndContractBlock();
 
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
@@ -1016,7 +1016,7 @@ namespace System.Reflection
         public override bool IsDefined(Type attributeType, bool inherit)
         {
             if (attributeType == null)
-                throw new ArgumentNullException("attributeType");
+                throw new ArgumentNullException(nameof(attributeType));
             Contract.EndContractBlock();
 
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
@@ -1039,7 +1039,7 @@ namespace System.Reflection
         {
             if (info == null)
             {
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             }
             Contract.EndContractBlock();
             UnitySerializationHolder.GetUnitySerializationInfo(info, UnitySerializationHolder.ModuleUnity, this.ScopeName, this.GetRuntimeAssembly());
@@ -1051,7 +1051,7 @@ namespace System.Reflection
         {
             // throw on null strings regardless of the value of "throwOnError"
             if (className == null)
-                throw new ArgumentNullException("className");
+                throw new ArgumentNullException(nameof(className));
 
             RuntimeType retType = null;
             Object keepAlive = null;
@@ -1145,7 +1145,7 @@ namespace System.Reflection
         public override FieldInfo GetField(String name, BindingFlags bindingAttr)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             if (RuntimeType == null)
                 return null;

@@ -873,7 +873,7 @@ namespace System.Threading
                                 ref StackCrawlMark stackMark)
         {
             if (callback == null)
-                throw new ArgumentNullException("TimerCallback");
+                throw new ArgumentNullException(nameof(TimerCallback));
             Contract.EndContractBlock();
 
             m_timer = new TimerHolder(new TimerQueueTimer(callback, state, dueTime, period, ref stackMark));
@@ -931,7 +931,7 @@ namespace System.Threading
         public bool Dispose(WaitHandle notifyObject)
         {
             if (notifyObject==null)
-                throw new ArgumentNullException("notifyObject");
+                throw new ArgumentNullException(nameof(notifyObject));
             Contract.EndContractBlock();
 
             return m_timer.Close(notifyObject);

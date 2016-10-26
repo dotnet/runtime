@@ -1781,7 +1781,7 @@ namespace System.Text
             internal Decoder(SerializationInfo info, StreamingContext context)
             {
                 // Any info?
-                if (info==null) throw new ArgumentNullException("info");
+                if (info==null) throw new ArgumentNullException(nameof(info));
                 Contract.EndContractBlock();
 
                 // Get Common Info
@@ -1807,7 +1807,7 @@ namespace System.Text
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
             {
                 // Any info?
-                if (info==null) throw new ArgumentNullException("info");
+                if (info==null) throw new ArgumentNullException(nameof(info));
                 Contract.EndContractBlock();
 
                 // Save Whidbey data

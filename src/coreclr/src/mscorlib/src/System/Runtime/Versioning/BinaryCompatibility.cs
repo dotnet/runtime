@@ -356,7 +356,7 @@ namespace System.Runtime.Versioning
         {
             if (frameworkName == null)
             {
-                throw new ArgumentNullException("frameworkName");
+                throw new ArgumentNullException(nameof(frameworkName));
             }
             if (frameworkName.Length == 0)
             {

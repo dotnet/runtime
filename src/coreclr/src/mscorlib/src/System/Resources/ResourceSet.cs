@@ -111,7 +111,7 @@ namespace System.Resources {
         public ResourceSet(IResourceReader reader)
         {
             if (reader == null)
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             Contract.EndContractBlock();
             Reader = reader;
             CommonInit();
@@ -122,7 +122,7 @@ namespace System.Resources {
         public ResourceSet(IResourceReader reader, Assembly assembly)
         {
             if (reader == null)
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             Contract.EndContractBlock();
             Reader = reader;
             CommonInit();
@@ -293,7 +293,7 @@ namespace System.Resources {
         private Object GetObjectInternal(String name)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             Contract.EndContractBlock();
 
             Hashtable copyOfTable = Table;  // Avoid a race with Dispose

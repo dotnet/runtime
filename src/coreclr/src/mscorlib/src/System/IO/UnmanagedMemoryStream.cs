@@ -135,7 +135,7 @@ namespace System.IO {
         [System.Security.SecurityCritical]  // auto-generated
         internal void Initialize(SafeBuffer buffer, long offset, long length, FileAccess access, bool skipSecurityCheck) {
             if (buffer == null) {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
             if (offset < 0) {
                 throw new ArgumentOutOfRangeException("offset", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
@@ -219,7 +219,7 @@ namespace System.IO {
         internal unsafe void Initialize(byte* pointer, long length, long capacity, FileAccess access, bool skipSecurityCheck) 
         {
             if (pointer == null)
-                throw new ArgumentNullException("pointer");
+                throw new ArgumentNullException(nameof(pointer));
             if (length < 0 || capacity < 0)
                 throw new ArgumentOutOfRangeException((length < 0) ? "length" : "capacity", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (length > capacity)
@@ -381,7 +381,7 @@ namespace System.IO {
         [System.Security.SecuritySafeCritical]  // auto-generated
         public override int Read([In, Out] byte[] buffer, int offset, int count) {
             if (buffer==null)
-                throw new ArgumentNullException("buffer", Environment.GetResourceString("ArgumentNull_Buffer"));
+                throw new ArgumentNullException(nameof(buffer), Environment.GetResourceString("ArgumentNull_Buffer"));
             if (offset < 0)
                 throw new ArgumentOutOfRangeException("offset", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (count < 0)
@@ -444,7 +444,7 @@ namespace System.IO {
         [ComVisible(false)]
         public override Task<Int32> ReadAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken) {        
             if (buffer==null)
-                throw new ArgumentNullException("buffer", Environment.GetResourceString("ArgumentNull_Buffer"));
+                throw new ArgumentNullException(nameof(buffer), Environment.GetResourceString("ArgumentNull_Buffer"));
             if (offset < 0)
                 throw new ArgumentOutOfRangeException("offset", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (count < 0)
@@ -566,7 +566,7 @@ namespace System.IO {
         [System.Security.SecuritySafeCritical]  // auto-generated
         public override void Write(byte[] buffer, int offset, int count) {
             if (buffer==null)
-                throw new ArgumentNullException("buffer", Environment.GetResourceString("ArgumentNull_Buffer"));
+                throw new ArgumentNullException(nameof(buffer), Environment.GetResourceString("ArgumentNull_Buffer"));
             if (offset < 0)
                 throw new ArgumentOutOfRangeException("offset", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (count < 0)
@@ -646,7 +646,7 @@ namespace System.IO {
         public override Task WriteAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken) { 
         
             if (buffer==null)
-                throw new ArgumentNullException("buffer", Environment.GetResourceString("ArgumentNull_Buffer"));
+                throw new ArgumentNullException(nameof(buffer), Environment.GetResourceString("ArgumentNull_Buffer"));
             if (offset < 0)
                 throw new ArgumentOutOfRangeException("offset", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (count < 0)

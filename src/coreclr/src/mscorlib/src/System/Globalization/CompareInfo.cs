@@ -135,7 +135,7 @@ namespace System.Globalization {
         public static CompareInfo GetCompareInfo(int culture, Assembly assembly){
             // Parameter checking.
             if (assembly == null) {
-                throw new ArgumentNullException("assembly");
+                throw new ArgumentNullException(nameof(assembly));
             }
             if (assembly!=typeof(Object).Module.Assembly) {
                 throw new ArgumentException(Environment.GetResourceString("Argument_OnlyMscorlib"));
@@ -161,7 +161,7 @@ namespace System.Globalization {
         // Assembly constructor should be deprecated, we don't act on the assembly information any more
         public static CompareInfo GetCompareInfo(String name, Assembly assembly){
             if (name == null || assembly == null) {
-                throw new ArgumentNullException(name == null ? "name" : "assembly");
+                throw new ArgumentNullException(name == null ? nameof(name) : nameof(assembly));
             }
             Contract.EndContractBlock();
 
@@ -209,7 +209,7 @@ namespace System.Globalization {
         {
             if (name == null)
             {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
             Contract.EndContractBlock();
 
@@ -226,7 +226,7 @@ namespace System.Globalization {
         public static bool IsSortable(String text) {
             if (text == null) {
                 // A null param is invalid here.
-                throw new ArgumentNullException("text");
+                throw new ArgumentNullException(nameof(text));
             }
 
             if (0 == text.Length) {
@@ -552,7 +552,7 @@ namespace System.Globalization {
         public unsafe virtual bool IsPrefix(String source, String prefix, CompareOptions options)
         {
             if (source == null || prefix == null) {
-                throw new ArgumentNullException((source == null ? "source" : "prefix"),
+                throw new ArgumentNullException((source == null ? nameof(source) : nameof(prefix)),
                     Environment.GetResourceString("ArgumentNull_String"));
             }
             Contract.EndContractBlock();
@@ -607,7 +607,7 @@ namespace System.Globalization {
         public unsafe virtual bool IsSuffix(String source, String suffix, CompareOptions options)
         {
             if (source == null || suffix == null) {
-                throw new ArgumentNullException((source == null ? "source" : "suffix"),
+                throw new ArgumentNullException((source == null ? nameof(source) : nameof(suffix)),
                     Environment.GetResourceString("ArgumentNull_String"));
             }
             Contract.EndContractBlock();
@@ -661,7 +661,7 @@ namespace System.Globalization {
         public unsafe virtual int IndexOf(String source, char value)
         {
             if (source==null)
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
             Contract.EndContractBlock();
 
             return IndexOf(source, value, 0, source.Length, CompareOptions.None);
@@ -671,7 +671,7 @@ namespace System.Globalization {
         public unsafe virtual int IndexOf(String source, String value)
         {
             if (source==null)
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
             Contract.EndContractBlock();
 
             return IndexOf(source, value, 0, source.Length, CompareOptions.None);
@@ -681,7 +681,7 @@ namespace System.Globalization {
         public unsafe virtual int IndexOf(String source, char value, CompareOptions options)
         {
             if (source==null)
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
             Contract.EndContractBlock();
 
             return IndexOf(source, value, 0, source.Length, options);
@@ -691,7 +691,7 @@ namespace System.Globalization {
         public unsafe virtual int IndexOf(String source, String value, CompareOptions options)
         {
             if (source==null)
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
             Contract.EndContractBlock();
 
             return IndexOf(source, value, 0, source.Length, options);
@@ -701,7 +701,7 @@ namespace System.Globalization {
         public unsafe virtual int IndexOf(String source, char value, int startIndex)
         {
             if (source == null)
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
             Contract.EndContractBlock();
 
             return IndexOf(source, value, startIndex, source.Length - startIndex, CompareOptions.None);
@@ -711,7 +711,7 @@ namespace System.Globalization {
         public unsafe virtual int IndexOf(String source, String value, int startIndex)
         {
             if (source == null)
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
             Contract.EndContractBlock();
 
             return IndexOf(source, value, startIndex, source.Length - startIndex, CompareOptions.None);
@@ -721,7 +721,7 @@ namespace System.Globalization {
         public unsafe virtual int IndexOf(String source, char value, int startIndex, CompareOptions options)
         {
             if (source == null)
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
             Contract.EndContractBlock();
 
             return IndexOf(source, value, startIndex, source.Length - startIndex, options);
@@ -731,7 +731,7 @@ namespace System.Globalization {
         public unsafe virtual int IndexOf(String source, String value, int startIndex, CompareOptions options)
         {
             if (source == null)
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
             Contract.EndContractBlock();
 
             return IndexOf(source, value, startIndex, source.Length - startIndex, options);
@@ -754,7 +754,7 @@ namespace System.Globalization {
         {
             // Validate inputs
             if (source == null)
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
 
             if (startIndex < 0 || startIndex > source.Length)
                 throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_Index"));
@@ -787,9 +787,9 @@ namespace System.Globalization {
         {
             // Validate inputs
             if (source == null)
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             if (startIndex > source.Length)
             {
@@ -851,7 +851,7 @@ namespace System.Globalization {
         public unsafe virtual int LastIndexOf(String source, char value)
         {
             if (source==null)
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
             Contract.EndContractBlock();
 
             // Can't start at negative index, so make sure we check for the length == 0 case.
@@ -863,7 +863,7 @@ namespace System.Globalization {
         public virtual int LastIndexOf(String source, String value)
         {
             if (source==null)
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
             Contract.EndContractBlock();
 
             // Can't start at negative index, so make sure we check for the length == 0 case.
@@ -875,7 +875,7 @@ namespace System.Globalization {
         public virtual int LastIndexOf(String source, char value, CompareOptions options)
         {
             if (source==null)
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
             Contract.EndContractBlock();
 
             // Can't start at negative index, so make sure we check for the length == 0 case.
@@ -886,7 +886,7 @@ namespace System.Globalization {
         public unsafe virtual int LastIndexOf(String source, String value, CompareOptions options)
         {
             if (source==null)
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
             Contract.EndContractBlock();
 
             // Can't start at negative index, so make sure we check for the length == 0 case.
@@ -936,7 +936,7 @@ namespace System.Globalization {
         {
             // Verify Arguments
             if (source==null)
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
             Contract.EndContractBlock();
 
             // Validate CompareOptions
@@ -985,9 +985,9 @@ namespace System.Globalization {
         {
             // Verify Arguments
             if (source == null)
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             Contract.EndContractBlock();
 
             // Validate CompareOptions
@@ -1056,7 +1056,7 @@ namespace System.Globalization {
         [System.Security.SecuritySafeCritical]
         private SortKey CreateSortKey(String source, CompareOptions options)
         {
-            if (source==null) { throw new ArgumentNullException("source"); }
+            if (source==null) { throw new ArgumentNullException(nameof(source)); }
             Contract.EndContractBlock();
 
             // Mask used to check if we have the right flags.
@@ -1159,7 +1159,7 @@ namespace System.Globalization {
         {
             if (source == null)
             {
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
             }
 
             if (options == CompareOptions.Ordinal)
@@ -1217,7 +1217,7 @@ namespace System.Globalization {
             //
             if(null == source)
             {
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
             }
 
             if ((options & ValidHashCodeOfStringMaskOffFlags) != 0)

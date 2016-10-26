@@ -46,7 +46,7 @@ namespace System.Text
         internal MLangCodePageEncoding(SerializationInfo info, StreamingContext context)
         {
             // Any info?
-            if (info==null) throw new ArgumentNullException("info");
+            if (info==null) throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
 
             // All versions have a code page
@@ -115,7 +115,7 @@ namespace System.Text
             internal MLangEncoder(SerializationInfo info, StreamingContext context)
             {
                 // Any info?
-                if (info==null) throw new ArgumentNullException("info");
+                if (info==null) throw new ArgumentNullException(nameof(info));
                 Contract.EndContractBlock();
 
                 this.realEncoding = (Encoding)info.GetValue("m_encoding", typeof(Encoding));
@@ -151,7 +151,7 @@ namespace System.Text
             internal MLangDecoder(SerializationInfo info, StreamingContext context)
             {
                 // Any info?
-                if (info==null) throw new ArgumentNullException("info");
+                if (info==null) throw new ArgumentNullException(nameof(info));
                 Contract.EndContractBlock();
 
                 this.realEncoding = (Encoding)info.GetValue("m_encoding", typeof(Encoding));

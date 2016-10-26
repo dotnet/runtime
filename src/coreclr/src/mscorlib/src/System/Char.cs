@@ -167,7 +167,7 @@ namespace System {
 
       public static char Parse(String s) {
           if (s==null) {
-              throw new ArgumentNullException("s");
+              throw new ArgumentNullException(nameof(s));
           } 
           Contract.EndContractBlock();
           
@@ -364,7 +364,7 @@ namespace System {
       // <;<;Not fully implemented>;>;
       public static char ToUpper(char c, CultureInfo culture) {
         if (culture==null)
-            throw new ArgumentNullException("culture");
+            throw new ArgumentNullException(nameof(culture));
         Contract.EndContractBlock();
         return culture.TextInfo.ToUpper(c);
       }
@@ -393,7 +393,7 @@ namespace System {
       // <;<;Not fully implemented>;>;
       public static char ToLower(char c, CultureInfo culture) {
         if (culture==null)
-            throw new ArgumentNullException("culture");
+            throw new ArgumentNullException(nameof(culture));
         Contract.EndContractBlock();
         return culture.TextInfo.ToLower(c);
       }
@@ -508,7 +508,7 @@ namespace System {
   
         public static bool IsControl(String s, int index) {
             if (s==null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             if (((uint)index)>=((uint)s.Length)) {
                 throw new ArgumentOutOfRangeException("index");
             }
@@ -524,7 +524,7 @@ namespace System {
         public static bool IsDigit(String s, int index)
         {
             if (s==null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             if (((uint)index)>=((uint)s.Length)) {
                 throw new ArgumentOutOfRangeException("index");
             }
@@ -539,7 +539,7 @@ namespace System {
         public static bool IsLetter(String s, int index)
         {
             if (s==null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             if (((uint)index)>=((uint)s.Length)) {
                 throw new ArgumentOutOfRangeException("index");
             }
@@ -558,7 +558,7 @@ namespace System {
         public static bool IsLetterOrDigit(String s, int index)
         {   
             if (s==null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             if (((uint)index)>=((uint)s.Length)) {
                 throw new ArgumentOutOfRangeException("index");
             }
@@ -573,7 +573,7 @@ namespace System {
         public static bool IsLower(String s, int index)
         {
             if (s==null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             if (((uint)index)>=((uint)s.Length)) {
                 throw new ArgumentOutOfRangeException("index");
             }
@@ -617,7 +617,7 @@ namespace System {
         public static bool IsNumber(String s, int index)
         {
             if (s==null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             if (((uint)index)>=((uint)s.Length)) {
                 throw new ArgumentOutOfRangeException("index");
             }
@@ -643,7 +643,7 @@ namespace System {
         public static bool IsPunctuation (String s, int index)
         {
             if (s==null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             if (((uint)index)>=((uint)s.Length)) {
                 throw new ArgumentOutOfRangeException("index");
             }
@@ -688,7 +688,7 @@ namespace System {
         public static bool IsSeparator(String s, int index)
         {
             if (s==null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             if (((uint)index)>=((uint)s.Length)) {
                 throw new ArgumentOutOfRangeException("index");
             }
@@ -710,7 +710,7 @@ namespace System {
         public static bool IsSurrogate(String s, int index)
         {
             if (s==null) {
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             }
             if (((uint)index)>=((uint)s.Length)) {
                 throw new ArgumentOutOfRangeException("index");
@@ -745,7 +745,7 @@ namespace System {
         public static bool IsSymbol(String s, int index)
         {
             if (s==null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             if (((uint)index)>=((uint)s.Length)) {
                 throw new ArgumentOutOfRangeException("index");
             }
@@ -760,7 +760,7 @@ namespace System {
         public static bool IsUpper(String s, int index)
         {   
             if (s==null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             if (((uint)index)>=((uint)s.Length)) {
                 throw new ArgumentOutOfRangeException("index");
             }
@@ -779,7 +779,7 @@ namespace System {
         public static bool IsWhiteSpace(String s, int index)
         {
             if (s==null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             if (((uint)index)>=((uint)s.Length)) {
                 throw new ArgumentOutOfRangeException("index");
             }
@@ -803,7 +803,7 @@ namespace System {
         public static UnicodeCategory GetUnicodeCategory(String s, int index)
         {
             if (s==null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             if (((uint)index)>=((uint)s.Length)) {
                 throw new ArgumentOutOfRangeException("index");
             }
@@ -822,7 +822,7 @@ namespace System {
         public static double GetNumericValue(String s, int index)
         {
             if (s==null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             if (((uint)index)>=((uint)s.Length)) {
                 throw new ArgumentOutOfRangeException("index");
             }
@@ -842,7 +842,7 @@ namespace System {
         [Pure]
         public static bool IsHighSurrogate(String s, int index) {
             if (s == null) {
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             }
             if (index < 0 || index >= s.Length) {
                 throw new ArgumentOutOfRangeException("index");
@@ -862,7 +862,7 @@ namespace System {
         [Pure]
         public static bool IsLowSurrogate(String s, int index) {
             if (s == null) {
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             }
             if (index < 0 || index >= s.Length) {
                 throw new ArgumentOutOfRangeException("index");
@@ -877,7 +877,7 @@ namespace System {
         [Pure]
         public static bool IsSurrogatePair(String s, int index) {
             if (s == null) {
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             }
             if (index < 0 || index >= s.Length) {
                 throw new ArgumentOutOfRangeException("index");
@@ -964,7 +964,7 @@ namespace System {
         
         public static int ConvertToUtf32(String s, int index) {
             if (s == null) {
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             }
 
             if (index < 0 || index >= s.Length) {

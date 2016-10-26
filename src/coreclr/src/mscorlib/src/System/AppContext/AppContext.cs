@@ -114,7 +114,7 @@ namespace System
         public static bool TryGetSwitch(string switchName, out bool isEnabled)
         {
             if (switchName == null)
-                throw new ArgumentNullException("switchName");
+                throw new ArgumentNullException(nameof(switchName));
             if (switchName.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "switchName");
 
@@ -210,7 +210,7 @@ namespace System
         public static void SetSwitch(string switchName, bool isEnabled)
         {
             if (switchName == null)
-                throw new ArgumentNullException("switchName");
+                throw new ArgumentNullException(nameof(switchName));
             if (switchName.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "switchName");
 

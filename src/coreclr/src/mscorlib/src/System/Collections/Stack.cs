@@ -59,7 +59,7 @@ namespace System.Collections {
         public Stack(ICollection col) : this((col==null ? 32 : col.Count))
         {
             if (col==null)
-                throw new ArgumentNullException("col");
+                throw new ArgumentNullException(nameof(col));
             Contract.EndContractBlock();
             IEnumerator en = col.GetEnumerator();
             while(en.MoveNext())
@@ -121,7 +121,7 @@ namespace System.Collections {
         // Copies the stack into an array.
         public virtual void CopyTo(Array array, int index) {
             if (array==null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             if (array.Rank != 1)
                 throw new ArgumentException(Environment.GetResourceString("Arg_RankMultiDimNotSupported"));
             if (index < 0)
@@ -192,7 +192,7 @@ namespace System.Collections {
         [HostProtection(Synchronization=true)]
         public static Stack Synchronized(Stack stack) {
             if (stack==null)
-                throw new ArgumentNullException("stack");
+                throw new ArgumentNullException(nameof(stack));
             Contract.Ensures(Contract.Result<Stack>() != null);
             Contract.EndContractBlock();
             return new SyncStack(stack);
@@ -363,7 +363,7 @@ namespace System.Collections {
         
             public StackDebugView( Stack stack) {
                 if( stack == null)
-                    throw new ArgumentNullException("stack");
+                    throw new ArgumentNullException(nameof(stack));
                 Contract.EndContractBlock();
 
                 this.stack = stack;

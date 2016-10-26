@@ -358,7 +358,7 @@ namespace System.IO {
         internal static string GetFullPathInternal(string path)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             Contract.EndContractBlock();
 
             string newPath = NormalizePath(path, fullCheck: true);
@@ -1212,7 +1212,7 @@ namespace System.IO {
 
         public static String Combine(String path1, String path2) {
             if (path1==null || path2==null)
-                throw new ArgumentNullException((path1==null) ? "path1" : "path2");
+                throw new ArgumentNullException((path1==null) ? nameof(path1) : nameof(path2));
             Contract.EndContractBlock();
             CheckInvalidPathChars(path1);
             CheckInvalidPathChars(path2);
@@ -1222,7 +1222,7 @@ namespace System.IO {
 
         public static String Combine(String path1, String path2, String path3) {
             if (path1 == null || path2 == null || path3 == null)
-                throw new ArgumentNullException((path1 == null) ? "path1" : (path2 == null) ? "path2" : "path3");
+                throw new ArgumentNullException((path1 == null) ? nameof(path1) : (path2 == null) ? nameof(path2) : nameof(path3));
             Contract.EndContractBlock();
             CheckInvalidPathChars(path1);
             CheckInvalidPathChars(path2);
@@ -1233,7 +1233,7 @@ namespace System.IO {
 
         public static String Combine(String path1, String path2, String path3, String path4) {
             if (path1 == null || path2 == null || path3 == null || path4 == null)
-                throw new ArgumentNullException((path1 == null) ? "path1" : (path2 == null) ? "path2" : (path3 == null) ? "path3" : "path4");
+                throw new ArgumentNullException((path1 == null) ? nameof(path1) : (path2 == null) ? nameof(path2) : (path3 == null) ? nameof(path3) : nameof(path4));
             Contract.EndContractBlock();
             CheckInvalidPathChars(path1);
             CheckInvalidPathChars(path2);
@@ -1245,7 +1245,7 @@ namespace System.IO {
 
         public static String Combine(params String[] paths) {
             if (paths == null) {
-                throw new ArgumentNullException("paths");
+                throw new ArgumentNullException(nameof(paths));
             }
             Contract.EndContractBlock();
 
@@ -1257,7 +1257,7 @@ namespace System.IO {
 
             for (int i = 0; i < paths.Length; i++) {
                 if (paths[i] == null) {
-                    throw new ArgumentNullException("paths");
+                    throw new ArgumentNullException(nameof(paths));
                 }
 
                 if (paths[i].Length  == 0) {
@@ -1404,7 +1404,7 @@ namespace System.IO {
         internal static void CheckInvalidPathChars(String path, bool checkAdditional = false)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
 
             if (PathInternal.HasIllegalCharacters(path, checkAdditional))
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidPathChars"));
@@ -1412,7 +1412,7 @@ namespace System.IO {
 
         internal static String InternalCombine(String path1, String path2) {
             if (path1==null || path2==null)
-                throw new ArgumentNullException((path1==null) ? "path1" : "path2");
+                throw new ArgumentNullException((path1==null) ? nameof(path1) : nameof(path2));
             Contract.EndContractBlock();
             CheckInvalidPathChars(path1);
             CheckInvalidPathChars(path2);

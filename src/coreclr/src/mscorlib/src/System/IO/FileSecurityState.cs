@@ -44,7 +44,7 @@ namespace System.IO
         {
             if (path == null)
             {
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             }
             VerifyAccess(access);
             m_access = access;

@@ -34,7 +34,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal V Indexer_Get<K, V>(K key)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
 
             Contract.EndContractBlock();
 
@@ -47,7 +47,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal void Indexer_Set<K, V>(K key, V value)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
 
             Contract.EndContractBlock();
 
@@ -79,7 +79,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal bool ContainsKey<K, V>(K key)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
 
             IMap<K, V> _this = JitHelpers.UnsafeCast<IMap<K, V>>(this);
             return _this.HasKey(key);
@@ -90,7 +90,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal void Add<K, V>(K key, V value)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
 
             if (ContainsKey<K, V>(key))
                 throw new ArgumentException(Environment.GetResourceString("Argument_AddingDuplicate"));
@@ -106,7 +106,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal bool Remove<K, V>(K key)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
 
             IMap<K, V> _this = JitHelpers.UnsafeCast<IMap<K, V>>(this);
             if (!_this.HasKey(key))
@@ -132,7 +132,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal bool TryGetValue<K, V>(K key, out V value)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
 
             IMap<K, V> _this = JitHelpers.UnsafeCast<IMap<K, V>>(this);
             if (!_this.HasKey(key))

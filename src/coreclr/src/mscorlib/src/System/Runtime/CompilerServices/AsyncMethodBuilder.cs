@@ -66,7 +66,7 @@ namespace System.Runtime.CompilerServices
             // See comment on AsyncMethodBuilderCore.Start
             // AsyncMethodBuilderCore.Start(ref stateMachine);
 
-            if (stateMachine == null) throw new ArgumentNullException("stateMachine");
+            if (stateMachine == null) throw new ArgumentNullException(nameof(stateMachine));
             Contract.EndContractBlock();
 
             // Run the MoveNext method within a copy-on-write ExecutionContext scope.
@@ -200,7 +200,7 @@ namespace System.Runtime.CompilerServices
         /// <exception cref="System.InvalidOperationException">The builder is not initialized.</exception>
         public void SetException(Exception exception)
         {
-            if (exception == null) throw new ArgumentNullException("exception");
+            if (exception == null) throw new ArgumentNullException(nameof(exception));
             Contract.EndContractBlock();
 
             if (AsyncCausalityTracer.LoggingOn)
@@ -301,7 +301,7 @@ namespace System.Runtime.CompilerServices
             // See comment on AsyncMethodBuilderCore.Start
             // AsyncMethodBuilderCore.Start(ref stateMachine);
 
-            if (stateMachine == null) throw new ArgumentNullException("stateMachine");
+            if (stateMachine == null) throw new ArgumentNullException(nameof(stateMachine));
             Contract.EndContractBlock();
 
             // Run the MoveNext method within a copy-on-write ExecutionContext scope.
@@ -457,7 +457,7 @@ namespace System.Runtime.CompilerServices
             // See comment on AsyncMethodBuilderCore.Start
             // AsyncMethodBuilderCore.Start(ref stateMachine);
 
-            if (stateMachine == null) throw new ArgumentNullException("stateMachine");
+            if (stateMachine == null) throw new ArgumentNullException(nameof(stateMachine));
             Contract.EndContractBlock();
 
             // Run the MoveNext method within a copy-on-write ExecutionContext scope.
@@ -650,7 +650,7 @@ namespace System.Runtime.CompilerServices
         /// <exception cref="System.InvalidOperationException">The task has already completed.</exception>
         public void SetException(Exception exception)
         {
-            if (exception == null) throw new ArgumentNullException("exception");
+            if (exception == null) throw new ArgumentNullException(nameof(exception));
             Contract.EndContractBlock();
 
 
@@ -859,7 +859,7 @@ namespace System.Runtime.CompilerServices
         internal static void Start<TStateMachine>(ref TStateMachine stateMachine)
             where TStateMachine : IAsyncStateMachine
         {
-            if (stateMachine == null) throw new ArgumentNullException("stateMachine");
+            if (stateMachine == null) throw new ArgumentNullException(nameof(stateMachine));
             Contract.EndContractBlock();
 
             // Run the MoveNext method within a copy-on-write ExecutionContext scope.
@@ -887,7 +887,7 @@ namespace System.Runtime.CompilerServices
         /// <exception cref="System.InvalidOperationException">The builder is incorrectly initialized.</exception>
         public void SetStateMachine(IAsyncStateMachine stateMachine)
         {
-            if (stateMachine == null) throw new ArgumentNullException("stateMachine");
+            if (stateMachine == null) throw new ArgumentNullException(nameof(stateMachine));
             Contract.EndContractBlock();
             if (m_stateMachine != null) throw new InvalidOperationException(Environment.GetResourceString("AsyncMethodBuilder_InstanceNotInitialized"));
             m_stateMachine = stateMachine;

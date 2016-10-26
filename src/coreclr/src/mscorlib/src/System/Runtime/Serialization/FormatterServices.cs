@@ -199,7 +199,7 @@ namespace System.Runtime.Serialization {
             MemberInfo[] members;
     
             if ((object)type==null) {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
             Contract.EndContractBlock();
 
@@ -257,7 +257,7 @@ namespace System.Runtime.Serialization {
         [System.Security.SecurityCritical]  // auto-generated_required
         public static Object GetUninitializedObject(Type type) {
             if ((object)type == null) {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
             Contract.EndContractBlock();
     
@@ -271,7 +271,7 @@ namespace System.Runtime.Serialization {
         [System.Security.SecurityCritical]  // auto-generated_required
         public static Object GetSafeUninitializedObject(Type type) {
              if ((object)type == null) {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
              Contract.EndContractBlock();
     
@@ -348,15 +348,15 @@ namespace System.Runtime.Serialization {
         [System.Security.SecurityCritical]  // auto-generated_required
         public static Object PopulateObjectMembers(Object obj, MemberInfo[] members, Object[] data) {
             if (obj==null) {
-                throw new ArgumentNullException("obj");
+                throw new ArgumentNullException(nameof(obj));
             }
 
             if (members==null) {
-                throw new ArgumentNullException("members");
+                throw new ArgumentNullException(nameof(members));
             }
 
             if (data==null) {
-                throw new ArgumentNullException("data");
+                throw new ArgumentNullException(nameof(data));
             }
 
             if (members.Length!=data.Length) {
@@ -372,7 +372,7 @@ namespace System.Runtime.Serialization {
                 mi = members[i];
     
                 if (mi==null) {
-                    throw new ArgumentNullException("members", Environment.GetResourceString("ArgumentNull_NullMember", i));
+                    throw new ArgumentNullException(nameof(members), Environment.GetResourceString("ArgumentNull_NullMember", i));
                 }
         
                 //If we find an empty, it means that the value was never set during deserialization.
@@ -404,11 +404,11 @@ namespace System.Runtime.Serialization {
         public static Object[] GetObjectData(Object obj, MemberInfo[] members) {
     
             if (obj==null) {
-                throw new ArgumentNullException("obj");
+                throw new ArgumentNullException(nameof(obj));
             }
     
             if (members==null) {
-                throw new ArgumentNullException("members");
+                throw new ArgumentNullException(nameof(members));
             }
             Contract.EndContractBlock();
             
@@ -421,7 +421,7 @@ namespace System.Runtime.Serialization {
                 mi=members[i];
     
                 if (mi==null) {
-                    throw new ArgumentNullException("members", Environment.GetResourceString("ArgumentNull_NullMember", i));
+                    throw new ArgumentNullException(nameof(members), Environment.GetResourceString("ArgumentNull_NullMember", i));
                 }
     
                 if (mi.MemberType==MemberTypes.Field) {
@@ -448,7 +448,7 @@ namespace System.Runtime.Serialization {
         public static ISerializationSurrogate GetSurrogateForCyclicalReference(ISerializationSurrogate innerSurrogate)
         {
             if (innerSurrogate == null)
-                throw new ArgumentNullException("innerSurrogate");
+                throw new ArgumentNullException(nameof(innerSurrogate));
             Contract.EndContractBlock();
             return new SurrogateForCyclicalReference(innerSurrogate);
         }
@@ -462,7 +462,7 @@ namespace System.Runtime.Serialization {
         [System.Security.SecurityCritical]  // auto-generated_required
         public static Type GetTypeFromAssembly(Assembly assem, String name) {
             if (assem==null)
-                throw new ArgumentNullException("assem");
+                throw new ArgumentNullException(nameof(assem));
             Contract.EndContractBlock();
             return assem.GetType(name, false, false);
         }
@@ -499,7 +499,7 @@ namespace System.Runtime.Serialization {
 
         internal static string GetClrAssemblyName(Type type, out bool hasTypeForwardedFrom) {
             if ((object)type == null) {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
 
             object[] typeAttributes = type.GetCustomAttributes(typeof(TypeForwardedFromAttribute), false);
@@ -566,7 +566,7 @@ namespace System.Runtime.Serialization {
         internal SurrogateForCyclicalReference(ISerializationSurrogate innerSurrogate)
         {
             if (innerSurrogate == null)
-                throw new ArgumentNullException("innerSurrogate");
+                throw new ArgumentNullException(nameof(innerSurrogate));
             this.innerSurrogate = innerSurrogate;
         }
 

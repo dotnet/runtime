@@ -151,7 +151,7 @@ namespace System {
         // Determines whether a String represents true or false.
         // 
         public static Boolean Parse (String value) {
-            if (value==null) throw new ArgumentNullException("value");
+            if (value==null) throw new ArgumentNullException(nameof(value));
             Contract.EndContractBlock();
             Boolean result = false;
             if (!TryParse(value, out result)) {

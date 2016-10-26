@@ -64,7 +64,7 @@ namespace System.Security {
         // The data structure consuming this will be responsible for dealing with null objects as keys.
         public int GetHashCode(Object obj)
         {            
-            if (obj == null) throw new ArgumentNullException("obj");
+            if (obj == null) throw new ArgumentNullException(nameof(obj));
             Contract.EndContractBlock();
             
             String str = obj as String;

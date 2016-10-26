@@ -84,7 +84,7 @@ namespace Microsoft.Win32 {
         [System.Security.SecurityCritical]  // auto-generated
         private static RegistryKey GetBaseKeyFromKeyName(string keyName, out string subKeyName) {
             if( keyName == null) {
-                throw new ArgumentNullException("keyName");
+                throw new ArgumentNullException(nameof(keyName));
             }
 
             string basekeyName;
