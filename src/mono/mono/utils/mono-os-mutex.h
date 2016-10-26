@@ -123,9 +123,31 @@ mono_os_cond_init (mono_cond_t *cond)
 {
 	int res;
 
+#if !defined(CLOCK_MONOTONIC) || defined(PLATFORM_MACOSX)
 	res = pthread_cond_init (cond, NULL);
 	if (G_UNLIKELY (res != 0))
 		g_error ("%s: pthread_cond_init failed with \"%s\" (%d)", __func__, g_strerror (res), res);
+#else
+	/* POSIX standard does not compel to have CLOCK_MONOTONIC */
+	pthread_condattr_t attr;
+
+	res = pthread_condattr_init (&attr);
+	if (G_UNLIKELY (res != 0))
+		g_error ("%s: pthread_condattr_init failed with \"%s\" (%d)", __func__, g_strerror (res), res);
+
+	res = pthread_condattr_setclock (&attr, CLOCK_MONOTONIC);
+	if (G_UNLIKELY (res != 0))
+		g_error ("%s: pthread_condattr_setclock failed with \"%s\" (%d)", __func__, g_strerror (res), res);
+
+	/* Attach an attribute having CLOCK_MONOTONIC to condition */
+	res = pthread_cond_init (cond, &attr);
+	if (G_UNLIKELY (res != 0))
+		g_error ("%s: pthread_cond_init failed with \"%s\" (%d)", __func__, g_strerror (res), res);
+
+	res = pthread_condattr_destroy (&attr);
+	if (G_UNLIKELY (res != 0))
+		g_error ("%s: pthread_condattr_destroy failed with \"%s\" (%d)", __func__, g_strerror (res), res);
+#endif
 }
 
 static inline void
@@ -151,9 +173,10 @@ mono_os_cond_wait (mono_cond_t *cond, mono_mutex_t *mutex)
 static inline int
 mono_os_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout_ms)
 {
+#if !defined(CLOCK_MONOTONIC) || defined(PLATFORM_MACOSX)
 	struct timeval tv;
+#endif
 	struct timespec ts;
-	gint64 usecs;
 	int res;
 
 	if (timeout_ms == MONO_INFINITE_WAIT) {
@@ -163,18 +186,27 @@ mono_os_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout_
 
 	/* ms = 10^-3, us = 10^-6, ns = 10^-9 */
 
+#if !defined(CLOCK_MONOTONIC) || defined(PLATFORM_MACOSX)
+	/* clock_gettime is not supported in MAC OS x */
 	res = gettimeofday (&tv, NULL);
 	if (G_UNLIKELY (res != 0))
 		g_error ("%s: gettimeofday failed with \"%s\" (%d)", __func__, g_strerror (errno), errno);
 
-	tv.tv_sec += timeout_ms / 1000;
-	usecs = tv.tv_usec + ((timeout_ms % 1000) * 1000);
-	if (usecs >= 1000000) {
-		usecs -= 1000000;
-		tv.tv_sec ++;
-	}
 	ts.tv_sec = tv.tv_sec;
-	ts.tv_nsec = usecs * 1000;
+	ts.tv_nsec = tv.tv_usec * 1000;
+#else
+	/* cond is using CLOCK_MONOTONIC as time source */
+	res = clock_gettime (CLOCK_MONOTONIC, &ts);
+	if (G_UNLIKELY (res != 0))
+		g_error ("%s: clock_gettime failed with \"%s\" (%d)", __func__, g_strerror (errno), errno);
+#endif
+
+	ts.tv_sec += timeout_ms / 1000;
+	ts.tv_nsec += (timeout_ms % 1000) * 1000 * 1000;
+	if (ts.tv_nsec >= 1000 * 1000 * 1000) {
+		ts.tv_nsec -= 1000 * 1000 * 1000;
+		ts.tv_sec ++;
+	}
 
 	res = pthread_cond_timedwait (cond, mutex, &ts);
 	if (G_UNLIKELY (res != 0 && res != ETIMEDOUT))
