@@ -22,7 +22,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            frame.Push(_field.GetValue(null));
+            frame.Push(_field.GetValue(obj: null));
             return +1;
         }
     }
