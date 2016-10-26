@@ -55,7 +55,7 @@ namespace System.Text
                 // Can't change fallback if buffer is wrong
                 if (m_fallbackBuffer != null && m_fallbackBuffer.Remaining > 0)
                     throw new ArgumentException(
-                      Environment.GetResourceString("Argument_FallbackBufferNotEmpty"), "value");
+                      Environment.GetResourceString("Argument_FallbackBufferNotEmpty"), nameof(value));
 
                 m_fallback = value;
                 m_fallbackBuffer = null;

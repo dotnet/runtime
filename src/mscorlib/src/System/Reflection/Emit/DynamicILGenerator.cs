@@ -100,7 +100,7 @@ namespace System.Reflection.Emit
             {
                 RuntimeMethodInfo rtMeth = meth as RuntimeMethodInfo;
                 if (rtMeth == null)
-                    throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeMethodInfo"), "meth");
+                    throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeMethodInfo"), nameof(meth));
 
                 RuntimeType declaringType = rtMeth.GetRuntimeType();
                 if (declaringType != null && (declaringType.IsGenericType || declaringType.IsArray))
@@ -152,7 +152,7 @@ namespace System.Reflection.Emit
 
             RuntimeConstructorInfo rtConstructor = con as RuntimeConstructorInfo;
             if (rtConstructor == null)
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeMethodInfo"), "con");
+                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeMethodInfo"), nameof(con));
 
             RuntimeType declaringType = rtConstructor.GetRuntimeType();
             int token;
@@ -197,7 +197,7 @@ namespace System.Reflection.Emit
 
             RuntimeFieldInfo runtimeField = field as RuntimeFieldInfo;
             if (runtimeField == null)
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeFieldInfo"), "field");
+                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeFieldInfo"), nameof(field));
 
             int token;
             if (field.DeclaringType == null)
@@ -313,13 +313,13 @@ namespace System.Reflection.Emit
                 throw new ArgumentNullException(nameof(methodInfo));
 
             if (!(opcode.Equals(OpCodes.Call) || opcode.Equals(OpCodes.Callvirt) || opcode.Equals(OpCodes.Newobj)))
-                throw new ArgumentException(Environment.GetResourceString("Argument_NotMethodCallOpcode"), "opcode");
+                throw new ArgumentException(Environment.GetResourceString("Argument_NotMethodCallOpcode"), nameof(opcode));
 
             if (methodInfo.ContainsGenericParameters)
-                throw new ArgumentException(Environment.GetResourceString("Argument_GenericsInvalid"), "methodInfo");
+                throw new ArgumentException(Environment.GetResourceString("Argument_GenericsInvalid"), nameof(methodInfo));
 
             if (methodInfo.DeclaringType != null && methodInfo.DeclaringType.ContainsGenericParameters)
-                throw new ArgumentException(Environment.GetResourceString("Argument_GenericsInvalid"), "methodInfo");
+                throw new ArgumentException(Environment.GetResourceString("Argument_GenericsInvalid"), nameof(methodInfo));
             Contract.EndContractBlock();
 
             int tk;
@@ -493,7 +493,7 @@ namespace System.Reflection.Emit
             DynamicMethod dm = methodInfo as DynamicMethod;
 
             if (rtMeth == null && dm == null)
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeMethodInfo"), "methodInfo");
+                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeMethodInfo"), nameof(methodInfo));
 
             ParameterInfo[] paramInfo = methodInfo.GetParametersNoCopy();
             if (paramInfo != null && paramInfo.Length != 0)

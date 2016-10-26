@@ -935,11 +935,11 @@ namespace System {
             }
 
             if( variable.Length == 0) {
-                throw new ArgumentException(Environment.GetResourceString("Argument_StringZeroLength"), "variable");
+                throw new ArgumentException(Environment.GetResourceString("Argument_StringZeroLength"), nameof(variable));
             }
 
             if( variable[0] == '\0') {
-                throw new ArgumentException(Environment.GetResourceString("Argument_StringFirstCharIsZero"), "variable");
+                throw new ArgumentException(Environment.GetResourceString("Argument_StringFirstCharIsZero"), nameof(variable));
             }
 
             // Make sure the environment variable name isn't longer than the 

@@ -205,25 +205,25 @@ namespace System.Security {
             Parser parser = new Parser( str );
             SecurityElement elRoot = parser.GetTopElement();
             if (elRoot == null)
-                throw new ArgumentException( String.Format( CultureInfo.CurrentCulture, Environment.GetResourceString( "Policy_BadXml" ), "configuration" ) );
+                throw new ArgumentException( String.Format( CultureInfo.CurrentCulture, Environment.GetResourceString( "Policy_BadXml" ), nameof(configuration) ) );
 
             SecurityElement elMscorlib = elRoot.SearchForChildByTag( "mscorlib" );
             if (elMscorlib == null)
-                throw new ArgumentException( String.Format( CultureInfo.CurrentCulture, Environment.GetResourceString( "Policy_BadXml" ), "mscorlib" ) );
+                throw new ArgumentException( String.Format( CultureInfo.CurrentCulture, Environment.GetResourceString( "Policy_BadXml" ), nameof(mscorlib) ) );
 
             SecurityElement elSecurity = elMscorlib.SearchForChildByTag( "security" );
             if (elSecurity == null)
-                throw new ArgumentException( String.Format( CultureInfo.CurrentCulture, Environment.GetResourceString( "Policy_BadXml" ), "security" ) );
+                throw new ArgumentException( String.Format( CultureInfo.CurrentCulture, Environment.GetResourceString( "Policy_BadXml" ), nameof(security) ) );
 
             SecurityElement elPolicy = elSecurity.SearchForChildByTag( "policy" );
             if (elPolicy == null)
-                throw new ArgumentException( String.Format( CultureInfo.CurrentCulture, Environment.GetResourceString( "Policy_BadXml" ), "policy" ) );
+                throw new ArgumentException( String.Format( CultureInfo.CurrentCulture, Environment.GetResourceString( "Policy_BadXml" ), nameof(policy) ) );
 
             SecurityElement elPolicyLevel = elPolicy.SearchForChildByTag( "PolicyLevel" );
             if (elPolicyLevel != null)
                 level.FromXml( elPolicyLevel );
             else
-                throw new ArgumentException( String.Format( CultureInfo.CurrentCulture, Environment.GetResourceString( "Policy_BadXml" ), "PolicyLevel" ) );
+                throw new ArgumentException( String.Format( CultureInfo.CurrentCulture, Environment.GetResourceString( "Policy_BadXml" ), nameof(PolicyLevel) ) );
 
             return level;
         }

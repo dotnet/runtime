@@ -131,7 +131,7 @@ namespace System {
           if ((digits < 0) || (digits > maxRoundingDigits))
               throw new ArgumentOutOfRangeException("digits", Environment.GetResourceString("ArgumentOutOfRange_RoundingDigits"));
           if (mode < MidpointRounding.ToEven || mode > MidpointRounding.AwayFromZero) {            
-              throw new ArgumentException(Environment.GetResourceString("Argument_InvalidEnumValue", mode, "MidpointRounding"), "mode");
+              throw new ArgumentException(Environment.GetResourceString("Argument_InvalidEnumValue", mode, nameof(MidpointRounding)), nameof(mode));
           }
           Contract.EndContractBlock();
           return InternalRound(value, digits, mode);                           

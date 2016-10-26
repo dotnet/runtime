@@ -88,7 +88,7 @@ namespace System.Security.Permissions {
                     m_keyStore = "*";
                 } else {
                     if (value != "User" && value != "Machine" && value != "*")
-                        throw new ArgumentException(Environment.GetResourceString("Argument_InvalidKeyStore", value), "value");
+                        throw new ArgumentException(Environment.GetResourceString("Argument_InvalidKeyStore", value), nameof(value));
                     m_keyStore = value;
                 }
             }

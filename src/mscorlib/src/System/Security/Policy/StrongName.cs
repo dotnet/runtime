@@ -55,7 +55,7 @@ namespace System.Security.Policy {
 
             RuntimeAssembly rtAssembly = assembly as RuntimeAssembly;
             if (assembly != null && rtAssembly == null)
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeAssembly"), "assembly");
+                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeAssembly"), nameof(assembly));
 
             m_publicKeyBlob = blob;
             m_name = name;

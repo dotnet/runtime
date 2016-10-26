@@ -36,7 +36,7 @@ namespace System.Reflection
         public static FieldInfo GetFieldFromHandle(RuntimeFieldHandle handle)
         {
             if (handle.IsNullHandle())
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidHandle"), "handle");
+                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidHandle"), nameof(handle));
                 
             FieldInfo f = RuntimeType.GetFieldInfo(handle.GetRuntimeFieldInfo());
                        
@@ -331,7 +331,7 @@ namespace System.Reflection
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
             if (attributeRuntimeType == null) 
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),"attributeType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
         }
@@ -346,7 +346,7 @@ namespace System.Reflection
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
             if (attributeRuntimeType == null) 
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),"attributeType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),nameof(attributeType));
 
             return CustomAttribute.IsDefined(this, attributeRuntimeType);
         }

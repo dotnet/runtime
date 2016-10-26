@@ -983,15 +983,15 @@ namespace System {
                             // Found a low surrogate.
                             return ((temp1 * 0x400) + temp2 + UNICODE_PLANE01_START);
                         } else {
-                            throw new ArgumentException(Environment.GetResourceString("Argument_InvalidHighSurrogate", index), "s"); 
+                            throw new ArgumentException(Environment.GetResourceString("Argument_InvalidHighSurrogate", index), nameof(s)); 
                         }
                     } else {
                         // Found a high surrogate at the end of the string.
-                        throw new ArgumentException(Environment.GetResourceString("Argument_InvalidHighSurrogate", index), "s"); 
+                        throw new ArgumentException(Environment.GetResourceString("Argument_InvalidHighSurrogate", index), nameof(s)); 
                     }
                 } else {
                     // Find a low surrogate at the character pointed by index.
-                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidLowSurrogate", index), "s"); 
+                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidLowSurrogate", index), nameof(s)); 
                 }
             }
             // Not a high-surrogate or low-surrogate. Genereate the UTF32 value for the BMP characters.

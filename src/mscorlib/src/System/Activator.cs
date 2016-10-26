@@ -102,7 +102,7 @@ namespace System {
             RuntimeType rt = type.UnderlyingSystemType as RuntimeType;
 
             if (rt == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),"type");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), nameof(type));
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return rt.CreateInstanceImpl(bindingAttr,binder,args,culture,activationAttributes, ref stackMark);
@@ -188,7 +188,7 @@ namespace System {
             RuntimeType rt = type.UnderlyingSystemType as RuntimeType;
 
             if (rt == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), "type");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), nameof(type));
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return rt.CreateInstanceDefaultCtor(!nonPublic, false, true, ref stackMark);

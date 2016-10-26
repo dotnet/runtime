@@ -45,7 +45,7 @@ namespace System.Collections {
                 throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
 
             if ( array.Length - index < this.Count ) 
-                throw new ArgumentException( Environment.GetResourceString("ArgumentOutOfRange_Index"), "index");
+                throw new ArgumentException( Environment.GetResourceString("ArgumentOutOfRange_Index"), nameof(index));
             Contract.EndContractBlock();
 
             // the actual copy is a NOP
@@ -85,10 +85,10 @@ namespace System.Collections {
                 }
 
                 if (!key.GetType().IsSerializable)                 
-                    throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), "key");                    
+                    throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), nameof(key));                    
 
                 if( (value != null) && (!value.GetType().IsSerializable ) )
-                    throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), "value");                    
+                    throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), nameof(value));                    
                 Contract.EndContractBlock();
 
                 throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ReadOnly"));
@@ -117,10 +117,10 @@ namespace System.Collections {
             }
 
             if (!key.GetType().IsSerializable)                 
-                throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), "key" );                    
+                throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), nameof(key) );                    
 
             if( (value != null) && (!value.GetType().IsSerializable) )
-                throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), "value");                    
+                throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), nameof(value));                    
             Contract.EndContractBlock();
 
             throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ReadOnly"));

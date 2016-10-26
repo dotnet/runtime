@@ -1273,7 +1273,7 @@ namespace System.Reflection.Emit
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(name));
             Contract.Ensures(Contract.Result<IResourceWriter>() != null);
             Contract.EndContractBlock();
 
@@ -1323,7 +1323,7 @@ namespace System.Reflection.Emit
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(name));
         
             if (m_assemblyBuilder.IsPersistable())
             {
@@ -1444,7 +1444,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentNullException(nameof(name));
 
             if (name.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(name));
         
             if ((attributes & MethodAttributes.Static) == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_GlobalFunctionHasToBeStatic"));
@@ -1998,7 +1998,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentNullException(nameof(methodName));
 
             if (methodName.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "methodName");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(methodName));
 
             if (arrayClass.IsArray == false)
                 throw new ArgumentException(Environment.GetResourceString("Argument_HasToBeArrayClass")); 

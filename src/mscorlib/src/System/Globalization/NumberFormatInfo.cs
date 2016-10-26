@@ -809,7 +809,7 @@ namespace System.Globalization {
         internal static void ValidateParseStyleInteger(NumberStyles style) {
             // Check for undefined flags
             if ((style & InvalidNumberStyles) != 0) {
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidNumberStyles"), "style");
+                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidNumberStyles"), nameof(style));
             }
             Contract.EndContractBlock();
             if ((style & NumberStyles.AllowHexSpecifier) != 0) { // Check for hex number
@@ -822,7 +822,7 @@ namespace System.Globalization {
         internal static void ValidateParseStyleFloatingPoint(NumberStyles style) {
             // Check for undefined flags
             if ((style & InvalidNumberStyles) != 0) {
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidNumberStyles"), "style");
+                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidNumberStyles"), nameof(style));
             }
             Contract.EndContractBlock();
             if ((style & NumberStyles.AllowHexSpecifier) != 0) { // Check for hex number

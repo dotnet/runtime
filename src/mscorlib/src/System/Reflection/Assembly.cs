@@ -586,7 +586,7 @@ namespace System.Reflection
 
             if (Path.IsRelative(path))
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_AbsolutePathRequired"), "path");
+                throw new ArgumentException(Environment.GetResourceString("Argument_AbsolutePathRequired"), nameof(path));
             }
 
             string normalizedPath = Path.GetFullPathInternal(path);
@@ -1639,7 +1639,7 @@ namespace System.Reflection
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
             if (attributeRuntimeType == null) 
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),"attributeType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
         }

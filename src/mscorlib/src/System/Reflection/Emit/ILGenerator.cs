@@ -599,7 +599,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentNullException(nameof(methodInfo));
 
             if (!(opcode.Equals(OpCodes.Call) || opcode.Equals(OpCodes.Callvirt) || opcode.Equals(OpCodes.Newobj)))
-                throw new ArgumentException(Environment.GetResourceString("Argument_NotMethodCallOpcode"), "opcode");
+                throw new ArgumentException(Environment.GetResourceString("Argument_NotMethodCallOpcode"), nameof(opcode));
 
             Contract.EndContractBlock();
 
@@ -859,7 +859,7 @@ namespace System.Reflection.Emit
             int tempVal = local.GetLocalIndex();
             if (local.GetMethodBuilder() != m_methodBuilder)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_UnmatchedMethodForLocal"), "local");
+                throw new ArgumentException(Environment.GetResourceString("Argument_UnmatchedMethodForLocal"), nameof(local));
             }
             // If the instruction is a ldloc, ldloca a stloc, morph it to the optimal form.
             if (opcode.Equals(OpCodes.Ldloc))
@@ -1213,7 +1213,7 @@ namespace System.Reflection.Emit
             parameterTypes[0] = (Type)cls;
             MethodInfo mi = prop.ReturnType.GetMethod("WriteLine", parameterTypes);
              if (mi==null) {
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmitWriteLineType"), "localBuilder");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmitWriteLineType"), nameof(localBuilder));
             }
 
             Emit(OpCodes.Callvirt, mi);
@@ -1251,7 +1251,7 @@ namespace System.Reflection.Emit
             parameterTypes[0] = (Type)cls;
             MethodInfo mi = prop.ReturnType.GetMethod("WriteLine", parameterTypes);
             if (mi==null) {
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmitWriteLineType"), "fld");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmitWriteLineType"), nameof(fld));
             }
             Emit(OpCodes.Callvirt, mi);
         }
@@ -1306,7 +1306,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentNullException(nameof(usingNamespace));
 
             if (usingNamespace.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "usingNamespace");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(usingNamespace));
             Contract.EndContractBlock();
 
             int index;

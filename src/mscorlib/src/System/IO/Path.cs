@@ -1418,9 +1418,9 @@ namespace System.IO {
             CheckInvalidPathChars(path2);
             
             if (path2.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_PathEmpty"), "path2");
+                throw new ArgumentException(Environment.GetResourceString("Argument_PathEmpty"), nameof(path2));
             if (IsPathRooted(path2))
-                throw new ArgumentException(Environment.GetResourceString("Arg_Path2IsRooted"), "path2");
+                throw new ArgumentException(Environment.GetResourceString("Arg_Path2IsRooted"), nameof(path2));
             int i = path1.Length;
             if (i == 0) return path2;
             char ch = path1[i - 1];

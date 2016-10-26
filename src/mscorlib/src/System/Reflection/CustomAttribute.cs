@@ -279,7 +279,7 @@ namespace System.Reflection
             if (type.IsValueType)
                 return CustomAttributeEncoding.Undefined;
 
-            throw new ArgumentException(Environment.GetResourceString("Argument_InvalidKindOfTypeForCA"), "type");
+            throw new ArgumentException(Environment.GetResourceString("Argument_InvalidKindOfTypeForCA"), nameof(type));
         }
         private static CustomAttributeType InitCustomAttributeType(RuntimeType parameterType)
         {
@@ -749,7 +749,7 @@ namespace System.Reflection
                     return typeof(object);
 
                 default :
-                    throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)encodedType), "encodedType");
+                    throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)encodedType), nameof(encodedType));
             }
         }
 
@@ -795,7 +795,7 @@ namespace System.Reflection
                     unsafe { return *(double*)&val; }
 
                 default:
-                    throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)val), "val");
+                    throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)val), nameof(val));
             }
         }
         private static RuntimeType ResolveType(RuntimeModule scope, string typeName)
