@@ -5488,7 +5488,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         costSz += 2;
                     }
                 }
-                else if ((opts.eeFlags & CORJIT_FLG_PREJIT) == 0)
+                else if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
                 {
                     costEx += 2;
                     costSz += 6;

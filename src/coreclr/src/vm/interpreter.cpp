@@ -1736,13 +1736,13 @@ void Interpreter::JitMethodIfAppropriate(InterpreterMethodInfo* interpMethInfo, 
                 fprintf(GetLogFile(), "JITting method %s:%s.\n", md->m_pszDebugClassName, md->m_pszDebugMethodName);
             }
 #endif // _DEBUG
-            DWORD dwFlags = CORJIT_FLG_MAKEFINALCODE;
+            CORJIT_FLAGS jitFlags(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE);
             NewHolder<COR_ILMETHOD_DECODER> pDecoder(NULL);
             // Dynamic methods (e.g., IL stubs) do not have an IL decoder but may
             // require additional flags.  Ordinary methods require the opposite.
             if (md->IsDynamicMethod())
             {
-                dwFlags |= md->AsDynamicMethodDesc()->GetILStubResolver()->GetJitFlags();
+                jitFlags.Add(md->AsDynamicMethodDesc()->GetILStubResolver()->GetJitFlags());
             }
             else
             {
@@ -1751,7 +1751,7 @@ void Interpreter::JitMethodIfAppropriate(InterpreterMethodInfo* interpMethInfo, 
                                                     md->GetMDImport(),
                                                     &status);
             }
-            PCODE res = md->MakeJitWorker(pDecoder, dwFlags, 0);
+            PCODE res = md->MakeJitWorker(pDecoder, jitFlags);
             interpMethInfo->m_jittedCode = res;
         }
     }

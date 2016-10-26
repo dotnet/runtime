@@ -48,7 +48,7 @@ void interceptor_ICJC::getVersionIdentifier(GUID* versionIdentifier /* OUT */)
     original_ICorJitCompiler->getVersionIdentifier(versionIdentifier);
 }
 
-unsigned interceptor_ICJC::getMaxIntrinsicSIMDVectorLength(DWORD cpuCompileFlags)
+unsigned interceptor_ICJC::getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags)
 {
     return original_ICorJitCompiler->getMaxIntrinsicSIMDVectorLength(cpuCompileFlags);
 }

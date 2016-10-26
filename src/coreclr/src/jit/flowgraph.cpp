@@ -6654,7 +6654,7 @@ void Compiler::fgImport()
 
     impImport(fgFirstBB);
 
-    if (!(opts.eeFlags & CORJIT_FLG_SKIP_VERIFICATION))
+    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SKIP_VERIFICATION))
     {
         CorInfoMethodRuntimeFlags verFlag;
         verFlag = tiIsVerifiableCode ? CORINFO_FLG_VERIFIABLE : CORINFO_FLG_UNVERIFIABLE;
@@ -8289,7 +8289,7 @@ void Compiler::fgAddInternal()
 
     CORINFO_JUST_MY_CODE_HANDLE* pDbgHandle = nullptr;
     CORINFO_JUST_MY_CODE_HANDLE  dbgHandle  = nullptr;
-    if (opts.compDbgCode && !(opts.eeFlags & CORJIT_FLG_IL_STUB))
+    if (opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
     {
         dbgHandle = info.compCompHnd->getJustMyCodeHandle(info.compMethodHnd, &pDbgHandle);
     }
@@ -14019,7 +14019,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     // we are willing to have more code expansion since we
     // won't be running code from this page
     //
-    if (opts.eeFlags & CORJIT_FLG_PREJIT)
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
     {
         if (rareJump)
         {
@@ -18661,7 +18661,7 @@ FILE*              Compiler::fgOpenFlowGraphFile(bool*  wbDontClose, Phases phas
     bool           createDuplicateFgxFiles = true;
 
 #ifdef DEBUG
-    if (opts.eeFlags & CORJIT_FLG_PREJIT)
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
     {
         pattern = JitConfig.NgenDumpFg();
         filename = JitConfig.NgenDumpFgFile();
@@ -21504,10 +21504,17 @@ void       Compiler::fgInvokeInlineeCompiler(GenTreeCall*  call,
                          pParam->pThis->eeGetMethodFullName(pParam->fncHandle),
                          pParam->pThis->dspPtr(pParam->inlineInfo->tokenLookupContextHandle)));
 
-            CORJIT_FLAGS compileFlagsForInlinee;
-            memcpy(&compileFlagsForInlinee, pParam->pThis->opts.jitFlags, sizeof(compileFlagsForInlinee));
-            compileFlagsForInlinee.corJitFlags &= ~CORJIT_FLG_LOST_WHEN_INLINING;
-            compileFlagsForInlinee.corJitFlags |= CORJIT_FLG_SKIP_VERIFICATION;
+            JitFlags compileFlagsForInlinee = *pParam->pThis->opts.jitFlags;
+
+            // The following flags are lost when inlining.
+            // (This is checked in Compiler::compInitOptions().)
+            compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_BBOPT);
+            compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_BBINSTR);
+            compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_PROF_ENTERLEAVE);
+            compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_DEBUG_EnC);
+            compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_DEBUG_INFO);
+
+            compileFlagsForInlinee.Set(JitFlags::JIT_FLAG_SKIP_VERIFICATION);
 
 #ifdef DEBUG
             if (pParam->pThis->verbose)
