@@ -154,8 +154,7 @@ namespace System.Diagnostics
                 // the process hasn't finished loading the main module (most likely).
                 // On NT, the first module is the main module.
                 EnsureState(State.HaveId | State.IsLocal);
-                ModuleInfo module = NtProcessManager.GetFirstModuleInfo(_processId);
-                return (module != null ? new ProcessModule(module) : null);
+                return NtProcessManager.GetFirstModule(_processId);
             }
         }
 
