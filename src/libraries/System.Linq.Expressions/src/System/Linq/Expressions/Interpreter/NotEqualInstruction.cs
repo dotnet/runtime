@@ -31,7 +31,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.True);
+                    frame.Push(ScriptingRuntimeHelpers.Boolean_True);
                 }
                 else
                 {
@@ -53,7 +53,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.True);
+                    frame.Push(ScriptingRuntimeHelpers.Boolean_True);
                 }
                 else
                 {
@@ -75,7 +75,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.True);
+                    frame.Push(ScriptingRuntimeHelpers.Boolean_True);
                 }
                 else
                 {
@@ -97,7 +97,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.True);
+                    frame.Push(ScriptingRuntimeHelpers.Boolean_True);
                 }
                 else
                 {
@@ -119,7 +119,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.True);
+                    frame.Push(ScriptingRuntimeHelpers.Boolean_True);
                 }
                 else
                 {
@@ -141,7 +141,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.True);
+                    frame.Push(ScriptingRuntimeHelpers.Boolean_True);
                 }
                 else
                 {
@@ -163,7 +163,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.True);
+                    frame.Push(ScriptingRuntimeHelpers.Boolean_True);
                 }
                 else
                 {
@@ -185,7 +185,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.True);
+                    frame.Push(ScriptingRuntimeHelpers.Boolean_True);
                 }
                 else
                 {
@@ -207,7 +207,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.True);
+                    frame.Push(ScriptingRuntimeHelpers.Boolean_True);
                 }
                 else
                 {
@@ -229,7 +229,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.True);
+                    frame.Push(ScriptingRuntimeHelpers.Boolean_True);
                 }
                 else
                 {
@@ -251,7 +251,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.True);
+                    frame.Push(ScriptingRuntimeHelpers.Boolean_True);
                 }
                 else
                 {
@@ -273,7 +273,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else if (right == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.True);
+                    frame.Push(ScriptingRuntimeHelpers.Boolean_True);
                 }
                 else
                 {

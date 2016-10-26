@@ -223,7 +223,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else if (other == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.False);
+                    frame.Push(ScriptingRuntimeHelpers.Boolean_False);
                 }
                 else
                 {

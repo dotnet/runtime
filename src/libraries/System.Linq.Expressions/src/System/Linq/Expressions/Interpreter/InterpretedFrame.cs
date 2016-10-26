@@ -73,7 +73,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public void Push(bool value)
         {
-            Data[StackIndex++] = value ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            Data[StackIndex++] = value ? ScriptingRuntimeHelpers.Boolean_True : ScriptingRuntimeHelpers.Boolean_False;
         }
 
         public void Push(int value)

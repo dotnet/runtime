@@ -159,13 +159,13 @@ namespace System.Linq.Expressions.Interpreter
                     }
                     else
                     {
-                        frame.Push((bool)right ? null : ScriptingRuntimeHelpers.False);
+                        frame.Push((bool)right ? null : ScriptingRuntimeHelpers.Boolean_False);
                     }
                     return +1;
                 }
                 else if (right == null)
                 {
-                    frame.Push((bool)left ? null : ScriptingRuntimeHelpers.False);
+                    frame.Push((bool)left ? null : ScriptingRuntimeHelpers.Boolean_False);
                     return +1;
                 }
                 frame.Push(((bool)left) & ((bool)right));

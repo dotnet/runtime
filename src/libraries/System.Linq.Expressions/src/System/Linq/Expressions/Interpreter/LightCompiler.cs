@@ -825,12 +825,12 @@ namespace System.Linq.Expressions.Interpreter
                             if (node.NodeType == ExpressionType.Equal)
                             {
                                 // right null, left not, false
-                                _instructions.EmitLoad(ScriptingRuntimeHelpers.False, typeof(bool));
+                                _instructions.EmitLoad(ScriptingRuntimeHelpers.Boolean_False, typeof(bool));
                             }
                             else
                             {
                                 // right null, left not, true
-                                _instructions.EmitLoad(ScriptingRuntimeHelpers.True, typeof(bool));
+                                _instructions.EmitLoad(ScriptingRuntimeHelpers.Boolean_True, typeof(bool));
                             }
                             _instructions.EmitBranch(end, false, true);
 
@@ -875,7 +875,7 @@ namespace System.Linq.Expressions.Interpreter
                                     {
                                         goto default;
                                     }
-                                    _instructions.EmitLoad(ScriptingRuntimeHelpers.False, typeof(object));
+                                    _instructions.EmitLoad(ScriptingRuntimeHelpers.Boolean_False, typeof(object));
                                     break;
                                 default:
                                     _instructions.EmitLoad(null, typeof(object));
@@ -1380,13 +1380,13 @@ namespace System.Linq.Expressions.Interpreter
             _instructions.EmitBranchTrue(returnNull);
 
             // return true
-            _instructions.EmitLoad(andAlso ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False, typeof(object));
+            _instructions.EmitLoad(andAlso ? ScriptingRuntimeHelpers.Boolean_True : ScriptingRuntimeHelpers.Boolean_False, typeof(object));
             _instructions.EmitStoreLocal(result.Index);
             _instructions.EmitBranch(returnValue);
 
             // return false
             _instructions.MarkLabel(returnFalse);
-            _instructions.EmitLoad(andAlso ? ScriptingRuntimeHelpers.False : ScriptingRuntimeHelpers.True, typeof(object));
+            _instructions.EmitLoad(andAlso ? ScriptingRuntimeHelpers.Boolean_False : ScriptingRuntimeHelpers.Boolean_True, typeof(object));
             _instructions.EmitStoreLocal(result.Index);
             _instructions.EmitBranch(returnValue);
 
