@@ -345,17 +345,9 @@ class Program
     static void TestMultipleLoads()
     {
         if (!LLILCJitEnabled) {
-            try
-            {
-                new MyLoadContext().TestMultipleLoads();
-            }
-            catch (FileLoadException e)
-            {
-                Assert.AreEqual(e.ToString().Contains("Native image cannot be loaded multiple times"), true);
-                return;
-            }
-
-            Assert.AreEqual("FileLoadException", "thrown");
+            // Runtime should be able to load the same R2R image in another load context,
+            // even though it will be treated as an IL-only image.
+            new MyLoadContext().TestMultipleLoads();
         }
     }
 #endif
