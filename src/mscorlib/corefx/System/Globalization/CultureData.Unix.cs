@@ -67,7 +67,6 @@ namespace System.Globalization
                 _sName = _sWindowsName;
             }
             _sRealName = _sName;
-            _sSpecificCulture = _sRealName; // we don't attempt to find a non-neutral locale if a neutral is passed in (unlike win32)
 
             _iLanguage = this.ILANGUAGE;
             if (_iLanguage == 0)
@@ -76,7 +75,9 @@ namespace System.Globalization
             }
 
             _bNeutral = (this.SISO3166CTRYNAME.Length == 0);
-
+            
+            _sSpecificCulture = _bNeutral ? LocaleData.GetSpecificCultureName(_sRealName) : _sRealName;   
+            
             // Remove the sort from sName unless custom culture
             if (index>0 && !_bNeutral && !IsCustomCultureId(_iLanguage))
             {
@@ -344,6 +345,61 @@ namespace System.Globalization
         {
             int digitSubstitution = LocaleData.GetLocaleDataNumericPart(cultureName, LocaleDataParts.DigitSubstitution);
             return digitSubstitution == -1 ? (int) DigitShapes.None : digitSubstitution; 
+        }
+
+        private static string GetThreeLetterWindowsLanguageName(string cultureName)
+        {
+            string langName = LocaleData.GetThreeLetterWindowsLangageName(cultureName);
+            return langName == null ? "ZZZ" /* default lang name */ : langName; 
+        }
+
+        private static CultureInfo[] EnumCultures(CultureTypes types)
+        {
+            if ((types & (CultureTypes.NeutralCultures | CultureTypes.SpecificCultures)) == 0)
+            {
+                return Array.Empty<CultureInfo>();
+            }
+            
+            int bufferLength = Interop.GlobalizationInterop.GetLocales(null, 0);
+            if (bufferLength <= 0)
+            {
+                return Array.Empty<CultureInfo>();
+            }
+            
+            Char [] chars = new Char[bufferLength];
+            
+            bufferLength = Interop.GlobalizationInterop.GetLocales(chars, bufferLength);
+            if (bufferLength <= 0)
+            {
+                return Array.Empty<CultureInfo>();
+            }
+            
+            bool enumNeutrals   = (types & CultureTypes.NeutralCultures) != 0; 
+            bool enumSpecificss = (types & CultureTypes.SpecificCultures) != 0; 
+            
+            List<CultureInfo> list = new List<CultureInfo>();
+            if (enumNeutrals) 
+            {
+                list.Add(CultureInfo.InvariantCulture);
+            }
+            
+            int index = 0;
+            while (index < bufferLength)
+            {
+                int length = (int) chars[index++];
+                if (index + length <= bufferLength)
+                {
+                    CultureInfo ci = CultureInfo.GetCultureInfo(new String(chars, index, length));
+                    if ((enumNeutrals && ci.IsNeutralCulture) || (enumSpecificss && !ci.IsNeutralCulture))
+                    {
+                        list.Add(ci);
+                    }
+                }
+                
+                index += length;
+            }
+            
+            return list.ToArray();
         }
     }
 }
