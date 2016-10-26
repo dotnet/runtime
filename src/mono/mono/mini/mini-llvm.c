@@ -8389,7 +8389,7 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 	module->llvm_only = llvm_only;
 	/* The first few entries are reserved */
 	module->max_got_offset = 16;
-	module->context = LLVMContextCreate ();
+	module->context = LLVMGetGlobalContext ();
 
 	if (llvm_only)
 		/* clang ignores our debug info because it has an invalid version */
