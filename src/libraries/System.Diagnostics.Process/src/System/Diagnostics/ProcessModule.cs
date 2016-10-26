@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
-using System.Globalization;
 
 namespace System.Diagnostics
 {
@@ -14,50 +13,24 @@ namespace System.Diagnostics
     /// </devdoc>
     public class ProcessModule : Component
     {
-        private readonly ModuleInfo _moduleInfo;
         private FileVersionInfo _fileVersionInfo;
 
-        /// <devdoc>
-        ///     Initialize the module.
-        /// </devdoc>
-        /// <internalonly/>
-        internal ProcessModule(ModuleInfo moduleInfo)
-        {
-            _moduleInfo = moduleInfo;
-        }
+        internal ProcessModule() { }
 
         /// <devdoc>
         ///     Returns the name of the Module.
         /// </devdoc>
-        public string ModuleName
-        {
-            get
-            {
-                return _moduleInfo._baseName;
-            }
-        }
+        public string ModuleName { get; internal set; }
 
         /// <devdoc>
         ///     Returns the full file path for the location of the module.
         /// </devdoc>
-        public string FileName
-        {
-            get
-            {
-                return _moduleInfo._fileName;
-            }
-        }
+        public string FileName { get; internal set; }
 
         /// <devdoc>
         ///     Returns the memory address that the module was loaded at.
         /// </devdoc>
-        public IntPtr BaseAddress
-        {
-            get
-            {
-                return _moduleInfo._baseOfDll;
-            }
-        }
+        public IntPtr BaseAddress { get; internal set; }
 
         /// <devdoc>
         ///     Returns the amount of memory required to load the module.  This does
@@ -65,42 +38,19 @@ namespace System.Diagnostics
         ///     it is running; it only includes the size of the static code and data
         ///     in the module file.
         /// </devdoc>
-        public int ModuleMemorySize
-        {
-            get
-            {
-                return _moduleInfo._sizeOfImage;
-            }
-        }
+        public int ModuleMemorySize { get; internal set; }
 
         /// <devdoc>
         ///     Returns the memory address for function that runs when the module is
         ///     loaded and run.
         /// </devdoc>
-        public IntPtr EntryPointAddress
-        {
-            get
-            {
-                return _moduleInfo._entryPoint;
-            }
-        }
+        public IntPtr EntryPointAddress { get; internal set; }
 
         /// <devdoc>
         ///     Returns version information about the module.
         /// </devdoc>
-        public FileVersionInfo FileVersionInfo
-        {
-            get
-            {
-                if (_fileVersionInfo == null)
-                    _fileVersionInfo = FileVersionInfo.GetVersionInfo(FileName);
-                return _fileVersionInfo;
-            }
-        }
+        public FileVersionInfo FileVersionInfo => _fileVersionInfo ?? (_fileVersionInfo = FileVersionInfo.GetVersionInfo(FileName));
 
-        public override string ToString()
-        {
-            return String.Format(CultureInfo.CurrentCulture, "{0} ({1})", base.ToString(), ModuleName);
-        }
+        public override string ToString() => $"{base.ToString()} ({ModuleName})";
     }
 }

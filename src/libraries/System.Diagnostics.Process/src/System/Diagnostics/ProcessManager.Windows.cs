@@ -2,13 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics
 {
@@ -89,9 +88,9 @@ namespace System.Diagnostics
         /// <summary>Gets an array of module infos for the specified process.</summary>
         /// <param name="processId">The ID of the process whose modules should be enumerated.</param>
         /// <returns>The array of modules.</returns>
-        public static ModuleInfo[] GetModuleInfos(int processId)
+        public static ProcessModuleCollection GetModules(int processId)
         {
-            return NtProcessManager.GetModuleInfos(processId);
+            return NtProcessManager.GetModules(processId);
         }
 
         /// <summary>Gets whether the named machine is remote or local.</summary>
@@ -291,25 +290,18 @@ namespace System.Diagnostics
             return ids;
         }
 
-        public static ModuleInfo[] GetModuleInfos(int processId)
+        public static ProcessModuleCollection GetModules(int processId)
         {
-            return GetModuleInfos(processId, false);
+            return GetModules(processId, firstModuleOnly: false);
         }
 
-        public static ModuleInfo GetFirstModuleInfo(int processId)
+        public static ProcessModule GetFirstModule(int processId)
         {
-            ModuleInfo[] moduleInfos = GetModuleInfos(processId, true);
-            if (moduleInfos.Length == 0)
-            {
-                return null;
-            }
-            else
-            {
-                return moduleInfos[0];
-            }
+            ProcessModuleCollection modules = GetModules(processId, firstModuleOnly: true);
+            return modules.Count == 0 ? null : modules[0];
         }
 
-        private static ModuleInfo[] GetModuleInfos(int processId, bool firstModuleOnly)
+        private static ProcessModuleCollection GetModules(int processId, bool firstModuleOnly)
         {
             // preserving Everett behavior.    
             if (processId == SystemProcessID || processId == IdleProcessID)
@@ -414,9 +406,9 @@ namespace System.Diagnostics
                     moduleHandles = new IntPtr[moduleHandles.Length * 2];
                 }
 
-                List<ModuleInfo> moduleInfos = new List<ModuleInfo>(firstModuleOnly ? 1 : moduleCount);
-                StringBuilder baseName = new StringBuilder(1024);
-                StringBuilder fileName = new StringBuilder(1024);
+                var modules = new ProcessModuleCollection(firstModuleOnly ? 1 : moduleCount);
+
+                char[] chars = new char[1024];
 
                 for (int i = 0; i < moduleCount; i++)
                 {
@@ -429,54 +421,47 @@ namespace System.Diagnostics
                         {
                             break;
                         }
-
-                        baseName.Clear();
-                        fileName.Clear();
                     }
 
                     IntPtr moduleHandle = moduleHandles[i];
-                    Interop.mincore.NtModuleInfo ntModuleInfo = new Interop.mincore.NtModuleInfo();
-                    if (!Interop.mincore.GetModuleInformation(processHandle, moduleHandle, ntModuleInfo, Marshal.SizeOf(ntModuleInfo)))
+                    Interop.mincore.NtModuleInfo ntModuleInfo;
+                    if (!Interop.mincore.GetModuleInformation(processHandle, moduleHandle, out ntModuleInfo))
                     {
                         HandleError();
                         continue;
                     }
 
-                    ModuleInfo moduleInfo = new ModuleInfo
+                    var module = new ProcessModule()
                     {
-                        _sizeOfImage = ntModuleInfo.SizeOfImage,
-                        _entryPoint = ntModuleInfo.EntryPoint,
-                        _baseOfDll = ntModuleInfo.BaseOfDll
+                        ModuleMemorySize = ntModuleInfo.SizeOfImage,
+                        EntryPointAddress = ntModuleInfo.EntryPoint,
+                        BaseAddress = ntModuleInfo.BaseOfDll
                     };
 
-                    int ret = Interop.mincore.GetModuleBaseName(processHandle, moduleHandle, baseName, baseName.Capacity);
-                    if (ret == 0)
+                    int length = Interop.mincore.GetModuleBaseName(processHandle, moduleHandle, chars, chars.Length);
+                    if (length == 0)
                     {
                         HandleError();
                         continue;
                     }
 
-                    moduleInfo._baseName = baseName.ToString();
+                    module.ModuleName = new string(chars, 0, length);
 
-                    ret = Interop.mincore.GetModuleFileNameEx(processHandle, moduleHandle, fileName, fileName.Capacity);
-                    if (ret == 0)
+                    length = Interop.mincore.GetModuleFileNameEx(processHandle, moduleHandle, chars, chars.Length);
+                    if (length == 0)
                     {
                         HandleError();
                         continue;
                     }
 
-                    moduleInfo._fileName = fileName.ToString();
+                    module.FileName = (length >= 4 && chars[0] == '\\' && chars[1] == '\\' && chars[2] == '?' && chars[3] == '\\') ?
+                        new string(chars, 4, length - 4) :
+                        new string(chars, 0, length);
 
-                    if (moduleInfo._fileName != null && moduleInfo._fileName.Length >= 4
-                        && moduleInfo._fileName.StartsWith(@"\\?\", StringComparison.Ordinal))
-                    {
-                        moduleInfo._fileName = fileName.ToString(4, fileName.Length - 4);
-                    }
-
-                    moduleInfos.Add(moduleInfo);
+                    modules.Add(module);
                 }
 
-                return moduleInfos.ToArray();
+                return modules;
             }
             finally
             {
