@@ -1035,7 +1035,7 @@ namespace System.Runtime.InteropServices
             RuntimeType rt = structureType.UnderlyingSystemType as RuntimeType;
 
             if (rt == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), "type");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), nameof(structureType));
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
 
