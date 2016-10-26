@@ -185,7 +185,7 @@ def main(argv):
     if platform == 'Linux' or platform == 'OSX':
         jitformat = os.path.join(jitformat, "jit-format")
     elif platform == 'Windows_NT':
-        jitformat = os.path.join(jitformat,"jit-format.cmd")
+        jitformat = os.path.join(jitformat,"jit-format.bat")
     errorMessage = ""
 
     builds = ["Checked", "Debug", "Release"]
