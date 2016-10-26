@@ -12895,7 +12895,7 @@ void CodeGen::genCodeForBBlist()
             // harmless "inc" instruction (does not interfere with the exception
             // object).
 
-            if ((compiler->opts.eeFlags & CORJIT_FLG_BBINSTR) && (stmt == block->bbTreeList) &&
+            if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) && (stmt == block->bbTreeList) &&
                 (block->bbCatchTyp && handlerGetsXcptnObj(block->bbCatchTyp)))
             {
                 nonVarPtrRegs &= ~RBM_EXCEPTION_OBJECT;
@@ -19875,7 +19875,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
 #if defined(_TARGET_X86_)
     if (call->gtFlags & GTF_CALL_UNMANAGED)
     {
-        if ((compiler->opts.eeFlags & CORJIT_FLG_PINVOKE_RESTORE_ESP) ||
+        if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PINVOKE_RESTORE_ESP) ||
             compiler->compStressCompile(Compiler::STRESS_PINVOKE_RESTORE_ESP, 50))
         {
             // P/Invoke signature mismatch resilience - restore ESP to pre-call value. We would ideally

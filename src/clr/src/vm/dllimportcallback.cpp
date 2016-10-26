@@ -1320,7 +1320,7 @@ MethodDesc* UMThunkMarshInfo::GetILStubMethodDesc(MethodDesc* pInvokeMD, PInvoke
     dwStubFlags |= NDIRECTSTUB_FL_REVERSE_INTEROP;  // could be either delegate interop or not--that info is passed in from the caller
 
 #if defined(DEBUGGING_SUPPORTED)
-    if (GetDebuggerCompileFlags(pSigInfo->GetModule(), 0) & CORJIT_FLG_DEBUG_CODE)
+    if (GetDebuggerCompileFlags(pSigInfo->GetModule(), CORJIT_FLAGS()).IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE))
     {
         dwStubFlags |= NDIRECTSTUB_FL_GENERATEDEBUGGABLEIL;
     }
@@ -1394,7 +1394,7 @@ VOID UMThunkMarshInfo::RunTimeInit()
         DWORD dwStubFlags = NDIRECTSTUB_FL_NGENEDSTUB | NDIRECTSTUB_FL_REVERSE_INTEROP | NDIRECTSTUB_FL_DELEGATE;
 
 #if defined(DEBUGGING_SUPPORTED)
-        if (GetDebuggerCompileFlags(GetModule(), 0) & CORJIT_FLG_DEBUG_CODE)
+        if (GetDebuggerCompileFlags(GetModule(), CORJIT_FLAGS()).IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE))
         {
             dwStubFlags |= NDIRECTSTUB_FL_GENERATEDEBUGGABLEIL;
         }

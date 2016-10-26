@@ -431,7 +431,7 @@ public:
 
     void ClearCodeStreams();
 
-    void LogILStub(DWORD dwJitFlags, SString *pDumpILStubCode = NULL);
+    void LogILStub(CORJIT_FLAGS jitFlags, SString *pDumpILStubCode = NULL);
 protected:
     void LogILStubWorker(ILInstruction* pInstrBuffer, UINT numInstr, size_t* pcbCode, INT* piCurStack, SString *pDumpILStubCode = NULL);
     void LogILInstruction(size_t curOffset, bool isLabeled, INT iCurStack, ILInstruction* pInstruction, SString *pDumpILStubCode = NULL);

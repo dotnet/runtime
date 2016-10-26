@@ -1245,8 +1245,8 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
     EEJitManager *jitMgr = ExecutionManager::GetEEJitManager();
     if (jitMgr->LoadJIT())
     {
-        DWORD cpuCompileFlags = jitMgr->GetCPUCompileFlags();
-        if ((cpuCompileFlags & CORJIT_FLG_FEATURE_SIMD) != 0)
+        CORJIT_FLAGS cpuCompileFlags = jitMgr->GetCPUCompileFlags();
+        if (cpuCompileFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_FEATURE_SIMD))
         {
             unsigned intrinsicSIMDVectorLength = jitMgr->m_jit->getMaxIntrinsicSIMDVectorLength(cpuCompileFlags);
             if (intrinsicSIMDVectorLength != 0)
