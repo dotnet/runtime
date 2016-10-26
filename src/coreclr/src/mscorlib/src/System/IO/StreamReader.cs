@@ -165,7 +165,7 @@ namespace System.IO
             if (!stream.CanRead)
                 throw new ArgumentException(Environment.GetResourceString("Argument_StreamNotReadable"));
             if (bufferSize <= 0)
-                throw new ArgumentOutOfRangeException("bufferSize", Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
+                throw new ArgumentOutOfRangeException(nameof(bufferSize), Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
             Contract.EndContractBlock();
 
             Init(stream, encoding, detectEncodingFromByteOrderMarks, bufferSize, leaveOpen);
@@ -203,7 +203,7 @@ namespace System.IO
             if (path.Length==0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyPath"));
             if (bufferSize <= 0)
-                throw new ArgumentOutOfRangeException("bufferSize", Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
+                throw new ArgumentOutOfRangeException(nameof(bufferSize), Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
             Contract.EndContractBlock();
 
             Stream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultFileStreamBufferSize, FileOptions.SequentialScan, Path.GetFileName(path), false, false, checkHost);

@@ -117,13 +117,13 @@ namespace System {
             if (destination == null)
                 throw new ArgumentNullException(nameof(destination));
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_NegativeCount"));
+                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NegativeCount"));
             if (sourceIndex < 0)
-                throw new ArgumentOutOfRangeException("sourceIndex", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(sourceIndex), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             if (count > Length - sourceIndex)
-                throw new ArgumentOutOfRangeException("sourceIndex", Environment.GetResourceString("ArgumentOutOfRange_IndexCount"));
+                throw new ArgumentOutOfRangeException(nameof(sourceIndex), Environment.GetResourceString("ArgumentOutOfRange_IndexCount"));
             if (destinationIndex > destination.Length - count || destinationIndex < 0)
-                throw new ArgumentOutOfRangeException("destinationIndex", Environment.GetResourceString("ArgumentOutOfRange_IndexCount"));
+                throw new ArgumentOutOfRangeException(nameof(destinationIndex), Environment.GetResourceString("ArgumentOutOfRange_IndexCount"));
             Contract.EndContractBlock();
 
             // Note: fixed does not like empty arrays
@@ -163,9 +163,9 @@ namespace System {
         {
             // Range check everything.
             if (startIndex < 0 || startIndex > Length || startIndex > Length - length)
-                throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             if (length < 0)
-                throw new ArgumentOutOfRangeException("length", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(length), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             Contract.EndContractBlock();
 
             if (length > 0)
@@ -242,12 +242,12 @@ namespace System {
                 return new String(value, startIndex, length); // default to ANSI
 
             if (length < 0)
-                throw new ArgumentOutOfRangeException("length", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(length), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (startIndex < 0)
-                throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_StartIndex"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_StartIndex"));
             if ((value + startIndex) < value) {
                 // overflow check
-                throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_PartialWCHAR"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_PartialWCHAR"));
             }
 
             byte [] b = new byte[length];
@@ -258,7 +258,7 @@ namespace System {
             catch(NullReferenceException) {
                 // If we got a NullReferencException. It means the pointer or 
                 // the index is out of range
-                throw new ArgumentOutOfRangeException("value", 
+                throw new ArgumentOutOfRangeException(nameof(value), 
                         Environment.GetResourceString("ArgumentOutOfRange_PartialWCHAR"));                
             }
 
@@ -458,13 +458,13 @@ namespace System {
                 throw new ArgumentNullException(nameof(value));
 
             if (startIndex < 0)
-                throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_StartIndex"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_StartIndex"));
 
             if (length < 0)
-                throw new ArgumentOutOfRangeException("length", Environment.GetResourceString("ArgumentOutOfRange_NegativeLength"));
+                throw new ArgumentOutOfRangeException(nameof(length), Environment.GetResourceString("ArgumentOutOfRange_NegativeLength"));
 
             if (startIndex > value.Length - length)
-                throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             Contract.EndContractBlock();
 
             if (length > 0) {
@@ -519,7 +519,7 @@ namespace System {
             else if (count == 0)
                 return String.Empty;
             else
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_MustBeNonNegNum", "count"));
+                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_MustBeNonNegNum", "count"));
         }
 
         [System.Security.SecurityCritical]  // auto-generated
@@ -641,7 +641,7 @@ namespace System {
                 return result;
             }
             catch (NullReferenceException) {
-                throw new ArgumentOutOfRangeException("ptr", Environment.GetResourceString("ArgumentOutOfRange_PartialWCHAR"));
+                throw new ArgumentOutOfRangeException(nameof(ptr), Environment.GetResourceString("ArgumentOutOfRange_PartialWCHAR"));
             }
         }
 
@@ -649,11 +649,11 @@ namespace System {
         private unsafe String CtorCharPtrStartLength(char *ptr, int startIndex, int length)
         {
             if (length < 0) {
-                throw new ArgumentOutOfRangeException("length", Environment.GetResourceString("ArgumentOutOfRange_NegativeLength"));
+                throw new ArgumentOutOfRangeException(nameof(length), Environment.GetResourceString("ArgumentOutOfRange_NegativeLength"));
             }
 
             if (startIndex < 0) {
-                throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_StartIndex"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_StartIndex"));
             }
             Contract.EndContractBlock();
             Contract.Assert(this == null, "this == null");        // this is the string constructor, we allocate it
@@ -661,7 +661,7 @@ namespace System {
             char *pFrom = ptr + startIndex;
             if (pFrom < ptr) {
                 // This means that the pointer operation has had an overflow
-                throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_PartialWCHAR"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_PartialWCHAR"));
             }
 
             if (length == 0)
@@ -675,7 +675,7 @@ namespace System {
                 return result;
             }
             catch (NullReferenceException) {
-                throw new ArgumentOutOfRangeException("ptr", Environment.GetResourceString("ArgumentOutOfRange_PartialWCHAR"));
+                throw new ArgumentOutOfRangeException(nameof(ptr), Environment.GetResourceString("ArgumentOutOfRange_PartialWCHAR"));
             }
         }
 

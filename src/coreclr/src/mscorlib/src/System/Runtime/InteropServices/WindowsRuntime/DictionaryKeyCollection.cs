@@ -28,7 +28,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (array == null)
                 throw new ArgumentNullException(nameof(array));
             if (index < 0)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             if (array.Length <= index && this.Count > 0)
                 throw new ArgumentException(Environment.GetResourceString("Arg_IndexOutOfRangeException"));
             if (array.Length - index < dictionary.Count)

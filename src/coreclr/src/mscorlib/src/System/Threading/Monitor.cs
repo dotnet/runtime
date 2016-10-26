@@ -127,7 +127,7 @@ namespace System.Threading {
         {
             long tm = (long)timeout.TotalMilliseconds;
             if (tm < -1 || tm > (long)Int32.MaxValue)
-                throw new ArgumentOutOfRangeException("timeout", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(timeout), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
             return (int)tm;
         }
 

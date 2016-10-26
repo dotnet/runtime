@@ -4395,7 +4395,7 @@ namespace System {
 
             if (UtcOffsetOutOfRange(baseUtcOffset)) {
 
-                throw new ArgumentOutOfRangeException("baseUtcOffset", Environment.GetResourceString("ArgumentOutOfRange_UtcOffset"));
+                throw new ArgumentOutOfRangeException(nameof(baseUtcOffset), Environment.GetResourceString("ArgumentOutOfRange_UtcOffset"));
             }
 
             if (baseUtcOffset.Ticks % TimeSpan.TicksPerMinute != 0) {
@@ -4671,7 +4671,7 @@ namespace System {
                 // So when trying to describe DaylightDeltas for those times, the DaylightDelta needs 
                 // to be -23 (what it takes to go from UTC+13 to UTC-10)
                 if (daylightDelta.TotalHours < -23.0 || daylightDelta.TotalHours > 14.0) {
-                    throw new ArgumentOutOfRangeException("daylightDelta", daylightDelta,
+                    throw new ArgumentOutOfRangeException(nameof(daylightDelta), daylightDelta,
                         Environment.GetResourceString("ArgumentOutOfRange_UtcOffset"));
                 }
 
@@ -4935,22 +4935,22 @@ namespace System {
 
                 // Month range 1-12
                 if (month < 1 || month > 12) {
-                    throw new ArgumentOutOfRangeException("month", Environment.GetResourceString("ArgumentOutOfRange_MonthParam"));
+                    throw new ArgumentOutOfRangeException(nameof(month), Environment.GetResourceString("ArgumentOutOfRange_MonthParam"));
                 }
 
                 // Day range 1-31
                 if (day < 1 || day > 31) {
-                    throw new ArgumentOutOfRangeException("day", Environment.GetResourceString("ArgumentOutOfRange_DayParam"));
+                    throw new ArgumentOutOfRangeException(nameof(day), Environment.GetResourceString("ArgumentOutOfRange_DayParam"));
                 }
 
                 // Week range 1-5
                 if (week < 1 || week > 5) {
-                    throw new ArgumentOutOfRangeException("week", Environment.GetResourceString("ArgumentOutOfRange_Week"));
+                    throw new ArgumentOutOfRangeException(nameof(week), Environment.GetResourceString("ArgumentOutOfRange_Week"));
                 }
 
                 // DayOfWeek range 0-6
                 if ((int)dayOfWeek < 0 || (int)dayOfWeek > 6) {
-                    throw new ArgumentOutOfRangeException("dayOfWeek", Environment.GetResourceString("ArgumentOutOfRange_DayOfWeek"));
+                    throw new ArgumentOutOfRangeException(nameof(dayOfWeek), Environment.GetResourceString("ArgumentOutOfRange_DayOfWeek"));
                 }
                 Contract.EndContractBlock();
 

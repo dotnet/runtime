@@ -142,7 +142,7 @@ namespace System.Diagnostics {
         public DebuggerBrowsableAttribute(DebuggerBrowsableState state)
         {
             if( state < DebuggerBrowsableState.Never || state > DebuggerBrowsableState.RootHidden)
-                throw new ArgumentOutOfRangeException("state");
+                throw new ArgumentOutOfRangeException(nameof(state));
             Contract.EndContractBlock();
 
             this.state = state;

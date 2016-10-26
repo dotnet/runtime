@@ -324,7 +324,7 @@ namespace System.Reflection.Emit
             if (securityContextSource < SecurityContextSource.CurrentAppDomain ||
                 securityContextSource > SecurityContextSource.CurrentAssembly)
             {
-                throw new ArgumentOutOfRangeException("securityContextSource");
+                throw new ArgumentOutOfRangeException(nameof(securityContextSource));
             }
 
             // Clone the name in case the caller modifies it underneath us.

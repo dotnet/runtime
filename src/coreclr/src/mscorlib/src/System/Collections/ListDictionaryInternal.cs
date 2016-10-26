@@ -198,7 +198,7 @@ namespace System.Collections {
                 throw new ArgumentException(Environment.GetResourceString("Arg_RankMultiDimNotSupported"));
 
             if (index < 0)
-                    throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
 
             if ( array.Length - index < this.Count ) 
                 throw new ArgumentException( Environment.GetResourceString("ArgumentOutOfRange_Index"), nameof(index));
@@ -332,7 +332,7 @@ namespace System.Collections {
                 if (array.Rank != 1)
                     throw new ArgumentException(Environment.GetResourceString("Arg_RankMultiDimNotSupported"));
                 if (index < 0)
-                    throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
                 Contract.EndContractBlock();
                 if (array.Length - index < list.Count) 
                     throw new ArgumentException(Environment.GetResourceString("ArgumentOutOfRange_Index"), nameof(index));                

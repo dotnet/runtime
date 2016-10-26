@@ -44,7 +44,7 @@ namespace System.Collections {
         // must be a non-negative number.
         public Stack(int initialCapacity) {
             if (initialCapacity < 0)
-                throw new ArgumentOutOfRangeException("initialCapacity", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(initialCapacity), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
             if (initialCapacity < _defaultCapacity)
                 initialCapacity = _defaultCapacity;  // Simplify doubling logic in Push.
@@ -125,7 +125,7 @@ namespace System.Collections {
             if (array.Rank != 1)
                 throw new ArgumentException(Environment.GetResourceString("Arg_RankMultiDimNotSupported"));
             if (index < 0)
-                throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (array.Length - index < _size)
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
             Contract.EndContractBlock();

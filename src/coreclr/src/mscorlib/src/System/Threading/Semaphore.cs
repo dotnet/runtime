@@ -21,12 +21,12 @@ namespace System.Threading
         {
             if (initialCount < 0)
             {
-                throw new ArgumentOutOfRangeException("initialCount", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(initialCount), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
 
             if (maximumCount < 1)
             {
-                throw new ArgumentOutOfRangeException("maximumCount", Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
+                throw new ArgumentOutOfRangeException(nameof(maximumCount), Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
             }
 
             if (initialCount > maximumCount)
@@ -54,12 +54,12 @@ namespace System.Threading
         {
             if (initialCount < 0)
             {
-                throw new ArgumentOutOfRangeException("initialCount", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(initialCount), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
 
             if (maximumCount < 1)
             {
-                throw new ArgumentOutOfRangeException("maximumCount", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(maximumCount), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
 
             if (initialCount > maximumCount)
@@ -182,7 +182,7 @@ namespace System.Threading
         {
             if (releaseCount < 1)
             {
-                throw new ArgumentOutOfRangeException("releaseCount", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(releaseCount), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
 
             //If ReleaseSempahore returns false when the specified value would cause

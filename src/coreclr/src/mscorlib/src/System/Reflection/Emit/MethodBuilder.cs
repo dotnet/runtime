@@ -943,7 +943,7 @@ namespace System.Reflection.Emit
                 action == SecurityAction.RequestOptional ||
                 action == SecurityAction.RequestRefuse)
             {
-                throw new ArgumentOutOfRangeException("action");
+                throw new ArgumentOutOfRangeException(nameof(action));
             }
 #pragma warning restore 618
 
@@ -975,7 +975,7 @@ namespace System.Reflection.Emit
             }
             if (maxStack < 0)
             {
-                throw new ArgumentOutOfRangeException("maxStack", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(maxStack), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
             Contract.EndContractBlock();
 
@@ -1087,7 +1087,7 @@ namespace System.Reflection.Emit
 
             if (il != null && (count < 0 || count > il.Length))
             {
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
 
             if (il == null)
@@ -1480,37 +1480,37 @@ namespace System.Reflection.Emit
         {
             if (tryOffset < 0)
             {
-                throw new ArgumentOutOfRangeException("tryOffset", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(tryOffset), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
 
             if (tryLength < 0)
             {
-                throw new ArgumentOutOfRangeException("tryLength", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(tryLength), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
 
             if (filterOffset < 0)
             {
-                throw new ArgumentOutOfRangeException("filterOffset", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(filterOffset), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
 
             if (handlerOffset < 0)
             {
-                throw new ArgumentOutOfRangeException("handlerOffset", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(handlerOffset), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
 
             if (handlerLength < 0)
             {
-                throw new ArgumentOutOfRangeException("handlerLength", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(handlerLength), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
 
             if ((long)tryOffset + tryLength > Int32.MaxValue)
             {
-                throw new ArgumentOutOfRangeException("tryLength", Environment.GetResourceString("ArgumentOutOfRange_Range", 0, Int32.MaxValue - tryOffset));
+                throw new ArgumentOutOfRangeException(nameof(tryLength), Environment.GetResourceString("ArgumentOutOfRange_Range", 0, Int32.MaxValue - tryOffset));
             }
 
             if ((long)handlerOffset + handlerLength > Int32.MaxValue)
             {
-                throw new ArgumentOutOfRangeException("handlerLength", Environment.GetResourceString("ArgumentOutOfRange_Range", 0, Int32.MaxValue - handlerOffset));
+                throw new ArgumentOutOfRangeException(nameof(handlerLength), Environment.GetResourceString("ArgumentOutOfRange_Range", 0, Int32.MaxValue - handlerOffset));
             }
 
             // Other tokens migth also be invalid. We only check nil tokens as the implementation (SectEH_Emit in corhlpr.cpp) requires it,
@@ -1524,7 +1524,7 @@ namespace System.Reflection.Emit
 
             if (!IsValidKind(kind))
             {
-                throw new ArgumentOutOfRangeException("kind", Environment.GetResourceString("ArgumentOutOfRange_Enum"));
+                throw new ArgumentOutOfRangeException(nameof(kind), Environment.GetResourceString("ArgumentOutOfRange_Enum"));
             }
             
             m_tryStartOffset = tryOffset;

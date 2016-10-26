@@ -117,7 +117,7 @@ namespace System.Text
         {
             // Double check input surrogate pair
             if (!Char.IsHighSurrogate(charUnknownHigh))
-                throw new ArgumentOutOfRangeException("charUnknownHigh",
+                throw new ArgumentOutOfRangeException(nameof(charUnknownHigh),
                     Environment.GetResourceString("ArgumentOutOfRange_Range",
                     0xD800, 0xDBFF));
 
