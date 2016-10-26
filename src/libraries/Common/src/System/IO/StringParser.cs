@@ -65,7 +65,7 @@ namespace System.IO
                 _startIndex = _endIndex + 1;
                 _endIndex = nextSeparator >= 0 ? nextSeparator : _buffer.Length;
 
-                if (!_skipEmpty || _endIndex > _startIndex + 1)
+                if (!_skipEmpty || _endIndex >= _startIndex + 1)
                 {
                     return true;
                 }
@@ -171,15 +171,10 @@ namespace System.IO
                     {
                         ThrowForInvalidData();
                     }
-                    result = checked((result * 10) + d);
+                    result = negative ? checked((result * 10) - d) : checked((result * 10) + d);
 
                     p++;
                 }
-            }
-
-            if (negative)
-            {
-                result *= -1;
             }
 
             Debug.Assert(result == int.Parse(ExtractCurrent()), "Expected manually parsed result to match Parse result");
@@ -221,15 +216,10 @@ namespace System.IO
                     {
                         ThrowForInvalidData();
                     }
-                    result = checked((result * 10) + d);
+                    result = negative ? checked((result * 10) - d) : checked((result * 10) + d);
 
                     p++;
                 }
-            }
-
-            if (negative)
-            {
-                result *= -1;
             }
 
             Debug.Assert(result == long.Parse(ExtractCurrent()), "Expected manually parsed result to match Parse result");
