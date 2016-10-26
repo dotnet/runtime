@@ -136,7 +136,7 @@ namespace System.Net.NetworkInformation
                     Interop.LinuxNetDeviceFlags flags = (Interop.LinuxNetDeviceFlags)StringParsingHelpers.ParseRawHexFileAsInt(path);
                     return (flags & Interop.LinuxNetDeviceFlags.IFF_MULTICAST) == Interop.LinuxNetDeviceFlags.IFF_MULTICAST;
                 }
-                catch (FileNotFoundException)
+                catch (Exception) // Ignore any problems accessing or parsing the file.
                 {
                 }
             }
@@ -185,7 +185,7 @@ namespace System.Net.NetworkInformation
                 string path = Path.Combine(NetworkFiles.SysClassNetFolder, name, NetworkFiles.SpeedFileName);
                 return StringParsingHelpers.ParseRawLongFile(path);
             }
-            catch (IOException) // Some interfaces may give an "Invalid argument" error when opening this file.
+            catch (Exception) // Ignore any problems accessing or parsing the file.
             {
                 return null;
             }
@@ -202,7 +202,7 @@ namespace System.Net.NetworkInformation
                     string state = File.ReadAllText(path).Trim();
                     return MapState(state);
                 }
-                catch (FileNotFoundException)
+                catch (Exception) // Ignore any problems accessing or parsing the file.
                 {
                 }
             }
