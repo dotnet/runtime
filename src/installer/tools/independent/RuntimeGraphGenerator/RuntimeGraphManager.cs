@@ -19,10 +19,15 @@ namespace Microsoft.DotNet.ProjectModel
             {
                 if (export.Library.Identity.Type == LibraryType.Package)
                 {
-                    var runtimeJson =  ((PackageDescription) export.Library).PackageLibrary.Files.FirstOrDefault(f => f == RuntimeJsonFileName);
+                    PackageDescription description = (PackageDescription) export.Library;
+                    var runtimeJson =  description.PackageLibrary.Files.FirstOrDefault(f => f == RuntimeJsonFileName);
                     if (runtimeJson != null)
                     {
-                        var runtimeJsonFullName = Path.Combine(export.Library.Path, runtimeJson);
+                        // Convert the package-name to lower-case in the path to lookup runtime.json
+                        string lowercasedPackageName = description.Identity.Name.ToLower();
+                        string pathToPackage = export.Library.Path.Replace(description.Identity.Name, lowercasedPackageName);
+
+                        var runtimeJsonFullName = Path.Combine(pathToPackage, runtimeJson);
                         graph = RuntimeGraph.Merge(graph, JsonRuntimeFormat.ReadRuntimeGraph(runtimeJsonFullName));
                     }
                 }
