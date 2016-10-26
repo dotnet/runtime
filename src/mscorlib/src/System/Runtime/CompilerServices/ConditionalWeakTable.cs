@@ -231,7 +231,7 @@ namespace System.Runtime.CompilerServices
 
             if (createValueCallback == null)
             {
-                throw new ArgumentNullException("createValueCallback");
+                throw new ArgumentNullException(nameof(createValueCallback));
             }
 
             TValue existingValue;

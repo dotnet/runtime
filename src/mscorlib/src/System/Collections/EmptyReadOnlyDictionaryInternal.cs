@@ -36,7 +36,7 @@ namespace System.Collections {
 
         public void CopyTo(Array array, int index)  {
             if (array==null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
 
             if (array.Rank != 1)
                 throw new ArgumentException(Environment.GetResourceString("Arg_RankMultiDimNotSupported"));
@@ -74,14 +74,14 @@ namespace System.Collections {
         public Object this[Object key] {
             get {
                 if (key == null) {
-                    throw new ArgumentNullException("key", Environment.GetResourceString("ArgumentNull_Key"));
+                    throw new ArgumentNullException(nameof(key), Environment.GetResourceString("ArgumentNull_Key"));
                 }
                 Contract.EndContractBlock();
                 return null;
             }
             set {
                 if (key == null) {
-                    throw new ArgumentNullException("key", Environment.GetResourceString("ArgumentNull_Key"));
+                    throw new ArgumentNullException(nameof(key), Environment.GetResourceString("ArgumentNull_Key"));
                 }
 
                 if (!key.GetType().IsSerializable)                 
@@ -113,7 +113,7 @@ namespace System.Collections {
 
         public void Add(Object key, Object value) {
             if (key == null) {
-                throw new ArgumentNullException("key", Environment.GetResourceString("ArgumentNull_Key"));
+                throw new ArgumentNullException(nameof(key), Environment.GetResourceString("ArgumentNull_Key"));
             }
 
             if (!key.GetType().IsSerializable)                 

@@ -326,7 +326,7 @@ namespace System.Globalization {
 
         public static double GetNumericValue(String s, int index) {
             if (s == null) {
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             }
             if (index < 0 || index >= s.Length) {
                 throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_Index"));
@@ -361,7 +361,7 @@ namespace System.Globalization {
 
         public static int GetDecimalDigitValue(String s, int index) {
             if (s == null) {
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             }
             if (index < 0 || index >= s.Length) {
                 throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_Index"));
@@ -398,7 +398,7 @@ namespace System.Globalization {
 
         public static int GetDigitValue(String s, int index) {
             if (s == null) {
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             }
             if (index < 0 || index >= s.Length) {
                 throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_Index"));
@@ -415,7 +415,7 @@ namespace System.Globalization {
         public static UnicodeCategory GetUnicodeCategory(String s, int index)
         {
             if (s==null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             if (((uint)index)>=((uint)s.Length)) {
                 throw new ArgumentOutOfRangeException("index");
             }
@@ -467,7 +467,7 @@ namespace System.Globalization {
 
         internal static BidiCategory GetBidiCategory(String s, int index) {
             if (s==null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             if (((uint)index)>=((uint)s.Length)) {
                 throw new ArgumentOutOfRangeException("index");
             }

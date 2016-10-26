@@ -20,7 +20,7 @@ namespace System.Security.Permissions
         public StrongNamePublicKeyBlob( byte[] publicKey )
         {
             if (publicKey == null)
-                throw new ArgumentNullException( "PublicKey" );
+                throw new ArgumentNullException( nameof(PublicKey) );
             Contract.EndContractBlock();
         
             this.PublicKey = new byte[publicKey.Length];

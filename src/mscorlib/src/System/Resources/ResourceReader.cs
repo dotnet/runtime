@@ -176,7 +176,7 @@ namespace System.Resources {
         public ResourceReader(Stream stream)
         {
             if (stream==null)
-                throw new ArgumentNullException("stream");
+                throw new ArgumentNullException(nameof(stream));
             if (!stream.CanRead)
                 throw new ArgumentException(Environment.GetResourceString("Argument_StreamNotReadable"));
             Contract.EndContractBlock();
@@ -1165,7 +1165,7 @@ namespace System.Resources {
         public void GetResourceData(String resourceName, out String resourceType, out byte[] resourceData)
         {
             if (resourceName == null)
-                throw new ArgumentNullException("resourceName");
+                throw new ArgumentNullException(nameof(resourceName));
             Contract.EndContractBlock();
             if (_resCache == null)
                 throw new InvalidOperationException(Environment.GetResourceString("ResourceReaderIsClosed"));

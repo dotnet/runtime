@@ -582,7 +582,7 @@ namespace System.Globalization {
                     throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ReadOnly"));
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         Environment.GetResourceString("ArgumentNull_String"));
                 }
                 Contract.EndContractBlock();
@@ -604,7 +604,7 @@ namespace System.Globalization {
                 if (IsReadOnly)
                     throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ReadOnly"));
                 if (value == null) {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         Environment.GetResourceString("ArgumentNull_Obj"));
                 }
                 Contract.EndContractBlock();
@@ -718,7 +718,7 @@ namespace System.Globalization {
 
         public  int GetEra(String eraName) {
             if (eraName == null) {
-                throw new ArgumentNullException("eraName",
+                throw new ArgumentNullException(nameof(eraName),
                     Environment.GetResourceString("ArgumentNull_String"));
             }
             Contract.EndContractBlock();
@@ -862,7 +862,7 @@ namespace System.Globalization {
                     throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ReadOnly"));
                 if (value == null) 
                 {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         Environment.GetResourceString("ArgumentNull_String"));
                 }
                 Contract.EndContractBlock();
@@ -945,7 +945,7 @@ namespace System.Globalization {
                 if (IsReadOnly)
                     throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ReadOnly"));
                 if (value == null) {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         Environment.GetResourceString("ArgumentNull_String"));
                 }
                 Contract.EndContractBlock();
@@ -977,7 +977,7 @@ namespace System.Globalization {
                 if (IsReadOnly)
                     throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ReadOnly"));
                 if (value == null) {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         Environment.GetResourceString("ArgumentNull_String"));
                 }
                 Contract.EndContractBlock();
@@ -1016,7 +1016,7 @@ namespace System.Globalization {
                 if (IsReadOnly)
                     throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ReadOnly"));
                 if (value == null) {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         Environment.GetResourceString("ArgumentNull_String"));
                 }
                 Contract.EndContractBlock();
@@ -1053,7 +1053,7 @@ namespace System.Globalization {
                 if (IsReadOnly)
                     throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ReadOnly"));
                 if (value == null) {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         Environment.GetResourceString("ArgumentNull_String"));
                 }
                 Contract.EndContractBlock();
@@ -1084,7 +1084,7 @@ namespace System.Globalization {
                 if (IsReadOnly)
                     throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ReadOnly"));
                 if (value == null) {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         Environment.GetResourceString("ArgumentNull_String"));
                 }
                 Contract.EndContractBlock();
@@ -1128,7 +1128,7 @@ namespace System.Globalization {
                 if (IsReadOnly)
                     throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ReadOnly"));
                 if (value == null)
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         Environment.GetResourceString("ArgumentNull_String"));
                 Contract.EndContractBlock();
 
@@ -1168,7 +1168,7 @@ namespace System.Globalization {
                 if (IsReadOnly)
                     throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ReadOnly"));
                 if (value == null) {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         Environment.GetResourceString("ArgumentNull_String"));
                 }
                 Contract.EndContractBlock();
@@ -1308,7 +1308,7 @@ namespace System.Globalization {
                     throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ReadOnly"));
                 if (value == null) 
                 {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         Environment.GetResourceString("ArgumentNull_String"));
                 }
                 Contract.EndContractBlock();
@@ -1349,7 +1349,7 @@ namespace System.Globalization {
                 if (IsReadOnly)
                     throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ReadOnly"));
                 if (value == null) {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         Environment.GetResourceString("ArgumentNull_String"));
                 }
                 Contract.EndContractBlock();
@@ -1388,7 +1388,7 @@ namespace System.Globalization {
                 if (IsReadOnly)
                     throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ReadOnly"));
                 if (value == null) {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         Environment.GetResourceString("ArgumentNull_Array"));
                 }
                 if (value.Length != 7) {
@@ -1416,7 +1416,7 @@ namespace System.Globalization {
                 if (IsReadOnly)
                     throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ReadOnly"));
                 if (value == null) {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         Environment.GetResourceString("ArgumentNull_Array"));
                 }
                 if (value.Length != 7)
@@ -1441,7 +1441,7 @@ namespace System.Globalization {
                 if (IsReadOnly)
                     throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ReadOnly"));
                 if (value == null) {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         Environment.GetResourceString("ArgumentNull_Array"));
                 }
                 if (value.Length != 7)
@@ -1466,7 +1466,7 @@ namespace System.Globalization {
                 if (IsReadOnly)
                     throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ReadOnly"));
                 if (value == null) {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         Environment.GetResourceString("ArgumentNull_Array"));
                 }
                 if (value.Length != 13)
@@ -1492,7 +1492,7 @@ namespace System.Globalization {
                 if (IsReadOnly)
                     throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ReadOnly"));
                 if (value == null) {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         Environment.GetResourceString("ArgumentNull_Array"));
                 }
                 if (value.Length != 13)
@@ -1977,7 +1977,7 @@ namespace System.Globalization {
 
         public static DateTimeFormatInfo ReadOnly(DateTimeFormatInfo dtfi) {
             if (dtfi == null) {
-                throw new ArgumentNullException("dtfi",
+                throw new ArgumentNullException(nameof(dtfi),
                     Environment.GetResourceString("ArgumentNull_Obj"));
             }
             Contract.EndContractBlock();
@@ -2038,7 +2038,7 @@ namespace System.Globalization {
             if (IsReadOnly)
                 throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ReadOnly"));
             if (patterns == null) {
-                throw new ArgumentNullException("patterns",
+                throw new ArgumentNullException(nameof(patterns),
                     Environment.GetResourceString("ArgumentNull_Array"));
             }
 
@@ -2109,7 +2109,7 @@ namespace System.Globalization {
                     throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ReadOnly"));
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         Environment.GetResourceString("ArgumentNull_Array"));
                 }
                 if (value.Length != 13)
@@ -2137,7 +2137,7 @@ namespace System.Globalization {
                     throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ReadOnly"));
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         Environment.GetResourceString("ArgumentNull_Array"));
                 }
                 if (value.Length != 13)

@@ -39,7 +39,7 @@ namespace System.IO {
         public static DirectoryInfo GetParent(String path)
         {
             if (path==null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
 
             if (path.Length==0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_PathEmpty"), "path");
@@ -56,7 +56,7 @@ namespace System.IO {
         [System.Security.SecuritySafeCritical]
         public static DirectoryInfo CreateDirectory(String path) {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             if (path.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_PathEmpty"));
             Contract.EndContractBlock();
@@ -68,7 +68,7 @@ namespace System.IO {
         internal static DirectoryInfo UnsafeCreateDirectory(String path)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             if (path.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_PathEmpty"));
             Contract.EndContractBlock();
@@ -109,7 +109,7 @@ namespace System.IO {
         [System.Security.SecuritySafeCritical]  // auto-generated
         public static DirectoryInfo CreateDirectory(String path, DirectorySecurity directorySecurity) {
             if (path==null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             if (path.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_PathEmpty"));
             Contract.EndContractBlock();
@@ -506,7 +506,7 @@ namespace System.IO {
         public static void SetAccessControl(String path, DirectorySecurity directorySecurity)
         {
             if (directorySecurity == null)
-                throw new ArgumentNullException("directorySecurity");
+                throw new ArgumentNullException(nameof(directorySecurity));
             Contract.EndContractBlock();
 
             String fullPath = Path.GetFullPathInternal(path);
@@ -518,7 +518,7 @@ namespace System.IO {
         public static String[] GetFiles(String path)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             Contract.Ensures(Contract.Result<String[]>() != null);
             Contract.EndContractBlock();
 
@@ -530,9 +530,9 @@ namespace System.IO {
         public static String[] GetFiles(String path, String searchPattern)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             if (searchPattern == null)
-                throw new ArgumentNullException("searchPattern");
+                throw new ArgumentNullException(nameof(searchPattern));
             Contract.Ensures(Contract.Result<String[]>() != null);
             Contract.EndContractBlock();
 
@@ -544,9 +544,9 @@ namespace System.IO {
         public static String[] GetFiles(String path, String searchPattern, SearchOption searchOption)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             if (searchPattern == null)
-                throw new ArgumentNullException("searchPattern");
+                throw new ArgumentNullException(nameof(searchPattern));
             if ((searchOption != SearchOption.TopDirectoryOnly) && (searchOption != SearchOption.AllDirectories))
                 throw new ArgumentOutOfRangeException("searchOption", Environment.GetResourceString("ArgumentOutOfRange_Enum"));
             Contract.Ensures(Contract.Result<String[]>() != null);
@@ -580,7 +580,7 @@ namespace System.IO {
         public static String[] GetDirectories(String path)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             Contract.Ensures(Contract.Result<String[]>() != null);
             Contract.EndContractBlock();
 
@@ -592,9 +592,9 @@ namespace System.IO {
         public static String[] GetDirectories(String path, String searchPattern)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             if (searchPattern == null)
-                throw new ArgumentNullException("searchPattern");
+                throw new ArgumentNullException(nameof(searchPattern));
             Contract.Ensures(Contract.Result<String[]>() != null);
             Contract.EndContractBlock();
 
@@ -606,9 +606,9 @@ namespace System.IO {
         public static String[] GetDirectories(String path, String searchPattern, SearchOption searchOption)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             if (searchPattern == null)
-                throw new ArgumentNullException("searchPattern");
+                throw new ArgumentNullException(nameof(searchPattern));
             if ((searchOption != SearchOption.TopDirectoryOnly) && (searchOption != SearchOption.AllDirectories))
                 throw new ArgumentOutOfRangeException("searchOption", Environment.GetResourceString("ArgumentOutOfRange_Enum"));
             Contract.Ensures(Contract.Result<String[]>() != null);
@@ -644,7 +644,7 @@ namespace System.IO {
         public static String[] GetFileSystemEntries(String path)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             Contract.Ensures(Contract.Result<String[]>() != null);
             Contract.EndContractBlock();
 
@@ -656,9 +656,9 @@ namespace System.IO {
         public static String[] GetFileSystemEntries(String path, String searchPattern)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             if (searchPattern == null)
-                throw new ArgumentNullException("searchPattern");
+                throw new ArgumentNullException(nameof(searchPattern));
             Contract.Ensures(Contract.Result<String[]>() != null);
             Contract.EndContractBlock();
 
@@ -670,9 +670,9 @@ namespace System.IO {
         public static String[] GetFileSystemEntries(String path, String searchPattern, SearchOption searchOption)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             if (searchPattern == null)
-                throw new ArgumentNullException("searchPattern");
+                throw new ArgumentNullException(nameof(searchPattern));
             if ((searchOption != SearchOption.TopDirectoryOnly) && (searchOption != SearchOption.AllDirectories))
                 throw new ArgumentOutOfRangeException("searchOption", Environment.GetResourceString("ArgumentOutOfRange_Enum"));
             Contract.Ensures(Contract.Result<String[]>() != null);
@@ -734,7 +734,7 @@ namespace System.IO {
         public static IEnumerable<String> EnumerateDirectories(String path)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             Contract.EndContractBlock();
 
             return InternalEnumerateDirectories(path, "*", SearchOption.TopDirectoryOnly);
@@ -743,9 +743,9 @@ namespace System.IO {
         public static IEnumerable<String> EnumerateDirectories(String path, String searchPattern)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             if (searchPattern == null)
-                throw new ArgumentNullException("searchPattern");
+                throw new ArgumentNullException(nameof(searchPattern));
             Contract.EndContractBlock();
 
             return InternalEnumerateDirectories(path, searchPattern, SearchOption.TopDirectoryOnly);
@@ -754,9 +754,9 @@ namespace System.IO {
         public static IEnumerable<String> EnumerateDirectories(String path, String searchPattern, SearchOption searchOption)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             if (searchPattern == null)
-                throw new ArgumentNullException("searchPattern");
+                throw new ArgumentNullException(nameof(searchPattern));
             if ((searchOption != SearchOption.TopDirectoryOnly) && (searchOption != SearchOption.AllDirectories))
                 throw new ArgumentOutOfRangeException("searchOption", Environment.GetResourceString("ArgumentOutOfRange_Enum"));
             Contract.EndContractBlock();
@@ -776,7 +776,7 @@ namespace System.IO {
         public static IEnumerable<String> EnumerateFiles(String path)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             Contract.Ensures(Contract.Result<IEnumerable<String>>() != null);
             Contract.EndContractBlock();
 
@@ -786,9 +786,9 @@ namespace System.IO {
         public static IEnumerable<String> EnumerateFiles(String path, String searchPattern)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             if (searchPattern == null)
-                throw new ArgumentNullException("searchPattern");
+                throw new ArgumentNullException(nameof(searchPattern));
             Contract.Ensures(Contract.Result<IEnumerable<String>>() != null);
             Contract.EndContractBlock();
 
@@ -798,9 +798,9 @@ namespace System.IO {
         public static IEnumerable<String> EnumerateFiles(String path, String searchPattern, SearchOption searchOption)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             if (searchPattern == null)
-                throw new ArgumentNullException("searchPattern");
+                throw new ArgumentNullException(nameof(searchPattern));
             if ((searchOption != SearchOption.TopDirectoryOnly) && (searchOption != SearchOption.AllDirectories))
                 throw new ArgumentOutOfRangeException("searchOption", Environment.GetResourceString("ArgumentOutOfRange_Enum"));
             Contract.Ensures(Contract.Result<IEnumerable<String>>() != null);
@@ -822,7 +822,7 @@ namespace System.IO {
         public static IEnumerable<String> EnumerateFileSystemEntries(String path)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             Contract.Ensures(Contract.Result<IEnumerable<String>>() != null);
             Contract.EndContractBlock();
 
@@ -832,9 +832,9 @@ namespace System.IO {
         public static IEnumerable<String> EnumerateFileSystemEntries(String path, String searchPattern)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             if (searchPattern == null)
-                throw new ArgumentNullException("searchPattern");
+                throw new ArgumentNullException(nameof(searchPattern));
             Contract.Ensures(Contract.Result<IEnumerable<String>>() != null);
             Contract.EndContractBlock();
 
@@ -844,9 +844,9 @@ namespace System.IO {
         public static IEnumerable<String> EnumerateFileSystemEntries(String path, String searchPattern, SearchOption searchOption)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             if (searchPattern == null)
-                throw new ArgumentNullException("searchPattern");
+                throw new ArgumentNullException(nameof(searchPattern));
             if ((searchOption != SearchOption.TopDirectoryOnly) && (searchOption != SearchOption.AllDirectories))
                 throw new ArgumentOutOfRangeException("searchOption", Environment.GetResourceString("ArgumentOutOfRange_Enum"));
             Contract.Ensures(Contract.Result<IEnumerable<String>>() != null);
@@ -917,7 +917,7 @@ namespace System.IO {
         [System.Security.SecuritySafeCritical]
         public static String GetDirectoryRoot(String path) {
             if (path==null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             Contract.EndContractBlock();
             
             String fullPath = Path.GetFullPathInternal(path);
@@ -1087,12 +1087,12 @@ namespace System.IO {
         [System.Security.SecurityCritical]
         private static void InternalMove(String sourceDirName,String destDirName,bool checkHost) {
             if (sourceDirName==null)
-                throw new ArgumentNullException("sourceDirName");
+                throw new ArgumentNullException(nameof(sourceDirName));
             if (sourceDirName.Length==0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), "sourceDirName");
             
             if (destDirName==null)
-                throw new ArgumentNullException("destDirName");
+                throw new ArgumentNullException(nameof(destDirName));
             if (destDirName.Length==0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), "destDirName");
             Contract.EndContractBlock();

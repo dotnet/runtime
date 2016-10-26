@@ -72,7 +72,7 @@ namespace System.Reflection
 
         public static InterfaceMapping GetRuntimeInterfaceMap(this TypeInfo typeInfo, Type interfaceType)
         {
-            if (typeInfo == null) throw new ArgumentNullException("typeInfo");
+            if (typeInfo == null) throw new ArgumentNullException(nameof(typeInfo));
             if (!(typeInfo is RuntimeType)) throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeType"));
 
             return typeInfo.GetInterfaceMap(interfaceType);
@@ -80,7 +80,7 @@ namespace System.Reflection
 
         public static MethodInfo GetMethodInfo(this Delegate del)
         {
-            if (del == null) throw new ArgumentNullException("del");
+            if (del == null) throw new ArgumentNullException(nameof(del));
 
             return del.Method;
         }

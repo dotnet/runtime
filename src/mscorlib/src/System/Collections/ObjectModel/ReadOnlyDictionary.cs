@@ -34,7 +34,7 @@ namespace System.Collections.ObjectModel
 
         public ReadOnlyDictionary(IDictionary<TKey, TValue> dictionary) {
             if (dictionary == null) {
-                throw new ArgumentNullException("dictionary");
+                throw new ArgumentNullException(nameof(dictionary));
             }
             Contract.EndContractBlock();
             m_dictionary = dictionary;

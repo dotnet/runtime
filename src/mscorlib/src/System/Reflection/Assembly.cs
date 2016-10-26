@@ -70,7 +70,7 @@ namespace System.Reflection
         public static Assembly GetAssembly(Type type)
         {
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             Contract.EndContractBlock();
 
             Module m = type.Module;
@@ -113,7 +113,7 @@ namespace System.Reflection
         public static Assembly LoadFrom(String assemblyFile)
         {
             if(assemblyFile == null) 
-                throw new ArgumentNullException("assemblyFile");
+                throw new ArgumentNullException(nameof(assemblyFile));
             string fullPath = Path.GetFullPathInternal(assemblyFile);
             return AssemblyLoadContext.Default.LoadFromAssemblyPath(fullPath);
         }
@@ -405,7 +405,7 @@ namespace System.Reflection
         public static Assembly LoadWithPartialName(String partialName)
         {
             if(partialName == null)
-                throw new ArgumentNullException("partialName");
+                throw new ArgumentNullException(nameof(partialName));
             return Load(partialName);
         }
 
@@ -483,7 +483,7 @@ namespace System.Reflection
 
 #if FEATURE_CORECLR
             if(rawAssembly == null)
-                throw new ArgumentNullException("rawAssembly");
+                throw new ArgumentNullException(nameof(rawAssembly));
             AssemblyLoadContext alc = new FileLoadAssemblyLoadContext();
             MemoryStream assemblyStream = new MemoryStream(rawAssembly);
             MemoryStream symbolStream = (rawSymbolStore!=null)?new MemoryStream(rawSymbolStore):null;
@@ -582,7 +582,7 @@ namespace System.Reflection
 #if FEATURE_CORECLR
             Assembly result = null;
             if(path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
 
             if (Path.IsRelative(path))
             {
@@ -1473,7 +1473,7 @@ namespace System.Reflection
         {
             // throw on null strings regardless of the value of "throwOnError"
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             RuntimeType type = null;
             Object keepAlive = null;
@@ -1605,7 +1605,7 @@ namespace System.Reflection
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info==null)
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
 
             Contract.EndContractBlock();
 
@@ -1633,7 +1633,7 @@ namespace System.Reflection
         public override Object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
             if (attributeType == null)
-                throw new ArgumentNullException("attributeType");
+                throw new ArgumentNullException(nameof(attributeType));
             Contract.EndContractBlock();
 
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
@@ -1647,7 +1647,7 @@ namespace System.Reflection
         public override bool IsDefined(Type attributeType, bool inherit)
         {
             if (attributeType == null)
-                throw new ArgumentNullException("attributeType");
+                throw new ArgumentNullException(nameof(attributeType));
             Contract.EndContractBlock();
 
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
@@ -1674,7 +1674,7 @@ namespace System.Reflection
                                                          ref StackCrawlMark stackMark)
         {
             if (assemblyFile == null)
-                throw new ArgumentNullException("assemblyFile");
+                throw new ArgumentNullException(nameof(assemblyFile));
 
             Contract.EndContractBlock();
 
@@ -1730,7 +1730,7 @@ namespace System.Reflection
             out RuntimeAssembly assemblyFromResolveEvent)
         {
             if (assemblyString == null)
-                throw new ArgumentNullException("assemblyString");
+                throw new ArgumentNullException(nameof(assemblyString));
             Contract.EndContractBlock();
 
             if ((assemblyString.Length == 0) ||
@@ -1777,7 +1777,7 @@ namespace System.Reflection
         {
        
             if (assemblyRef == null)
-                throw new ArgumentNullException("assemblyRef");
+                throw new ArgumentNullException(nameof(assemblyRef));
             Contract.EndContractBlock();
 
             if (assemblyRef.CodeBase != null)
@@ -2106,7 +2106,7 @@ namespace System.Reflection
         internal static RuntimeAssembly InternalLoadFromStream(Stream assemblyStream, Stream pdbStream, ref StackCrawlMark stackMark)
         {
             if (assemblyStream  == null)
-                throw new ArgumentNullException("assemblyStream");
+                throw new ArgumentNullException(nameof(assemblyStream));
 
             if (assemblyStream.GetType()!=typeof(UnmanagedMemoryStream))
                 throw new NotSupportedException();
@@ -2413,7 +2413,7 @@ namespace System.Reflection
             StringBuilder sb = new StringBuilder();
             if(type == null) {
                 if (name == null)
-                    throw new ArgumentNullException("type");
+                    throw new ArgumentNullException(nameof(type));
             }
             else {
                 String nameSpace = type.Namespace;
@@ -2777,7 +2777,7 @@ namespace System.Reflection
                                                        ref StackCrawlMark stackMark)
         {
             if (culture == null)
-                throw new ArgumentNullException("culture");
+                throw new ArgumentNullException(nameof(culture));
             Contract.EndContractBlock();
 
 

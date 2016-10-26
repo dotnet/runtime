@@ -208,7 +208,7 @@ namespace System {
         //
         public DateTime(int year, int month, int day, int hour, int minute, int second, Calendar calendar) {
             if (calendar == null)
-                throw new ArgumentNullException("calendar");
+                throw new ArgumentNullException(nameof(calendar));
             Contract.EndContractBlock();
             this.dateData = (UInt64)calendar.ToDateTime(year, month, day, hour, minute, second, 0).Ticks;
         }
@@ -248,7 +248,7 @@ namespace System {
         //
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, Calendar calendar) {
             if (calendar == null)
-                throw new ArgumentNullException("calendar");
+                throw new ArgumentNullException(nameof(calendar));
             if (millisecond < 0 || millisecond >= MillisPerSecond) {
                 throw new ArgumentOutOfRangeException("millisecond", Environment.GetResourceString("ArgumentOutOfRange_Range", 0, MillisPerSecond - 1));
             }
@@ -262,7 +262,7 @@ namespace System {
 
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, Calendar calendar, DateTimeKind kind) {
             if (calendar == null)
-                throw new ArgumentNullException("calendar");
+                throw new ArgumentNullException(nameof(calendar));
             if (millisecond < 0 || millisecond >= MillisPerSecond) {
                 throw new ArgumentOutOfRangeException("millisecond", Environment.GetResourceString("ArgumentOutOfRange_Range", 0, MillisPerSecond - 1));
             }            
@@ -279,7 +279,7 @@ namespace System {
         
         private DateTime(SerializationInfo info, StreamingContext context) {
             if (info==null)
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
     
             Boolean foundTicks = false;
@@ -675,7 +675,7 @@ namespace System {
         [System.Security.SecurityCritical /*auto-generated_required*/]
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context) {
             if (info==null) {
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             }
             Contract.EndContractBlock();
 

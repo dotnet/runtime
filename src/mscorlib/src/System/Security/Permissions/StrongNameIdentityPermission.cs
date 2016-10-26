@@ -135,7 +135,7 @@ namespace System.Security.Permissions
         public StrongNameIdentityPermission( StrongNamePublicKeyBlob blob, String name, Version version )
         {
             if (blob == null)
-                throw new ArgumentNullException( "blob" );
+                throw new ArgumentNullException( nameof(blob) );
             if (name != null && name.Equals( "" ))
                 throw new ArgumentException( Environment.GetResourceString( "Argument_EmptyStrongName" ) );      
             Contract.EndContractBlock();
@@ -156,7 +156,7 @@ namespace System.Security.Permissions
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException( "PublicKey" );
+                    throw new ArgumentNullException( nameof(PublicKey) );
                 Contract.EndContractBlock();
                 m_unrestricted = false;
                 if(m_strongNames != null && m_strongNames.Length == 1)

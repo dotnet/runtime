@@ -127,7 +127,7 @@ namespace System.IO {
         // Writes this MemoryStream to another stream.
         public unsafe override void WriteTo(Stream stream) {
             if (stream==null)
-                throw new ArgumentNullException("stream", Environment.GetResourceString("ArgumentNull_Stream"));
+                throw new ArgumentNullException(nameof(stream), Environment.GetResourceString("ArgumentNull_Stream"));
             Contract.EndContractBlock();
 
             if (!_unmanagedStream._isOpen) __Error.StreamIsClosed();
@@ -151,7 +151,7 @@ namespace System.IO {
 
             // The parameter checks must be in sync with the base version:
             if (destination == null)
-                throw new ArgumentNullException("destination");
+                throw new ArgumentNullException(nameof(destination));
             
             if (bufferSize <= 0)
                 throw new ArgumentOutOfRangeException("bufferSize", Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));

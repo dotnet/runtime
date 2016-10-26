@@ -115,7 +115,7 @@ namespace System {
         unsafe public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count)
         {
             if (destination == null)
-                throw new ArgumentNullException("destination");
+                throw new ArgumentNullException(nameof(destination));
             if (count < 0)
                 throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_NegativeCount"));
             if (sourceIndex < 0)
@@ -455,7 +455,7 @@ namespace System {
         private String CtorCharArrayStartLength(char [] value, int startIndex, int length)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             if (startIndex < 0)
                 throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_StartIndex"));
@@ -708,7 +708,7 @@ namespace System {
         [System.Security.SecuritySafeCritical]  // auto-generated
         unsafe public static String Copy (String str) {
             if (str==null) {
-                throw new ArgumentNullException("str");
+                throw new ArgumentNullException(nameof(str));
             }
             Contract.Ensures(Contract.Result<String>() != null);
             Contract.EndContractBlock();
@@ -727,7 +727,7 @@ namespace System {
         [System.Security.SecuritySafeCritical]  // auto-generated
         public static String Intern(String str) {
             if (str==null) {
-                throw new ArgumentNullException("str");
+                throw new ArgumentNullException(nameof(str));
             }
             Contract.Ensures(Contract.Result<String>().Length == str.Length);
             Contract.Ensures(str.Equals(Contract.Result<String>()));
@@ -740,7 +740,7 @@ namespace System {
         [System.Security.SecuritySafeCritical]  // auto-generated
         public static String IsInterned(String str) {
             if (str==null) {
-                throw new ArgumentNullException("str");
+                throw new ArgumentNullException(nameof(str));
             }
             Contract.Ensures(Contract.Result<String>() == null || Contract.Result<String>().Length == str.Length);
             Contract.EndContractBlock();

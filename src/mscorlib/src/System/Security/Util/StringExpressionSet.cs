@@ -122,7 +122,7 @@ namespace System.Security.Util {
         public void AddExpressions( String str )
         {
             if (str == null)
-                throw new ArgumentNullException( "str" );
+                throw new ArgumentNullException( nameof(str) );
             Contract.EndContractBlock();
             if (str.Length == 0)
                 return;
@@ -210,14 +210,14 @@ namespace System.Security.Util {
         {
             if (str == null)
             {
-                throw new ArgumentNullException( "str" );
+                throw new ArgumentNullException( nameof(str) );
             }
             Contract.EndContractBlock();
             ArrayList retArrayList = new ArrayList();
             for (int index = 0; index < str.Length; ++index)
             {
                 if (str[index] == null)
-                    throw new ArgumentNullException( "str" );
+                    throw new ArgumentNullException( nameof(str) );
 
                 // Replace alternate directory separators
                 String oneString = StaticProcessWholeString( str[index] );

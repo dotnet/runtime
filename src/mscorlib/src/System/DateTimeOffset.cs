@@ -516,7 +516,7 @@ namespace System {
         [System.Security.SecurityCritical]  // auto-generated_required
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context) {
             if (info == null) {
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             }
 
             Contract.EndContractBlock();
@@ -528,7 +528,7 @@ namespace System {
 
         DateTimeOffset(SerializationInfo info, StreamingContext context) {
             if (info == null) {
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             }
 
             m_dateTime      = (DateTime)info.GetValue("DateTime", typeof(DateTime));

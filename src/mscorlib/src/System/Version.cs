@@ -272,7 +272,7 @@ namespace System {
 
         public static Version Parse(string input) {
             if (input == null) {
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
             }
             Contract.EndContractBlock();
 
@@ -368,14 +368,14 @@ namespace System {
 
         public static bool operator <(Version v1, Version v2) {
             if ((Object) v1 == null)
-                throw new ArgumentNullException("v1");
+                throw new ArgumentNullException(nameof(v1));
             Contract.EndContractBlock();
             return (v1.CompareTo(v2) < 0);
         }
         
         public static bool operator <=(Version v1, Version v2) {
             if ((Object) v1 == null)
-                throw new ArgumentNullException("v1");
+                throw new ArgumentNullException(nameof(v1));
             Contract.EndContractBlock();
             return (v1.CompareTo(v2) <= 0);
         }

@@ -62,7 +62,7 @@ namespace System.Globalization {
         [System.Security.SecuritySafeCritical]  // auto-generated
         public RegionInfo(String name) {
             if (name==null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             if (name.Length == 0) //The InvariantCulture has no matching region
             { 

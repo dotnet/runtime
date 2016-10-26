@@ -479,7 +479,7 @@ namespace System.Reflection
         public override Object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
             if (attributeType == null)
-                throw new ArgumentNullException("attributeType");
+                throw new ArgumentNullException(nameof(attributeType));
             Contract.EndContractBlock();
 
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
@@ -493,7 +493,7 @@ namespace System.Reflection
         public override bool IsDefined(Type attributeType, bool inherit)
         {
             if (attributeType == null)
-                throw new ArgumentNullException("attributeType");
+                throw new ArgumentNullException(nameof(attributeType));
             Contract.EndContractBlock();
 
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
@@ -898,7 +898,7 @@ namespace System.Reflection
         {
             // Validate the parameters.
             if (delegateType == null)
-                throw new ArgumentNullException("delegateType");
+                throw new ArgumentNullException(nameof(delegateType));
             Contract.EndContractBlock();
 
             RuntimeType rtType = delegateType as RuntimeType;
@@ -924,7 +924,7 @@ namespace System.Reflection
         public override MethodInfo MakeGenericMethod(params Type[] methodInstantiation)
         {
           if (methodInstantiation == null)
-                throw new ArgumentNullException("methodInstantiation");
+                throw new ArgumentNullException(nameof(methodInstantiation));
           Contract.EndContractBlock();
 
             RuntimeType[] methodInstantionRuntimeType = new RuntimeType[methodInstantiation.Length];
@@ -1036,7 +1036,7 @@ namespace System.Reflection
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info == null)
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
 
             if (m_reflectedTypeCache.IsGlobal)

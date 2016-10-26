@@ -90,7 +90,7 @@ namespace System.Reflection.Emit
             ModuleBuilder mod, TypeBuilder type, bool bIsGlobalMethod)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             if (name.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "name");
@@ -99,7 +99,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(Environment.GetResourceString("Argument_IllegalName"), "name");
 
             if (mod == null)
-                throw new ArgumentNullException("mod");
+                throw new ArgumentNullException(nameof(mod));
             Contract.EndContractBlock();
 
             if (parameterTypes != null)
@@ -107,7 +107,7 @@ namespace System.Reflection.Emit
                 foreach(Type t in parameterTypes)
                 {
                     if (t == null)
-                        throw new ArgumentNullException("parameterTypes");
+                        throw new ArgumentNullException(nameof(parameterTypes));
                 }
             }
 
@@ -203,7 +203,7 @@ namespace System.Reflection.Emit
             // queries this instance to get all of the information which it needs.
             if (il == null)
             {
-                throw new ArgumentNullException("il");
+                throw new ArgumentNullException(nameof(il));
             }
             Contract.EndContractBlock();
 
@@ -705,7 +705,7 @@ namespace System.Reflection.Emit
         public GenericTypeParameterBuilder[] DefineGenericParameters (params string[] names)
         {
             if (names == null)
-                throw new ArgumentNullException("names");
+                throw new ArgumentNullException(nameof(names));
 
             if (names.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Arg_EmptyArray"), "names");
@@ -716,7 +716,7 @@ namespace System.Reflection.Emit
 
             for (int i = 0; i < names.Length; i ++)
                 if (names[i] == null)
-                    throw new ArgumentNullException("names");
+                    throw new ArgumentNullException(nameof(names));
 
             if (m_tkMethod.Token != 0)
                 throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_MethodBuilderBaked"));
@@ -932,7 +932,7 @@ namespace System.Reflection.Emit
         public void AddDeclarativeSecurity(SecurityAction action, PermissionSet pset)
         {
             if (pset == null)
-                throw new ArgumentNullException("pset");
+                throw new ArgumentNullException(nameof(pset));
             Contract.EndContractBlock();
 
             ThrowIfGeneric ();
@@ -971,7 +971,7 @@ namespace System.Reflection.Emit
         {
             if (il == null)
             {
-                throw new ArgumentNullException("il", Environment.GetResourceString("ArgumentNull_Array"));
+                throw new ArgumentNullException(nameof(il), Environment.GetResourceString("ArgumentNull_Array"));
             }
             if (maxStack < 0)
             {
@@ -1187,9 +1187,9 @@ namespace System.Reflection.Emit
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             if (con == null)
-                throw new ArgumentNullException("con");
+                throw new ArgumentNullException(nameof(con));
             if (binaryAttribute == null)
-                throw new ArgumentNullException("binaryAttribute");
+                throw new ArgumentNullException(nameof(binaryAttribute));
             Contract.EndContractBlock();
 
             ThrowIfGeneric();
@@ -1207,7 +1207,7 @@ namespace System.Reflection.Emit
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
             if (customBuilder == null)
-                throw new ArgumentNullException("customBuilder");
+                throw new ArgumentNullException(nameof(customBuilder));
             Contract.EndContractBlock();
 
             ThrowIfGeneric();

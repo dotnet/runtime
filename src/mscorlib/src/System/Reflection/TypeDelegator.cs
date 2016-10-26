@@ -31,7 +31,7 @@ namespace System.Reflection {
         
         public TypeDelegator(Type delegatingType) {
             if (delegatingType == null)
-                throw new ArgumentNullException("delegatingType");
+                throw new ArgumentNullException(nameof(delegatingType));
             Contract.EndContractBlock();
                 
             typeImpl = delegatingType;

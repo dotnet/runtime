@@ -139,7 +139,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal void CopyTo<K, V>(KeyValuePair<K, V>[] array, int arrayIndex)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
 
             if (arrayIndex < 0)
                 throw new ArgumentOutOfRangeException("arrayIndex");

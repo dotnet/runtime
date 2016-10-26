@@ -91,7 +91,7 @@ namespace System.Collections.Concurrent
         {
             if (list == null)
             {
-                throw new ArgumentNullException("list");
+                throw new ArgumentNullException(nameof(list));
             }
             if (loadBalance)
             {
@@ -122,7 +122,7 @@ namespace System.Collections.Concurrent
 
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
             if (loadBalance)
             {
@@ -172,7 +172,7 @@ namespace System.Collections.Concurrent
         {
             if (source == null)
             {
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
             }
 
             if ((partitionerOptions & (~EnumerablePartitionerOptions.NoBuffering)) != 0)

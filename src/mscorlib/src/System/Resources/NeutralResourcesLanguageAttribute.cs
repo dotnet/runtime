@@ -35,7 +35,7 @@ namespace System.Resources {
         public NeutralResourcesLanguageAttribute(String cultureName)
         {
             if (cultureName == null)
-                throw new ArgumentNullException("cultureName");
+                throw new ArgumentNullException(nameof(cultureName));
             Contract.EndContractBlock();
 
             _culture = cultureName;
@@ -45,7 +45,7 @@ namespace System.Resources {
         public NeutralResourcesLanguageAttribute(String cultureName, UltimateResourceFallbackLocation location)
         {
             if (cultureName == null)
-                throw new ArgumentNullException("cultureName");
+                throw new ArgumentNullException(nameof(cultureName));
             if (!Enum.IsDefined(typeof(UltimateResourceFallbackLocation), location))
                 throw new ArgumentException(Environment.GetResourceString("Arg_InvalidNeutralResourcesLanguage_FallbackLoc", location));
             Contract.EndContractBlock();

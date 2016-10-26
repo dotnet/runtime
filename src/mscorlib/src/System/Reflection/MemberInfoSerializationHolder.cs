@@ -31,7 +31,7 @@ namespace System.Reflection
             Type[] genericArguments)
         {
             if (info == null)
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
 
             String assemblyName = reflectedClass.Module.Assembly.FullName;
@@ -65,7 +65,7 @@ namespace System.Reflection
         internal MemberInfoSerializationHolder(SerializationInfo info, StreamingContext context) 
         {
             if (info == null)
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
 
             String assemblyName = info.GetString("AssemblyName");

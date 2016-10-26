@@ -323,7 +323,7 @@ namespace System.Globalization {
 
         public CultureInfo(String name, bool useUserOverride) {
             if (name==null) {
-                throw new ArgumentNullException("name",
+                throw new ArgumentNullException(nameof(name),
                     Environment.GetResourceString("ArgumentNull_String"));
             }
             Contract.EndContractBlock();
@@ -540,7 +540,7 @@ namespace System.Globalization {
         internal CultureInfo(String cultureName, String textAndCompareCultureName)
         {
             if (cultureName==null) {
-                throw new ArgumentNullException("cultureName",
+                throw new ArgumentNullException(nameof(cultureName),
                     Environment.GetResourceString("ArgumentNull_String"));
             }
             Contract.EndContractBlock();
@@ -701,7 +701,7 @@ namespace System.Globalization {
             set {
 #if FEATURE_APPX
                     if (value == null) {
-                        throw new ArgumentNullException("value");
+                        throw new ArgumentNullException(nameof(value));
                     }                    
 
                     if (AppDomain.IsAppXModel()) {
@@ -799,7 +799,7 @@ namespace System.Globalization {
             set {
 #if FEATURE_APPX
                     if (value == null) {
-                        throw new ArgumentNullException("value");
+                        throw new ArgumentNullException(nameof(value));
                     }                    
 
                     if (AppDomain.IsAppXModel()) {
@@ -1357,7 +1357,7 @@ namespace System.Globalization {
             }
             set {
                 if (value == null) {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         Environment.GetResourceString("ArgumentNull_Obj"));
                 }
                 Contract.EndContractBlock();
@@ -1393,7 +1393,7 @@ namespace System.Globalization {
 
             set {
                 if (value == null) {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         Environment.GetResourceString("ArgumentNull_Obj"));
                 }
                 Contract.EndContractBlock();
@@ -1595,7 +1595,7 @@ namespace System.Globalization {
 
         public static CultureInfo ReadOnly(CultureInfo ci) {
             if (ci == null) {
-                throw new ArgumentNullException("ci");
+                throw new ArgumentNullException(nameof(ci));
             }
             Contract.Ensures(Contract.Result<CultureInfo>() != null);
             Contract.EndContractBlock();
@@ -1849,7 +1849,7 @@ namespace System.Globalization {
             // Make sure we have a valid, non-zero length string as name
             if (name == null)
             {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
             Contract.Ensures(Contract.Result<CultureInfo>() != null);
             Contract.EndContractBlock();
@@ -1871,12 +1871,12 @@ namespace System.Globalization {
             // Make sure we have a valid, non-zero length string as name
             if (null == name)
             {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
 
             if (null == altName)
             {
-                throw new ArgumentNullException("altName");
+                throw new ArgumentNullException(nameof(altName));
             }
             Contract.Ensures(Contract.Result<CultureInfo>() != null);
             Contract.EndContractBlock();

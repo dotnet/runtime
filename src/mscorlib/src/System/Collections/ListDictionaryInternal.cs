@@ -30,7 +30,7 @@ namespace System.Collections {
         public Object this[Object key] {
             get {
                 if (key == null) {
-                    throw new ArgumentNullException("key", Environment.GetResourceString("ArgumentNull_Key"));
+                    throw new ArgumentNullException(nameof(key), Environment.GetResourceString("ArgumentNull_Key"));
                 }
                 Contract.EndContractBlock();
                 DictionaryNode node = head;
@@ -45,7 +45,7 @@ namespace System.Collections {
             }
             set {
                 if (key == null) {
-                    throw new ArgumentNullException("key", Environment.GetResourceString("ArgumentNull_Key"));
+                    throw new ArgumentNullException(nameof(key), Environment.GetResourceString("ArgumentNull_Key"));
                 }
                 Contract.EndContractBlock();
 
@@ -132,7 +132,7 @@ namespace System.Collections {
 
         public void Add(Object key, Object value) {
             if (key == null) {
-                throw new ArgumentNullException("key", Environment.GetResourceString("ArgumentNull_Key"));
+                throw new ArgumentNullException(nameof(key), Environment.GetResourceString("ArgumentNull_Key"));
             }
             Contract.EndContractBlock();
 
@@ -179,7 +179,7 @@ namespace System.Collections {
 
         public bool Contains(Object key) {
             if (key == null) {
-                throw new ArgumentNullException("key", Environment.GetResourceString("ArgumentNull_Key"));
+                throw new ArgumentNullException(nameof(key), Environment.GetResourceString("ArgumentNull_Key"));
             }
             Contract.EndContractBlock();
             for (DictionaryNode node = head; node != null; node = node.next) {
@@ -192,7 +192,7 @@ namespace System.Collections {
 
         public void CopyTo(Array array, int index)  {
             if (array==null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
                 
             if (array.Rank != 1)
                 throw new ArgumentException(Environment.GetResourceString("Arg_RankMultiDimNotSupported"));
@@ -220,7 +220,7 @@ namespace System.Collections {
 
         public void Remove(Object key) {
             if (key == null) {
-                throw new ArgumentNullException("key", Environment.GetResourceString("ArgumentNull_Key"));
+                throw new ArgumentNullException(nameof(key), Environment.GetResourceString("ArgumentNull_Key"));
             }
             Contract.EndContractBlock();
             version++;
@@ -328,7 +328,7 @@ namespace System.Collections {
 
             void ICollection.CopyTo(Array array, int index)  {
                 if (array==null)
-                    throw new ArgumentNullException("array");
+                    throw new ArgumentNullException(nameof(array));
                 if (array.Rank != 1)
                     throw new ArgumentException(Environment.GetResourceString("Arg_RankMultiDimNotSupported"));
                 if (index < 0)

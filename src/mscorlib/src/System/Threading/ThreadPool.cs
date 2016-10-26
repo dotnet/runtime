@@ -1505,7 +1505,7 @@ namespace System.Threading
             }
             else
             {
-                throw new ArgumentNullException("WaitOrTimerCallback");
+                throw new ArgumentNullException(nameof(WaitOrTimerCallback));
             }
             return registeredWaitHandle;
         }
@@ -1687,7 +1687,7 @@ namespace System.Threading
             }
             else
             {
-                throw new ArgumentNullException("WaitCallback");
+                throw new ArgumentNullException(nameof(WaitCallback));
             }
             return success;
         }
@@ -1928,7 +1928,7 @@ namespace System.Threading
         public static bool BindHandle(SafeHandle osHandle)
         {
             if (osHandle == null)
-                throw new ArgumentNullException("osHandle");
+                throw new ArgumentNullException(nameof(osHandle));
             
             bool ret = false;
             bool mustReleaseSafeHandle = false;

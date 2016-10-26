@@ -738,7 +738,7 @@ namespace System {
 
         static public DateTimeOffset ConvertTime(DateTimeOffset dateTimeOffset, TimeZoneInfo destinationTimeZone) {
             if (destinationTimeZone == null) {
-                throw new ArgumentNullException("destinationTimeZone");
+                throw new ArgumentNullException(nameof(destinationTimeZone));
             }
 
             Contract.EndContractBlock();
@@ -762,7 +762,7 @@ namespace System {
 
         static public DateTime ConvertTime(DateTime dateTime, TimeZoneInfo destinationTimeZone) {
             if (destinationTimeZone == null) {
-                throw new ArgumentNullException("destinationTimeZone");
+                throw new ArgumentNullException(nameof(destinationTimeZone));
             }
             Contract.EndContractBlock();
 
@@ -790,11 +790,11 @@ namespace System {
 
         static private DateTime ConvertTime(DateTime dateTime, TimeZoneInfo sourceTimeZone, TimeZoneInfo destinationTimeZone, TimeZoneInfoOptions flags, CachedData cachedData) {
             if (sourceTimeZone == null) {
-                throw new ArgumentNullException("sourceTimeZone");
+                throw new ArgumentNullException(nameof(sourceTimeZone));
             }
 
             if (destinationTimeZone == null) {
-                throw new ArgumentNullException("destinationTimeZone");
+                throw new ArgumentNullException(nameof(destinationTimeZone));
             }
             Contract.EndContractBlock();
 
@@ -921,7 +921,7 @@ namespace System {
         //
         static public TimeZoneInfo FromSerializedString(string source) {
             if (source == null) {
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
             }
             if (source.Length == 0) {
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidSerializedString", source), "source");
@@ -1025,7 +1025,7 @@ namespace System {
         //
         public Boolean HasSameRules(TimeZoneInfo other) {
             if (other == null) {
-                throw new ArgumentNullException("other");
+                throw new ArgumentNullException(nameof(other));
             }
 
             // check the utcOffset and supportsDaylightSavingTime members
@@ -1376,7 +1376,7 @@ namespace System {
         [System.Security.SecurityCritical]  // auto-generated_required
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context) {
             if (info == null) {
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             }
             Contract.EndContractBlock();
 
@@ -1392,7 +1392,7 @@ namespace System {
         
         TimeZoneInfo(SerializationInfo info, StreamingContext context) {
             if (info == null) {
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             }
 
             m_id                  = (String)info.GetValue("Id", typeof(String));
@@ -2582,7 +2582,7 @@ namespace System {
             }
 
             if (id == null) {
-                throw new ArgumentNullException("id");
+                throw new ArgumentNullException(nameof(id));
             }
             else if (!IsValidSystemTimeZoneId(id)) {
                 throw new TimeZoneNotFoundException(Environment.GetResourceString("TimeZoneNotFound_MissingData", id));
@@ -4386,7 +4386,7 @@ namespace System {
                 out Boolean adjustmentRulesSupportDst) {
 
             if (id == null) {
-                throw new ArgumentNullException("id");
+                throw new ArgumentNullException(nameof(id));
             }
 
             if (id.Length == 0) {
@@ -4712,7 +4712,7 @@ namespace System {
             [System.Security.SecurityCritical]  // auto-generated_required
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context) {
                 if (info == null) {
-                    throw new ArgumentNullException("info");
+                    throw new ArgumentNullException(nameof(info));
                 }
                 Contract.EndContractBlock();
  
@@ -4727,7 +4727,7 @@ namespace System {
 
             AdjustmentRule(SerializationInfo info, StreamingContext context) {
                 if (info == null) {
-                    throw new ArgumentNullException("info");
+                    throw new ArgumentNullException(nameof(info));
                 }
 
                 m_dateStart           = (DateTime)info.GetValue("DateStart", typeof(DateTime));
@@ -4976,7 +4976,7 @@ namespace System {
             [System.Security.SecurityCritical]  // auto-generated_required
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context) {
                 if (info == null) {
-                    throw new ArgumentNullException("info");
+                    throw new ArgumentNullException(nameof(info));
                 }
                 Contract.EndContractBlock();
  
@@ -4990,7 +4990,7 @@ namespace System {
 
             TransitionTime(SerializationInfo info, StreamingContext context) {
                 if (info == null) {
-                    throw new ArgumentNullException("info");
+                    throw new ArgumentNullException(nameof(info));
                 }
 
                 m_timeOfDay       = (DateTime)info.GetValue("TimeOfDay", typeof(DateTime));

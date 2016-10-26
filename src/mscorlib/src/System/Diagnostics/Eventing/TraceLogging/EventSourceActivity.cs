@@ -35,7 +35,7 @@ namespace System.Diagnostics.Tracing
         public EventSourceActivity(EventSource eventSource)
         {
             if (eventSource == null)
-                throw new ArgumentNullException("eventSource");
+                throw new ArgumentNullException(nameof(eventSource));
             Contract.EndContractBlock();
 
             this.eventSource = eventSource;
