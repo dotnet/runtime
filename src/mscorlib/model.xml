@@ -8087,6 +8087,7 @@
       <Member Name="QueueUserWorkItem(System.Threading.WaitCallback)" />
       <Member Name="QueueUserWorkItem(System.Threading.WaitCallback,System.Object)" />
       <Member Name="SetMaxThreads(System.Int32,System.Int32)" />
+      <Member Name="BindHandle(System.IntPtr)" />
       <Member Name="BindHandle(System.Runtime.InteropServices.SafeHandle)" />
       <Member Name="RegisterWaitForSingleObject(System.Threading.WaitHandle,System.Threading.WaitOrTimerCallback,System.Object,System.UInt32,System.Boolean)" />
       <Member Name="RegisterWaitForSingleObject(System.Threading.WaitHandle,System.Threading.WaitOrTimerCallback,System.Object,System.Int32,System.Boolean)" />
@@ -8131,11 +8132,14 @@
       <Member Name="#ctor(System.Int32,System.Int32,System.IntPtr,System.IAsyncResult)" />
       <Member MemberType="Property" Name="AsyncResult" />
       <Member MemberType="Property" Name="EventHandle" />
+      <Member MemberType="Property" Name="EventHandleIntPtr" />
       <Member MemberType="Property" Name="OffsetLow" />
       <Member MemberType="Property" Name="OffsetHigh" />
       <Member Name="Free(System.Threading.NativeOverlapped*)" />
+      <Member Name="Pack(System.Threading.IOCompletionCallback)" />
       <Member Name="Pack(System.Threading.IOCompletionCallback,System.Object)" />
       <Member Name="Unpack(System.Threading.NativeOverlapped*)" />
+      <Member Name="UnsafePack(System.Threading.IOCompletionCallback)" />
       <Member Name="UnsafePack(System.Threading.IOCompletionCallback,System.Object)" Condition="FEATURE_COMINTEROP" />
     </Type>
     <Type Name="System.Threading.IOCompletionCallback">
