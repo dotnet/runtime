@@ -347,7 +347,7 @@ namespace System.Globalization {
         public CultureInfo(int culture, bool useUserOverride) {
             // We don't check for other invalid LCIDS here...
             if (culture < 0) {
-                throw new ArgumentOutOfRangeException("culture",
+                throw new ArgumentOutOfRangeException(nameof(culture),
                     Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
             }
             Contract.EndContractBlock();
@@ -1827,7 +1827,7 @@ namespace System.Globalization {
             // the altCulture code path for SQL Server.
             // Also check for zero as this would fail trying to add as a key to the hash.
             if (culture <= 0) {
-                throw new ArgumentOutOfRangeException("culture",
+                throw new ArgumentOutOfRangeException(nameof(culture),
                     Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
             }
             Contract.Ensures(Contract.Result<CultureInfo>() != null);

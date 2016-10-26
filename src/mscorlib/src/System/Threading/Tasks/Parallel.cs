@@ -98,7 +98,7 @@ namespace System.Threading.Tasks
             set
             {
                 if ((value == 0) || (value < -1))
-                    throw new ArgumentOutOfRangeException("MaxDegreeOfParallelism");
+                    throw new ArgumentOutOfRangeException(nameof(MaxDegreeOfParallelism));
                 m_maxDegreeOfParallelism = value;
             }
         }

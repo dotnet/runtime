@@ -79,7 +79,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             int destLen = array.GetLength(0);
 
             if (arrayIndex < destLB)
-                throw new ArgumentOutOfRangeException("arrayIndex");
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex));
 
             // Does the dimension in question have sufficient space to copy the expected number of entries?
             // We perform this check before valid index check to ensure the exception message is in sync with

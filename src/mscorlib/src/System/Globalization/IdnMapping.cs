@@ -264,7 +264,7 @@ namespace System.Globalization
                 throw new ArgumentOutOfRangeException("byteIndex",
                     Environment.GetResourceString("ArgumentOutOfRange_Index"));
             if (index > ascii.Length - count)
-                throw new ArgumentOutOfRangeException("ascii",
+                throw new ArgumentOutOfRangeException(nameof(ascii),
                       Environment.GetResourceString("ArgumentOutOfRange_IndexCountBuffer"));
 
             // This is a case (i.e. explicitly null-terminated input) where behavior in .NET and Win32 intentionally differ.

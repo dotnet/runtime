@@ -175,7 +175,7 @@ namespace System.Diagnostics.Tracing
         {
             if (name != null && 0 <= name.IndexOf('\0'))
             {
-                throw new ArgumentOutOfRangeException("name");
+                throw new ArgumentOutOfRangeException(nameof(name));
             }
         }
 

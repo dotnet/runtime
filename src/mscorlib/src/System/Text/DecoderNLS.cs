@@ -86,11 +86,11 @@ namespace System.Text
                     Environment.GetResourceString("ArgumentNull_Array"));
 
             if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException((index<0 ? "index" : "count"),
+                throw new ArgumentOutOfRangeException((index<0 ? nameof(index) : nameof(count)),
                     Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
 
             if (bytes.Length - index < count)
-                throw new ArgumentOutOfRangeException("bytes",
+                throw new ArgumentOutOfRangeException(nameof(bytes),
                     Environment.GetResourceString("ArgumentOutOfRange_IndexCountBuffer"));
 
             Contract.EndContractBlock();
@@ -113,7 +113,7 @@ namespace System.Text
                       Environment.GetResourceString("ArgumentNull_Array"));
 
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count",
+                throw new ArgumentOutOfRangeException(nameof(count),
                       Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
 
@@ -141,15 +141,15 @@ namespace System.Text
                     Environment.GetResourceString("ArgumentNull_Array"));
 
             if (byteIndex < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException((byteIndex<0 ? "byteIndex" : "byteCount"),
+                throw new ArgumentOutOfRangeException((byteIndex<0 ? nameof(byteIndex) : nameof(byteCount)),
                     Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
 
             if ( bytes.Length - byteIndex < byteCount)
-                throw new ArgumentOutOfRangeException("bytes",
+                throw new ArgumentOutOfRangeException(nameof(bytes),
                     Environment.GetResourceString("ArgumentOutOfRange_IndexCountBuffer"));
 
             if (charIndex < 0 || charIndex > chars.Length)
-                throw new ArgumentOutOfRangeException("charIndex",
+                throw new ArgumentOutOfRangeException(nameof(charIndex),
                     Environment.GetResourceString("ArgumentOutOfRange_Index"));
 
             Contract.EndContractBlock();
@@ -180,7 +180,7 @@ namespace System.Text
                       Environment.GetResourceString("ArgumentNull_Array"));
 
             if (byteCount < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException((byteCount<0 ? "byteCount" : "charCount"),
+                throw new ArgumentOutOfRangeException((byteCount<0 ? nameof(byteCount) : nameof(charCount)),
                       Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
 
@@ -205,19 +205,19 @@ namespace System.Text
                       Environment.GetResourceString("ArgumentNull_Array"));
 
             if (byteIndex < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException((byteIndex<0 ? "byteIndex" : "byteCount"),
+                throw new ArgumentOutOfRangeException((byteIndex<0 ? nameof(byteIndex) : nameof(byteCount)),
                       Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
 
             if (charIndex < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException((charIndex<0 ? "charIndex" : "charCount"),
+                throw new ArgumentOutOfRangeException((charIndex<0 ? nameof(charIndex) : nameof(charCount)),
                       Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
 
             if (bytes.Length - byteIndex < byteCount)
-                throw new ArgumentOutOfRangeException("bytes",
+                throw new ArgumentOutOfRangeException(nameof(bytes),
                       Environment.GetResourceString("ArgumentOutOfRange_IndexCountBuffer"));
 
             if (chars.Length - charIndex < charCount)
-                throw new ArgumentOutOfRangeException("chars",
+                throw new ArgumentOutOfRangeException(nameof(chars),
                       Environment.GetResourceString("ArgumentOutOfRange_IndexCountBuffer"));
 
             Contract.EndContractBlock();
@@ -252,7 +252,7 @@ namespace System.Text
                     Environment.GetResourceString("ArgumentNull_Array"));
 
             if (byteCount < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException((byteCount<0 ? "byteCount" : "charCount"),
+                throw new ArgumentOutOfRangeException((byteCount<0 ? nameof(byteCount) : nameof(charCount)),
                     Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
 

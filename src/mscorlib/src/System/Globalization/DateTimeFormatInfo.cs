@@ -694,7 +694,7 @@ namespace System.Globalization {
                 }
                 
                 // The assigned calendar is not a valid calendar for this culture, throw
-                throw new ArgumentOutOfRangeException("value", Environment.GetResourceString("Argument_InvalidCalendar"));
+                throw new ArgumentOutOfRangeException(nameof(value), Environment.GetResourceString("Argument_InvalidCalendar"));
             }
         }
 
@@ -795,7 +795,7 @@ namespace System.Globalization {
             if ((--era) < EraNames.Length && (era >= 0)) {
                 return (m_eraNames[era]);
             }
-            throw new ArgumentOutOfRangeException("era", Environment.GetResourceString("ArgumentOutOfRange_InvalidEraValue"));
+            throw new ArgumentOutOfRangeException(nameof(era), Environment.GetResourceString("ArgumentOutOfRange_InvalidEraValue"));
         }
 
         internal String[] AbbreviatedEraNames
@@ -823,7 +823,7 @@ namespace System.Globalization {
             if ((--era) < m_abbrevEraNames.Length && (era >= 0)) {
                 return (m_abbrevEraNames[era]);
             }
-            throw new ArgumentOutOfRangeException("era", Environment.GetResourceString("ArgumentOutOfRange_InvalidEraValue"));
+            throw new ArgumentOutOfRangeException(nameof(era), Environment.GetResourceString("ArgumentOutOfRange_InvalidEraValue"));
         }
 
         internal String[] AbbreviatedEnglishEraNames
@@ -894,7 +894,7 @@ namespace System.Globalization {
                 firstDayOfWeek = (int)value;
                 } else {
                     throw new ArgumentOutOfRangeException(
-                        "value", Environment.GetResourceString("ArgumentOutOfRange_Range",
+                        nameof(value), Environment.GetResourceString("ArgumentOutOfRange_Range",
                         DayOfWeek.Sunday, DayOfWeek.Saturday));
                 }
             }
@@ -922,7 +922,7 @@ namespace System.Globalization {
                     calendarWeekRule = (int)value;
                 } else {
                     throw new ArgumentOutOfRangeException(
-                        "value", Environment.GetResourceString("ArgumentOutOfRange_Range",
+                        nameof(value), Environment.GetResourceString("ArgumentOutOfRange_Range",
                         CalendarWeekRule.FirstDay, CalendarWeekRule.FirstFourDayWeek));
                 }
             }
@@ -1556,7 +1556,7 @@ namespace System.Globalization {
             // (actually is 13 right now for all cases)
             if ((month < 1) || (month > monthNamesArray.Length)) {
                 throw new ArgumentOutOfRangeException(
-                    "month", Environment.GetResourceString("ArgumentOutOfRange_Range",
+                    nameof(month), Environment.GetResourceString("ArgumentOutOfRange_Range",
                     1, monthNamesArray.Length));
             }
             return (monthNamesArray[month-1]);
@@ -1614,7 +1614,7 @@ namespace System.Globalization {
 
             if ((int)dayofweek < 0 || (int)dayofweek > 6) {
                 throw new ArgumentOutOfRangeException(
-                    "dayofweek", Environment.GetResourceString("ArgumentOutOfRange_Range",
+                    nameof(dayofweek), Environment.GetResourceString("ArgumentOutOfRange_Range",
                     DayOfWeek.Sunday, DayOfWeek.Saturday));
             }
             Contract.EndContractBlock();
@@ -1633,7 +1633,7 @@ namespace System.Globalization {
 
             if ((int)dayOfWeek < 0 || (int)dayOfWeek > 6) {
                 throw new ArgumentOutOfRangeException(
-                    "dayOfWeek", Environment.GetResourceString("ArgumentOutOfRange_Range",
+                    nameof(dayOfWeek), Environment.GetResourceString("ArgumentOutOfRange_Range",
                     DayOfWeek.Sunday, DayOfWeek.Saturday));
             }
             Contract.EndContractBlock();
@@ -1750,7 +1750,7 @@ namespace System.Globalization {
         {
             if ((int)dayofweek < 0 || (int)dayofweek > 6) {
                 throw new ArgumentOutOfRangeException(
-                    "dayofweek", Environment.GetResourceString("ArgumentOutOfRange_Range",
+                    nameof(dayofweek), Environment.GetResourceString("ArgumentOutOfRange_Range",
                     DayOfWeek.Sunday, DayOfWeek.Saturday));
             }
             Contract.EndContractBlock();
@@ -1765,7 +1765,7 @@ namespace System.Globalization {
         {
             if (month < 1 || month > 13) {
                 throw new ArgumentOutOfRangeException(
-                    "month", Environment.GetResourceString("ArgumentOutOfRange_Range",
+                    nameof(month), Environment.GetResourceString("ArgumentOutOfRange_Range",
                     1, 13));
             }
             Contract.EndContractBlock();
@@ -1778,7 +1778,7 @@ namespace System.Globalization {
         {
             if (month < 1 || month > 13) {
                 throw new ArgumentOutOfRangeException(
-                    "month", Environment.GetResourceString("ArgumentOutOfRange_Range",
+                    nameof(month), Environment.GetResourceString("ArgumentOutOfRange_Range",
                     1, 13));
             }
             Contract.EndContractBlock();

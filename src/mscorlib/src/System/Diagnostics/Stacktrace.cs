@@ -312,7 +312,7 @@ namespace System.Diagnostics {
         {
     
             if (skipFrames < 0)
-                throw new ArgumentOutOfRangeException("skipFrames", 
+                throw new ArgumentOutOfRangeException(nameof(skipFrames), 
                     Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
     
@@ -332,7 +332,7 @@ namespace System.Diagnostics {
         {
     
             if (skipFrames < 0)
-                throw new ArgumentOutOfRangeException("skipFrames", 
+                throw new ArgumentOutOfRangeException(nameof(skipFrames), 
                     Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
     
@@ -383,7 +383,7 @@ namespace System.Diagnostics {
                 throw new ArgumentNullException(nameof(e));
 
             if (skipFrames < 0)
-                throw new ArgumentOutOfRangeException("skipFrames", 
+                throw new ArgumentOutOfRangeException(nameof(skipFrames), 
                     Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
     
@@ -405,7 +405,7 @@ namespace System.Diagnostics {
                 throw new ArgumentNullException(nameof(e));
 
             if (skipFrames < 0)
-                throw new ArgumentOutOfRangeException("skipFrames", 
+                throw new ArgumentOutOfRangeException(nameof(skipFrames), 
                     Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
     

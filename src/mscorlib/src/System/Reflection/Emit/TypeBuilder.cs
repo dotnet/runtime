@@ -2540,7 +2540,7 @@ namespace System.Reflection.Emit {
                 action == SecurityAction.RequestOptional ||
                 action == SecurityAction.RequestRefuse)
             {
-                throw new ArgumentOutOfRangeException("action");
+                throw new ArgumentOutOfRangeException(nameof(action));
             }
 #pragma warning restore 618
 

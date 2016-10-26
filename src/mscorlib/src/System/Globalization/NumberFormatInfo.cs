@@ -316,7 +316,7 @@ namespace System.Globalization {
             set {
                 if (value < 0 || value > 99) {
                     throw new ArgumentOutOfRangeException(
-                                "CurrencyDecimalDigits",
+                                nameof(CurrencyDecimalDigits),
                                 String.Format(
                                     CultureInfo.CurrentCulture,
                                     Environment.GetResourceString("ArgumentOutOfRange_Range"),
@@ -491,7 +491,7 @@ namespace System.Globalization {
             set {
                 if (value < 0 || value > 15) {
                     throw new ArgumentOutOfRangeException(
-                                "CurrencyNegativePattern",
+                                nameof(CurrencyNegativePattern),
                                 String.Format(
                                     CultureInfo.CurrentCulture,
                                     Environment.GetResourceString("ArgumentOutOfRange_Range"),
@@ -513,7 +513,7 @@ namespace System.Globalization {
                 //
                 if (value < 0 || value > 4) {
                     throw new ArgumentOutOfRangeException(
-                                "NumberNegativePattern",
+                                nameof(NumberNegativePattern),
                                 String.Format(
                                     CultureInfo.CurrentCulture,
                                     Environment.GetResourceString("ArgumentOutOfRange_Range"),
@@ -535,7 +535,7 @@ namespace System.Globalization {
                 //
                 if (value < 0 || value > 3) {
                     throw new ArgumentOutOfRangeException(
-                                "PercentPositivePattern",
+                                nameof(PercentPositivePattern),
                                 String.Format(
                                     CultureInfo.CurrentCulture,
                                     Environment.GetResourceString("ArgumentOutOfRange_Range"),
@@ -557,7 +557,7 @@ namespace System.Globalization {
                 //
                 if (value < 0 || value > 11) {
                     throw new ArgumentOutOfRangeException(
-                                "PercentNegativePattern",
+                                nameof(PercentNegativePattern),
                                 String.Format(
                                     CultureInfo.CurrentCulture,
                                     Environment.GetResourceString("ArgumentOutOfRange_Range"),
@@ -606,7 +606,7 @@ namespace System.Globalization {
             set {
                 if (value < 0 || value > 99) {
                     throw new ArgumentOutOfRangeException(
-                                "NumberDecimalDigits",
+                                nameof(NumberDecimalDigits),
                                 String.Format(
                                     CultureInfo.CurrentCulture,
                                     Environment.GetResourceString("ArgumentOutOfRange_Range"),
@@ -645,7 +645,7 @@ namespace System.Globalization {
             set {
                 if (value < 0 || value > 3) {
                     throw new ArgumentOutOfRangeException(
-                                "CurrencyPositivePattern",
+                                nameof(CurrencyPositivePattern),
                                 String.Format(
                                     CultureInfo.CurrentCulture,
                                     Environment.GetResourceString("ArgumentOutOfRange_Range"),
@@ -694,7 +694,7 @@ namespace System.Globalization {
             set {
                 if (value < 0 || value > 99) {
                     throw new ArgumentOutOfRangeException(
-                                "PercentDecimalDigits",
+                                nameof(PercentDecimalDigits),
                                 String.Format(
                                     CultureInfo.CurrentCulture,
                                     Environment.GetResourceString("ArgumentOutOfRange_Range"),

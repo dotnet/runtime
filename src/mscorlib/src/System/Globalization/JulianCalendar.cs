@@ -112,7 +112,7 @@ namespace System.Globalization {
 
         static internal void CheckEraRange(int era) {
             if (era != CurrentEra && era != JulianEra) {
-                throw new ArgumentOutOfRangeException("era", Environment.GetResourceString("ArgumentOutOfRange_InvalidEraValue"));
+                throw new ArgumentOutOfRangeException(nameof(era), Environment.GetResourceString("ArgumentOutOfRange_InvalidEraValue"));
             }
         }
 
@@ -120,7 +120,7 @@ namespace System.Globalization {
             CheckEraRange(era);
             if (year <= 0 || year > MaxYear) {
                 throw new ArgumentOutOfRangeException(
-                            "year",
+                            nameof(year),
                             String.Format(
                                 CultureInfo.CurrentCulture,
                                 Environment.GetResourceString("ArgumentOutOfRange_Range"),
@@ -131,7 +131,7 @@ namespace System.Globalization {
 
         static internal void CheckMonthRange(int month) {
             if (month < 1 || month > 12) {
-                throw new ArgumentOutOfRangeException("month", Environment.GetResourceString("ArgumentOutOfRange_Month"));
+                throw new ArgumentOutOfRangeException(nameof(month), Environment.GetResourceString("ArgumentOutOfRange_Month"));
             }
         }
 
@@ -159,7 +159,7 @@ namespace System.Globalization {
             int monthDays = days[month] - days[month - 1];
             if (day < 1 || day > monthDays) {
                 throw new ArgumentOutOfRangeException(
-                            "day",
+                            nameof(day),
                             String.Format(
                                 CultureInfo.CurrentCulture,
                                 Environment.GetResourceString("ArgumentOutOfRange_Range"),
@@ -230,7 +230,7 @@ namespace System.Globalization {
         {
             if (months < -120000 || months > 120000) {
                 throw new ArgumentOutOfRangeException(
-                            "months",
+                            nameof(months),
                             String.Format(
                                 CultureInfo.CurrentCulture,
                                 Environment.GetResourceString("ArgumentOutOfRange_Range"),
@@ -377,7 +377,7 @@ namespace System.Globalization {
             CheckDayRange(year, month, day);
             if (millisecond < 0 || millisecond >= MillisPerSecond) {
                 throw new ArgumentOutOfRangeException(
-                            "millisecond",
+                            nameof(millisecond),
                             String.Format(
                                 CultureInfo.CurrentCulture,
                                 Environment.GetResourceString("ArgumentOutOfRange_Range"),
@@ -420,14 +420,14 @@ namespace System.Globalization {
 
         public override int ToFourDigitYear(int year) {
             if (year < 0) {
-                throw new ArgumentOutOfRangeException("year",
+                throw new ArgumentOutOfRangeException(nameof(year),
                     Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
             Contract.EndContractBlock();
 
             if (year > MaxYear) {
                 throw new ArgumentOutOfRangeException(
-                            "year",
+                            nameof(year),
                             String.Format(
                                 CultureInfo.CurrentCulture,
                                 Environment.GetResourceString("ArgumentOutOfRange_Bounds_Lower_Upper"),

@@ -140,7 +140,7 @@ namespace System.Diagnostics {
                 throw new ArgumentNullException ("LogSwitch");
     
             if (level < 0)
-                throw new ArgumentOutOfRangeException("level", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(level), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
     
             // Is logging for this level for this switch enabled?

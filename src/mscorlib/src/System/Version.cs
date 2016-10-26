@@ -37,16 +37,16 @@ namespace System {
     
         public Version(int major, int minor, int build, int revision) {
             if (major < 0) 
-              throw new ArgumentOutOfRangeException("major",Environment.GetResourceString("ArgumentOutOfRange_Version"));
+              throw new ArgumentOutOfRangeException(nameof(major),Environment.GetResourceString("ArgumentOutOfRange_Version"));
 
             if (minor < 0) 
-              throw new ArgumentOutOfRangeException("minor",Environment.GetResourceString("ArgumentOutOfRange_Version"));
+              throw new ArgumentOutOfRangeException(nameof(minor),Environment.GetResourceString("ArgumentOutOfRange_Version"));
 
             if (build < 0)
-              throw new ArgumentOutOfRangeException("build",Environment.GetResourceString("ArgumentOutOfRange_Version"));
+              throw new ArgumentOutOfRangeException(nameof(build),Environment.GetResourceString("ArgumentOutOfRange_Version"));
             
             if (revision < 0) 
-              throw new ArgumentOutOfRangeException("revision",Environment.GetResourceString("ArgumentOutOfRange_Version"));
+              throw new ArgumentOutOfRangeException(nameof(revision),Environment.GetResourceString("ArgumentOutOfRange_Version"));
             Contract.EndContractBlock();
             
             _Major = major;
@@ -57,13 +57,13 @@ namespace System {
 
         public Version(int major, int minor, int build) {
             if (major < 0) 
-                throw new ArgumentOutOfRangeException("major",Environment.GetResourceString("ArgumentOutOfRange_Version"));
+                throw new ArgumentOutOfRangeException(nameof(major),Environment.GetResourceString("ArgumentOutOfRange_Version"));
 
             if (minor < 0) 
-              throw new ArgumentOutOfRangeException("minor",Environment.GetResourceString("ArgumentOutOfRange_Version"));
+              throw new ArgumentOutOfRangeException(nameof(minor),Environment.GetResourceString("ArgumentOutOfRange_Version"));
 
             if (build < 0) 
-              throw new ArgumentOutOfRangeException("build",Environment.GetResourceString("ArgumentOutOfRange_Version"));
+              throw new ArgumentOutOfRangeException(nameof(build),Environment.GetResourceString("ArgumentOutOfRange_Version"));
 
             Contract.EndContractBlock();
             
@@ -74,10 +74,10 @@ namespace System {
     
         public Version(int major, int minor) {
             if (major < 0) 
-                throw new ArgumentOutOfRangeException("major",Environment.GetResourceString("ArgumentOutOfRange_Version"));
+                throw new ArgumentOutOfRangeException(nameof(major),Environment.GetResourceString("ArgumentOutOfRange_Version"));
 
             if (minor < 0) 
-                throw new ArgumentOutOfRangeException("minor",Environment.GetResourceString("ArgumentOutOfRange_Version"));
+                throw new ArgumentOutOfRangeException(nameof(minor),Environment.GetResourceString("ArgumentOutOfRange_Version"));
             Contract.EndContractBlock();
             
             _Major = major;

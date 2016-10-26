@@ -59,7 +59,7 @@ namespace System.Threading
         {
             if (initialCount < 0)
             {
-                throw new ArgumentOutOfRangeException("initialCount");
+                throw new ArgumentOutOfRangeException(nameof(initialCount));
             }
 
             m_initialCount = initialCount;
@@ -229,7 +229,7 @@ namespace System.Threading
         {
             if (signalCount <= 0)
             {
-                throw new ArgumentOutOfRangeException("signalCount");
+                throw new ArgumentOutOfRangeException(nameof(signalCount));
             }
 
             ThrowIfDisposed();
@@ -340,7 +340,7 @@ namespace System.Threading
         {
             if (signalCount <= 0)
             {
-                throw new ArgumentOutOfRangeException("signalCount");
+                throw new ArgumentOutOfRangeException(nameof(signalCount));
             }
 
             ThrowIfDisposed();
@@ -409,7 +409,7 @@ namespace System.Threading
 
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
 
             m_currentCount = count;
@@ -481,7 +481,7 @@ namespace System.Threading
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
             if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
             {
-                throw new ArgumentOutOfRangeException("timeout");
+                throw new ArgumentOutOfRangeException(nameof(timeout));
             }
 
             return Wait((int)totalMilliseconds, new CancellationToken());
@@ -511,7 +511,7 @@ namespace System.Threading
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
             if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
             {
-                throw new ArgumentOutOfRangeException("timeout");
+                throw new ArgumentOutOfRangeException(nameof(timeout));
             }
 
             return Wait((int)totalMilliseconds, cancellationToken);
@@ -555,7 +555,7 @@ namespace System.Threading
         {
             if (millisecondsTimeout < -1)
             {
-                throw new ArgumentOutOfRangeException("millisecondsTimeout");
+                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout));
             }
 
             ThrowIfDisposed();

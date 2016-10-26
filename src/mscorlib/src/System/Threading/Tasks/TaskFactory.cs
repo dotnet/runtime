@@ -225,7 +225,7 @@ namespace System.Threading.Tasks
                       TaskCreationOptions.PreferFairness |
                       TaskCreationOptions.RunContinuationsAsynchronously)) != 0)
             {
-                throw new ArgumentOutOfRangeException("creationOptions");
+                throw new ArgumentOutOfRangeException(nameof(creationOptions));
             }
             Contract.EndContractBlock();
         }
@@ -1593,9 +1593,9 @@ namespace System.Threading.Tasks
             {
                 // Options detected here cause exceptions in FromAsync methods that take beginMethod as a parameter
                 if ((creationOptions & TaskCreationOptions.LongRunning) != 0)
-                    throw new ArgumentOutOfRangeException("creationOptions", Environment.GetResourceString("Task_FromAsync_LongRunning"));
+                    throw new ArgumentOutOfRangeException(nameof(creationOptions), Environment.GetResourceString("Task_FromAsync_LongRunning"));
                 if ((creationOptions & TaskCreationOptions.PreferFairness) != 0)
-                    throw new ArgumentOutOfRangeException("creationOptions", Environment.GetResourceString("Task_FromAsync_PreferFairness"));
+                    throw new ArgumentOutOfRangeException(nameof(creationOptions), Environment.GetResourceString("Task_FromAsync_PreferFairness"));
             }
 
             // Check for general validity of options
@@ -1606,7 +1606,7 @@ namespace System.Threading.Tasks
                       TaskCreationOptions.PreferFairness |
                       TaskCreationOptions.LongRunning)) != 0)
             {
-                throw new ArgumentOutOfRangeException("creationOptions");
+                throw new ArgumentOutOfRangeException(nameof(creationOptions));
             }
         }
 
@@ -3179,7 +3179,7 @@ namespace System.Threading.Tasks
             const TaskContinuationOptions illegalMask = TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.LongRunning;
             if ((continuationOptions & illegalMask) == illegalMask)
             {
-                throw new ArgumentOutOfRangeException("continuationOptions", Environment.GetResourceString("Task_ContinueWith_ESandLR"));
+                throw new ArgumentOutOfRangeException(nameof(continuationOptions), Environment.GetResourceString("Task_ContinueWith_ESandLR"));
             }
 
             // Check that no nonsensical options are specified.
@@ -3193,12 +3193,12 @@ namespace System.Threading.Tasks
                 NotOnAny |
                 TaskContinuationOptions.ExecuteSynchronously)) != 0)
             {
-                throw new ArgumentOutOfRangeException("continuationOptions");
+                throw new ArgumentOutOfRangeException(nameof(continuationOptions));
             }
 
             // Check that no "fire" options are specified.
             if ((continuationOptions & NotOnAny) != 0)
-                throw new ArgumentOutOfRangeException("continuationOptions", Environment.GetResourceString("Task_MultiTaskContinuation_FireOptions"));
+                throw new ArgumentOutOfRangeException(nameof(continuationOptions), Environment.GetResourceString("Task_MultiTaskContinuation_FireOptions"));
             Contract.EndContractBlock();
         }
     }
