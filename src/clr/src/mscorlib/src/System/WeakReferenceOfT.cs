@@ -46,7 +46,7 @@ namespace System
         internal WeakReference(SerializationInfo info, StreamingContext context)
         {
             if (info == null) {
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             }
             Contract.EndContractBlock();
 
@@ -102,7 +102,7 @@ namespace System
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info == null) {
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             }
             Contract.EndContractBlock();
 

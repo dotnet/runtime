@@ -142,7 +142,7 @@ namespace System
         public int IndexOf(String value, int startIndex, int count, StringComparison comparisonType) {
             // Validate inputs
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             if (startIndex < 0 || startIndex > this.Length)
                 throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_Index"));
@@ -302,7 +302,7 @@ namespace System
         [System.Security.SecuritySafeCritical]
         public int LastIndexOf(String value, int startIndex, int count, StringComparison comparisonType) {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             Contract.EndContractBlock();
 
             // Special case for 0 length input strings

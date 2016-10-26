@@ -110,7 +110,7 @@ namespace System.Security.Permissions
         public UrlIdentityPermission( String site )
         {
             if (site == null)
-                throw new ArgumentNullException( "site" );
+                throw new ArgumentNullException( nameof(site) );
             Contract.EndContractBlock();
             Url = site;
         }

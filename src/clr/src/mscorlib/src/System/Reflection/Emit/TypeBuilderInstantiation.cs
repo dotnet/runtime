@@ -28,13 +28,13 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException();
 
             if (typeArguments == null)
-                throw new ArgumentNullException("typeArguments");
+                throw new ArgumentNullException(nameof(typeArguments));
             Contract.EndContractBlock();
 
             foreach (Type t in typeArguments)
             {
                 if (t == null)
-                    throw new ArgumentNullException("typeArguments");                    
+                    throw new ArgumentNullException(nameof(typeArguments));                    
             }
             
             return new TypeBuilderInstantiation(type, typeArguments);

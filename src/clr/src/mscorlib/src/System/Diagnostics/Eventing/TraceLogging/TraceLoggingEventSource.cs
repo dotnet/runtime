@@ -100,7 +100,7 @@ namespace System.Diagnostics.Tracing
         {
             if (eventSourceName == null)
             {
-                throw new ArgumentNullException("eventSourceName");
+                throw new ArgumentNullException(nameof(eventSourceName));
             }
             Contract.EndContractBlock();
         }
@@ -115,7 +115,7 @@ namespace System.Diagnostics.Tracing
         {
             if (eventName == null)
             {
-                throw new ArgumentNullException("eventName");
+                throw new ArgumentNullException(nameof(eventName));
             }
 
             Contract.EndContractBlock();
@@ -143,7 +143,7 @@ namespace System.Diagnostics.Tracing
         {
             if (eventName == null)
             {
-                throw new ArgumentNullException("eventName");
+                throw new ArgumentNullException(nameof(eventName));
             }
 
             Contract.EndContractBlock();

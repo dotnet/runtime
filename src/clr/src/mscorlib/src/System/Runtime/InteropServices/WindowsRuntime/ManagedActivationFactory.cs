@@ -37,7 +37,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal ManagedActivationFactory(Type type)
         {
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
 
             // Check whether the type is "exported to WinRT", i.e. it is declared in a managed .winmd and is decorated
             // with at least one ActivatableAttribute or StaticAttribute.

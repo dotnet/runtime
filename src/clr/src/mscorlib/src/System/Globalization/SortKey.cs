@@ -119,7 +119,7 @@ namespace System.Globalization {
         public static int Compare(SortKey sortkey1, SortKey sortkey2) {
     
             if (sortkey1==null || sortkey2==null) {
-                throw new ArgumentNullException((sortkey1==null ? "sortkey1": "sortkey2"));
+                throw new ArgumentNullException((sortkey1==null ? nameof(sortkey1): nameof(sortkey2)));
             }
             Contract.EndContractBlock();
     

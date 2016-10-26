@@ -25,7 +25,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal ListToBindableVectorViewAdapter(IList list)
         {
             if (list == null)
-                throw new ArgumentNullException("list");
+                throw new ArgumentNullException(nameof(list));
 
             Contract.EndContractBlock();
 

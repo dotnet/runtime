@@ -192,7 +192,7 @@ namespace System.Threading
         public CancellationTokenRegistration Register(Action callback)
         {
             if (callback == null)
-                throw new ArgumentNullException("callback");
+                throw new ArgumentNullException(nameof(callback));
             
             return Register(
                 s_ActionToActionObjShunt,
@@ -227,7 +227,7 @@ namespace System.Threading
         public CancellationTokenRegistration Register(Action callback, bool useSynchronizationContext)
         {
             if (callback == null)
-                throw new ArgumentNullException("callback");
+                throw new ArgumentNullException(nameof(callback));
             
             return Register(
                 s_ActionToActionObjShunt,
@@ -260,7 +260,7 @@ namespace System.Threading
         public CancellationTokenRegistration Register(Action<Object> callback, Object state)
         {
             if (callback == null)
-                throw new ArgumentNullException("callback");
+                throw new ArgumentNullException(nameof(callback));
 
             return Register(
                 callback,
@@ -325,7 +325,7 @@ namespace System.Threading
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
 
             if (callback == null)
-                throw new ArgumentNullException("callback");
+                throw new ArgumentNullException(nameof(callback));
 
             if (CanBeCanceled == false)
             {

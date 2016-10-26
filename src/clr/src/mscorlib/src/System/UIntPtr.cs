@@ -71,7 +71,7 @@ namespace System {
         unsafe void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info==null) {
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             }
             Contract.EndContractBlock();
             info.AddValue("value", (ulong)m_value);

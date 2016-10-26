@@ -125,7 +125,7 @@ namespace System.Globalization
 
         public String GetAscii(String unicode, int index)
         {
-            if (unicode==null) throw new ArgumentNullException("unicode");
+            if (unicode==null) throw new ArgumentNullException(nameof(unicode));
             Contract.EndContractBlock();
             return GetAscii(unicode, index, unicode.Length - index);
         }
@@ -133,7 +133,7 @@ namespace System.Globalization
         public String GetAscii(String unicode, int index, int count)
         {
             throw null;
-            /*if (unicode==null) throw new ArgumentNullException("unicode");
+            /*if (unicode==null) throw new ArgumentNullException(nameof(unicode));
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException((index < 0) ? "index" : "count",
                       Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
@@ -249,14 +249,14 @@ namespace System.Globalization
 
         public String GetUnicode(String ascii, int index)
         {
-            if (ascii==null) throw new ArgumentNullException("ascii");
+            if (ascii==null) throw new ArgumentNullException(nameof(ascii));
             Contract.EndContractBlock();
             return GetUnicode(ascii, index, ascii.Length - index);
         }
 
         public String GetUnicode(String ascii, int index, int count)
         {
-            if (ascii==null) throw new ArgumentNullException("ascii");
+            if (ascii==null) throw new ArgumentNullException(nameof(ascii));
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException((index < 0) ? "index" : "count",
                       Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));

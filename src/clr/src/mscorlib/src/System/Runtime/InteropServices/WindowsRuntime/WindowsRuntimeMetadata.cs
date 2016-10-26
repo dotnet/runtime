@@ -30,7 +30,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         public static IEnumerable<string> ResolveNamespace(string namespaceName, string windowsSdkFilePath, IEnumerable<string> packageGraphFilePaths)
         {
             if (namespaceName == null)
-                throw new ArgumentNullException("namespaceName");
+                throw new ArgumentNullException(nameof(namespaceName));
             Contract.EndContractBlock();
 
             string[] packageGraphFilePathsArray = null;

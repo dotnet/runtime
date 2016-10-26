@@ -48,10 +48,10 @@ namespace System.IO {
 
         public BinaryReader(Stream input, Encoding encoding, bool leaveOpen) {
             if (input==null) {
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
             }
             if (encoding==null) {
-                throw new ArgumentNullException("encoding");
+                throw new ArgumentNullException(nameof(encoding));
             }
             if (!input.CanRead)
                 throw new ArgumentException(Environment.GetResourceString("Argument_StreamNotReadable"));
@@ -297,7 +297,7 @@ namespace System.IO {
         [SecuritySafeCritical]
         public virtual int Read(char[] buffer, int index, int count) {
             if (buffer==null) {
-                throw new ArgumentNullException("buffer", Environment.GetResourceString("ArgumentNull_Buffer"));
+                throw new ArgumentNullException(nameof(buffer), Environment.GetResourceString("ArgumentNull_Buffer"));
             }
             if (index < 0) {
                 throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
@@ -502,7 +502,7 @@ namespace System.IO {
 
         public virtual int Read(byte[] buffer, int index, int count) {
             if (buffer==null)
-                throw new ArgumentNullException("buffer", Environment.GetResourceString("ArgumentNull_Buffer"));
+                throw new ArgumentNullException(nameof(buffer), Environment.GetResourceString("ArgumentNull_Buffer"));
             if (index < 0)
                 throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (count < 0)

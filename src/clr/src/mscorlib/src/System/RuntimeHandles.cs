@@ -792,7 +792,7 @@ namespace System
         private RuntimeTypeHandle(SerializationInfo info, StreamingContext context)
         {
             if(info == null) 
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
 
             RuntimeType m = (RuntimeType)info.GetValue("TypeObj", typeof(RuntimeType));
@@ -807,7 +807,7 @@ namespace System
         public void GetObjectData(SerializationInfo info, StreamingContext context) 
         {
             if(info == null) 
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
 
             if (m_type == null)
@@ -959,7 +959,7 @@ namespace System
         private RuntimeMethodHandle(SerializationInfo info, StreamingContext context)
         {
             if(info == null)
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
             
             MethodBase m =(MethodBase)info.GetValue("MethodObj", typeof(MethodBase));
@@ -974,7 +974,7 @@ namespace System
         public void GetObjectData(SerializationInfo info, StreamingContext context) 
         {
             if (info == null) 
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
 
             if (m_value == null)
@@ -1646,7 +1646,7 @@ namespace System
         private RuntimeFieldHandle(SerializationInfo info, StreamingContext context)
         {
             if(info==null)
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
             
             FieldInfo f =(RuntimeFieldInfo) info.GetValue("FieldObj", typeof(RuntimeFieldInfo));
@@ -1664,7 +1664,7 @@ namespace System
         public void GetObjectData(SerializationInfo info, StreamingContext context) 
         {
             if (info == null) 
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
 
             if (m_ptr == null)

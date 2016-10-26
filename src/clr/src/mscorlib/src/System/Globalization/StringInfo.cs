@@ -92,7 +92,7 @@ namespace System.Globalization {
             }
             set {
                 if (null == value) {
-                    throw new ArgumentNullException("String",
+                    throw new ArgumentNullException(nameof(String),
                         Environment.GetResourceString("ArgumentNull_String"));
                 }
                 Contract.EndContractBlock();
@@ -268,7 +268,7 @@ namespace System.Globalization {
             // Validate parameters.
             //
             if (str==null) {
-                throw new ArgumentNullException("str");
+                throw new ArgumentNullException(nameof(str));
             }
             Contract.EndContractBlock();
         
@@ -297,7 +297,7 @@ namespace System.Globalization {
             //
             if (str==null) 
             {
-                throw new ArgumentNullException("str");
+                throw new ArgumentNullException(nameof(str));
             }
             Contract.EndContractBlock();
         
@@ -326,7 +326,7 @@ namespace System.Globalization {
         {
             if (str == null)
             {
-                throw new ArgumentNullException("str");
+                throw new ArgumentNullException(nameof(str));
             }
             Contract.EndContractBlock();
             

@@ -180,7 +180,7 @@ namespace System.Text {
         [System.Security.SecurityCritical]  // auto-generated
         private StringBuilder(SerializationInfo info, StreamingContext context) {
             if (info == null)
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
 
             int persistedCapacity = 0;
@@ -244,7 +244,7 @@ namespace System.Text {
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info==null) {
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             }
             Contract.EndContractBlock();
 
@@ -606,7 +606,7 @@ namespace System.Text {
                 if (startIndex == 0 && charCount == 0) {
                     return this;
                 }
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
             if (charCount > value.Length - startIndex) {
                 throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_Index"));
@@ -702,7 +702,7 @@ namespace System.Text {
                 if (startIndex == 0 && count == 0) {
                     return this;
                 }
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
 
             if (count == 0) {
@@ -741,7 +741,7 @@ namespace System.Text {
         [SecuritySafeCritical]
         public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count) {
             if (destination == null) {
-                throw new ArgumentNullException("destination");
+                throw new ArgumentNullException(nameof(destination));
             }
 
             if (count < 0) {
@@ -1129,7 +1129,7 @@ namespace System.Text {
                 {
                     return this;
                 }
-                throw new ArgumentNullException("value", Environment.GetResourceString("ArgumentNull_String"));
+                throw new ArgumentNullException(nameof(value), Environment.GetResourceString("ArgumentNull_String"));
             }
 
             //Range check the array.
@@ -1263,7 +1263,7 @@ namespace System.Text {
             {
                 // To preserve the original exception behavior, throw an exception about format if both
                 // args and format are null. The actual null check for format is in AppendFormatHelper.
-                throw new ArgumentNullException((format == null) ? "format" : "args");
+                throw new ArgumentNullException((format == null) ? nameof(format) : nameof(args));
             }
             Contract.Ensures(Contract.Result<String>() != null);
             Contract.EndContractBlock();
@@ -1291,7 +1291,7 @@ namespace System.Text {
             {
                 // To preserve the original exception behavior, throw an exception about format if both
                 // args and format are null. The actual null check for format is in AppendFormatHelper.
-                throw new ArgumentNullException((format == null) ? "format" : "args");
+                throw new ArgumentNullException((format == null) ? nameof(format) : nameof(args));
             }
             Contract.Ensures(Contract.Result<String>() != null);
             Contract.EndContractBlock();
@@ -1309,7 +1309,7 @@ namespace System.Text {
 
         internal StringBuilder AppendFormatHelper(IFormatProvider provider, String format, ParamsArray args) {
             if (format == null) {
-                throw new ArgumentNullException("format");
+                throw new ArgumentNullException(nameof(format));
             }
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             Contract.EndContractBlock();
@@ -1598,7 +1598,7 @@ namespace System.Text {
             }
             if (oldValue == null)
             {
-                throw new ArgumentNullException("oldValue");
+                throw new ArgumentNullException(nameof(oldValue));
             }
             if (oldValue.Length == 0)
             {

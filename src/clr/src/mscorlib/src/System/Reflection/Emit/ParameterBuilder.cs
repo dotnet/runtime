@@ -31,7 +31,7 @@ namespace System.Reflection.Emit {
         {
             if (unmanagedMarshal == null)
             {
-                throw new ArgumentNullException("unmanagedMarshal");
+                throw new ArgumentNullException(nameof(unmanagedMarshal));
             }
             Contract.EndContractBlock();
             
@@ -61,9 +61,9 @@ namespace System.Reflection.Emit {
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             if (con == null)
-                throw new ArgumentNullException("con");
+                throw new ArgumentNullException(nameof(con));
             if (binaryAttribute == null)
-                throw new ArgumentNullException("binaryAttribute");
+                throw new ArgumentNullException(nameof(binaryAttribute));
             Contract.EndContractBlock();
 
             TypeBuilder.DefineCustomAttribute(
@@ -80,7 +80,7 @@ namespace System.Reflection.Emit {
         {
             if (customBuilder == null)
             {
-                throw new ArgumentNullException("customBuilder");
+                throw new ArgumentNullException(nameof(customBuilder));
             }
             Contract.EndContractBlock();
             customBuilder.CreateCustomAttribute((ModuleBuilder) (m_methodBuilder .GetModule()), m_pdToken.Token);

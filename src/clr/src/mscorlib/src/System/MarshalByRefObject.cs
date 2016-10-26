@@ -234,7 +234,7 @@ namespace System {
         internal static bool CanCastToXmlTypeHelper(RuntimeType castType, MarshalByRefObject o)
         {
             if (castType == null)
-                throw new ArgumentNullException("castType");
+                throw new ArgumentNullException(nameof(castType));
         
             Contract.EndContractBlock();
             // MarshalByRefObject's can only be casted to MarshalByRefObject's or interfaces.

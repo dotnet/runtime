@@ -77,7 +77,7 @@ namespace System.Security {
         public static PermissionSet GetStandardSandbox(Evidence evidence)
         {
             if (evidence == null)
-                throw new ArgumentNullException("evidence");
+                throw new ArgumentNullException(nameof(evidence));
             Contract.EndContractBlock();
 
             //
@@ -160,7 +160,7 @@ namespace System.Security {
         static public PolicyLevel LoadPolicyLevelFromFile(string path, PolicyLevelType type)
         {
             if (path == null)
-               throw new ArgumentNullException( "path" );
+               throw new ArgumentNullException( nameof(path) );
             Contract.EndContractBlock();
 
             if (!AppDomain.CurrentDomain.IsLegacyCasPolicyEnabled)
@@ -197,7 +197,7 @@ namespace System.Security {
         private static PolicyLevel LoadPolicyLevelFromStringHelper (string str, string path, PolicyLevelType type)
         {
             if (str == null)
-                throw new ArgumentNullException( "str" );
+                throw new ArgumentNullException( nameof(str) );
             Contract.EndContractBlock();
 
             PolicyLevel level = new PolicyLevel(type, path);

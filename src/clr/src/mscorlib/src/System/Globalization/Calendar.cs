@@ -192,7 +192,7 @@ namespace System.Globalization {
         [System.Runtime.InteropServices.ComVisible(false)]
         public static Calendar ReadOnly(Calendar calendar) 
         {
-            if (calendar == null)       { throw new ArgumentNullException("calendar"); }
+            if (calendar == null)       { throw new ArgumentNullException(nameof(calendar)); }
             Contract.EndContractBlock();
             if (calendar.IsReadOnly)    { return (calendar); }
             

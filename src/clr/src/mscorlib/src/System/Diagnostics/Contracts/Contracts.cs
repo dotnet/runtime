@@ -654,7 +654,7 @@ namespace System.Diagnostics.Contracts {
                 throw new ArgumentException("fromInclusive must be less than or equal to toExclusive.");
 #endif
             if (predicate == null)
-                throw new ArgumentNullException("predicate");
+                throw new ArgumentNullException(nameof(predicate));
             Contract.EndContractBlock();
 
             for (int i = fromInclusive; i < toExclusive; i++)
@@ -679,9 +679,9 @@ namespace System.Diagnostics.Contracts {
         public static bool ForAll<T>(IEnumerable<T> collection, Predicate<T> predicate)
         {
             if (collection == null)
-                throw new ArgumentNullException("collection");
+                throw new ArgumentNullException(nameof(collection));
             if (predicate == null)
-                throw new ArgumentNullException("predicate");
+                throw new ArgumentNullException(nameof(predicate));
             Contract.EndContractBlock();
 
             foreach (T t in collection)
@@ -716,7 +716,7 @@ namespace System.Diagnostics.Contracts {
                 throw new ArgumentException("fromInclusive must be less than or equal to toExclusive.");
 #endif
             if (predicate == null)
-                throw new ArgumentNullException("predicate");
+                throw new ArgumentNullException(nameof(predicate));
             Contract.EndContractBlock();
 
             for (int i = fromInclusive; i < toExclusive; i++)
@@ -740,9 +740,9 @@ namespace System.Diagnostics.Contracts {
         public static bool Exists<T>(IEnumerable<T> collection, Predicate<T> predicate)
         {
             if (collection == null)
-                throw new ArgumentNullException("collection");
+                throw new ArgumentNullException(nameof(collection));
             if (predicate == null)
-                throw new ArgumentNullException("predicate");
+                throw new ArgumentNullException(nameof(predicate));
             Contract.EndContractBlock();
 
             foreach (T t in collection)

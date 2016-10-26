@@ -303,7 +303,7 @@ namespace System.Reflection.Emit
                                  SecurityContextSource securityContextSource)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             if (access != AssemblyBuilderAccess.Run
 #if !FEATURE_CORECLR
@@ -623,7 +623,7 @@ namespace System.Reflection.Emit
             ref StackCrawlMark stackMark)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "name");
             if (name[0] == '\0')
@@ -832,14 +832,14 @@ namespace System.Reflection.Emit
             ref    StackCrawlMark stackMark)    // stack crawl mark used to find caller
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "name");
             if (name[0] == '\0')
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidName"), "name");
 
             if (fileName == null)
-                throw new ArgumentNullException("fileName");
+                throw new ArgumentNullException(nameof(fileName));
             if (fileName.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), "fileName");
             if (!String.Equals(fileName, Path.GetFileName(fileName)))
@@ -1008,11 +1008,11 @@ namespace System.Reflection.Emit
             ResourceAttributes attribute)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), name);
             if (fileName == null)
-                throw new ArgumentNullException("fileName");
+                throw new ArgumentNullException(nameof(fileName));
             if (fileName.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), "fileName");
             if (!String.Equals(fileName, Path.GetFileName(fileName)))
@@ -1084,11 +1084,11 @@ namespace System.Reflection.Emit
             ResourceAttributes attribute)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), name);
             if (fileName == null)
-                throw new ArgumentNullException("fileName");
+                throw new ArgumentNullException(nameof(fileName));
             if (fileName.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), fileName);
             if (!String.Equals(fileName, Path.GetFileName(fileName)))
@@ -1437,7 +1437,7 @@ namespace System.Reflection.Emit
         public void DefineUnmanagedResource(Byte[] resource)
         {
             if (resource == null)
-                throw new ArgumentNullException("resource");
+                throw new ArgumentNullException(nameof(resource));
             Contract.EndContractBlock();
 
             lock(SyncRoot)
@@ -1461,7 +1461,7 @@ namespace System.Reflection.Emit
         public void DefineUnmanagedResource(String resourceFileName)
         {
             if (resourceFileName == null)
-                throw new ArgumentNullException("resourceFileName");
+                throw new ArgumentNullException(nameof(resourceFileName));
             Contract.EndContractBlock();
 
             lock(SyncRoot)
@@ -1520,7 +1520,7 @@ namespace System.Reflection.Emit
             String      name)                   // the name of module for the look up
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "name");
             Contract.EndContractBlock();
@@ -1571,7 +1571,7 @@ namespace System.Reflection.Emit
         {
 
             if (entryMethod == null)
-                throw new ArgumentNullException("entryMethod");
+                throw new ArgumentNullException(nameof(entryMethod));
             Contract.EndContractBlock();
 
             BCLDebug.Log("DYNIL", "## DYNIL LOGGING: AssemblyBuilder.SetEntryPoint");
@@ -1609,9 +1609,9 @@ namespace System.Reflection.Emit
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             if (con == null)
-                throw new ArgumentNullException("con");
+                throw new ArgumentNullException(nameof(con));
             if (binaryAttribute == null)
-                throw new ArgumentNullException("binaryAttribute");
+                throw new ArgumentNullException(nameof(binaryAttribute));
             Contract.EndContractBlock();
     
             lock(SyncRoot)
@@ -1647,7 +1647,7 @@ namespace System.Reflection.Emit
         {
             if (customBuilder == null)
             {
-                throw new ArgumentNullException("customBuilder");
+                throw new ArgumentNullException(nameof(customBuilder));
             }
             Contract.EndContractBlock();
 
@@ -1710,7 +1710,7 @@ namespace System.Reflection.Emit
             PortableExecutableKinds portableExecutableKind, ImageFileMachine imageFileMachine)
         {
             if (assemblyFileName == null)
-                throw new ArgumentNullException("assemblyFileName");
+                throw new ArgumentNullException(nameof(assemblyFileName));
             if (assemblyFileName.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), "assemblyFileName");
             if (!String.Equals(assemblyFileName, Path.GetFileName(assemblyFileName)))

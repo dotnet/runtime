@@ -652,7 +652,7 @@ namespace System {
         [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe static Double ParseDouble(String value, NumberStyles options, NumberFormatInfo numfmt) {
             if (value == null) {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
 
             Byte * numberBufferBytes = stackalloc Byte[NumberBuffer.NumberBufferBytes];
@@ -933,7 +933,7 @@ namespace System {
         [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe static Single ParseSingle(String value, NumberStyles options, NumberFormatInfo numfmt) {
             if (value == null) {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
 
             Byte * numberBufferBytes = stackalloc Byte[NumberBuffer.NumberBufferBytes];
@@ -1014,7 +1014,7 @@ namespace System {
         private unsafe static void StringToNumber(String str, NumberStyles options, ref NumberBuffer number, NumberFormatInfo info, Boolean parseDecimal) {
     
             if (str == null) {
-                throw new ArgumentNullException("String");
+                throw new ArgumentNullException(nameof(String));
             }
             Contract.EndContractBlock();
             Contract.Assert(info != null, "");

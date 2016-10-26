@@ -45,7 +45,7 @@ namespace System.Text
         internal static void AddProvider(EncodingProvider provider)
         {
             if (provider == null)
-                throw new ArgumentNullException("provider");
+                throw new ArgumentNullException(nameof(provider));
 
             lock (s_InternalSyncObject)
             {

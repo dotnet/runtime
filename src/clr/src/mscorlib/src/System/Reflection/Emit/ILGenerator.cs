@@ -475,7 +475,7 @@ namespace System.Reflection.Emit
         public virtual void Emit(OpCode opcode, MethodInfo meth)
         {
             if (meth == null)
-                throw new ArgumentNullException("meth");
+                throw new ArgumentNullException(nameof(meth));
             Contract.EndContractBlock();
 
             if (opcode.Equals(OpCodes.Call) || opcode.Equals(OpCodes.Callvirt) || opcode.Equals(OpCodes.Newobj))
@@ -596,7 +596,7 @@ namespace System.Reflection.Emit
         public virtual void EmitCall(OpCode opcode, MethodInfo methodInfo, Type[] optionalParameterTypes)
         {
             if (methodInfo == null)
-                throw new ArgumentNullException("methodInfo");
+                throw new ArgumentNullException(nameof(methodInfo));
 
             if (!(opcode.Equals(OpCodes.Call) || opcode.Equals(OpCodes.Callvirt) || opcode.Equals(OpCodes.Newobj)))
                 throw new ArgumentException(Environment.GetResourceString("Argument_NotMethodCallOpcode"), "opcode");
@@ -633,7 +633,7 @@ namespace System.Reflection.Emit
         public virtual void Emit(OpCode opcode, SignatureHelper signature)
         {
             if (signature == null)
-                throw new ArgumentNullException("signature");
+                throw new ArgumentNullException(nameof(signature));
             Contract.EndContractBlock();
 
             int stackchange = 0;
@@ -670,7 +670,7 @@ namespace System.Reflection.Emit
         public virtual void Emit(OpCode opcode, ConstructorInfo con)
         {
             if (con == null)
-                throw new ArgumentNullException("con");
+                throw new ArgumentNullException(nameof(con));
             Contract.EndContractBlock();
 
             int stackchange = 0;
@@ -804,7 +804,7 @@ namespace System.Reflection.Emit
         public virtual void Emit(OpCode opcode, Label[] labels)
         {
             if (labels == null)
-                throw new ArgumentNullException("labels");
+                throw new ArgumentNullException(nameof(labels));
             Contract.EndContractBlock();
 
             // Emitting a switch table
@@ -853,7 +853,7 @@ namespace System.Reflection.Emit
 
             if (local == null)
             {
-                throw new ArgumentNullException("local");
+                throw new ArgumentNullException(nameof(local));
             }
             Contract.EndContractBlock();
             int tempVal = local.GetLocalIndex();
@@ -1050,7 +1050,7 @@ namespace System.Reflection.Emit
             } else {
                 // execute this branch if previous clause is Catch or Fault
                 if (exceptionType==null) {
-                    throw new ArgumentNullException("exceptionType");
+                    throw new ArgumentNullException(nameof(exceptionType));
                 }
 
                 Label endLabel = current.GetEndLabel();
@@ -1152,7 +1152,7 @@ namespace System.Reflection.Emit
             // Emits the il to throw an exception
 
             if (excType==null) {
-                throw new ArgumentNullException("excType");
+                throw new ArgumentNullException(nameof(excType));
             }
 
             if (!excType.IsSubclassOf(typeof(Exception)) && excType!=typeof(Exception)) {
@@ -1230,7 +1230,7 @@ namespace System.Reflection.Emit
 
             if (fld == null)
             {
-                throw new ArgumentNullException("fld");
+                throw new ArgumentNullException(nameof(fld));
             }
             Contract.EndContractBlock();
             
@@ -1282,7 +1282,7 @@ namespace System.Reflection.Emit
             }
 
             if (localType==null) {
-                throw new ArgumentNullException("localType");
+                throw new ArgumentNullException(nameof(localType));
             }
 
             if (methodBuilder.m_bIsBaked) {
@@ -1303,7 +1303,7 @@ namespace System.Reflection.Emit
             // for the current active lexical scope.
 
             if (usingNamespace == null)
-                throw new ArgumentNullException("usingNamespace");
+                throw new ArgumentNullException(nameof(usingNamespace));
 
             if (usingNamespace.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "usingNamespace");

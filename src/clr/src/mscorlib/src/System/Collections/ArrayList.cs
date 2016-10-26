@@ -83,7 +83,7 @@ namespace System.Collections {
         // 
         public ArrayList(ICollection c) {
             if (c==null)
-                throw new ArgumentNullException("c", Environment.GetResourceString("ArgumentNull_Collection"));
+                throw new ArgumentNullException(nameof(c), Environment.GetResourceString("ArgumentNull_Collection"));
             Contract.EndContractBlock();
 
             int count = c.Count;
@@ -188,7 +188,7 @@ namespace System.Collections {
         //
         public static ArrayList Adapter(IList list) {
             if (list==null)
-                throw new ArgumentNullException("list");
+                throw new ArgumentNullException(nameof(list));
             Contract.Ensures(Contract.Result<ArrayList>() != null);
             Contract.EndContractBlock();
             return new IListWrapper(list);
@@ -356,7 +356,7 @@ namespace System.Collections {
         //
         public static IList FixedSize(IList list) {
             if (list==null)
-                throw new ArgumentNullException("list");
+                throw new ArgumentNullException(nameof(list));
             Contract.Ensures(Contract.Result<IList>() != null);
             Contract.EndContractBlock();
             return new FixedSizeList(list);
@@ -367,7 +367,7 @@ namespace System.Collections {
         //
         public static ArrayList FixedSize(ArrayList list) {
             if (list==null)
-                throw new ArgumentNullException("list");
+                throw new ArgumentNullException(nameof(list));
             Contract.Ensures(Contract.Result<ArrayList>() != null);
             Contract.EndContractBlock();
             return new FixedSizeArrayList(list);
@@ -475,7 +475,7 @@ namespace System.Collections {
         //
         public virtual void InsertRange(int index, ICollection c) {
             if (c==null)
-                throw new ArgumentNullException("c", Environment.GetResourceString("ArgumentNull_Collection"));
+                throw new ArgumentNullException(nameof(c), Environment.GetResourceString("ArgumentNull_Collection"));
             if (index < 0 || index > _size) throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_Index"));
             //Contract.Ensures(Count == Contract.OldValue(Count) + c.Count);
             Contract.EndContractBlock();
@@ -559,7 +559,7 @@ namespace System.Collections {
 #endif
         public static IList ReadOnly(IList list) {
             if (list==null)
-                throw new ArgumentNullException("list");
+                throw new ArgumentNullException(nameof(list));
             Contract.Ensures(Contract.Result<IList>() != null);
             Contract.EndContractBlock();
             return new ReadOnlyList(list);
@@ -569,7 +569,7 @@ namespace System.Collections {
         //
         public static ArrayList ReadOnly(ArrayList list) {
             if (list==null)
-                throw new ArgumentNullException("list");
+                throw new ArgumentNullException(nameof(list));
             Contract.Ensures(Contract.Result<ArrayList>() != null);
             Contract.EndContractBlock();
             return new ReadOnlyArrayList(list);
@@ -671,7 +671,7 @@ namespace System.Collections {
         // given collection.
         //
         public virtual void SetRange(int index, ICollection c) {
-            if (c==null) throw new ArgumentNullException("c", Environment.GetResourceString("ArgumentNull_Collection"));
+            if (c==null) throw new ArgumentNullException(nameof(c), Environment.GetResourceString("ArgumentNull_Collection"));
             Contract.EndContractBlock();
             int count = c.Count;
             if (index < 0 || index > _size - count) throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_Index"));
@@ -732,7 +732,7 @@ namespace System.Collections {
         [HostProtection(Synchronization=true)]
         public static IList Synchronized(IList list) {
             if (list==null)
-                throw new ArgumentNullException("list");
+                throw new ArgumentNullException(nameof(list));
             Contract.Ensures(Contract.Result<IList>() != null);
             Contract.EndContractBlock();
             return new SyncIList(list);
@@ -743,7 +743,7 @@ namespace System.Collections {
         [HostProtection(Synchronization=true)]
         public static ArrayList Synchronized(ArrayList list) {
             if (list==null)
-                throw new ArgumentNullException("list");
+                throw new ArgumentNullException(nameof(list));
             Contract.Ensures(Contract.Result<ArrayList>() != null);
             Contract.EndContractBlock();
             return new SyncArrayList(list);
@@ -767,7 +767,7 @@ namespace System.Collections {
         [SecuritySafeCritical]
         public virtual Array ToArray(Type type) {
             if (type==null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             Contract.Ensures(Contract.Result<Array>() != null);
             Contract.EndContractBlock();
             Array array = Array.UnsafeCreateInstance(type, _size);
@@ -906,7 +906,7 @@ namespace System.Collections {
     
             public override void CopyTo(int index, Array array, int arrayIndex, int count) {
                 if (array==null)
-                    throw new ArgumentNullException("array");
+                    throw new ArgumentNullException(nameof(array));
                 if (index < 0 || arrayIndex < 0)
                     throw new ArgumentOutOfRangeException((index < 0) ? "index" : "arrayIndex", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
                 if( count < 0)
@@ -973,7 +973,7 @@ namespace System.Collections {
     
             public override void InsertRange(int index, ICollection c) {
                 if (c==null)
-                    throw new ArgumentNullException("c", Environment.GetResourceString("ArgumentNull_Collection"));
+                    throw new ArgumentNullException(nameof(c), Environment.GetResourceString("ArgumentNull_Collection"));
                 if (index < 0 || index > this.Count) throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_Index"));
                 Contract.EndContractBlock();
 
@@ -1073,7 +1073,7 @@ namespace System.Collections {
     
             public override void SetRange(int index, ICollection c) {
                 if (c==null) {
-                    throw new ArgumentNullException("c", Environment.GetResourceString("ArgumentNull_Collection"));
+                    throw new ArgumentNullException(nameof(c), Environment.GetResourceString("ArgumentNull_Collection"));
                 }
                 Contract.EndContractBlock();
 
@@ -1126,7 +1126,7 @@ namespace System.Collections {
             public override Array ToArray(Type type)
             {
                 if (type==null)
-                    throw new ArgumentNullException("type");
+                    throw new ArgumentNullException(nameof(type));
                 Contract.EndContractBlock();
                 Array array = Array.UnsafeCreateInstance(type, _list.Count);
                 _list.CopyTo(array, 0);
@@ -2191,7 +2191,7 @@ namespace System.Collections {
 
             public override void AddRange(ICollection c) {
                 if( c ==  null ) {
-                    throw new ArgumentNullException("c");
+                    throw new ArgumentNullException(nameof(c));
                 }
                 Contract.EndContractBlock();
 
@@ -2265,7 +2265,7 @@ namespace System.Collections {
     
             public override void CopyTo(Array array, int index) {
                 if (array==null)
-                    throw new ArgumentNullException("array");
+                    throw new ArgumentNullException(nameof(array));
                 if (array.Rank != 1)
                     throw new ArgumentException(Environment.GetResourceString("Arg_RankMultiDimNotSupported"));
                 if (index < 0)
@@ -2280,7 +2280,7 @@ namespace System.Collections {
 
             public override void CopyTo(int index, Array array, int arrayIndex, int count) {
                 if (array==null)
-                    throw new ArgumentNullException("array");
+                    throw new ArgumentNullException(nameof(array));
                 if (array.Rank != 1)
                     throw new ArgumentException(Environment.GetResourceString("Arg_RankMultiDimNotSupported"));
                 if (index < 0 || count < 0)
@@ -2394,7 +2394,7 @@ namespace System.Collections {
             public override void InsertRange(int index, ICollection c) {
                 if (index < 0 || index > _baseSize) throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_Index"));
                 if( c == null) {
-                    throw new ArgumentNullException("c");
+                    throw new ArgumentNullException(nameof(c));
                 }
                 Contract.EndContractBlock();
 
@@ -2522,7 +2522,7 @@ namespace System.Collections {
             [SecuritySafeCritical]
             public override Array ToArray(Type type) {
                 if (type==null)
-                    throw new ArgumentNullException("type");
+                    throw new ArgumentNullException(nameof(type));
                 Contract.EndContractBlock();
 
                 InternalUpdateRange();
@@ -2619,7 +2619,7 @@ namespace System.Collections {
         
             public ArrayListDebugView( ArrayList arrayList) {
                 if( arrayList == null)
-                    throw new ArgumentNullException("arrayList");
+                    throw new ArgumentNullException(nameof(arrayList));
 
                 this.arrayList = arrayList;
             }

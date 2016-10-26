@@ -48,7 +48,7 @@ namespace System.Reflection
         public StrongNameKeyPair(FileStream keyPairFile)
         {
             if (keyPairFile == null)
-                throw new ArgumentNullException("keyPairFile");
+                throw new ArgumentNullException(nameof(keyPairFile));
             Contract.EndContractBlock();
 
             int length = (int)keyPairFile.Length;
@@ -67,7 +67,7 @@ namespace System.Reflection
         public StrongNameKeyPair(byte[] keyPairArray)
         {
             if (keyPairArray == null)
-                throw new ArgumentNullException("keyPairArray");
+                throw new ArgumentNullException(nameof(keyPairArray));
             Contract.EndContractBlock();
 
             _keyPairArray = new byte[keyPairArray.Length];
@@ -96,7 +96,7 @@ namespace System.Reflection
         public StrongNameKeyPair(String keyPairContainer)
         {
             if (keyPairContainer == null)
-                throw new ArgumentNullException("keyPairContainer");
+                throw new ArgumentNullException(nameof(keyPairContainer));
             Contract.EndContractBlock();
 
             _keyPairContainer = keyPairContainer;

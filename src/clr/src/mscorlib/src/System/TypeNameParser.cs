@@ -79,7 +79,7 @@ namespace System
             ref StackCrawlMark stackMark)
         {
             if (typeName == null)
-                throw new ArgumentNullException("typeName");
+                throw new ArgumentNullException(nameof(typeName));
             if (typeName.Length > 0 && typeName[0] == '\0')
                 throw new ArgumentException(Environment.GetResourceString("Format_StringZeroLength"));
             Contract.EndContractBlock();
