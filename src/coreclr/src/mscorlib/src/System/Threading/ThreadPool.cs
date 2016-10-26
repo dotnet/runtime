@@ -1904,17 +1904,18 @@ namespace System.Threading
              bool                   compressStack   
              );
 
-#if !FEATURE_CORECLR
+
         [System.Security.SecuritySafeCritical]  // auto-generated
         [Obsolete("ThreadPool.BindHandle(IntPtr) has been deprecated.  Please use ThreadPool.BindHandle(SafeHandle) instead.", false)]
+#pragma warning disable 618
         [SecurityPermissionAttribute( SecurityAction.Demand, Flags = SecurityPermissionFlag.UnmanagedCode)]
+#pragma warning restore 618
         public static bool BindHandle(
              IntPtr osHandle
              )
         {
             return BindIOCompletionCallbackNative(osHandle);
         }
-#endif
 
         #if FEATURE_CORECLR
         [System.Security.SecurityCritical] // auto-generated
