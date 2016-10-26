@@ -271,8 +271,8 @@ namespace System.Globalization
             // The .NET APIs should (and did in v4.0 and earlier) throw an ArgumentException on input that includes a terminating null.
             // The Win32 APIs fail on an embedded null, but not on a terminating null.
             if (count > 0 && ascii[index + count - 1] == (char)0)
-                throw new ArgumentException("ascii",
-                    Environment.GetResourceString("Argument_IdnBadPunycode"));
+                throw new ArgumentException(Environment.GetResourceString("Argument_IdnBadPunycode"), 
+                    nameof(ascii));
             Contract.EndContractBlock();
 
             // We're only using part of the string
