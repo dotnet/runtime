@@ -8,7 +8,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
     /*
      * TestProjectFixture is an abstraction around a TestProject which manages
      * setup of the TestProject, copying test projects for perf on build/restore,
-     * and building/publishing/restoring test projects where necessary. 
+     * and building/publishing/restoring test projects where necessary.
      */
     public class TestProjectFixture
     {
@@ -56,9 +56,9 @@ namespace Microsoft.DotNet.CoreSetup.Test
             _testProjectName = testProjectName;
 
             _exeExtension = exeExtension ?? RuntimeInformationExtensions.GetExeExtensionForCurrentOSPlatform();
-            _sharedLibraryExtension = sharedLibraryExtension 
+            _sharedLibraryExtension = sharedLibraryExtension
                 ?? RuntimeInformationExtensions.GetSharedLibraryExtensionForCurrentPlatform();
-            _sharedLibraryPrefix = sharedLibraryPrefix 
+            _sharedLibraryPrefix = sharedLibraryPrefix
                 ?? RuntimeInformationExtensions.GetSharedLibraryPrefixForCurrentPlatform();
 
             _repoDirectoriesProvider = repoDirectoriesProvider;
@@ -71,12 +71,12 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             _sdkDotnet = new DotNetCli(dotnetInstallPath ?? DotNetCli.GetStage0Path(repoDirectoriesProvider.RepoRoot));
             _currentRid = currentRid ?? _sdkDotnet.GetRuntimeId();
-            
+
             _builtDotnet = new DotNetCli(repoDirectoriesProvider.BuiltDotnet);
 
             InitializeTestProject(
                 _testProjectName,
-                _testProjectSourceDirectory, 
+                _testProjectSourceDirectory,
                 _testArtifactDirectory,
                 _exeExtension,
                 _sharedLibraryExtension,
@@ -98,8 +98,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
             _sourceTestProject = fixtureToCopy._sourceTestProject;
 
             _testProject = CopyTestProject(
-                fixtureToCopy.TestProject, 
-                _testArtifactDirectory, 
+                fixtureToCopy.TestProject,
+                _testArtifactDirectory,
                 _exeExtension,
                 _sharedLibraryExtension,
                 _sharedLibraryPrefix);
@@ -121,27 +121,27 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 sharedLibraryPrefix);
 
             _testProject = CopyTestProject(
-                _sourceTestProject, 
-                testArtifactDirectory, 
+                _sourceTestProject,
+                testArtifactDirectory,
                 exeExtension,
                 sharedLibraryExtension,
                 sharedLibraryPrefix);
         }
 
         private TestProject CopyTestProject(
-            TestProject sourceTestProject, 
-            string testArtifactDirectory, 
+            TestProject sourceTestProject,
+            string testArtifactDirectory,
             string exeExtension,
             string sharedLibraryExtension,
             string sharedLibraryPrefix)
         {
             string copiedTestProjectDirectory = CalculateTestProjectDirectory(
-                sourceTestProject.ProjectName, 
+                sourceTestProject.ProjectName,
                 testArtifactDirectory);
 
             sourceTestProject.CopyProjectFiles(copiedTestProjectDirectory);
             return new TestProject(
-                copiedTestProjectDirectory, 
+                copiedTestProjectDirectory,
                 exeExtension,
                 sharedLibraryExtension,
                 sharedLibraryPrefix);
@@ -159,7 +159,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             return projectDirectory;
         }
-        
+
         private void ValidateRequiredDirectories(RepoDirectoriesProvider repoDirectoriesProvider)
         {
             if ( ! Directory.Exists(repoDirectoriesProvider.BuiltDotnet))
@@ -179,9 +179,9 @@ namespace Microsoft.DotNet.CoreSetup.Test
         }
 
         public TestProjectFixture BuildProject(
-            DotNetCli dotnet = null, 
-            string runtime = null, 
-            string framework = "netcoreapp1.0",
+            DotNetCli dotnet = null,
+            string runtime = null,
+            string framework = "netcoreapp1.1",
             string outputDirectory = null)
         {
             dotnet = dotnet ?? _sdkDotnet;
@@ -223,7 +223,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public TestProjectFixture PublishProject(
             DotNetCli dotnet = null,
             string runtime = null,
-            string framework = "netcoreapp1.0",
+            string framework = "netcoreapp1.1",
             string outputDirectory = null)
         {
             dotnet = dotnet ?? _sdkDotnet;

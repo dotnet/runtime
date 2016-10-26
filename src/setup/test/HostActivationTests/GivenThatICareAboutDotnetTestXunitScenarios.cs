@@ -41,7 +41,7 @@ namespace Microsoft.DotNet.Tools.Publish.Tests
         }
 
         public void ActivateDotnetTestXunitOnTestProject(
-            RepoDirectoriesProvider repoDirectories, 
+            RepoDirectoriesProvider repoDirectories,
             TestProjectFixture testProjectFixture)
         {
             var dotnet = testProjectFixture.BuiltDotnet;
@@ -53,7 +53,7 @@ namespace Microsoft.DotNet.Tools.Publish.Tests
             var appDll = testProjectFixture.TestProject.AppDll;
 
             dotnet.Exec(
-                    "exec", 
+                    "exec",
                     "--runtimeconfig", runtimeConfig,
                     "--depsfile", depsJson,
                     "--additionalProbingPath", additionalProbingPath,
@@ -73,8 +73,8 @@ namespace Microsoft.DotNet.Tools.Publish.Tests
         private string FindDotnetTestXunitDll(RepoDirectoriesProvider repoDirectories, string dotnetTestXunitVersion)
         {
             var dotnetTestXunitDll = Path.Combine(
-                repoDirectories.NugetPackages, 
-                "dotnet-test-xunit", 
+                repoDirectories.NugetPackages,
+                "dotnet-test-xunit",
                 dotnetTestXunitVersion,
                 "lib",
                 "netcoreapp1.0",

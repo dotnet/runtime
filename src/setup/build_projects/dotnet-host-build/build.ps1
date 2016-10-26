@@ -8,7 +8,7 @@ param(
     [string]$Architecture="x64",
     [string]$TargetArch="",
     [string]$ToolsetDir="",
-    [string]$Framework="netcoreapp1.0",
+    [string]$Framework="netcoreapp1.1",
     [string[]]$Targets=@("Default"),
     [string[]]$EnvVars=@(),
     [switch]$NoPackage,
@@ -54,7 +54,7 @@ if($TargetArch -eq "arm64")
     $env:INCLUDE="$ToolsetDir\VC_sdk\inc;$ToolsetDir\sdpublic\sdk\inc;$ToolsetDir\sdpublic\shared\inc;$ToolsetDir\sdpublic\shared\inc\minwin;$ToolsetDir\sdpublic\sdk\inc\ucrt;$ToolsetDir\sdpublic\sdk\inc\minwin;$ToolsetDir\sdpublic\sdk\inc\mincore;$ToolsetDir\sdpublic\sdk\inc\abi;$ToolsetDir\sdpublic\sdk\inc\clientcore;$ToolsetDir\diasdk\include";
 }
 
-# No use in specifying a RID if the current and target architecture are equivalent. 
+# No use in specifying a RID if the current and target architecture are equivalent.
 if($TargetArch -eq "x86" -and $Architecture -ne "x86")
 {
     $env:TARGETRID = "win7-x86";
@@ -101,7 +101,7 @@ if (!(Test-Path "$RepoRoot\artifacts"))
 $DOTNET_INSTALL_SCRIPT_URL="https://raw.githubusercontent.com/dotnet/cli/rel/1.0.0/scripts/obtain/dotnet-install.ps1"
 Invoke-WebRequest $DOTNET_INSTALL_SCRIPT_URL -OutFile "$RepoRoot\artifacts\dotnet-install.ps1"
 
-& "$RepoRoot\artifacts\dotnet-install.ps1" -Version 1.0.0-preview3-003223-3 -Architecture $Architecture -Verbose
+& "$RepoRoot\artifacts\dotnet-install.ps1" -Version 1.0.0-preview3-003886 -Architecture $Architecture -Verbose
 if($LASTEXITCODE -ne 0) { throw "Failed to install stage0" }
 
 # Put the stage0 on the path
