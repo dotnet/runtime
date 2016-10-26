@@ -62,7 +62,7 @@ xunit.performance.analysis.exe %PERFOUT%.xml -xml %XMLOUT% > %BENCHNAME%-analysi
 
 @rem optionally upload results to benchview
 if not [%BENCHVIEW_PATH%] == [] (
-  py %BENCHVIEW_PATH%\measurement.py xunit perf-Perflab.xml --better desc --drop-first-value
+  py %BENCHVIEW_PATH%\measurement.py xunit perf-%BENCHNAME%.xml --better desc --drop-first-value
   py %BENCHVIEW_PATH%\submission.py measurement.json ^
                                     --build ..\build.json ^
                                     --machine-data ..\machinedata.json ^
@@ -75,6 +75,9 @@ if not [%BENCHVIEW_PATH%] == [] (
                                     --arch "%TEST_ARCH%" ^
                                     --machinepool "PerfSnake"
   py %BENCHVIEW_PATH%\upload.py submission.json --container coreclr
+  REM Save off the results to the root directory for recovery later in Jenkins
+  xcopy perf-%BENCHNAME%*.xml %CORECLR_REPO%\
+  xcopy perf-%BENCHNAME%*.etl %CORECLR_REPO%\
 ) else (
   type %XMLOUT% | findstr "test name" 
   type %XMLOUT% | findstr Duration 
