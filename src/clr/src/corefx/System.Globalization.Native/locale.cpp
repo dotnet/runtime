@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <locale.h>
 
+#include "icushim.h"
 #include "locale.hpp"
 
 int32_t UErrorCodeToBool(UErrorCode status)

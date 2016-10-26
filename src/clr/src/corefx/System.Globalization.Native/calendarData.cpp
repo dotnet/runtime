@@ -6,7 +6,7 @@
 #include <string.h>
 #include <vector>
 
-#include "config.h"
+#include "icushim.h"
 #include "locale.hpp"
 #include "holders.h"
 #include "errors.h"
