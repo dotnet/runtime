@@ -38,6 +38,8 @@ public class main {
 	for (int i = 0; i < st.FrameCount; ++i) {
 	    StackFrame sf = st.GetFrame (i);
 	    MethodBase m = sf.GetMethod ();
+		if (m == null)
+			continue;
 	    Type t = m.DeclaringType;
 	    if (m.IsGenericMethod) {
 		Type[] margs = m.GetGenericArguments ();
