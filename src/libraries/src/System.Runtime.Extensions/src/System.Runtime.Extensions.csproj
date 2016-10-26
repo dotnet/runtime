@@ -44,6 +44,7 @@
     <Compile Include="System\Environment.SpecialFolder.cs" />
     <Compile Include="System\Environment.SpecialFolderOption.cs" />
     <Compile Include="System\EnvironmentVariableTarget.cs" />
+    <Compile Include="System\MathF.cs" /> <!-- https://github.com/dotnet/buildtools/issues/1041 -->
     <Compile Include="System\OperatingSystem.cs" />
     <Compile Include="System\PlatformID.cs" />
     <Compile Include="System\IO\Path.cs" />
