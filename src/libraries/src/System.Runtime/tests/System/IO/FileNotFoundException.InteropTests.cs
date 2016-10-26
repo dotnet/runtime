@@ -12,6 +12,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(HResults.COR_E_FILENOTFOUND)]
         [InlineData(HResults.CTL_E_FILENOTFOUND)]
+        [ActiveIssue(13025)]
         public static void From_HR(int hr)
         {
             FileNotFoundException exception = Assert.IsAssignableFrom<FileNotFoundException>(Marshal.GetExceptionForHR(hr));
