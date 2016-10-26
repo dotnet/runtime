@@ -148,6 +148,56 @@ const char* DetectDefaultLocaleName()
     return uloc_getDefault();
 }
 
+// GlobalizationNative_GetLocales gets all locale names and store it in the value buffer
+// in case of success, it returns the count of the characters stored in value buffer  
+// in case of failure, it returns negative number.
+// if the input value buffer is null, it returns the length needed to store the 
+// locale names list.
+// if the value is not null, it fills the value with locale names separated by the length 
+// of each name. 
+extern "C" int32_t GlobalizationNative_GetLocales(UChar *value, int32_t valueLength)
+{
+    int32_t totalLength = 0;
+    int32_t index = 0;
+    int32_t localeCount = uloc_countAvailable();
+    
+    if (localeCount <=  0)
+        return -1; // failed
+    
+    for (int32_t i = 0; i < localeCount; i++)
+    {
+        const char *pLocaleName = uloc_getAvailable(i);
+        if (pLocaleName[0] == 0) // unexpected empty name
+            return -2;
+        
+        int32_t localeNameLength = strlen(pLocaleName);
+        
+        totalLength += localeNameLength + 1; // add 1 for the name length
+        
+        if (value != nullptr)
+        {
+            if (totalLength > valueLength)
+                return -3;
+            
+            value[index++] = (UChar) localeNameLength;
+            
+            for (int j=0; j<localeNameLength; j++)
+            {
+                if (pLocaleName[j] == '_') // fix the locale name  
+                {
+                    value[index++] = (UChar) '-';
+                }
+                else
+                {
+                    value[index++] = (UChar) pLocaleName[j];
+                }
+            }
+        }
+    }
+    
+    return totalLength;
+}
+
 extern "C" int32_t GlobalizationNative_GetLocaleName(const UChar* localeName, UChar* value, int32_t valueLength)
 {
     UErrorCode status = U_ZERO_ERROR;

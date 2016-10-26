@@ -74,9 +74,11 @@ namespace System.Globalization
 
         // Language
         private String _sISO639Language; // ISO 639 Language Name
+        private String _sISO639Language2; // ISO 639 Language Name
         private String _sLocalizedLanguage; // Localized name for this language
         private String _sEnglishLanguage; // English name for this language
         private String _sNativeLanguage; // Native name of this language
+        private String _sAbbrevLang; // abbreviated language name (Windows Language Name) ex: ENU
 
         // Region
         private String _sRegionName; // (RegionInfo)
@@ -399,6 +401,42 @@ namespace System.Globalization
             return retVal;
         }
 
+        // Clear our internal caches
+        internal static void ClearCachedData()
+        {
+            s_cachedCultures = null;
+            s_cachedRegions = null;
+        }
+
+        internal static CultureInfo[] GetCultures(CultureTypes types)
+        {
+            // Disable  warning 618: System.Globalization.CultureTypes.FrameworkCultures' is obsolete
+#pragma warning disable 618
+            // Validate flags
+            if ((int)types <= 0 || ((int)types & (int)~(CultureTypes.NeutralCultures | CultureTypes.SpecificCultures |
+                                                        CultureTypes.InstalledWin32Cultures | CultureTypes.UserCustomCulture |
+                                                        CultureTypes.ReplacementCultures | CultureTypes.WindowsOnlyCultures |
+                                                        CultureTypes.FrameworkCultures)) != 0)
+            {
+                throw new ArgumentOutOfRangeException("types", 
+                              SR.Format(SR.ArgumentOutOfRange_Range, CultureTypes.NeutralCultures, CultureTypes.FrameworkCultures));
+            }
+
+            // We have deprecated CultureTypes.FrameworkCultures.
+            // When this enum is used, we will enumerate Whidbey framework cultures (for compatibility).
+            //
+
+            // We have deprecated CultureTypes.WindowsOnlyCultures.
+            // When this enum is used, we will return an empty array for this enum.
+            if ((types & CultureTypes.WindowsOnlyCultures) != 0)
+            {
+                // Remove the enum as it is an no-op.
+                types &= (~CultureTypes.WindowsOnlyCultures);
+            }
+            
+#pragma warning restore 618
+            return EnumCultures(types);
+        }
 
         /////////////////////////////////////////////////////////////////////////
         // Build our invariant information
@@ -430,9 +468,11 @@ namespace System.Globalization
 
                     // Language
                     invariant._sISO639Language = "iv";                   // ISO 639 Language Name
+		            invariant._sISO639Language2 = "ivl";                  // 3 char ISO 639 lang name 2
                     invariant._sLocalizedLanguage = "Invariant Language";   // Display name for this Language
                     invariant._sEnglishLanguage = "Invariant Language";   // English name for this language
                     invariant._sNativeLanguage = "Invariant Language";   // Native name of this language
+		            invariant._sAbbrevLang = "IVL";                  // abbreviated language name (Windows Language Name)
 
                     // Region
                     invariant._sRegionName = "IV";                    // (RegionInfo)
@@ -876,6 +916,17 @@ namespace System.Globalization
             }
         }
 
+        // The culture name to be used in CultureInfo.CreateSpecificCulture()
+        internal string SSPECIFICCULTURE
+        {
+            get
+            {
+                // This got populated during the culture initialization
+                Contract.Assert(_sSpecificCulture != null, "[CultureData.SSPECIFICCULTURE] Expected this.sSpecificCulture to be populated by culture data initialization already");
+                return _sSpecificCulture;
+            }
+        }
+
         /////////////
         // Language //
         /////////////
@@ -887,11 +938,38 @@ namespace System.Globalization
             {
                 if (_sISO639Language == null)
                 {
-                    _sISO639Language = GetLocaleInfo(LocaleStringData.Iso639LanguageName);
+                    _sISO639Language = GetLocaleInfo(LocaleStringData.Iso639LanguageTwoLetterName);
                 }
                 return _sISO639Language;
             }
         }
+
+        // iso 639 language name, ie: eng
+        internal string SISO639LANGNAME2
+        {
+            get
+            {
+                if (_sISO639Language2 == null)
+                {
+                    _sISO639Language2 = GetLocaleInfo(LocaleStringData.Iso639LanguageThreeLetterName);
+                }
+                return _sISO639Language2;
+            }
+        }
+
+        // abbreviated windows language name (ie: enu) (non-standard, avoid this)
+        internal string SABBREVLANGNAME
+        {
+            get
+            {
+                if (_sAbbrevLang == null)
+                {
+                    _sAbbrevLang = GetThreeLetterWindowsLanguageName(_sRealName);
+                }
+                return _sAbbrevLang;
+            }
+        }
+
 
         // Localized name for this language (Windows Only) ie: Inglis
         // This is only valid for Windows 8 and higher neutrals:
@@ -2263,7 +2341,9 @@ namespace System.Globalization
             /// <summary>negative sign (coresponds to LOCALE_SNEGATIVESIGN)</summary>
             NegativeSign = 0x00000051,
             /// <summary>ISO abbreviated language name (coresponds to LOCALE_SISO639LANGNAME)</summary>
-            Iso639LanguageName = 0x00000059,
+            Iso639LanguageTwoLetterName = 0x00000059,
+            /// <summary>ISO abbreviated country name (coresponds to LOCALE_SISO639LANGNAME2)</summary>
+            Iso639LanguageThreeLetterName = 0x00000067,
             /// <summary>ISO abbreviated country name (coresponds to LOCALE_SISO3166CTRYNAME)</summary>
             Iso3166CountryName = 0x0000005A,
             /// <summary>3 letter ISO country code (coresponds to LOCALE_SISO3166CTRYNAME2)</summary>
