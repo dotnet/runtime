@@ -219,6 +219,7 @@ namespace System.Text.Tests
         }
 
         [Fact]
+        [ActiveIssue(13047)]
         public static void Append_UShort_NoSpareCapacity_ThrowsArgumentOutOfRangeException()
         {
             var builder = new StringBuilder(0, 5);
@@ -239,6 +240,7 @@ namespace System.Text.Tests
         }
 
         [Fact]
+        [ActiveIssue(13047)]
         public static void Append_Bool_NoSpareCapacity_ThrowsArgumentOutOfRangeException()
         {
             var builder = new StringBuilder(0, 5);
@@ -262,6 +264,7 @@ namespace System.Text.Tests
         }
 
         [Fact]
+        [ActiveIssue(13047)]
         public static void Append_Decimal_NoSpareCapacity_ThrowsArgumentOutOfRangeException()
         {
             var builder = new StringBuilder(0, 5);
@@ -285,6 +288,7 @@ namespace System.Text.Tests
         }
 
         [Fact]
+        [ActiveIssue(13047)]
         public static void Append_Double_NoSpareCapacity_ThrowsArgumentOutOfRangeException()
         {
             var builder = new StringBuilder(0, 5);
@@ -305,6 +309,7 @@ namespace System.Text.Tests
         }
 
         [Fact]
+        [ActiveIssue(13047)]
         public static void Append_Short_NoSpareCapacity_ThrowsArgumentOutOfRangeException()
         {
             var builder = new StringBuilder(0, 5);
@@ -325,6 +330,7 @@ namespace System.Text.Tests
         }
 
         [Fact]
+        [ActiveIssue(13047)]
         public static void Append_Int_NoSpareCapacity_ThrowsArgumentOutOfRangeException()
         {
             var builder = new StringBuilder(0, 5);
@@ -345,6 +351,7 @@ namespace System.Text.Tests
         }
 
         [Fact]
+        [ActiveIssue(13047)]
         public static void Append_Long_NoSpareCapacity_ThrowsArgumentOutOfRangeException()
         {
             var builder = new StringBuilder(0, 5);
@@ -367,6 +374,7 @@ namespace System.Text.Tests
         }
 
         [Fact]
+        [ActiveIssue(13047)]
         public static void Append_Object_NoSpareCapacity_ThrowsArgumentOutOfRangeException()
         {
             var builder = new StringBuilder(0, 5);
@@ -387,6 +395,7 @@ namespace System.Text.Tests
         }
 
         [Fact]
+        [ActiveIssue(13047)]
         public static void Append_SByte_NoSpareCapacity_ThrowsArgumentOutOfRangeException()
         {
             var builder = new StringBuilder(0, 5);
@@ -410,6 +419,7 @@ namespace System.Text.Tests
         }
 
         [Fact]
+        [ActiveIssue(13047)]
         public static void Append_Float_NoSpareCapacity_ThrowsArgumentOutOfRangeException()
         {
             var builder = new StringBuilder(0, 5);
@@ -430,6 +440,7 @@ namespace System.Text.Tests
         }
 
         [Fact]
+        [ActiveIssue(13047)]
         public static void Append_Byte_NoSpareCapacity_ThrowsArgumentOutOfRangeException()
         {
             var builder = new StringBuilder(0, 5);
@@ -450,6 +461,7 @@ namespace System.Text.Tests
         }
 
         [Fact]
+        [ActiveIssue(13047)]
         public static void Append_UInt_NoSpareCapacity_ThrowsArgumentOutOfRangeException()
         {
             var builder = new StringBuilder(0, 5);
@@ -470,6 +482,7 @@ namespace System.Text.Tests
         }
 
         [Fact]
+        [ActiveIssue(13047)]
         public static void Append_ULong_NoSpareCapacity_ThrowsArgumentOutOfRangeException()
         {
             var builder = new StringBuilder(0, 5);
@@ -501,6 +514,7 @@ namespace System.Text.Tests
         }
 
         [Fact]
+        [ActiveIssue(13047)]
         public static void Append_Char_Invalid()
         {
             var builder = new StringBuilder(0, 5);
@@ -531,6 +545,7 @@ namespace System.Text.Tests
         }
 
         [Fact]
+        [ActiveIssue(13047)]
         public static unsafe void Append_CharPointer_Invalid()
         {
             var builder = new StringBuilder();
@@ -576,6 +591,7 @@ namespace System.Text.Tests
         }
 
         [Fact]
+        [ActiveIssue(13047)]
         public static void Append_String_Invalid()
         {
             var builder = new StringBuilder(0, 5);
@@ -620,6 +636,7 @@ namespace System.Text.Tests
         }
 
         [Fact]
+        [ActiveIssue(13047)]
         public static void Append_CharArray_Invalid()
         {
             var builder = new StringBuilder(0, 5);
@@ -751,6 +768,7 @@ namespace System.Text.Tests
         }
 
         [Fact]
+        [ActiveIssue(13047)]
         public static void AppendFormat_Invalid()
         {
             var builder = new StringBuilder(0, 5);
@@ -858,6 +876,7 @@ namespace System.Text.Tests
         }
 
         [Fact]
+        [ActiveIssue(13047)]
         public static void AppendLine_NoSpareCapacity_ThrowsArgumentOutOfRangeException()
         {
             var builder = new StringBuilder(0, 5);
