@@ -5,8 +5,8 @@
 
 #include <stdint.h>
 #include <unistd.h>
-#include <unicode/ucal.h>
 
+#include "icushim.h"
 #include "locale.hpp"
 #include "holders.h"
 #include "errors.h"

@@ -8,12 +8,8 @@
 #include <stdint.h>
 #include <vector>
 #include <map>
-#include <unicode/uchar.h>
-#include <unicode/ucol.h>
-#include <unicode/usearch.h>
-#include <unicode/utf16.h>
 
-#include "config.h"
+#include "icushim.h"
 
 const int32_t CompareOptionsIgnoreCase = 0x1;
 const int32_t CompareOptionsIgnoreNonSpace = 0x2;
