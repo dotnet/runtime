@@ -9,6 +9,7 @@
   "frameworks": {
     ".NETCoreApp,Version=v1.0": {},
     ".NETCoreApp,Version=v1.1": {},
-    "netstandard1.3": {}
+    "netstandard1.3": {},
+    "netstandard1.5": {}
   }
 }
