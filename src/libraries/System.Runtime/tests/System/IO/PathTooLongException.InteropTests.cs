@@ -10,6 +10,7 @@ namespace System.IO.Tests
     public static class PathTooLongExceptionInteropTests
     {
         [Fact]
+        [ActiveIssue(13025)]        
         public static void From_HR()
         {
             int hr = HResults.COR_E_PATHTOOLONG;

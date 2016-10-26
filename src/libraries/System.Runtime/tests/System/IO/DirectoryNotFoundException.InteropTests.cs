@@ -13,6 +13,7 @@ namespace System.IO.Tests
         [InlineData(HResults.COR_E_DIRECTORYNOTFOUND)]
         [InlineData(HResults.STG_E_PATHNOTFOUND)]
         [InlineData(HResults.CTL_E_PATHNOTFOUND)]
+        [ActiveIssue(13025)]
         public static void From_HR(int hr)
         {
             DirectoryNotFoundException exception = Assert.IsAssignableFrom<DirectoryNotFoundException>(Marshal.GetExceptionForHR(hr));
