@@ -261,7 +261,7 @@ namespace System.Globalization
                 throw new ArgumentOutOfRangeException((index < 0) ? "index" : "count",
                       Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (index > ascii.Length)
-                throw new ArgumentOutOfRangeException("byteIndex",
+                throw new ArgumentOutOfRangeException(nameof(index),
                     Environment.GetResourceString("ArgumentOutOfRange_Index"));
             if (index > ascii.Length - count)
                 throw new ArgumentOutOfRangeException(nameof(ascii),
