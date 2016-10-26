@@ -71,7 +71,6 @@ namespace System.Net.Sockets.Tests
         
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        [ActiveIssue(9189, TestPlatforms.AnyUnix)]
         public async Task ConnectAsync_StringHost_Success()
         {
             using (var c = new UdpClient())
@@ -92,7 +91,6 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        [ActiveIssue(9189, TestPlatforms.AnyUnix)]
         public void Connect_StringHost_Success()
         {
             using (var c = new UdpClient())
