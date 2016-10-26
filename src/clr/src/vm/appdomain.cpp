@@ -8084,11 +8084,13 @@ BOOL AppDomain::IsCached(AssemblySpec *pSpec)
     return m_AssemblyCache.Contains(pSpec);
 }
 
+#ifdef FEATURE_CORECLR
 void AppDomain::GetCacheAssemblyList(SetSHash<PTR_DomainAssembly>& assemblyList)
 {
     CrstHolder holder(&m_DomainCacheCrst);
     m_AssemblyCache.GetAllAssemblies(assemblyList);
 }
+#endif
 
 PEAssembly* AppDomain::FindCachedFile(AssemblySpec* pSpec, BOOL fThrow /*=TRUE*/)
 {
