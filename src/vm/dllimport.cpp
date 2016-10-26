@@ -1024,7 +1024,7 @@ public:
             pcsUnmarshal->EmitRET();
         }
 
-        DWORD dwJitFlags = CORJIT_FLG_IL_STUB;
+        CORJIT_FLAGS jitFlags(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB);
                 
         if (m_slIL.HasInteropParamExceptionInfo())
         {
@@ -1049,7 +1049,7 @@ public:
         else
         {
             // All other IL stubs will need to use the secret parameter.
-            dwJitFlags |= CORJIT_FLG_PUBLISH_SECRET_PARAM;
+            jitFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM);
         }
 
         if (SF_IsReverseStub(m_dwStubFlags))
@@ -1114,7 +1114,7 @@ public:
         m_slIL.GenerateCode(pbBuffer, cbCode);
         m_slIL.GetLocalSig(pbLocalSig, cbSig);
 
-        pResolver->SetJitFlags(dwJitFlags);
+        pResolver->SetJitFlags(jitFlags);
 
 #ifdef LOGGING
         LOG((LF_STUBS, LL_INFO1000, "---------------------------------------------------------------------\n"));
@@ -1153,7 +1153,7 @@ public:
 
             LogILStubFlags(LF_STUBS, LL_INFO1000, m_dwStubFlags);
 
-            m_slIL.LogILStub(dwJitFlags);
+            m_slIL.LogILStub(jitFlags);
         }
         LOG((LF_STUBS, LL_INFO1000, "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"));
 #endif // LOGGING
@@ -1170,7 +1170,7 @@ public:
                 pStubMD, 
                 pbLocalSig, 
                 cbSig,
-                dwJitFlags,
+                jitFlags,
                 &convertToHRTryCatch,
                 &cleanupTryFinally,
                 maxStack,
@@ -1188,7 +1188,7 @@ public:
         MethodDesc *    pStubMD, 
         PCCOR_SIGNATURE pbLocalSig, 
         DWORD           cbSig, 
-        DWORD           dwJitFlags, 
+        CORJIT_FLAGS    jitFlags,
         ILStubEHClause * pConvertToHRTryCatchBounds,
         ILStubEHClause * pCleanupTryFinallyBounds,
         DWORD           maxStack, 
@@ -1256,7 +1256,7 @@ public:
         strILStubCode.AppendPrintf(W(".maxstack %d \n"), maxStack);
         strILStubCode.AppendPrintf(W(".locals %s\n"), strLocalSig.GetUnicode());
         
-        m_slIL.LogILStub(dwJitFlags, &strILStubCode);
+        m_slIL.LogILStub(jitFlags, &strILStubCode);
 
         if (pConvertToHRTryCatchBounds->cbTryLength != 0 && pConvertToHRTryCatchBounds->cbHandlerLength != 0)
         {
@@ -5947,8 +5947,8 @@ PCODE JitILStub(MethodDesc* pStubMD)
             // A dynamically generated IL stub
             //
             
-            DWORD dwFlags = pStubMD->AsDynamicMethodDesc()->GetILStubResolver()->GetJitFlags();
-            pCode = pStubMD->MakeJitWorker(NULL, dwFlags, 0);
+            CORJIT_FLAGS jitFlags = pStubMD->AsDynamicMethodDesc()->GetILStubResolver()->GetJitFlags();
+            pCode = pStubMD->MakeJitWorker(NULL, jitFlags);
 
             _ASSERTE(pCode == pStubMD->GetNativeCode());            
         }

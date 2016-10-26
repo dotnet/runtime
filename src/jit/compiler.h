@@ -7434,9 +7434,8 @@ public:
 
     struct Options
     {
-        CORJIT_FLAGS* jitFlags;  // all flags passed from the EE
-        unsigned      eeFlags;   // CorJitFlag flags passed from the EE
-        unsigned      compFlags; // method attributes
+        JitFlags* jitFlags;  // all flags passed from the EE
+        unsigned  compFlags; // method attributes
 
         codeOptimize compCodeOpt; // what type of code optimizations
 
@@ -7505,7 +7504,7 @@ public:
 #ifdef FEATURE_READYTORUN_COMPILER
         inline bool IsReadyToRun()
         {
-            return (eeFlags & CORJIT_FLG_READYTORUN) != 0;
+            return jitFlags->IsSet(JitFlags::JIT_FLAG_READYTORUN);
         }
 #else
         inline bool IsReadyToRun()
@@ -7519,7 +7518,7 @@ public:
         inline bool ShouldUsePInvokeHelpers()
         {
 #if COR_JIT_EE_VERSION > 460
-            return (jitFlags->corJitFlags2 & CORJIT_FLG2_USE_PINVOKE_HELPERS) != 0;
+            return jitFlags->IsSet(JitFlags::JIT_FLAG_USE_PINVOKE_HELPERS);
 #else
             return false;
 #endif
@@ -7530,7 +7529,7 @@ public:
         inline bool IsReversePInvoke()
         {
 #if COR_JIT_EE_VERSION > 460
-            return (jitFlags->corJitFlags2 & CORJIT_FLG2_REVERSE_PINVOKE) != 0;
+            return jitFlags->IsSet(JitFlags::JIT_FLAG_REVERSE_PINVOKE);
 #else
             return false;
 #endif
@@ -7540,7 +7539,7 @@ public:
         inline bool IsJit32Compat()
         {
 #if defined(_TARGET_X86_) && COR_JIT_EE_VERSION > 460
-            return (jitFlags->corJitFlags2 & CORJIT_FLG2_DESKTOP_QUIRKS) != 0;
+            return jitFlags->IsSet(JitFlags::JIT_FLAG_DESKTOP_QUIRKS);
 #else
             return false;
 #endif
@@ -7550,7 +7549,7 @@ public:
         inline bool IsJit64Compat()
         {
 #if defined(_TARGET_AMD64_) && COR_JIT_EE_VERSION > 460
-            return (jitFlags->corJitFlags2 & CORJIT_FLG2_DESKTOP_QUIRKS) != 0;
+            return jitFlags->IsSet(JitFlags::JIT_FLAG_DESKTOP_QUIRKS);
 #elif defined(_TARGET_AMD64_) && !defined(FEATURE_CORECLR)
             return true;
 #else
@@ -8095,14 +8094,14 @@ public:
                     CORINFO_METHOD_INFO*  methodInfo,
                     void**                methodCodePtr,
                     ULONG*                methodCodeSize,
-                    CORJIT_FLAGS*         compileFlags);
+                    JitFlags*             compileFlags);
     void compCompileFinish();
     int compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
                           COMP_HANDLE                      compHnd,
                           CORINFO_METHOD_INFO*             methodInfo,
                           void**                           methodCodePtr,
                           ULONG*                           methodCodeSize,
-                          CORJIT_FLAGS*                    compileFlags,
+                          JitFlags*                        compileFlags,
                           CorInfoInstantiationVerification instVerInfo);
 
     ArenaAllocator* compGetAllocator();
@@ -8335,7 +8334,7 @@ public:
 protected:
     size_t compMaxUncheckedOffsetForNullObject;
 
-    void compInitOptions(CORJIT_FLAGS* compileFlags);
+    void compInitOptions(JitFlags* compileFlags);
 
     void compSetProcessor();
     void compInitDebuggingInfo();
@@ -8343,7 +8342,7 @@ protected:
 #ifdef _TARGET_ARMARCH_
     bool compRsvdRegCheck(FrameLayoutState curState);
 #endif
-    void compCompile(void** methodCodePtr, ULONG* methodCodeSize, CORJIT_FLAGS* compileFlags);
+    void compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags* compileFlags);
 
 #ifdef PROFILING_SUPPORTED
     // Data required for generating profiler Enter/Leave/TailCall hooks

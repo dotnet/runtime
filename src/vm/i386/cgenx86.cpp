@@ -1682,7 +1682,7 @@ void ResumeAtJit(PCONTEXT pContext, LPVOID oldESP)
 
 #pragma warning(push)
 #pragma warning(disable: 4035)
-DWORD getcpuid(DWORD arg, unsigned char result[16])
+extern "C" DWORD __stdcall getcpuid(DWORD arg, unsigned char result[16])
 {
     LIMITED_METHOD_CONTRACT
 
@@ -1709,7 +1709,7 @@ DWORD getcpuid(DWORD arg, unsigned char result[16])
 //     Arg3 is a pointer to the return buffer
 //   No need to check whether or not CPUID is supported because we have already called CPUID with success to come here.
 
-DWORD getextcpuid(DWORD arg1, DWORD arg2, unsigned char result[16])
+extern "C" DWORD __stdcall getextcpuid(DWORD arg1, DWORD arg2, unsigned char result[16])
 {
     LIMITED_METHOD_CONTRACT
 
@@ -1727,6 +1727,27 @@ DWORD getextcpuid(DWORD arg1, DWORD arg2, unsigned char result[16])
         mov     [esi+12], edx
         pop     esi
         pop     ebx
+    }
+}
+
+extern "C" DWORD __stdcall xmmYmmStateSupport()
+{
+    // No CONTRACT
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+
+    __asm
+    {
+        mov     ecx, 0                  ; Specify xcr0
+        xgetbv                          ; result in EDX:EAX
+        and eax, 06H
+        cmp eax, 06H                    ; check OS has enabled both XMM and YMM state support
+        jne     not_supported
+        mov     eax, 1
+        jmp     done
+    not_supported:
+        mov     eax, 0
+    done:
     }
 }
 

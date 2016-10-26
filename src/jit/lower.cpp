@@ -2638,7 +2638,7 @@ void Lowering::InsertPInvokeMethodProlog()
     CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef _TARGET_64BIT_
-    if (comp->opts.eeFlags & CORJIT_FLG_IL_STUB)
+    if (comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
     {
         // Push a frame - if we are NOT in an IL stub, this is done right before the call
         // The init routine sets InlinedCallFrame's m_pNext, so we just set the thead's top-of-stack
@@ -2714,7 +2714,7 @@ void Lowering::InsertPInvokeMethodEpilog(BasicBlock* returnBB DEBUGARG(GenTreePt
     CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef _TARGET_64BIT_
-    if (comp->opts.eeFlags & CORJIT_FLG_IL_STUB)
+    if (comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
 #endif // _TARGET_64BIT_
     {
         GenTree* frameUpd = CreateFrameLinkUpdate(PopFrame);
@@ -2857,7 +2857,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
     CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef _TARGET_64BIT_
-    if (!(comp->opts.eeFlags & CORJIT_FLG_IL_STUB))
+    if (!comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
     {
         // Set the TCB's frame to be the one we just created.
         // Note the init routine for the InlinedCallFrame (CORINFO_HELP_INIT_PINVOKE_FRAME)
@@ -2925,7 +2925,7 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
     CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef _TARGET_64BIT_
-    if (!(comp->opts.eeFlags & CORJIT_FLG_IL_STUB))
+    if (!comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
     {
         tree = CreateFrameLinkUpdate(PopFrame);
         BlockRange().InsertBefore(insertionPoint, LIR::SeqTree(comp, tree));
@@ -2945,7 +2945,7 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
 GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
 {
     // PInvoke lowering varies depending on the flags passed in by the EE. By default,
-    // GC transitions are generated inline; if CORJIT_FLG2_USE_PINVOKE_HELPERS is specified,
+    // GC transitions are generated inline; if CORJIT_FLAG_USE_PINVOKE_HELPERS is specified,
     // GC transitions are instead performed using helper calls. Examples of each case are given
     // below. Note that the data structure that is used to store information about a call frame
     // containing any P/Invoke calls is initialized in the method prolog (see

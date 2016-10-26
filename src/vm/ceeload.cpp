@@ -15911,9 +15911,9 @@ void Module::ExpandAll()
                                                                                  pMD->GetMDImport(),
                                                                                  &ignored));
 #ifdef FEATURE_INTERPRETER
-                pMD->MakeJitWorker(pHeader, CORJIT_FLG_MAKEFINALCODE, 0);
+                pMD->MakeJitWorker(pHeader, CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE));
 #else
-                pMD->MakeJitWorker(pHeader, 0, 0);
+                pMD->MakeJitWorker(pHeader, CORJIT_FLAGS());
 #endif
             }
         }

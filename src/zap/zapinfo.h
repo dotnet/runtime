@@ -231,7 +231,7 @@ class ZapInfo
 
     void InitMethodName();
 
-    int ComputeJitFlags(CORINFO_METHOD_HANDLE handle);
+    CORJIT_FLAGS ComputeJitFlags(CORINFO_METHOD_HANDLE handle);
 
     ZapDebugInfo * EmitDebugInfo();
     ZapGCInfo * EmitGCInfo();
