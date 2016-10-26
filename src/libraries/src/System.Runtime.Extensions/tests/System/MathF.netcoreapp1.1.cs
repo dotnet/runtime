@@ -42,7 +42,7 @@ namespace System.Tests
 
             if (delta > allowedVariance)
             {
-                throw new EqualException($"{expected}", $"{actual}");
+                throw new EqualException($"{expected,10:G9}", $"{actual,10:G9}");
             }
         }
 
@@ -93,9 +93,9 @@ namespace System.Tests
         [Fact]
         public static void Atan2()
         {
-            Assert.Equal(-MathF.PI, MathF.Atan2(-0.0f, -0.0f));
+            AssertEqual(-MathF.PI, MathF.Atan2(-0.0f, -0.0f), CrossPlatformMachineEpsilon * 10);
             Assert.Equal(-0.0f, MathF.Atan2(-0.0f, 0.0f));
-            Assert.Equal(MathF.PI, MathF.Atan2(0.0f, -0.0f));
+            AssertEqual(MathF.PI, MathF.Atan2(0.0f, -0.0f), CrossPlatformMachineEpsilon * 10);
             Assert.Equal(0.0f, MathF.Atan2(0.0f, 0.0f));
             AssertEqual(MathF.PI / 2.0f, MathF.Atan2(1.0f, 0.0f), CrossPlatformMachineEpsilon * 10);
             AssertEqual(0.588002604f, MathF.Atan2(2.0f, 3.0f), CrossPlatformMachineEpsilon);
