@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.Collections;
 using System.ComponentModel;
@@ -1292,6 +1293,45 @@ namespace System.Net.Sockets
             }
 
             return bytesTransferred;
+        }
+
+        public void SendFile(string fileName)
+        {
+            SendFile(fileName, null, null, TransmitFileOptions.UseDefaultWorkerThread);
+        }
+
+        public void SendFile(string fileName, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
+            if (CleanedUp)
+            {
+                throw new ObjectDisposedException(this.GetType().FullName);
+            }
+
+            if (!Connected)
+            {
+                throw new NotSupportedException(SR.net_notconnected);
+            }
+
+            ValidateBlockingMode();
+
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"::SendFile() SRC:{LocalEndPoint} DST:{RemoteEndPoint} fileName:{fileName}");
+
+            SendFileInternal(fileName, preBuffer, postBuffer, flags);
+
+#if TRACE_VERBOSE
+            if (NetEventSource.IsEnabled)
+            {
+                try
+                {
+                    NetEventSource.Info(this, $"::SendFile() SRC:{LocalEndPoint} DST:{RemoteEndPoint} UnsafeNclNativeMethods.OSSOCK.TransmitFile returns errorCode:{errorCode}");
+                }
+                catch (ObjectDisposedException) { }
+            }
+#endif
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         // Sends data to a specific end point, starting at the indicated location in the buffer.
@@ -2852,6 +2892,52 @@ namespace System.Net.Sockets
             return bytesTransferred;
         }
 
+        public IAsyncResult BeginSendFile(string fileName, AsyncCallback callback, object state)
+        {
+            return BeginSendFile(fileName, null, null, TransmitFileOptions.UseDefaultWorkerThread, callback, state);
+        }
+
+        public IAsyncResult BeginSendFile(string fileName, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags, AsyncCallback callback, object state)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
+            if (CleanedUp)
+            {
+                throw new ObjectDisposedException(this.GetType().FullName);
+            }
+
+            if (!Connected)
+            {
+                throw new NotSupportedException(SR.net_notconnected);
+            }
+
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"::DoBeginSendFile() SRC:{LocalEndPoint} DST:{RemoteEndPoint} fileName:{fileName}");
+
+            IAsyncResult asyncResult = BeginSendFileInternal(fileName, preBuffer, postBuffer, flags, callback, state);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, asyncResult);
+            return asyncResult;
+        }
+
+        public void EndSendFile(IAsyncResult asyncResult)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, asyncResult);
+
+            if (CleanedUp)
+            {
+                throw new ObjectDisposedException(this.GetType().FullName);
+            }
+
+            if (asyncResult == null)
+            {
+                throw new ArgumentNullException(nameof(asyncResult));
+            }
+
+            EndSendFileInternal(asyncResult);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+        }
+
         // Routine Description:
         // 
         //    BeginSendTo - Async implementation of SendTo,
@@ -4022,7 +4108,7 @@ namespace System.Net.Sockets
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
-        #region Async methods
+#region Async methods
         public bool AcceptAsync(SocketAsyncEventArgs e)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, e);
@@ -4683,10 +4769,10 @@ namespace System.Net.Sockets
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this, retval);
             return retval;
         }
-        #endregion
-        #endregion
+#endregion
+#endregion
 
-        #region Internal and private properties
+#region Internal and private properties
         private static object InternalSyncObject
         {
             get
@@ -4733,9 +4819,9 @@ namespace System.Net.Sockets
                             TransportType.All;
             }
         }
-        #endregion
+#endregion
 
-        #region Internal and private methods
+#region Internal and private methods
         internal static void GetIPProtocolInformation(AddressFamily addressFamily, Internals.SocketAddress socketAddress, out bool isIPv4, out bool isIPv6)
         {
             bool isIPv4MappedToIPv6 = socketAddress.Family == AddressFamily.InterNetworkV6 && socketAddress.GetIPAddress().IsIPv4MappedToIPv6;
@@ -5738,7 +5824,7 @@ namespace System.Net.Sockets
             }
         }
 
-        #endregion
+#endregion
 
         [System.Diagnostics.Conditional("TRACE_VERBOSE")]
         internal void DebugMembers()
