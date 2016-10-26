@@ -101,7 +101,7 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="TryExpression"/>.</returns>
         public static TryExpression TryFault(Expression body, Expression fault)
         {
-            return MakeTry(null, body, null, fault, null);
+            return MakeTry(null, body, null, fault, handlers: null);
         }
 
         /// <summary>
@@ -112,7 +112,7 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="TryExpression"/>.</returns>
         public static TryExpression TryFinally(Expression body, Expression @finally)
         {
-            return MakeTry(null, body, @finally, null, null);
+            return MakeTry(null, body, @finally, fault: null, handlers: null);
         }
 
         /// <summary>

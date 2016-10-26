@@ -151,7 +151,7 @@ namespace System.Linq.Expressions.Compiler
             {
                 _ilg.Emit(OpCodes.Ldloca, loc);
                 _ilg.EmitGetValueOrDefault(b.Left.Type);
-                _ilg.EmitConvertToType(nnLeftType, b.Type, true);
+                _ilg.EmitConvertToType(nnLeftType, b.Type, isChecked: true);
             }
             else
             {
@@ -165,7 +165,7 @@ namespace System.Linq.Expressions.Compiler
             EmitExpression(b.Right);
             if (!TypeUtils.AreEquivalent(b.Right.Type, b.Type))
             {
-                _ilg.EmitConvertToType(b.Right.Type, b.Type, true);
+                _ilg.EmitConvertToType(b.Right.Type, b.Type, isChecked: true);
             }
             _ilg.MarkLabel(labEnd);
         }

@@ -65,12 +65,12 @@ namespace System.Linq.Expressions
         /// <returns>The reduced expression.</returns>
         public override Expression Reduce()
         {
-            return ReduceMemberInit(NewExpression, Bindings, true);
+            return ReduceMemberInit(NewExpression, Bindings, keepOnStack: true);
         }
 
         internal static Expression ReduceMemberInit(Expression objExpression, ReadOnlyCollection<MemberBinding> bindings, bool keepOnStack)
         {
-            ParameterExpression objVar = Expression.Variable(objExpression.Type, null);
+            ParameterExpression objVar = Expression.Variable(objExpression.Type, name: null);
             int count = bindings.Count;
             var block = new Expression[count + 2];
             block[0] = Expression.Assign(objVar, objExpression);
@@ -84,7 +84,7 @@ namespace System.Linq.Expressions
 
         internal static Expression ReduceListInit(Expression listExpression, ReadOnlyCollection<ElementInit> initializers, bool keepOnStack)
         {
-            ParameterExpression listVar = Expression.Variable(listExpression.Type, null);
+            ParameterExpression listVar = Expression.Variable(listExpression.Type, name: null);
             int count = initializers.Count;
             var block = new Expression[count + 2];
             block[0] = Expression.Assign(listVar, listExpression);
@@ -105,9 +105,9 @@ namespace System.Linq.Expressions
                 case MemberBindingType.Assignment:
                     return Expression.Assign(member, ((MemberAssignment)binding).Expression);
                 case MemberBindingType.ListBinding:
-                    return ReduceListInit(member, ((MemberListBinding)binding).Initializers, false);
+                    return ReduceListInit(member, ((MemberListBinding)binding).Initializers, keepOnStack: false);
                 case MemberBindingType.MemberBinding:
-                    return ReduceMemberInit(member, ((MemberMemberBinding)binding).Bindings, false);
+                    return ReduceMemberInit(member, ((MemberMemberBinding)binding).Bindings, keepOnStack: false);
                 default: throw ContractUtils.Unreachable;
             }
         }

@@ -71,7 +71,7 @@ namespace System.Linq.Expressions
         /// <returns>The reduced expression.</returns>
         public override Expression Reduce()
         {
-            return MemberInitExpression.ReduceListInit(NewExpression, Initializers, true);
+            return MemberInitExpression.ReduceListInit(NewExpression, Initializers, keepOnStack: true);
         }
 
         /// <summary>
