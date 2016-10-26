@@ -53,12 +53,14 @@ def static getOSGroup(def os) {
 					batchFile("set __TestIntermediateDir=int&&build.cmd release ${architecture}")
 					batchFile("tests\\runtest.cmd release ${architecture} GenerateLayoutOnly")
 					batchFile("tests\\scripts\\run-xunit-perf.cmd -arch ${architecture} -configuration ${configuration} -testBinLoc bin\\tests\\Windows_NT.${architecture}.Release\\performance\\perflab\\Perflab -library -uploadToBenchview C:\\Tools\\Microsoft.Benchview.JSONFormat\\tools -runtype " + runType)
+					batchFile("tests\\scripts\\run-xunit-perf.cmd -arch ${architecture} -configuration ${configuration} -testBinLoc bin\\tests\\Windows_NT.${architecture}.Release\\Jit\\Performance\\CodeQuality -uploadToBenchview C:\\Tools\\Microsoft.Benchview.JSONFormat\\tools -runtype " + runType)
 				}
 			}
 
 			// Save machinedata.json to /artifact/bin/ Jenkins dir
 			def archiveSettings = new ArchivalSettings()
-			archiveSettings.addFiles('sandbox\\perf-*.xml')
+			archiveSettings.addFiles('perf-*.xml')
+			archiveSettings.addFiles('perf-*.etl')
 			Utilities.addArchival(newJob, archiveSettings)
 
 			Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
@@ -77,58 +79,6 @@ def static getOSGroup(def os) {
 				builder.emitTrigger(newJob)
 			}
 		}
-    }
-}
-
-[true, false].each { isPR ->
-    ['Windows_NT'].each { os ->
-        def architecture = 'x64'
-        def configuration = 'Release'
-        def newJob = job(Utilities.getFullJobName(project, "perf_${os}", isPR)) {
-
-            // Set the label.
-            label('performance')
-            steps {
-                    // Batch
-                    batchFile("C:\\Tools\\nuget.exe install Microsoft.BenchView.JSONFormat -Source http://benchviewtestfeed.azurewebsites.net/nuget -OutputDirectory C:\\tools -Prerelease -ExcludeVersion")
-                    batchFile("py C:\\tools\\Microsoft.BenchView.JSONFormat\\tools\\machinedata.py")
-                    batchFile("set __TestIntermediateDir=int&&build.cmd release ${architecture}")
-                    batchFile("tests\\runtest.cmd release ${architecture}")
-                    batchFile("tests\\scripts\\run-xunit-perf.cmd -arch ${architecture} -configuration ${configuration} -testBinLoc bin\\tests\\Windows_NT.x64.Release\\Jit\\Performance\\CodeQuality")
-            }
-        }
-
-        // Save machinedata.json to /artifact/bin/ Jenkins dir
-        def archiveSettings = new ArchivalSettings()
-        archiveSettings.addFiles('sandbox\\perf-*.xml')
-        archiveSettings.addFiles('machinedata.json')
-        Utilities.addArchival(newJob, archiveSettings)
-
-        Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
-
-        // For perf, we need to keep the run results longer
-        newJob.with {
-            // Enable the log rotator
-            logRotator {
-                artifactDaysToKeep(7)
-                daysToKeep(300)
-                artifactNumToKeep(25)
-                numToKeep(1000)
-            }
-        }
-        if (isPR) {
-            TriggerBuilder builder = TriggerBuilder.triggerOnPullRequest()
-            builder.setGithubContext("${os} Perf Tests")
-            builder.triggerOnlyOnComment()
-            builder.setCustomTriggerPhrase("(?i).*test\\W+${os}\\W+perf.*")
-            builder.triggerForBranch(branch)
-            builder.emitTrigger(newJob)
-        }
-        else {
-            // Set a push trigger
-            TriggerBuilder builder = TriggerBuilder.triggerOnCommit()
-            builder.emitTrigger(newJob)
-        }
     }
 }
 
