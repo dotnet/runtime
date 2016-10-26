@@ -1147,6 +1147,7 @@ namespace System
         public virtual string Source { get { throw null; } set { } }
         public virtual string StackTrace { get { throw null; } }
         public System.Reflection.MethodBase TargetSite { get { throw null; } } 
+        protected event System.EventHandler<System.Runtime.Serialization.SafeSerializationEventArgs> SerializeObjectState { add { } remove { } }
         public virtual System.Exception GetBaseException() { throw null; }
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
@@ -6165,6 +6166,16 @@ namespace System.Runtime.Serialization
         Clone = 0x40,
         CrossAppDomain = 0x80,
         All = 0xFF,
+    }
+    public sealed partial class SafeSerializationEventArgs : System.EventArgs
+    {
+        internal SafeSerializationEventArgs() { }
+        public System.Runtime.Serialization.StreamingContext StreamingContext { get { throw null; } }
+        public void AddSerializedState(System.Runtime.Serialization.ISafeSerializationData serializedState) { }
+    }
+    public partial interface ISafeSerializationData
+    {
+        void CompleteDeserialization(object deserialized);
     }
 }
 namespace System.Runtime.Versioning
