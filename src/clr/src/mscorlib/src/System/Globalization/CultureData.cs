@@ -933,7 +933,7 @@ namespace System.Globalization
                                                             CultureTypes.FrameworkCultures)) != 0)
             {
                 throw new ArgumentOutOfRangeException(
-                                "types",
+                                nameof(types),
                                 String.Format(
                                     CultureInfo.CurrentCulture,
                                     Environment.GetResourceString("ArgumentOutOfRange_Range"), CultureTypes.NeutralCultures, CultureTypes.FrameworkCultures));

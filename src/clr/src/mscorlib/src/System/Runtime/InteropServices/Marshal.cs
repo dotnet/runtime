@@ -1261,7 +1261,7 @@ namespace System.Runtime.InteropServices
 
                 // Overflow checking
                 if (nb < s.Length)
-                    throw new ArgumentOutOfRangeException("s");
+                    throw new ArgumentOutOfRangeException(nameof(s));
 
                 UIntPtr len = new UIntPtr((uint)nb);
                 IntPtr hglobal = Win32Native.LocalAlloc_NoSafeHandle(LMEM_FIXED, len);
@@ -1291,7 +1291,7 @@ namespace System.Runtime.InteropServices
 
                 // Overflow checking
                 if (nb < s.Length)
-                    throw new ArgumentOutOfRangeException("s");
+                    throw new ArgumentOutOfRangeException(nameof(s));
 
                 UIntPtr len = new UIntPtr((uint)nb);
                 IntPtr hglobal = Win32Native.LocalAlloc_NoSafeHandle(LMEM_FIXED, len);
@@ -1893,7 +1893,7 @@ namespace System.Runtime.InteropServices
 
                 // Overflow checking
                 if (nb < s.Length)
-                    throw new ArgumentOutOfRangeException("s");
+                    throw new ArgumentOutOfRangeException(nameof(s));
                 
                 IntPtr hglobal = Win32Native.CoTaskMemAlloc(new UIntPtr((uint)nb));
 
@@ -1926,7 +1926,7 @@ namespace System.Runtime.InteropServices
 
                 // Overflow checking
                 if (nb < s.Length)
-                    throw new ArgumentOutOfRangeException("s");
+                    throw new ArgumentOutOfRangeException(nameof(s));
 
                 IntPtr pMem = Win32Native.CoTaskMemAlloc(new UIntPtr((uint)nb +1));
 
@@ -1964,7 +1964,7 @@ namespace System.Runtime.InteropServices
 
                 // Overflow checking
                 if (nb < s.Length)
-                    throw new ArgumentOutOfRangeException("s");
+                    throw new ArgumentOutOfRangeException(nameof(s));
 
                 IntPtr hglobal = Win32Native.CoTaskMemAlloc(new UIntPtr((uint)nb));
 
@@ -2019,7 +2019,7 @@ namespace System.Runtime.InteropServices
 
             // Overflow checking
             if (s.Length + 1 < s.Length)
-                throw new ArgumentOutOfRangeException("s");
+                throw new ArgumentOutOfRangeException(nameof(s));
 
             IntPtr bstr = Win32Native.SysAllocStringLen(s, s.Length);
             if (bstr == IntPtr.Zero)

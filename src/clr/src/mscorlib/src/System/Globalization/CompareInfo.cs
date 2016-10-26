@@ -493,11 +493,11 @@ namespace System.Globalization {
             }
             if (offset1 > (string1 == null ? 0 : string1.Length) - length1)
             {
-                throw new ArgumentOutOfRangeException("string1", Environment.GetResourceString("ArgumentOutOfRange_OffsetLength"));
+                throw new ArgumentOutOfRangeException(nameof(string1), Environment.GetResourceString("ArgumentOutOfRange_OffsetLength"));
             }
             if (offset2 > (string2 == null ? 0 : string2.Length) - length2)
             {
-                throw new ArgumentOutOfRangeException("string2", Environment.GetResourceString("ArgumentOutOfRange_OffsetLength"));
+                throw new ArgumentOutOfRangeException(nameof(string2), Environment.GetResourceString("ArgumentOutOfRange_OffsetLength"));
             }
             if ((options & CompareOptions.Ordinal) != 0)
             {
@@ -757,10 +757,10 @@ namespace System.Globalization {
                 throw new ArgumentNullException(nameof(source));
 
             if (startIndex < 0 || startIndex > source.Length)
-                throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_Index"));
 
             if (count < 0 || startIndex > source.Length - count)
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_Count"));
+                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_Count"));
             Contract.EndContractBlock();
 
             if (options == CompareOptions.OrdinalIgnoreCase)
@@ -793,7 +793,7 @@ namespace System.Globalization {
 
             if (startIndex > source.Length)
             {
-                throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
             Contract.EndContractBlock();
 
@@ -810,11 +810,11 @@ namespace System.Globalization {
 
             if (startIndex < 0)
             {
-                throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
 
             if (count < 0 || startIndex > source.Length - count)
-                throw new ArgumentOutOfRangeException("count",Environment.GetResourceString("ArgumentOutOfRange_Count"));
+                throw new ArgumentOutOfRangeException(nameof(count),Environment.GetResourceString("ArgumentOutOfRange_Count"));
 
             if (options == CompareOptions.OrdinalIgnoreCase)
             {
@@ -952,7 +952,7 @@ namespace System.Globalization {
 
             // Make sure we're not out of range
             if (startIndex < 0 || startIndex > source.Length)
-                throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_Index"));
 
             // Make sure that we allow startIndex == source.Length
             if (startIndex == source.Length)
@@ -964,7 +964,7 @@ namespace System.Globalization {
 
             // 2nd have of this also catches when startIndex == MAXINT, so MAXINT - 0 + 1 == -1, which is < 0.
             if (count < 0 || startIndex - count + 1 < 0)
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_Count"));
+                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_Count"));
 
             if (options == CompareOptions.OrdinalIgnoreCase)
             {
@@ -1003,7 +1003,7 @@ namespace System.Globalization {
 
             // Make sure we're not out of range
             if (startIndex < 0 || startIndex > source.Length)
-                throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_Index"));
 
             // Make sure that we allow startIndex == source.Length
             if (startIndex == source.Length)
@@ -1019,7 +1019,7 @@ namespace System.Globalization {
 
             // 2nd half of this also catches when startIndex == MAXINT, so MAXINT - 0 + 1 == -1, which is < 0.
             if (count < 0 || startIndex - count + 1 < 0)
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_Count"));
+                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_Count"));
 
             if (options == CompareOptions.OrdinalIgnoreCase)
             {

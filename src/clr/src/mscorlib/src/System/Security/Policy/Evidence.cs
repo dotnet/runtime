@@ -1066,7 +1066,7 @@ namespace System.Security.Policy
             if (array == null)
                 throw new ArgumentNullException(nameof(array));
             if (index < 0 || index > array.Length - Count)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             Contract.EndContractBlock();
 
             int currentIndex = index;

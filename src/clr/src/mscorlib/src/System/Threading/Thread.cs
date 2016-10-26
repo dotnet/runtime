@@ -241,7 +241,7 @@ namespace System.Threading {
                 throw new ArgumentNullException(nameof(start));
             }
             if (0 > maxStackSize)
-                throw new ArgumentOutOfRangeException("maxStackSize",Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(maxStackSize),Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
             SetStartHelper((Delegate)start, maxStackSize);
         }
@@ -260,7 +260,7 @@ namespace System.Threading {
                 throw new ArgumentNullException(nameof(start));
             }
             if (0 > maxStackSize)
-                throw new ArgumentOutOfRangeException("maxStackSize",Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(maxStackSize),Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
             SetStartHelper((Delegate)start, maxStackSize);
         }
@@ -673,7 +673,7 @@ namespace System.Threading {
         {
             long tm = (long)timeout.TotalMilliseconds;
             if (tm < -1 || tm > (long) Int32.MaxValue)
-                throw new ArgumentOutOfRangeException("timeout", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(timeout), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
 
             return Join((int)tm);
         }
@@ -703,7 +703,7 @@ namespace System.Threading {
         {
             long tm = (long)timeout.TotalMilliseconds;
             if (tm < -1 || tm > (long) Int32.MaxValue)
-                throw new ArgumentOutOfRangeException("timeout", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(timeout), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
             Sleep((int)tm);
         }
 

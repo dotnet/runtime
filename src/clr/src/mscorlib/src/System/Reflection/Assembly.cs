@@ -517,7 +517,7 @@ namespace System.Reflection
             if (securityContextSource < SecurityContextSource.CurrentAppDomain ||
                 securityContextSource > SecurityContextSource.CurrentAssembly)
             {
-                throw new ArgumentOutOfRangeException("securityContextSource");
+                throw new ArgumentOutOfRangeException(nameof(securityContextSource));
             }
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;

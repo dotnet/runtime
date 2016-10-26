@@ -271,9 +271,9 @@ namespace System.Collections {
         // 
         public Hashtable(int capacity, float loadFactor) {
             if (capacity < 0)
-                throw new ArgumentOutOfRangeException("capacity", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(capacity), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (!(loadFactor >= 0.1f && loadFactor <= 1.0f))
-                throw new ArgumentOutOfRangeException("loadFactor", Environment.GetResourceString("ArgumentOutOfRange_HashtableLoadFactor", .1, 1.0));
+                throw new ArgumentOutOfRangeException(nameof(loadFactor), Environment.GetResourceString("ArgumentOutOfRange_HashtableLoadFactor", .1, 1.0));
             Contract.EndContractBlock();
     
             // Based on perf work, .72 is the optimal load factor for this table.  
@@ -594,7 +594,7 @@ namespace System.Collections {
             if (array.Rank != 1)
                 throw new ArgumentException(Environment.GetResourceString("Arg_RankMultiDimNotSupported"));
             if (arrayIndex < 0) 
-                throw new ArgumentOutOfRangeException("arrayIndex", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (array.Length - arrayIndex < Count)
                 throw new ArgumentException(Environment.GetResourceString("Arg_ArrayPlusOffTooSmall"));
             Contract.EndContractBlock();
@@ -1306,7 +1306,7 @@ namespace System.Collections {
                 if (array.Rank != 1)
                     throw new ArgumentException(Environment.GetResourceString("Arg_RankMultiDimNotSupported"));
                 if (arrayIndex < 0) 
-                    throw new ArgumentOutOfRangeException("arrayIndex", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    throw new ArgumentOutOfRangeException(nameof(arrayIndex), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
                 Contract.EndContractBlock();
                 if (array.Length - arrayIndex < _hashtable.count)
                     throw new ArgumentException(Environment.GetResourceString("Arg_ArrayPlusOffTooSmall"));
@@ -1347,7 +1347,7 @@ namespace System.Collections {
                 if (array.Rank != 1)
                     throw new ArgumentException(Environment.GetResourceString("Arg_RankMultiDimNotSupported"));
                 if (arrayIndex < 0) 
-                    throw new ArgumentOutOfRangeException("arrayIndex", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    throw new ArgumentOutOfRangeException(nameof(arrayIndex), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
                 Contract.EndContractBlock();
                 if (array.Length - arrayIndex < _hashtable.count)
                     throw new ArgumentException(Environment.GetResourceString("Arg_ArrayPlusOffTooSmall"));

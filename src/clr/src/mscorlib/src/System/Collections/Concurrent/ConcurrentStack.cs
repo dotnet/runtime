@@ -475,12 +475,12 @@ namespace System.Collections.Concurrent
             }
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ConcurrentStack_PushPopRange_CountOutOfRange"));
+                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ConcurrentStack_PushPopRange_CountOutOfRange"));
             }
             int length = items.Length;
             if (startIndex >= length || startIndex < 0)
             {
-                throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ConcurrentStack_PushPopRange_StartOutOfRange"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ConcurrentStack_PushPopRange_StartOutOfRange"));
             }
             if (length - count < startIndex) //instead of (startIndex + count > items.Length) to prevent overflow
             {

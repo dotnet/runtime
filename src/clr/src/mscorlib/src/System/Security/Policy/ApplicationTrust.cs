@@ -614,7 +614,7 @@ namespace System.Security.Policy {
             if (array.Rank != 1)
                 throw new ArgumentException(Environment.GetResourceString("Arg_RankMultiDimNotSupported"));
             if (index < 0 || index >= array.Length)
-                throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             if (array.Length - index < this.Count)
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
             Contract.EndContractBlock();

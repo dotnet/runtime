@@ -107,7 +107,7 @@ namespace System.Collections {
         //
         public SortedList(int initialCapacity) {
             if (initialCapacity < 0)
-                throw new ArgumentOutOfRangeException("initialCapacity", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(initialCapacity), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
             keys = new Object[initialCapacity];
             values = new Object[initialCapacity];
@@ -196,7 +196,7 @@ namespace System.Collections {
             }
             set {
                 if (value < Count) {
-                    throw new ArgumentOutOfRangeException("value", Environment.GetResourceString("ArgumentOutOfRange_SmallCapacity"));
+                    throw new ArgumentOutOfRangeException(nameof(value), Environment.GetResourceString("ArgumentOutOfRange_SmallCapacity"));
                 }
                 Contract.EndContractBlock();
 
@@ -329,7 +329,7 @@ namespace System.Collections {
             if (array.Rank != 1)
                 throw new ArgumentException(Environment.GetResourceString("Arg_RankMultiDimNotSupported"));
             if (arrayIndex < 0) 
-                throw new ArgumentOutOfRangeException("arrayIndex", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (array.Length - arrayIndex < Count)
                 throw new ArgumentException(Environment.GetResourceString("Arg_ArrayPlusOffTooSmall"));
             Contract.EndContractBlock();
@@ -368,7 +368,7 @@ namespace System.Collections {
         // 
         public virtual Object GetByIndex(int index) {
             if (index < 0 || index >= Count) 
-                throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             Contract.EndContractBlock();
             return values[index];
         }
@@ -394,7 +394,7 @@ namespace System.Collections {
         // Returns the key of the entry at the given index.
         // 
         public virtual Object GetKey(int index) {
-            if (index < 0 || index >= Count) throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+            if (index < 0 || index >= Count) throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             Contract.EndContractBlock();
             return keys[index];
         }
@@ -496,7 +496,7 @@ namespace System.Collections {
         // decreased by one.
         // 
         public virtual void RemoveAt(int index) {
-            if (index < 0 || index >= Count) throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+            if (index < 0 || index >= Count) throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             Contract.EndContractBlock();
             _size--;
             if (index < _size) {
@@ -522,7 +522,7 @@ namespace System.Collections {
         // the given entry is overwritten.
         // 
         public virtual void SetByIndex(int index, Object value) {
-            if (index < 0 || index >= Count) throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+            if (index < 0 || index >= Count) throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             Contract.EndContractBlock();
             values[index] = value;
             version++;

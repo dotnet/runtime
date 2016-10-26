@@ -479,7 +479,7 @@ namespace System {
 
         public static DateTimeOffset FromUnixTimeSeconds(long seconds) {
             if (seconds < UnixMinSeconds || seconds > UnixMaxSeconds) {
-                throw new ArgumentOutOfRangeException("seconds",
+                throw new ArgumentOutOfRangeException(nameof(seconds),
                     string.Format(Environment.GetResourceString("ArgumentOutOfRange_Range"), UnixMinSeconds, UnixMaxSeconds));
             }
 
@@ -492,7 +492,7 @@ namespace System {
             const long MaxMilliseconds = DateTime.MaxTicks / TimeSpan.TicksPerMillisecond - UnixEpochMilliseconds;
 
             if (milliseconds < MinMilliseconds || milliseconds > MaxMilliseconds) {
-                throw new ArgumentOutOfRangeException("milliseconds",
+                throw new ArgumentOutOfRangeException(nameof(milliseconds),
                     string.Format(Environment.GetResourceString("ArgumentOutOfRange_Range"), MinMilliseconds, MaxMilliseconds));
             }
 
@@ -742,7 +742,7 @@ namespace System {
                 throw new ArgumentException(Environment.GetResourceString("Argument_OffsetPrecision"), nameof(offset));
             }
             if (ticks < MinOffset || ticks > MaxOffset) {
-                throw new ArgumentOutOfRangeException("offset", Environment.GetResourceString("Argument_OffsetOutOfRange"));
+                throw new ArgumentOutOfRangeException(nameof(offset), Environment.GetResourceString("Argument_OffsetOutOfRange"));
             }
             return (Int16)(offset.Ticks / TimeSpan.TicksPerMinute);
         }
@@ -756,7 +756,7 @@ namespace System {
             // 14 hours and the DateTime instance is more than that distance from the boundaries of Int64.
             Int64 utcTicks = dateTime.Ticks - offset.Ticks;
             if (utcTicks < DateTime.MinTicks || utcTicks > DateTime.MaxTicks) {                
-                throw new ArgumentOutOfRangeException("offset", Environment.GetResourceString("Argument_UTCOutOfRange"));                
+                throw new ArgumentOutOfRangeException(nameof(offset), Environment.GetResourceString("Argument_UTCOutOfRange"));                
             }
             // make sure the Kind is set to Unspecified
             //

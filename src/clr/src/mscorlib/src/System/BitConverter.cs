@@ -362,11 +362,11 @@ namespace System {
             }
 
             if (startIndex < 0 || startIndex >= value.Length && startIndex > 0) {  // Don't throw for a 0 length array.
-                throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_StartIndex")); 
+                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_StartIndex")); 
             }
 
             if (length < 0) {
-                throw new ArgumentOutOfRangeException("length", Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
+                throw new ArgumentOutOfRangeException(nameof(length), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
             }
 
             if (startIndex > value.Length - length) {
@@ -380,7 +380,7 @@ namespace System {
 
             if (length > (Int32.MaxValue / 3)) {
                 // (Int32.MaxValue / 3) == 715,827,882 Bytes == 699 MB
-                throw new ArgumentOutOfRangeException("length", Environment.GetResourceString("ArgumentOutOfRange_LengthTooLarge", (Int32.MaxValue / 3)));
+                throw new ArgumentOutOfRangeException(nameof(length), Environment.GetResourceString("ArgumentOutOfRange_LengthTooLarge", (Int32.MaxValue / 3)));
             }
 
             int chArrayLength = length * 3;
@@ -430,9 +430,9 @@ namespace System {
             if (value==null)
                 throw new ArgumentNullException(nameof(value));
             if (startIndex < 0)
-                throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (startIndex > value.Length - 1)
-                throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             Contract.EndContractBlock();
     
             return (value[startIndex]==0)?false:true;

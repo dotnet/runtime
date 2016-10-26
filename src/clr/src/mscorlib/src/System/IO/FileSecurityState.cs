@@ -112,7 +112,7 @@ namespace System.IO
         private static void VerifyAccess(FileSecurityStateAccess access)
         {
             if ((access & ~FileSecurityStateAccess.AllAccess) != 0)
-                throw new ArgumentOutOfRangeException("access", Environment.GetResourceString("Arg_EnumIllegalVal"));
+                throw new ArgumentOutOfRangeException(nameof(access), Environment.GetResourceString("Arg_EnumIllegalVal"));
         }
 
         private static void VerifyPath(String path)
