@@ -485,7 +485,7 @@ namespace System.Reflection
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
             if (attributeRuntimeType == null) 
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),"attributeType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType, inherit);
         }
@@ -499,7 +499,7 @@ namespace System.Reflection
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
             if (attributeRuntimeType == null) 
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),"attributeType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),nameof(attributeType));
 
             return CustomAttribute.IsDefined(this, attributeRuntimeType, inherit);
         }
@@ -903,10 +903,10 @@ namespace System.Reflection
 
             RuntimeType rtType = delegateType as RuntimeType;
             if (rtType == null)
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeType"), "delegateType");
+                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeType"), nameof(delegateType));
 
             if (!rtType.IsDelegate())
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeDelegate"), "delegateType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeDelegate"), nameof(delegateType));
 
             Delegate d = Delegate.CreateDelegateInternal(rtType, this, firstArgument, bindingFlags, ref stackMark);
             if (d == null)

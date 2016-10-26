@@ -347,7 +347,7 @@ namespace System {
             if (pointerType == null)
                 throw new ArgumentNullException(nameof(pointerType));
             if (!pointerType.IsPointer)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBePointer"),"pointerType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBePointer"),nameof(pointerType));
             Contract.EndContractBlock();
 
             m_objref = pointerType;

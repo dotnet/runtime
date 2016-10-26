@@ -452,12 +452,12 @@ namespace System.Reflection.Emit
 
             if (rtModule == null)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeModule"), "m");
+                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeModule"), nameof(m));
             }
 
             // The user cannot explicitly use this assembly
             if (rtModule == s_anonymouslyHostedDynamicMethodsModule)
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidValue"), "m");
+                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidValue"), nameof(m));
 
             // ask for member access if skip visibility
             if (skipVisibility) 

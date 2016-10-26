@@ -106,7 +106,7 @@ namespace System.Runtime.Loader
 
             if (Path.IsRelative(assemblyPath))
             {
-                throw new ArgumentException( Environment.GetResourceString("Argument_AbsolutePathRequired"), "assemblyPath");
+                throw new ArgumentException( Environment.GetResourceString("Argument_AbsolutePathRequired"), nameof(assemblyPath));
             }
 
             RuntimeAssembly loadedAssembly = null;
@@ -123,12 +123,12 @@ namespace System.Runtime.Loader
 
             if (Path.IsRelative(nativeImagePath))
             {
-                throw new ArgumentException( Environment.GetResourceString("Argument_AbsolutePathRequired"), "nativeImagePath");
+                throw new ArgumentException( Environment.GetResourceString("Argument_AbsolutePathRequired"), nameof(nativeImagePath));
             }
 
             if (assemblyPath != null && Path.IsRelative(assemblyPath))
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_AbsolutePathRequired"), "assemblyPath");
+                throw new ArgumentException(Environment.GetResourceString("Argument_AbsolutePathRequired"), nameof(assemblyPath));
             }
 
             // Basic validation has succeeded - lets try to load the NI image.
@@ -306,11 +306,11 @@ namespace System.Runtime.Loader
             }
             if (unmanagedDllPath.Length == 0)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyPath"), "unmanagedDllPath");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyPath"), nameof(unmanagedDllPath));
             }
             if (Path.IsRelative(unmanagedDllPath))
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_AbsolutePathRequired"), "unmanagedDllPath");
+                throw new ArgumentException(Environment.GetResourceString("Argument_AbsolutePathRequired"), nameof(unmanagedDllPath));
             }
 
             return InternalLoadUnmanagedDllFromPath(unmanagedDllPath);

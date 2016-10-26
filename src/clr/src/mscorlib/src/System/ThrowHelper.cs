@@ -192,11 +192,11 @@ namespace System {
         }
 
         private static ArgumentException GetWrongKeyTypeArgumentException(object key, Type targetType) {
-            return new ArgumentException(Environment.GetResourceString("Arg_WrongType", key, targetType), "key");
+            return new ArgumentException(Environment.GetResourceString("Arg_WrongType", key, targetType), nameof(key));
         }
 
         private static ArgumentException GetWrongValueTypeArgumentException(object value, Type targetType) {
-            return new ArgumentException(Environment.GetResourceString("Arg_WrongType", value, targetType), "value");
+            return new ArgumentException(Environment.GetResourceString("Arg_WrongType", value, targetType), nameof(value));
         }
 
         private static ArgumentOutOfRangeException GetArgumentOutOfRangeException(ExceptionArgument argument, ExceptionResource resource) {

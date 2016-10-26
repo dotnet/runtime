@@ -404,10 +404,10 @@ namespace System
 
             RuntimeType rtType = enumType as RuntimeType;
             if (rtType == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), "enumType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), nameof(enumType));
 
             if (!enumType.IsEnum)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnum"), "enumType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnum"), nameof(enumType));
 
             if (value == null) {
                 parseResult.SetFailure(ParseFailureKind.ArgumentNull, "value");
@@ -629,7 +629,7 @@ namespace System
 
                 default:
                     // All unsigned types will be directly cast
-                    throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnumBaseTypeOrEnum"), "value");
+                    throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnumBaseTypeOrEnum"), nameof(value));
             }
         }
 
@@ -651,7 +651,7 @@ namespace System
                 throw new ArgumentNullException(nameof(enumType));
 
             if (!enumType.IsEnum)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnum"), "enumType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnum"), nameof(enumType));
 
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
@@ -662,7 +662,7 @@ namespace System
 
             RuntimeType rtType = enumType as RuntimeType;
             if (rtType == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), "enumType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), nameof(enumType));
 
             // Check if both of them are of the same type
             Type valueType = value.GetType();
@@ -1147,11 +1147,11 @@ namespace System
             if (enumType == null)
                 throw new ArgumentNullException(nameof(enumType));
             if (!enumType.IsEnum)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnum"), "enumType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnum"), nameof(enumType));
             Contract.EndContractBlock();
             RuntimeType rtType = enumType as RuntimeType;
             if (rtType == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), "enumType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), nameof(enumType));
             return InternalBoxEnum(rtType, value);
         }
 
@@ -1162,11 +1162,11 @@ namespace System
             if (enumType == null)
                 throw new ArgumentNullException(nameof(enumType));
             if (!enumType.IsEnum)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnum"), "enumType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnum"), nameof(enumType));
             Contract.EndContractBlock();
             RuntimeType rtType = enumType as RuntimeType;
             if (rtType == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), "enumType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), nameof(enumType));
             return InternalBoxEnum(rtType, value);
         }
 
@@ -1177,11 +1177,11 @@ namespace System
             if (enumType == null)
                 throw new ArgumentNullException(nameof(enumType));
             if (!enumType.IsEnum)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnum"), "enumType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnum"), nameof(enumType));
             Contract.EndContractBlock();
             RuntimeType rtType = enumType as RuntimeType;
             if (rtType == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), "enumType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), nameof(enumType));
             return InternalBoxEnum(rtType, value);
         }
 
@@ -1192,11 +1192,11 @@ namespace System
             if (enumType == null)
                 throw new ArgumentNullException(nameof(enumType));
             if (!enumType.IsEnum)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnum"), "enumType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnum"), nameof(enumType));
             Contract.EndContractBlock();
             RuntimeType rtType = enumType as RuntimeType;
             if (rtType == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), "enumType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), nameof(enumType));
             return InternalBoxEnum(rtType, value);
         }
 
@@ -1208,11 +1208,11 @@ namespace System
             if (enumType == null)
                 throw new ArgumentNullException(nameof(enumType));
             if (!enumType.IsEnum)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnum"), "enumType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnum"), nameof(enumType));
             Contract.EndContractBlock();
             RuntimeType rtType = enumType as RuntimeType;
             if (rtType == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), "enumType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), nameof(enumType));
             return InternalBoxEnum(rtType, value);
         }
 
@@ -1224,11 +1224,11 @@ namespace System
             if (enumType == null)
                 throw new ArgumentNullException(nameof(enumType));
             if (!enumType.IsEnum)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnum"), "enumType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnum"), nameof(enumType));
             Contract.EndContractBlock();
             RuntimeType rtType = enumType as RuntimeType;
             if (rtType == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), "enumType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), nameof(enumType));
             return InternalBoxEnum(rtType, value);
         }
 
@@ -1239,11 +1239,11 @@ namespace System
             if (enumType == null)
                 throw new ArgumentNullException(nameof(enumType));
             if (!enumType.IsEnum)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnum"), "enumType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnum"), nameof(enumType));
             Contract.EndContractBlock();
             RuntimeType rtType = enumType as RuntimeType;
             if (rtType == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), "enumType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), nameof(enumType));
             return InternalBoxEnum(rtType, value);
         }
 
@@ -1255,11 +1255,11 @@ namespace System
             if (enumType == null)
                 throw new ArgumentNullException(nameof(enumType));
             if (!enumType.IsEnum)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnum"), "enumType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnum"), nameof(enumType));
             Contract.EndContractBlock();
             RuntimeType rtType = enumType as RuntimeType;
             if (rtType == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), "enumType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), nameof(enumType));
             return InternalBoxEnum(rtType, unchecked((long)value));
         }
 
@@ -1269,11 +1269,11 @@ namespace System
             if (enumType == null)
                 throw new ArgumentNullException(nameof(enumType));
             if (!enumType.IsEnum)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnum"), "enumType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnum"), nameof(enumType));
             Contract.EndContractBlock();
             RuntimeType rtType = enumType as RuntimeType;
             if (rtType == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), "enumType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), nameof(enumType));
             return InternalBoxEnum(rtType, value);
         }
 
@@ -1283,11 +1283,11 @@ namespace System
             if (enumType == null)
                 throw new ArgumentNullException(nameof(enumType));
             if (!enumType.IsEnum)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnum"), "enumType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnum"), nameof(enumType));
             Contract.EndContractBlock();
             RuntimeType rtType = enumType as RuntimeType;
             if (rtType == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), "enumType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), nameof(enumType));
             return InternalBoxEnum(rtType, value ? 1 : 0);
         }
         #endregion

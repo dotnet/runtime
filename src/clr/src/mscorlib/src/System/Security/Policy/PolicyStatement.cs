@@ -360,7 +360,7 @@ namespace System.Security.Policy {
                 throw new ArgumentNullException( nameof(et) );
 
             if (!et.Tag.Equals( "PolicyStatement" ))
-                throw new ArgumentException( String.Format( CultureInfo.CurrentCulture, Environment.GetResourceString( "Argument_InvalidXMLElement" ),  "PolicyStatement", this.GetType().FullName ) );
+                throw new ArgumentException( String.Format( CultureInfo.CurrentCulture, Environment.GetResourceString( "Argument_InvalidXMLElement" ),  nameof(PolicyStatement), this.GetType().FullName ) );
             Contract.EndContractBlock();
         
             m_attributes = (PolicyStatementAttribute) 0;
@@ -438,7 +438,7 @@ namespace System.Security.Policy {
             Contract.EndContractBlock();
 
             if (!doc.GetTagForElement( position ).Equals( "PolicyStatement" ))
-                throw new ArgumentException( String.Format( CultureInfo.CurrentCulture, Environment.GetResourceString( "Argument_InvalidXMLElement" ),  "PolicyStatement", this.GetType().FullName ) );
+                throw new ArgumentException( String.Format( CultureInfo.CurrentCulture, Environment.GetResourceString( "Argument_InvalidXMLElement" ),  nameof(PolicyStatement), this.GetType().FullName ) );
         
             m_attributes = (PolicyStatementAttribute) 0;
 

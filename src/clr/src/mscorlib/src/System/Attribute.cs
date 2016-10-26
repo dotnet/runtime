@@ -577,7 +577,7 @@ namespace System {
                 throw new ArgumentException(Environment.GetResourceString("Argument_MustHaveAttributeBaseClass"));
 
             if (element.Member == null)
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidParameterInfo"), "element");
+                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidParameterInfo"), nameof(element));
 
             Contract.EndContractBlock();
 
@@ -594,7 +594,7 @@ namespace System {
                 throw new ArgumentNullException(nameof(element));
 
             if (element.Member == null)
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidParameterInfo"), "element");
+                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidParameterInfo"), nameof(element));
 
             Contract.EndContractBlock();
 
