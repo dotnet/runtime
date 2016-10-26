@@ -2,16 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
+using Microsoft.Win32.SafeHandles;
 using System.Collections;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Globalization;
 using System.IO;
-using System.Net;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
-using System.Threading;
 
 namespace System.Net.Sockets
 {
@@ -210,6 +204,100 @@ namespace System.Net.Sockets
 
             handle = acceptSocket._handle;
             return acceptSocket;
+        }
+
+        private void SendFileInternal(string fileName, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags)
+        {
+            // Open the file, if any
+            FileStream fileStream = null;
+            if (fileName != null && fileName.Length > 0)
+            {
+                fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
+            }
+
+            SocketError errorCode;
+            using (fileStream)
+            {
+                SafeFileHandle fileHandle = fileStream?.SafeFileHandle;
+
+                // This can throw ObjectDisposedException.
+                errorCode = SocketPal.SendFile(_handle, fileHandle, preBuffer, postBuffer, flags);
+            }
+
+            if (errorCode != SocketError.Success)
+            {
+                SocketException socketException = new SocketException((int)errorCode);
+                UpdateStatusAfterSocketError(socketException);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, socketException);
+                throw socketException;
+            }
+
+            // If the TransmitFile call did a Disconnect, process that now
+            if ((flags & (TransmitFileOptions.Disconnect | TransmitFileOptions.ReuseSocket)) != 0)
+            {
+                SetToDisconnected();
+                _remoteEndPoint = null;
+            }
+        }
+
+        private IAsyncResult BeginSendFileInternal(string fileName, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags, AsyncCallback callback, object state)
+        {
+            FileStream fileStream = null;
+            if (fileName != null && fileName.Length > 0)
+            {
+                fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
+            }
+
+            TransmitFileAsyncResult asyncResult = new TransmitFileAsyncResult(this, state, callback);
+            asyncResult.StartPostingAsyncOp(false);
+
+            SocketError errorCode = SocketPal.SendFileAsync(_handle, fileStream, preBuffer, postBuffer, flags, asyncResult);
+
+            // Check for synchronous exception
+            if (errorCode != SocketError.Success)
+            {
+                SocketException socketException = new SocketException((int)errorCode);
+                UpdateStatusAfterSocketError(socketException);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, socketException);
+                throw socketException;
+            }
+
+            asyncResult.FinishPostingAsyncOp(ref Caches.SendClosureCache);
+
+            return asyncResult;
+        }
+
+        private void EndSendFileInternal(IAsyncResult asyncResult)
+        {
+            TransmitFileAsyncResult castedAsyncResult = asyncResult as TransmitFileAsyncResult;
+            if (castedAsyncResult == null || castedAsyncResult.AsyncObject != this)
+            {
+                throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
+            }
+
+            if (castedAsyncResult.EndCalled)
+            {
+                throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, "EndSendFile"));
+            }
+
+            castedAsyncResult.InternalWaitForCompletion();
+            castedAsyncResult.EndCalled = true;
+
+            // If the socket was disconnected by the SendFile operation, process that
+            if (castedAsyncResult.DoDisconnect)
+            {
+                SetToDisconnected();
+                _remoteEndPoint = null;
+            }
+
+            if ((SocketError)castedAsyncResult.ErrorCode != SocketError.Success)
+            {
+                SocketException socketException = new SocketException(castedAsyncResult.ErrorCode);
+                UpdateStatusAfterSocketError(socketException);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, socketException);
+                throw socketException;
+            }
+
         }
     }
 }

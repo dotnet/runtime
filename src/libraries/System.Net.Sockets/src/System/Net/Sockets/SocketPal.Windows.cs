@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.Collections;
 using System.ComponentModel;
@@ -198,6 +199,31 @@ namespace System.Net.Sockets
             }
 
             bytesTransferred = bytesSent;
+            return SocketError.Success;
+        }
+
+        public static unsafe SocketError SendFile(SafeCloseSocket handle, SafeFileHandle fileHandle, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags)
+        {
+            fixed (byte * prePinnedBuffer = preBuffer)
+            fixed (byte * postPinnedBuffer = postBuffer)
+            {
+                Interop.Mswsock.TransmitFileBuffers transmitFileBuffers = null;
+                if (preBuffer != null || postBuffer != null)
+                {
+                    transmitFileBuffers = new Interop.Mswsock.TransmitFileBuffers();
+                    transmitFileBuffers.Head = (IntPtr)prePinnedBuffer;
+                    transmitFileBuffers.HeadLength = (preBuffer != null ? preBuffer.Length : 0);
+                    transmitFileBuffers.Tail = (IntPtr)postPinnedBuffer;
+                    transmitFileBuffers.TailLength = (postBuffer != null ? postBuffer.Length : 0);
+                }
+
+                bool success = Interop.Mswsock.TransmitFile(handle, fileHandle, 0, 0, SafeNativeOverlapped.Zero, transmitFileBuffers, flags);
+                if (!success)
+                {
+                    return GetLastSocketError();
+                }
+            }
+
             return SocketError.Success;
         }
 
@@ -781,6 +807,25 @@ namespace System.Net.Sockets
             {
                 errorCode = GetLastSocketError();
             }
+
+            return errorCode;
+        }
+
+        public static unsafe SocketError SendFileAsync(SafeCloseSocket handle, FileStream fileStream, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags, TransmitFileAsyncResult asyncResult)
+        {
+            asyncResult.SetUnmanagedStructures(fileStream, preBuffer, postBuffer, (flags & (TransmitFileOptions.Disconnect | TransmitFileOptions.ReuseSocket)) != 0);
+
+            SocketError errorCode = SocketError.Success;
+            bool result;
+            result = Interop.Mswsock.TransmitFile(handle, fileStream?.SafeFileHandle, 0, 0, asyncResult.OverlappedHandle, asyncResult.TransmitFileBuffers, flags);
+
+            if (!result)
+            {
+                errorCode = GetLastSocketError();
+            }
+
+            // This will release resources if necessary
+            errorCode = asyncResult.CheckAsyncCallOverlappedResult(errorCode);
 
             return errorCode;
         }
