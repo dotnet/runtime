@@ -8,6 +8,10 @@ RUN dnf upgrade -y nss
 
 RUN dnf clean all
 
+# Set a different rid to publish buildtools for, until we update to a version which
+# natively supports fedora.24-x64
+ENV __PUBLISH_RID=fedora.23-x64
+
 # Setup User to match Host User, and give superuser permissions 
 ARG USER_ID=0 
 RUN useradd -m code_executor -u ${USER_ID} -g wheel
