@@ -1334,7 +1334,7 @@ namespace System.Reflection.Emit
         {
             if (startLine == 0 || startLine < 0 || endLine == 0 || endLine < 0)
             {
-                throw new ArgumentOutOfRangeException("startLine");
+                throw new ArgumentOutOfRangeException(nameof(startLine));
             }
             Contract.EndContractBlock();
             m_LineNumberInfo.AddLineNumberInfo(document, m_length, startLine, startColumn, endLine, endColumn);

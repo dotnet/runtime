@@ -548,7 +548,7 @@ namespace System.IO {
             if (searchPattern == null)
                 throw new ArgumentNullException(nameof(searchPattern));
             if ((searchOption != SearchOption.TopDirectoryOnly) && (searchOption != SearchOption.AllDirectories))
-                throw new ArgumentOutOfRangeException("searchOption", Environment.GetResourceString("ArgumentOutOfRange_Enum"));
+                throw new ArgumentOutOfRangeException(nameof(searchOption), Environment.GetResourceString("ArgumentOutOfRange_Enum"));
             Contract.Ensures(Contract.Result<String[]>() != null);
             Contract.EndContractBlock();
             
@@ -610,7 +610,7 @@ namespace System.IO {
             if (searchPattern == null)
                 throw new ArgumentNullException(nameof(searchPattern));
             if ((searchOption != SearchOption.TopDirectoryOnly) && (searchOption != SearchOption.AllDirectories))
-                throw new ArgumentOutOfRangeException("searchOption", Environment.GetResourceString("ArgumentOutOfRange_Enum"));
+                throw new ArgumentOutOfRangeException(nameof(searchOption), Environment.GetResourceString("ArgumentOutOfRange_Enum"));
             Contract.Ensures(Contract.Result<String[]>() != null);
             Contract.EndContractBlock();
 
@@ -674,7 +674,7 @@ namespace System.IO {
             if (searchPattern == null)
                 throw new ArgumentNullException(nameof(searchPattern));
             if ((searchOption != SearchOption.TopDirectoryOnly) && (searchOption != SearchOption.AllDirectories))
-                throw new ArgumentOutOfRangeException("searchOption", Environment.GetResourceString("ArgumentOutOfRange_Enum"));
+                throw new ArgumentOutOfRangeException(nameof(searchOption), Environment.GetResourceString("ArgumentOutOfRange_Enum"));
             Contract.Ensures(Contract.Result<String[]>() != null);
             Contract.EndContractBlock();
 
@@ -758,7 +758,7 @@ namespace System.IO {
             if (searchPattern == null)
                 throw new ArgumentNullException(nameof(searchPattern));
             if ((searchOption != SearchOption.TopDirectoryOnly) && (searchOption != SearchOption.AllDirectories))
-                throw new ArgumentOutOfRangeException("searchOption", Environment.GetResourceString("ArgumentOutOfRange_Enum"));
+                throw new ArgumentOutOfRangeException(nameof(searchOption), Environment.GetResourceString("ArgumentOutOfRange_Enum"));
             Contract.EndContractBlock();
 
             return InternalEnumerateDirectories(path, searchPattern, searchOption);
@@ -802,7 +802,7 @@ namespace System.IO {
             if (searchPattern == null)
                 throw new ArgumentNullException(nameof(searchPattern));
             if ((searchOption != SearchOption.TopDirectoryOnly) && (searchOption != SearchOption.AllDirectories))
-                throw new ArgumentOutOfRangeException("searchOption", Environment.GetResourceString("ArgumentOutOfRange_Enum"));
+                throw new ArgumentOutOfRangeException(nameof(searchOption), Environment.GetResourceString("ArgumentOutOfRange_Enum"));
             Contract.Ensures(Contract.Result<IEnumerable<String>>() != null);
             Contract.EndContractBlock();
 
@@ -848,7 +848,7 @@ namespace System.IO {
             if (searchPattern == null)
                 throw new ArgumentNullException(nameof(searchPattern));
             if ((searchOption != SearchOption.TopDirectoryOnly) && (searchOption != SearchOption.AllDirectories))
-                throw new ArgumentOutOfRangeException("searchOption", Environment.GetResourceString("ArgumentOutOfRange_Enum"));
+                throw new ArgumentOutOfRangeException(nameof(searchOption), Environment.GetResourceString("ArgumentOutOfRange_Enum"));
             Contract.Ensures(Contract.Result<IEnumerable<String>>() != null);
             Contract.EndContractBlock();
 

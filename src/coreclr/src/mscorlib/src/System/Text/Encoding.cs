@@ -189,7 +189,7 @@ namespace System.Text
             // Validate code page
             if (codePage < 0)
             {
-                throw new ArgumentOutOfRangeException("codePage");
+                throw new ArgumentOutOfRangeException(nameof(codePage));
             }
             Contract.EndContractBlock();
 
@@ -208,7 +208,7 @@ namespace System.Text
             // Validate code page
             if (codePage < 0)
             {
-                throw new ArgumentOutOfRangeException("codePage");
+                throw new ArgumentOutOfRangeException(nameof(codePage));
             }
             Contract.EndContractBlock();
 
@@ -416,7 +416,7 @@ namespace System.Text
             //
             if (codepage < 0 || codepage > 65535) {
                 throw new ArgumentOutOfRangeException(
-                    "codepage", Environment.GetResourceString("ArgumentOutOfRange_Range",
+                    nameof(codepage), Environment.GetResourceString("ArgumentOutOfRange_Range",
                         0, 65535));
             }
 
@@ -907,7 +907,7 @@ namespace System.Text
                       Environment.GetResourceString("ArgumentNull_Array"));
 
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count",
+                throw new ArgumentOutOfRangeException(nameof(count),
                       Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
 
@@ -1103,7 +1103,7 @@ namespace System.Text
                       Environment.GetResourceString("ArgumentNull_Array"));
 
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count",
+                throw new ArgumentOutOfRangeException(nameof(count),
                       Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
 
@@ -1247,7 +1247,7 @@ namespace System.Text
                 throw new ArgumentNullException(nameof(bytes), Environment.GetResourceString("ArgumentNull_Array"));
 
             if (byteCount < 0)
-                throw new ArgumentOutOfRangeException("byteCount", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(byteCount), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
 
             return String.CreateStringFromEncoding(bytes, byteCount, this);

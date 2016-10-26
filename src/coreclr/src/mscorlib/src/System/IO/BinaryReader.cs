@@ -300,10 +300,10 @@ namespace System.IO {
                 throw new ArgumentNullException(nameof(buffer), Environment.GetResourceString("ArgumentNull_Buffer"));
             }
             if (index < 0) {
-                throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
             if (count < 0) {
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
             if (buffer.Length - index < count) {
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
@@ -475,7 +475,7 @@ namespace System.IO {
         [SecuritySafeCritical]
         public virtual char[] ReadChars(int count) {
             if (count<0) {
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
             Contract.Ensures(Contract.Result<char[]>() != null);
             Contract.Ensures(Contract.Result<char[]>().Length <= count);
@@ -504,9 +504,9 @@ namespace System.IO {
             if (buffer==null)
                 throw new ArgumentNullException(nameof(buffer), Environment.GetResourceString("ArgumentNull_Buffer"));
             if (index < 0)
-                throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (buffer.Length - index < count)
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
             Contract.Ensures(Contract.Result<int>() >= 0);
@@ -518,7 +518,7 @@ namespace System.IO {
         }
 
         public virtual byte[] ReadBytes(int count) {
-            if (count < 0) throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+            if (count < 0) throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.Ensures(Contract.Result<byte[]>() != null);
             Contract.Ensures(Contract.Result<byte[]>().Length <= Contract.OldValue(count));
             Contract.EndContractBlock();
@@ -551,7 +551,7 @@ namespace System.IO {
 
         protected virtual void FillBuffer(int numBytes) {
             if (m_buffer != null && (numBytes < 0 || numBytes > m_buffer.Length)) {
-                throw new ArgumentOutOfRangeException("numBytes", Environment.GetResourceString("ArgumentOutOfRange_BinaryReaderFillBuffer"));
+                throw new ArgumentOutOfRangeException(nameof(numBytes), Environment.GetResourceString("ArgumentOutOfRange_BinaryReaderFillBuffer"));
             }
             int bytesRead=0;
             int n = 0;

@@ -218,13 +218,13 @@ namespace System.Threading
         {
             if (spinCount < 0)
             {
-                throw new ArgumentOutOfRangeException("spinCount");
+                throw new ArgumentOutOfRangeException(nameof(spinCount));
             }
 
             if (spinCount > SpinCountState_MaxValue)
             {
                 throw new ArgumentOutOfRangeException(
-                    "spinCount",
+                    nameof(spinCount),
                     String.Format(Environment.GetResourceString("ManualResetEventSlim_ctor_SpinCountOutOfRange"), SpinCountState_MaxValue));
             }
 
@@ -464,7 +464,7 @@ namespace System.Threading
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
             if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
             {
-                throw new ArgumentOutOfRangeException("timeout");
+                throw new ArgumentOutOfRangeException(nameof(timeout));
             }
 
             return Wait((int)totalMilliseconds, new CancellationToken());
@@ -495,7 +495,7 @@ namespace System.Threading
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
             if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
             {
-                throw new ArgumentOutOfRangeException("timeout");
+                throw new ArgumentOutOfRangeException(nameof(timeout));
             }
 
             return Wait((int)totalMilliseconds, cancellationToken);
@@ -544,7 +544,7 @@ namespace System.Threading
 
             if (millisecondsTimeout < -1)
             {
-                throw new ArgumentOutOfRangeException("millisecondsTimeout");
+                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout));
             }
 
             if (!IsSet)

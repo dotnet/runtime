@@ -652,7 +652,7 @@ namespace System.Reflection
             MetadataToken tk = new MetadataToken(metadataToken);
 
             if (!MetadataImport.IsValidToken(tk))
-                throw new ArgumentOutOfRangeException("metadataToken",
+                throw new ArgumentOutOfRangeException(nameof(metadataToken),
                     Environment.GetResourceString("Argument_InvalidToken", tk, this));
 
             if (!tk.IsMemberRef && !tk.IsMethodDef && !tk.IsTypeSpec && !tk.IsSignature && !tk.IsFieldDef)
@@ -679,7 +679,7 @@ namespace System.Reflection
             MetadataToken tk = new MetadataToken(metadataToken);
 
             if (!MetadataImport.IsValidToken(tk))
-                throw new ArgumentOutOfRangeException("metadataToken",
+                throw new ArgumentOutOfRangeException(nameof(metadataToken),
                     Environment.GetResourceString("Argument_InvalidToken", tk, this));
 
             RuntimeTypeHandle[] typeArgs = ConvertToTypeHandleArray(genericTypeArguments);
@@ -730,7 +730,7 @@ namespace System.Reflection
             MetadataToken tk = new MetadataToken(metadataToken);
 
             if (!MetadataImport.IsValidToken(tk) || !tk.IsFieldDef)
-                throw new ArgumentOutOfRangeException("metadataToken",
+                throw new ArgumentOutOfRangeException(nameof(metadataToken),
                     String.Format(CultureInfo.CurrentUICulture, Environment.GetResourceString("Argument_InvalidToken", tk, this)));
 
             int tkDeclaringType;
@@ -762,7 +762,7 @@ namespace System.Reflection
             MetadataToken tk = new MetadataToken(metadataToken);
 
             if (!MetadataImport.IsValidToken(tk))
-                throw new ArgumentOutOfRangeException("metadataToken",
+                throw new ArgumentOutOfRangeException(nameof(metadataToken),
                     Environment.GetResourceString("Argument_InvalidToken", tk, this));
 
             RuntimeTypeHandle[] typeArgs = ConvertToTypeHandleArray(genericTypeArguments);
@@ -820,7 +820,7 @@ namespace System.Reflection
                 throw new ArgumentException(Environment.GetResourceString("Argument_ResolveModuleType", tk), nameof(metadataToken));
             
             if (!MetadataImport.IsValidToken(tk))
-                throw new ArgumentOutOfRangeException("metadataToken",
+                throw new ArgumentOutOfRangeException(nameof(metadataToken),
                     Environment.GetResourceString("Argument_InvalidToken", tk, this));
 
             if (!tk.IsTypeDef && !tk.IsTypeSpec && !tk.IsTypeRef)
@@ -867,7 +867,7 @@ namespace System.Reflection
             if (tk.IsMemberRef)
             {
                 if (!MetadataImport.IsValidToken(tk))
-                    throw new ArgumentOutOfRangeException("metadataToken",
+                    throw new ArgumentOutOfRangeException(nameof(metadataToken),
                         Environment.GetResourceString("Argument_InvalidToken", tk, this));
 
                 ConstArray sig = MetadataImport.GetMemberRefProps(tk);
@@ -898,7 +898,7 @@ namespace System.Reflection
                     String.Format(CultureInfo.CurrentUICulture, Environment.GetResourceString("Argument_ResolveString"), metadataToken, ToString()));
 
             if (!MetadataImport.IsValidToken(tk))
-                throw new ArgumentOutOfRangeException("metadataToken",
+                throw new ArgumentOutOfRangeException(nameof(metadataToken),
                     String.Format(CultureInfo.CurrentUICulture, Environment.GetResourceString("Argument_InvalidToken", tk, this)));
 
             string str = MetadataImport.GetUserString(metadataToken);

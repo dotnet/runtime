@@ -62,7 +62,7 @@ namespace System.Runtime.InteropServices
         {
             // Make sure the type parameter is within the valid range for the enum.
             if ((uint)type > (uint)MaxHandleType)
-                throw new ArgumentOutOfRangeException("type", Environment.GetResourceString("ArgumentOutOfRange_Enum"));
+                throw new ArgumentOutOfRangeException(nameof(type), Environment.GetResourceString("ArgumentOutOfRange_Enum"));
             Contract.EndContractBlock();
 
             m_handle = InternalAlloc(value, type);

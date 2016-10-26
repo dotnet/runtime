@@ -142,7 +142,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 throw new ArgumentNullException(nameof(array));
 
             if (arrayIndex < 0)
-                throw new ArgumentOutOfRangeException("arrayIndex");
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex));
 
             if (array.Length <= arrayIndex && Count<K, V>() > 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_IndexOutOfArrayBounds"));

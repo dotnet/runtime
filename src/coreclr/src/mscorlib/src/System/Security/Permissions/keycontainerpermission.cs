@@ -232,7 +232,7 @@ namespace System.Security.Permissions {
                 if (index < 0)
                     throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_EnumNotStarted"));
                 if (index >= Count)
-                    throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                    throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_Index"));
                 Contract.EndContractBlock();
 
                 return (KeyContainerPermissionAccessEntry)m_list[index];
@@ -296,7 +296,7 @@ namespace System.Security.Permissions {
             if (array.Rank != 1)
                 throw new ArgumentException(Environment.GetResourceString("Arg_RankMultiDimNotSupported"));
             if (index < 0 || index >= array.Length)
-                throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             if (index + this.Count > array.Length)
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
             Contract.EndContractBlock();

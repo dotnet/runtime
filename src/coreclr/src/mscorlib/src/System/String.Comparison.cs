@@ -552,7 +552,7 @@ namespace System
 
             if (length < 0)
             {
-                throw new ArgumentOutOfRangeException("length", Environment.GetResourceString("ArgumentOutOfRange_NegativeLength"));
+                throw new ArgumentOutOfRangeException(nameof(length), Environment.GetResourceString("ArgumentOutOfRange_NegativeLength"));
             }
 
             if (indexA < 0 || indexB < 0)
@@ -657,7 +657,7 @@ namespace System
 
             if (length < 0)
             {
-                throw new ArgumentOutOfRangeException("length", Environment.GetResourceString("ArgumentOutOfRange_NegativeCount"));
+                throw new ArgumentOutOfRangeException(nameof(length), Environment.GetResourceString("ArgumentOutOfRange_NegativeCount"));
             }
 
             if (indexA < 0 || indexB < 0)

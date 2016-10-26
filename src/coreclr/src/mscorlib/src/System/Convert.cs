@@ -2183,9 +2183,9 @@ namespace System {
             if (inArray==null) 
                 throw new ArgumentNullException(nameof(inArray));
             if (length<0)
-                throw new ArgumentOutOfRangeException("length", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(length), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             if (offset<0)
-                throw new ArgumentOutOfRangeException("offset", Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
+                throw new ArgumentOutOfRangeException(nameof(offset), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
             if (options < Base64FormattingOptions.None || options > Base64FormattingOptions.InsertLineBreaks)
                 throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)options));
             Contract.Ensures(Contract.Result<string>() != null);
@@ -2196,7 +2196,7 @@ namespace System {
 
             inArrayLength = inArray.Length;
             if (offset > (inArrayLength - length))
-                throw new ArgumentOutOfRangeException("offset", Environment.GetResourceString("ArgumentOutOfRange_OffsetLength"));
+                throw new ArgumentOutOfRangeException(nameof(offset), Environment.GetResourceString("ArgumentOutOfRange_OffsetLength"));
            
             if (inArrayLength == 0)
                 return String.Empty;
@@ -2232,11 +2232,11 @@ namespace System {
             if (outArray==null)
                 throw new ArgumentNullException(nameof(outArray));
             if (length<0)
-                throw new ArgumentOutOfRangeException("length", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(length), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             if (offsetIn<0)
-                throw new ArgumentOutOfRangeException("offsetIn", Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
+                throw new ArgumentOutOfRangeException(nameof(offsetIn), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
             if (offsetOut<0)
-                throw new ArgumentOutOfRangeException("offsetOut", Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
+                throw new ArgumentOutOfRangeException(nameof(offsetOut), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
 
             if( options < Base64FormattingOptions.None || options > Base64FormattingOptions.InsertLineBreaks) {
                 throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)options));
@@ -2255,7 +2255,7 @@ namespace System {
             inArrayLength = inArray.Length;
 
             if (offsetIn > (int)(inArrayLength - length))
-                throw new ArgumentOutOfRangeException("offsetIn", Environment.GetResourceString("ArgumentOutOfRange_OffsetLength"));
+                throw new ArgumentOutOfRangeException(nameof(offsetIn), Environment.GetResourceString("ArgumentOutOfRange_OffsetLength"));
 
             if (inArrayLength == 0)
                 return 0;
@@ -2268,7 +2268,7 @@ namespace System {
             numElementsToCopy = ToBase64_CalculateAndValidateOutputLength(length, insertLineBreaks);
     
             if (offsetOut > (int)(outArrayLength -  numElementsToCopy))
-                throw new ArgumentOutOfRangeException("offsetOut", Environment.GetResourceString("ArgumentOutOfRange_OffsetOut"));
+                throw new ArgumentOutOfRangeException(nameof(offsetOut), Environment.GetResourceString("ArgumentOutOfRange_OffsetOut"));
 
             fixed (char* outChars = &outArray[offsetOut]) {
                 fixed (byte* inData = inArray) { 
@@ -2399,13 +2399,13 @@ namespace System {
                 throw new ArgumentNullException(nameof(inArray));
 
             if (length < 0)
-                throw new ArgumentOutOfRangeException("length", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(length), Environment.GetResourceString("ArgumentOutOfRange_Index"));
 
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset", Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
+                throw new ArgumentOutOfRangeException(nameof(offset), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
 
             if (offset > inArray.Length - length)
-                throw new ArgumentOutOfRangeException("offset", Environment.GetResourceString("ArgumentOutOfRange_OffsetLength"));
+                throw new ArgumentOutOfRangeException(nameof(offset), Environment.GetResourceString("ArgumentOutOfRange_OffsetLength"));
 
             Contract.EndContractBlock();
 

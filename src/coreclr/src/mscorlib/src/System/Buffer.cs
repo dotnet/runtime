@@ -149,7 +149,7 @@ namespace System {
 
             // Is the index in valid range of the array?
             if (index < 0 || index >= _ByteLength(array))
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
 
             return _GetByte(array, index);
         }
@@ -177,7 +177,7 @@ namespace System {
 
             // Is the index in valid range of the array?
             if (index < 0 || index >= _ByteLength(array))
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
 
             // Make the FCall to do the work
             _SetByte(array, index, value);

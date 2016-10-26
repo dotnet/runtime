@@ -1068,7 +1068,7 @@ namespace System.Reflection.Emit
         public unsafe void SetCode(byte* code, int codeSize, int maxStackSize)
         {
             if (codeSize < 0)
-                throw new ArgumentOutOfRangeException("codeSize", Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
+                throw new ArgumentOutOfRangeException(nameof(codeSize), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
 
             if (codeSize > 0 && code == null)
                 throw new ArgumentNullException(nameof(code));
@@ -1094,7 +1094,7 @@ namespace System.Reflection.Emit
         public unsafe void SetExceptions(byte* exceptions, int exceptionsSize)
         {
             if (exceptionsSize < 0)
-                throw new ArgumentOutOfRangeException("exceptionsSize", Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
+                throw new ArgumentOutOfRangeException(nameof(exceptionsSize), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
 
             if (exceptionsSize > 0 && exceptions == null)
                 throw new ArgumentNullException(nameof(exceptions));
@@ -1119,7 +1119,7 @@ namespace System.Reflection.Emit
         public unsafe void SetLocalSignature(byte* localSignature, int signatureSize)
         {
             if (signatureSize < 0)
-                throw new ArgumentOutOfRangeException("signatureSize", Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
+                throw new ArgumentOutOfRangeException(nameof(signatureSize), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
 
             if (signatureSize > 0 && localSignature == null)
                 throw new ArgumentNullException(nameof(localSignature));

@@ -788,9 +788,9 @@ namespace System.Threading
                      int           period)
         {
             if (dueTime < -1)
-                throw new ArgumentOutOfRangeException("dueTime", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(dueTime), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
             if (period < -1 )
-                throw new ArgumentOutOfRangeException("period", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(period), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
             Contract.EndContractBlock();
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
 
@@ -806,15 +806,15 @@ namespace System.Threading
         {                
             long dueTm = (long)dueTime.TotalMilliseconds;
             if (dueTm < -1)
-                throw new ArgumentOutOfRangeException("dueTm",Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(dueTm),Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
             if (dueTm > MAX_SUPPORTED_TIMEOUT)
-                throw new ArgumentOutOfRangeException("dueTm",Environment.GetResourceString("ArgumentOutOfRange_TimeoutTooLarge"));
+                throw new ArgumentOutOfRangeException(nameof(dueTm),Environment.GetResourceString("ArgumentOutOfRange_TimeoutTooLarge"));
 
             long periodTm = (long)period.TotalMilliseconds;
             if (periodTm < -1)
-                throw new ArgumentOutOfRangeException("periodTm",Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(periodTm),Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
             if (periodTm > MAX_SUPPORTED_TIMEOUT)
-                throw new ArgumentOutOfRangeException("periodTm",Environment.GetResourceString("ArgumentOutOfRange_PeriodTooLarge"));
+                throw new ArgumentOutOfRangeException(nameof(periodTm),Environment.GetResourceString("ArgumentOutOfRange_PeriodTooLarge"));
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             TimerSetup(callback,state,(UInt32)dueTm,(UInt32)periodTm,ref stackMark);
@@ -840,13 +840,13 @@ namespace System.Threading
                      long          period)
         {
             if (dueTime < -1)
-                throw new ArgumentOutOfRangeException("dueTime",Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(dueTime),Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
             if (period < -1)
-                throw new ArgumentOutOfRangeException("period",Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(period),Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
             if (dueTime > MAX_SUPPORTED_TIMEOUT)
-                throw new ArgumentOutOfRangeException("dueTime",Environment.GetResourceString("ArgumentOutOfRange_TimeoutTooLarge"));
+                throw new ArgumentOutOfRangeException(nameof(dueTime),Environment.GetResourceString("ArgumentOutOfRange_TimeoutTooLarge"));
             if (period > MAX_SUPPORTED_TIMEOUT)
-                throw new ArgumentOutOfRangeException("period",Environment.GetResourceString("ArgumentOutOfRange_PeriodTooLarge"));
+                throw new ArgumentOutOfRangeException(nameof(period),Environment.GetResourceString("ArgumentOutOfRange_PeriodTooLarge"));
             Contract.EndContractBlock();
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             TimerSetup(callback,state,(UInt32) dueTime, (UInt32) period,ref stackMark);
@@ -894,9 +894,9 @@ namespace System.Threading
         public bool Change(int dueTime, int period)
         {
             if (dueTime < -1 )
-                throw new ArgumentOutOfRangeException("dueTime",Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(dueTime),Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
             if (period < -1)
-                throw new ArgumentOutOfRangeException("period",Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(period),Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
             Contract.EndContractBlock();
 
             return m_timer.m_timer.Change((UInt32)dueTime, (UInt32)period);
@@ -916,13 +916,13 @@ namespace System.Threading
         public bool Change(long dueTime, long period)
         {
             if (dueTime < -1 )
-                throw new ArgumentOutOfRangeException("dueTime", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(dueTime), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
             if (period < -1)
-                throw new ArgumentOutOfRangeException("period", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(period), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
             if (dueTime > MAX_SUPPORTED_TIMEOUT)
-                throw new ArgumentOutOfRangeException("dueTime", Environment.GetResourceString("ArgumentOutOfRange_TimeoutTooLarge"));
+                throw new ArgumentOutOfRangeException(nameof(dueTime), Environment.GetResourceString("ArgumentOutOfRange_TimeoutTooLarge"));
             if (period > MAX_SUPPORTED_TIMEOUT)
-                throw new ArgumentOutOfRangeException("period", Environment.GetResourceString("ArgumentOutOfRange_PeriodTooLarge"));
+                throw new ArgumentOutOfRangeException(nameof(period), Environment.GetResourceString("ArgumentOutOfRange_PeriodTooLarge"));
             Contract.EndContractBlock();
 
             return m_timer.m_timer.Change((UInt32)dueTime, (UInt32)period);
