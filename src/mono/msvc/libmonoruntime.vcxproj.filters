@@ -175,15 +175,6 @@
     <ClCompile Include="..\mono\metadata\boehm-gc.c">
       <Filter>Source Files\boehm</Filter>
     </ClCompile>
-    <ClCompile Include="..\mono\metadata\sgen-os-mach.c">
-      <Filter>Source Files\sgen</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\metadata\sgen-os-posix.c">
-      <Filter>Source Files\sgen</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\metadata\sgen-os-win32.c">
-      <Filter>Source Files\sgen</Filter>
-    </ClCompile>
     <ClCompile Include="..\mono\metadata\appdomain.c">
       <Filter>Source Files\gc</Filter>
     </ClCompile>
@@ -249,9 +240,6 @@
     </ClCompile>
     <ClCompile Include="..\mono\metadata\sre-save.c">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\mono\metadata\sgen-os-coop.c">
-      <Filter>Source Files\sgen</Filter>
     </ClCompile>
     <ClCompile Include="..\mono\metadata\socket-io-windows.c">
 	  <Filter>Source Files</Filter>

@@ -59,7 +59,6 @@
 #include <mono/utils/dtrace.h>
 #include <mono/utils/mono-signal-handler.h>
 #include <mono/utils/mono-threads.h>
-#include <mono/utils/mono-threads-posix-signals.h>
 
 #include "mini.h"
 #include <string.h>
@@ -813,7 +812,7 @@ mono_runtime_setup_stat_profiler (void)
 	 */
 #if defined (USE_POSIX_BACKEND) && defined (SIGRTMIN) && !defined (PLATFORM_ANDROID)
 	/* Just take the first real-time signal we can get. */
-	profiler_signal = mono_threads_posix_signal_search_alternative (-1);
+	profiler_signal = mono_threads_suspend_search_alternative_signal ();
 #else
 	profiler_signal = SIGPROF;
 #endif

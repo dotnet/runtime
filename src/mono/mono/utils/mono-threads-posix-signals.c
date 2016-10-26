@@ -17,7 +17,7 @@
 #include <errno.h>
 #include <signal.h>
 
-#include "mono-threads-posix-signals.h"
+#include "mono-threads-debug.h"
 
 #if defined(__APPLE__) || defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
 #define DEFAULT_SUSPEND_SIGNAL SIGXFSZ
@@ -26,25 +26,20 @@
 #endif
 #define DEFAULT_RESTART_SIGNAL SIGXCPU
 
-static int suspend_signal_num;
-static int restart_signal_num;
 static int abort_signal_num;
 
 static sigset_t suspend_signal_mask;
 static sigset_t suspend_ack_signal_mask;
 
-//Can't avoid the circular dep on this. Will be gone pretty soon
-extern int mono_gc_get_suspend_signal (void);
-
-int
-mono_threads_posix_signal_search_alternative (int min_signal)
+gint
+mono_threads_suspend_search_alternative_signal (void)
 {
 #if !defined (SIGRTMIN)
 	g_error ("signal search only works with RTMIN");
 #else
 	int i;
 	/* we try to avoid SIGRTMIN and any one that might have been set already, see bug #75387 */
-	for (i = MAX (min_signal, SIGRTMIN) + 1; i < SIGRTMAX; ++i) {
+	for (i = SIGRTMIN + 1; i < SIGRTMAX; ++i) {
 		struct sigaction sinfo;
 		sigaction (i, NULL, &sinfo);
 		if (sinfo.sa_handler == SIG_DFL && (void*)sinfo.sa_sigaction == (void*)SIG_DFL) {
@@ -58,7 +53,9 @@ mono_threads_posix_signal_search_alternative (int min_signal)
 static void
 signal_add_handler (int signo, gpointer handler, int flags)
 {
-#if !defined(__native_client__)
+#if defined(__native_client__)
+	g_assert_not_reached ();
+#else
 	/*FIXME, move the code from mini to utils and do the right thing!*/
 	struct sigaction sa;
 	struct sigaction previous_sa;
@@ -75,61 +72,20 @@ signal_add_handler (int signo, gpointer handler, int flags)
 }
 
 static int
-suspend_signal_get (void)
-{
-#if defined(PLATFORM_ANDROID)
-	return SIGUNUSED;
-#elif !defined (SIGRTMIN)
-#ifdef SIGUSR1
-	return SIGUSR1;
-#else
-	return -1;
-#endif /* SIGUSR1 */
-#else
-	static int suspend_signum = -1;
-	if (suspend_signum == -1)
-		suspend_signum = mono_threads_posix_signal_search_alternative (-1);
-	return suspend_signum;
-#endif /* SIGRTMIN */
-}
-
-static int
-restart_signal_get (void)
-{
-#if defined(PLATFORM_ANDROID)
-	return SIGTTOU;
-#elif !defined (SIGRTMIN)
-#ifdef SIGUSR2
-	return SIGUSR2;
-#else
-	return -1;
-#endif /* SIGUSR1 */
-#else
-	static int resume_signum = -1;
-	if (resume_signum == -1)
-		resume_signum = mono_threads_posix_signal_search_alternative (suspend_signal_get () + 1);
-	return resume_signum;
-#endif /* SIGRTMIN */
-}
-
-
-static int
 abort_signal_get (void)
 {
 #if defined(PLATFORM_ANDROID)
 	return SIGTTIN;
-#elif !defined (SIGRTMIN)
-#ifdef SIGTTIN
+#elif defined (SIGRTMIN)
+	static int abort_signum = -1;
+	if (abort_signum == -1)
+		abort_signum = mono_threads_suspend_search_alternative_signal ();
+	return abort_signum;
+#elif defined (SIGTTIN)
 	return SIGTTIN;
 #else
 	return -1;
-#endif /* SIGRTMIN */
-#else
-	static int abort_signum = -1;
-	if (abort_signum == -1)
-		abort_signum = mono_threads_posix_signal_search_alternative (restart_signal_get () + 1);
-	return abort_signum;
-#endif /* SIGRTMIN */
+#endif
 }
 
 static void
@@ -142,7 +98,7 @@ restart_signal_handler (int _dummy, siginfo_t *_info, void *context)
 	int old_errno = errno;
 
 	info = mono_thread_info_current ();
-	info->signal = restart_signal_num;
+	info->signal = DEFAULT_RESTART_SIGNAL;
 	errno = old_errno;
 #endif
 }
@@ -206,7 +162,7 @@ suspend_signal_handler (int _dummy, siginfo_t *info, void *context)
 	do {
 		current->signal = 0;
 		sigsuspend (&suspend_signal_mask);
-	} while (current->signal != restart_signal_num);
+	} while (current->signal != DEFAULT_RESTART_SIGNAL);
 
 	/* Unblock the restart signal. */
 	pthread_sigmask (SIG_UNBLOCK, &suspend_ack_signal_mask, NULL);
@@ -232,81 +188,52 @@ done:
 #endif
 }
 
-static void
-abort_signal_handler (int _dummy, siginfo_t *info, void *context)
-{
-#if defined(__native_client__)
-	g_assert_not_reached ();
-#else
-	suspend_signal_handler (_dummy, info, context);
-#endif
-}
-
 void
-mono_threads_posix_init_signals (MonoThreadPosixInitSignals signals)
+mono_threads_suspend_init_signals (void)
 {
 	sigset_t signal_set;
 
-	g_assert ((signals == MONO_THREADS_POSIX_INIT_SIGNALS_SUSPEND_RESTART) ^ (signals == MONO_THREADS_POSIX_INIT_SIGNALS_ABORT));
-
 	sigemptyset (&signal_set);
 
-	switch (signals) {
-	case MONO_THREADS_POSIX_INIT_SIGNALS_SUSPEND_RESTART: {
-		if (mono_thread_info_unified_management_enabled ()) {
-			suspend_signal_num = DEFAULT_SUSPEND_SIGNAL;
-			restart_signal_num = DEFAULT_RESTART_SIGNAL;
-		} else {
-			suspend_signal_num = suspend_signal_get ();
-			restart_signal_num = restart_signal_get ();
-		}
+	sigfillset (&suspend_signal_mask);
+	sigdelset (&suspend_signal_mask, DEFAULT_RESTART_SIGNAL);
 
-		sigfillset (&suspend_signal_mask);
-		sigdelset (&suspend_signal_mask, restart_signal_num);
-		if (!mono_thread_info_unified_management_enabled ())
-			sigdelset (&suspend_signal_mask, mono_gc_get_suspend_signal ());
+	sigemptyset (&suspend_ack_signal_mask);
+	sigaddset (&suspend_ack_signal_mask, DEFAULT_RESTART_SIGNAL);
 
-		sigemptyset (&suspend_ack_signal_mask);
-		sigaddset (&suspend_ack_signal_mask, restart_signal_num);
+	signal_add_handler (DEFAULT_SUSPEND_SIGNAL, suspend_signal_handler, SA_RESTART);
+	signal_add_handler (DEFAULT_RESTART_SIGNAL, restart_signal_handler, SA_RESTART);
 
-		signal_add_handler (suspend_signal_num, suspend_signal_handler, SA_RESTART);
-		signal_add_handler (restart_signal_num, restart_signal_handler, SA_RESTART);
+	sigaddset (&signal_set, DEFAULT_SUSPEND_SIGNAL);
+	sigaddset (&signal_set, DEFAULT_RESTART_SIGNAL);
 
-		sigaddset (&signal_set, suspend_signal_num);
-		sigaddset (&signal_set, restart_signal_num);
+	abort_signal_num = abort_signal_get ();
 
-		break;
-	}
-	case MONO_THREADS_POSIX_INIT_SIGNALS_ABORT: {
-		abort_signal_num = abort_signal_get ();
+	/* the difference between abort and suspend here is made by not
+	 * passing SA_RESTART, meaning we won't restart the syscall when
+	 * receiving a signal */
+	signal_add_handler (abort_signal_num, suspend_signal_handler, 0);
 
-		signal_add_handler (abort_signal_num, abort_signal_handler, 0);
-
-		sigaddset (&signal_set, abort_signal_num);
-
-		break;
-	}
-	default: g_assert_not_reached ();
-	}
+	sigaddset (&signal_set, abort_signal_num);
 
 	/* ensure all the new signals are unblocked */
 	sigprocmask (SIG_UNBLOCK, &signal_set, NULL);
 }
 
 gint
-mono_threads_posix_get_suspend_signal (void)
+mono_threads_suspend_get_suspend_signal (void)
 {
-	return suspend_signal_num;
+	return DEFAULT_SUSPEND_SIGNAL;
 }
 
 gint
-mono_threads_posix_get_restart_signal (void)
+mono_threads_suspend_get_restart_signal (void)
 {
-	return restart_signal_num;
+	return DEFAULT_RESTART_SIGNAL;
 }
 
 gint
-mono_threads_posix_get_abort_signal (void)
+mono_threads_suspend_get_abort_signal (void)
 {
 	return abort_signal_num;
 }

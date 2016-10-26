@@ -12,6 +12,7 @@
 #if defined(USE_WINDOWS_BACKEND)
 
 #include <mono/utils/mono-compiler.h>
+#include <mono/utils/mono-threads-debug.h>
 #include <limits.h>
 
 
@@ -63,13 +64,40 @@ mono_threads_suspend_begin_async_suspend (MonoThreadInfo *info, gboolean interru
 	}
 
 	CloseHandle (handle);
-	return info->suspend_can_continue;
+	return TRUE;
 }
 
 gboolean
 mono_threads_suspend_check_suspend_result (MonoThreadInfo *info)
 {
 	return info->suspend_can_continue;
+}
+
+static void CALLBACK
+abort_apc (ULONG_PTR param)
+{
+	THREADS_INTERRUPT_DEBUG ("%06d - abort_apc () called", GetCurrentThreadId ());
+}
+
+void
+mono_threads_suspend_abort_syscall (MonoThreadInfo *info)
+{
+	DWORD id = mono_thread_info_get_tid (info);
+	HANDLE handle;
+
+	handle = OpenThread (THREAD_ALL_ACCESS, FALSE, id);
+	g_assert (handle);
+
+	THREADS_INTERRUPT_DEBUG ("%06d - Aborting syscall in thread %06d", GetCurrentThreadId (), id);
+	QueueUserAPC ((PAPCFUNC)abort_apc, handle, (ULONG_PTR)NULL);
+
+	CloseHandle (handle);
+}
+
+gboolean
+mono_threads_suspend_needs_abort_syscall (void)
+{
+	return TRUE;
 }
 
 gboolean
@@ -126,6 +154,35 @@ mono_threads_suspend_register (MonoThreadInfo *info)
 void
 mono_threads_suspend_free (MonoThreadInfo *info)
 {
+}
+
+void
+mono_threads_suspend_init_signals (void)
+{
+}
+
+gint
+mono_threads_suspend_search_alternative_signal (void)
+{
+	g_assert_not_reached ();
+}
+
+gint
+mono_threads_suspend_get_suspend_signal (void)
+{
+	return -1;
+}
+
+gint
+mono_threads_suspend_get_restart_signal (void)
+{
+	return -1;
+}
+
+gint
+mono_threads_suspend_get_abort_signal (void)
+{
+	return -1;
 }
 
 #endif

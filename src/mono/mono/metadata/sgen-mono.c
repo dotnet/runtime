@@ -29,6 +29,7 @@
 #include "utils/mono-logger-internals.h"
 #include "utils/mono-threads-coop.h"
 #include "sgen/sgen-thread-pool.h"
+#include "utils/mono-threads.h"
 
 #ifdef HEAVY_STATISTICS
 static guint64 stat_wbarrier_set_arrayref = 0;
@@ -182,6 +183,18 @@ void
 mono_gc_wbarrier_value_copy_bitmap (gpointer _dest, gpointer _src, int size, unsigned bitmap)
 {
 	sgen_wbarrier_value_copy_bitmap (_dest, _src, size, bitmap);
+}
+
+int
+mono_gc_get_suspend_signal (void)
+{
+	return mono_threads_suspend_get_suspend_signal ();
+}
+
+int
+mono_gc_get_restart_signal (void)
+{
+	return mono_threads_suspend_get_restart_signal ();
 }
 
 static MonoMethod *write_barrier_conc_method;
@@ -731,18 +744,6 @@ mono_gc_ephemeron_array_add (MonoObject *obj)
 /*
  * Appdomain handling
  */
-
-void
-mono_gc_set_current_thread_appdomain (MonoDomain *domain)
-{
-	SgenThreadInfo *info = mono_thread_info_current ();
-
-	/* Could be called from sgen_thread_unregister () with a NULL info */
-	if (domain) {
-		g_assert (info);
-		info->client_info.stopped_domain = domain;
-	}
-}
 
 static gboolean
 need_remove_object_for_domain (GCObject *start, MonoDomain *domain)
@@ -2214,8 +2215,6 @@ sgen_client_thread_register (SgenThreadInfo* info, void *stack_bottom_fallback)
 #endif
 
 	info->client_info.skip = 0;
-	info->client_info.stopped_ip = NULL;
-	info->client_info.stopped_domain = NULL;
 
 	info->client_info.stack_start = NULL;
 
@@ -2875,13 +2874,6 @@ sgen_client_init (void)
 		mono_tls_key_set_offset (TLS_KEY_SGEN_THREAD_INFO, tls_offset);
 	}
 #endif
-
-	/*
-	 * This needs to happen before any internal allocations because
-	 * it inits the small id which is required for hazard pointer
-	 * operations.
-	 */
-	sgen_os_init ();
 
 	mono_gc_register_thread (&dummy);
 }

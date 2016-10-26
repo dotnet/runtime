@@ -29,6 +29,7 @@
 #include <mono/utils/mono-coop-mutex.h>
 #include <mono/utils/mono-coop-semaphore.h>
 #include <mono/utils/mono-threads-coop.h>
+#include <mono/utils/mono-threads-debug.h>
 
 #include <errno.h>
 
@@ -71,7 +72,6 @@ static gboolean mono_threads_inited = FALSE;
 
 static MonoSemType suspend_semaphore;
 static size_t pending_suspends;
-static gboolean unified_suspend_enabled;
 
 #define mono_thread_info_run_state(info) (((MonoThreadInfo*)info)->thread_state & THREAD_STATE_MASK)
 
@@ -674,8 +674,6 @@ mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t info_size)
 #endif
 	g_assert (res);
 
-	unified_suspend_enabled = g_getenv ("MONO_ENABLE_UNIFIED_SUSPEND") != NULL || mono_threads_is_coop_enabled ();
-	
 	if ((sleepLimit = g_getenv ("MONO_SLEEP_ABORT_LIMIT")) != NULL) {
 		errno = 0;
 		long threshold = strtol(sleepLimit, NULL, 10);
@@ -693,8 +691,8 @@ mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t info_size)
 	mono_thread_smr_init ();
 	mono_threads_platform_init ();
 	mono_threads_suspend_init ();
+	mono_threads_suspend_init_signals ();
 	mono_threads_coop_init ();
-	mono_threads_abort_syscall_init ();
 
 #if defined(__MACH__)
 	mono_mach_init (thread_info_key);
@@ -1096,12 +1094,6 @@ mono_thread_info_abort_socket_syscall_for_close (MonoNativeThreadId tid)
 
 	mono_threads_end_global_suspend ();
 	mono_thread_info_suspend_unlock ();
-}
-
-gboolean
-mono_thread_info_unified_management_enabled (void)
-{
-	return unified_suspend_enabled;
 }
 
 /*

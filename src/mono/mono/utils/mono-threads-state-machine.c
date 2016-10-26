@@ -6,6 +6,7 @@
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/checked-build.h>
+#include <mono/utils/mono-threads-debug.h>
 
 #include <errno.h>
 

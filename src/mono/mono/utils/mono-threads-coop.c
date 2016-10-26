@@ -27,6 +27,7 @@
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-threads-api.h>
 #include <mono/utils/checked-build.h>
+#include <mono/utils/mono-threads-debug.h>
 
 #ifdef TARGET_OSX
 #include <mono/utils/mach-support.h>

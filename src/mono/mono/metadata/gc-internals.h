@@ -297,8 +297,6 @@ gboolean mono_gc_card_table_nursery_check (void);
 
 void* mono_gc_get_nursery (int *shift_bits, size_t *size);
 
-void mono_gc_set_current_thread_appdomain (MonoDomain *domain);
-
 void mono_gc_set_skip_thread (gboolean skip);
 
 #ifndef HOST_WIN32

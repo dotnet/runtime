@@ -66,7 +66,6 @@ MONO_FAST_TLS_DECLARE(tls_appdomain);
 	MonoThreadInfo *info; \
 	MONO_FAST_TLS_SET (tls_appdomain,x); \
 	mono_native_tls_set_value (appdomain_thread_id, x); \
-	mono_gc_set_current_thread_appdomain (x); \
 	info = mono_thread_info_current (); \
 	if (info) \
 		mono_thread_info_tls_set (info, TLS_KEY_DOMAIN, (x));	\
@@ -78,7 +77,6 @@ MONO_FAST_TLS_DECLARE(tls_appdomain);
 #define SET_APPDOMAIN(x) do {						\
 		MonoThreadInfo *info;								\
 		mono_native_tls_set_value (appdomain_thread_id, x);	\
-		mono_gc_set_current_thread_appdomain (x);		\
 		info = mono_thread_info_current ();				\
 		if (info)												 \
 			mono_thread_info_tls_set (info, TLS_KEY_DOMAIN, (x));	\
