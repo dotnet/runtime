@@ -246,7 +246,7 @@ namespace System.Reflection.Emit
                 if (m_manifestModuleBuilder.InternalModule == module)
                     return m_manifestModuleBuilder;
 
-                throw new ArgumentException("module");
+                throw new ArgumentException(null, nameof(module));
             }
         }
 

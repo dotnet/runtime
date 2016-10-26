@@ -852,7 +852,7 @@ namespace System.Reflection
             CustomAttributeEncoding encodedType = encodedArg.CustomAttributeType.EncodedType;
 
             if (encodedType == CustomAttributeEncoding.Undefined)
-                throw new ArgumentException("encodedArg");
+                throw new ArgumentException(null, nameof(encodedArg));
 
             else if (encodedType == CustomAttributeEncoding.Enum)
             {
