@@ -13,6 +13,33 @@ namespace System.Net.Tests
 {
     public class HttpWebResponseHeaderTest
     {
+        public void HttpContinueMethod(int StatusCode, WebHeaderCollection httpHeaders)
+        {
+        }
+
+        [OuterLoop]
+        [Fact]
+        public async Task HttpWebRequest_ContinueDelegateProperty_Success()
+        {
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            {
+                HttpWebRequest request = WebRequest.CreateHttp(url);
+                request.Method = HttpMethod.Get.Method;
+                HttpContinueDelegate continueDelegate = new HttpContinueDelegate(HttpContinueMethod);
+                request.ContinueDelegate = continueDelegate;
+                Task<WebResponse> getResponse = request.GetResponseAsync();
+                DateTimeOffset utcNow = DateTimeOffset.UtcNow;
+                await LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                        $"HTTP/1.1 200 OK\r\n" +
+                        $"Date: {utcNow:R}\r\n" +
+                        "Content-Type: application/json;charset=UTF-8\r\n" +
+                        "Content-Length: 5\r\n" +
+                        "\r\n" +
+                        "12345");
+                Assert.Equal(continueDelegate, request.ContinueDelegate);
+            });
+        }
+
         [OuterLoop]
         [Fact]
         public async Task HttpHeader_Set_Success()
