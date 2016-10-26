@@ -143,7 +143,7 @@ namespace System.Runtime.InteropServices
             if (ptr == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(ptr));
             if (len < 0)
-                throw new ArgumentException("len");
+                throw new ArgumentException(null, nameof(len));
 
             return new String((sbyte *)ptr, 0, len); 
         }
@@ -154,7 +154,7 @@ namespace System.Runtime.InteropServices
             if (ptr == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(ptr));
             if (len < 0)
-                throw new ArgumentException("len");
+                throw new ArgumentException(null, nameof(len));
 
             return new String((char *)ptr, 0, len);
         }
@@ -199,7 +199,7 @@ namespace System.Runtime.InteropServices
         {
             if (byteLen < 0)
             {
-                throw new ArgumentException("byteLen");
+                throw new ArgumentException(null, nameof(byteLen));
             }
             else if (IntPtr.Zero == ptr)
             {
