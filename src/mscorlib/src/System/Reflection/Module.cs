@@ -657,7 +657,7 @@ namespace System.Reflection
 
             if (!tk.IsMemberRef && !tk.IsMethodDef && !tk.IsTypeSpec && !tk.IsSignature && !tk.IsFieldDef)
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidToken", tk, this),
-                                            "metadataToken");
+                                            nameof(metadataToken));
 
             ConstArray signature;
             if (tk.IsMemberRef)
@@ -690,16 +690,16 @@ namespace System.Reflection
                 if (!tk.IsMethodDef && !tk.IsMethodSpec)
                 {
                     if (!tk.IsMemberRef)
-                        throw new ArgumentException("metadataToken",
-                            Environment.GetResourceString("Argument_ResolveMethod", tk, this));
+                        throw new ArgumentException(Environment.GetResourceString("Argument_ResolveMethod", tk, this),
+                            nameof(metadataToken));
 
                     unsafe
                     {
                         ConstArray sig = MetadataImport.GetMemberRefProps(tk);
                         
                         if (*(MdSigCallingConvention*)sig.Signature.ToPointer() == MdSigCallingConvention.Field)
-                            throw new ArgumentException("metadataToken", 
-                                Environment.GetResourceString("Argument_ResolveMethod", tk, this));
+                            throw new ArgumentException(Environment.GetResourceString("Argument_ResolveMethod", tk, this),
+                                nameof(metadataToken));
                     }
                 }
 
@@ -775,16 +775,16 @@ namespace System.Reflection
                 if (!tk.IsFieldDef)
                 {
                     if (!tk.IsMemberRef)
-                        throw new ArgumentException("metadataToken",
-                            Environment.GetResourceString("Argument_ResolveField", tk, this));
+                        throw new ArgumentException(Environment.GetResourceString("Argument_ResolveField", tk, this),
+                            nameof(metadataToken));
 
                     unsafe 
                     {
                         ConstArray sig = MetadataImport.GetMemberRefProps(tk);
                         
                         if (*(MdSigCallingConvention*)sig.Signature.ToPointer() != MdSigCallingConvention.Field)
-                            throw new ArgumentException("metadataToken",
-                                Environment.GetResourceString("Argument_ResolveField", tk, this));                            
+                            throw new ArgumentException(Environment.GetResourceString("Argument_ResolveField", tk, this),
+                                nameof(metadataToken));                            
                     }
 
                     fieldHandle = ModuleHandle.ResolveFieldHandleInternal(GetNativeHandle(), tk, typeArgs, methodArgs);
@@ -885,8 +885,8 @@ namespace System.Reflection
                 }                
             }
 
-            throw new ArgumentException("metadataToken",
-                Environment.GetResourceString("Argument_ResolveMember", tk, this));
+            throw new ArgumentException(Environment.GetResourceString("Argument_ResolveMember", tk, this),
+                nameof(metadataToken));
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
