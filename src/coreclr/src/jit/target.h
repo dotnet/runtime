@@ -584,7 +584,7 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define REG_PINVOKE_TARGET_PARAM REG_EAX
   #define RBM_PINVOKE_TARGET_PARAM RBM_EAX
 
-  // IL stub's secret parameter (CORJIT_FLG_PUBLISH_SECRET_PARAM)
+  // IL stub's secret parameter (JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM)
   #define REG_SECRET_STUB_PARAM    REG_EAX
   #define RBM_SECRET_STUB_PARAM    RBM_EAX
 
@@ -977,7 +977,7 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define RBM_PINVOKE_TARGET_PARAM          RBM_R10
   #define PREDICT_REG_PINVOKE_TARGET_PARAM  PREDICT_REG_R10
 
-  // IL stub's secret MethodDesc parameter (CORJIT_FLG_PUBLISH_SECRET_PARAM)
+  // IL stub's secret MethodDesc parameter (JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM)
   #define REG_SECRET_STUB_PARAM    REG_R10
   #define RBM_SECRET_STUB_PARAM    RBM_R10
 
@@ -1349,7 +1349,7 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define RBM_PINVOKE_TARGET_PARAM          RBM_R12
   #define PREDICT_REG_PINVOKE_TARGET_PARAM  PREDICT_REG_R12
 
-  // IL stub's secret MethodDesc parameter (CORJIT_FLG_PUBLISH_SECRET_PARAM)
+  // IL stub's secret MethodDesc parameter (JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM)
   #define REG_SECRET_STUB_PARAM     REG_R12
   #define RBM_SECRET_STUB_PARAM     RBM_R12
 
@@ -1630,7 +1630,7 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define RBM_PINVOKE_TARGET_PARAM          RBM_R14
   #define PREDICT_REG_PINVOKE_TARGET_PARAM  PREDICT_REG_R14
 
-  // IL stub's secret MethodDesc parameter (CORJIT_FLG_PUBLISH_SECRET_PARAM)
+  // IL stub's secret MethodDesc parameter (JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM)
   #define REG_SECRET_STUB_PARAM     REG_R12
   #define RBM_SECRET_STUB_PARAM     RBM_R12
 

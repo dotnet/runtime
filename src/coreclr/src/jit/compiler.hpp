@@ -4108,7 +4108,7 @@ inline bool Compiler::compIsProfilerHookNeeded()
     return compProfilerHookNeeded
            // IL stubs are excluded by VM and we need to do the same even running
            // under a complus env hook to generate profiler hooks
-           || (opts.compJitELTHookEnabled && !(opts.eeFlags & CORJIT_FLG_IL_STUB));
+           || (opts.compJitELTHookEnabled && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB));
 #else  // !PROFILING_SUPPORTED
     return false;
 #endif // !PROFILING_SUPPORTED
@@ -4200,7 +4200,7 @@ inline bool Compiler::impIsDUP_LDVIRTFTN_TOKEN(const BYTE* delegateCreateStart, 
 
 inline bool Compiler::compIsForImportOnly()
 {
-    return ((opts.eeFlags & CORJIT_FLG_IMPORT_ONLY) != 0);
+    return opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IMPORT_ONLY);
 }
 
 /*****************************************************************************
