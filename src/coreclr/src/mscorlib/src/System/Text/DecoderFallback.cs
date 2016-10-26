@@ -277,7 +277,7 @@ namespace System.Text
             // Throw it, using our complete bytes
             throw new ArgumentException(
                 Environment.GetResourceString("Argument_RecursiveFallbackBytes",
-                    strBytes.ToString()), "bytesUnknown");
+                    strBytes.ToString()), nameof(bytesUnknown));
         }
 
     }

@@ -687,7 +687,7 @@ namespace System {
 
             if(String.IsNullOrWhiteSpace(functionName))
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_NPMSInvalidName"), "functionName");
+                throw new ArgumentException(Environment.GetResourceString("Argument_NPMSInvalidName"), nameof(functionName));
             }
 
             Contract.EndContractBlock();

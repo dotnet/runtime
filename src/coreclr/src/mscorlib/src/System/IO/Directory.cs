@@ -42,7 +42,7 @@ namespace System.IO {
                 throw new ArgumentNullException(nameof(path));
 
             if (path.Length==0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_PathEmpty"), "path");
+                throw new ArgumentException(Environment.GetResourceString("Argument_PathEmpty"), nameof(path));
             Contract.EndContractBlock();
 
             String fullPath = Path.GetFullPathInternal(path);
@@ -1089,12 +1089,12 @@ namespace System.IO {
             if (sourceDirName==null)
                 throw new ArgumentNullException(nameof(sourceDirName));
             if (sourceDirName.Length==0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), "sourceDirName");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), nameof(sourceDirName));
             
             if (destDirName==null)
                 throw new ArgumentNullException(nameof(destDirName));
             if (destDirName.Length==0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), "destDirName");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), nameof(destDirName));
             Contract.EndContractBlock();
 
             String fullsourceDirName = Path.GetFullPathInternal(sourceDirName);

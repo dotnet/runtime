@@ -122,7 +122,7 @@ namespace Microsoft.Win32 {
                     break;                    
 #endif
                 default:
-                    throw new ArgumentException(Environment.GetResourceString("Arg_RegInvalidKeyName", "keyName"));
+                    throw new ArgumentException(Environment.GetResourceString("Arg_RegInvalidKeyName", nameof(keyName)));
             }            
             if( i == -1 || i == keyName.Length) {
                 subKeyName = string.Empty;

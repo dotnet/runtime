@@ -348,7 +348,7 @@ namespace System
             // Single comparison to check if comparisonType is within [CurrentCulture .. OrdinalIgnoreCase]
             if ((uint)(comparisonType - StringComparison.CurrentCulture) > (uint)(StringComparison.OrdinalIgnoreCase - StringComparison.CurrentCulture))
             {
-                throw new ArgumentException(Environment.GetResourceString("NotSupported_StringComparison"), "comparisonType");
+                throw new ArgumentException(Environment.GetResourceString("NotSupported_StringComparison"), nameof(comparisonType));
             }
             Contract.EndContractBlock();
 
@@ -535,7 +535,7 @@ namespace System
         [System.Security.SecuritySafeCritical]  // auto-generated
         public static int Compare(String strA, int indexA, String strB, int indexB, int length, StringComparison comparisonType) {
             if (comparisonType < StringComparison.CurrentCulture || comparisonType > StringComparison.OrdinalIgnoreCase) {
-                throw new ArgumentException(Environment.GetResourceString("NotSupported_StringComparison"), "comparisonType");
+                throw new ArgumentException(Environment.GetResourceString("NotSupported_StringComparison"), nameof(comparisonType));
             }
             Contract.EndContractBlock();
             
@@ -732,7 +732,7 @@ namespace System
             }
 
             if( comparisonType < StringComparison.CurrentCulture || comparisonType > StringComparison.OrdinalIgnoreCase) {
-                throw new ArgumentException(Environment.GetResourceString("NotSupported_StringComparison"), "comparisonType");
+                throw new ArgumentException(Environment.GetResourceString("NotSupported_StringComparison"), nameof(comparisonType));
             }
             Contract.EndContractBlock();
 
@@ -767,7 +767,7 @@ namespace System
                     return this.Length < value.Length ? false : (TextInfo.CompareOrdinalIgnoreCaseEx(this, this.Length - value.Length, value, 0, value.Length, value.Length) == 0);
 #endif
                 default:
-                    throw new ArgumentException(Environment.GetResourceString("NotSupported_StringComparison"), "comparisonType");
+                    throw new ArgumentException(Environment.GetResourceString("NotSupported_StringComparison"), nameof(comparisonType));
             }                        
         }
 
@@ -849,7 +849,7 @@ namespace System
         [System.Security.SecuritySafeCritical]  // auto-generated
         public bool Equals(String value, StringComparison comparisonType) {
             if (comparisonType < StringComparison.CurrentCulture || comparisonType > StringComparison.OrdinalIgnoreCase)
-                throw new ArgumentException(Environment.GetResourceString("NotSupported_StringComparison"), "comparisonType");
+                throw new ArgumentException(Environment.GetResourceString("NotSupported_StringComparison"), nameof(comparisonType));
             Contract.EndContractBlock();
 
             if ((Object)this == (Object)value) {
@@ -895,7 +895,7 @@ namespace System
 #endif
 
                 default:
-                    throw new ArgumentException(Environment.GetResourceString("NotSupported_StringComparison"), "comparisonType");
+                    throw new ArgumentException(Environment.GetResourceString("NotSupported_StringComparison"), nameof(comparisonType));
             }
         }
 
@@ -918,7 +918,7 @@ namespace System
         [System.Security.SecuritySafeCritical]  // auto-generated
         public static bool Equals(String a, String b, StringComparison comparisonType) {
             if (comparisonType < StringComparison.CurrentCulture || comparisonType > StringComparison.OrdinalIgnoreCase)
-                throw new ArgumentException(Environment.GetResourceString("NotSupported_StringComparison"), "comparisonType");
+                throw new ArgumentException(Environment.GetResourceString("NotSupported_StringComparison"), nameof(comparisonType));
             Contract.EndContractBlock();
 
             if ((Object)a==(Object)b) {
@@ -966,7 +966,7 @@ namespace System
                     }
 
                 default:
-                    throw new ArgumentException(Environment.GetResourceString("NotSupported_StringComparison"), "comparisonType");
+                    throw new ArgumentException(Environment.GetResourceString("NotSupported_StringComparison"), nameof(comparisonType));
             }
         }
 
@@ -1088,7 +1088,7 @@ namespace System
             }
 
             if( comparisonType < StringComparison.CurrentCulture || comparisonType > StringComparison.OrdinalIgnoreCase) {
-                throw new ArgumentException(Environment.GetResourceString("NotSupported_StringComparison"), "comparisonType");
+                throw new ArgumentException(Environment.GetResourceString("NotSupported_StringComparison"), nameof(comparisonType));
             }
             Contract.EndContractBlock();
 
@@ -1133,7 +1133,7 @@ namespace System
 #endif
 
                 default:
-                    throw new ArgumentException(Environment.GetResourceString("NotSupported_StringComparison"), "comparisonType");
+                    throw new ArgumentException(Environment.GetResourceString("NotSupported_StringComparison"), nameof(comparisonType));
             }                        
         }
 

@@ -1392,7 +1392,7 @@ namespace System.Globalization {
                         Environment.GetResourceString("ArgumentNull_Array"));
                 }
                 if (value.Length != 7) {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidArrayLength", 7), "value");
+                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidArrayLength", 7), nameof(value));
                 }
                 Contract.EndContractBlock();
                 CheckNullValue(value, value.Length);
@@ -1421,7 +1421,7 @@ namespace System.Globalization {
                 }
                 if (value.Length != 7)
                 {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidArrayLength", 7), "value");
+                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidArrayLength", 7), nameof(value));
                 }
                 Contract.EndContractBlock();
                 CheckNullValue(value, value.Length);
@@ -1446,7 +1446,7 @@ namespace System.Globalization {
                 }
                 if (value.Length != 7)
                 {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidArrayLength", 7), "value");
+                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidArrayLength", 7), nameof(value));
                 }
                 Contract.EndContractBlock();
                 CheckNullValue(value, value.Length);
@@ -1471,7 +1471,7 @@ namespace System.Globalization {
                 }
                 if (value.Length != 13)
                 {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidArrayLength", 13), "value");
+                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidArrayLength", 13), nameof(value));
                 }
                 Contract.EndContractBlock();
                 CheckNullValue(value, value.Length - 1);
@@ -1497,7 +1497,7 @@ namespace System.Globalization {
                 }
                 if (value.Length != 13)
                 {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidArrayLength", 13), "value");
+                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidArrayLength", 13), nameof(value));
                 }
                 Contract.EndContractBlock();
                 CheckNullValue(value, value.Length - 1);
@@ -1740,7 +1740,7 @@ namespace System.Globalization {
                     result = this.AllYearMonthPatterns;
                     break;
                 default:
-                    throw new ArgumentException(Environment.GetResourceString("Format_BadFormatSpecifier"), "format");
+                    throw new ArgumentException(Environment.GetResourceString("Format_BadFormatSpecifier"), nameof(format));
             }
             return (result);
         }
@@ -2044,7 +2044,7 @@ namespace System.Globalization {
 
             if (patterns.Length == 0)
             {
-                throw new ArgumentException(Environment.GetResourceString("Arg_ArrayZeroError"), "patterns");
+                throw new ArgumentException(Environment.GetResourceString("Arg_ArrayZeroError"), nameof(patterns));
             }
             Contract.EndContractBlock();
 
@@ -2086,7 +2086,7 @@ namespace System.Globalization {
                     break;
                     
                 default:
-                    throw new ArgumentException(Environment.GetResourceString("Format_BadFormatSpecifier"), "format");
+                    throw new ArgumentException(Environment.GetResourceString("Format_BadFormatSpecifier"), nameof(format));
             }
 
             // Clear the token hash table, note that even short dates could require this
@@ -2114,7 +2114,7 @@ namespace System.Globalization {
                 }
                 if (value.Length != 13)
                 {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidArrayLength", 13), "value");
+                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidArrayLength", 13), nameof(value));
                 }
                 Contract.EndContractBlock();
                 CheckNullValue(value, value.Length - 1);
@@ -2142,7 +2142,7 @@ namespace System.Globalization {
                 }
                 if (value.Length != 13)
                 {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidArrayLength", 13), "value");
+                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidArrayLength", 13), nameof(value));
                 }
                 Contract.EndContractBlock();
                 CheckNullValue(value, value.Length - 1);

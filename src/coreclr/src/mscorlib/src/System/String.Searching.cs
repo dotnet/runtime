@@ -174,7 +174,7 @@ namespace System
                         return TextInfo.IndexOfStringOrdinalIgnoreCase(this, value, startIndex, count);
 
                 default:
-                    throw new ArgumentException(Environment.GetResourceString("NotSupported_StringComparison"), "comparisonType");
+                    throw new ArgumentException(Environment.GetResourceString("NotSupported_StringComparison"), nameof(comparisonType));
             }  
         }
 
@@ -351,7 +351,7 @@ namespace System
                     else
                         return TextInfo.LastIndexOfStringOrdinalIgnoreCase(this, value, startIndex, count);
                 default:
-                    throw new ArgumentException(Environment.GetResourceString("NotSupported_StringComparison"), "comparisonType");
+                    throw new ArgumentException(Environment.GetResourceString("NotSupported_StringComparison"), nameof(comparisonType));
             }  
         }
     }

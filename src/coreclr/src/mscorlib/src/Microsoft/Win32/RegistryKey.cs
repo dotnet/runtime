@@ -1107,7 +1107,7 @@ namespace Microsoft.Win32 {
         [ComVisible(false)]
         public Object GetValue(String name, Object defaultValue, RegistryValueOptions options) {
             if( options < RegistryValueOptions.None || options > RegistryValueOptions.DoNotExpandEnvironmentNames) {
-                throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)options), "options");
+                throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)options), nameof(options));
             }
             bool doNotExpand = (options == RegistryValueOptions.DoNotExpandEnvironmentNames);
             CheckPermission(RegistryInternalCheck.CheckValueReadPermission, name, false, RegistryKeyPermissionCheck.Default);            
@@ -1409,7 +1409,7 @@ namespace Microsoft.Win32 {
             }
 
             if (!Enum.IsDefined(typeof(RegistryValueKind), valueKind))
-                throw new ArgumentException(Environment.GetResourceString("Arg_RegBadKeyKind"), "valueKind");
+                throw new ArgumentException(Environment.GetResourceString("Arg_RegBadKeyKind"), nameof(valueKind));
 
             EnsureWriteable();
 

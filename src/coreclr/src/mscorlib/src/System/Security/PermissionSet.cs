@@ -1754,7 +1754,7 @@ namespace System.Security {
                 throw new ArgumentNullException(nameof(et));
 
             if (!et.Tag.Equals(s_str_PermissionSet))
-                throw new ArgumentException(String.Format( null, Environment.GetResourceString( "Argument_InvalidXMLElement" ), "PermissionSet", this.GetType().FullName) );
+                throw new ArgumentException(String.Format( null, Environment.GetResourceString( "Argument_InvalidXMLElement" ), nameof(PermissionSet), this.GetType().FullName) );
             Contract.EndContractBlock();
 
             Reset();
@@ -1856,7 +1856,7 @@ namespace System.Security {
             Contract.EndContractBlock();
             
             if (!doc.GetTagForElement( position ).Equals(s_str_PermissionSet))
-                throw new ArgumentException(String.Format( null, Environment.GetResourceString( "Argument_InvalidXMLElement" ), "PermissionSet", this.GetType().FullName) );
+                throw new ArgumentException(String.Format( null, Environment.GetResourceString( "Argument_InvalidXMLElement" ), nameof(PermissionSet), this.GetType().FullName) );
             
             Reset();
             m_allPermissionsDecoded = false;

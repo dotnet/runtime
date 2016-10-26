@@ -38,7 +38,7 @@ namespace System {
             if( platform < PlatformID.Win32S || platform > PlatformID.MacOSX) {
                 throw new ArgumentException(
                     Environment.GetResourceString("Arg_EnumIllegalVal", (int)platform),
-                    "platform");
+                    nameof(platform));
             }
 
             if ((Object) version == null)

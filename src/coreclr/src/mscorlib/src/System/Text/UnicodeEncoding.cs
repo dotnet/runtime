@@ -448,7 +448,7 @@ namespace System.Text
                         // Throw it, using our complete character
                         throw new ArgumentException(
                                     Environment.GetResourceString("Argument_RecursiveFallback",
-                                    charLeftOver), "chars");
+                                    charLeftOver), nameof(chars));
                     }
                     else
                     {
@@ -851,7 +851,7 @@ namespace System.Text
                         // Throw it, using our complete character
                         throw new ArgumentException(
                                     Environment.GetResourceString("Argument_RecursiveFallback",
-                                    charLeftOver), "chars");
+                                    charLeftOver), nameof(chars));
                     }
                     else
                     {

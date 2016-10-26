@@ -94,7 +94,7 @@ namespace System.Globalization
             throw new ArgumentException(
                 String.Format(
                     CultureInfo.CurrentCulture,
-                    Environment.GetResourceString("Argument_EncodingNotSupported"), name), "name");
+                    Environment.GetResourceString("Argument_EncodingNotSupported"), name), nameof(name));
         }
 
         // Return a list of all EncodingInfo objects describing all of our encodings

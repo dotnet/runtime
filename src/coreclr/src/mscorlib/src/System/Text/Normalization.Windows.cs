@@ -175,7 +175,7 @@ namespace System.Text
                 case ERROR_NO_UNICODE_TRANSLATION:
                     throw new ArgumentException(
                         Environment.GetResourceString("Argument_InvalidCharSequenceNoIndex" ),
-                        "strInput");
+                        nameof(strInput));
                 case ERROR_NOT_ENOUGH_MEMORY:
                     throw new OutOfMemoryException(
                         Environment.GetResourceString("Arg_OutOfMemoryException"));
@@ -205,7 +205,7 @@ namespace System.Text
                 if (iError == ERROR_INVALID_PARAMETER)
                     throw new ArgumentException(
                         Environment.GetResourceString("Argument_InvalidCharSequenceNoIndex" ),
-                        "strInput");
+                        nameof(strInput));
 
                 // We shouldn't really be able to get here..., guessing length is
                 // a trivial math function...
@@ -254,7 +254,7 @@ namespace System.Text
                         // Illegal code point or order found.  Ie: FFFE or D800 D800, etc.
                         throw new ArgumentException(
                             Environment.GetResourceString("Argument_InvalidCharSequence", iLength ),
-                            "strInput");
+                            nameof(strInput));
                     case ERROR_NOT_ENOUGH_MEMORY:
                         throw new OutOfMemoryException(
                             Environment.GetResourceString("Arg_OutOfMemoryException"));

@@ -49,9 +49,9 @@ namespace System.Reflection.Emit {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(name));
             if (name[0] == '\0')
-                throw new ArgumentException(Environment.GetResourceString("Argument_IllegalName"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_IllegalName"), nameof(name));
             Contract.EndContractBlock();
             
             m_name = name;

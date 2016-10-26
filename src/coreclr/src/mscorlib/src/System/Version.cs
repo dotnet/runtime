@@ -215,7 +215,7 @@ namespace System {
                 return StringBuilderCache.GetStringAndRelease(sb);
             default:
                 if (_Build == -1)
-                    throw new ArgumentException(Environment.GetResourceString("ArgumentOutOfRange_Bounds_Lower_Upper", "0", "2"), "fieldCount");
+                    throw new ArgumentException(Environment.GetResourceString("ArgumentOutOfRange_Bounds_Lower_Upper", "0", "2"), nameof(fieldCount));
 
                 if (fieldCount == 3)
                 {
@@ -229,7 +229,7 @@ namespace System {
                 }
 
                 if (_Revision == -1)
-                    throw new ArgumentException(Environment.GetResourceString("ArgumentOutOfRange_Bounds_Lower_Upper", "0", "3"), "fieldCount");
+                    throw new ArgumentException(Environment.GetResourceString("ArgumentOutOfRange_Bounds_Lower_Upper", "0", "3"), nameof(fieldCount));
 
                 if (fieldCount == 4)
                 {
@@ -244,7 +244,7 @@ namespace System {
                     return StringBuilderCache.GetStringAndRelease(sb);
                 }
 
-                throw new ArgumentException(Environment.GetResourceString("ArgumentOutOfRange_Bounds_Lower_Upper", "0", "4"), "fieldCount");
+                throw new ArgumentException(Environment.GetResourceString("ArgumentOutOfRange_Bounds_Lower_Upper", "0", "4"), nameof(fieldCount));
             }
         }
 

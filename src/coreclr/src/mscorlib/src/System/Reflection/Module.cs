@@ -752,7 +752,7 @@ namespace System.Reflection
             }
             catch
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_ResolveField", tk, this), "metadataToken");
+                throw new ArgumentException(Environment.GetResourceString("Argument_ResolveField", tk, this), nameof(metadataToken));
             }
         }
 
@@ -817,14 +817,14 @@ namespace System.Reflection
             MetadataToken tk = new MetadataToken(metadataToken);
 
             if (tk.IsGlobalTypeDefToken)
-                throw new ArgumentException(Environment.GetResourceString("Argument_ResolveModuleType", tk), "metadataToken");
+                throw new ArgumentException(Environment.GetResourceString("Argument_ResolveModuleType", tk), nameof(metadataToken));
             
             if (!MetadataImport.IsValidToken(tk))
                 throw new ArgumentOutOfRangeException("metadataToken",
                     Environment.GetResourceString("Argument_InvalidToken", tk, this));
 
             if (!tk.IsTypeDef && !tk.IsTypeSpec && !tk.IsTypeRef)
-                throw new ArgumentException(Environment.GetResourceString("Argument_ResolveType", tk, this), "metadataToken");
+                throw new ArgumentException(Environment.GetResourceString("Argument_ResolveType", tk, this), nameof(metadataToken));
 
             RuntimeTypeHandle[] typeArgs = ConvertToTypeHandleArray(genericTypeArguments);
             RuntimeTypeHandle[] methodArgs = ConvertToTypeHandleArray(genericMethodArguments);
@@ -834,7 +834,7 @@ namespace System.Reflection
                 Type t = GetModuleHandle().ResolveTypeHandle(metadataToken, typeArgs, methodArgs).GetRuntimeType();
                     
                 if (t == null)
-                    throw new ArgumentException(Environment.GetResourceString("Argument_ResolveType", tk, this), "metadataToken");
+                    throw new ArgumentException(Environment.GetResourceString("Argument_ResolveType", tk, this), nameof(metadataToken));
 
                 return t;
             } 
@@ -1007,7 +1007,7 @@ namespace System.Reflection
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
             if (attributeRuntimeType == null) 
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),"attributeType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
         }
@@ -1022,7 +1022,7 @@ namespace System.Reflection
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
             if (attributeRuntimeType == null) 
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),"attributeType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),nameof(attributeType));
 
             return CustomAttribute.IsDefined(this, attributeRuntimeType);
         }

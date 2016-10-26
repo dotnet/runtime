@@ -51,10 +51,10 @@ namespace System.Collections {
 
 #if FEATURE_SERIALIZATION
                 if (!key.GetType().IsSerializable)                 
-                    throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), "key");                    
+                    throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), nameof(key));                    
 
                 if( (value != null) && (!value.GetType().IsSerializable ) )
-                    throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), "value");                    
+                    throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), nameof(value));                    
 #endif
                 
                 version++;
@@ -138,10 +138,10 @@ namespace System.Collections {
 
 #if FEATURE_SERIALIZATION
             if (!key.GetType().IsSerializable)                 
-                throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), "key" );                    
+                throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), nameof(key) );                    
 
             if( (value != null) && (!value.GetType().IsSerializable) )
-                throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), "value");                    
+                throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), nameof(value));                    
 #endif
             
             version++;
@@ -201,7 +201,7 @@ namespace System.Collections {
                     throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
 
             if ( array.Length - index < this.Count ) 
-                throw new ArgumentException( Environment.GetResourceString("ArgumentOutOfRange_Index"), "index");
+                throw new ArgumentException( Environment.GetResourceString("ArgumentOutOfRange_Index"), nameof(index));
             Contract.EndContractBlock();
 
             for (DictionaryNode node = head; node != null; node = node.next) {
@@ -335,7 +335,7 @@ namespace System.Collections {
                     throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
                 Contract.EndContractBlock();
                 if (array.Length - index < list.Count) 
-                    throw new ArgumentException(Environment.GetResourceString("ArgumentOutOfRange_Index"), "index");                
+                    throw new ArgumentException(Environment.GetResourceString("ArgumentOutOfRange_Index"), nameof(index));                
                 for (DictionaryNode node = list.head; node != null; node = node.next) {
                     array.SetValue(isKeys ? node.key : node.value, index);
                     index++;

@@ -145,7 +145,7 @@ namespace System {
 
             // Is it of primitive types?
             if (!IsPrimitiveTypeArray(array))
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBePrimArray"), "array");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBePrimArray"), nameof(array));
 
             // Is the index in valid range of the array?
             if (index < 0 || index >= _ByteLength(array))
@@ -173,7 +173,7 @@ namespace System {
 
             // Is it of primitive types?
             if (!IsPrimitiveTypeArray(array))
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBePrimArray"), "array");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBePrimArray"), nameof(array));
 
             // Is the index in valid range of the array?
             if (index < 0 || index >= _ByteLength(array))
@@ -203,7 +203,7 @@ namespace System {
 
             // Is it of primitive types?
             if (!IsPrimitiveTypeArray(array))
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBePrimArray"), "array");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBePrimArray"), nameof(array));
 
             return _ByteLength(array);
         }
