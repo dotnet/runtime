@@ -108,5 +108,4 @@ namespace Microsoft.Win32.SafeHandles
             get { return handle == new IntPtr(-1); }
         }
     }
-
 }
