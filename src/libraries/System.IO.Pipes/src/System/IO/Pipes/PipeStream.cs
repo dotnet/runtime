@@ -164,6 +164,22 @@ namespace System.IO.Pipes
             return ReadAsyncCore(buffer, offset, count, cancellationToken);
         }
 
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        {
+            if (_isAsync)
+                return TaskToApm.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
+            else
+                return base.BeginRead(buffer, offset, count, callback, state);
+        }
+
+        public override int EndRead(IAsyncResult asyncResult)
+        {
+            if (_isAsync)
+                return TaskToApm.End<int>(asyncResult);
+            else
+                return base.EndRead(asyncResult);
+        }
+
         [SecurityCritical]
         public override void Write(byte[] buffer, int offset, int count)
         {
@@ -210,6 +226,22 @@ namespace System.IO.Pipes
             }
 
             return WriteAsyncCore(buffer, offset, count, cancellationToken);
+        }
+
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        {
+            if (_isAsync)
+                return TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), callback, state);
+            else
+                return base.BeginWrite(buffer, offset, count, callback, state);
+        }
+
+        public override void EndWrite(IAsyncResult asyncResult)
+        {
+            if (_isAsync)
+                TaskToApm.End(asyncResult);
+            else
+                base.EndWrite(asyncResult);
         }
 
         private void CheckReadWriteArgs(byte[] buffer, int offset, int count)
