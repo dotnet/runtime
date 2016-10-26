@@ -32,23 +32,52 @@ namespace System.Net.NetworkInformation
             const int MaxTries = 3;
             for (int attempt = 0; attempt < MaxTries; attempt++)
             {
+                // Because these callbacks are executed in a reverse-PInvoke, we do not want any exceptions
+                // to propogate out, because they will not be catchable. Instead, we track all the exceptions
+                // that are thrown in these callbacks, and aggregate them at the end.
+                List<Exception> exceptions = new List<Exception>();
                 int result = Interop.Sys.EnumerateInterfaceAddresses(
                     (name, ipAddr, maskAddr) =>
                     {
-                        LinuxNetworkInterface lni = GetOrCreate(interfacesByName, name);
-                        lni.ProcessIpv4Address(ipAddr, maskAddr);
+                        try
+                        {
+                            LinuxNetworkInterface lni = GetOrCreate(interfacesByName, name);
+                            lni.ProcessIpv4Address(ipAddr, maskAddr);
+                        }
+                        catch (Exception e)
+                        {
+                            exceptions.Add(e);
+                        }
                     },
                     (name, ipAddr, scopeId) =>
                     {
-                        LinuxNetworkInterface lni = GetOrCreate(interfacesByName, name);
-                        lni.ProcessIpv6Address( ipAddr, *scopeId);
+                        try
+                        {
+                            LinuxNetworkInterface lni = GetOrCreate(interfacesByName, name);
+                            lni.ProcessIpv6Address(ipAddr, *scopeId);
+                        }
+                        catch (Exception e)
+                        {
+                            exceptions.Add(e);
+                        }
                     },
                     (name, llAddr) =>
                     {
-                        LinuxNetworkInterface lni = GetOrCreate(interfacesByName, name);
-                        lni.ProcessLinkLayerAddress(llAddr);
+                        try
+                        {
+                            LinuxNetworkInterface lni = GetOrCreate(interfacesByName, name);
+                            lni.ProcessLinkLayerAddress(llAddr);
+                        }
+                        catch (Exception e)
+                        {
+                            exceptions.Add(e);
+                        }
                     });
-                if (result == 0)
+                if (exceptions.Count > 0)
+                {
+                    throw new NetworkInformationException(SR.net_PInvokeError, new AggregateException(exceptions));
+                }
+                else if (result == 0)
                 {
                     return interfacesByName.Values.ToArray();
                 }
