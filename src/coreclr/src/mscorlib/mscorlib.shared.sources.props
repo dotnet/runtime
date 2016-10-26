@@ -123,7 +123,7 @@
     <InteropSources Condition="'$(FeatureCominterop)' != 'true'" Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NonPortable.cs" />
     <InteropSources Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\InteropServices\DispatchWrapper.cs" />
     <InteropSources Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ExtensibleClassFactory.cs" />
-    <InteropSources Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ICustomFactory.cs" />
+    <InteropSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ICustomFactory.cs" />
     <InteropSources Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ObjectCreationDelegate.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureClassicCominterop)' == 'true'">

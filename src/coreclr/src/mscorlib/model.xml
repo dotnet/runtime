@@ -6555,7 +6555,6 @@
       <Member MemberType="Property" Name="ErrorCode" />
       <Member Name="get_ErrorCode" />
     </Type>
-    <Type Status="ImplRoot" Name="System.Runtime.InteropServices.LCIDConversionAttribute" Condition="FEATURE_COMINTEROP" />
     <Type Name="System.Runtime.InteropServices.CallingConvention">
       <Member MemberType="Field" Name="value__" />
       <Member MemberType="Field" Name="Winapi" />
@@ -6667,6 +6666,36 @@
     <Type Name="System.Runtime.InteropServices.AllowReversePInvokeCallsAttribute">
       <Member Name="#ctor" />
     </Type>
+    <Type Name="System.Runtime.InteropServices.AutomationProxyAttribute">
+      <Member Name="#ctor(System.Boolean)" />
+      <Member Name="get_Value" />
+      <Member MemberType="Property" Name="Value" />      
+    </Type>
+   <Type Name="System.Runtime.InteropServices.ComAliasNameAttribute">
+      <Member Name="#ctor(System.String)" />
+      <Member Name="get_Value" />
+      <Member MemberType="Property" Name="Value" />      
+    </Type>
+    <Type Name="System.Runtime.InteropServices.ComCompatibleVersionAttribute">
+      <Member Name="#ctor(System.Int32,System.Int32,System.Int32,System.Int32)" />
+      <Member Name="get_MajorVersion" />
+      <Member MemberType="Property" Name="MajorVersion" />      
+      <Member Name="get_MinorVersion" />
+      <Member MemberType="Property" Name="MinorVersion" />      
+      <Member Name="get_BuildNumber" />
+      <Member MemberType="Property" Name="BuildNumber" />      
+      <Member Name="get_RevisionNumber" />
+      <Member MemberType="Property" Name="RevisionNumber" />      
+    </Type>    
+    <Type Name="System.Runtime.InteropServices.ComConversionLossAttribute">
+      <Member Name="#ctor" />
+    </Type>
+    <Type Name="System.Runtime.InteropServices.ComRegisterFunctionAttribute">
+      <Member Name="#ctor" />
+    </Type>
+    <Type Name="System.Runtime.InteropServices.ComUnregisterFunctionAttribute">
+      <Member Name="#ctor" />
+    </Type>
     <Type Name="System.Runtime.InteropServices.ExternalException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
@@ -6724,6 +6753,14 @@
     <Type Name="System.Runtime.InteropServices.ICustomQueryInterface">
       <Member Name="GetInterface(System.Guid@,System.IntPtr@)" />
     </Type>
+    <Type Name="System.Runtime.InteropServices.ICustomFactory">
+      <Member Name="CreateInstance(System.Type)" />
+    </Type>
+    <Type Name="System.Runtime.InteropServices.ImportedFromTypeLibAttribute">
+      <Member Name="#ctor(System.String)" />
+      <Member Name="get_Value" />
+      <Member MemberType="Property" Name="Value" />      
+    </Type>    
     <Type Name="System.Runtime.InteropServices.InAttribute">
       <Member Name="#ctor" />
     </Type>
@@ -6757,10 +6794,10 @@
       <Member MemberType="Field" Name="Sequential" />
       <Member MemberType="Field" Name="value__" />
     </Type>
-    <Type Name="System.Runtime.InteropServices.NativeCallableAttribute">
-      <Member Name="#ctor" />
-      <Member MemberType="Field" Name="CallingConvention" /> <!-- EE -->
-      <Member MemberType="Field" Name="EntryPoint" /> <!-- EE -->
+    <Type Name="System.Runtime.InteropServices.LCIDConversionAttribute">
+      <Member Name="#ctor(System.Int32)" />
+      <Member Name="get_Value" />
+      <Member MemberType="Property" Name="Value" />      
     </Type>
     <Type Name="System.Runtime.InteropServices.Marshal">
       <Member MemberType="Field" Name="SystemDefaultCharSize" />
@@ -6927,11 +6964,23 @@
       <Member MemberType="Field" Name="SafeArraySubType" />
       <Member MemberType="Field" Name="SafeArrayUserDefinedSubType" />
     </Type>
+    <Type Name="System.Runtime.InteropServices.ManagedToNativeComInteropStubAttribute">
+      <Member Name="#ctor(System.Type,System.String)" />
+      <Member Name="get_ClassType" />
+      <Member MemberType="Property" Name="ClassType" />      
+      <Member Name="get_MethodName" />
+      <Member MemberType="Property" Name="MethodName" />      
+    </Type>       
     <Type Name="System.Runtime.InteropServices.MarshalDirectiveException" >
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
       <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
+    </Type>
+    <Type Name="System.Runtime.InteropServices.NativeCallableAttribute">
+      <Member Name="#ctor" />
+      <Member MemberType="Field" Name="CallingConvention" /> <!-- EE -->
+      <Member MemberType="Field" Name="EntryPoint" /> <!-- EE -->
     </Type>
     <Type Name="System.Runtime.InteropServices.OptionalAttribute">
       <Member Name="#ctor" />
@@ -6941,6 +6990,18 @@
     </Type>
     <Type Name="System.Runtime.InteropServices.PreserveSigAttribute">
       <Member Name="#ctor" />
+    </Type>
+    <Type Name="System.Runtime.InteropServices.PrimaryInteropAssemblyAttribute">
+      <Member Name="#ctor(System.Int32,System.Int32)" />
+      <Member Name="get_MajorVersion" />
+      <Member MemberType="Property" Name="MajorVersion" />      
+      <Member Name="get_MinorVersion" />
+      <Member MemberType="Property" Name="MinorVersion" />      
+    </Type>    
+    <Type Name="System.Runtime.InteropServices.ProgIdAttribute">
+      <Member Name="#ctor(System.String)" />
+      <Member Name="get_Value" />
+      <Member MemberType="Property" Name="Value" />      
     </Type>
     <Type Name="System.Runtime.InteropServices.SafeHandle">
       <Member MemberType="Field" Name="handle" />
@@ -6961,6 +7022,18 @@
       <Member MemberType="Property" Name="IsClosed" />
       <Member MemberType="Property" Name="IsInvalid" />
     </Type>
+   <Type Name="System.Runtime.InteropServices.TypeLibImportClassAttribute">
+      <Member Name="#ctor(System.Type)" />
+      <Member Name="get_Value" />
+      <Member MemberType="Property" Name="Value" />
+    </Type>
+    <Type Name="System.Runtime.InteropServices.TypeLibVersionAttribute">
+      <Member Name="#ctor(System.Int32,System.Int32)" />
+      <Member Name="get_MajorVersion" />
+      <Member MemberType="Property" Name="MajorVersion" />      
+      <Member Name="get_MinorVersion" />
+      <Member MemberType="Property" Name="MinorVersion" />      
+    </Type>       
     <Type Name="System.Runtime.InteropServices.CriticalHandle">
       <Member MemberType="Field" Name="handle" />
       <Member MemberType="Field" Name="_stackTrace" Flavor="chk,dbg" />
@@ -9976,7 +10049,7 @@
       <Member Name="AddField(System.String)" /> <!-- EE -->
       <Member Name="RemoveMember(System.Reflection.MemberInfo)" /> <!-- EE -->
     </Type>
-    <Type Status="ImplRoot" Name="System.Runtime.InteropServices.ICustomMarshaler">
+    <Type Name="System.Runtime.InteropServices.ICustomMarshaler">
       <Member Name="MarshalNativeToManaged(System.IntPtr)" /> <!-- EE -->
       <Member Name="MarshalManagedToNative(System.Object)" /> <!-- EE -->
       <Member Name="CleanUpNativeData(System.IntPtr)" /> <!-- EE -->
