@@ -7,6 +7,7 @@
 #include <string.h>
 #include <vector>
 
+#include "icushim.h"
 #include "locale.hpp"
 #include "holders.h"
 

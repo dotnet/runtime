@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include <unicode/utypes.h>
-
 /*
 * These values should be kept in sync with
 * Interop.GlobalizationInterop.ResultCode
