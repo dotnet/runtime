@@ -62,7 +62,7 @@ namespace System.Globalization {
                     }
                 }
 
-                throw new ArgumentException("pStrings");
+                throw new ArgumentException(null, nameof(pStrings));
             }
             else
             {

@@ -582,7 +582,7 @@ namespace System
         internal static RuntimeType GetTypeByNameUsingCARules(string name, RuntimeModule scope)
         {
             if (name == null || name.Length == 0)
-                throw new ArgumentException("name"); 
+                throw new ArgumentException(null, nameof(name)); 
             Contract.EndContractBlock();
 
             RuntimeType type = null;
