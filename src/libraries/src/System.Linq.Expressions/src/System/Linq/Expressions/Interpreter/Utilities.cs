@@ -85,14 +85,14 @@ namespace System.Linq.Expressions.Interpreter
     }
 #endif
 
-    internal class ScriptingRuntimeHelpers
+    internal static class ScriptingRuntimeHelpers
     {
         public static object Int32ToObject(int i)
         {
             switch (i)
             {
                 case -1:
-                    return Int32_m;
+                    return Int32_M1;
                 case 0:
                     return Int32_0;
                 case 1:
@@ -104,18 +104,18 @@ namespace System.Linq.Expressions.Interpreter
             return i;
         }
 
-        private static readonly object Int32_m = -1;
+        private static readonly object Int32_M1 = -1;
         private static readonly object Int32_0 = 0;
         private static readonly object Int32_1 = 1;
         private static readonly object Int32_2 = 2;
 
         public static object BooleanToObject(bool b)
         {
-            return b ? True : False;
+            return b ? Boolean_True : Boolean_False;
         }
 
-        internal static readonly object True = true;
-        internal static readonly object False = false;
+        internal static readonly object Boolean_True = true;
+        internal static readonly object Boolean_False = false;
 
         internal static object GetPrimitiveDefaultValue(Type type)
         {
@@ -124,7 +124,7 @@ namespace System.Linq.Expressions.Interpreter
             switch (type.GetTypeCode())
             {
                 case TypeCode.Boolean:
-                    result = False;
+                    result = Boolean_False;
                     break;
                 case TypeCode.SByte:
                     result = default(sbyte);
@@ -153,7 +153,6 @@ namespace System.Linq.Expressions.Interpreter
                 case TypeCode.UInt64:
                     result = default(ulong);
                     break;
-
                 case TypeCode.Single:
                     return default(float);
                 case TypeCode.Double:
