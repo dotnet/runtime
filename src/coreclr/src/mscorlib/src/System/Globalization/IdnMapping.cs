@@ -401,7 +401,7 @@ namespace System.Globalization
                     // If its too far between dots then fail
                     if (i - iLastDot > M_labelLimit + 1)
                         throw new ArgumentException(Environment.GetResourceString(
-                            "Argument_IdnBadLabelSize"), "Unicode");
+                            "Argument_IdnBadLabelSize"), nameof(unicode));
 
                     // If validating Std3, then char before dot can't be - char
                     if (bUseStd3 && i > 0)
