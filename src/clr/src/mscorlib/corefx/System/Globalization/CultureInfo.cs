@@ -315,6 +315,66 @@ namespace System.Globalization
             return ci;
         }
 
+        //
+        // Return a specific culture.  A tad irrelevent now since we always return valid data
+        // for neutral locales.
+        //
+        // Note that there's interesting behavior that tries to find a smaller name, ala RFC4647,
+        // if we can't find a bigger name.  That doesn't help with things like "zh" though, so
+        // the approach is of questionable value
+        //
+        public static CultureInfo CreateSpecificCulture(String name)
+        {
+            Contract.Ensures(Contract.Result<CultureInfo>() != null);
+
+            CultureInfo culture;
+
+            try
+            {
+                culture = new CultureInfo(name);
+            }
+            catch (ArgumentException)
+            {
+                // When CultureInfo throws this exception, it may be because someone passed the form
+                // like "az-az" because it came out of an http accept lang. We should try a little
+                // parsing to perhaps fall back to "az" here and use *it* to create the neutral.
+
+                int idx;
+
+                culture = null;
+                for (idx = 0; idx < name.Length; idx++)
+                {
+                    if ('-' == name[idx])
+                    {
+                        try
+                        {
+                            culture = new CultureInfo(name.Substring(0, idx));
+                            break;
+                        }
+                        catch (ArgumentException)
+                        {
+                            // throw the original exception so the name in the string will be right
+                            throw;
+                        }
+                    }
+                }
+
+                if (culture == null)
+                {
+                    // nothing to save here; throw the original exception
+                    throw;
+                }
+            }
+
+            // In the most common case, they've given us a specific culture, so we'll just return that.
+            if (!(culture.IsNeutralCulture))
+            {
+                return culture;
+            }
+
+            return (new CultureInfo(culture.m_cultureData.SSPECIFICCULTURE));
+        }
+
         //        //
         //        // Return a specific culture.  A tad irrelevent now since we always return valid data
         //        // for neutral locales.
@@ -495,6 +555,20 @@ namespace System.Globalization
             }
         }
 
+        public static CultureInfo InstalledUICulture
+        {
+            get
+            {
+                Contract.Ensures(Contract.Result<CultureInfo>() != null);
+                if (s_userDefaultCulture == null)
+                {
+                    Init();
+                }
+                Contract.Assert(s_userDefaultCulture != null, "[CultureInfo.InstalledUICulture] s_userDefaultCulture != null");
+                return s_userDefaultCulture;
+            }
+        }
+
         public static CultureInfo DefaultThreadCurrentCulture
         {
             get { return s_DefaultThreadCurrentCulture; }
@@ -595,6 +669,18 @@ namespace System.Globalization
             {
                 return (this.m_cultureData.ILANGUAGE);
             }
+        }
+
+        public static CultureInfo[] GetCultures(CultureTypes types)
+        {
+            Contract.Ensures(Contract.Result<CultureInfo[]>() != null);
+            // internally we treat UserCustomCultures as Supplementals but v2
+            // treats as Supplementals and Replacements
+            if((types & CultureTypes.UserCustomCulture) == CultureTypes.UserCustomCulture)
+            {
+                types |= CultureTypes.ReplacementCultures;
+            }
+            return (CultureData.GetCultures(types));
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -703,6 +789,32 @@ namespace System.Globalization
             }
         }
 
+        // ie: eng
+        public virtual String ThreeLetterISOLanguageName
+        {
+            get
+            {
+                Contract.Ensures(Contract.Result<String>() != null);
+                return m_cultureData.SISO639LANGNAME2;
+            }
+        }
+
+        ////////////////////////////////////////////////////////////////////////
+        //
+        //  ThreeLetterWindowsLanguageName
+        //
+        //  Returns the 3 letter windows language name for the current instance.  eg: "ENU"
+        //  The ISO names are much preferred
+        //
+        ////////////////////////////////////////////////////////////////////////
+        public virtual String ThreeLetterWindowsLanguageName
+        {
+            get
+            {
+                Contract.Ensures(Contract.Result<String>() != null);
+                return m_cultureData.SABBREVLANGNAME;
+            }
+        }
 
         ////////////////////////////////////////////////////////////////////////
         //
@@ -908,6 +1020,21 @@ namespace System.Globalization
             }
         }
 
+        public void ClearCachedData()
+        {
+            s_userDefaultCulture = null;
+
+            RegionInfo.s_currentRegionInfo = null;
+            #pragma warning disable 0618 // disable the obsolete warning 
+            TimeZone.ResetTimeZone();
+            #pragma warning restore 0618
+            TimeZoneInfo.ClearCachedData();
+            s_LcidCachedCultures = null;
+            s_NameCachedCultures = null;
+
+            CultureData.ClearCachedData();
+        }
+
         /*=================================GetCalendarInstance==========================
         **Action: Map a Win32 CALID to an instance of supported calendar.
         **Returns: An instance of calendar.
@@ -1013,12 +1140,11 @@ namespace System.Globalization
             }
         }
 
-
-        private bool UseUserOverride
+        public bool UseUserOverride
         {
             get
             {
-                return (this.m_cultureData.UseUserOverride);
+                return m_cultureData.UseUserOverride;
             }
         }
 
@@ -1316,6 +1442,55 @@ namespace System.Globalization
                     "name", name, SR.Argument_CultureNotSupported);
             }
             return retval;
+        }
+
+        // Gets a cached copy of the specified culture from an internal hashtable (or creates it
+        // if not found).
+        public static CultureInfo GetCultureInfo(string name, string altName)
+        {
+            // Make sure we have a valid, non-zero length string as name
+            if (name == null)
+            {
+                throw new ArgumentNullException("name");
+            }
+
+            if (altName == null)
+            {
+                throw new ArgumentNullException("altName");
+            }
+            
+            Contract.Ensures(Contract.Result<CultureInfo>() != null);
+            Contract.EndContractBlock();
+
+            CultureInfo retval = GetCultureInfoHelper(-1, name, altName);
+            if (retval == null)
+            {
+                throw new CultureNotFoundException("name or altName",
+                                        SR.Format(SR.Argument_OneOfCulturesNotSupported, name, altName));
+            }
+            return retval;
+        }
+
+        // This function is deprecated, we don't like it
+        public static CultureInfo GetCultureInfoByIetfLanguageTag(string name)
+        {
+            Contract.Ensures(Contract.Result<CultureInfo>() != null);
+
+            // Disallow old zh-CHT/zh-CHS names
+            if (name == "zh-CHT" || name == "zh-CHS")
+            {
+                throw new CultureNotFoundException("name", SR.Format(SR.Argument_CultureIetfNotSupported, name));
+            }
+            
+            CultureInfo ci = GetCultureInfo(name);
+
+            // Disallow alt sorts and es-es_TS
+            if (ci.LCID > 0xffff || ci.LCID == 0x040a)
+            {
+                throw new CultureNotFoundException("name", SR.Format(SR.Argument_CultureIetfNotSupported, name));
+            }
+            
+            return ci;
         }
     }
 }

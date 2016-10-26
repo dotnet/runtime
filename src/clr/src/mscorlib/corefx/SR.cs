@@ -139,6 +139,11 @@ namespace System.Globalization
             get { return Environment.GetResourceString("Argument_ConflictingDateTimeStyles"); }
         }
 
+        public static string Argument_CultureIetfNotSupported
+        {
+            get { return Environment.GetResourceString("Argument_CultureIetfNotSupported"); }
+        }
+
         public static string Argument_CultureInvalidIdentifier
         {
             get { return Environment.GetResourceString("Argument_CultureInvalidIdentifier"); }
@@ -232,6 +237,11 @@ namespace System.Globalization
         public static string Argument_NoRegionInvariantCulture
         {
             get { return Environment.GetResourceString("Argument_NoRegionInvariantCulture"); }
+        }
+
+        public static string Argument_OneOfCulturesNotSupported
+        {
+            get { return Environment.GetResourceString("Argument_OneOfCulturesNotSupported"); }
         }
 
         public static string Argument_OnlyMscorlib

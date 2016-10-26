@@ -597,5 +597,15 @@ namespace System.Globalization
         {
             throw new NotImplementedException();
         }
+        
+        private static string GetThreeLetterWindowsLanguageName(string cultureName)
+        {
+            throw new NotImplementedException();
+        }
+
+        private static CultureInfo[] EnumCultures(CultureTypes types)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

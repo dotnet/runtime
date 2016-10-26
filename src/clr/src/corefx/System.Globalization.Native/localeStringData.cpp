@@ -37,7 +37,8 @@ enum LocaleStringData : int32_t
     PMDesignator = 0x00000029,
     PositiveSign = 0x00000050,
     NegativeSign = 0x00000051,
-    Iso639LanguageName = 0x00000059,
+    Iso639LanguageTwoLetterName = 0x00000059,
+    Iso639LanguageThreeLetterName = 0x00000067,
     Iso3166CountryName = 0x0000005A,
     Iso3166CountryName2= 0x00000068,
     NaNSymbol = 0x00000069,
@@ -115,11 +116,11 @@ UErrorCode GetLocaleInfoAmPm(const char* locale, bool am, UChar* value, int32_t 
 
 /*
 Function:
-GetLocaleIso639LanguageName
+GetLocaleIso639LanguageTwoLetterName
 
 Gets the language name for a locale (via uloc_getLanguage) and converts the result to UChars
 */
-UErrorCode GetLocaleIso639LanguageName(const char* locale, UChar* value, int32_t valueLength)
+UErrorCode GetLocaleIso639LanguageTwoLetterName(const char* locale, UChar* value, int32_t valueLength)
 {
     UErrorCode status = U_ZERO_ERROR;
     int32_t length = uloc_getLanguage(locale, nullptr, 0, &status);
@@ -135,6 +136,23 @@ UErrorCode GetLocaleIso639LanguageName(const char* locale, UChar* value, int32_t
     }
 
     return status;
+}
+
+/*
+Function:
+GetLocaleIso639LanguageThreeLetterName
+
+Gets the language name for a locale (via uloc_getISO3Language) and converts the result to UChars
+*/
+UErrorCode GetLocaleIso639LanguageThreeLetterName(const char* locale, UChar* value, int32_t valueLength)
+{
+    const char *isoLanguage = uloc_getISO3Language(locale);
+    if (isoLanguage[0] == 0)
+    {
+        return U_ILLEGAL_ARGUMENT_ERROR;
+    }
+    
+    return u_charsToUChars_safe(isoLanguage, value, valueLength);
 }
 
 /*
@@ -315,8 +333,11 @@ extern "C" int32_t GlobalizationNative_GetLocaleInfoString(
         case NegativeSign:
             status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_MINUS_SIGN_SYMBOL, value, valueLength);
             break;
-        case Iso639LanguageName:
-            status = GetLocaleIso639LanguageName(locale, value, valueLength);
+        case Iso639LanguageTwoLetterName:
+            status = GetLocaleIso639LanguageTwoLetterName(locale, value, valueLength);
+            break;
+        case Iso639LanguageThreeLetterName:
+            status = GetLocaleIso639LanguageThreeLetterName(locale, value, valueLength);
             break;
         case Iso3166CountryName:
             status = GetLocaleIso3166CountryName(locale, value, valueLength);

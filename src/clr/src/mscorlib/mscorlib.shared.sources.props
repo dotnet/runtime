@@ -627,6 +627,7 @@
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\CompareInfo.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\CultureData.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\CultureInfo.cs" />
+    <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\CultureTypes.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\CultureNotFoundException.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\DateTimeFormatInfo.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\DateTimeFormatInfoScanner.cs" />
