@@ -332,7 +332,7 @@ namespace System.Globalization {
             this.m_cultureData = CultureData.GetCultureData(name, useUserOverride);
 
             if (this.m_cultureData == null) {
-                throw new CultureNotFoundException("name", name, Environment.GetResourceString("Argument_CultureNotSupported"));
+                throw new CultureNotFoundException(nameof(name), name, Environment.GetResourceString("Argument_CultureNotSupported"));
             }
 
             this.m_name = this.m_cultureData.CultureName;
@@ -367,7 +367,7 @@ namespace System.Globalization {
                     // Can't support unknown custom cultures and we do not support neutral or
                     // non-custom user locales.
                     throw new CultureNotFoundException(
-                        "culture", culture, Environment.GetResourceString("Argument_CultureNotSupported"));
+                        nameof(culture), culture, Environment.GetResourceString("Argument_CultureNotSupported"));
 
                 default:
                     // Now see if this LCID is supported in the system default CultureData  table.
@@ -424,7 +424,7 @@ namespace System.Globalization {
                 this.m_cultureData = CultureData.GetCultureData(m_name, m_useUserOverride);
                 if (this.m_cultureData == null)
                     throw new CultureNotFoundException(
-                        "m_name", m_name, Environment.GetResourceString("Argument_CultureNotSupported"));
+                        nameof(m_name), m_name, Environment.GetResourceString("Argument_CultureNotSupported"));
                     
 #if FEATURE_USE_LCID
             }
@@ -548,7 +548,7 @@ namespace System.Globalization {
             this.m_cultureData = CultureData.GetCultureData(cultureName, false);
             if (this.m_cultureData == null)
                 throw new CultureNotFoundException(
-                    "cultureName", cultureName, Environment.GetResourceString("Argument_CultureNotSupported"));
+                    nameof(cultureName), cultureName, Environment.GetResourceString("Argument_CultureNotSupported"));
             
             this.m_name = this.m_cultureData.CultureName;            
 
@@ -1836,7 +1836,7 @@ namespace System.Globalization {
             if (null == retval)
             {
                 throw new CultureNotFoundException(
-                    "culture", culture, Environment.GetResourceString("Argument_CultureNotSupported"));
+                    nameof(culture), culture, Environment.GetResourceString("Argument_CultureNotSupported"));
             }
             return retval;
         }
@@ -1858,7 +1858,7 @@ namespace System.Globalization {
             if (retval == null)
             {
                 throw new CultureNotFoundException(
-                    "name", name, Environment.GetResourceString("Argument_CultureNotSupported"));
+                    nameof(name), name, Environment.GetResourceString("Argument_CultureNotSupported"));
                 
             }
             return retval;
@@ -1884,7 +1884,7 @@ namespace System.Globalization {
             CultureInfo retval = GetCultureInfoHelper(-1, name, altName);
             if (retval == null)
             {
-                throw new CultureNotFoundException("name or altName",
+                throw new CultureNotFoundException(nameof(name) + " or " + nameof(altName),
                                         String.Format(
                                             CultureInfo.CurrentCulture, 
                                             Environment.GetResourceString("Argument_OneOfCulturesNotSupported"), 
@@ -1904,7 +1904,7 @@ namespace System.Globalization {
             if (name == "zh-CHT" || name == "zh-CHS")
             {
                 throw new CultureNotFoundException(
-                            "name",
+                            nameof(name),
                             String.Format(CultureInfo.CurrentCulture, Environment.GetResourceString("Argument_CultureIetfNotSupported"), name)
                             );
             }
@@ -1915,7 +1915,7 @@ namespace System.Globalization {
             if (ci.LCID > 0xffff || ci.LCID == 0x040a)
             {
                 throw new CultureNotFoundException(
-                            "name",
+                            nameof(name),
                             String.Format(CultureInfo.CurrentCulture, Environment.GetResourceString("Argument_CultureIetfNotSupported"), name)
                             );
             }
