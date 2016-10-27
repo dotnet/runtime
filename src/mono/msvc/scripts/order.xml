@@ -35,7 +35,7 @@
     </project>
     <project dir="class/System" library="System-basic">
       <boot>true</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:BOOTSTRAP_BASIC -nowarn:1699 -lib:./../../class/lib/basic -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -d:MONO_SECURITY_ALIAS -d:CONFIGURATION_DEP -r:./../../class/lib/basic/System.Xml.dll -r:./../../class/lib/basic/System.Configuration.dll -r:MonoSecurity=./../../class/lib/basic/Mono.Security.dll</flags>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:BOOTSTRAP_BASIC -nowarn:1699 -lib:./../../class/lib/basic -optimize /noconfig -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:MONO_FEATURE_BTLS -d:SECURITY_DEP -d:XML_DEP -d:MONO_SECURITY_ALIAS -d:CONFIGURATION_DEP -r:./../../class/lib/basic/System.Xml.dll -r:./../../class/lib/basic/System.Configuration.dll -r:MonoSecurity=./../../class/lib/basic/Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/basic/System.dll</library_output>
@@ -90,7 +90,7 @@
     </project>
     <project dir="class/System" library="System-build">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/build/mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -d:MONO_SECURITY_ALIAS -d:CONFIGURATION_DEP -r:./../../class/lib/build/System.Xml.dll -r:./../../class/lib/build/System.Configuration.dll -r:MonoSecurity=./../../class/lib/build/Mono.Security.dll</flags>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/build/mscorlib.dll -optimize /noconfig -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:MONO_FEATURE_BTLS -d:SECURITY_DEP -d:XML_DEP -d:MONO_SECURITY_ALIAS -d:CONFIGURATION_DEP -r:./../../class/lib/build/System.Xml.dll -r:./../../class/lib/build/System.Configuration.dll -r:MonoSecurity=./../../class/lib/build/Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/build/System.dll</library_output>
@@ -101,7 +101,7 @@
     </project>
     <project dir="class/System" library="System-bare-build">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/build/mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav</flags>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/build/mscorlib.dll -optimize /noconfig -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:MONO_FEATURE_BTLS</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/build/bare/System.dll</library_output>
@@ -112,7 +112,7 @@
     </project>
     <project dir="class/System" library="System-secxml-build">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/build/mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -d:MONO_SECURITY_ALIAS -r:./../../class/lib/build/bare/System.Xml.dll -r:MonoSecurity=./../../class/lib/build/Mono.Security.dll</flags>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/build/mscorlib.dll -optimize /noconfig -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:MONO_FEATURE_BTLS -d:SECURITY_DEP -d:XML_DEP -d:MONO_SECURITY_ALIAS -r:./../../class/lib/build/bare/System.Xml.dll -r:MonoSecurity=./../../class/lib/build/Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/build/secxml/System.dll</library_output>
@@ -607,7 +607,7 @@
     </project>
     <project dir="class/System" library="System-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -d:MONO_SECURITY_ALIAS -d:CONFIGURATION_DEP -r:./../../class/lib/net_4_x/System.Xml.dll -r:./../../class/lib/net_4_x/System.Configuration.dll -r:MonoSecurity=./../../class/lib/net_4_x/Mono.Security.dll</flags>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll -debug -optimize /noconfig -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:MONO_FEATURE_BTLS -d:SECURITY_DEP -d:XML_DEP -d:MONO_SECURITY_ALIAS -d:CONFIGURATION_DEP -r:./../../class/lib/net_4_x/System.Xml.dll -r:./../../class/lib/net_4_x/System.Configuration.dll -r:MonoSecurity=./../../class/lib/net_4_x/Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_x/System.dll</library_output>
@@ -629,7 +629,7 @@
     </project>
     <project dir="class/System" library="System-bare-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav</flags>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll -debug -optimize /noconfig -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:MONO_FEATURE_BTLS</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_x/bare/System.dll</library_output>
@@ -651,7 +651,7 @@
     </project>
     <project dir="class/System" library="System-secxml-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -d:MONO_SECURITY_ALIAS -r:./../../class/lib/net_4_x/bare/System.Xml.dll -r:MonoSecurity=./../../class/lib/net_4_x/Mono.Security.dll</flags>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll -debug -optimize /noconfig -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:MONO_FEATURE_BTLS -d:SECURITY_DEP -d:XML_DEP -d:MONO_SECURITY_ALIAS -r:./../../class/lib/net_4_x/bare/System.Xml.dll -r:MonoSecurity=./../../class/lib/net_4_x/Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_x/secxml/System.dll</library_output>
@@ -5491,7 +5491,7 @@
     </project>
     <project dir="class/System" library="System-monodroid">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:MOBILE,MOBILE_LEGACY -d:MOBILE_DYNAMIC -d:MONODROID -d:ANDROID -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monodroid/mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP -d:SECURITY_DEP -d:XML_DEP -r:./../../class/lib/monodroid/System.Xml.dll -r:MonoSecurity=./../../class/lib/monodroid/Mono.Security.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:MOBILE,MOBILE_LEGACY -d:MOBILE_DYNAMIC -d:MONODROID -d:ANDROID -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monodroid/mscorlib.dll -debug -optimize /noconfig -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:MONO_FEATURE_BTLS -d:INSIDE_SYSTEM -d:SECURITY_DEP -nowarn:618,1635 -d:SECURITY_DEP -d:XML_DEP -r:./../../class/lib/monodroid/System.Xml.dll -r:MonoSecurity=./../../class/lib/monodroid/Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/monodroid/System.dll</library_output>
@@ -5502,7 +5502,7 @@
     </project>
     <project dir="class/System" library="System-bare-monodroid">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:MOBILE,MOBILE_LEGACY -d:MOBILE_DYNAMIC -d:MONODROID -d:ANDROID -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monodroid/mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:MOBILE,MOBILE_LEGACY -d:MOBILE_DYNAMIC -d:MONODROID -d:ANDROID -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monodroid/mscorlib.dll -debug -optimize /noconfig -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:MONO_FEATURE_BTLS -d:INSIDE_SYSTEM -d:SECURITY_DEP -nowarn:618,1635</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/monodroid/bare/System.dll</library_output>
@@ -5513,7 +5513,7 @@
     </project>
     <project dir="class/System" library="System-secxml-monodroid">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:MOBILE,MOBILE_LEGACY -d:MOBILE_DYNAMIC -d:MONODROID -d:ANDROID -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monodroid/mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP -d:SECURITY_DEP -d:XML_DEP -r:./../../class/lib/monodroid/bare/System.Xml.dll -r:MonoSecurity=./../../class/lib/monodroid/Mono.Security.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:MOBILE,MOBILE_LEGACY -d:MOBILE_DYNAMIC -d:MONODROID -d:ANDROID -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monodroid/mscorlib.dll -debug -optimize /noconfig -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:MONO_FEATURE_BTLS -d:INSIDE_SYSTEM -d:SECURITY_DEP -nowarn:618,1635 -d:SECURITY_DEP -d:XML_DEP -r:./../../class/lib/monodroid/bare/System.Xml.dll -r:MonoSecurity=./../../class/lib/monodroid/Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/monodroid/secxml/System.dll</library_output>
@@ -7471,7 +7471,7 @@
     </project>
     <project dir="class/System" library="System-monotouch">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch/mscorlib.dll -debug -d:FULL_AOT_RUNTIME -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP -d:SECURITY_DEP -d:XML_DEP -r:./../../class/lib/monotouch/System.Xml.dll -r:MonoSecurity=./../../class/lib/monotouch/Mono.Security.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch/mscorlib.dll -debug -d:FULL_AOT_RUNTIME -optimize /noconfig -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP -nowarn:618,1635 -d:SECURITY_DEP -d:XML_DEP -r:./../../class/lib/monotouch/System.Xml.dll -r:MonoSecurity=./../../class/lib/monotouch/Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/monotouch/System.dll</library_output>
@@ -7493,7 +7493,7 @@
     </project>
     <project dir="class/System" library="System-bare-monotouch">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch/mscorlib.dll -debug -d:FULL_AOT_RUNTIME -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch/mscorlib.dll -debug -d:FULL_AOT_RUNTIME -optimize /noconfig -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP -nowarn:618,1635</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/monotouch/bare/System.dll</library_output>
@@ -7515,7 +7515,7 @@
     </project>
     <project dir="class/System" library="System-secxml-monotouch">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch/mscorlib.dll -debug -d:FULL_AOT_RUNTIME -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP -d:SECURITY_DEP -d:XML_DEP -r:./../../class/lib/monotouch/bare/System.Xml.dll -r:MonoSecurity=./../../class/lib/monotouch/Mono.Security.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch/mscorlib.dll -debug -d:FULL_AOT_RUNTIME -optimize /noconfig -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP -nowarn:618,1635 -d:SECURITY_DEP -d:XML_DEP -r:./../../class/lib/monotouch/bare/System.Xml.dll -r:MonoSecurity=./../../class/lib/monotouch/Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/monotouch/secxml/System.dll</library_output>
@@ -9803,7 +9803,7 @@
     </project>
     <project dir="class/System" library="System-monotouch_runtime">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch_runtime/mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP -d:SECURITY_DEP -d:XML_DEP -r:./../../class/lib/monotouch_runtime/System.Xml.dll -r:MonoSecurity=./../../class/lib/monotouch_runtime/Mono.Security.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch_runtime/mscorlib.dll -debug -optimize /noconfig -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP -nowarn:618,1635 -d:SECURITY_DEP -d:XML_DEP -r:./../../class/lib/monotouch_runtime/System.Xml.dll -r:MonoSecurity=./../../class/lib/monotouch_runtime/Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/monotouch_runtime/System.dll</library_output>
@@ -9825,7 +9825,7 @@
     </project>
     <project dir="class/System" library="System-bare-monotouch_runtime">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch_runtime/mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch_runtime/mscorlib.dll -debug -optimize /noconfig -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP -nowarn:618,1635</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/monotouch_runtime/bare/System.dll</library_output>
@@ -9847,7 +9847,7 @@
     </project>
     <project dir="class/System" library="System-secxml-monotouch_runtime">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch_runtime/mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP -d:SECURITY_DEP -d:XML_DEP -r:./../../class/lib/monotouch_runtime/bare/System.Xml.dll -r:MonoSecurity=./../../class/lib/monotouch_runtime/Mono.Security.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch_runtime/mscorlib.dll -debug -optimize /noconfig -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP -nowarn:618,1635 -d:SECURITY_DEP -d:XML_DEP -r:./../../class/lib/monotouch_runtime/bare/System.Xml.dll -r:MonoSecurity=./../../class/lib/monotouch_runtime/Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/monotouch_runtime/secxml/System.dll</library_output>
@@ -10001,7 +10001,7 @@
     </project>
     <project dir="class/System" library="System-monotouch_watch">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch_watch/mscorlib.dll -debug -d:FULL_AOT_RUNTIME -d:FEATURE_NO_BSD_SOCKETS -d:MONOTOUCH_WATCH -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP -d:SECURITY_DEP -d:XML_DEP -r:./../../class/lib/monotouch_watch/System.Xml.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch_watch/mscorlib.dll -debug -d:FULL_AOT_RUNTIME -d:FEATURE_NO_BSD_SOCKETS -d:MONOTOUCH_WATCH -optimize /noconfig -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP -nowarn:618,1635 -d:SECURITY_DEP -d:XML_DEP -r:./../../class/lib/monotouch_watch/System.Xml.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/monotouch_watch/System.dll</library_output>
@@ -10023,7 +10023,7 @@
     </project>
     <project dir="class/System" library="System-bare-monotouch_watch">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch_watch/mscorlib.dll -debug -d:FULL_AOT_RUNTIME -d:FEATURE_NO_BSD_SOCKETS -d:MONOTOUCH_WATCH -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch_watch/mscorlib.dll -debug -d:FULL_AOT_RUNTIME -d:FEATURE_NO_BSD_SOCKETS -d:MONOTOUCH_WATCH -optimize /noconfig -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP -nowarn:618,1635</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/monotouch_watch/bare/System.dll</library_output>
@@ -10045,7 +10045,7 @@
     </project>
     <project dir="class/System" library="System-secxml-monotouch_watch">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch_watch/mscorlib.dll -debug -d:FULL_AOT_RUNTIME -d:FEATURE_NO_BSD_SOCKETS -d:MONOTOUCH_WATCH -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP -d:SECURITY_DEP -d:XML_DEP -r:./../../class/lib/monotouch_watch/bare/System.Xml.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch_watch/mscorlib.dll -debug -d:FULL_AOT_RUNTIME -d:FEATURE_NO_BSD_SOCKETS -d:MONOTOUCH_WATCH -optimize /noconfig -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP -nowarn:618,1635 -d:SECURITY_DEP -d:XML_DEP -r:./../../class/lib/monotouch_watch/bare/System.Xml.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/monotouch_watch/secxml/System.dll</library_output>
@@ -12300,7 +12300,7 @@
     </project>
     <project dir="class/System" library="System-monotouch_watch_runtime">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch_watch_runtime/mscorlib.dll -debug -d:FEATURE_NO_BSD_SOCKETS -d:MONOTOUCH_WATCH -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP -d:SECURITY_DEP -d:XML_DEP -r:./../../class/lib/monotouch_watch_runtime/System.Xml.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch_watch_runtime/mscorlib.dll -debug -d:FEATURE_NO_BSD_SOCKETS -d:MONOTOUCH_WATCH -optimize /noconfig -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP -nowarn:618,1635 -d:SECURITY_DEP -d:XML_DEP -r:./../../class/lib/monotouch_watch_runtime/System.Xml.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/monotouch_watch_runtime/System.dll</library_output>
@@ -12322,7 +12322,7 @@
     </project>
     <project dir="class/System" library="System-bare-monotouch_watch_runtime">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch_watch_runtime/mscorlib.dll -debug -d:FEATURE_NO_BSD_SOCKETS -d:MONOTOUCH_WATCH -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch_watch_runtime/mscorlib.dll -debug -d:FEATURE_NO_BSD_SOCKETS -d:MONOTOUCH_WATCH -optimize /noconfig -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP -nowarn:618,1635</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/monotouch_watch_runtime/bare/System.dll</library_output>
@@ -12344,7 +12344,7 @@
     </project>
     <project dir="class/System" library="System-secxml-monotouch_watch_runtime">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch_watch_runtime/mscorlib.dll -debug -d:FEATURE_NO_BSD_SOCKETS -d:MONOTOUCH_WATCH -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP -d:SECURITY_DEP -d:XML_DEP -r:./../../class/lib/monotouch_watch_runtime/bare/System.Xml.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch_watch_runtime/mscorlib.dll -debug -d:FEATURE_NO_BSD_SOCKETS -d:MONOTOUCH_WATCH -optimize /noconfig -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP -nowarn:618,1635 -d:SECURITY_DEP -d:XML_DEP -r:./../../class/lib/monotouch_watch_runtime/bare/System.Xml.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/monotouch_watch_runtime/secxml/System.dll</library_output>
@@ -12520,7 +12520,7 @@
     </project>
     <project dir="class/System" library="System-monotouch_tv">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch_tv/mscorlib.dll -debug -d:FULL_AOT_RUNTIME -d:MONOTOUCH_TV -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP -d:SECURITY_DEP -d:XML_DEP -r:./../../class/lib/monotouch_tv/System.Xml.dll -r:MonoSecurity=./../../class/lib/monotouch_tv/Mono.Security.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch_tv/mscorlib.dll -debug -d:FULL_AOT_RUNTIME -d:MONOTOUCH_TV -optimize /noconfig -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP -nowarn:618,1635 -d:SECURITY_DEP -d:XML_DEP -r:./../../class/lib/monotouch_tv/System.Xml.dll -r:MonoSecurity=./../../class/lib/monotouch_tv/Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/monotouch_tv/System.dll</library_output>
@@ -12542,7 +12542,7 @@
     </project>
     <project dir="class/System" library="System-bare-monotouch_tv">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch_tv/mscorlib.dll -debug -d:FULL_AOT_RUNTIME -d:MONOTOUCH_TV -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch_tv/mscorlib.dll -debug -d:FULL_AOT_RUNTIME -d:MONOTOUCH_TV -optimize /noconfig -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP -nowarn:618,1635</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/monotouch_tv/bare/System.dll</library_output>
@@ -12564,7 +12564,7 @@
     </project>
     <project dir="class/System" library="System-secxml-monotouch_tv">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch_tv/mscorlib.dll -debug -d:FULL_AOT_RUNTIME -d:MONOTOUCH_TV -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP -d:SECURITY_DEP -d:XML_DEP -r:./../../class/lib/monotouch_tv/bare/System.Xml.dll -r:MonoSecurity=./../../class/lib/monotouch_tv/Mono.Security.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch_tv/mscorlib.dll -debug -d:FULL_AOT_RUNTIME -d:MONOTOUCH_TV -optimize /noconfig -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP -nowarn:618,1635 -d:SECURITY_DEP -d:XML_DEP -r:./../../class/lib/monotouch_tv/bare/System.Xml.dll -r:MonoSecurity=./../../class/lib/monotouch_tv/Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/monotouch_tv/secxml/System.dll</library_output>
@@ -14852,7 +14852,7 @@
     </project>
     <project dir="class/System" library="System-monotouch_tv_runtime">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch_tv_runtime/mscorlib.dll -debug -d:MONOTOUCH_TV -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP -d:SECURITY_DEP -d:XML_DEP -r:./../../class/lib/monotouch_tv_runtime/System.Xml.dll -r:MonoSecurity=./../../class/lib/monotouch_tv_runtime/Mono.Security.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch_tv_runtime/mscorlib.dll -debug -d:MONOTOUCH_TV -optimize /noconfig -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP -nowarn:618,1635 -d:SECURITY_DEP -d:XML_DEP -r:./../../class/lib/monotouch_tv_runtime/System.Xml.dll -r:MonoSecurity=./../../class/lib/monotouch_tv_runtime/Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/monotouch_tv_runtime/System.dll</library_output>
@@ -14874,7 +14874,7 @@
     </project>
     <project dir="class/System" library="System-bare-monotouch_tv_runtime">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch_tv_runtime/mscorlib.dll -debug -d:MONOTOUCH_TV -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch_tv_runtime/mscorlib.dll -debug -d:MONOTOUCH_TV -optimize /noconfig -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP -nowarn:618,1635</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/monotouch_tv_runtime/bare/System.dll</library_output>
@@ -14896,7 +14896,7 @@
     </project>
     <project dir="class/System" library="System-secxml-monotouch_tv_runtime">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch_tv_runtime/mscorlib.dll -debug -d:MONOTOUCH_TV -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP -d:SECURITY_DEP -d:XML_DEP -r:./../../class/lib/monotouch_tv_runtime/bare/System.Xml.dll -r:MonoSecurity=./../../class/lib/monotouch_tv_runtime/Mono.Security.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MOBILE,MOBILE_LEGACY -d:MONO -d:MONOTOUCH -d:DISABLE_REMOTING -d:DISABLE_COM -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/monotouch_tv_runtime/mscorlib.dll -debug -d:MONOTOUCH_TV -optimize /noconfig -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP -nowarn:618,1635 -d:SECURITY_DEP -d:XML_DEP -r:./../../class/lib/monotouch_tv_runtime/bare/System.Xml.dll -r:MonoSecurity=./../../class/lib/monotouch_tv_runtime/Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/monotouch_tv_runtime/secxml/System.dll</library_output>
@@ -15050,7 +15050,7 @@
     </project>
     <project dir="class/System" library="System-xammac">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:MOBILE -d:MOBILE_DYNAMIC -d:XAMMAC -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:XAMARIN_MODERN -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/xammac/mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP -d:SECURITY_DEP -d:XML_DEP -r:./../../class/lib/xammac/System.Xml.dll -r:MonoSecurity=./../../class/lib/xammac/Mono.Security.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:MOBILE -d:MOBILE_DYNAMIC -d:XAMMAC -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:XAMARIN_MODERN -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/xammac/mscorlib.dll -debug -optimize /noconfig -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:MONO_FEATURE_BTLS -d:INSIDE_SYSTEM -d:SECURITY_DEP -nowarn:618,1635 -d:SECURITY_DEP -d:XML_DEP -r:./../../class/lib/xammac/System.Xml.dll -r:MonoSecurity=./../../class/lib/xammac/Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/xammac/System.dll</library_output>
@@ -15061,7 +15061,7 @@
     </project>
     <project dir="class/System" library="System-bare-xammac">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:MOBILE -d:MOBILE_DYNAMIC -d:XAMMAC -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:XAMARIN_MODERN -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/xammac/mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:MOBILE -d:MOBILE_DYNAMIC -d:XAMMAC -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:XAMARIN_MODERN -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/xammac/mscorlib.dll -debug -optimize /noconfig -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:MONO_FEATURE_BTLS -d:INSIDE_SYSTEM -d:SECURITY_DEP -nowarn:618,1635</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/xammac/bare/System.dll</library_output>
@@ -15072,7 +15072,7 @@
     </project>
     <project dir="class/System" library="System-secxml-xammac">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:MOBILE -d:MOBILE_DYNAMIC -d:XAMMAC -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:XAMARIN_MODERN -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/xammac/mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:INSIDE_SYSTEM -d:SECURITY_DEP -d:SECURITY_DEP -d:XML_DEP -r:./../../class/lib/xammac/bare/System.Xml.dll -r:MonoSecurity=./../../class/lib/xammac/Mono.Security.dll</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:MOBILE -d:MOBILE_DYNAMIC -d:XAMMAC -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:XAMARIN_MODERN -d:NETSTANDARD -nowarn:1699 -nostdlib -r:./../../class/lib/xammac/mscorlib.dll -debug -optimize /noconfig -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -d:MONO_FEATURE_BTLS -d:INSIDE_SYSTEM -d:SECURITY_DEP -nowarn:618,1635 -d:SECURITY_DEP -d:XML_DEP -r:./../../class/lib/xammac/bare/System.Xml.dll -r:MonoSecurity=./../../class/lib/xammac/Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/xammac/secxml/System.dll</library_output>
@@ -17030,7 +17030,7 @@
     </project>
     <project dir="class/System" library="System-xammac_net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/xammac_net_4_5/mscorlib.dll -debug -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NO_SYSTEM_DRAWING_DEPENDENCY -d:NO_WINFORMS_DEPENDENCY -d:NO_SYSTEM_WEB_DEPENDENCY -d:XAMMAC_4_5 -d:XAMARIN_MODERN -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -d:MONO_SECURITY_ALIAS -d:CONFIGURATION_DEP -r:./../../class/lib/xammac_net_4_5/System.Xml.dll -r:./../../class/lib/xammac_net_4_5/System.Configuration.dll -r:MonoSecurity=./../../class/lib/xammac_net_4_5/Mono.Security.dll</flags>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/xammac_net_4_5/mscorlib.dll -debug -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NO_SYSTEM_DRAWING_DEPENDENCY -d:NO_WINFORMS_DEPENDENCY -d:NO_SYSTEM_WEB_DEPENDENCY -d:XAMMAC_4_5 -d:XAMARIN_MODERN -optimize /noconfig -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:MONO_FEATURE_BTLS -d:SECURITY_DEP -d:XML_DEP -d:MONO_SECURITY_ALIAS -d:CONFIGURATION_DEP -r:./../../class/lib/xammac_net_4_5/System.Xml.dll -r:./../../class/lib/xammac_net_4_5/System.Configuration.dll -r:MonoSecurity=./../../class/lib/xammac_net_4_5/Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/xammac_net_4_5/System.dll</library_output>
@@ -17052,7 +17052,7 @@
     </project>
     <project dir="class/System" library="System-bare-xammac_net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/xammac_net_4_5/mscorlib.dll -debug -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NO_SYSTEM_DRAWING_DEPENDENCY -d:NO_WINFORMS_DEPENDENCY -d:NO_SYSTEM_WEB_DEPENDENCY -d:XAMMAC_4_5 -d:XAMARIN_MODERN -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav</flags>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/xammac_net_4_5/mscorlib.dll -debug -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NO_SYSTEM_DRAWING_DEPENDENCY -d:NO_WINFORMS_DEPENDENCY -d:NO_SYSTEM_WEB_DEPENDENCY -d:XAMMAC_4_5 -d:XAMARIN_MODERN -optimize /noconfig -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:MONO_FEATURE_BTLS</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/xammac_net_4_5/bare/System.dll</library_output>
@@ -17074,7 +17074,7 @@
     </project>
     <project dir="class/System" library="System-secxml-xammac_net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/xammac_net_4_5/mscorlib.dll -debug -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NO_SYSTEM_DRAWING_DEPENDENCY -d:NO_WINFORMS_DEPENDENCY -d:NO_SYSTEM_WEB_DEPENDENCY -d:XAMMAC_4_5 -d:XAMARIN_MODERN -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -d:MONO_SECURITY_ALIAS -r:./../../class/lib/xammac_net_4_5/bare/System.Xml.dll -r:MonoSecurity=./../../class/lib/xammac_net_4_5/Mono.Security.dll</flags>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/xammac_net_4_5/mscorlib.dll -debug -d:FEATURE_INTERCEPTABLE_THREADPOOL_CALLBACK -d:NO_SYSTEM_DRAWING_DEPENDENCY -d:NO_WINFORMS_DEPENDENCY -d:NO_SYSTEM_WEB_DEPENDENCY -d:XAMMAC_4_5 -d:XAMARIN_MODERN -optimize /noconfig -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:MONO_FEATURE_BTLS -d:SECURITY_DEP -d:XML_DEP -d:MONO_SECURITY_ALIAS -r:./../../class/lib/xammac_net_4_5/bare/System.Xml.dll -r:MonoSecurity=./../../class/lib/xammac_net_4_5/Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/xammac_net_4_5/secxml/System.dll</library_output>
