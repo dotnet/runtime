@@ -3544,3 +3544,364 @@ public class Vehicle
 {
     public string LicenseNumber;
 }
+
+public class Person1
+{
+    public String Name;
+    public int Age;
+}
+
+[DataContract(Name = "Person", Namespace = "http://www.msn.com/employees")]
+class Person : IExtensibleDataObject
+{
+    private ExtensionDataObject extensionDataObject_value;
+    public ExtensionDataObject ExtensionData
+    {
+        get
+        {
+            return extensionDataObject_value;
+        }
+        set
+        {
+            extensionDataObject_value = value;
+        }
+    }
+    [DataMember]
+    public string Name=string.Empty;
+}
+
+[DataContract(Name = "Person", Namespace = "http://www.msn.com/employees")]
+class PersonV2 : IExtensibleDataObject
+{
+    // Best practice: add an Order number to new members.
+    [DataMember(Order = 2)]
+    public int ID = 0;
+
+    [DataMember]
+    public string Name = string.Empty;
+
+    private ExtensionDataObject extensionDataObject_value;
+    public ExtensionDataObject ExtensionData
+    {
+        get
+        {
+            return extensionDataObject_value;
+        }
+        set
+        {
+            extensionDataObject_value = value;
+        }
+    }
+}
+
+[DataContract(Namespace = "www.msn.com/Examples/")]
+public class Employee
+{
+    [DataMember]
+    public string EmployeeName;
+    [DataMember]
+    private string ID = string.Empty;
+}
+
+
+[DataContract]
+public class Name
+{
+    [DataMember]
+    public string firstName;
+    public string middlename;
+    [DataMember]
+    public string lastName;
+}
+
+[DataContract(Namespace = "http://msn.com")]
+public class Order
+{
+    private string productValue;
+    private int quantityValue;
+    private decimal valueValue;
+
+    [DataMember(Name = "cost")]
+    public decimal Value
+    {
+        get { return valueValue; }
+        set { valueValue = value; }
+    }
+
+    [DataMember(Name = "quantity")]
+    public int Quantity
+    {
+        get { return quantityValue; }
+        set { quantityValue = value; }
+    }
+
+    [DataMember(Name = "productName")]
+    public string Product
+    {
+        get { return productValue; }
+        set { productValue = value; }
+    }
+}
+
+[DataContract(Namespace = "http://www.msn.com/")]
+public class Line
+{
+    private Order[] itemsValue;
+
+    [DataMember]
+    public Order[] Items
+    {
+        get { return itemsValue; }
+        set { itemsValue = value; }
+    }
+}
+
+public class Transportation
+{
+    // The SoapElementAttribute specifies that the
+    // generated XML element name will be "Wheels"
+    // instead of "Vehicle".
+    [SoapElement("Wheels")]
+    public string Vehicle;
+    [SoapElement(DataType = "dateTime")]
+    public DateTime CreationDate;
+    [SoapElement(IsNullable = true)]
+    public Thing thing;
+
+}
+
+public class Thing
+{
+    [SoapElement(IsNullable = true)]
+    public string ThingName;
+}
+
+public class MyReader : XmlSerializationReader
+{
+    protected override void InitCallbacks() { }
+    protected override void InitIDs() { }
+
+    public static byte[] HexToBytes(string value)
+    {
+        return ToByteArrayHex(value);
+    }
+}
+
+public class MyWriter : XmlSerializationWriter
+{
+    protected override void InitCallbacks() { }
+
+    public static string BytesToHex(byte[] by)
+    {
+        return FromByteArrayHex(by);
+    }
+}
+
+class MyStreamProvider : IStreamProvider
+{
+    Stream stream;
+    bool streamReleased;
+    public MyStreamProvider(Stream stream)
+    {
+        this.stream = stream;
+        this.streamReleased = false;
+    }
+    public bool StreamReleased
+    {
+        get { return this.streamReleased; }
+    }
+    public Stream GetStream()
+    {
+        return this.stream;
+    }
+    public void ReleaseStream(Stream stream)
+    {
+        this.streamReleased = true;
+    }
+}
+
+public class ReaderWriterFactory
+{
+    public enum ReaderWriterType
+    {
+        Binary,
+        Text,
+        MTOM,
+        WebData,
+        WrappedWebData
+    };
+
+    public enum TransferMode
+    {
+        Buffered,
+        Streamed
+    };
+
+    public enum ReaderMode
+    {
+        Buffered,
+        Streamed
+    };
+
+    public static ReaderWriterType Binary = ReaderWriterType.Binary;
+    public static ReaderWriterType Text = ReaderWriterType.Text;
+    public static ReaderWriterType MTOM = ReaderWriterType.MTOM;
+    public static ReaderWriterType WebData = ReaderWriterType.WebData;
+    public static ReaderWriterType WrappedWebData = ReaderWriterType.WrappedWebData;
+
+    public static XmlReader CreateXmlReader(ReaderWriterType rwType, byte[] buffer, Encoding encoding, XmlDictionaryReaderQuotas quotas, IXmlDictionary dictionary, OnXmlDictionaryReaderClose onClose)
+    {
+        XmlReader result = null;
+        switch (rwType)
+        {
+            case ReaderWriterType.Binary:
+                result = XmlDictionaryReader.CreateBinaryReader(buffer, 0, buffer.Length, dictionary, quotas, null, onClose);
+                break;
+            case ReaderWriterType.Text:
+                result = XmlDictionaryReader.CreateTextReader(buffer, 0, buffer.Length, encoding, quotas, onClose);
+                break;
+            case ReaderWriterType.WebData:
+                if (quotas != XmlDictionaryReaderQuotas.Max)
+                {
+                    throw new Exception("Cannot enforce quotas on the Webdata readers!");
+                }
+                if (onClose != null)
+                {
+                    throw new Exception("Webdata readers do not support the OnClose callback!");
+                }
+                XmlParserContext context = new XmlParserContext(null, null, null, XmlSpace.Default, encoding);
+                result = XmlReader.Create(new MemoryStream(buffer), new XmlReaderSettings(), context);
+                break;
+            case ReaderWriterType.MTOM:
+                result = XmlDictionaryReader.CreateMtomReader(buffer, 0, buffer.Length, new Encoding[] { encoding }, null, quotas, int.MaxValue, onClose);
+                break;
+            case ReaderWriterType.WrappedWebData:
+                if (quotas != XmlDictionaryReaderQuotas.Max)
+                {
+                    throw new Exception("There is no overload to create the webdata readers with quotas!");
+                }
+                if (onClose != null)
+                {
+                    throw new Exception("Webdata readers do not support the OnClose callback!");
+                }
+                XmlParserContext context2 = new XmlParserContext(null, null, null, XmlSpace.Default, encoding);
+                result = XmlReader.Create(new MemoryStream(buffer), new XmlReaderSettings(), context2);
+                result = XmlDictionaryReader.CreateDictionaryReader(result);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException("rwType");
+        }
+        return result;
+    }
+
+    public static XmlReader CreateXmlReader(ReaderWriterType rwType, Stream stream, Encoding encoding, XmlDictionaryReaderQuotas quotas, IXmlDictionary dictionary, OnXmlDictionaryReaderClose onClose)
+    {
+        XmlReader result = null;
+        switch (rwType)
+        {
+            case ReaderWriterType.Binary:
+                result = XmlDictionaryReader.CreateBinaryReader(stream, dictionary, quotas, null, onClose);
+                break;
+            case ReaderWriterType.Text:
+                result = XmlDictionaryReader.CreateTextReader(stream, encoding, quotas, onClose);
+                break;
+            case ReaderWriterType.MTOM:
+                result = XmlDictionaryReader.CreateMtomReader(stream, new Encoding[] { encoding }, null, quotas, int.MaxValue, onClose);
+                break;
+            case ReaderWriterType.WebData:
+            case ReaderWriterType.WrappedWebData:
+                if (quotas != XmlDictionaryReaderQuotas.Max)
+                {
+                    throw new Exception("Webdata readers do not support quotas!");
+                }
+                if (onClose != null)
+                {
+                    throw new Exception("Webdata readers do not support the OnClose callback!");
+                }
+                XmlParserContext context = new XmlParserContext(null, null, null, XmlSpace.Default, encoding);
+                result = XmlReader.Create(stream, new XmlReaderSettings(), context);
+                if (rwType == ReaderWriterType.WrappedWebData)
+                {
+                    result = XmlDictionaryReader.CreateDictionaryReader(result);
+                }
+                break;
+            default:
+                throw new ArgumentOutOfRangeException("rwType");
+        }
+        return result;
+    }
+
+    public static XmlReader CreateXmlReader(ReaderWriterType rwType, byte[] buffer, Encoding encoding, XmlDictionaryReaderQuotas quotas, IXmlDictionary dictionary)
+    {
+        return CreateXmlReader(rwType, buffer, encoding, quotas, dictionary, null);
+    }
+
+    public static XmlReader CreateXmlReader(ReaderWriterType rwType, Stream stream, Encoding encoding, XmlDictionaryReaderQuotas quotas, IXmlDictionary dictionary)
+    {
+        return CreateXmlReader(rwType, stream, encoding, quotas, dictionary, null);
+    }
+
+    public static XmlReader CreateXmlReader(ReaderWriterType rwType, byte[] buffer, Encoding encoding, XmlDictionaryReaderQuotas quotas)
+    {
+        return CreateXmlReader(rwType, buffer, encoding, quotas, null);
+    }
+
+    public static XmlReader CreateXmlReader(ReaderWriterType rwType, Stream stream, Encoding encoding, XmlDictionaryReaderQuotas quotas)
+    {
+        return CreateXmlReader(rwType, stream, encoding, quotas, null);
+    }
+
+    public static XmlReader CreateXmlReader(ReaderWriterType rwType, byte[] buffer, Encoding encoding)
+    {
+        return CreateXmlReader(rwType, buffer, encoding, XmlDictionaryReaderQuotas.Max);
+    }
+
+    public static XmlReader CreateXmlReader(ReaderWriterType rwType, Stream stream, Encoding encoding)
+    {
+        return CreateXmlReader(rwType, stream, encoding, XmlDictionaryReaderQuotas.Max);
+    }
+
+    public static XmlWriter CreateXmlWriter(ReaderWriterType rwType, Stream stream, Encoding encoding)
+    {
+        return CreateXmlWriter(rwType, stream, encoding, null);
+    }
+
+    public static XmlWriter CreateXmlWriter(ReaderWriterType rwType, Stream stream, Encoding encoding, IXmlDictionary dictionary)
+    {
+        XmlWriter result = null;
+        switch (rwType)
+        {
+            case ReaderWriterType.Binary:
+                result = XmlDictionaryWriter.CreateBinaryWriter(stream, dictionary);
+                break;
+            case ReaderWriterType.Text:
+                result = XmlDictionaryWriter.CreateTextWriter(stream, encoding);
+                break;
+            case ReaderWriterType.MTOM:
+                result = XmlDictionaryWriter.CreateMtomWriter(stream, encoding, int.MaxValue, "myStartInfo", null, null, true, false);
+                break;
+            case ReaderWriterType.WebData:
+                XmlWriterSettings settings = new XmlWriterSettings();
+                settings.Encoding = encoding;
+                result = XmlWriter.Create(stream, settings);
+                break;
+            case ReaderWriterType.WrappedWebData:
+                XmlWriterSettings settings2 = new XmlWriterSettings();
+                settings2.Encoding = encoding;
+                result = XmlWriter.Create(stream, settings2);
+                result = XmlDictionaryWriter.CreateDictionaryWriter(result);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException("rwType");
+        }
+        return result;
+    }
+
+}
+
+[DataContract]
+public class TestData
+{
+    [DataMember]
+    public String TestString;
+}

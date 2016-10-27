@@ -17,6 +17,7 @@ using System.Runtime.Serialization.Json;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
+using System.Xml.Schema;
 using Xunit;
 
 
@@ -2598,6 +2599,71 @@ public static partial class DataContractSerializerTests
         string expectedxmlstring = "<ObjectContainer xmlns =\"http://schemas.datacontract.org/2004/07/\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><_data i:type=\"a:DTOContainer\" xmlns:a=\"http://www.default.com\"><nDTO i:type=\"a:DTO\"><DateTime xmlns=\"http://schemas.datacontract.org/2004/07/System\">9999-12-31T23:59:59.9999999Z</DateTime><OffsetMinutes xmlns=\"http://schemas.datacontract.org/2004/07/System\">0</OffsetMinutes></nDTO></_data></ObjectContainer>";
         ObjectContainer deserialized = SerializeAndDeserialize(instance, expectedxmlstring, null, serializerfunc, false);
         Assert.Equal(DateTimeOffset.MaxValue, ((DTOContainer)deserialized.Data).nDTO);
+    }
+
+    [ActiveIssue(12767)]
+    [Fact]
+    public static void DCS_ExtensionDataObjectTest()
+    {
+        PersonV2 p2 = new PersonV2();
+        p2.Name = "Elizabeth";
+        p2.ID = 2006;
+        DataContractSerializer ser =
+                new DataContractSerializer(typeof(PersonV2));
+        MemoryStream ms = new MemoryStream();
+        ser.WriteObject(ms, p2);
+        string actualOutput = new StreamReader(ms).ReadToEnd();
+        ms.Position = 0;
+        DataContractSerializer ser2 =
+                new DataContractSerializer(typeof(Person));
+        XmlDictionaryReader reader =
+               XmlDictionaryReader.CreateTextReader(ms, new XmlDictionaryReaderQuotas());
+        Person p1 = (Person)ser2.ReadObject(reader, false);
+        Assert.NotNull(p1.ExtensionData);
+    }
+
+    [Fact]
+    public static void DCS_XPathQueryGeneratorTest()
+    {
+        Type t = typeof(Order);
+        MemberInfo[] mi = t.GetMember("Product");
+        MemberInfo[] mi2 = t.GetMember("Value");
+        MemberInfo[] mi3 = t.GetMember("Quantity");
+        Assert.Equal("/xg0:Order/xg0:productName", GenerateaAndGetXPath(t, mi));
+        Assert.Equal("/xg0:Order/xg0:cost", GenerateaAndGetXPath(t, mi2));
+        Assert.Equal("/xg0:Order/xg0:quantity", GenerateaAndGetXPath(t, mi3));
+        Type t2 = typeof(Line);
+        MemberInfo[] mi4 = t2.GetMember("Items");
+        Assert.Equal("/xg0:Line/xg0:Items", GenerateaAndGetXPath(t2, mi4));
+    }
+    static string GenerateaAndGetXPath(Type t, MemberInfo[] mi)
+    {
+        // Create a new name table and name space manager.
+        NameTable nt = new NameTable();
+        XmlNamespaceManager xname = new XmlNamespaceManager(nt);
+        // Generate the query and print it.
+        return XPathQueryGenerator.CreateFromDataContractSerializer(
+            t, mi, out xname);
+    }
+
+    [ActiveIssue(12772)]
+    [Fact]
+    public static void XsdDataContractExporterTest()
+    {
+        XsdDataContractExporter exporter = new XsdDataContractExporter();
+        if (exporter.CanExport(typeof(Employee)))
+        {
+            exporter.Export(typeof(Employee));
+            Assert.Equal(3,exporter.Schemas.Count);
+
+            XmlSchemaSet mySchemas = exporter.Schemas;
+
+            XmlQualifiedName XmlNameValue = exporter.GetRootElementName(typeof(Employee));
+            string EmployeeNameSpace = XmlNameValue.Namespace;
+            Assert.Equal("www.msn.com/Examples/", EmployeeNameSpace);
+            XmlSchema schema = mySchemas.Schemas(EmployeeNameSpace).Cast<XmlSchema>().FirstOrDefault();
+            Assert.NotNull(schema);
+        }
     }
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractSerializerSettings settings = null, Func<DataContractSerializer> serializerFactory = null, bool skipStringCompare = false)
     {
