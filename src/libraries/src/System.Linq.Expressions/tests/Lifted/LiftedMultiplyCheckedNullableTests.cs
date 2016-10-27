@@ -168,6 +168,19 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedMultiplyCheckedNullableNumberTest(bool useInterpreter)
+        {
+            Number?[] values = new Number?[] { null, new Number(0), new Number(1), Number.MaxValue };
+            for (int i = 0; i < values.Length; i++)
+            {
+                for (int j = 0; j < values.Length; j++)
+                {
+                    VerifyMultiplyCheckedNullableNumber(values[i], values[j], useInterpreter);
+                }
+            }
+        }
+
         #endregion
 
         #region Helpers
@@ -500,6 +513,20 @@ namespace System.Linq.Expressions.Tests
             }
 
             Assert.Equal(expected, f());
+        }
+        
+        private static void VerifyMultiplyCheckedNullableNumber(Number? a, Number? b, bool useInterpreter)
+        {
+            Expression<Func<Number?>> e =
+                Expression.Lambda<Func<Number?>>(
+                    Expression.MultiplyChecked(
+                        Expression.Constant(a, typeof(Number?)),
+                        Expression.Constant(b, typeof(Number?))));
+            Assert.Equal(typeof(Number?), e.Body.Type);
+            Func<Number?> f = e.Compile(useInterpreter);
+
+            Number? expected = a * b;
+            Assert.Equal(expected, f()); // NB: checked behavior doesn't apply to non-primitive types
         }
 
         #endregion
