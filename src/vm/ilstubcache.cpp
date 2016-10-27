@@ -128,7 +128,7 @@ MethodDesc* ILStubCache::CreateAndLinkNewILStubMethodDesc(LoaderAllocator* pAllo
         pStubLinker->GenerateCode(pbBuffer, cbCode);
         pStubLinker->GetLocalSig(pbLocalSig, cbSig);
 
-        pResolver->SetJitFlags(CORJIT_FLG_IL_STUB);
+        pResolver->SetJitFlags(CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB));
     }
 
     pResolver->SetTokenLookupMap(pStubLinker->GetTokenLookupMap());

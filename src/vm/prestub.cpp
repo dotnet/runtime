@@ -256,7 +256,7 @@ void DACNotifyCompilationFinished(MethodDesc *methodDesc)
 // which prevents us from trying to JIT the same method more that once.
 
 
-PCODE MethodDesc::MakeJitWorker(COR_ILMETHOD_DECODER* ILHeader, DWORD flags, DWORD flags2)
+PCODE MethodDesc::MakeJitWorker(COR_ILMETHOD_DECODER* ILHeader, CORJIT_FLAGS flags)
 {
     STANDARD_VM_CONTRACT;
 
@@ -280,7 +280,7 @@ PCODE MethodDesc::MakeJitWorker(COR_ILMETHOD_DECODER* ILHeader, DWORD flags, DWO
 #ifdef FEATURE_MULTICOREJIT
     MulticoreJitManager & mcJitManager = GetAppDomain()->GetMulticoreJitManager();
 
-    bool fBackgroundThread = (flags & CORJIT_FLG_MCJIT_BACKGROUND) != 0;
+    bool fBackgroundThread = flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MCJIT_BACKGROUND);
 #endif
 
     {
@@ -461,13 +461,13 @@ PCODE MethodDesc::MakeJitWorker(COR_ILMETHOD_DECODER* ILHeader, DWORD flags, DWO
             if (!fBackgroundThread)
 #endif // FEATURE_MULTICOREJIT
             {
-                StackSampler::RecordJittingInfo(this, flags, flags2);
+                StackSampler::RecordJittingInfo(this, flags);
             }
 #endif // FEATURE_STACK_SAMPLING
 
             EX_TRY
             {
-                pCode = UnsafeJitFunction(this, ILHeader, flags, flags2, &sizeOfCode);
+                pCode = UnsafeJitFunction(this, ILHeader, flags, &sizeOfCode);
             }
             EX_CATCH
             {
@@ -1463,7 +1463,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT)
             // Mark the code as hot in case the method ends up in the native image
             g_IBCLogger.LogMethodCodeAccess(this);
 
-            pCode = MakeJitWorker(pHeader, 0, 0);
+            pCode = MakeJitWorker(pHeader, CORJIT_FLAGS());
 
 #ifdef FEATURE_INTERPRETER
             if ((pCode != NULL) && !HasStableEntryPoint())

@@ -1264,9 +1264,9 @@ void* emitter::emitAllocInstr(size_t sz, emitAttr opsz)
     //     ARM - This is currently broken on _TARGET_ARM_
     //     When nopSize is odd we misalign emitCurIGsize
     //
-    if (!(emitComp->opts.eeFlags & CORJIT_FLG_PREJIT) && !emitInInstrumentation &&
-        !emitIGisInProlog(emitCurIG) // don't do this in prolog or epilog
-        && !emitIGisInEpilog(emitCurIG) &&
+    if (!emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) && !emitInInstrumentation &&
+        !emitIGisInProlog(emitCurIG) && // don't do this in prolog or epilog
+        !emitIGisInEpilog(emitCurIG) &&
         emitRandomNops // sometimes we turn off where exact codegen is needed (pinvoke inline)
         )
     {

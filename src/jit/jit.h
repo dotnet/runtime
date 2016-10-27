@@ -210,6 +210,7 @@
 
 #include "corhdr.h"
 #include "corjit.h"
+#include "jitee.h"
 
 #define __OPERATOR_NEW_INLINE 1 // indicate that I will define these
 #define __PLACEMENT_NEW_INLINE  // don't bring in the global placement new, it is easy to make a mistake
@@ -829,7 +830,7 @@ extern int jitNativeCode(CORINFO_METHOD_HANDLE methodHnd,
                          CORINFO_METHOD_INFO*  methodInfo,
                          void**                methodCodePtr,
                          ULONG*                methodCodeSize,
-                         CORJIT_FLAGS*         compileFlags,
+                         JitFlags*             compileFlags,
                          void*                 inlineInfoPtr);
 
 #ifdef _HOST_64BIT_

@@ -3054,7 +3054,7 @@ bool CodeGenInterface::validImmForBL(ssize_t addr)
     return
         // If we are running the altjit for NGEN, then assume we can use the "BL" instruction.
         // This matches the usual behavior for NGEN, since we normally do generate "BL".
-        (!compiler->info.compMatchedVM && (compiler->opts.eeFlags & CORJIT_FLG_PREJIT)) ||
+        (!compiler->info.compMatchedVM && compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT)) ||
         (compiler->eeGetRelocTypeHint((void*)addr) == IMAGE_REL_BASED_THUMB_BRANCH24);
 }
 bool CodeGen::arm_Valid_Imm_For_BL(ssize_t addr)

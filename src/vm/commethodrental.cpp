@@ -102,9 +102,9 @@ void QCALLTYPE COMMethodRental::SwapMethodBody(EnregisteredTypeHandle cls, INT32
             COMPlusThrowHR(VLDTR_E_MD_BADHEADER);
 
 #ifdef FEATURE_INTERPRETER
-        pMethodDesc->MakeJitWorker(&header, CORJIT_FLG_MAKEFINALCODE, 0);
+        pMethodDesc->MakeJitWorker(&header, CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE));
 #else // !FEATURE_INTERPRETER
-        pMethodDesc->MakeJitWorker(&header, 0, 0);
+        pMethodDesc->MakeJitWorker(&header, CORJIT_FLAGS());
 #endif // !FEATURE_INTERPRETER
     }
 

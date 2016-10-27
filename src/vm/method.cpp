@@ -1078,7 +1078,7 @@ BOOL MethodDesc::IsVerifiable()
 #endif // _VER_EE_VERIFICATION_ENABLED
     }
 
-    UnsafeJitFunction(this, pHeader, CORJIT_FLG_IMPORT_ONLY, 0);
+    UnsafeJitFunction(this, pHeader, CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY));
     _ASSERTE(IsVerified());
 
     return (IsVerified() && (m_wFlags & mdcVerifiable));
