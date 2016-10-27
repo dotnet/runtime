@@ -3487,6 +3487,9 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 
 	lcall = emit_call (ctx, bb, &builder, callee, args, LLVMCountParamTypes (llvm_sig));
 
+	if (ins->opcode != OP_TAILCALL && LLVMGetInstructionOpcode (lcall) == LLVMCall)
+		mono_llvm_set_call_notail (lcall);
+
 	/*
 	 * Modify cconv and parameter attributes to pass rgctx/imt correctly.
 	 */

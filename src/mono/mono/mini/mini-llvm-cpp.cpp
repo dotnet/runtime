@@ -233,7 +233,7 @@ void
 mono_llvm_set_call_notail (LLVMValueRef func)
 {
 #if LLVM_API_VERSION > 100
-	//unwrap<CallInst>(func)->setTailCallKind (CallInst::TailCallKind::TCK_NoTail);
+	unwrap<CallInst>(func)->setTailCallKind (CallInst::TailCallKind::TCK_NoTail);
 #endif
 }
 
