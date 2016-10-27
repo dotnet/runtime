@@ -266,7 +266,7 @@ namespace System.Diagnostics
                     }
                     catch (IOException e)
                     {
-                        error = Marshal.GetHRForException(e);
+                        error = e.HResult;
                         switch (error)
                         {
                             case Interop.mincore.RPCStatus.RPC_S_CALL_FAILED:
