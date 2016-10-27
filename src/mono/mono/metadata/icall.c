@@ -105,22 +105,6 @@
 #include <sys/utsname.h>
 #endif
 
-#if defined(HAVE_BTLS) && !defined(HAVE_DYNAMIC_BTLS)
-#include <btls/btls-ssl.h>
-#include <btls/btls-bio.h>
-#include <btls/btls-error.h>
-#include <btls/btls-key.h>
-#include <btls/btls-pkcs12.h>
-#include <btls/btls-x509-crl.h>
-#include <btls/btls-x509-chain.h>
-#include <btls/btls-x509-lookup.h>
-#include <btls/btls-x509-lookup-mono.h>
-#include <btls/btls-x509-name.h>
-#include <btls/btls-x509-revoked.h>
-#include <btls/btls-x509-store-ctx.h>
-#include <btls/btls-x509-verify-param.h>
-#endif
-
 extern MonoString* ves_icall_System_Environment_GetOSVersionString (void);
 
 ICALL_EXPORT MonoReflectionAssembly* ves_icall_System_Reflection_Assembly_GetCallingAssembly (void);
