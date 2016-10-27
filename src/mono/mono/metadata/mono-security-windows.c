@@ -8,8 +8,8 @@
 #include <glib.h>
 
 #if defined(HOST_WIN32)
-#include <WinSock2.h>
-#include <Windows.h>
+#include <winsock2.h>
+#include <windows.h>
 #include "mono/metadata/mono-security-windows-internals.h"
 
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)

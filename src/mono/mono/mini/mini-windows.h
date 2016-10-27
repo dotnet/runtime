@@ -5,7 +5,7 @@
 #include <glib.h>
 
 #ifdef HOST_WIN32
-#include "Windows.h"
+#include "windows.h"
 #include "mini.h"
 #include "mono/utils/mono-context.h"
 

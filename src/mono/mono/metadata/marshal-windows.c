@@ -8,8 +8,8 @@
 #include <glib.h>
 
 #if defined(HOST_WIN32)
-#include <WinSock2.h>
-#include <Windows.h>
+#include <winsock2.h>
+#include <windows.h>
 #include <objbase.h>
 #include "mono/metadata/marshal-windows-internals.h"
 
