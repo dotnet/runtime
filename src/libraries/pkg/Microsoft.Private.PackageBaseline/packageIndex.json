@@ -837,9 +837,10 @@
     },
     "runtime.win7-x64.runtime.native.System.Data.SqlClient.sni": {
       "StableVersions": [
-        "4.0.1"
+        "4.0.1",
+        "4.3.0"
       ],
-      "BaselineVersion": "4.4.0"
+      "BaselineVersion": "4.3.0"
     },
     "runtime.win7-x64.runtime.native.System.IO.Compression": {
       "StableVersions": [
@@ -849,9 +850,10 @@
     },
     "runtime.win7-x86.runtime.native.System.Data.SqlClient.sni": {
       "StableVersions": [
-        "4.0.1"
+        "4.0.1",
+        "4.3.0"
       ],
-      "BaselineVersion": "4.4.0"
+      "BaselineVersion": "4.3.0"
     },
     "runtime.win7-x86.runtime.native.System.IO.Compression": {
       "StableVersions": [
