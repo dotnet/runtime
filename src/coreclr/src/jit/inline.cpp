@@ -646,10 +646,11 @@ void InlineResult::Report()
     m_Reported = true;
 
 #ifdef DEBUG
-    const char* callee = nullptr;
+    const char* callee      = nullptr;
+    const bool  showInlines = (JitConfig.JitPrintInlinedMethods() == 1);
 
     // Optionally dump the result
-    if (VERBOSE)
+    if (VERBOSE || showInlines)
     {
         const char* format = "INLINER: during '%s' result '%s' reason '%s' for '%s' calling '%s'\n";
         const char* caller = (m_Caller == nullptr) ? "n/a" : m_RootCompiler->eeGetMethodFullName(m_Caller);
@@ -689,10 +690,16 @@ void InlineResult::Report()
 
 #ifdef DEBUG
 
+            const char* obsString = InlGetObservationString(obs);
+
             if (VERBOSE)
             {
-                const char* obsString = InlGetObservationString(obs);
                 JITDUMP("\nINLINER: Marking %s as NOINLINE because of %s\n", callee, obsString);
+            }
+
+            if (showInlines)
+            {
+                printf("Marking %s as NOINLINE because of %s\n", callee, obsString);
             }
 
 #endif // DEBUG
