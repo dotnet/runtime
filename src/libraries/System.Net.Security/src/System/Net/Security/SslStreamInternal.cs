@@ -395,6 +395,13 @@ namespace System.Net.Security
 
                 do
                 {
+                    if (count == 0 && !SslStreamPal.CanEncryptEmptyMessage)
+                    {
+                        // If it's an empty message and the PAL doesn't support that,
+                        // we're done.
+                        return;
+                    }
+
                     // Request a write IO slot.
                     if (_sslState.CheckEnqueueWrite(asyncRequest))
                     {
