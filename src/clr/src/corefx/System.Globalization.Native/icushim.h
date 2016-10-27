@@ -88,6 +88,8 @@
     PER_FUNCTION_BLOCK(uldn_keyValueDisplayName, libicui18n) \
     PER_FUNCTION_BLOCK(uldn_open, libicui18n) \
     PER_FUNCTION_BLOCK(uloc_canonicalize, libicuuc) \
+    PER_FUNCTION_BLOCK(uloc_countAvailable, libicuuc) \
+    PER_FUNCTION_BLOCK(uloc_getAvailable, libicuuc) \
     PER_FUNCTION_BLOCK(uloc_getBaseName, libicuuc) \
     PER_FUNCTION_BLOCK(uloc_getCharacterOrientation, libicuuc) \
     PER_FUNCTION_BLOCK(uloc_getCountry, libicuuc) \
@@ -96,6 +98,7 @@
     PER_FUNCTION_BLOCK(uloc_getDisplayLanguage, libicuuc) \
     PER_FUNCTION_BLOCK(uloc_getDisplayName, libicuuc) \
     PER_FUNCTION_BLOCK(uloc_getISO3Country, libicuuc) \
+    PER_FUNCTION_BLOCK(uloc_getISO3Language, libicuuc) \
     PER_FUNCTION_BLOCK(uloc_getKeywordValue, libicuuc) \
     PER_FUNCTION_BLOCK(uloc_getLanguage, libicuuc) \
     PER_FUNCTION_BLOCK(uloc_getLCID, libicuuc) \
@@ -195,6 +198,8 @@ FOR_ALL_ICU_FUNCTIONS
 #define uldn_keyValueDisplayName(...) uldn_keyValueDisplayName_ptr(__VA_ARGS__)
 #define uldn_open(...) uldn_open_ptr(__VA_ARGS__)
 #define uloc_canonicalize(...) uloc_canonicalize_ptr(__VA_ARGS__)
+#define uloc_countAvailable(...) uloc_countAvailable_ptr(__VA_ARGS__)
+#define uloc_getAvailable(...) uloc_getAvailable_ptr(__VA_ARGS__)
 #define uloc_getBaseName(...) uloc_getBaseName_ptr(__VA_ARGS__)
 #define uloc_getCharacterOrientation(...) uloc_getCharacterOrientation_ptr(__VA_ARGS__)
 #define uloc_getCountry(...) uloc_getCountry_ptr(__VA_ARGS__)
@@ -203,6 +208,7 @@ FOR_ALL_ICU_FUNCTIONS
 #define uloc_getDisplayLanguage(...) uloc_getDisplayLanguage_ptr(__VA_ARGS__)
 #define uloc_getDisplayName(...) uloc_getDisplayName_ptr(__VA_ARGS__)
 #define uloc_getISO3Country(...) uloc_getISO3Country_ptr(__VA_ARGS__)
+#define uloc_getISO3Language(...) uloc_getISO3Language_ptr(__VA_ARGS__)
 #define uloc_getKeywordValue(...) uloc_getKeywordValue_ptr(__VA_ARGS__)
 #define uloc_getLanguage(...) uloc_getLanguage_ptr(__VA_ARGS__)
 #define uloc_getLCID(...) uloc_getLCID_ptr(__VA_ARGS__)
