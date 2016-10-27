@@ -744,7 +744,7 @@ void MethodContext::recCompileMethod(CORINFO_METHOD_INFO *info, unsigned flags)
 void MethodContext::dmpCompileMethod(DWORD key, const Agnostic_CompileMethod& value)
 {
     printf("CompiledMethod key %u, value ftn-%016llX scp-%016llX ilo-%u ils-%u ms-%u ehc-%u opt-%u rk-%u "
-             "args{cc-%u rc-%016llX rts-%016llX rt-%u(%s) flg-%08X nA-%u cc-%u ci-%u mc-%u mi-%u arg-%016llX cb-%u pSig-%u scp-%016llX tok-%08X} "
+           "args{cc-%u rc-%016llX rts-%016llX rt-%u(%s) flg-%08X nA-%u cc-%u ci-%u mc-%u mi-%u arg-%016llX cb-%u pSig-%u scp-%016llX tok-%08X} "
            "locals{cc-%u rc-%016llX rts-%016llX rt-%u(%s) flg-%08X nA-%u cc-%u ci-%u mc-%u mi-%u arg-%016llX cb-%u pSig-%u scp-%016llX tok-%08X} "
            "flg-%08X",
         key,
@@ -1098,8 +1098,8 @@ void MethodContext::recGetJitFlags(CORJIT_FLAGS *jitFlags, DWORD sizeInBytes, DW
 }
 void MethodContext::dmpGetJitFlags(DWORD key, DD value)
 {
-    CORJIT_FLAGS *flags = (CORJIT_FLAGS*)GetJitFlags->GetBuffer(value.A);
-    printf("GetJitFlags key %u sizeInBytes-%u corJitFlags-%08X corJitFlags2-%08X", key, value.B, flags->corJitFlags, flags->corJitFlags2);
+    CORJIT_FLAGS *jitflags = (CORJIT_FLAGS*)GetJitFlags->GetBuffer(value.A);
+    printf("GetJitFlags key %u sizeInBytes-%u jitFlags-%016llX", key, value.B, jitflags->GetFlagsRaw());
     GetJitFlags->Unlock();
 }
 DWORD MethodContext::repGetJitFlags(CORJIT_FLAGS *jitFlags, DWORD sizeInBytes)

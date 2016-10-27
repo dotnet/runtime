@@ -425,12 +425,15 @@ ZapperOptions::ZapperOptions() :
   m_fPartialNGen(false),
   m_fPartialNGenSet(false),
   m_fNGenLastRetry(false),
-  m_compilerFlags(CORJIT_FLG_RELOC | CORJIT_FLG_PREJIT),
+  m_compilerFlags(),
   m_legacyMode(false)
 #ifdef FEATURE_CORECLR
   ,m_fNoMetaData(s_fNGenNoMetaData)
 #endif
 {
+    m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_RELOC);
+    m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_PREJIT);
+
     m_zapSet = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ZapSet);
     if (m_zapSet != NULL && wcslen(m_zapSet) > 3)
     {
@@ -519,18 +522,21 @@ Zapper::Zapper(NGenOptions *pOptions, bool fromDllHost)
 
     pOptions = &currentVersionOptions;
 
-    zo->m_compilerFlags = CORJIT_FLG_RELOC | CORJIT_FLG_PREJIT;
+    zo->m_compilerFlags.Reset();
+    zo->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_RELOC);
+    zo->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_PREJIT);
     zo->m_autodebug = true;
 
     if (pOptions->fDebug)
     {
-        zo->m_compilerFlags |= CORJIT_FLG_DEBUG_INFO|CORJIT_FLG_DEBUG_CODE;
+        zo->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_INFO);
+        zo->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE);
         zo->m_autodebug = false;
     }
 
     if (pOptions->fProf)
     {
-        zo->m_compilerFlags |= CORJIT_FLG_PROF_ENTERLEAVE;
+        zo->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_PROF_ENTERLEAVE);
     }
 
 #ifdef FEATURE_FUSION
@@ -576,7 +582,7 @@ Zapper::Zapper(NGenOptions *pOptions, bool fromDllHost)
 #endif //FEATURE_FUSION
 
     if (pOptions->fInstrument)
-        zo->m_compilerFlags |= CORJIT_FLG_BBINSTR;
+        zo->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
 
     zo->m_verbose = pOptions->fVerbose;
     zo->m_statOptions = pOptions->uStats;
@@ -2041,10 +2047,10 @@ void Zapper::CreateCompilationDomain()
 
     BOOL fForceDebug = FALSE;
     if (!m_pOpt->m_autodebug)
-        fForceDebug = (m_pOpt->m_compilerFlags & CORJIT_FLG_DEBUG_INFO) != 0;
+        fForceDebug = m_pOpt->m_compilerFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_INFO);
 
-    BOOL fForceProfile = (m_pOpt->m_compilerFlags & CORJIT_FLG_PROF_ENTERLEAVE) != 0;
-    BOOL fForceInstrument = (m_pOpt->m_compilerFlags & CORJIT_FLG_BBINSTR) != 0;
+    BOOL fForceProfile = m_pOpt->m_compilerFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PROF_ENTERLEAVE);
+    BOOL fForceInstrument = m_pOpt->m_compilerFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
 
     InitEE(fForceDebug, fForceProfile, fForceInstrument);
 
@@ -3332,28 +3338,29 @@ IMetaDataAssemblyEmit * Zapper::CreateAssemblyEmitter()
 
 void Zapper::InitializeCompilerFlags(CORCOMPILE_VERSION_INFO * pVersionInfo)
 {
-    m_pOpt->m_compilerFlags &= ~(CORJIT_FLG_DEBUG_INFO
-                                 | CORJIT_FLG_DEBUG_CODE
-                                 | CORJIT_FLG_PROF_ENTERLEAVE
-                                 | CORJIT_FLG_PROF_NO_PINVOKE_INLINE);
+    m_pOpt->m_compilerFlags.Clear(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_INFO);
+    m_pOpt->m_compilerFlags.Clear(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE);
+    m_pOpt->m_compilerFlags.Clear(CORJIT_FLAGS::CORJIT_FLAG_PROF_ENTERLEAVE);
+    m_pOpt->m_compilerFlags.Clear(CORJIT_FLAGS::CORJIT_FLAG_PROF_NO_PINVOKE_INLINE);
 
     // We track debug info all the time in the ngen image
-    m_pOpt->m_compilerFlags |= CORJIT_FLG_DEBUG_INFO;
+    m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_INFO);
 
     if (pVersionInfo->wCodegenFlags & CORCOMPILE_CODEGEN_DEBUGGING)
     {
-        m_pOpt->m_compilerFlags |= (CORJIT_FLG_DEBUG_INFO|
-                                    CORJIT_FLG_DEBUG_CODE);
+        m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_INFO);
+        m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE);
     }
 
     if (pVersionInfo->wCodegenFlags & CORCOMPILE_CODEGEN_PROFILING)
     {
-        m_pOpt->m_compilerFlags |= CORJIT_FLG_PROF_ENTERLEAVE | CORJIT_FLG_PROF_NO_PINVOKE_INLINE;
+        m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_PROF_ENTERLEAVE);
+        m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_PROF_NO_PINVOKE_INLINE);
         m_pOpt->m_ngenProfileImage = true;
     }
 
     if (pVersionInfo->wCodegenFlags & CORCOMPILE_CODEGEN_PROF_INSTRUMENTING)
-        m_pOpt->m_compilerFlags |= CORJIT_FLG_BBINSTR;
+        m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
 
 #if defined(_TARGET_X86_)
 
@@ -3362,7 +3369,7 @@ void Zapper::InitializeCompilerFlags(CORCOMPILE_VERSION_INFO * pVersionInfo)
     switch (CPU_X86_FAMILY(pVersionInfo->cpuInfo.dwCPUType))
     {
     case CPU_X86_PENTIUM_4:
-        m_pOpt->m_compilerFlags |= CORJIT_FLG_TARGET_P4;
+        m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_TARGET_P4);
         break;
 
     default:
@@ -3371,20 +3378,20 @@ void Zapper::InitializeCompilerFlags(CORCOMPILE_VERSION_INFO * pVersionInfo)
 
     if (CPU_X86_USE_CMOV(pVersionInfo->cpuInfo.dwFeatures))
     {
-        m_pOpt->m_compilerFlags |= CORJIT_FLG_USE_CMOV |
-                                   CORJIT_FLG_USE_FCOMI;
+        m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_CMOV);
+        m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_FCOMI);
     }
 
     if (CPU_X86_USE_SSE2(pVersionInfo->cpuInfo.dwFeatures))
     {
-        m_pOpt->m_compilerFlags |= CORJIT_FLG_USE_SSE2;
+        m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE2);
     }
 
 #endif // _TARGET_X86_
 
-    if (   (m_pOpt->m_compilerFlags & CORJIT_FLG_DEBUG_INFO)
-        && (m_pOpt->m_compilerFlags & CORJIT_FLG_DEBUG_CODE)
-        && (m_pOpt->m_compilerFlags & CORJIT_FLG_PROF_ENTERLEAVE))
+    if (   m_pOpt->m_compilerFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_INFO)
+        && m_pOpt->m_compilerFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE)
+        && m_pOpt->m_compilerFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PROF_ENTERLEAVE))
     {
         //
         // We've decided not to support debugging + optimizations disabled + profiling to

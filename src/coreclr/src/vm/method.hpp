@@ -1649,7 +1649,7 @@ public:
 
     PCODE DoPrestub(MethodTable *pDispatchingMT);
 
-    PCODE MakeJitWorker(COR_ILMETHOD_DECODER* ILHeader, DWORD  flags, DWORD flags2);
+    PCODE MakeJitWorker(COR_ILMETHOD_DECODER* ILHeader, CORJIT_FLAGS flags);
 
     VOID GetMethodInfo(SString &namespaceOrClassName, SString &methodName, SString &methodSignature);
     VOID GetMethodInfoWithNewSig(SString &namespaceOrClassName, SString &methodName, SString &methodSignature);

@@ -3910,7 +3910,7 @@ void Compiler::verHandleVerificationFailure(BasicBlock* block DEBUGARG(bool logM
 #endif // DEBUG
 
     // Add the non verifiable flag to the compiler
-    if ((opts.eeFlags & CORJIT_FLG_IMPORT_ONLY) != 0)
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IMPORT_ONLY))
     {
         tiIsVerifiableCode = FALSE;
     }
@@ -16527,7 +16527,7 @@ void Compiler::impImport(BasicBlock* method)
             // coupled with the JIT64 IL Verification logic.  Look inside verHandleVerificationFailure
             // method for further explanation on why we raise this exception instead of making the jitted
             // code throw the verification exception during execution.
-            if (tiVerificationNeeded && (opts.eeFlags & CORJIT_FLG_IMPORT_ONLY) != 0)
+            if (tiVerificationNeeded && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IMPORT_ONLY))
             {
                 BADCODE("Basic block marked as not verifiable");
             }
