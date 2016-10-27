@@ -3014,7 +3014,7 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
 #if defined(DEBUG)
                                 ,
                             (compiler->compCodeOpt() != Compiler::SMALL_CODE) &&
-                                !(compiler->opts.eeFlags & CORJIT_FLG_PREJIT)
+                                !compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT)
 #endif
 #ifdef LEGACY_BACKEND
                                 ,
@@ -7817,7 +7817,7 @@ void CodeGen::genPrologPadForReJit()
     assert(compiler->compGeneratingProlog);
 
 #ifdef _TARGET_XARCH_
-    if (!(compiler->opts.eeFlags & CORJIT_FLG_PROF_REJIT_NOPS))
+    if (!compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PROF_REJIT_NOPS))
     {
         return;
     }

@@ -1354,7 +1354,7 @@ void InlineStrategy::DumpDataEnsurePolicyIsSet()
     // successful policy, so fake one up.
     if (m_LastSuccessfulPolicy == nullptr)
     {
-        const bool isPrejitRoot = (opts.eeFlags & CORJIT_FLG_PREJIT) != 0;
+        const bool isPrejitRoot = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
         m_LastSuccessfulPolicy  = InlinePolicy::GetPolicy(m_Compiler, isPrejitRoot);
 
         // Add in a bit of data....
@@ -1484,7 +1484,7 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
     const Compiler::Info&    info = m_Compiler->info;
     const Compiler::Options& opts = m_Compiler->opts;
 
-    const bool isPrejitRoot  = (opts.eeFlags & CORJIT_FLG_PREJIT) != 0;
+    const bool isPrejitRoot  = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
     const bool isForceInline = (info.compFlags & CORINFO_FLG_FORCEINLINE) != 0;
 
     // We'd really like the method identifier to be unique and

@@ -21,7 +21,7 @@ class StackSampler
 public:
     // Interface
     static void Init();
-    static void RecordJittingInfo(MethodDesc* pMD, DWORD dwFlags, DWORD dwFlags2);
+    static void RecordJittingInfo(MethodDesc* pMD, CORJIT_FLAGS flags);
 
 private:
 
@@ -41,7 +41,7 @@ private:
 
     void JitAndCollectTrace(MethodDesc* pMD, const ADID& adId);
 
-    void RecordJittingInfoInternal(MethodDesc* pMD, DWORD flags);
+    void RecordJittingInfoInternal(MethodDesc* pMD, CORJIT_FLAGS flags);
     ADID GetDomainId(MethodDesc* pMD, const ADID& defaultId);
 
 

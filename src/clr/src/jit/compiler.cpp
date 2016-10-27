@@ -2269,14 +2269,14 @@ const char* Compiler::compLocalVarName(unsigned varNum, unsigned offs)
 
 void Compiler::compSetProcessor()
 {
-    unsigned compileFlags = opts.eeFlags;
+    const JitFlags& jitFlags = *opts.jitFlags;
 
 #if defined(_TARGET_ARM_)
     info.genCPU = CPU_ARM;
 #elif defined(_TARGET_AMD64_)
     info.genCPU = CPU_X64;
 #elif defined(_TARGET_X86_)
-    if (compileFlags & CORJIT_FLG_TARGET_P4)
+    if (jitFlags.IsSet(JitFlags::JIT_FLAG_TARGET_P4))
         info.genCPU = CPU_X86_PENTIUM_4;
     else
         info.genCPU = CPU_X86;
@@ -2296,7 +2296,7 @@ void Compiler::compSetProcessor()
     // COMPlus_EnableAVX can be used to disable using AVX if available on a target machine.
     // Note that FEATURE_AVX_SUPPORT is not enabled for ctpjit
     opts.compCanUseAVX = false;
-    if (((compileFlags & CORJIT_FLG_PREJIT) == 0) && ((compileFlags & CORJIT_FLG_USE_AVX2) != 0))
+    if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT) && jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AVX2))
     {
         if (JitConfig.EnableAVX() != 0)
         {
@@ -2311,9 +2311,9 @@ void Compiler::compSetProcessor()
 #endif //_TARGET_AMD64_
 
 #ifdef _TARGET_X86_
-    opts.compUseFCOMI   = ((opts.eeFlags & CORJIT_FLG_USE_FCOMI) != 0);
-    opts.compUseCMOV    = ((opts.eeFlags & CORJIT_FLG_USE_CMOV) != 0);
-    opts.compCanUseSSE2 = ((opts.eeFlags & CORJIT_FLG_USE_SSE2) != 0);
+    opts.compUseFCOMI   = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_FCOMI);
+    opts.compUseCMOV    = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_CMOV);
+    opts.compCanUseSSE2 = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE2);
 
 #ifdef DEBUG
     if (opts.compUseFCOMI)
@@ -2403,31 +2403,36 @@ unsigned ReinterpretHexAsDecimal(unsigned in)
     return result;
 }
 
-void Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
+void Compiler::compInitOptions(JitFlags* jitFlags)
 {
 #ifdef UNIX_AMD64_ABI
     opts.compNeedToAlignFrame = false;
 #endif // UNIX_AMD64_ABI
     memset(&opts, 0, sizeof(opts));
 
-    unsigned compileFlags = jitFlags->corJitFlags;
-
     if (compIsForInlining())
     {
-        assert((compileFlags & CORJIT_FLG_LOST_WHEN_INLINING) == 0);
-        assert(compileFlags & CORJIT_FLG_SKIP_VERIFICATION);
+        // The following flags are lost when inlining. (They are removed in
+        // Compiler::fgInvokeInlineeCompiler().)
+        assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT));
+        assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR));
+        assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_PROF_ENTERLEAVE));
+        assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_EnC));
+        assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_INFO));
+
+        assert(jitFlags->IsSet(JitFlags::JIT_FLAG_SKIP_VERIFICATION));
     }
 
     opts.jitFlags  = jitFlags;
-    opts.eeFlags   = compileFlags;
     opts.compFlags = CLFLG_MAXOPT; // Default value is for full optimization
 
-    if (opts.eeFlags & (CORJIT_FLG_DEBUG_CODE | CORJIT_FLG_MIN_OPT))
+    if (jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_CODE) || jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT))
     {
         opts.compFlags = CLFLG_MINOPT;
     }
     // Don't optimize .cctors (except prejit) or if we're an inlinee
-    else if (!(opts.eeFlags & CORJIT_FLG_PREJIT) && ((info.compFlags & FLG_CCTOR) == FLG_CCTOR) && !compIsForInlining())
+    else if (!jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) && ((info.compFlags & FLG_CCTOR) == FLG_CCTOR) &&
+             !compIsForInlining())
     {
         opts.compFlags = CLFLG_MINOPT;
     }
@@ -2439,24 +2444,25 @@ void Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
     // If the EE sets SIZE_OPT or if we are compiling a Class constructor
     // we will optimize for code size at the expense of speed
     //
-    if ((opts.eeFlags & CORJIT_FLG_SIZE_OPT) || ((info.compFlags & FLG_CCTOR) == FLG_CCTOR))
+    if (jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT) || ((info.compFlags & FLG_CCTOR) == FLG_CCTOR))
     {
         opts.compCodeOpt = SMALL_CODE;
     }
     //
     // If the EE sets SPEED_OPT we will optimize for speed at the expense of code size
     //
-    else if (opts.eeFlags & CORJIT_FLG_SPEED_OPT)
+    else if (jitFlags->IsSet(JitFlags::JIT_FLAG_SPEED_OPT))
     {
         opts.compCodeOpt = FAST_CODE;
-        assert((opts.eeFlags & CORJIT_FLG_SIZE_OPT) == 0);
+        assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT));
     }
 
     //-------------------------------------------------------------------------
 
-    opts.compDbgCode = (opts.eeFlags & CORJIT_FLG_DEBUG_CODE) != 0;
-    opts.compDbgInfo = (opts.eeFlags & CORJIT_FLG_DEBUG_INFO) != 0;
-    opts.compDbgEnC  = (opts.eeFlags & CORJIT_FLG_DEBUG_EnC) != 0;
+    opts.compDbgCode = jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_CODE);
+    opts.compDbgInfo = jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_INFO);
+    opts.compDbgEnC  = jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_EnC);
+
 #if REGEN_SHORTCUTS || REGEN_CALLPAT
     // We never want to have debugging enabled when regenerating GC encoding patterns
     opts.compDbgCode = false;
@@ -2496,7 +2502,7 @@ void Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
 #ifdef DEBUG
 
     const JitConfigValues::MethodSet* pfAltJit;
-    if (opts.eeFlags & CORJIT_FLG_PREJIT)
+    if (jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
     {
         pfAltJit = &JitConfig.AltJitNgen();
     }
@@ -2521,7 +2527,7 @@ void Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
 #else // !DEBUG
 
     const char* altJitVal;
-    if (opts.eeFlags & CORJIT_FLG_PREJIT)
+    if (jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
     {
         altJitVal = JitConfig.AltJitNgen().list();
     }
@@ -2625,7 +2631,7 @@ void Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
         //
         if (!compIsForInlining())
         {
-            if (opts.eeFlags & CORJIT_FLG_PREJIT)
+            if (jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
             {
                 if (JitConfig.NgenDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
                 {
@@ -2977,7 +2983,7 @@ void Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
 #ifdef FEATURE_SIMD
 #ifdef _TARGET_AMD64_
     // Minimum bar for availing SIMD benefits is SSE2 on AMD64.
-    featureSIMD = ((opts.eeFlags & CORJIT_FLG_FEATURE_SIMD) != 0);
+    featureSIMD = jitFlags->IsSet(JitFlags::JIT_FLAG_FEATURE_SIMD);
 #endif // _TARGET_AMD64_
 #endif // FEATURE_SIMD
 
@@ -3032,7 +3038,7 @@ void Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
     //
     if (!altJitConfig || opts.altJit)
     {
-        if (opts.eeFlags & CORJIT_FLG_PREJIT)
+        if (jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
         {
             if ((JitConfig.NgenOrder() & 1) == 1)
             {
@@ -3197,10 +3203,10 @@ void Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
 #endif
 
 #ifdef PROFILING_SUPPORTED
-    opts.compNoPInvokeInlineCB = (opts.eeFlags & CORJIT_FLG_PROF_NO_PINVOKE_INLINE) ? true : false;
+    opts.compNoPInvokeInlineCB = jitFlags->IsSet(JitFlags::JIT_FLAG_PROF_NO_PINVOKE_INLINE);
 
     // Cache the profiler handle
-    if (opts.eeFlags & CORJIT_FLG_PROF_ENTERLEAVE)
+    if (jitFlags->IsSet(JitFlags::JIT_FLAG_PROF_ENTERLEAVE))
     {
         BOOL hookNeeded;
         BOOL indirected;
@@ -3245,7 +3251,7 @@ void Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
     }
 #endif
 
-    opts.compMustInlinePInvokeCalli = (opts.eeFlags & CORJIT_FLG_IL_STUB) ? true : false;
+    opts.compMustInlinePInvokeCalli = jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB);
 
     opts.compScopeInfo = opts.compDbgInfo;
 
@@ -3257,7 +3263,7 @@ void Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
 //-------------------------------------------------------------------------
 
 #if RELOC_SUPPORT
-    opts.compReloc = (opts.eeFlags & CORJIT_FLG_RELOC) ? true : false;
+    opts.compReloc = jitFlags->IsSet(JitFlags::JIT_FLAG_RELOC);
 #endif
 
 #ifdef DEBUG
@@ -3267,7 +3273,7 @@ void Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
 #endif
 #endif // DEBUG
 
-    opts.compProcedureSplitting = (opts.eeFlags & CORJIT_FLG_PROCSPLIT) ? true : false;
+    opts.compProcedureSplitting = jitFlags->IsSet(JitFlags::JIT_FLAG_PROCSPLIT);
 
 #ifdef _TARGET_ARM64_
     // TODO-ARM64-NYI: enable hot/cold splitting
@@ -3312,7 +3318,7 @@ void Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
     fgProfileBuffer              = nullptr;
     fgProfileData_ILSizeMismatch = false;
     fgNumProfileRuns             = 0;
-    if (opts.eeFlags & CORJIT_FLG_BBOPT)
+    if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
     {
         assert(!compIsForInlining());
         HRESULT hr;
@@ -3383,7 +3389,7 @@ void Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
         printf("OPTIONS: compProcedureSplitting   = %s\n", dspBool(opts.compProcedureSplitting));
         printf("OPTIONS: compProcedureSplittingEH = %s\n", dspBool(opts.compProcedureSplittingEH));
 
-        if ((opts.eeFlags & CORJIT_FLG_BBOPT) && fgHaveProfileData())
+        if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT) && fgHaveProfileData())
         {
             printf("OPTIONS: using real profile data\n");
         }
@@ -3393,7 +3399,7 @@ void Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
             printf("OPTIONS: discarded IBC profile data due to mismatch in ILSize\n");
         }
 
-        if (opts.eeFlags & CORJIT_FLG_PREJIT)
+        if (jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
         {
             printf("OPTIONS: Jit invoked for ngen\n");
         }
@@ -3402,11 +3408,11 @@ void Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
 #endif
 
     opts.compGCPollType = GCPOLL_NONE;
-    if (opts.eeFlags & CORJIT_FLG_GCPOLL_CALLS)
+    if (jitFlags->IsSet(JitFlags::JIT_FLAG_GCPOLL_CALLS))
     {
         opts.compGCPollType = GCPOLL_CALL;
     }
-    else if (opts.eeFlags & CORJIT_FLG_GCPOLL_INLINE)
+    else if (jitFlags->IsSet(JitFlags::JIT_FLAG_GCPOLL_INLINE))
     {
         // make sure that the EE didn't set both flags.
         assert(opts.compGCPollType == GCPOLL_NONE);
@@ -3673,11 +3679,8 @@ void Compiler::compInitDebuggingInfo()
 
 void Compiler::compSetOptimizationLevel()
 {
-    unsigned compileFlags;
     bool     theMinOptsValue;
     unsigned jitMinOpts;
-
-    compileFlags = opts.eeFlags;
 
     if (compIsForInlining())
     {
@@ -3775,7 +3778,7 @@ void Compiler::compSetOptimizationLevel()
     }
     // For PREJIT we never drop down to MinOpts
     // unless unless CLFLG_MINOPT is set
-    else if (!(compileFlags & CORJIT_FLG_PREJIT))
+    else if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
     {
         if ((unsigned)JitConfig.JitMinOptsCodeSize() < info.compILCodeSize)
         {
@@ -3817,7 +3820,7 @@ void Compiler::compSetOptimizationLevel()
     // Retail check if we should force Minopts due to the complexity of the method
     // For PREJIT we never drop down to MinOpts
     // unless unless CLFLG_MINOPT is set
-    if (!theMinOptsValue && !(compileFlags & CORJIT_FLG_PREJIT) &&
+    if (!theMinOptsValue && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) &&
         ((DEFAULT_MIN_OPTS_CODE_SIZE < info.compILCodeSize) || (DEFAULT_MIN_OPTS_INSTR_COUNT < opts.instrCount) ||
          (DEFAULT_MIN_OPTS_BB_COUNT < fgBBcount) || (DEFAULT_MIN_OPTS_LV_NUM_COUNT < lvaCount) ||
          (DEFAULT_MIN_OPTS_LV_REF_COUNT < opts.lvRefCount)))
@@ -3895,27 +3898,27 @@ _SetMinOpts:
         }
 
 #if !defined(_TARGET_AMD64_)
-        // The VM sets CORJIT_FLG_FRAMED for two reasons: (1) the COMPlus_JitFramed variable is set, or
+        // The VM sets JitFlags::JIT_FLAG_FRAMED for two reasons: (1) the COMPlus_JitFramed variable is set, or
         // (2) the function is marked "noinline". The reason for #2 is that people mark functions
         // noinline to ensure the show up on in a stack walk. But for AMD64, we don't need a frame
         // pointer for the frame to show up in stack walk.
-        if (compileFlags & CORJIT_FLG_FRAMED)
+        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_FRAMED))
             codeGen->setFrameRequired(true);
 #endif
 
-        if (compileFlags & CORJIT_FLG_RELOC)
+        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_RELOC))
         {
             codeGen->genAlignLoops = false; // loop alignment not supported for prejitted code
 
-            // The zapper doesn't set CORJIT_FLG_ALIGN_LOOPS, and there is
+            // The zapper doesn't set JitFlags::JIT_FLAG_ALIGN_LOOPS, and there is
             // no reason for it to set it as the JIT doesn't currently support loop alignment
             // for prejitted images. (The JIT doesn't know the final address of the code, hence
             // it can't align code based on unknown addresses.)
-            assert((compileFlags & CORJIT_FLG_ALIGN_LOOPS) == 0);
+            assert(!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALIGN_LOOPS));
         }
         else
         {
-            codeGen->genAlignLoops = (compileFlags & CORJIT_FLG_ALIGN_LOOPS) != 0;
+            codeGen->genAlignLoops = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALIGN_LOOPS);
         }
     }
 
@@ -4087,7 +4090,7 @@ void Compiler::compFunctionTraceEnd(void* methodCodePtr, ULONG methodCodeSize, b
 // For an overview of the structure of the JIT, see:
 //   https://github.com/dotnet/coreclr/blob/master/Documentation/botr/ryujit-overview.md
 //
-void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, CORJIT_FLAGS* compileFlags)
+void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags* compileFlags)
 {
     if (compIsForInlining())
     {
@@ -4167,7 +4170,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, CORJIT_F
     fgRemoveEH();
 #endif // !FEATURE_EH
 
-    if (compileFlags->corJitFlags & CORJIT_FLG_BBINSTR)
+    if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
     {
         fgInstrumentMethod();
     }
@@ -4723,7 +4726,7 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
                           CORINFO_METHOD_INFO*  methodInfo,
                           void**                methodCodePtr,
                           ULONG*                methodCodeSize,
-                          CORJIT_FLAGS*         compileFlags)
+                          JitFlags*             compileFlags)
 {
 #ifdef FEATURE_JIT_METHOD_PERF
     static bool checkedForJitTimeLog = false;
@@ -4887,7 +4890,7 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
 
     // Set this before the first 'BADCODE'
     // Skip verification where possible
-    tiVerificationNeeded = (compileFlags->corJitFlags & CORJIT_FLG_SKIP_VERIFICATION) == 0;
+    tiVerificationNeeded = !compileFlags->IsSet(JitFlags::JIT_FLAG_SKIP_VERIFICATION);
 
     assert(!compIsForInlining() || !tiVerificationNeeded); // Inlinees must have been verified.
 
@@ -4918,8 +4921,8 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
 
                 case CORINFO_VERIFICATION_CAN_SKIP:
                     // The VM should first verify the open instantiation. If unverifiable code
-                    // is detected, it should pass in CORJIT_FLG_SKIP_VERIFICATION.
-                    assert(!"The VM should have used CORJIT_FLG_SKIP_VERIFICATION");
+                    // is detected, it should pass in JitFlags::JIT_FLAG_SKIP_VERIFICATION.
+                    assert(!"The VM should have used JitFlags::JIT_FLAG_SKIP_VERIFICATION");
                     tiVerificationNeeded = false;
                     break;
 
@@ -4958,7 +4961,7 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
         CORINFO_METHOD_INFO*  methodInfo;
         void**                methodCodePtr;
         ULONG*                methodCodeSize;
-        CORJIT_FLAGS*         compileFlags;
+        JitFlags*             compileFlags;
 
         CorInfoInstantiationVerification instVerInfo;
         int                              result;
@@ -5098,7 +5101,7 @@ void Compiler::compCompileFinish()
         mdMethodDef currentMethodToken = info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
 
         unsigned profCallCount = 0;
-        if (((opts.eeFlags & CORJIT_FLG_BBOPT) != 0) && fgHaveProfileData())
+        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT) && fgHaveProfileData())
         {
             assert(fgProfileBuffer[0].ILOffset == 0);
             profCallCount = fgProfileBuffer[0].ExecutionCount;
@@ -5235,7 +5238,7 @@ void Compiler::compCompileFinish()
     // For ngen the int3 or breakpoint instruction will be right at the
     // start of the ngen method and we will stop when we execute it.
     //
-    if ((opts.eeFlags & CORJIT_FLG_PREJIT) == 0)
+    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
     {
         if (compJitHaltMethod())
         {
@@ -5323,7 +5326,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
                                 CORINFO_METHOD_INFO*             methodInfo,
                                 void**                           methodCodePtr,
                                 ULONG*                           methodCodeSize,
-                                CORJIT_FLAGS*                    compileFlags,
+                                JitFlags*                        compileFlags,
                                 CorInfoInstantiationVerification instVerInfo)
 {
     CORINFO_METHOD_HANDLE methodHnd = info.compMethodHnd;
@@ -5465,7 +5468,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
 
     info.compIsContextful = (info.compClassAttr & CORINFO_FLG_CONTEXTFUL) != 0;
 
-    info.compPublishStubParam = (opts.eeFlags & CORJIT_FLG_PUBLISH_SECRET_PARAM) != 0;
+    info.compPublishStubParam = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM);
 
     switch (methodInfo->args.getCallConv())
     {
@@ -5503,7 +5506,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
 
     const bool forceInline = !!(info.compFlags & CORINFO_FLG_FORCEINLINE);
 
-    if (!compIsForInlining() && (opts.eeFlags & CORJIT_FLG_PREJIT))
+    if (!compIsForInlining() && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
     {
         // We're prejitting the root method. We also will analyze it as
         // a potential inline candidate.
@@ -6152,7 +6155,7 @@ int jitNativeCode(CORINFO_METHOD_HANDLE methodHnd,
                   CORINFO_METHOD_INFO*  methodInfo,
                   void**                methodCodePtr,
                   ULONG*                methodCodeSize,
-                  CORJIT_FLAGS*         compileFlags,
+                  JitFlags*             compileFlags,
                   void*                 inlineInfoPtr)
 {
     //
@@ -6206,7 +6209,7 @@ START:
         CORINFO_METHOD_INFO*  methodInfo;
         void**                methodCodePtr;
         ULONG*                methodCodeSize;
-        CORJIT_FLAGS*         compileFlags;
+        JitFlags*             compileFlags;
         InlineInfo*           inlineInfo;
 #if MEASURE_CLRAPI_CALLS
         WrapICorJitInfo* wrapCLR;
@@ -6326,8 +6329,9 @@ START:
         jitFallbackCompile = true;
 
         // Update the flags for 'safer' code generation.
-        compileFlags->corJitFlags |= CORJIT_FLG_MIN_OPT;
-        compileFlags->corJitFlags &= ~(CORJIT_FLG_SIZE_OPT | CORJIT_FLG_SPEED_OPT);
+        compileFlags->Set(JitFlags::JIT_FLAG_MIN_OPT);
+        compileFlags->Clear(JitFlags::JIT_FLAG_SIZE_OPT);
+        compileFlags->Clear(JitFlags::JIT_FLAG_SPEED_OPT);
 
         goto START;
     }

@@ -284,21 +284,17 @@ CorJitResult CILJit::compileMethod(
         return g_realJitCompiler->compileMethod(compHnd, methodInfo, flags, entryAddress, nativeSizeOfCode);
     }
 
-    CORJIT_FLAGS jitFlags = {0};
+    JitFlags jitFlags;
 
-    DWORD jitFlagsSize = 0;
 #if COR_JIT_EE_VERSION > 460
-    if (flags == CORJIT_FLG_CALL_GETJITFLAGS)
-    {
-        jitFlagsSize = compHnd->getJitFlags(&jitFlags, sizeof(jitFlags));
-    }
-#endif
-
-    assert(jitFlagsSize <= sizeof(jitFlags));
-    if (jitFlagsSize == 0)
-    {
-        jitFlags.corJitFlags = flags;
-    }
+    assert(flags == CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS);
+    CORJIT_FLAGS corJitFlags;
+    DWORD        jitFlagsSize = compHnd->getJitFlags(&corJitFlags, sizeof(corJitFlags));
+    assert(jitFlagsSize == sizeof(corJitFlags));
+    jitFlags.SetFromFlags(corJitFlags);
+#else  // COR_JIT_EE_VERSION <= 460
+    jitFlags.SetFromOldFlags(flags, 0);
+#endif // COR_JIT_EE_VERSION <= 460
 
     int                   result;
     void*                 methodCodePtr = nullptr;
@@ -385,17 +381,30 @@ void CILJit::getVersionIdentifier(GUID* versionIdentifier)
 /*****************************************************************************
  * Determine the maximum length of SIMD vector supported by this JIT.
  */
+
+#if COR_JIT_EE_VERSION > 460
+unsigned CILJit::getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags)
+#else
 unsigned CILJit::getMaxIntrinsicSIMDVectorLength(DWORD cpuCompileFlags)
+#endif
 {
     if (g_realJitCompiler != nullptr)
     {
         return g_realJitCompiler->getMaxIntrinsicSIMDVectorLength(cpuCompileFlags);
     }
 
+    JitFlags jitFlags;
+
+#if COR_JIT_EE_VERSION > 460
+    jitFlags.SetFromFlags(cpuCompileFlags);
+#else  // COR_JIT_EE_VERSION <= 460
+    jitFlags.SetFromOldFlags(cpuCompileFlags, 0);
+#endif // COR_JIT_EE_VERSION <= 460
+
 #ifdef _TARGET_AMD64_
 #ifdef FEATURE_AVX_SUPPORT
-    if (((cpuCompileFlags & CORJIT_FLG_PREJIT) == 0) && ((cpuCompileFlags & CORJIT_FLG_FEATURE_SIMD) != 0) &&
-        ((cpuCompileFlags & CORJIT_FLG_USE_AVX2) != 0))
+    if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT) && jitFlags.IsSet(JitFlags::JIT_FLAG_FEATURE_SIMD) &&
+        jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AVX2))
     {
         if (JitConfig.EnableAVX() != 0)
         {

@@ -653,7 +653,7 @@ public:
     // in the code are.  The native compiler will ensure that these places
     // have a corresponding break point in native code.
     //
-    // Note that unless CORJIT_FLG_DEBUG_CODE is specified, this function will
+    // Note that unless CORJIT_FLAG_DEBUG_CODE is specified, this function will
     // be used only as a hint and the native compiler should not change its
     // code generation.
     void getBoundaries(
@@ -683,7 +683,7 @@ public:
     // under debugging, the JIT needs to keep them live over their
     // entire scope so that they can be inspected.
     //
-    // Note that unless CORJIT_FLG_DEBUG_CODE is specified, this function will
+    // Note that unless CORJIT_FLAG_DEBUG_CODE is specified, this function will
     // be used only as a hint and the native compiler should not change its
     // code generation.
     void getVars(
