@@ -194,8 +194,7 @@ namespace Microsoft.DotNet.Host.Build
                 string cmakeHostFxrVer = $"-DCLI_CMAKE_HOST_FXR_VER:STRING={hostVersion.LatestHostFxrVersion.ToString()}";
                 string cmakeCommitHash = $"-DCLI_CMAKE_COMMIT_HASH:STRING={commitHash}";
                 string cmakeResourceDir = $"-DCLI_CMAKE_RESOURCE_DIR:STRING={resourceDir}";
-                string cmakeExtraArgs = "";
-
+                
                 switch (platform.ToLower())
                 {
                     case "x86":
