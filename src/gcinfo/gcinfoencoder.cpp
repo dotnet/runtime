@@ -343,9 +343,13 @@ GcInfoSize& GcInfoSize::operator+=(const GcInfoSize& other)
     NumRanges += other.NumRanges;
     NumRegs += other.NumRegs;
     NumStack += other.NumStack;
+    NumUntracked += other.NumUntracked;
     NumTransitions += other.NumTransitions;
     SizeOfCode += other.SizeOfCode;
+    EncPreservedSlots += other.EncPreservedSlots;
     
+    UntrackedSlotSize += other.UntrackedSlotSize;
+    NumUntrackedSize += other.NumUntrackedSize;
     FlagsSize += other.FlagsSize;
     CodeLengthSize += other.CodeLengthSize;
     ProEpilogSize += other.ProEpilogSize;
@@ -387,11 +391,15 @@ void GcInfoSize::Log(DWORD level, const char * header)
         LogSpew(LF_GCINFO, level, "NumRanges: %Iu\n", NumRanges);
         LogSpew(LF_GCINFO, level, "NumRegs: %Iu\n", NumRegs);
         LogSpew(LF_GCINFO, level, "NumStack: %Iu\n", NumStack);
+        LogSpew(LF_GCINFO, level, "NumUntracked: %Iu\n", NumUntracked);
         LogSpew(LF_GCINFO, level, "NumTransitions: %Iu\n", NumTransitions);
         LogSpew(LF_GCINFO, level, "SizeOfCode: %Iu\n", SizeOfCode);
+        LogSpew(LF_GCINFO, level, "EncPreservedSlots: %Iu\n", EncPreservedSlots);
 
         LogSpew(LF_GCINFO, level, "---SIZES(bits)---\n");
         LogSpew(LF_GCINFO, level, "Total: %Iu\n", TotalSize);
+        LogSpew(LF_GCINFO, level, "UntrackedSlot: %Iu\n", UntrackedSlotSize);
+        LogSpew(LF_GCINFO, level, "NumUntracked: %Iu\n", NumUntrackedSize);
         LogSpew(LF_GCINFO, level, "Flags: %Iu\n", FlagsSize);
         LogSpew(LF_GCINFO, level, "CodeLength: %Iu\n", CodeLengthSize);
         LogSpew(LF_GCINFO, level, "Prolog/Epilog: %Iu\n", ProEpilogSize);
