@@ -11,19 +11,28 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void IsAttached()
         {
-            // TODO: Implement this when Debugger is properly implemented
+            bool b = Debugger.IsAttached;
         }
 
         [Fact]
-        public void Launch()
+        public void IsLogging()
         {
-            // TODO: Implement this when Debugger is properly implemented
+            if (Debugger.IsAttached)
+                Debugger.IsLogging();
+            else
+                Assert.False(Debugger.IsLogging());
         }
 
         [Fact]
-        public void Break()
+        public void Log()
         {
-            // TODO: Implement this when Debugger is properly implemented
+            Debugger.Log(10, "category", "This is a test log message raised in the System.Diagnostics.Debug tests for the .NET Debugger class.");
+        }
+
+        [Fact]
+        public void NotifyOfCrossThreadDependency()
+        {
+            Debugger.NotifyOfCrossThreadDependency();
         }
     }
 }
