@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.IO;
 using Xunit;
 
@@ -94,6 +95,19 @@ namespace Tests.System.IO
             Assert.Equal(long.MaxValue, sp.ParseNextInt64());
             Assert.Equal(ulong.MinValue, sp.ParseNextUInt64());
             Assert.Equal(ulong.MaxValue, sp.ParseNextUInt64());
+        }
+
+        [Fact]
+        public void TestOverflowFromNumericParsing()
+        {
+            string buffer = long.MinValue + "," + long.MaxValue + "," + decimal.MinValue + "," + decimal.MaxValue;
+            char separator = ',';
+
+            StringParser sp = new StringParser(buffer, separator);
+            Assert.Throws<OverflowException>(() => sp.ParseNextInt32());
+            Assert.Throws<OverflowException>(() => sp.ParseNextUInt32());
+            Assert.Throws<OverflowException>(() => sp.ParseNextInt64());
+            Assert.Throws<OverflowException>(() => sp.ParseNextUInt64());
         }
 
         [Fact]
