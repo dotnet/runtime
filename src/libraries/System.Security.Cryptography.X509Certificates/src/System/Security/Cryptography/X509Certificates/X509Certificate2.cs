@@ -4,6 +4,7 @@
 
 using Internal.Cryptography;
 using Internal.Cryptography.Pal;
+using System;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Text;
@@ -138,6 +139,22 @@ namespace System.Security.Cryptography.X509Certificates
                 ThrowIfInvalid();
 
                 return Pal.HasPrivateKey;
+            }
+        }
+
+        public AsymmetricAlgorithm PrivateKey
+        {
+            get
+            {
+                if (_lazyPrivateKey == null)
+                {
+                    _lazyPrivateKey = Pal.GetPrivateKey();
+                }
+                return _lazyPrivateKey;
+            }
+            set
+            {
+                throw new PlatformNotSupportedException();
             }
         }
 
@@ -525,6 +542,7 @@ namespace System.Security.Cryptography.X509Certificates
         private volatile X500DistinguishedName _lazySubjectName;
         private volatile X500DistinguishedName _lazyIssuer;
         private volatile PublicKey _lazyPublicKey;
+        private volatile AsymmetricAlgorithm _lazyPrivateKey;
         private volatile X509ExtensionCollection _lazyExtensions;
     }
 }

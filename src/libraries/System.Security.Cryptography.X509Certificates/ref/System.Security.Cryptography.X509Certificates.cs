@@ -37,6 +37,7 @@ namespace System.Security.Cryptography.X509Certificates
         public PublicKey(System.Security.Cryptography.Oid oid, System.Security.Cryptography.AsnEncodedData parameters, System.Security.Cryptography.AsnEncodedData keyValue) { }
         public System.Security.Cryptography.AsnEncodedData EncodedKeyValue { get { throw null; } }
         public System.Security.Cryptography.AsnEncodedData EncodedParameters { get { throw null; } }
+        public System.Security.Cryptography.AsymmetricAlgorithm Key { get { throw null; } }
         public System.Security.Cryptography.Oid Oid { get { throw null; } }
     }
     public static partial class RSACertificateExtensions
@@ -160,6 +161,7 @@ namespace System.Security.Cryptography.X509Certificates
         public System.DateTime NotAfter { get { throw null; } }
         public System.DateTime NotBefore { get { throw null; } }
         public System.Security.Cryptography.X509Certificates.PublicKey PublicKey { get { throw null; } }
+        public System.Security.Cryptography.AsymmetricAlgorithm PrivateKey { get { throw null; } set { } }
         public byte[] RawData { get { throw null; } }
         public string SerialNumber { get { throw null; } }
         public System.Security.Cryptography.Oid SignatureAlgorithm { get { throw null; } }

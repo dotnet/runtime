@@ -425,7 +425,7 @@ namespace Internal.Cryptography.Pal
             {
                 if (HasPrivateKey)
                 {
-                    CspParameters parameters = GetPrivateKey();
+                    CspParameters parameters = GetPrivateKeyCsp();
                     cspKeyContainerInfo = new CspKeyContainerInfo(parameters);
                 }
             }
