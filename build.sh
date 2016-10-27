@@ -217,6 +217,15 @@ build_coreclr()
         echo "Failed to build coreclr components."
         exit 1
     fi
+
+    echo "Verifying System.Globalization.Native.so dependencies"
+
+    ldd -r $__BinDir/System.Globalization.Native.so | awk 'BEGIN {count=0} /undefined symbol:/ { if (count==0) {print "Undefined symbol(s) found:"} print " " $3; count++ } END {if (count>0) exit(1)}'
+    if [ $? != 0 ]; then
+        echo "Failed. System.Globalization.Native.so has undefined dependencies. These are likely ICU APIs that need to be added to icushim.h"
+        exit 1
+    fi
+
 	popd
 }
 
