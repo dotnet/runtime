@@ -46,6 +46,8 @@
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
       <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
+    <Compile Include="System\Reflection\AssemblyNameProxyTests.cs" />
+    <Compile Include="System\MarshalByRefObjectTest.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp1.1'">
     <Compile Include="System\BitConverter.netcoreapp1.1.cs" />

@@ -207,6 +207,9 @@ CannotRemoveBaseTypeOrInterface : Type 'System.InvalidOperationException' does n
 MembersMustExist : Member 'System.InvalidOperationException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.InvalidProgramException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.InvalidTimeZoneException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.MarshalByRefObject.GetLifetimeService()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.MarshalByRefObject.InitializeLifetimeService()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.MarshalByRefObject.MemberwiseClone(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.MemberAccessException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.MemberAccessException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.MethodAccessException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
@@ -621,4 +624,3 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.Task' does not im
 MembersMustExist : Member 'System.Threading.Tasks.Task.Dispose()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.Tasks.Task.Dispose(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.Task<TResult>' does not implement interface 'System.IDisposable' in the implementation but it does in the contract.
-Total Issues: 614

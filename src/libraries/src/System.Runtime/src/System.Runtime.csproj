@@ -32,7 +32,6 @@
     <Compile Include="System\Collections\Generic\ISet.cs" />
     <Compile Include="System\ComponentModel\EditorBrowsableAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\StrongBox.cs" />
-    <Compile Include="System\Reflection\AssemblyNameProxy.cs" />
     <Compile Include="System\Reflection\RuntimeReflectionExtensions.cs" />
     <Compile Include="System\Runtime\CompilerServices\Attributes.cs" />
   </ItemGroup>

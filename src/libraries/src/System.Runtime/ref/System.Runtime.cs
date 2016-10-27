@@ -1566,6 +1566,9 @@ namespace System
     public abstract partial class MarshalByRefObject
     {
         protected MarshalByRefObject() { }
+        public object GetLifetimeService() { throw null; }
+        public virtual object InitializeLifetimeService() { throw null; }
+        protected System.MarshalByRefObject MemberwiseClone(bool cloneIdentity) { throw null; }
     }
     public partial class Lazy<T, TMetadata> : System.Lazy<T>
     {
@@ -4738,11 +4741,6 @@ namespace System.Reflection
         None = 0,
         PublicKey = 1,
         Retargetable = 256,
-    }
-    public class AssemblyNameProxy : System.MarshalByRefObject
-    {
-        public AssemblyNameProxy() { }
-        public System.Reflection.AssemblyName GetAssemblyName(System.String assemblyFile) { throw null; }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(1), Inherited = false)]
     public sealed partial class AssemblyProductAttribute : System.Attribute
