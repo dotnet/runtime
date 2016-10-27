@@ -47,6 +47,84 @@
         return totalSize / Marshal.SizeOf(t);
     }
 
+    public static HashSet<Type> WidenableTypes { get; private set; } = new HashSet<Type>()
+    {
+        typeof(byte),
+        typeof(ushort),
+        typeof(uint),
+        typeof(sbyte),
+        typeof(short),
+        typeof(int),
+        typeof(float),
+    };
+
+    private static Dictionary<Type, Type> s_widenTargets = new Dictionary<Type, Type>()
+    {
+        { typeof(byte), typeof(ushort) },
+        { typeof(ushort), typeof(uint) },
+        { typeof(uint), typeof(ulong) },
+        { typeof(sbyte), typeof(short) },
+        { typeof(short), typeof(int) },
+        { typeof(int), typeof(long) },
+        { typeof(float), typeof(double) },
+    };
+
+    public Type GetWidenTarget(Type t)
+    {
+        Type target;
+        if (!s_widenTargets.TryGetValue(t, out target))
+        {
+            throw new InvalidOperationException("No widen target for " + t.Name);
+        }
+
+        return target;
+    }
+
+    public static HashSet<Type> NarrowableTypes { get; private set; } = new HashSet<Type>()
+    {
+        typeof(ushort),
+        typeof(uint),
+        typeof(ulong),
+        typeof(short),
+        typeof(int),
+        typeof(long),
+        typeof(double),
+    };
+
+    private static Dictionary<Type, Type> s_narrowTargets = new Dictionary<Type, Type>()
+    {
+        { typeof(ulong), typeof(uint) },
+        { typeof(uint), typeof(ushort) },
+        { typeof(ushort), typeof(byte) },
+        { typeof(long), typeof(int) },
+        { typeof(int), typeof(short) },
+        { typeof(short), typeof(sbyte) },
+        { typeof(double), typeof(float) },
+    };
+
+    public Type GetNarrowTarget(Type t)
+    {
+        Type target;
+        if (!s_narrowTargets.TryGetValue(t, out target))
+        {
+            throw new InvalidOperationException("No narrow target for " + t.Name);
+        }
+
+        return target;
+    }
+
+    public static List<KeyValuePair<Type, Type>> SameSizeConversionPairs = new List<KeyValuePair<Type, Type>>()
+    {
+        new KeyValuePair<Type, Type>(typeof(int), typeof(float)),
+        new KeyValuePair<Type, Type>(typeof(uint), typeof(float)),
+        new KeyValuePair<Type, Type>(typeof(long), typeof(double)),
+        new KeyValuePair<Type, Type>(typeof(ulong), typeof(double)),
+        new KeyValuePair<Type, Type>(typeof(float), typeof(int)),
+        new KeyValuePair<Type, Type>(typeof(float), typeof(uint)),
+        new KeyValuePair<Type, Type>(typeof(double), typeof(long)),
+        new KeyValuePair<Type, Type>(typeof(double), typeof(ulong)),
+    };
+
     public void GenerateCopyrightHeader()
     {
 #>// Licensed to the .NET Foundation under one or more agreements.

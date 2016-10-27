@@ -807,17 +807,17 @@ namespace System.Numerics.Tests
                 });
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Fact]
         public void DivisionByZeroExceptionByte() { TestDivisionByZeroException<Byte>(); }
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Fact]
         public void DivisionByZeroExceptionSByte() { TestDivisionByZeroException<SByte>(); }
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Fact]
         public void DivisionByZeroExceptionUInt16() { TestDivisionByZeroException<UInt16>(); }
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Fact]
         public void DivisionByZeroExceptionInt16() { TestDivisionByZeroException<Int16>(); }
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Fact]
         public void DivisionByZeroExceptionInt32() { TestDivisionByZeroException<Int32>(); }
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Fact]
         public void DivisionByZeroExceptionInt64() { TestDivisionByZeroException<Int64>(); }
         private void TestDivisionByZeroException<T>() where T : struct
         {
@@ -2239,6 +2239,375 @@ namespace System.Numerics.Tests
             Assert.Equal(valueFromNormalCall, valueFromReflection);
         }
         #endregion Reflection Tests
+
+        #region Same-Size Conversions
+        [Fact]
+        public void ConvertInt32ToSingle()
+        {
+            Int32[] source = GenerateRandomValuesForVector<Int32>();
+            Vector<Int32> sourceVec = new Vector<Int32>(source);
+            Vector<Single> targetVec = Vector.ConvertToSingle(sourceVec);
+            for (int i = 0; i < Vector<Single>.Count; i++)
+            {
+                Assert.Equal((Single)source[i], targetVec[i]);
+            }
+        }
+
+        [Fact]
+        public void ConvertUInt32ToSingle()
+        {
+            UInt32[] source = GenerateRandomValuesForVector<UInt32>();
+            Vector<UInt32> sourceVec = new Vector<UInt32>(source);
+            Vector<Single> targetVec = Vector.ConvertToSingle(sourceVec);
+            for (int i = 0; i < Vector<Single>.Count; i++)
+            {
+                Assert.Equal((Single)source[i], targetVec[i]);
+            }
+        }
+
+        [Fact]
+        public void ConvertInt64ToDouble()
+        {
+            Int64[] source = GenerateRandomValuesForVector<Int64>();
+            Vector<Int64> sourceVec = new Vector<Int64>(source);
+            Vector<Double> targetVec = Vector.ConvertToDouble(sourceVec);
+            for (int i = 0; i < Vector<Double>.Count; i++)
+            {
+                Assert.Equal((Double)source[i], targetVec[i]);
+            }
+        }
+
+        [Fact]
+        public void ConvertUInt64ToDouble()
+        {
+            UInt64[] source = GenerateRandomValuesForVector<UInt64>();
+            Vector<UInt64> sourceVec = new Vector<UInt64>(source);
+            Vector<Double> targetVec = Vector.ConvertToDouble(sourceVec);
+            for (int i = 0; i < Vector<Double>.Count; i++)
+            {
+                Assert.Equal((Double)source[i], targetVec[i]);
+            }
+        }
+
+        [Fact]
+        public void ConvertSingleToInt32()
+        {
+            Single[] source = GenerateRandomValuesForVector<Single>();
+            Vector<Single> sourceVec = new Vector<Single>(source);
+            Vector<Int32> targetVec = Vector.ConvertToInt32(sourceVec);
+            for (int i = 0; i < Vector<Int32>.Count; i++)
+            {
+                Assert.Equal((Int32)source[i], targetVec[i]);
+            }
+        }
+
+        [Fact]
+        public void ConvertSingleToUInt32()
+        {
+            Single[] source = GenerateRandomValuesForVector<Single>();
+            Vector<Single> sourceVec = new Vector<Single>(source);
+            Vector<UInt32> targetVec = Vector.ConvertToUInt32(sourceVec);
+            for (int i = 0; i < Vector<UInt32>.Count; i++)
+            {
+                Assert.Equal((UInt32)source[i], targetVec[i]);
+            }
+        }
+
+        [Fact]
+        public void ConvertDoubleToInt64()
+        {
+            Double[] source = GenerateRandomValuesForVector<Double>();
+            Vector<Double> sourceVec = new Vector<Double>(source);
+            Vector<Int64> targetVec = Vector.ConvertToInt64(sourceVec);
+            for (int i = 0; i < Vector<Int64>.Count; i++)
+            {
+                Assert.Equal((Int64)source[i], targetVec[i]);
+            }
+        }
+
+        [Fact]
+        public void ConvertDoubleToUInt64()
+        {
+            Double[] source = GenerateRandomValuesForVector<Double>();
+            Vector<Double> sourceVec = new Vector<Double>(source);
+            Vector<UInt64> targetVec = Vector.ConvertToUInt64(sourceVec);
+            for (int i = 0; i < Vector<UInt64>.Count; i++)
+            {
+                Assert.Equal((UInt64)source[i], targetVec[i]);
+            }
+        }
+
+        #endregion Same-Size Conversions
+
+        #region Narrow / Widen
+        [Fact]
+        public void WidenByte()
+        {
+            Byte[] source = GenerateRandomValuesForVector<Byte>();
+            Vector<Byte> sourceVec = new Vector<Byte>(source);
+            Vector<UInt16> dest1;
+            Vector<UInt16> dest2;
+            Vector.Widen(sourceVec, out dest1, out dest2);
+            ValidateVector(dest1, (index, val) =>
+            {
+                Assert.Equal((UInt16)source[index], val);
+            });
+
+            ValidateVector(dest2, (index, val) =>
+            {
+                Assert.Equal((UInt16)source[index + Vector<UInt16>.Count], val);
+            });
+        }
+
+        [Fact]
+        public void WidenUInt16()
+        {
+            UInt16[] source = GenerateRandomValuesForVector<UInt16>();
+            Vector<UInt16> sourceVec = new Vector<UInt16>(source);
+            Vector<UInt32> dest1;
+            Vector<UInt32> dest2;
+            Vector.Widen(sourceVec, out dest1, out dest2);
+            ValidateVector(dest1, (index, val) =>
+            {
+                Assert.Equal((UInt32)source[index], val);
+            });
+
+            ValidateVector(dest2, (index, val) =>
+            {
+                Assert.Equal((UInt32)source[index + Vector<UInt32>.Count], val);
+            });
+        }
+
+        [Fact]
+        public void WidenUInt32()
+        {
+            UInt32[] source = GenerateRandomValuesForVector<UInt32>();
+            Vector<UInt32> sourceVec = new Vector<UInt32>(source);
+            Vector<UInt64> dest1;
+            Vector<UInt64> dest2;
+            Vector.Widen(sourceVec, out dest1, out dest2);
+            ValidateVector(dest1, (index, val) =>
+            {
+                Assert.Equal((UInt64)source[index], val);
+            });
+
+            ValidateVector(dest2, (index, val) =>
+            {
+                Assert.Equal((UInt64)source[index + Vector<UInt64>.Count], val);
+            });
+        }
+
+        [Fact]
+        public void WidenSByte()
+        {
+            SByte[] source = GenerateRandomValuesForVector<SByte>();
+            Vector<SByte> sourceVec = new Vector<SByte>(source);
+            Vector<Int16> dest1;
+            Vector<Int16> dest2;
+            Vector.Widen(sourceVec, out dest1, out dest2);
+            ValidateVector(dest1, (index, val) =>
+            {
+                Assert.Equal((Int16)source[index], val);
+            });
+
+            ValidateVector(dest2, (index, val) =>
+            {
+                Assert.Equal((Int16)source[index + Vector<Int16>.Count], val);
+            });
+        }
+
+        [Fact]
+        public void WidenInt16()
+        {
+            Int16[] source = GenerateRandomValuesForVector<Int16>();
+            Vector<Int16> sourceVec = new Vector<Int16>(source);
+            Vector<Int32> dest1;
+            Vector<Int32> dest2;
+            Vector.Widen(sourceVec, out dest1, out dest2);
+            ValidateVector(dest1, (index, val) =>
+            {
+                Assert.Equal((Int32)source[index], val);
+            });
+
+            ValidateVector(dest2, (index, val) =>
+            {
+                Assert.Equal((Int32)source[index + Vector<Int32>.Count], val);
+            });
+        }
+
+        [Fact]
+        public void WidenInt32()
+        {
+            Int32[] source = GenerateRandomValuesForVector<Int32>();
+            Vector<Int32> sourceVec = new Vector<Int32>(source);
+            Vector<Int64> dest1;
+            Vector<Int64> dest2;
+            Vector.Widen(sourceVec, out dest1, out dest2);
+            ValidateVector(dest1, (index, val) =>
+            {
+                Assert.Equal((Int64)source[index], val);
+            });
+
+            ValidateVector(dest2, (index, val) =>
+            {
+                Assert.Equal((Int64)source[index + Vector<Int64>.Count], val);
+            });
+        }
+
+        [Fact]
+        public void WidenSingle()
+        {
+            Single[] source = GenerateRandomValuesForVector<Single>();
+            Vector<Single> sourceVec = new Vector<Single>(source);
+            Vector<Double> dest1;
+            Vector<Double> dest2;
+            Vector.Widen(sourceVec, out dest1, out dest2);
+            ValidateVector(dest1, (index, val) =>
+            {
+                Assert.Equal((Double)source[index], val);
+            });
+
+            ValidateVector(dest2, (index, val) =>
+            {
+                Assert.Equal((Double)source[index + Vector<Double>.Count], val);
+            });
+        }
+
+
+        [Fact]
+        public void NarrowUInt16()
+        {
+            UInt16[] source1 = GenerateRandomValuesForVector<UInt16>();
+            UInt16[] source2 = GenerateRandomValuesForVector<UInt16>();
+            Vector<UInt16> sourceVec1 = new Vector<UInt16>(source1);
+            Vector<UInt16> sourceVec2 = new Vector<UInt16>(source2);
+            Vector<Byte> dest = Vector.Narrow(sourceVec1, sourceVec2);
+
+            for (int i = 0; i < Vector<UInt16>.Count; i++)
+            {
+                Assert.Equal((Byte)source1[i], dest[i]);
+            }
+            for (int i = 0; i < Vector<UInt16>.Count; i++)
+            {
+                Assert.Equal((Byte)source2[i], dest[i + Vector<UInt16>.Count]);
+            }
+        }
+
+        [Fact]
+        public void NarrowUInt32()
+        {
+            UInt32[] source1 = GenerateRandomValuesForVector<UInt32>();
+            UInt32[] source2 = GenerateRandomValuesForVector<UInt32>();
+            Vector<UInt32> sourceVec1 = new Vector<UInt32>(source1);
+            Vector<UInt32> sourceVec2 = new Vector<UInt32>(source2);
+            Vector<UInt16> dest = Vector.Narrow(sourceVec1, sourceVec2);
+
+            for (int i = 0; i < Vector<UInt32>.Count; i++)
+            {
+                Assert.Equal((UInt16)source1[i], dest[i]);
+            }
+            for (int i = 0; i < Vector<UInt32>.Count; i++)
+            {
+                Assert.Equal((UInt16)source2[i], dest[i + Vector<UInt32>.Count]);
+            }
+        }
+
+        [Fact]
+        public void NarrowUInt64()
+        {
+            UInt64[] source1 = GenerateRandomValuesForVector<UInt64>();
+            UInt64[] source2 = GenerateRandomValuesForVector<UInt64>();
+            Vector<UInt64> sourceVec1 = new Vector<UInt64>(source1);
+            Vector<UInt64> sourceVec2 = new Vector<UInt64>(source2);
+            Vector<UInt32> dest = Vector.Narrow(sourceVec1, sourceVec2);
+
+            for (int i = 0; i < Vector<UInt64>.Count; i++)
+            {
+                Assert.Equal((UInt32)source1[i], dest[i]);
+            }
+            for (int i = 0; i < Vector<UInt64>.Count; i++)
+            {
+                Assert.Equal((UInt32)source2[i], dest[i + Vector<UInt64>.Count]);
+            }
+        }
+
+        [Fact]
+        public void NarrowInt16()
+        {
+            Int16[] source1 = GenerateRandomValuesForVector<Int16>();
+            Int16[] source2 = GenerateRandomValuesForVector<Int16>();
+            Vector<Int16> sourceVec1 = new Vector<Int16>(source1);
+            Vector<Int16> sourceVec2 = new Vector<Int16>(source2);
+            Vector<SByte> dest = Vector.Narrow(sourceVec1, sourceVec2);
+
+            for (int i = 0; i < Vector<Int16>.Count; i++)
+            {
+                Assert.Equal((SByte)source1[i], dest[i]);
+            }
+            for (int i = 0; i < Vector<Int16>.Count; i++)
+            {
+                Assert.Equal((SByte)source2[i], dest[i + Vector<Int16>.Count]);
+            }
+        }
+
+        [Fact]
+        public void NarrowInt32()
+        {
+            Int32[] source1 = GenerateRandomValuesForVector<Int32>();
+            Int32[] source2 = GenerateRandomValuesForVector<Int32>();
+            Vector<Int32> sourceVec1 = new Vector<Int32>(source1);
+            Vector<Int32> sourceVec2 = new Vector<Int32>(source2);
+            Vector<Int16> dest = Vector.Narrow(sourceVec1, sourceVec2);
+
+            for (int i = 0; i < Vector<Int32>.Count; i++)
+            {
+                Assert.Equal((Int16)source1[i], dest[i]);
+            }
+            for (int i = 0; i < Vector<Int32>.Count; i++)
+            {
+                Assert.Equal((Int16)source2[i], dest[i + Vector<Int32>.Count]);
+            }
+        }
+
+        [Fact]
+        public void NarrowInt64()
+        {
+            Int64[] source1 = GenerateRandomValuesForVector<Int64>();
+            Int64[] source2 = GenerateRandomValuesForVector<Int64>();
+            Vector<Int64> sourceVec1 = new Vector<Int64>(source1);
+            Vector<Int64> sourceVec2 = new Vector<Int64>(source2);
+            Vector<Int32> dest = Vector.Narrow(sourceVec1, sourceVec2);
+
+            for (int i = 0; i < Vector<Int64>.Count; i++)
+            {
+                Assert.Equal((Int32)source1[i], dest[i]);
+            }
+            for (int i = 0; i < Vector<Int64>.Count; i++)
+            {
+                Assert.Equal((Int32)source2[i], dest[i + Vector<Int64>.Count]);
+            }
+        }
+
+        [Fact]
+        public void NarrowDouble()
+        {
+            Double[] source1 = GenerateRandomValuesForVector<Double>();
+            Double[] source2 = GenerateRandomValuesForVector<Double>();
+            Vector<Double> sourceVec1 = new Vector<Double>(source1);
+            Vector<Double> sourceVec2 = new Vector<Double>(source2);
+            Vector<Single> dest = Vector.Narrow(sourceVec1, sourceVec2);
+
+            for (int i = 0; i < Vector<Double>.Count; i++)
+            {
+                Assert.Equal((Single)source1[i], dest[i]);
+            }
+            for (int i = 0; i < Vector<Double>.Count; i++)
+            {
+                Assert.Equal((Single)source2[i], dest[i + Vector<Double>.Count]);
+            }
+        }
+
+        #endregion Narrow / Widen
 
         #region Helper Methods
         private static void ValidateVector<T>(Vector<T> vector, Action<int, T> indexValidationFunc) where T : struct
