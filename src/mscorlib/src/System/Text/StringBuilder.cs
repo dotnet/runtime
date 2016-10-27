@@ -55,7 +55,7 @@ namespace System.Text {
         internal char[] m_ChunkChars;                // The characters in this block
         internal StringBuilder m_ChunkPrevious;      // Link to the block logically before this block
         internal int m_ChunkLength;                  // The index in m_ChunkChars that represent the end of the block
-        internal int m_ChunkOffset;                  // The logial offset (sum of all characters in previous blocks)
+        internal int m_ChunkOffset;                  // The logical offset (sum of all characters in previous blocks)
         internal int m_MaxCapacity = 0;
 
         //
@@ -561,6 +561,14 @@ namespace System.Text {
             if (repeatCount==0) {
                 return this;
             }
+
+            // this is where we can check if the repeatCount will put us over m_MaxCapacity
+            // We are doing the check here to prevent the corruption of the StringBuilder.
+            int newLength = Length + repeatCount;
+            if (newLength > m_MaxCapacity || newLength < repeatCount) {
+                throw new ArgumentOutOfRangeException("repeatCount", Environment.GetResourceString("ArgumentOutOfRange_LengthGreaterThanCapacity"));
+            }
+
             int idx = m_ChunkLength;
             while (repeatCount > 0)
             {
@@ -1710,6 +1718,13 @@ namespace System.Text {
             if (valueCount < 0)
             {
                 throw new ArgumentOutOfRangeException("valueCount", Environment.GetResourceString("ArgumentOutOfRange_NegativeCount"));
+            }
+
+            // this is where we can check if the valueCount will put us over m_MaxCapacity
+            // We are doing the check here to prevent the corruption of the StringBuilder.
+            int newLength = Length + valueCount;
+            if (newLength > m_MaxCapacity || newLength < valueCount) {
+                throw new ArgumentOutOfRangeException("valueCount", Environment.GetResourceString("ArgumentOutOfRange_LengthGreaterThanCapacity"));
             }
 
             // This case is so common we want to optimize for it heavily. 
