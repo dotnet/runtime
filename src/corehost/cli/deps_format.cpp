@@ -124,6 +124,22 @@ void deps_json_t::reconcile_libraries_with_targets(
 
 pal::string_t get_own_rid()
 {
+    // For OSX, try to dynamically detect OS version and use appropriate
+    // starting RID. This is to support Sierra even though host binaries
+    // are built on El-Cap and Yosemite.
+#if defined(__APPLE__)
+    pal::os_moniker_t moniker;
+    if (pal::get_os_moniker(&moniker)) {
+        if (moniker >= pal::os_moniker_t::sierra) {
+            return pal::string_t("osx.10.12-") + get_arch();
+        }
+        if (moniker >= pal::os_moniker_t::el_capitan) {
+            return pal::string_t("osx.10.11-") + get_arch();
+        }
+    }
+#endif
+
+    // Otherwise, default to RID supplied during build time of the binary.
 #if defined(TARGET_RUNTIME_ID)
     return _STRINGIFY(TARGET_RUNTIME_ID);
 #else
