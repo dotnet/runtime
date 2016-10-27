@@ -16209,6 +16209,23 @@ GenTreePtr Compiler::fgInitThisClass()
     }
     else
     {
+#ifdef FEATURE_READYTORUN_COMPILER
+        // Only CoreRT understands CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE. Don't do this on CoreCLR.
+        if (opts.IsReadyToRun() && eeGetEEInfo()->targetAbi == CORINFO_CORERT_ABI)
+        {
+            CORINFO_RESOLVED_TOKEN resolvedToken;
+            ZeroMemory(&resolvedToken, sizeof(resolvedToken));
+
+            GenTreePtr ctxTree = getRuntimeContextTree(kind.runtimeLookupKind);
+
+            // CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE with a zeroed out resolvedToken means "get the static
+            // base of the class that owns the method being compiled". If we're in this method, it means we're not
+            // inlining and there's no ambiguity.
+            return impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE, TYP_BYREF,
+                                             gtNewArgList(ctxTree), &kind);
+        }
+#endif
+
         // Collectible types requires that for shared generic code, if we use the generic context paramter
         // that we report it. (This is a conservative approach, we could detect some cases particularly when the
         // context parameter is this that we don't need the eager reporting logic.)
