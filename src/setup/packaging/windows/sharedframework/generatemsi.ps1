@@ -11,6 +11,7 @@ param(
     [Parameter(Mandatory=$true)][string]$SharedFrameworkNugetVersion,
     [Parameter(Mandatory=$true)][string]$SharedFrameworkUpgradeCode,
     [Parameter(Mandatory=$true)][string]$Architecture,
+    [Parameter(Mandatory=$true)][string]$TargetArchitecture,
     [Parameter(Mandatory=$true)][string]$WixObjRoot
 )
 
@@ -66,6 +67,7 @@ function RunCandle
         -dFrameworkDisplayVersion="$SharedFrameworkNugetVersion" `
         -dFrameworkComponentVersion="$SharedFrameworkComponentVersion" `
         -dFrameworkUpgradeCode="$SharedFrameworkUpgradeCode" `
+        -dTargetArchitecture="$TargetArchitecture" `
         -dBuildVersion="$DotnetMSIVersion" `
         -arch $Architecture `
         -ext WixDependencyExtension.dll `

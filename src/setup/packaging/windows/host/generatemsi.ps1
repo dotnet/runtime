@@ -9,6 +9,7 @@ param(
     [Parameter(Mandatory=$true)][string]$SharedHostMSIVersion,
     [Parameter(Mandatory=$true)][string]$SharedHostNugetVersion,
     [Parameter(Mandatory=$true)][string]$Architecture,
+    [Parameter(Mandatory=$true)][string]$TargetArchitecture,
     [Parameter(Mandatory=$true)][string]$WixObjRoot
 )
 
@@ -31,6 +32,7 @@ function RunCandle
         -dProductMoniker="$ProductMoniker" `
         -dBuildVersion="$SharedHostMSIVersion" `
         -dNugetVersion="$SharedHostNugetVersion" `
+        -dTargetArchitecture="$TargetArchitecture" `
         -arch $Architecture `
         "$AuthWsxRoot\host.wxs" `
         "$AuthWsxRoot\provider.wxs" `

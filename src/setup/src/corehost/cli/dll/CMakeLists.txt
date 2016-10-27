@@ -60,3 +60,8 @@ if(WIN32)
 endif()
 add_library(hostpolicy SHARED ${SOURCES} ${RESOURCES})
 
+# Specify the import library to link against for Arm32 build since the default set is minimal
+if (WIN32 AND CLI_CMAKE_PLATFORM_ARCH_ARM)
+    target_link_libraries(hostpolicy shell32.lib)
+endif()
+

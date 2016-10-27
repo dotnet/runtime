@@ -40,7 +40,11 @@ namespace Microsoft.DotNet.Host.Build
 
         private static string DisplayVersion { get; set; }
 
-        private static string Arch { get; } = CurrentArchitecture.Current.ToString();
+        // Processor Architecture of MSI's contents
+        private static string TargetArch { get; set; }
+
+        // Processor Architecture of MSI itself
+        private static string MSIBuildArch { get; set; }
 
         private static void AcquireWix(BuildTargetContext c)
         {
@@ -87,6 +91,20 @@ namespace Microsoft.DotNet.Host.Build
             MsiVersion = buildVersion.GenerateMsiVersion();
             DisplayVersion = buildVersion.SimpleVersion;
 
+            TargetArch = c.BuildContext.Get<string>("Platform");
+
+            MSIBuildArch = CurrentArchitecture.Current.ToString();
+            
+            // If we are building the MSI for Arm32 or Arm64, then build it as x86 or x64 for now.
+            if (String.Compare(TargetArch, "arm", true) == 0)
+            {
+                MSIBuildArch = "x86";
+            }
+            else if (String.Compare(TargetArch, "arm64", true) == 0)
+            {
+                MSIBuildArch = "x64";
+            }
+
             AcquireWix(c);
             return c.Success();
         }
@@ -128,7 +146,7 @@ namespace Microsoft.DotNet.Host.Build
 
             Cmd("powershell", "-NoProfile", "-NoLogo",
                 Path.Combine(Dirs.RepoRoot, "packaging", "windows", "host", "generatemsi.ps1"),
-                inputDir, SharedHostMsi, WixRoot, sharedHostBrandName, hostMsiVersion, hostNugetVersion, Arch, wixObjRoot)
+                inputDir, SharedHostMsi, WixRoot, sharedHostBrandName, hostMsiVersion, hostNugetVersion, MSIBuildArch, TargetArch, wixObjRoot)
                     .Execute()
                     .EnsureSuccessful();
             return c.Success();
@@ -153,7 +171,7 @@ namespace Microsoft.DotNet.Host.Build
 
             Cmd("powershell", "-NoProfile", "-NoLogo",
                 Path.Combine(Dirs.RepoRoot, "packaging", "windows", "hostfxr", "generatemsi.ps1"),
-                inputDir, HostFxrMsi, WixRoot, hostFxrBrandName, hostFxrMsiVersion, hostFxrNugetVersion, Arch, wixObjRoot)
+                inputDir, HostFxrMsi, WixRoot, hostFxrBrandName, hostFxrMsiVersion, hostFxrNugetVersion, MSIBuildArch, TargetArch, wixObjRoot)
                     .Execute()
                     .EnsureSuccessful();
             return c.Success();
@@ -179,7 +197,7 @@ namespace Microsoft.DotNet.Host.Build
 
             Cmd("powershell", "-NoProfile", "-NoLogo",
                 Path.Combine(Dirs.RepoRoot, "packaging", "windows", "sharedframework", "generatemsi.ps1"),
-                inputDir, SharedFrameworkMsi, WixRoot, sharedFxBrandName, msiVerison, sharedFrameworkNuGetName, sharedFrameworkNuGetVersion, upgradeCode, Arch, wixObjRoot)
+                inputDir, SharedFrameworkMsi, WixRoot, sharedFxBrandName, msiVerison, sharedFrameworkNuGetName, sharedFrameworkNuGetVersion, upgradeCode, MSIBuildArch, TargetArch, wixObjRoot)
                     .Execute()
                     .EnsureSuccessful();
             return c.Success();
@@ -196,7 +214,7 @@ namespace Microsoft.DotNet.Host.Build
 
             Cmd("powershell", "-NoProfile", "-NoLogo",
                 Path.Combine(Dirs.RepoRoot, "packaging", "windows", "sharedframework", "generatebundle.ps1"),
-                SharedFrameworkMsi, SharedHostMsi, HostFxrMsi, SharedFrameworkBundle, WixRoot, sharedFxBrandName, MsiVersion, DisplayVersion, sharedFrameworkNuGetName, sharedFrameworkNuGetVersion, upgradeCode, Arch)
+                SharedFrameworkMsi, SharedHostMsi, HostFxrMsi, SharedFrameworkBundle, WixRoot, sharedFxBrandName, MsiVersion, DisplayVersion, sharedFrameworkNuGetName, sharedFrameworkNuGetVersion, upgradeCode, TargetArch, MSIBuildArch)
                     .Execute()
                     .EnsureSuccessful();
             return c.Success();

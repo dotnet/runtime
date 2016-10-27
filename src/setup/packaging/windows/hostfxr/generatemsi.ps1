@@ -9,6 +9,7 @@ param(
     [Parameter(Mandatory=$true)][string]$HostFxrMSIVersion,
     [Parameter(Mandatory=$true)][string]$HostFxrNugetVersion,
     [Parameter(Mandatory=$true)][string]$Architecture,
+    [Parameter(Mandatory=$true)][string]$TargetArchitecture,
     [Parameter(Mandatory=$true)][string]$WixObjRoot
 )
 
@@ -63,6 +64,7 @@ function RunCandle
         -dBuildVersion="$HostFxrMSIVersion" `
         -dNugetVersion="$HostFxrNugetVersion" `
         -dComponentVersion="$ComponentVersion" `
+        -dTargetArchitecture="$TargetArchitecture" `
         -arch $Architecture `
         -ext WixDependencyExtension.dll `
         "$AuthWsxRoot\hostfxr.wxs" `
