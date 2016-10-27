@@ -142,11 +142,12 @@ pal::string_t get_directory(const pal::string_t& path)
         return ret + DIR_SEPARATOR;
     }
 
-    while (path_sep >= 0 && ret[path_sep] == DIR_SEPARATOR)
+    int pos = (int) path_sep;
+    while (pos >= 0 && ret[pos] == DIR_SEPARATOR)
     {
-        path_sep--;
+        pos--;
     }
-    return ret.substr(0, path_sep + 1) + DIR_SEPARATOR;
+    return ret.substr(0, pos + 1) + DIR_SEPARATOR;
 }
 
 void replace_char(pal::string_t* path, pal::char_t match, pal::char_t repl)
