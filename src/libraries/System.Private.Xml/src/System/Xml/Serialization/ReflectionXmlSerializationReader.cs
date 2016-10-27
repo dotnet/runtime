@@ -666,7 +666,6 @@ namespace System.Xml.Serialization
             }
             else
             {
-                string methodName = $"To{mapping.TypeDesc.FormatterName}";
                 if (!mapping.TypeDesc.HasCustomFormatter)
                 {
                     string value = readFunc();
@@ -726,6 +725,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
+                    string methodName = "To" + mapping.TypeDesc.FormatterName;
                     MethodInfo method = typeof(XmlSerializationReader).GetMethod(methodName, BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, new Type[] { typeof(string) });
                     if (method == null)
                     {
