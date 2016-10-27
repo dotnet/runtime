@@ -27,13 +27,13 @@ namespace System.Net.NetworkInformation
         public unsafe static NetworkInterface[] GetOsxNetworkInterfaces()
         {
             Dictionary<string, OsxNetworkInterface> interfacesByName = new Dictionary<string, OsxNetworkInterface>();
+            List<Exception> exceptions = null;
             const int MaxTries = 3;
             for (int attempt = 0; attempt < MaxTries; attempt++)
             {
                 // Because these callbacks are executed in a reverse-PInvoke, we do not want any exceptions
                 // to propogate out, because they will not be catchable. Instead, we track all the exceptions
                 // that are thrown in these callbacks, and aggregate them at the end.
-                List<Exception> exceptions = new List<Exception>();
                 int result = Interop.Sys.EnumerateInterfaceAddresses(
                     (name, ipAddr, maskAddr) =>
                     {
@@ -44,6 +44,10 @@ namespace System.Net.NetworkInformation
                         }
                         catch (Exception e)
                         {
+                            if (exceptions == null)
+                            {
+                                exceptions = new List<Exception>();
+                            }
                             exceptions.Add(e);
                         }
                     },
@@ -56,6 +60,10 @@ namespace System.Net.NetworkInformation
                         }
                         catch (Exception e)
                         {
+                            if (exceptions == null)
+                            {
+                                exceptions = new List<Exception>();
+                            }
                             exceptions.Add(e);
                         }
                     },
@@ -68,14 +76,18 @@ namespace System.Net.NetworkInformation
                         }
                         catch (Exception e)
                         {
+                            if (exceptions == null)
+                            {
+                                exceptions = new List<Exception>();
+                            }
                             exceptions.Add(e);
                         }
                     });
-                if (exceptions.Count > 0)
+                if (exceptions != null)
                 {
                     throw new NetworkInformationException(SR.net_PInvokeError, new AggregateException(exceptions));
                 }
-                if (result == 0)
+                else if (result == 0)
                 {
                     return interfacesByName.Values.ToArray();
                 }
