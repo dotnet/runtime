@@ -1041,7 +1041,6 @@
   <ItemGroup>
     <SecurityPrincipalSources Include="$(BclSourcesRoot)\System\Security\Principal\IIdentity.cs" />
     <SecurityPrincipalSources Include="$(BclSourcesRoot)\System\Security\Principal\IPrincipal.cs" />
-    <SecurityPrincipalSources Include="$(BclSourcesRoot)\System\Security\Principal\PrincipalPolicy.cs" />
     <SecurityPrincipalSources Include="$(BclSourcesRoot)\System\Security\Principal\TokenImpersonationLevel.cs" />
   </ItemGroup>
   <ItemGroup>
