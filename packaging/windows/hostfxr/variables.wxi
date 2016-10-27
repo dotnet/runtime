@@ -8,7 +8,7 @@
   <?define HostFxr_ProductVersion   =   "$(var.BuildVersion)" ?>
   <?define HostFxr_BuildVersion   =   "$(var.BuildVersion)" ?>
   <?define Manufacturer     =   "Microsoft Corporation" ?>
-  <?define ProductName      =   "$(var.ProductMoniker) ($(sys.BUILDARCH))" ?>
+  <?define ProductName      =   "$(var.ProductMoniker) ($(var.TargetArchitecture))" ?>
   <?define ProductLanguage  =   "1033" ?>
   <?define ProductVersion   =   "$(var.HostFxr_ProductVersion)" ?>
   <?define LCID  = "$(var.ProductLanguage)"?>

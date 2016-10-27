@@ -6,7 +6,7 @@
     <Version>$(HostResolverVersion)</Version>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <SkipValidatePackage>true</SkipValidatePackage>
-    <PackagePlatforms>x64;x86;arm64;</PackagePlatforms>
+    <PackagePlatforms>x64;x86;arm;arm64;</PackagePlatforms>
     <OutputPath>$(PackagesOutputPath)</OutputPath>
     <IncludeRuntimeJson>true</IncludeRuntimeJson>
     <Serviceable>true</Serviceable>
@@ -21,6 +21,9 @@
     </ProjectReference>
     <ProjectReference Include="win\Microsoft.NETCore.DotNetHostResolver.pkgproj">
       <Platform>x86</Platform>
+    </ProjectReference>
+    <ProjectReference Include="win\Microsoft.NETCore.DotNetHostResolver.pkgproj">
+      <Platform>arm</Platform>
     </ProjectReference>
     <ProjectReference Include="win\Microsoft.NETCore.DotNetHostResolver.pkgproj">
       <Platform>arm64</Platform>

@@ -5,7 +5,7 @@
   <?define Servicing_Key_SPIndex   =   "0" ?>
   <?define Servicing_Key_SPName   =   "Beta" ?>
   <?define Manufacturer     =   "Microsoft Corporation" ?>
-  <?define ProductName      =   "$(var.ProductMoniker) ($(sys.BUILDARCH))" ?>
+  <?define ProductName      =   "$(var.ProductMoniker) ($(var.TargetArchitecture))" ?>
   <?define ProductLanguage  =   "1033" ?>
   <?define ProductVersion   =   "$(var.BuildVersion)" ?>
   <?define LCID  = "$(var.ProductLanguage)"?>
