@@ -84,7 +84,7 @@ namespace System.Linq.Expressions.Compiler
                 Type indexType = TypeUtils.GetNonNullableType(rightType);
                 if (indexType != typeof(int))
                 {
-                    _ilg.EmitConvertToType(indexType, typeof(int), true);
+                    _ilg.EmitConvertToType(indexType, typeof(int), isChecked: true);
                 }
                 _ilg.Emit(OpCodes.Ldelema, node.Type);
             }
@@ -290,7 +290,7 @@ namespace System.Linq.Expressions.Compiler
             PropertyInfo pi = (PropertyInfo)node.Member;
 
             // emit the get
-            EmitCall(instanceType, pi.GetGetMethod(true));
+            EmitCall(instanceType, pi.GetGetMethod(nonPublic: true));
 
             // emit the address of the value
             LocalBuilder valueLocal = GetLocal(node.Type);
@@ -308,7 +308,7 @@ namespace System.Linq.Expressions.Compiler
                 }
                 @this._ilg.Emit(OpCodes.Ldloc, valueLocal);
                 @this.FreeLocal(valueLocal);
-                @this.EmitCall(instanceLocal?.LocalType, pi.GetSetMethod(true));
+                @this.EmitCall(instanceLocal?.LocalType, pi.GetSetMethod(nonPublic: true));
             };
         }
 
