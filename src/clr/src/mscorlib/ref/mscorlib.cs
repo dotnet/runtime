@@ -11966,6 +11966,9 @@ namespace System.Runtime.Loader
         public static System.Runtime.Loader.AssemblyLoadContext Default { get { throw null; } }
         public event System.Func<System.Runtime.Loader.AssemblyLoadContext, System.Reflection.AssemblyName, System.Reflection.Assembly> Resolving { add { } remove { } }
         public event System.Action<System.Runtime.Loader.AssemblyLoadContext> Unloading { add { } remove { } }
+        public static event AssemblyLoadEventHandler AssemblyLoad { add { } remove { } }
+        public static event ResolveEventHandler TypeResolve { add { } remove { } }
+        public static event ResolveEventHandler ResourceResolve { add { } remove { } }
         public static System.Reflection.AssemblyName GetAssemblyName(string assemblyPath) { throw null; }
         public static System.Runtime.Loader.AssemblyLoadContext GetLoadContext(System.Reflection.Assembly assembly) { throw null; }
         public static System.Reflection.Assembly[] GetLoadedAssemblies() { throw null; }

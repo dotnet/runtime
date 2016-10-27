@@ -470,6 +470,27 @@ namespace System.Runtime.Loader
 
         // Synchronization primitive for controlling initialization of Default load context
         private static readonly object s_initLock = new Object();
+
+        // Occurs when an Assembly is loaded
+        public static event AssemblyLoadEventHandler AssemblyLoad 
+        { 
+            add { AppDomain.CurrentDomain.AssemblyLoad += value; } 
+            remove { AppDomain.CurrentDomain.AssemblyLoad -= value; } 
+        }
+
+        // Occurs when resolution of type fails
+        public static event ResolveEventHandler TypeResolve 
+        { 
+            add { AppDomain.CurrentDomain.TypeResolve += value; } 
+            remove { AppDomain.CurrentDomain.TypeResolve -= value; } 
+        }
+
+        // Occurs when resolution of resource fails
+        public static event ResolveEventHandler ResourceResolve 
+        { 
+            add { AppDomain.CurrentDomain.ResourceResolve += value; } 
+            remove { AppDomain.CurrentDomain.ResourceResolve -= value; } 
+        } 
     }
 
     [System.Security.SecuritySafeCritical]
