@@ -167,7 +167,9 @@ void genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode);
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
 #ifdef _TARGET_X86_
-bool genAdjustStackForPutArgStk(GenTreePutArgStk* putArgStk, bool isSrcInMemory);
+bool genAdjustStackForPutArgStk(GenTreePutArgStk* putArgStk);
+void genPushReg(var_types type, regNumber srcReg);
+void genPutArgStkFieldList(GenTreePutArgStk* putArgStk);
 #endif // _TARGET_X86_
 
 void genPutStructArgStk(GenTreePutArgStk* treeNode);

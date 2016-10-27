@@ -5724,13 +5724,14 @@ regNumber LinearScan::allocateBusyReg(Interval* current, RefPosition* refPositio
             }
         }
 
-        LsraLocation nextLocation = assignedInterval->getNextRefLocation();
+        RefPosition* nextRefPosition = assignedInterval->getNextRefPosition();
+        LsraLocation nextLocation    = assignedInterval->getNextRefLocation();
 
         // We should never spill a register that's occupied by an Interval with its next use at the current location.
         // Normally this won't occur (unless we actually had more uses in a single node than there are registers),
         // because we'll always find something with a later nextLocation, but it can happen in stress when
         // we have LSRA_SELECT_NEAREST.
-        if ((nextLocation == refLocation) && !refPosition->isFixedRegRef)
+        if ((nextLocation == refLocation) && !refPosition->isFixedRegRef && nextRefPosition->RequiresRegister())
         {
             continue;
         }
@@ -5815,7 +5816,17 @@ regNumber LinearScan::allocateBusyReg(Interval* current, RefPosition* refPositio
     else
     {
         // Must have found a spill candidate.
-        assert((farthestRefPhysRegRecord != nullptr) && (farthestLocation > refLocation || refPosition->isFixedRegRef));
+        assert(farthestRefPhysRegRecord != nullptr);
+        if ((farthestLocation == refLocation) && !refPosition->isFixedRegRef)
+        {
+            Interval*    assignedInterval = farthestRefPhysRegRecord->assignedInterval;
+            RefPosition* nextRefPosition  = assignedInterval->getNextRefPosition();
+            assert(!nextRefPosition->RequiresRegister());
+        }
+        else
+        {
+            assert(farthestLocation > refLocation || refPosition->isFixedRegRef);
+        }
     }
 #endif
 
