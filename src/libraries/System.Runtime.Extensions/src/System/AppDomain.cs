@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-
 using System;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
@@ -205,10 +204,10 @@ namespace System
         public event ResolveEventHandler ResourceResolve { add { } remove { } }
         //public void SetPrincipalPolicy(System.Security.Principal.PrincipalPolicy policy) { }
         /*
-        public void SetThreadPrincipal(System.Security.Principal.IPrincipal principal) 
-        { 
+        public void SetThreadPrincipal(System.Security.Principal.IPrincipal principal)
+        {
             if (principal == null) throw new ArgumentNullException("principal");
-            throw new PlatformNotSupportedException(); 
+            throw new PlatformNotSupportedException();
         }*/
     }
 }
