@@ -15,7 +15,7 @@ repositories.  You can see what is available from
  * <https://dotnet.myget.org/gallery/dotnet-core>, and in particular you can see the builds of CoreCLR at 
  * <https://dotnet.myget.org/feed/dotnet-core/package/nuget/Microsoft.NETCore.Runtime.CoreCLR>.   
  
-Thus if your goal is just to get the latest bug fixes and features, you don't need to build CoreC*LR yourself you 
+Thus if your goal is just to get the latest bug fixes and features, you don't need to build CoreCLR yourself you 
 can simply add <https://dotnet.myget.org/F/dotnet-core/api/v3/index.json> to your Nuget Feed list. 
 
 ## Package Version Numbers
