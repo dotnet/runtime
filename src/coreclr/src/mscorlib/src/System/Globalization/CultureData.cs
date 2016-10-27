@@ -906,7 +906,7 @@ namespace System.Globalization
             // If not successful, throw
             if (retVal == null)
                 throw new CultureNotFoundException(
-                    "culture", culture, Environment.GetResourceString("Argument_CultureNotSupported"));
+                    nameof(culture), culture, Environment.GetResourceString("Argument_CultureNotSupported"));
 
             // Return the one we found
             return retVal;

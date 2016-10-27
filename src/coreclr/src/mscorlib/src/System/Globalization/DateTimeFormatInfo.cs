@@ -411,7 +411,7 @@ namespace System.Globalization {
 
                 if (this.m_cultureData == null)
                     throw new CultureNotFoundException(
-                        "m_name", m_name, Environment.GetResourceString("Argument_CultureNotSupported"));
+                        nameof(m_name), m_name, Environment.GetResourceString("Argument_CultureNotSupported"));
             }
             // Note: This is for Everett compatibility
 
