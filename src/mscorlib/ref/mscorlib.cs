@@ -12399,11 +12399,6 @@ namespace System.Security.Principal
         System.Security.Principal.IIdentity Identity { get; }
         bool IsInRole(string role);
     }
-    public enum PrincipalPolicy {
-        UnauthenticatedPrincipal = 0,
-        NoPrincipal = 1,
-        WindowsPrincipal = 2,
-    }
     public enum TokenImpersonationLevel
     {
         Anonymous = 1,

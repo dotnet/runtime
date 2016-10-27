@@ -10661,12 +10661,6 @@
       <Member Name="IsInRole(System.String)" />
       <Member Name ="get_Identity" />
     </Type>
-    <Type Name="System.Security.Principal.PrincipalPolicy">
-      <Member MemberType="Field" Name="UnauthenticatedPrincipal" />
-      <Member MemberType="Field" Name="NoPrincipal" />
-      <Member MemberType="Field" Name="WindowsPrincipal" />
-      <Member MemberType="Field" Name="value__" />
-    </Type>
     <Type Name="System.Security.Principal.TokenImpersonationLevel">
       <Member MemberType="Field" Name="Anonymous" />
       <Member MemberType="Field" Name="Delegation" />
