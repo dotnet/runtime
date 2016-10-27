@@ -9,6 +9,7 @@ using System.Text;
 
 namespace System
 {
+    [Serializable]
     public sealed class ApplicationId
     {
         private readonly byte[] _publicKeyToken;
