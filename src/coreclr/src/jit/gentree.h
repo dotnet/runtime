@@ -566,7 +566,7 @@ public:
 
     bool isContainedIntOrIImmed() const
     {
-        return isContained() && IsCnsIntOrI();
+        return isContained() && IsCnsIntOrI() && !isContainedSpillTemp();
     }
 
     bool isContainedFltOrDblImmed() const
@@ -4649,10 +4649,14 @@ struct GenTreePutArgStk : public GenTreeUnOp
     // block node.
 
     enum class Kind : __int8{
-        Invalid, RepInstr, Unroll, AllSlots,
+        Invalid, RepInstr, Unroll, Push, PushAllSlots,
     };
 
     Kind gtPutArgStkKind;
+    bool isPushKind()
+    {
+        return (gtPutArgStkKind == Kind::Push) || (gtPutArgStkKind == Kind::PushAllSlots);
+    }
 
     unsigned gtNumSlots;             // Number of slots for the argument to be passed on stack
     unsigned gtNumberReferenceSlots; // Number of reference slots.

@@ -11287,19 +11287,62 @@ void Compiler::gtDispTree(GenTreePtr   tree,
         {
             printf(" (last use)");
         }
-        if (tree->OperIsCopyBlkOp())
+        if (tree->OperIsBlkOp())
         {
-            printf(" (copy)");
-        }
-        else if (tree->OperIsInitBlkOp())
-        {
-            printf(" (init)");
+            if (tree->OperIsCopyBlkOp())
+            {
+                printf(" (copy)");
+            }
+            else if (tree->OperIsInitBlkOp())
+            {
+                printf(" (init)");
+            }
+            if (tree->OperIsStoreBlk() && (tree->AsBlk()->gtBlkOpKind != GenTreeBlk::BlkOpKindInvalid))
+            {
+                switch (tree->AsBlk()->gtBlkOpKind)
+                {
+                    case GenTreeBlk::BlkOpKindRepInstr:
+                        printf(" (RepInstr)");
+                        break;
+                    case GenTreeBlk::BlkOpKindUnroll:
+                        printf(" (Unroll)");
+                        break;
+                    case GenTreeBlk::BlkOpKindHelper:
+                        printf(" (Helper)");
+                        break;
+                    default:
+                        unreached();
+                }
+            }
         }
         else if (tree->OperIsFieldList())
         {
             printf(" %s at offset %d", varTypeName(tree->AsFieldList()->gtFieldType),
                    tree->AsFieldList()->gtFieldOffset);
         }
+#if FEATURE_PUT_STRUCT_ARG_STK
+        else if ((tree->OperGet() == GT_PUTARG_STK) &&
+                 (tree->AsPutArgStk()->gtPutArgStkKind != GenTreePutArgStk::Kind::Invalid))
+        {
+            switch (tree->AsPutArgStk()->gtPutArgStkKind)
+            {
+                case GenTreePutArgStk::Kind::RepInstr:
+                    printf(" (RepInstr)");
+                    break;
+                case GenTreePutArgStk::Kind::Unroll:
+                    printf(" (Unroll)");
+                    break;
+                case GenTreePutArgStk::Kind::Push:
+                    printf(" (Push)");
+                    break;
+                case GenTreePutArgStk::Kind::PushAllSlots:
+                    printf(" (PushAllSlots)");
+                    break;
+                default:
+                    unreached();
+            }
+        }
+#endif // FEATURE_PUT_STRUCT_ARG_STK
 
         IndirectAssignmentAnnotation* pIndirAnnote;
         if (tree->gtOper == GT_ASG && GetIndirAssignMap()->Lookup(tree, &pIndirAnnote))

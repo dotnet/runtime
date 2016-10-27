@@ -2100,6 +2100,7 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* putArgStk)
 
         // Now that the fields have been sorted, initialize the LSRA info.
         bool     allFieldsAreSlots = true;
+        bool     needsByteTemp     = false;
         unsigned prevOffset        = putArgStk->getArgSize();
         for (GenTreeFieldList* current = fieldList; current != nullptr; current = current->Rest())
         {
@@ -2108,11 +2109,45 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* putArgStk)
             const unsigned  fieldOffset = current->gtFieldOffset;
             assert(fieldType != TYP_LONG);
 
-            // TODO-X86-CQ: we could probably improve codegen here by marking all of the operands to field nodes that
-            // we are going to `push` on the stack as reg-optional.
+            // For x86 we must mark all integral fields as contained or reg-optional, and handle them
+            // accordingly in code generation, since we may have up to 8 fields, which cannot all be in
+            // registers to be consumed atomically by the call.
+            if (varTypeIsIntegralOrI(fieldNode))
+            {
+                if (fieldNode->OperGet() == GT_LCL_VAR)
+                {
+                    LclVarDsc* varDsc = &(comp->lvaTable[fieldNode->AsLclVarCommon()->gtLclNum]);
+                    if (varDsc->lvTracked && !varDsc->lvDoNotEnregister)
+                    {
+                        SetRegOptional(fieldNode);
+                    }
+                    else
+                    {
+                        MakeSrcContained(putArgStk, fieldNode);
+                    }
+                }
+                else if (fieldNode->IsIntCnsFitsInI32())
+                {
+                    MakeSrcContained(putArgStk, fieldNode);
+                }
+                else
+                {
+                    // For the case where we cannot directly push the value, if we run out of registers,
+                    // it would be better to defer computation until we are pushing the arguments rather
+                    // than spilling, but this situation is not all that common, as most cases of promoted
+                    // structs do not have a large number of fields, and of those most are lclVars or
+                    // copy-propagated constants.
+                    SetRegOptional(fieldNode);
+                }
+            }
+            else
+            {
+                assert(varTypeIsFloating(fieldNode));
+            }
 
-            const bool fieldIsSlot =
-                varTypeIsIntegralOrI(fieldType) && ((fieldOffset % 4) == 0) && ((prevOffset - fieldOffset) >= 4);
+            // We can treat as a slot any field that is stored at a slot boundary, where the previous
+            // field is not in the same slot. (Note that we store the fields in reverse order.)
+            const bool fieldIsSlot = ((fieldOffset % 4) == 0) && ((prevOffset - fieldOffset) >= 4);
             if (!fieldIsSlot)
             {
                 allFieldsAreSlots = false;
@@ -2120,8 +2155,9 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* putArgStk)
                 {
                     // If this field is a slot--i.e. it is an integer field that is 4-byte aligned and takes up 4 bytes
                     // (including padding)--we can store the whole value rather than just the byte. Otherwise, we will
-                    // need a byte-addressable register for the store.
-                    fieldNode->gtLsraInfo.setSrcCandidates(l, l->allRegs(TYP_INT) & ~RBM_NON_BYTE_REGS);
+                    // need a byte-addressable register for the store. We will enforce this requirement on an internal
+                    // register, which we can use to copy multiple byte values.
+                    needsByteTemp = true;
                 }
             }
 
@@ -2133,10 +2169,28 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* putArgStk)
             prevOffset = fieldOffset;
         }
 
-        // If all fields of this list are slots, set the copy kind.
+        // Set the copy kind.
+        // TODO-X86-CQ: Even if we are using push, if there are contiguous floating point fields, we should
+        // adjust the stack once for those fields. The latter is really best done in code generation, but
+        // this tuning should probably be undertaken as a whole.
+        // Also, if there are  floating point fields, it may be better to use the "Unroll" mode
+        // of copying the struct as a whole, if the fields are not register candidates.
         if (allFieldsAreSlots)
         {
-            putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::AllSlots;
+            putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::PushAllSlots;
+        }
+        else
+        {
+            putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Push;
+            // If any of the fields cannot be stored with an actual push, we may need a temporary
+            // register to load the value before storing it to the stack location.
+            info->internalIntCount = 1;
+            regMaskTP regMask      = l->allRegs(TYP_INT);
+            if (needsByteTemp)
+            {
+                regMask &= ~RBM_NON_BYTE_REGS;
+            }
+            info->setInternalCandidates(l, regMask);
         }
         return;
     }
@@ -2218,15 +2272,23 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* putArgStk)
             info->addInternalCandidates(l, l->internalFloatRegCandidates());
         }
 
-        // If src or dst are on stack, we don't have to generate the address into a register
-        // because it's just some constant+SP
-        putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Unroll;
+#ifdef _TARGET_X86_
+        if (size < XMM_REGSIZE_BYTES)
+        {
+            putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Push;
+        }
+        else
+#endif // _TARGET_X86_
+        {
+            putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Unroll;
+        }
     }
 #ifdef _TARGET_X86_
     else if (putArgStk->gtNumberReferenceSlots != 0)
     {
         // On x86, we must use `push` to store GC references to the stack in order for the emitter to properly update
         // the function's GC info. These `putargstk` nodes will generate a sequence of `push` instructions.
+        putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Push;
     }
 #endif // _TARGET_X86_
     else
@@ -2496,6 +2558,7 @@ void Lowering::TreeNodeInfoInitModDiv(GenTree* tree)
         info->setDstCandidates(l, RBM_RAX);
     }
 
+    bool op2CanBeRegOptional = true;
 #ifdef _TARGET_X86_
     if (op1->OperGet() == GT_LONG)
     {
@@ -2505,7 +2568,9 @@ void Lowering::TreeNodeInfoInitModDiv(GenTree* tree)
 
         // Src count is actually 3, so increment.
         assert(op2->IsCnsIntOrI());
+        assert(tree->OperGet() == GT_UMOD);
         info->srcCount++;
+        op2CanBeRegOptional = false;
 
         // This situation also requires an internal register.
         info->internalIntCount = 1;
@@ -2526,7 +2591,7 @@ void Lowering::TreeNodeInfoInitModDiv(GenTree* tree)
     {
         MakeSrcContained(tree, op2);
     }
-    else
+    else if (op2CanBeRegOptional)
     {
         op2->gtLsraInfo.setSrcCandidates(l, l->allRegs(TYP_INT) & ~(RBM_RAX | RBM_RDX));
 
