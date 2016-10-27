@@ -156,7 +156,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="ParameterExpression"/> node with the specified name and type.</returns>
         public static ParameterExpression Parameter(Type type)
         {
-            return Parameter(type, null);
+            return Parameter(type, name: null);
         }
 
         /// <summary>
@@ -166,7 +166,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="ParameterExpression"/> node with the specified name and type.</returns>
         public static ParameterExpression Variable(Type type)
         {
-            return Variable(type, null);
+            return Variable(type, name: null);
         }
 
         /// <summary>
@@ -215,7 +215,7 @@ namespace System.Linq.Expressions
                 throw Error.TypeMustNotBePointer(nameof(type));
             }
 
-            return ParameterExpression.Make(type, name, false);
+            return ParameterExpression.Make(type, name, isByRef: false);
         }
     }
 }

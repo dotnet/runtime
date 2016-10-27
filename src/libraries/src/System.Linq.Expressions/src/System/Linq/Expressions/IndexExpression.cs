@@ -285,7 +285,7 @@ namespace System.Linq.Expressions
         {
             MethodInfo mi;
 
-            mi = pi.GetGetMethod(true);
+            mi = pi.GetGetMethod(nonPublic: true);
             ParameterInfo[] parms;
             if (mi != null)
             {
@@ -293,7 +293,7 @@ namespace System.Linq.Expressions
             }
             else
             {
-                mi = pi.GetSetMethod(true);
+                mi = pi.GetSetMethod(nonPublic: true);
                 //The setter has an additional parameter for the value to set,
                 //need to remove the last type to match the arguments.
                 parms = mi.GetParametersCached().RemoveLast();
@@ -366,14 +366,14 @@ namespace System.Linq.Expressions
             if (property.PropertyType == typeof(void)) throw Error.PropertyTypeCannotBeVoid(nameof(property));
 
             ParameterInfo[] getParameters = null;
-            MethodInfo getter = property.GetGetMethod(true);
+            MethodInfo getter = property.GetGetMethod(nonPublic: true);
             if (getter != null)
             {
                 getParameters = getter.GetParametersCached();
                 ValidateAccessor(instance, getter, getParameters, ref argList, nameof(property));
             }
 
-            MethodInfo setter = property.GetSetMethod(true);
+            MethodInfo setter = property.GetSetMethod(nonPublic: true);
             if (setter != null)
             {
                 ParameterInfo[] setParameters = setter.GetParametersCached();

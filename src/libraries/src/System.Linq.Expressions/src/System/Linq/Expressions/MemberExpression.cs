@@ -259,11 +259,11 @@ namespace System.Linq.Expressions
         {
             ContractUtils.RequiresNotNull(property, nameof(property));
 
-            MethodInfo mi = property.GetGetMethod(true);
+            MethodInfo mi = property.GetGetMethod(nonPublic: true);
 
             if (mi == null)
             {
-                mi = property.GetSetMethod(true);
+                mi = property.GetSetMethod(nonPublic: true);
 
                 if (mi == null)
                 {
@@ -317,11 +317,11 @@ namespace System.Linq.Expressions
             PropertyInfo[] props = type.GetProperties(flags);
             foreach (PropertyInfo pi in props)
             {
-                if (pi.CanRead && CheckMethod(mi, pi.GetGetMethod(true)))
+                if (pi.CanRead && CheckMethod(mi, pi.GetGetMethod(nonPublic: true)))
                 {
                     return pi;
                 }
-                if (pi.CanWrite && CheckMethod(mi, pi.GetSetMethod(true)))
+                if (pi.CanWrite && CheckMethod(mi, pi.GetSetMethod(nonPublic: true)))
                 {
                     return pi;
                 }
