@@ -85,11 +85,6 @@ const unsigned int MAX_INL_ARGS = 10; // does not include obj pointer
 const unsigned int MAX_INL_LCLS = 8;
 #endif // LEGACY_BACKEND
 
-// Flags lost during inlining.
-
-#define CORJIT_FLG_LOST_WHEN_INLINING                                                                                  \
-    (CORJIT_FLG_BBOPT | CORJIT_FLG_BBINSTR | CORJIT_FLG_PROF_ENTERLEAVE | CORJIT_FLG_DEBUG_EnC | CORJIT_FLG_DEBUG_INFO)
-
 // Forward declarations
 
 class InlineStrategy;

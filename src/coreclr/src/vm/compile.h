@@ -377,7 +377,7 @@ class CEECompileInfo : public ICorCompileInfo
 
     HRESULT GetBaseJitFlags(
             IN  CORINFO_METHOD_HANDLE    hMethod,
-            OUT DWORD                   *pFlags);
+            OUT CORJIT_FLAGS            *pFlags);
 
 #ifdef _WIN64
     SIZE_T  getPersonalityValue();

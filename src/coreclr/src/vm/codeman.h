@@ -1146,17 +1146,17 @@ public:
 #endif // !DACCESS_COMPILE
 
 private:
-    DWORD               m_dwCPUCompileFlags;
+    CORJIT_FLAGS m_CPUCompileFlags;
 
 #if !defined CROSSGEN_COMPILE && !defined DACCESS_COMPILE
     void SetCpuInfo();
 #endif
 
 public:
-    inline DWORD GetCPUCompileFlags()
+    inline CORJIT_FLAGS GetCPUCompileFlags()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_dwCPUCompileFlags;
+        return m_CPUCompileFlags;
     }
 
 private :

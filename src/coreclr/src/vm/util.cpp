@@ -2069,16 +2069,9 @@ lDone:
 #define CACHE_PARTITION_BITS    0x003FF000      // number of cache Physical Partitions is returned in EBX[21:12] (10 bits) using cpuid function 4
 #define CACHE_LINESIZE_BITS     0x00000FFF      // Linesize returned in EBX[11:0] (12 bits) using cpuid function 4
 
-#if defined(_TARGET_X86_)
-    // these are defined in cgenx86.cpp
-    extern DWORD getcpuid(DWORD arg1, unsigned char result[16]);
-    extern DWORD getextcpuid(DWORD arg1, DWORD arg2, unsigned char result[16]);
-#elif defined(_TARGET_AMD64_)
-    // these are defined in  src\VM\AMD64\asmhelpers.asm
-    extern "C" DWORD __stdcall getcpuid(DWORD arg1, unsigned char result[16]);
-    extern "C" DWORD __stdcall getextcpuid(DWORD arg1, DWORD arg2, unsigned char result[16]);
-#endif
-
+// these are defined in src\VM\AMD64\asmhelpers.asm / cgenx86.cpp
+extern "C" DWORD __stdcall getcpuid(DWORD arg1, unsigned char result[16]);
+extern "C" DWORD __stdcall getextcpuid(DWORD arg1, DWORD arg2, unsigned char result[16]);
 
 // The following function uses a deterministic mechanism for enumerating/calculating the details of the cache hierarychy at runtime
 // by using deterministic cache parameter leafs on Prescott and higher processors. 

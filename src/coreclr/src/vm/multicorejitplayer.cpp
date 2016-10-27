@@ -556,7 +556,7 @@ bool MulticoreJitProfilePlayer::CompileMethodDesc(Module * pModule, MethodDesc *
 #endif
 
         // MakeJitWorker calls back to MulticoreJitCodeStorage::StoreMethodCode under MethodDesc lock
-        pMD->MakeJitWorker(& header, CORJIT_FLG_MCJIT_BACKGROUND, 0);
+        pMD->MakeJitWorker(& header, CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_MCJIT_BACKGROUND));
 
         return true;
     }

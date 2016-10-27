@@ -299,7 +299,7 @@ void ZapILMetaData::CopyMetaData()
 
         // unless we're producing an instrumented version - the IBC logging for meta data doesn't
         // work for the hot/cold split version.
-        if (m_pImage->m_zapper->m_pOpt->m_compilerFlags & CORJIT_FLG_BBINSTR)
+        if (m_pImage->m_zapper->m_pOpt->m_compilerFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR))
             IfFailThrow(pIMetaDataCorProfileData->SetCorProfileData(NULL));
         else
             IfFailThrow(pIMetaDataCorProfileData->SetCorProfileData(m_pImage->GetProfileData()));
@@ -308,7 +308,7 @@ void ZapILMetaData::CopyMetaData()
     // If we are ngening with the tuning option, the IBC data that is
     // generated gets reordered and may be  inconsistent with the
     // metadata in the original IL image. Let's just skip that case.
-    if (!(m_pImage->m_zapper->m_pOpt->m_compilerFlags & CORJIT_FLG_BBINSTR))
+    if (!m_pImage->m_zapper->m_pOpt->m_compilerFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR))
     {
         // Communicate the reordering option for saving
         NonVMComHolder<IMDInternalMetadataReorderingOptions> pIMDInternalMetadataReorderingOptions;

@@ -1187,6 +1187,7 @@ EEJitManager::EEJitManager()
     // CRST_TAKEN_DURING_SHUTDOWN - We take this lock during shutdown if ETW is on (to do rundown)
     m_CodeHeapCritSec( CrstSingleUseLock,
                         CrstFlags(CRST_UNSAFE_ANYMODE|CRST_DEBUGGER_THREAD|CRST_TAKEN_DURING_SHUTDOWN)),
+    m_CPUCompileFlags(),
     m_EHClauseCritSec( CrstSingleUseLock )
 {
     CONTRACTL {
@@ -1211,17 +1212,17 @@ EEJitManager::EEJitManager()
     m_AltJITRequired   = false;
 #endif
 
-    m_dwCPUCompileFlags = 0;
-
     m_cleanupList = NULL;
 }
 
-#if defined(_TARGET_AMD64_)
+#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
 extern "C" DWORD __stdcall getcpuid(DWORD arg, unsigned char result[16]);
 extern "C" DWORD __stdcall xmmYmmStateSupport();
 
 bool DoesOSSupportAVX()
 {
+    LIMITED_METHOD_CONTRACT;
+
 #ifndef FEATURE_PAL
     // On Windows we have an api(GetEnabledXStateFeatures) to check if AVX is supported
     typedef DWORD64 (WINAPI *PGETENABLEDXSTATEFEATURES)();
@@ -1255,7 +1256,7 @@ bool DoesOSSupportAVX()
     return TRUE;
 }
 
-#endif // defined(_TARGET_AMD64_)
+#endif // defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
 
 void EEJitManager::SetCpuInfo()
 {
@@ -1265,7 +1266,7 @@ void EEJitManager::SetCpuInfo()
     // NOTE: This function needs to be kept in sync with Zapper::CompileAssembly()
     //
 
-    DWORD dwCPUCompileFlags = 0;
+    CORJIT_FLAGS CPUCompileFlags;
 
 #if defined(_TARGET_X86_)
     // NOTE: if you're adding any flags here, you probably should also be doing it
@@ -1276,7 +1277,7 @@ void EEJitManager::SetCpuInfo()
     switch (CPU_X86_FAMILY(cpuInfo.dwCPUType))
     {
     case CPU_X86_PENTIUM_4:
-        dwCPUCompileFlags |= CORJIT_FLG_TARGET_P4;
+        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_TARGET_P4);
         break;
     default:
         break;
@@ -1284,15 +1285,17 @@ void EEJitManager::SetCpuInfo()
 
     if (CPU_X86_USE_CMOV(cpuInfo.dwFeatures))
     {
-        dwCPUCompileFlags |= CORJIT_FLG_USE_CMOV |
-                             CORJIT_FLG_USE_FCOMI;
+        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_CMOV);
+        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_FCOMI);
     }
 
     if (CPU_X86_USE_SSE2(cpuInfo.dwFeatures))
     {
-        dwCPUCompileFlags |= CORJIT_FLG_USE_SSE2;
+        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE2);
     }
-#elif defined(_TARGET_AMD64_)
+#endif // _TARGET_X86_
+
+#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
     unsigned char buffer[16];
     DWORD maxCpuId = getcpuid(0, buffer);
     if (maxCpuId >= 0)
@@ -1301,17 +1304,17 @@ void EEJitManager::SetCpuInfo()
         // It returns the resulting eax in buffer[0-3], ebx in buffer[4-7], ecx in buffer[8-11],
         // and edx in buffer[12-15].
         // We will set the following flags:
-        // CORJIT_FLG_USE_SSE3_4 if the following feature bits are set (input EAX of 1)
+        // CORJIT_FLAG_USE_SSE3_4 if the following feature bits are set (input EAX of 1)
         //    SSE3 - ECX bit 0     (buffer[8]  & 0x01)
         //    SSSE3 - ECX bit 9    (buffer[9]  & 0x02)
         //    SSE4.1 - ECX bit 19  (buffer[10] & 0x08)
         //    SSE4.2 - ECX bit 20  (buffer[10] & 0x10)
-        // CORJIT_FLG_USE_AVX if the following feature bits are set (input EAX of 1), and xmmYmmStateSupport returns 1:
+        // CORJIT_FLAG_USE_AVX if the following feature bits are set (input EAX of 1), and xmmYmmStateSupport returns 1:
         //    OSXSAVE - ECX bit 27 (buffer[11] & 0x08)
         //    AVX - ECX bit 28     (buffer[11] & 0x10)
-        // CORJIT_FLG_USE_AVX2 if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
+        // CORJIT_FLAG_USE_AVX2 if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
         //    AVX2 - EBX bit 5     (buffer[4]  & 0x20)
-        // CORJIT_FLG_USE_AVX_512 is not currently set, but defined so that it can be used in future without
+        // CORJIT_FLAG_USE_AVX_512 is not currently set, but defined so that it can be used in future without
         // synchronously updating VM and JIT.
         (void) getcpuid(1, buffer);
         // If SSE2 is not enabled, there is no point in checking the rest.
@@ -1324,7 +1327,7 @@ void EEJitManager::SetCpuInfo()
                 ((buffer[10] & 0x08) != 0) &&       // SSE4.1
                 ((buffer[10] & 0x10) != 0))         // SSE4.2
             {
-                dwCPUCompileFlags |= CORJIT_FLG_USE_SSE3_4;
+                CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE3_4);
             }
             if ((buffer[11] & 0x18) == 0x18)
             {
@@ -1332,13 +1335,13 @@ void EEJitManager::SetCpuInfo()
                 {
                     if (xmmYmmStateSupport() == 1)
                     {
-                        dwCPUCompileFlags |= CORJIT_FLG_USE_AVX;
+                        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_AVX);
                         if (maxCpuId >= 0x07)
                         {
                             (void) getcpuid(0x07, buffer);
                             if ((buffer[4]  & 0x20) != 0)
                             {
-                                dwCPUCompileFlags |= CORJIT_FLG_USE_AVX2;
+                                CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_AVX2);
                             }
                         }
                     }
@@ -1347,13 +1350,13 @@ void EEJitManager::SetCpuInfo()
             static ConfigDWORD fFeatureSIMD;
             if (fFeatureSIMD.val(CLRConfig::EXTERNAL_FeatureSIMD) != 0)
             {
-                dwCPUCompileFlags |= CORJIT_FLG_FEATURE_SIMD;
+                CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_FEATURE_SIMD);
             }
         }
     }
-#endif // defined(_TARGET_AMD64_)
+#endif // defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
 
-    m_dwCPUCompileFlags = dwCPUCompileFlags;
+    m_CPUCompileFlags = CPUCompileFlags;
 }
 
 // Define some data that we can use to get a better idea of what happened when we get a Watson dump that indicates the JIT failed to load.

@@ -1164,7 +1164,7 @@ enum CorCompileILRegion
 class ICorCompilePreloader
 {
  public:
-    typedef void (__stdcall *CORCOMPILE_CompileStubCallback)(LPVOID pContext, CORINFO_METHOD_HANDLE hStub, DWORD dwJitFlags);
+    typedef void (__stdcall *CORCOMPILE_CompileStubCallback)(LPVOID pContext, CORINFO_METHOD_HANDLE hStub, CORJIT_FLAGS jitFlags);
 
     //
     // Map methods are available after Serialize() is called
@@ -1849,7 +1849,7 @@ class ICorCompileInfo
     // Get the compilation flags that are shared between JIT and NGen
     virtual HRESULT GetBaseJitFlags(
             IN  CORINFO_METHOD_HANDLE   hMethod,
-            OUT DWORD                  *pFlags) = 0;
+            OUT CORJIT_FLAGS           *pFlags) = 0;
 
     // needed for stubs to obtain the number of bytes to copy into the native image
     // return the beginning of the stub and the size to copy (in bytes)
@@ -1887,16 +1887,16 @@ class ICorCompileInfo
 /*****************************************************************************/
 // This function determines the compile flags to use for a generic intatiation
 // since only the open instantiation can be verified.
-// See the comment associated with CORJIT_FLG_SKIP_VERIFICATION for details.
+// See the comment associated with CORJIT_FLAG_SKIP_VERIFICATION for details.
 //
 // On return:
 // if *raiseVerificationException=TRUE, the caller should raise a VerificationException.
 // if *unverifiableGenericCode=TRUE, the method is a generic instantiation with
 // unverifiable code
 
-CorJitFlag GetCompileFlagsIfGenericInstantiation(
+CORJIT_FLAGS GetCompileFlagsIfGenericInstantiation(
         CORINFO_METHOD_HANDLE method,
-        CorJitFlag compileFlags,
+        CORJIT_FLAGS compileFlags,
         ICorJitInfo * pCorJitInfo,
         BOOL * raiseVerificationException,
         BOOL * unverifiableGenericCode);
