@@ -1186,14 +1186,15 @@ void CodeGen::genConsumeRegs(GenTree* tree)
 #ifdef _TARGET_XARCH_
         else if (tree->OperGet() == GT_LCL_VAR)
         {
-            // A contained lcl var must be living on stack and marked as reg optional.
+            // A contained lcl var must be living on stack and marked as reg optional, or not be a
+            // register candidate.
             unsigned   varNum = tree->AsLclVarCommon()->GetLclNum();
             LclVarDsc* varDsc = compiler->lvaTable + varNum;
 
             noway_assert(varDsc->lvRegNum == REG_STK);
-            noway_assert(tree->IsRegOptional());
+            noway_assert(tree->IsRegOptional() || !varDsc->lvLRACandidate);
 
-            // Update the life of reg optional lcl var.
+            // Update the life of the lcl var.
             genUpdateLife(tree);
         }
 #endif // _TARGET_XARCH_
