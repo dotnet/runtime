@@ -136,7 +136,7 @@ namespace System.Numerics.Tests
         [OuterLoop]
         public static void RunLargeValueLogTests()
         {
-            LargeValueLogTests(0, 5, 64, 4);
+            LargeValueLogTests(0, 4, 64, 3);
         }
 
         /// <summary>
@@ -158,11 +158,11 @@ namespace System.Numerics.Tests
 
                 for (int j = 0; j<bigShiftLoopLimit; j++)
                 {
-                    temp = temp << Int32.MaxValue;
+                    temp = temp << (int.MaxValue / 2);
                     double expected =
                         (double)startShift +
                         smallShift * (double)(i + 1) +
-                        Int32.MaxValue * (double)(j + 1);
+                        (int.MaxValue / 2) * (double)(j + 1);
                     Assert.True(ApproxEqual(BigInteger.Log(temp, logbase), expected));
                 }
                 
