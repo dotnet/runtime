@@ -1631,6 +1631,76 @@ namespace System.Numerics.Tests
         }
         #endregion Reflection Tests
 
+        #region Same-Size Conversions
+<# foreach (var sourceTargetPair in SameSizeConversionPairs) {
+    Type sourceType = sourceTargetPair.Key;
+    Type targetType = sourceTargetPair.Value;
+#>
+        [Fact]
+        public void Convert<#=sourceType.Name#>To<#=targetType.Name#>()
+        {
+            <#=sourceType.Name#>[] source = GenerateRandomValuesForVector<<#=sourceType.Name#>>();
+            Vector<<#=sourceType.Name#>> sourceVec = new Vector<<#=sourceType.Name#>>(source);
+            Vector<<#=targetType.Name#>> targetVec = Vector.ConvertTo<#=targetType.Name#>(sourceVec);
+            for (int i = 0; i < Vector<<#=targetType.Name#>>.Count; i++)
+            {
+                Assert.Equal((<#=targetType.Name#>)source[i], targetVec[i]);
+            }
+        }
+
+<# } #>
+        #endregion Same-Size Conversions
+
+        #region Narrow / Widen
+<# foreach (var widenSource in WidenableTypes) {
+    Type widenTarget = GetWidenTarget(widenSource);
+#>
+        [Fact]
+        public void Widen<#=widenSource.Name#>()
+        {
+            <#=widenSource.Name#>[] source = GenerateRandomValuesForVector<<#=widenSource.Name#>>();
+            Vector<<#=widenSource.Name#>> sourceVec = new Vector<<#=widenSource.Name#>>(source);
+            Vector<<#=widenTarget.Name#>> dest1;
+            Vector<<#=widenTarget.Name#>> dest2;
+            Vector.Widen(sourceVec, out dest1, out dest2);
+            ValidateVector(dest1, (index, val) =>
+            {
+                Assert.Equal((<#=widenTarget.Name#>)source[index], val);
+            });
+
+            ValidateVector(dest2, (index, val) =>
+            {
+                Assert.Equal((<#=widenTarget.Name#>)source[index + Vector<<#=widenTarget.Name#>>.Count], val);
+            });
+        }
+
+<# } #>
+
+<# foreach (var narrowSource in NarrowableTypes) {
+    Type narrowTarget = GetNarrowTarget(narrowSource);
+#>
+        [Fact]
+        public void Narrow<#=narrowSource.Name#>()
+        {
+            <#=narrowSource.Name#>[] source1 = GenerateRandomValuesForVector<<#=narrowSource.Name#>>();
+            <#=narrowSource.Name#>[] source2 = GenerateRandomValuesForVector<<#=narrowSource.Name#>>();
+            Vector<<#=narrowSource.Name#>> sourceVec1 = new Vector<<#=narrowSource.Name#>>(source1);
+            Vector<<#=narrowSource.Name#>> sourceVec2 = new Vector<<#=narrowSource.Name#>>(source2);
+            Vector<<#=narrowTarget.Name#>> dest = Vector.Narrow(sourceVec1, sourceVec2);
+
+            for (int i = 0; i < Vector<<#=narrowSource.Name#>>.Count; i++)
+            {
+                Assert.Equal((<#=narrowTarget.Name#>)source1[i], dest[i]);
+            }
+            for (int i = 0; i < Vector<<#=narrowSource.Name#>>.Count; i++)
+            {
+                Assert.Equal((<#=narrowTarget.Name#>)source2[i], dest[i + Vector<<#=narrowSource.Name#>>.Count]);
+            }
+        }
+
+<# } #>
+        #endregion Narrow / Widen
+
         #region Helper Methods
         private static void ValidateVector<T>(Vector<T> vector, Action<int, T> indexValidationFunc) where T : struct
         {
