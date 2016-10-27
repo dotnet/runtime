@@ -15,12 +15,15 @@ namespace Internal.Cryptography.Pal
     {
         public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters, ICertificatePal certificatePal)
         {
+            if (oid.Value == Oids.Ecc && certificatePal != null)
+            {
+                return ((OpenSslX509CertificateReader)certificatePal).GetECDsaPublicKey();
+            }
+
             switch (oid.Value)
             {
                 case Oids.RsaRsa:
                     return BuildRsaPublicKey(encodedKeyValue);
-                case Oids.Ecc:
-                    return ((OpenSslX509CertificateReader)certificatePal).GetECDsaPublicKey();
             }
 
             // NotSupportedException is what desktop and CoreFx-Windows throw in this situation.
