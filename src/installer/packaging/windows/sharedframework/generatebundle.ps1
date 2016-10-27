@@ -13,6 +13,7 @@ param(
     [Parameter(Mandatory=$true)][string]$SharedFrameworkNugetName,
     [Parameter(Mandatory=$true)][string]$SharedFrameworkNugetVersion,
     [Parameter(Mandatory=$true)][string]$SharedFrameworkUpgradeCode,
+    [Parameter(Mandatory=$true)][string]$TargetArchitecture,
     [Parameter(Mandatory=$true)][string]$Architecture
 )
 
@@ -40,6 +41,7 @@ function RunCandleForBundle
         -dFrameworkDisplayVersion="$SharedFrameworkNugetVersion" `
         -dFrameworkComponentVersion="$SharedFrameworkComponentVersion" `
         -dFrameworkUpgradeCode="$SharedFrameworkUpgradeCode" `
+        -dTargetArchitecture="$TargetArchitecture" `
         -arch "$Architecture" `
         -ext WixBalExtension.dll `
         -ext WixUtilExtension.dll `

@@ -24,6 +24,7 @@ namespace Microsoft.DotNet.Host.Build
             // Key: Current platform RID. Value: The actual publishable (non-dummy) package name produced by the build system for this RID.
             { "win7-x64", "win7-x64" },
             { "win7-x86", "win7-x86" },
+            { "win8-arm", "win8-arm" },
             { "win10-arm64", "win10-arm64" },
             { "osx.10.10-x64", "osx.10.10-x64" },
             { "osx.10.11-x64", "osx.10.10-x64" },
@@ -193,6 +194,7 @@ namespace Microsoft.DotNet.Host.Build
                 string cmakeHostFxrVer = $"-DCLI_CMAKE_HOST_FXR_VER:STRING={hostVersion.LatestHostFxrVersion.ToString()}";
                 string cmakeCommitHash = $"-DCLI_CMAKE_COMMIT_HASH:STRING={commitHash}";
                 string cmakeResourceDir = $"-DCLI_CMAKE_RESOURCE_DIR:STRING={resourceDir}";
+                string cmakeExtraArgs = "";
 
                 switch (platform.ToLower())
                 {
@@ -201,6 +203,12 @@ namespace Microsoft.DotNet.Host.Build
                         visualStudio = "Visual Studio 14 2015";
                         archMacro = "-DCLI_CMAKE_PLATFORM_ARCH_I386=1";
                         arch = "x86";
+                        break;
+                    case "arm":
+                        cmakeBaseRid = "-DCLI_CMAKE_PKG_RID:STRING=win8-arm";
+                        visualStudio = "Visual Studio 14 2015 ARM";
+                        archMacro = "-DCLI_CMAKE_PLATFORM_ARCH_ARM=1 -DCMAKE_SYSTEM_VERSION=10.0";
+                        arch = "arm";
                         break;
                     case "arm64":
                         cmakeBaseRid = "-DCLI_CMAKE_PKG_RID:STRING=win10-arm64";

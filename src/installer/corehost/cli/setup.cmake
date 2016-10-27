@@ -87,6 +87,15 @@ else()
     message(FATAL_ERROR "Unknown target architecture")
 endif()
 
+# Specify the Windows SDK to be used for Arm builds
+if (WIN32 AND CLI_CMAKE_PLATFORM_ARCH_ARM)
+    if(NOT DEFINED CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION OR CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION STREQUAL "" )
+	      message(FATAL_ERROR "Windows SDK is required for the Arm32 build.")
+      else()
+	      message("Using Windows SDK version ${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}")
+      endif()
+endif ()
+
 if("${CLI_CMAKE_RUNTIME_ID}" STREQUAL "")
     message(FATAL_ERROR "Runtime ID not specified")
 else()
