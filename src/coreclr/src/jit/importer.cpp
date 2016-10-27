@@ -1872,7 +1872,7 @@ GenTreePtr Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CO
 // getRuntimeContextTree: find pointer to context for runtime lookup.
 //
 // Arguments:
-//    pLookup - how to do lookup.
+//    kind - lookup kind.
 //
 // Return Value:
 //    Return GenTree pointer to generic shared context.
@@ -1880,10 +1880,9 @@ GenTreePtr Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CO
 // Notes:
 //    Reports about generic context using.
 
-GenTreePtr Compiler::getRuntimeContextTree(CORINFO_LOOKUP* pLookup)
+GenTreePtr Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
 {
-    GenTreePtr                  ctxTree = nullptr;
-    CORINFO_RUNTIME_LOOKUP_KIND kind    = pLookup->lookupKind.runtimeLookupKind;
+    GenTreePtr ctxTree = nullptr;
 
     // Collectible types requires that for shared generic code, if we use the generic context parameter
     // that we report it. (This is a conservative approach, we could detect some cases particularly when the
@@ -1936,7 +1935,7 @@ GenTreePtr Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedTok
     // In other word, it cannot be called by the instance of the Compiler for the inlinee.
     assert(!compIsForInlining());
 
-    GenTreePtr ctxTree = getRuntimeContextTree(pLookup);
+    GenTreePtr ctxTree = getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind);
 
 #ifdef FEATURE_READYTORUN_COMPILER
     if (opts.IsReadyToRun())
@@ -5794,11 +5793,10 @@ GenTreePtr Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolve
         {
 #ifdef FEATURE_READYTORUN_COMPILER
             noway_assert(opts.IsReadyToRun());
-            CORINFO_GENERICHANDLE_RESULT embedInfo;
-            info.compCompHnd->embedGenericHandle(pResolvedToken, FALSE, &embedInfo);
-            assert(embedInfo.lookup.lookupKind.needsRuntimeLookup);
+            CORINFO_LOOKUP_KIND kind = info.compCompHnd->getLocationOfThisType(info.compMethodHnd);
+            assert(kind.needsRuntimeLookup);
 
-            GenTreePtr      ctxTree = getRuntimeContextTree(&embedInfo.lookup);
+            GenTreePtr      ctxTree = getRuntimeContextTree(kind.runtimeLookupKind);
             GenTreeArgList* args    = gtNewArgList(ctxTree);
 
             unsigned callFlags = 0;
