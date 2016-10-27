@@ -3201,7 +3201,7 @@ void PInvokeStaticSigInfo::DllImportInit(MethodDesc* pMD, LPCUTF8 *ppLibName, LP
     // initialize data members to defaults
     PreInit(pMD);
 
-    // System.Runtime.InteropServices.DLLImportAttribute
+    // System.Runtime.InteropServices.DllImportAttribute
     IMDInternalImport  *pInternalImport = pMD->GetMDImport();
     CorPinvokeMap mappingFlags = pmMaxValue;
     mdModuleRef modref = mdModuleRefNil;
