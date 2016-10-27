@@ -246,12 +246,6 @@
             "BuildPackages": false
           }
         },
-        "sourceIndex": {
-          "description": "Builds the source index data.",
-          "settings": {
-            "Project": "src/SourceIndex/index.proj"
-          }
-        },
         "packages": {
           "description": "Builds the NuGet packages.",
           "settings": {

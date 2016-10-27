@@ -87,24 +87,4 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="RewriteReferences" Condition="'$(SourceIndex)' == 'true'" AfterTargets="ResolveNuGetPackages">
-    <ItemGroup>
-      <Reference Remove="@(_ReferenceFromPackage)"/>
-      <_ReferenceProjectToHarvest Include="@(_ReferenceFromPackage -> '$(MSBuildThisFileDirectory)src/%(Filename)/src/%(FileName).csproj')"/>
-      <_ReferenceProjectToHarvest Include="@(_ReferenceFromPackage -> '$(MSBuildThisFileDirectory)src/%(Filename)/src/%(FileName).vbproj')"/>
-    </ItemGroup>
-
-    <MSBuild Condition="'$(SourceIndex)' == 'true' AND Exists('%(Identity)')"
-             Projects="%(_ReferenceProjectToHarvest.Identity)"
-             Targets="GetTargetPath">
-      <Output TaskParameter="TargetOutputs" ItemName="_PackageLibReferencePath"/>
-    </MSBuild>
-    <Error Condition="!Exists('%(_PackageLibReferencePath.Identity)')" Text="Required Reference '%(Identity)' does not exist. Ensure that you have built the entire tree."/>
-    <ItemGroup Condition=" '$(SourceIndex)' == 'true' ">
-      <ReferencePath Include="%(_PackageLibReferencePath.Identity)" Condition="Exists('%(Identity)')"/>
-      <ReferencePath Include="$(PackagesDir)runtime.win7-x64.Microsoft.NETCore.Runtime.CoreCLR\1.2.0-$(CoreClrExpectedPrerelease)\runtimes\win7-x64\lib\netstandard1.0\mscorlib.dll"/>
-      <ReferencePath Include="$(PackagesDir)runtime.win7-x64.Microsoft.NETCore.Runtime.CoreCLR\1.2.0-$(CoreClrExpectedPrerelease)\runtimes\win7-x64\lib\netstandard1.0\System.Private.CoreLib.dll"/>
-    </ItemGroup>
-  </Target>
-
 </Project>
