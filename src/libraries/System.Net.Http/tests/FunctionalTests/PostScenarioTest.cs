@@ -62,7 +62,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [ActiveIssue(5485, TestPlatforms.Windows)]
         [Theory, MemberData(nameof(EchoServers))]
         public async Task PostEmptyContentUsingChunkedEncoding_Success(Uri serverUri)
         {
