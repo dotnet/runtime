@@ -5,7 +5,7 @@
     <!-- Temporary workaround, VisualBasic projects cannot be built on non-Windows platforms. See issue #5230. -->
     <Project Include="Microsoft.VisualBasic.Tests.csproj" Condition="'$(OS)'=='Windows_NT'">
       <OSGroup>Windows_NT</OSGroup>
-      <TestTFMs>netcore50;netcoreapp1.0;net46;net461;net462;net463</TestTFMs>
+      <TestTFMs>netcore50;netcoreapp1.0;netcoreapp1.1;net46;net461;net462;net463</TestTFMs>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
