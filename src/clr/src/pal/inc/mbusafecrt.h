@@ -31,16 +31,6 @@ typedef int errno_t;
 // define the return value for success 
 #define SAFECRT_SUCCESS 0
 
-/*
- * Sizes for buffers used by the _makepath() and _splitpath() functions.
- * note that the sizes include space for 0-terminator
- */
-//#define _MAX_PATH   260 /* max. length of full pathname */
-//#define _MAX_DRIVE  3   /* max. length of drive component */
-//#define _MAX_DIR    256 /* max. length of path component */
-//#define _MAX_FNAME  256 /* max. length of file name component */
-//#define _MAX_EXT    256 /* max. length of extension component */
-
 #ifdef __cplusplus
     extern "C" {
 #endif

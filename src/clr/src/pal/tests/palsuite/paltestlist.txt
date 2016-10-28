@@ -350,10 +350,8 @@ c_runtime/_fullpath/test1/paltest_fullpath_test1
 c_runtime/_isnan/test1/paltest_isnan_test1
 c_runtime/_isnanf/test1/paltest_isnanf_test1
 c_runtime/_itow/test1/paltest_itow_test1
-c_runtime/_makepath/test1/paltest_makepath_test1
 c_runtime/_mbsdec/test1/paltest_mbsdec_test1
 c_runtime/_mbsinc/test1/paltest_mbsinc_test1
-c_runtime/_mbslen/test1/paltest_mbslen_test1
 c_runtime/_mbsninc/test1/paltest_mbsninc_test1
 c_runtime/_open_osfhandle/test1/paltest_open_osfhandle_test1
 c_runtime/_open_osfhandle/test2/paltest_open_osfhandle_test2
@@ -400,11 +398,9 @@ c_runtime/_snwprintf/test5/paltest_snwprintf_test5
 c_runtime/_snwprintf/test6/paltest_snwprintf_test6
 c_runtime/_snwprintf/test8/paltest_snwprintf_test8
 c_runtime/_snwprintf/test9/paltest_snwprintf_test9
-c_runtime/_splitpath/test1/paltest_splitpath_test1
 c_runtime/_stricmp/test1/paltest_stricmp_test1
 c_runtime/_strlwr/test1/paltest_strlwr_test1
 c_runtime/_strnicmp/test1/paltest_strnicmp_test1
-c_runtime/_swab/test1/paltest_swab_test1
 c_runtime/_vsnprintf/test1/paltest_vsnprintf_test1
 c_runtime/_vsnprintf/test10/paltest_vsnprintf_test10
 c_runtime/_vsnprintf/test11/paltest_vsnprintf_test11
@@ -451,7 +447,6 @@ c_runtime/_wfopen/test4/paltest_wfopen_test4
 c_runtime/_wfopen/test5/paltest_wfopen_test5
 c_runtime/_wfopen/test6/paltest_wfopen_test6
 c_runtime/_wfopen/test7/paltest_wfopen_test7
-c_runtime/_wsplitpath/test1/paltest_wsplitpath_test1
 c_runtime/_wtoi/test1/paltest_wtoi_test1
 c_runtime/__iscsym/test1/paltest_iscsym_test1
 debug_api/OutputDebugStringW/test1/paltest_outputdebugstringw_test1
@@ -735,8 +730,6 @@ miscellaneous/wsprintfW/test6/paltest_wsprintfw_test6
 miscellaneous/wsprintfW/test8/paltest_wsprintfw_test8
 miscellaneous/wsprintfW/test9/paltest_wsprintfw_test9
 miscellaneous/_i64tow/test1/paltest_i64tow_test1
-miscellaneous/_ui64tow/test1/paltest_ui64tow_test1
-miscellaneous/_ui64tow/test2/paltest_ui64tow_test2
 pal_specific/pal_entrypoint/test1/paltest_pal_entrypoint_test1
 pal_specific/PAL_errno/test1/paltest_pal_errno_test1
 pal_specific/pal_initializedebug/test1/paltest_pal_initializedebug_test1

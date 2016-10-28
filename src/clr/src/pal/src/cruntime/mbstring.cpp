@@ -37,60 +37,6 @@ SET_DEFAULT_DEBUG_CHANNEL(CRT);
 
 /*++
 Function:
-  _mbslen
-
-Determines the number of characters (code points) in a multibyte
-character string.
-
-Parameters
-
-string  Points to a multibyte character string.
-
-Return Values
-
-The mbslen subroutine returns the number of multibyte characters in a
-multibyte character string. It returns 0 if the string parameter
-points to a null character or if a character cannot be formed from the
-string pointed to by this parameter.
-
---*/
-size_t 
-__cdecl
-_mbslen(
-        const unsigned char *string)
-{
-    size_t ret = 0;
-    CPINFO cpinfo;
-    PERF_ENTRY(_mbslen);
-    ENTRY("_mbslen (string=%p (%s))\n", string, string);
-
-    if (string)
-    {
-        if (GetCPInfo(CP_ACP, &cpinfo) && cpinfo.MaxCharSize == 1)
-        {
-            ret = strlen((const char*)string);
-        }
-        else
-        {
-            while (*string)
-            {
-                if (IsDBCSLeadByteEx(CP_ACP, *string))
-                {
-                    ++string;
-                }
-                ++string;
-                ++ret;
-            }
-        }
-    }
-
-    LOGEXIT("_mbslen returning size_t %u\n", ret);
-    PERF_EXIT(_mbslen);
-    return ret;
-}
-
-/*++
-Function:
   _mbsinc
 
 Return Value
