@@ -137,7 +137,7 @@ class WinRTDelegateRedirector
 public:
     static MethodTable *GetWinRTTypeForRedirectedDelegateIndex(WinMDAdapter::RedirectedTypeIndex index);
 
-    static bool WinRTDelegateRedirector::ResolveRedirectedDelegate(MethodTable *pMT, WinMDAdapter::RedirectedTypeIndex *pIndex);
+    static bool ResolveRedirectedDelegate(MethodTable *pMT, WinMDAdapter::RedirectedTypeIndex *pIndex);
 };
 
 #endif // WINRT_DELEGATE_REDIRECTOR_H
