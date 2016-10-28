@@ -447,9 +447,7 @@ static bool AcquireImage(Module * pModule, PEImageLayout * pLayout, READYTORUN_H
         }
     }
 
-    // Some Ready-to-Run images have no code (e.g., facade assemblies), and don't have Module import.
-    // If we reach here, just accept the image.
-    return true;
+    return false;
 }
 
 PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker *pamTracker)

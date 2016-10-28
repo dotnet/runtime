@@ -291,9 +291,6 @@ void ZapImage::OutputEntrypointsTableForReadyToRun()
     pReadyToRunHeader->RegisterSection(READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS, pHashtableBlob);
     pReadyToRunHeader->RegisterSection(READYTORUN_SECTION_RUNTIME_FUNCTIONS, m_pRuntimeFunctionSection);
 
-    if (m_pImportSectionsTable->GetSize() != 0)
-        pReadyToRunHeader->RegisterSection(READYTORUN_SECTION_IMPORT_SECTIONS, m_pImportSectionsTable);
-
     if (m_pLazyMethodCallHelperSection->GetNodeCount() != 0)
         pReadyToRunHeader->RegisterSection(READYTORUN_SECTION_DELAYLOAD_METHODCALL_THUNKS, m_pLazyMethodCallHelperSection);
 
