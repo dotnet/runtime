@@ -17,6 +17,8 @@
 
 #if defined(__APPLE__)
 #include <mach-o/dyld.h>
+#include <sys/param.h>
+#include <sys/sysctl.h>
 #endif
 
 #if defined(__LINUX__)
@@ -167,6 +169,30 @@ bool pal::get_default_servicing_directory(string_t* recv)
     trace::info(_X("Using core servicing at [%s]"), ext.c_str());
     return true;
 }
+
+#if defined(__APPLE__)
+bool pal::get_os_moniker(os_moniker_t* moniker)
+{
+    char str[256];
+
+    size_t size = sizeof(str);
+    int ret = sysctlbyname("kern.osrelease", str, &size, NULL, 0);
+    if (ret != 0)
+    {
+        return false;
+    }
+
+    std::string release(str, size);
+    size_t pos = release.find('.');
+    if (pos == std::string::npos)
+    {
+        return false;
+    }
+
+    *moniker = (os_moniker_t) stoi(release.substr(0, pos));
+    return true;
+}
+#endif
 
 #if defined(__APPLE__)
 bool pal::get_own_executable_path(pal::string_t* recv)
