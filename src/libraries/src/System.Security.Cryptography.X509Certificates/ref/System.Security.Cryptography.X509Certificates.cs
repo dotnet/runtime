@@ -100,14 +100,18 @@ namespace System.Security.Cryptography.X509Certificates
     {
         public X509Certificate() { }
         public X509Certificate(byte[] data) { }
+        public X509Certificate(byte[] rawData, System.Security.SecureString password) { }
+        public X509Certificate(byte[] rawData, System.Security.SecureString password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
         public X509Certificate(byte[] rawData, string password) { }
         public X509Certificate(byte[] rawData, string password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
         public X509Certificate(System.IntPtr handle) { }
+        public X509Certificate(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public X509Certificate(System.Security.Cryptography.X509Certificates.X509Certificate cert) { }
         public X509Certificate(string fileName) { }
+        public X509Certificate(string fileName, System.Security.SecureString password) { }
+        public X509Certificate(string fileName, System.Security.SecureString password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
         public X509Certificate(string fileName, string password) { }
         public X509Certificate(string fileName, string password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
-        public X509Certificate(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public System.IntPtr Handle { get { throw null; } }
         public string Issuer { get { throw null; } }
         public string Subject { get { throw null; } }
@@ -116,6 +120,7 @@ namespace System.Security.Cryptography.X509Certificates
         public override bool Equals(object obj) { throw null; }
         public virtual bool Equals(System.Security.Cryptography.X509Certificates.X509Certificate other) { throw null; }
         public virtual byte[] Export(System.Security.Cryptography.X509Certificates.X509ContentType contentType) { throw null; }
+        public virtual byte[] Export(System.Security.Cryptography.X509Certificates.X509ContentType contentType, System.Security.SecureString password) { throw null; }
         public virtual byte[] Export(System.Security.Cryptography.X509Certificates.X509ContentType contentType, string password) { throw null; }
         public virtual byte[] GetCertHash() { throw null; }
         public virtual string GetCertHashString() { throw null; }
@@ -145,14 +150,18 @@ namespace System.Security.Cryptography.X509Certificates
     {
         public X509Certificate2() { }
         public X509Certificate2(byte[] rawData) { }
+        public X509Certificate2(byte[] rawData, System.Security.SecureString password) { }
+        public X509Certificate2(byte[] rawData, System.Security.SecureString password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
         public X509Certificate2(byte[] rawData, string password) { }
         public X509Certificate2(byte[] rawData, string password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
         public X509Certificate2(System.IntPtr handle) { }
+        protected X509Certificate2(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public X509Certificate2(System.Security.Cryptography.X509Certificates.X509Certificate cert) { }
         public X509Certificate2(string fileName) { }
+        public X509Certificate2(string fileName, System.Security.SecureString password) { }
+        public X509Certificate2(string fileName, System.Security.SecureString password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
         public X509Certificate2(string fileName, string password) { }
         public X509Certificate2(string fileName, string password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
-        protected X509Certificate2(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public bool Archived { get { throw null; } set { } }
         public System.Security.Cryptography.X509Certificates.X509ExtensionCollection Extensions { get { throw null; } }
         public string FriendlyName { get { throw null; } set { } }

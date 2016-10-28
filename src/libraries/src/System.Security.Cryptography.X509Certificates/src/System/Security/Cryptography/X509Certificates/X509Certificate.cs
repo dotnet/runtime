@@ -4,9 +4,11 @@
 
 using Internal.Cryptography;
 using Internal.Cryptography.Pal;
+using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.Serialization;
+using System.Security;
 using System.Text;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -21,10 +23,20 @@ namespace System.Security.Cryptography.X509Certificates
         public X509Certificate(byte[] data)
         {
             if (data != null && data.Length != 0)  // For compat reasons, this constructor treats passing a null or empty data set as the same as calling the nullary constructor.
-                Pal = CertificatePal.FromBlob(data, null, X509KeyStorageFlags.DefaultKeySet);
+            {
+                using (var safePasswordHandle = new SafePasswordHandle((string)null))
+                {
+                    Pal = CertificatePal.FromBlob(data, safePasswordHandle, X509KeyStorageFlags.DefaultKeySet);
+                }
+            }
         }
 
         public X509Certificate(byte[] rawData, string password)
+            : this(rawData, password, X509KeyStorageFlags.DefaultKeySet)
+        {
+        }
+
+        public X509Certificate(byte[] rawData, SecureString password)
             : this(rawData, password, X509KeyStorageFlags.DefaultKeySet)
         {
         }
@@ -36,7 +48,23 @@ namespace System.Security.Cryptography.X509Certificates
  
             ValidateKeyStorageFlags(keyStorageFlags);
 
-            Pal = CertificatePal.FromBlob(rawData, password, keyStorageFlags);
+            using (var safePasswordHandle = new SafePasswordHandle(password))
+            {
+                Pal = CertificatePal.FromBlob(rawData, safePasswordHandle, keyStorageFlags);
+            }
+        }
+
+        public X509Certificate(byte[] rawData, SecureString password, X509KeyStorageFlags keyStorageFlags)
+        {
+            if (rawData == null || rawData.Length == 0)
+                throw new ArgumentException(SR.Arg_EmptyOrNullArray, nameof(rawData));
+
+            ValidateKeyStorageFlags(keyStorageFlags);
+
+            using (var safePasswordHandle = new SafePasswordHandle(password))
+            {
+                Pal = CertificatePal.FromBlob(rawData, safePasswordHandle, keyStorageFlags);
+            }
         }
 
         public X509Certificate(IntPtr handle)
@@ -51,7 +79,7 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         public X509Certificate(string fileName)
-            : this(fileName, null, X509KeyStorageFlags.DefaultKeySet)
+            : this(fileName, (string)null, X509KeyStorageFlags.DefaultKeySet)
         {
         }
 
@@ -60,14 +88,35 @@ namespace System.Security.Cryptography.X509Certificates
         {
         }
 
+        public X509Certificate(string fileName, SecureString password)
+            : this(fileName, password, X509KeyStorageFlags.DefaultKeySet)
+        {
+        }
+
         public X509Certificate(string fileName, string password, X509KeyStorageFlags keyStorageFlags)
         {
             if (fileName == null)
                 throw new ArgumentNullException(nameof(fileName));
-            
+
             ValidateKeyStorageFlags(keyStorageFlags);
 
-            Pal = CertificatePal.FromFile(fileName, password, keyStorageFlags);
+            using (var safePasswordHandle = new SafePasswordHandle(password))
+            {
+                Pal = CertificatePal.FromFile(fileName, safePasswordHandle, keyStorageFlags);
+            }
+        }
+
+        public X509Certificate(string fileName, SecureString password, X509KeyStorageFlags keyStorageFlags) : this()
+        {
+            if (fileName == null)
+                throw new ArgumentNullException(nameof(fileName));
+
+            ValidateKeyStorageFlags(keyStorageFlags);
+
+            using (var safePasswordHandle = new SafePasswordHandle(password))
+            {
+                Pal = CertificatePal.FromFile(fileName, safePasswordHandle, keyStorageFlags);
+            }
         }
 
         public X509Certificate(X509Certificate cert)
@@ -87,7 +136,10 @@ namespace System.Security.Cryptography.X509Certificates
             byte[] rawData = (byte[])info.GetValue("RawData", typeof(byte[]));
             if (rawData != null)
             {
-                Pal = CertificatePal.FromBlob(rawData, null, X509KeyStorageFlags.DefaultKeySet);
+                using (var safePasswordHandle = new SafePasswordHandle((string)null))
+                {
+                    Pal = CertificatePal.FromBlob(rawData, safePasswordHandle, X509KeyStorageFlags.DefaultKeySet);
+                }
             }
         }
 
@@ -186,20 +238,34 @@ namespace System.Security.Cryptography.X509Certificates
 
         public virtual byte[] Export(X509ContentType contentType)
         {
-            return Export(contentType, null);
+            return Export(contentType, (string)null);
         }
 
         public virtual byte[] Export(X509ContentType contentType, string password)
         {
-            if (!(contentType == X509ContentType.Cert || contentType == X509ContentType.SerializedCert || contentType == X509ContentType.Pkcs12))
-                throw new CryptographicException(SR.Cryptography_X509_InvalidContentType);
+            VerifyContentType(contentType);
 
             if (Pal == null)
                 throw new CryptographicException(ErrorCode.E_POINTER);  // Not the greatest error, but needed for backward compat.
 
+            using (var safePasswordHandle = new SafePasswordHandle(password))
             using (IExportPal storePal = StorePal.FromCertificate(Pal))
             {
-                return storePal.Export(contentType, password);
+                return storePal.Export(contentType, safePasswordHandle);
+            }
+        }
+
+        public virtual byte[] Export(X509ContentType contentType, SecureString password)
+        {
+            VerifyContentType(contentType);
+
+            if (Pal == null)
+                throw new CryptographicException(ErrorCode.E_POINTER);  // Not the greatest error, but needed for backward compat.
+
+            using (var safePasswordHandle = new SafePasswordHandle(password))
+            using (IExportPal storePal = StorePal.FromCertificate(Pal))
+            {
+                return storePal.Export(contentType, safePasswordHandle);
             }
         }
 
@@ -465,6 +531,12 @@ namespace System.Security.Cryptography.X509Certificates
                     SR.Format(SR.Cryptography_X509_InvalidFlagCombination, persistenceFlags),
                     nameof(keyStorageFlags));
             }
+        }
+
+        private void VerifyContentType(X509ContentType contentType)
+        {
+            if (!(contentType == X509ContentType.Cert || contentType == X509ContentType.SerializedCert || contentType == X509ContentType.Pkcs12))
+                throw new CryptographicException(SR.Cryptography_X509_InvalidContentType);
         }
 
         private volatile byte[] _lazyCertHash;
