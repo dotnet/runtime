@@ -83,7 +83,7 @@ extern "C" int32_t CryptoNative_GetX509Thumbprint(X509* x509, uint8_t* pBuf, int
         return -SHA_DIGEST_LENGTH;
     }
 
-    memcpy(pBuf, x509->sha1_hash, SHA_DIGEST_LENGTH);
+    memcpy_s(pBuf, UnsignedCast(cBuf), x509->sha1_hash, SHA_DIGEST_LENGTH);
     return 1;
 }
 
@@ -336,7 +336,7 @@ extern "C" int32_t CryptoNative_GetAsn1StringBytes(ASN1_STRING* asn1, uint8_t* p
         return -length;
     }
 
-    memcpy(pBuf, asn1->data, UnsignedCast(length));
+    memcpy_s(pBuf, UnsignedCast(cBuf), asn1->data, UnsignedCast(length));
     return 1;
 }
 
@@ -387,7 +387,7 @@ extern "C" int32_t CryptoNative_GetX509NameRawBytes(X509_NAME* x509Name, uint8_t
         return -length;
     }
 
-    memcpy(pBuf, x509Name->bytes->data, UnsignedCast(length));
+    memcpy_s(pBuf, UnsignedCast(cBuf), x509Name->bytes->data, UnsignedCast(length));
     return 1;
 }
 
