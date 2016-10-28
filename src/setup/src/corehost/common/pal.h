@@ -174,6 +174,16 @@ namespace pal
     inline bool clr_palstring(const char* cstr, pal::string_t* out) { out->assign(cstr); return true; }
 #endif
 
+#if defined(__APPLE__)
+    enum os_moniker_t
+    {
+        sierra = 16,
+        el_capitan = 15,
+    };
+
+    bool get_os_moniker(os_moniker_t* moniker);
+#endif
+
     bool touch_file(const pal::string_t& path);
     bool realpath(string_t* path);
     bool file_exists(const string_t& path);
