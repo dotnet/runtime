@@ -2,7 +2,7 @@
   "frameworks": {
     "netstandard1.7": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.2.0-beta-24628-02"
+        "Microsoft.TargetingPack.Private.CoreCLR": "1.2.0-beta-24628-03"
       }
     },
     "net462": {
