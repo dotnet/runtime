@@ -6726,7 +6726,7 @@ void CodeGen::genFloatToFloatCast(GenTreePtr treeNode)
     assert(varTypeIsFloating(srcType) && varTypeIsFloating(dstType));
 
     genConsumeOperands(treeNode->AsOp());
-    if (srcType == dstType && targetReg == op1->gtRegNum)
+    if (srcType == dstType && (!op1->isContained() && (targetReg == op1->gtRegNum)))
     {
         // source and destinations types are the same and also reside in the same register.
         // we just need to consume and produce the reg in this case.
