@@ -203,7 +203,7 @@ public:
 
     void recReportInliningDecision(CORINFO_METHOD_HANDLE inlinerHnd, CORINFO_METHOD_HANDLE inlineeHnd, CorInfoInline inlineResult, const char * reason);
     void dmpReportInliningDecision(DWORD key, const Agnostic_ReportInliningDecision& value);
-    CorInfoInline CompileResult::repReportInliningDecision(CORINFO_METHOD_HANDLE inlinerHnd, CORINFO_METHOD_HANDLE inlineeHnd);
+    CorInfoInline repReportInliningDecision(CORINFO_METHOD_HANDLE inlinerHnd, CORINFO_METHOD_HANDLE inlineeHnd);
 
     void recSetEHcount(unsigned cEH);
     void dmpSetEHcount(DWORD key, DWORD value);

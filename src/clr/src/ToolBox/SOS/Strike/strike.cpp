@@ -9119,7 +9119,7 @@ DECLARE_API (ProcInfo)
         if (pFntGetProcessTimes && pFntGetProcessTimes (hProcess,&CreationTime,&ExitTime,&KernelTime,&UserTime)) {
             ExtOut("---------------------------------------\n");
             ExtOut("Process Times\n");
-            static char *Month[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep",
+            static const char *Month[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep",
                         "Oct", "Nov", "Dec"};
             SYSTEMTIME SystemTime;
             FILETIME LocalFileTime;

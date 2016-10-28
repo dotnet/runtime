@@ -75,8 +75,8 @@ public:
                                           HANDLE & pPrivateNamespace, 
                                           PSID* pSID, 
                                           BOOL bCreate);
-    static HRESULT IPCShared::FreeHandles(HANDLE & hDescriptor, PSID & pSID);
-    static HRESULT IPCShared::FreeHandles(HANDLE & hBoundaryDescriptor, PSID & pSID, HANDLE & hPrivateNamespace);
+    static HRESULT FreeHandles(HANDLE & hDescriptor, PSID & pSID);
+    static HRESULT FreeHandles(HANDLE & hBoundaryDescriptor, PSID & pSID, HANDLE & hPrivateNamespace);
     static HRESULT CreateWinNTDescriptor(DWORD pid, BOOL bRestrictiveACL, SECURITY_ATTRIBUTES **ppSA, KernelObject whatObject);
     static HRESULT CreateWinNTDescriptor(DWORD pid, BOOL bRestrictiveACL, SECURITY_ATTRIBUTES **ppSA, KernelObject whatObject, EDescriptorType descType);
     static void DestroySecurityAttributes(SECURITY_ATTRIBUTES *pSA);

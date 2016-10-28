@@ -973,7 +973,7 @@ BOOL RunProcess(LPCWSTR tempResObj, LPCWSTR pszFilename, DWORD* pdwExitCode, PEW
     if (FAILED(GetClrSystemDirectory(wszSystemDir)))
         return FALSE;
 
-    WCHAR* wzMachine;
+    const WCHAR* wzMachine;
     if(pewriter.isIA64())
         wzMachine = L"IA64";
     else if(pewriter.isAMD64())

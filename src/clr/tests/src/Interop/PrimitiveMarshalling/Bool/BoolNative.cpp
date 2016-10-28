@@ -116,8 +116,10 @@ extern "C" DLL_EXPORT BOOL __stdcall MarshalPointer_Out(/*[out]*/ BOOL *pboolVal
 }
 
 #pragma warning(push)
+#if _MSC_VER <= 1900
 // 'BOOL' forcing value to bool 'true' or 'false'
 #pragma warning(disable: 4800)
+#endif
 
 extern "C" DLL_EXPORT bool __stdcall Marshal_As_In(/*[in]*/bool boolValue)
 {

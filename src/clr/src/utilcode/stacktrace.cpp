@@ -208,7 +208,7 @@ typedef DWORD (_stdcall *pfnImgHlp_SymGetOptions)(
 
 struct IMGHLPFN_LOAD
 {
-    LPSTR   pszFnName;
+    LPCSTR   pszFnName;
     LPVOID * ppvfn;
 };
 
@@ -520,7 +520,7 @@ DWORD_PTR dwAddr
     }
 
     CHAR rgchUndec[256];
-    CHAR * pszSymbol = NULL;
+    const CHAR * pszSymbol = NULL;
 
     // Name field of IMAGEHLP_SYMBOL is dynamically sized.
     // Pad with space for 255 characters.

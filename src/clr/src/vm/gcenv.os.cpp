@@ -367,7 +367,7 @@ typedef BOOL (WINAPI *PQUERY_INFORMATION_JOB_OBJECT)(HANDLE jobHandle, JOBOBJECT
 #ifdef FEATURE_CORECLR
 // For coresys we need to look for an API in some apiset dll on win8 if we can't find it  
 // in the traditional dll.
-HINSTANCE LoadDllForAPI(WCHAR* dllTraditional, WCHAR* dllApiSet)
+HINSTANCE LoadDllForAPI(const WCHAR* dllTraditional, const WCHAR* dllApiSet)
 {
     HINSTANCE hinst = WszLoadLibrary(dllTraditional);
 
