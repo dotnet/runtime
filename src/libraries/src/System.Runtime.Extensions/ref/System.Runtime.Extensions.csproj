@@ -15,5 +15,9 @@
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- Temporary till we publish System.Security.Principal updated package -->
+    <ProjectReference Include="..\..\System.Security.Principal\ref\System.Security.Principal.csproj" />
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

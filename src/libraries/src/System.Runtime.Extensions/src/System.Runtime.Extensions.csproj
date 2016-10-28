@@ -384,6 +384,14 @@
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj">
       <UndefineProperties>%(ProjectReference.UndefineProperties);TargetGroup</UndefineProperties>
     </ProjectReference>
+    <ProjectReference Include="..\..\System.Security.Principal\src\System.Security.Principal.csproj">
+      <Aliases>System_Security_Principal</Aliases>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Security.Permissions\src\System.Security.Permissions.csproj">
+      <Aliases>System_Security_Permissions</Aliases>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj">
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net462' Or '$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="mscorlib" />
