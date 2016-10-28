@@ -756,8 +756,6 @@ mono_dynimage_encode_typedef_or_ref_full (MonoDynamicImage *assembly, MonoType *
 	if (token)
 		return token;
 	klass = mono_class_from_mono_type (type);
-	if (!klass)
-		klass = mono_class_from_mono_type (type);
 
 	/*
 	 * If it's in the same module and not a generic type parameter:
