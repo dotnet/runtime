@@ -20,6 +20,7 @@ namespace System.Net.Sockets.Performance.Tests
             _log = TestLogging.GetInstance();
         }
 
+        [ActiveIssue(13110, TestPlatforms.AnyUnix)]
         [OuterLoop]
         [Fact]
         public void SocketPerformance_SingleSocketClientAsync_LocalHostServerAsync()
@@ -41,6 +42,7 @@ namespace System.Net.Sockets.Performance.Tests
                 socket_instances);
         }
 
+        [ActiveIssue(13110, TestPlatforms.AnyUnix)]
         [OuterLoop]
         [Fact]
         public void SocketPerformance_MultipleSocketClientAsync_LocalHostServerAsync()
