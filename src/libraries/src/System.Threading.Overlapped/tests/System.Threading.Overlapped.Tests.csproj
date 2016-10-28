@@ -11,7 +11,7 @@
     <AssemblyName>System.Threading.Overlapped.Tests</AssemblyName>
     <ProjectGuid>{861A3318-35AD-46ac-8257-8D5D2479BAD9}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TargetGroup)'==''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -31,8 +31,12 @@
     <Compile Include="ThreadPoolBoundHandle_DisposeTests.cs" />
     <Compile Include="ThreadPoolBoundHandle_BindHandleTests.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'==''">
+    <Compile Include="OverlappedTests.cs" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.Threading.Overlapped.pkgproj" />
+    <ProjectReference Include="..\..\System.Threading.ThreadPool\pkg\System.Threading.ThreadPool.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
