@@ -28,7 +28,7 @@
 #include <mono/io-layer/io-layer.h>
 /* FIXME: fix this code to not depend so much on the internals */
 #include <mono/metadata/class-internals.h>
-#include <mono/utils/w32handle.h>
+#include <mono/metadata/w32handle.h>
 
 #define LOGDEBUG(...)  
 /* define LOGDEBUG(...) g_message(__VA_ARGS__)  */

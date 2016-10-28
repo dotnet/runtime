@@ -246,7 +246,9 @@ common_sources = \
 	w32semaphore.h	\
 	w32event.h	\
 	w32handle-namespace.h	\
-	w32handle-namespace.c
+	w32handle-namespace.c	\
+	w32handle.h	\
+	w32handle.c
 
 # These source files have compile time dependencies on GC code
 gc_dependent_sources = \

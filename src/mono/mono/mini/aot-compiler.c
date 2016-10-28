@@ -9791,7 +9791,7 @@ compile_methods (MonoAotCompile *acfg)
 		GPtrArray *frag;
 		int len, j;
 		GPtrArray *threads;
-		HANDLE handle;
+		MonoThreadHandle *thread_handle;
 		gpointer *user_data;
 		MonoMethod **methods;
 
@@ -9824,13 +9824,13 @@ compile_methods (MonoAotCompile *acfg)
 			user_data [1] = acfg;
 			user_data [2] = frag;
 			
-			handle = mono_threads_create_thread (compile_thread_main, (gpointer) user_data, NULL, NULL);
-			g_ptr_array_add (threads, handle);
+			thread_handle = mono_threads_create_thread (compile_thread_main, (gpointer) user_data, NULL, NULL);
+			g_ptr_array_add (threads, thread_handle);
 		}
 		g_free (methods);
 
 		for (i = 0; i < threads->len; ++i) {
-			WaitForSingleObjectEx (g_ptr_array_index (threads, i), INFINITE, FALSE);
+			mono_thread_info_wait_one_handle (g_ptr_array_index (threads, i), INFINITE, FALSE);
 			mono_threads_close_thread_handle (g_ptr_array_index (threads, i));
 		}
 	} else {

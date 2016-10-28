@@ -7,7 +7,7 @@
 #include "socket-private.h"
 
 #include "mono/utils/mono-lazy-init.h"
-#include "mono/utils/w32handle.h"
+#include "mono/metadata/w32handle.h"
 
 gboolean _wapi_has_shut_down = FALSE;
 

@@ -11,7 +11,7 @@
 #define _WAPI_WAIT_H_
 
 #include "mono/io-layer/status.h"
-#include "mono/utils/w32handle.h"
+#include "mono/metadata/w32handle.h"
 
 G_BEGIN_DECLS
 

@@ -349,7 +349,8 @@ typedef enum {
 struct _MonoInternalThread {
 	MonoObject  obj;
 	volatile int lock_thread_id; /* to be used as the pre-shifted thread id in thin locks. Used for appdomain_ref push/pop */
-	HANDLE	    handle;
+	MonoThreadHandle *handle;
+	HANDLE native_handle;
 	MonoArray  *cached_culture_info;
 	gunichar2  *name;
 	guint32	    name_len;

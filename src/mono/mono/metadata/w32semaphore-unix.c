@@ -12,7 +12,7 @@
 #include "w32handle-namespace.h"
 #include "mono/io-layer/io-layer.h"
 #include "mono/utils/mono-logger-internals.h"
-#include "mono/utils/w32handle.h"
+#include "mono/metadata/w32handle.h"
 
 typedef struct {
 	guint32 val;

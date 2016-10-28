@@ -44,7 +44,7 @@
 #include <mono/utils/mono-poll.h>
 #include <mono/utils/mono-once.h>
 #include <mono/utils/mono-logger-internals.h>
-#include <mono/utils/w32handle.h>
+#include <mono/metadata/w32handle.h>
 
 #include <netinet/in.h>
 #include <netinet/tcp.h>

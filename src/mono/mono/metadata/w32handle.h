@@ -1,6 +1,6 @@
 
-#ifndef _MONO_UTILS_W32HANDLE_H_
-#define _MONO_UTILS_W32HANDLE_H_
+#ifndef _MONO_METADATA_W32HANDLE_H_
+#define _MONO_METADATA_W32HANDLE_H_
 
 #include <config.h>
 #include <glib.h>
@@ -183,4 +183,4 @@ mono_w32handle_wait_multiple (gpointer *handles, gsize nhandles, gboolean waital
 MonoW32HandleWaitRet
 mono_w32handle_signal_and_wait (gpointer signal_handle, gpointer wait_handle, guint32 timeout, gboolean alertable);
 
-#endif /* _MONO_UTILS_W32HANDLE_H_ */
+#endif /* _MONO_METADATA_W32HANDLE_H_ */

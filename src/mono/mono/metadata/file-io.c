@@ -35,7 +35,7 @@
 #include <mono/metadata/marshal.h>
 #include <mono/utils/strenc.h>
 #include <utils/mono-io-portability.h>
-#include <mono/utils/w32handle.h>
+#include <mono/metadata/w32handle.h>
 
 #undef DEBUG
 

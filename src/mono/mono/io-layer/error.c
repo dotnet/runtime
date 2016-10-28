@@ -15,10 +15,10 @@
 
 #include "mono/io-layer/wapi.h"
 #include "mono/io-layer/wapi-private.h"
-#include "mono/utils/mono-once.h"
+#include "mono/utils/mono-lazy-init.h"
 
 static pthread_key_t error_key;
-static mono_once_t error_key_once=MONO_ONCE_INIT;
+static mono_lazy_init_t error_key_once = MONO_LAZY_INIT_STATUS_NOT_INITIALIZED;
 
 static void error_init(void)
 {
@@ -28,12 +28,17 @@ static void error_init(void)
 	g_assert (ret == 0);
 }
 
-void _wapi_error_cleanup (void)
+static void error_cleanup (void)
 {
 	int ret;
 
 	ret = pthread_key_delete (error_key);
 	g_assert (ret == 0);
+}
+
+void _wapi_error_cleanup (void)
+{
+	mono_lazy_cleanup (&error_key_once, error_cleanup);
 }
 
 /**
@@ -51,7 +56,7 @@ guint32 GetLastError(void)
 
 	if (_wapi_has_shut_down)
 		return 0;
-	mono_once(&error_key_once, error_init);
+	mono_lazy_initialize(&error_key_once, error_init);
 	errptr=pthread_getspecific(error_key);
 	err=GPOINTER_TO_UINT(errptr);
 	
@@ -71,7 +76,7 @@ void SetLastError(guint32 code)
 	if (_wapi_has_shut_down)
 		return;
 	/* Set the thread-local error code */
-	mono_once(&error_key_once, error_init);
+	mono_lazy_initialize(&error_key_once, error_init);
 	ret = pthread_setspecific(error_key, GUINT_TO_POINTER(code));
 	g_assert (ret == 0);
 }

@@ -14,7 +14,7 @@
 
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
-#include <mono/utils/w32handle.h>
+#include <mono/metadata/w32handle.h>
 
 /**
  * WaitForSingleObjectEx:

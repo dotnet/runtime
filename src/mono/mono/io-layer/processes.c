@@ -107,7 +107,7 @@
 #include <mono/utils/mono-proclib.h>
 #include <mono/utils/mono-once.h>
 #include <mono/utils/mono-logger-internals.h>
-#include <mono/utils/w32handle.h>
+#include <mono/metadata/w32handle.h>
 
 #define STILL_ACTIVE STATUS_PENDING
 

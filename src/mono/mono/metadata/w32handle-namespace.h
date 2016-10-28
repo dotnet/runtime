@@ -5,7 +5,7 @@
 #include <config.h>
 #include <glib.h>
 
-#include "mono/utils/w32handle.h"
+#include "mono/metadata/w32handle.h"
 
 #define MONO_W32HANDLE_NAMESPACE_MAX_PATH 260
 

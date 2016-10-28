@@ -44,7 +44,7 @@
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-error-internals.h>
-#include <mono/utils/w32handle.h>
+#include <mono/metadata/w32handle.h>
 #include <mono/metadata/w32event.h>
 #include <mono/metadata/w32mutex.h>
 
@@ -213,7 +213,7 @@ static mono_mutex_t interlocked_mutex;
 static gint32 thread_interruption_requested = 0;
 
 /* Event signaled when a thread changes its background mode */
-static HANDLE background_change_event;
+static MonoOSEvent background_change_event;
 
 static gboolean shutting_down = FALSE;
 
@@ -592,7 +592,6 @@ static void
 mono_thread_internal_set_priority (MonoInternalThread *internal, MonoThreadPriority priority)
 {
 	g_assert (internal);
-	g_assert (internal->handle);
 
 	g_assert (priority >= MONO_THREAD_PRIORITY_LOWEST);
 	g_assert (priority <= MONO_THREAD_PRIORITY_HIGHEST);
@@ -601,7 +600,9 @@ mono_thread_internal_set_priority (MonoInternalThread *internal, MonoThreadPrior
 #ifdef HOST_WIN32
 	BOOL res;
 
-	res = SetThreadPriority (internal->handle, priority - 2);
+	g_assert (internal->native_handle);
+
+	res = SetThreadPriority (internal->native_handle, priority - 2);
 	if (!res)
 		g_error ("%s: SetThreadPriority failed, error %d", __func__, GetLastError ());
 #else /* HOST_WIN32 */
@@ -676,7 +677,10 @@ mono_thread_attach_internal (MonoThread *thread, gboolean force_attach, gboolean
 	info = mono_thread_info_current ();
 
 	internal = thread->internal_thread;
-	internal->handle = mono_thread_info_duplicate_handle (info);
+	internal->handle = mono_threads_open_thread_handle (info->handle);
+#ifdef HOST_WIN32
+	internal->native_handle = OpenThread (THREAD_ALL_ACCESS, FALSE, GetCurrentThreadId ());
+#endif
 	internal->tid = MONO_NATIVE_THREAD_ID_TO_UINT (mono_native_thread_id_get ());
 	internal->thread_info = info;
 	internal->small_id = info->small_id;
@@ -904,7 +908,7 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoObject *sta
 	gboolean threadpool_thread, guint32 stack_size, MonoError *error)
 {
 	StartInfo *start_info = NULL;
-	HANDLE thread_handle;
+	MonoThreadHandle *thread_handle;
 	MonoNativeThreadId tid;
 	gboolean ret;
 	gsize stack_set_size;
@@ -1194,7 +1198,7 @@ mono_thread_exit (void)
 	if (mono_thread_get_main () && (thread == mono_thread_get_main ()->internal_thread))
 		exit (mono_environment_exitcode_get ());
 
-	mono_thread_info_exit ();
+	mono_thread_info_exit (0);
 }
 
 void
@@ -1255,17 +1259,23 @@ ves_icall_System_Threading_Thread_Thread_internal (MonoThread *this_obj,
  * This is called from the finalizer of the internal thread object.
  */
 void
-ves_icall_System_Threading_InternalThread_Thread_free_internal (MonoInternalThread *this_obj, HANDLE thread)
+ves_icall_System_Threading_InternalThread_Thread_free_internal (MonoInternalThread *this_obj)
 {
-	THREAD_DEBUG (g_message ("%s: Closing thread %p, handle %p", __func__, this, thread));
+	THREAD_DEBUG (g_message ("%s: Closing thread %p, handle %p", __func__, this, this_obj->handle));
 
 	/*
 	 * Since threads keep a reference to their thread object while running, by the time this function is called,
 	 * the thread has already exited/detached, i.e. thread_cleanup () has ran. The exception is during shutdown,
 	 * when thread_cleanup () can be called after this.
 	 */
-	if (thread)
-		mono_threads_close_thread_handle (thread);
+	if (this_obj->handle) {
+		mono_threads_close_thread_handle (this_obj->handle);
+		this_obj->handle = NULL;
+	}
+
+#if HOST_WIN32
+	CloseHandle (this_obj->native_handle);
+#endif
 
 	if (this_obj->synch_cs) {
 		MonoCoopMutex *synch_cs = this_obj->synch_cs;
@@ -1512,7 +1522,7 @@ ves_icall_System_Threading_Thread_SetPriority (MonoThread *this_obj, int priorit
 
 	LOCK_THREAD (internal);
 	internal->priority = priority;
-	if (internal->handle != NULL)
+	if (internal->thread_info != NULL)
 		mono_thread_internal_set_priority (internal, priority);
 	UNLOCK_THREAD (internal);
 }
@@ -1600,7 +1610,7 @@ gboolean
 ves_icall_System_Threading_Thread_Join_internal(MonoThread *this_obj, int ms)
 {
 	MonoInternalThread *thread = this_obj->internal_thread;
-	HANDLE handle = thread->handle;
+	MonoThreadHandle *handle = thread->handle;
 	MonoInternalThread *cur_thread = mono_thread_internal_current ();
 	gboolean ret;
 
@@ -1626,12 +1636,12 @@ ves_icall_System_Threading_Thread_Join_internal(MonoThread *this_obj, int ms)
 	mono_thread_set_state (cur_thread, ThreadState_WaitSleepJoin);
 
 	MONO_ENTER_GC_SAFE;
-	ret=WaitForSingleObjectEx (handle, ms, TRUE);
+	ret=mono_thread_info_wait_one_handle (handle, ms, TRUE);
 	MONO_EXIT_GC_SAFE;
 
 	mono_thread_clr_state (cur_thread, ThreadState_WaitSleepJoin);
 	
-	if(ret==WAIT_OBJECT_0) {
+	if(ret==MONO_THREAD_INFO_WAIT_RET_SUCCESS_0) {
 		THREAD_DEBUG (g_message ("%s: join successful", __func__));
 
 		return(TRUE);
@@ -2069,7 +2079,7 @@ ves_icall_System_Threading_Thread_ClrState (MonoInternalThread* this_obj, guint3
 		 * be notified, since it has to rebuild the list of threads to
 		 * wait for.
 		 */
-		mono_w32event_set (background_change_event);
+		mono_os_event_set (&background_change_event);
 	}
 }
 
@@ -2083,7 +2093,7 @@ ves_icall_System_Threading_Thread_SetState (MonoInternalThread* this_obj, guint3
 		 * be notified, since it has to rebuild the list of threads to
 		 * wait for.
 		 */
-		mono_w32event_set (background_change_event);
+		mono_os_event_set (&background_change_event);
 	}
 }
 
@@ -2834,8 +2844,7 @@ void mono_thread_init (MonoThreadStartCB start_cb,
 	mono_os_mutex_init_recursive(&interlocked_mutex);
 	mono_os_mutex_init_recursive(&joinable_threads_mutex);
 	
-	background_change_event = mono_w32event_create (TRUE, FALSE);
-	g_assert(background_change_event != NULL);
+	mono_os_event_init (&background_change_event, TRUE, FALSE);
 	
 	mono_init_static_data_info (&thread_static_info);
 	mono_init_static_data_info (&context_static_info);
@@ -2855,14 +2864,14 @@ void mono_thread_init (MonoThreadStartCB start_cb,
 
 void mono_thread_cleanup (void)
 {
-#if !defined(RUN_IN_SUBTHREAD)
+#if !defined(RUN_IN_SUBTHREAD) && !defined(HOST_WIN32)
 	/* The main thread must abandon any held mutexes (particularly
 	 * important for named mutexes as they are shared across
 	 * processes, see bug 74680.)  This will happen when the
 	 * thread exits, but if it's not running in a subthread it
 	 * won't exit in time.
 	 */
-	mono_thread_info_set_exited (mono_thread_info_current ());
+	mono_w32mutex_abandon ();
 #endif
 
 #if 0
@@ -2874,7 +2883,7 @@ void mono_thread_cleanup (void)
 	mono_os_mutex_destroy (&interlocked_mutex);
 	mono_os_mutex_destroy (&delayed_free_table_mutex);
 	mono_os_mutex_destroy (&small_id_mutex);
-	CloseHandle (background_change_event);
+	mono_os_event_destroy (&background_change_event);
 #endif
 
 	mono_native_tls_free (current_object_key);
@@ -2906,7 +2915,7 @@ static void print_tids (gpointer key, gpointer value, gpointer user)
 
 struct wait_data 
 {
-	HANDLE handles[MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS];
+	MonoThreadHandle *handles[MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS];
 	MonoInternalThread *threads[MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS];
 	guint32 num;
 };
@@ -2914,15 +2923,16 @@ struct wait_data
 static void
 wait_for_tids (struct wait_data *wait, guint32 timeout)
 {
-	guint32 i, ret;
+	guint32 i;
+	MonoThreadInfoWaitRet ret;
 	
 	THREAD_DEBUG (g_message("%s: %d threads to wait for in this batch", __func__, wait->num));
 
 	MONO_ENTER_GC_SAFE;
-	ret=WaitForMultipleObjectsEx(wait->num, wait->handles, TRUE, timeout, TRUE);
+	ret = mono_thread_info_wait_multiple_handle(wait->handles, wait->num, NULL, TRUE, timeout, TRUE);
 	MONO_EXIT_GC_SAFE;
 
-	if(ret==WAIT_FAILED) {
+	if(ret==MONO_THREAD_INFO_WAIT_RET_FAILED) {
 		/* See the comment in build_wait_tids() */
 		THREAD_DEBUG (g_message ("%s: Wait failed", __func__));
 		return;
@@ -2931,7 +2941,7 @@ wait_for_tids (struct wait_data *wait, guint32 timeout)
 	for(i=0; i<wait->num; i++)
 		mono_threads_close_thread_handle (wait->handles [i]);
 
-	if (ret == WAIT_TIMEOUT)
+	if (ret == MONO_THREAD_INFO_WAIT_RET_TIMEOUT)
 		return;
 
 	for(i=0; i<wait->num; i++) {
@@ -2948,24 +2958,19 @@ wait_for_tids (struct wait_data *wait, guint32 timeout)
 
 static void wait_for_tids_or_state_change (struct wait_data *wait, guint32 timeout)
 {
-	guint32 i, ret, count;
+	guint32 i;
+	MonoThreadInfoWaitRet ret;
 	
 	THREAD_DEBUG (g_message("%s: %d threads to wait for in this batch", __func__, wait->num));
 
-	/* Add the thread state change event, so it wakes up if a thread changes
-	 * to background mode.
-	 */
-	count = wait->num;
-	if (count < MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS) {
-		wait->handles [count] = background_change_event;
-		count++;
-	}
+	/* Add the thread state change event, so it wakes
+	 * up if a thread changes to background mode. */
 
 	MONO_ENTER_GC_SAFE;
-	ret=WaitForMultipleObjectsEx (count, wait->handles, FALSE, timeout, TRUE);
+	ret = mono_thread_info_wait_multiple_handle (wait->handles, wait->num, &background_change_event, FALSE, timeout, TRUE);
 	MONO_EXIT_GC_SAFE;
 
-	if(ret==WAIT_FAILED) {
+	if(ret==MONO_THREAD_INFO_WAIT_RET_FAILED) {
 		/* See the comment in build_wait_tids() */
 		THREAD_DEBUG (g_message ("%s: Wait failed", __func__));
 		return;
@@ -2974,7 +2979,7 @@ static void wait_for_tids_or_state_change (struct wait_data *wait, guint32 timeo
 	for(i=0; i<wait->num; i++)
 		mono_threads_close_thread_handle (wait->handles [i]);
 
-	if (ret == WAIT_TIMEOUT)
+	if (ret == MONO_THREAD_INFO_WAIT_RET_TIMEOUT)
 		return;
 	
 	if (ret < wait->num) {
@@ -2993,8 +2998,7 @@ static void build_wait_tids (gpointer key, gpointer value, gpointer user)
 {
 	struct wait_data *wait=(struct wait_data *)user;
 
-	if(wait->num<MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS) {
-		HANDLE handle;
+	if(wait->num<MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS - 1) {
 		MonoInternalThread *thread=(MonoInternalThread *)value;
 
 		/* Ignore background threads, we abort them later */
@@ -3024,15 +3028,9 @@ static void build_wait_tids (gpointer key, gpointer value, gpointer user)
 			return;
 		}
 
-		handle = mono_threads_open_thread_handle (thread->handle, thread_get_tid (thread));
-		if (handle == NULL) {
-			THREAD_DEBUG (g_message ("%s: ignoring unopenable thread %"G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
-			return;
-		}
-		
 		THREAD_DEBUG (g_message ("%s: Invoking mono_thread_manage callback on thread %p", __func__, thread));
 		if ((thread->manage_callback == NULL) || (thread->manage_callback (thread->root_domain_thread) == TRUE)) {
-			wait->handles[wait->num]=handle;
+			wait->handles[wait->num]=mono_threads_open_thread_handle (thread->handle);
 			wait->threads[wait->num]=thread;
 			wait->num++;
 
@@ -3055,7 +3053,6 @@ remove_and_abort_threads (gpointer key, gpointer value, gpointer user)
 	struct wait_data *wait=(struct wait_data *)user;
 	MonoNativeThreadId self = mono_native_thread_id_get ();
 	MonoInternalThread *thread = (MonoInternalThread *)value;
-	HANDLE handle;
 
 	if (wait->num >= MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS)
 		return FALSE;
@@ -3065,11 +3062,7 @@ remove_and_abort_threads (gpointer key, gpointer value, gpointer user)
 	     && (thread->state & ThreadState_Background) != 0
 	     && (thread->flags & MONO_THREAD_FLAG_DONT_MANAGE) == 0
 	) {
-		handle = mono_threads_open_thread_handle (thread->handle, thread_get_tid (thread));
-		if (handle == NULL)
-			return FALSE;
-
-		wait->handles[wait->num] = handle;
+		wait->handles[wait->num] = mono_threads_open_thread_handle (thread->handle);
 		wait->threads[wait->num] = thread;
 		wait->num++;
 
@@ -3117,7 +3110,7 @@ mono_threads_set_shutting_down (void)
 		mono_thread_detach_internal (current_thread);
 
 		/* Wake up other threads potentially waiting for us */
-		mono_thread_info_exit ();
+		mono_thread_info_exit (0);
 	} else {
 		shutting_down = TRUE;
 
@@ -3125,7 +3118,7 @@ mono_threads_set_shutting_down (void)
 		 * interrupt the main thread if it is waiting for all
 		 * the other threads.
 		 */
-		mono_w32event_set (background_change_event);
+		mono_os_event_set (&background_change_event);
 		
 		mono_threads_unlock ();
 	}
@@ -3158,7 +3151,7 @@ void mono_thread_manage (void)
 		THREAD_DEBUG (g_message ("%s: There are %d threads to join", __func__, mono_g_hash_table_size (threads));
 			mono_g_hash_table_foreach (threads, print_tids, NULL));
 	
-		mono_w32event_reset (background_change_event);
+		mono_os_event_reset (&background_change_event);
 		wait->num=0;
 		/*We must zero all InternalThread pointers to avoid making the GC unhappy.*/
 		memset (wait->threads, 0, MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS * SIZEOF_VOID_P);
@@ -3212,7 +3205,6 @@ collect_threads_for_suspend (gpointer key, gpointer value, gpointer user_data)
 {
 	MonoInternalThread *thread = (MonoInternalThread*)value;
 	struct wait_data *wait = (struct wait_data*)user_data;
-	HANDLE handle;
 
 	/* 
 	 * We try to exclude threads early, to avoid running into the MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS
@@ -3224,11 +3216,7 @@ collect_threads_for_suspend (gpointer key, gpointer value, gpointer user_data)
 		return;
 
 	if (wait->num<MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS) {
-		handle = mono_threads_open_thread_handle (thread->handle, thread_get_tid (thread));
-		if (handle == NULL)
-			return;
-
-		wait->handles [wait->num] = handle;
+		wait->handles [wait->num] = mono_threads_open_thread_handle (thread->handle);
 		wait->threads [wait->num] = thread;
 		wait->num++;
 	}
@@ -3752,10 +3740,7 @@ collect_appdomain_thread (gpointer key, gpointer value, gpointer user_data)
 		/* printf ("ABORTING THREAD %p BECAUSE IT REFERENCES DOMAIN %s.\n", thread->tid, domain->friendly_name); */
 
 		if(data->wait.num<MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS) {
-			HANDLE handle = mono_threads_open_thread_handle (thread->handle, thread_get_tid (thread));
-			if (handle == NULL)
-				return;
-			data->wait.handles [data->wait.num] = handle;
+			data->wait.handles [data->wait.num] = mono_threads_open_thread_handle (thread->handle);
 			data->wait.threads [data->wait.num] = thread;
 			data->wait.num++;
 		} else {
@@ -4414,7 +4399,7 @@ mono_thread_request_interruption (gboolean running_managed)
 		   or similar */
 		/* Our implementation of this function ignores the func argument */
 #ifdef HOST_WIN32
-		QueueUserAPC ((PAPCFUNC)dummy_apc, thread->handle, (ULONG_PTR)NULL);
+		QueueUserAPC ((PAPCFUNC)dummy_apc, thread->native_handle, (ULONG_PTR)NULL);
 #else
 		mono_thread_info_self_interrupt ();
 #endif

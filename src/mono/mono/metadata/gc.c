@@ -91,13 +91,13 @@ static void mono_reference_queue_cleanup (void);
 static void reference_queue_clear_for_domain (MonoDomain *domain);
 
 
-static guint32
-guarded_wait (HANDLE handle, guint32 timeout, gboolean alertable)
+static MonoThreadInfoWaitRet
+guarded_wait (MonoThreadHandle *thread_handle, guint32 timeout, gboolean alertable)
 {
-	guint32 result;
+	MonoThreadInfoWaitRet result;
 
 	MONO_ENTER_GC_SAFE;
-	result = WaitForSingleObjectEx (handle, timeout, alertable);
+	result = mono_thread_info_wait_one_handle (thread_handle, timeout, alertable);
 	MONO_EXIT_GC_SAFE;
 
 	return result;
@@ -642,7 +642,9 @@ ves_icall_System_GC_WaitForPendingFinalizers (void)
 	ResetEvent (pending_done_event);
 	mono_gc_finalize_notify ();
 	/* g_print ("Waiting for pending finalizers....\n"); */
-	guarded_wait (pending_done_event, INFINITE, TRUE);
+	MONO_ENTER_GC_SAFE;
+	WaitForSingleObjectEx (pending_done_event, INFINITE, TRUE);
+	MONO_EXIT_GC_SAFE;
 	/* g_print ("Done pending....\n"); */
 #else
 	gboolean alerted = FALSE;
@@ -1014,6 +1016,7 @@ mono_gc_cleanup (void)
 	if (!gc_disabled) {
 		finished = TRUE;
 		if (mono_thread_internal_current () != gc_thread) {
+			int ret;
 			gint64 start_ticks = mono_msec_ticks ();
 			gint64 end_ticks = start_ticks + 2000;
 
@@ -1035,8 +1038,6 @@ mono_gc_cleanup (void)
 			}
 
 			if (!finalizer_thread_exited) {
-				int ret;
-
 				/* Set a flag which the finalizer thread can check */
 				suspend_finalizers = TRUE;
 				mono_gc_suspend_finalizers ();
@@ -1047,23 +1048,22 @@ mono_gc_cleanup (void)
 				/* Wait for it to stop */
 				ret = guarded_wait (gc_thread->handle, 100, TRUE);
 
-				if (ret == WAIT_TIMEOUT) {
+				if (ret == MONO_THREAD_INFO_WAIT_RET_TIMEOUT) {
 					/*
 					 * The finalizer thread refused to exit. Make it stop.
 					 */
 					mono_thread_internal_stop (gc_thread);
 					ret = guarded_wait (gc_thread->handle, 100, TRUE);
-					g_assert (ret != WAIT_TIMEOUT);
+					g_assert (ret != MONO_THREAD_INFO_WAIT_RET_TIMEOUT);
 					/* The thread can't set this flag */
 					finalizer_thread_exited = TRUE;
 				}
 			}
 
-			int ret;
 
 			/* Wait for the thread to actually exit */
 			ret = guarded_wait (gc_thread->handle, INFINITE, TRUE);
-			g_assert (ret == WAIT_OBJECT_0);
+			g_assert (ret == MONO_THREAD_INFO_WAIT_RET_SUCCESS_0);
 
 			mono_thread_join (GUINT_TO_POINTER (gc_thread->tid));
 			g_assert (finalizer_thread_exited);

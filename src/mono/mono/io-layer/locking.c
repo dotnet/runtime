@@ -18,7 +18,7 @@
 #include <mono/io-layer/io-private.h>
 #include <mono/io-layer/io-trace.h>
 #include <mono/utils/mono-logger-internals.h>
-#include <mono/utils/w32handle.h>
+#include <mono/metadata/w32handle.h>
 
 gboolean
 _wapi_lock_file_region (int fd, off_t offset, off_t length)

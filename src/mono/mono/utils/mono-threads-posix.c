@@ -17,7 +17,6 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-coop-semaphore.h>
 #include <mono/metadata/gc-internals.h>
-#include <mono/utils/w32handle.h>
 #include <mono/utils/mono-threads-debug.h>
 
 #include <errno.h>
@@ -35,23 +34,6 @@ extern int tkill (pid_t tid, int signal);
 #include <pthread.h>
 
 #include <sys/resource.h>
-
-#if defined(__native_client__)
-void nacl_shutdown_gc_thread(void);
-#endif
-
-void
-mono_threads_platform_register (MonoThreadInfo *info)
-{
-	gpointer thread_handle;
-
-	thread_handle = mono_w32handle_new (MONO_W32HANDLE_THREAD, NULL);
-	if (thread_handle == INVALID_HANDLE_VALUE)
-		g_error ("%s: failed to create handle", __func__);
-
-	g_assert (!info->handle);
-	info->handle = thread_handle;
-}
 
 int
 mono_threads_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_data, gsize* const stack_size, MonoNativeThreadId *out_tid)
@@ -158,25 +140,9 @@ mono_threads_platform_yield (void)
 }
 
 void
-mono_threads_platform_exit (int exit_code)
+mono_threads_platform_exit (gsize exit_code)
 {
-#if defined(__native_client__)
-	nacl_shutdown_gc_thread();
-#endif
-
-	mono_thread_info_detach ();
-
-	pthread_exit (NULL);
-}
-
-void
-mono_threads_platform_unregister (MonoThreadInfo *info)
-{
-	g_assert (info->handle);
-
-	/* The thread is no longer active, so unref it */
-	mono_w32handle_unref (info->handle);
-	info->handle = NULL;
+	pthread_exit ((gpointer) exit_code);
 }
 
 int
@@ -191,28 +157,6 @@ mono_threads_get_max_stack_size (void)
 	if (lim.rlim_max > (rlim_t)INT_MAX)
 		return INT_MAX;
 	return (int)lim.rlim_max;
-}
-
-gpointer
-mono_threads_platform_duplicate_handle (MonoThreadInfo *info)
-{
-	g_assert (info->handle);
-	mono_w32handle_ref (info->handle);
-	return info->handle;
-}
-
-HANDLE
-mono_threads_platform_open_thread_handle (HANDLE handle, MonoNativeThreadId tid)
-{
-	mono_w32handle_ref (handle);
-
-	return handle;
-}
-
-void
-mono_threads_platform_close_thread_handle (HANDLE handle)
-{
-	mono_w32handle_unref (handle);
 }
 
 int
@@ -309,56 +253,6 @@ mono_native_thread_join (MonoNativeThreadId tid)
 	void *res;
 
 	return !pthread_join (tid, &res);
-}
-
-void
-mono_threads_platform_set_exited (gpointer handle)
-{
-	int thr_ret;
-
-	g_assert (handle);
-	if (mono_w32handle_issignalled (handle))
-		g_error ("%s: handle %p thread %p has already exited, it's handle is signalled", __func__, handle, mono_native_thread_id_get ());
-	if (mono_w32handle_get_type (handle) == MONO_W32HANDLE_UNUSED)
-		g_error ("%s: handle %p thread %p has already exited, it's handle type is 'unused'", __func__, handle, mono_native_thread_id_get ());
-
-	thr_ret = mono_w32handle_lock_handle (handle);
-	g_assert (thr_ret == 0);
-
-	mono_w32handle_set_signal_state (handle, TRUE, TRUE);
-
-	thr_ret = mono_w32handle_unlock_handle (handle);
-	g_assert (thr_ret == 0);
-}
-
-static const gchar* thread_typename (void)
-{
-	return "Thread";
-}
-
-static gsize thread_typesize (void)
-{
-	return 0;
-}
-
-static MonoW32HandleOps thread_ops = {
-	NULL,				/* close */
-	NULL,				/* signal */
-	NULL,				/* own */
-	NULL,				/* is_owned */
-	NULL,				/* special_wait */
-	NULL,				/* prewait */
-	NULL,				/* details */
-	thread_typename,	/* typename */
-	thread_typesize,	/* typesize */
-};
-
-void
-mono_threads_platform_init (void)
-{
-	mono_w32handle_register_ops (MONO_W32HANDLE_THREAD, &thread_ops);
-
-	mono_w32handle_register_capabilities (MONO_W32HANDLE_THREAD, MONO_W32HANDLE_CAP_WAIT);
 }
 
 #endif /* defined(_POSIX_VERSION) || defined(__native_client__) */

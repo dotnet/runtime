@@ -189,22 +189,6 @@ mono_threads_suspend_get_abort_signal (void)
 
 #if defined (HOST_WIN32)
 
-void
-mono_threads_platform_register (MonoThreadInfo *info)
-{
-	HANDLE thread_handle;
-
-	thread_handle = GetCurrentThread ();
-	g_assert (thread_handle);
-
-	/* The handle returned by GetCurrentThread () is a pseudo handle, so it can't
-	 * be used to refer to the thread from other threads for things like aborting. */
-	DuplicateHandle (GetCurrentProcess (), thread_handle, GetCurrentProcess (), &thread_handle, THREAD_ALL_ACCESS, TRUE, 0);
-
-	g_assert (!info->handle);
-	info->handle = thread_handle;
-}
-
 int
 mono_threads_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_data, gsize* const stack_size, MonoNativeThreadId *out_tid)
 {
@@ -312,19 +296,9 @@ mono_threads_platform_yield (void)
 }
 
 void
-mono_threads_platform_exit (int exit_code)
+mono_threads_platform_exit (gsize exit_code)
 {
-	mono_thread_info_detach ();
 	ExitThread (exit_code);
-}
-
-void
-mono_threads_platform_unregister (MonoThreadInfo *info)
-{
-	g_assert (info->handle);
-
-	CloseHandle (info->handle);
-	info->handle = NULL;
 }
 
 int
@@ -332,29 +306,6 @@ mono_threads_get_max_stack_size (void)
 {
 	//FIXME
 	return INT_MAX;
-}
-
-gpointer
-mono_threads_platform_duplicate_handle (MonoThreadInfo *info)
-{
-	HANDLE thread_handle;
-
-	g_assert (info->handle);
-	DuplicateHandle (GetCurrentProcess (), info->handle, GetCurrentProcess (), &thread_handle, THREAD_ALL_ACCESS, TRUE, 0);
-
-	return thread_handle;
-}
-
-HANDLE
-mono_threads_platform_open_thread_handle (HANDLE handle, MonoNativeThreadId tid)
-{
-	return OpenThread (THREAD_ALL_ACCESS, TRUE, tid);
-}
-
-void
-mono_threads_platform_close_thread_handle (HANDLE handle)
-{
-	CloseHandle (handle);
 }
 
 #if defined(_MSC_VER)
@@ -387,16 +338,6 @@ mono_native_thread_set_name (MonoNativeThreadId tid, const char *name)
 	__except(EXCEPTION_EXECUTE_HANDLER) {
 	}
 #endif
-}
-
-void
-mono_threads_platform_set_exited (gpointer handle)
-{
-}
-
-void
-mono_threads_platform_init (void)
-{
 }
 
 #endif

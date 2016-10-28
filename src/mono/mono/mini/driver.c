@@ -52,7 +52,7 @@
 #include "mono/utils/mono-counters.h"
 #include "mono/utils/mono-hwcap.h"
 #include "mono/utils/mono-logger-internals.h"
-#include "mono/utils/w32handle.h"
+#include "mono/metadata/w32handle.h"
 
 #include "mini.h"
 #include "jit.h"

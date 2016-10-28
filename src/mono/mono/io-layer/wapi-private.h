@@ -27,7 +27,7 @@ extern gboolean _wapi_has_shut_down;
 #include <mono/io-layer/io-private.h>
 #include <mono/io-layer/socket-private.h>
 #include <mono/io-layer/process-private.h>
-#include <mono/utils/w32handle.h>
+#include <mono/metadata/w32handle.h>
 
 struct _WapiHandle_shared_ref
 {

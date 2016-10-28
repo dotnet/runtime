@@ -68,7 +68,7 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-threads.h>
-#include <mono/utils/w32handle.h>
+#include <mono/metadata/w32handle.h>
 #ifdef HOST_WIN32
 #include <direct.h>
 #endif
@@ -84,7 +84,7 @@
  * Changes which are already detected at runtime, like the addition
  * of icalls, do not require an increment.
  */
-#define MONO_CORLIB_VERSION 160
+#define MONO_CORLIB_VERSION 161
 
 typedef struct
 {
@@ -2480,13 +2480,13 @@ mono_domain_unload (MonoDomain *domain)
 	mono_domain_try_unload (domain, &exc);
 }
 
-static guint32
-guarded_wait (HANDLE handle, guint32 timeout, gboolean alertable)
+static MonoThreadInfoWaitRet
+guarded_wait (MonoThreadHandle *thread_handle, guint32 timeout, gboolean alertable)
 {
-	guint32 result;
+	MonoThreadInfoWaitRet result;
 
 	MONO_ENTER_GC_SAFE;
-	result = WaitForSingleObjectEx (handle, timeout, alertable);
+	result = mono_thread_info_wait_one_handle (thread_handle, timeout, alertable);
 	MONO_EXIT_GC_SAFE;
 
 	return result;
@@ -2515,7 +2515,7 @@ void
 mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 {
 	MonoError error;
-	HANDLE thread_handle;
+	MonoThreadHandle *thread_handle;
 	MonoAppDomainState prev_state;
 	MonoMethod *method;
 	unload_data *thread_data;
@@ -2582,7 +2582,7 @@ mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 		return;
 
 	/* Wait for the thread */	
-	while (!thread_data->done && guarded_wait (thread_handle, INFINITE, TRUE) == WAIT_IO_COMPLETION) {
+	while (!thread_data->done && guarded_wait (thread_handle, INFINITE, TRUE) == MONO_THREAD_INFO_WAIT_RET_ALERTED) {
 		if (mono_thread_internal_has_appdomain_ref (mono_thread_internal_current (), domain) && (mono_thread_interruption_requested ())) {
 			/* The unload thread tries to abort us */
 			/* The icall wrapper will execute the abort */

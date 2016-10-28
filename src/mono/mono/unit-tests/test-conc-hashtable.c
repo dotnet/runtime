@@ -11,7 +11,7 @@
 #include "utils/mono-threads.h"
 #include "utils/mono-conc-hashtable.h"
 #include "utils/checked-build.h"
-#include "utils/w32handle.h"
+#include "metadata/w32handle.h"
 
 #include <stdlib.h>
 #include <string.h>

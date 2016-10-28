@@ -16,7 +16,7 @@
 #include "mono/metadata/object-internals.h"
 #include "mono/utils/mono-logger-internals.h"
 #include "mono/utils/mono-threads.h"
-#include "mono/utils/w32handle.h"
+#include "mono/metadata/w32handle.h"
 
 typedef struct {
 	MonoNativeThreadId tid;

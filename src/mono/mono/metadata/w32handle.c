@@ -42,12 +42,12 @@
 
 #include "w32handle.h"
 
-#include "atomic.h"
-#include "mono-logger-internals.h"
-#include "mono-os-mutex.h"
-#include "mono-proclib.h"
-#include "mono-threads.h"
-#include "mono-time.h"
+#include "utils/atomic.h"
+#include "utils/mono-logger-internals.h"
+#include "utils/mono-os-mutex.h"
+#include "utils/mono-proclib.h"
+#include "utils/mono-threads.h"
+#include "utils/mono-time.h"
 
 #undef DEBUG_REFS
 

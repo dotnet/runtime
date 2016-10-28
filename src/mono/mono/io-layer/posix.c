@@ -25,7 +25,7 @@
 #include <mono/io-layer/io-private.h>
 #include <mono/io-layer/io-trace.h>
 #include <mono/utils/mono-logger-internals.h>
-#include <mono/utils/w32handle.h>
+#include <mono/metadata/w32handle.h>
 
 static guint32
 convert_from_flags(int flags)

@@ -45,7 +45,7 @@
 #include <mono/utils/strenc.h>
 #include <mono/utils/mono-once.h>
 #include <mono/utils/mono-logger-internals.h>
-#include <mono/utils/w32handle.h>
+#include <mono/metadata/w32handle.h>
 
 /*
  * If SHM is disabled, this will point to a hash of _WapiFileShare structures, otherwise

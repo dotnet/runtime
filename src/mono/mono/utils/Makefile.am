@@ -173,8 +173,6 @@ monoutils_sources = \
 	parse.h	\
 	checked-build.c \
 	checked-build.h \
-	w32handle.c \
-	w32handle.h \
 	os-event.h
 
 arch_sources = 
