@@ -1128,45 +1128,6 @@ errno_t __cdecl _i64tow_s(__int64 _Value, WCHAR *_Dst, size_t _SizeInWords, int 
 }
 
 #endif
-
-/* getenv_s */
-/*
- * _ReturnValue indicates if the variable has been found and size needed
- */
-_SAFECRT__EXTERN_C
-errno_t __cdecl getenv_s(size_t *_ReturnValue, char *_Dst, size_t _SizeInWords, const char *_Name);
-
-#if defined(__cplusplus) && _SAFECRT_USE_CPP_OVERLOADS
-extern "C++"
-template <size_t _SizeInWords>
-inline
-errno_t __cdecl getenv_s(size_t *_ReturnValue, char *_Dst, size_t _SizeInWords, const char *_Name)
-{
-    return getenv_s(_ReturnValue, _Dst, _SizeInWords, _Name);
-}
-#endif
-
-#if _SAFECRT_USE_INLINES
-
-__inline
-errno_t __cdecl getenv_s(size_t *_ReturnValue, char *_Dst, size_t _SizeInWords, const char *_Name)
-{
-    char *szFound;
-
-    /* validation section */
-    _SAFECRT__VALIDATE_STRING(_Dst, _SizeInWords);
-
-    szFound = getenv(_Name);
-    if (szFound == nullptr)
-    {
-        *_ReturnValue = 0;
-        return 0;
-    }
-    *_ReturnValue = strlen(szFound) + 1;
-    return strcpy_s(_Dst, _SizeInWords, szFound);
-}
-
-#endif
  
 }
 #endif /* __cplusplus */

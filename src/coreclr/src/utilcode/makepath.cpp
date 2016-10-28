@@ -17,7 +17,7 @@
 
 #ifndef FEATURE_CORECLR
 /***
-*void _makepath() - build path name from components
+*void MakePath() - build path name from components
 *
 *Purpose:
 *       create a path name from its individual components

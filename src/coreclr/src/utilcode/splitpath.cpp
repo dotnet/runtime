@@ -18,7 +18,7 @@
 
 
 /***
-*_splitpath() - split a path name into its individual components
+*SplitPath() - split a path name into its individual components
 *
 *Purpose:
 *       to split a path name into its individual components
@@ -214,7 +214,7 @@ void    SplitPathInterior(
 }
 
 /***
-*_splitpath() - split a path name into its individual components
+*SplitPath() - split a path name into its individual components
 *
 *Purpose:
 *       to split a path name into its individual components

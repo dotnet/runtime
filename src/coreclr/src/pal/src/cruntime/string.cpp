@@ -151,61 +151,6 @@ _strlwr(
     return orig;
 }
 
-
-/*++
-Function:
-  _swab
-
-Swaps bytes.
-
-Return Value
-
-None
-
-Parameters
-
-src        Data to be copied and swapped
-dest       Storage location for swapped data
-n          Number of bytes to be copied and swapped
-
-Remarks
-
-The _swab function copies n bytes from src, swaps each pair of
-adjacent bytes, and stores the result at dest. The integer n should be
-an even number to allow for swapping. _swab is typically used to
-prepare binary data for transfer to a machine that uses a different
-byte order.
-
-Example
-
-char from[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-char   to[] = "..........................";
-
-printf("Before:\n%s\n%s\n\n", from, to);
-_swab(from, to, strlen(from));
-printf("After:\n%s\n%s\n\n", from, to);
-
-Before:
-ABCDEFGHIJKLMNOPQRSTUVWXYZ
-..........................
-
-After:
-ABCDEFGHIJKLMNOPQRSTUVWXYZ
-BADCFEHGJILKNMPORQTSVUXWZY
-
---*/
-void
-__cdecl
-_swab(char *src, char *dest, int n)
-{
-    PERF_ENTRY(_swab);
-    ENTRY("_swab (src=%p (%s), dest=%p (%s), n=%d)\n", src?src:"NULL", src?src:"NULL", dest?dest:"NULL", dest?dest:"NULL", n);
-    swab(src, dest, n);
-    LOGEXIT("_swab returning\n");
-    PERF_EXIT(_swab);
-}
-
-
 /*++
 Function:
   PAL_strtoul
