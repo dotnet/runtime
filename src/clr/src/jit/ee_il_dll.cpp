@@ -401,7 +401,8 @@ unsigned CILJit::getMaxIntrinsicSIMDVectorLength(DWORD cpuCompileFlags)
     jitFlags.SetFromOldFlags(cpuCompileFlags, 0);
 #endif // COR_JIT_EE_VERSION <= 460
 
-#ifdef _TARGET_AMD64_
+#ifdef FEATURE_SIMD
+#ifdef _TARGET_XARCH_
 #ifdef FEATURE_AVX_SUPPORT
     if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT) && jitFlags.IsSet(JitFlags::JIT_FLAG_FEATURE_SIMD) &&
         jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AVX2))
@@ -413,9 +414,10 @@ unsigned CILJit::getMaxIntrinsicSIMDVectorLength(DWORD cpuCompileFlags)
     }
 #endif // FEATURE_AVX_SUPPORT
     return 16;
-#else  // !_TARGET_AMD64_
+#endif // _TARGET_XARCH_
+#else  // !FEATURE_SIMD
     return 0;
-#endif // !_TARGET_AMD64_
+#endif // !FEATURE_SIMD
 }
 
 void CILJit::setRealJit(ICorJitCompiler* realJitCompiler)
