@@ -8,9 +8,9 @@
     <AssemblyName>System.Threading.Overlapped</AssemblyName>
     <ProjectGuid>{6A07CCB8-3E59-47e7-B3DD-DB1F6FC501D5}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='' OR '$(TargetGroup)'=='net46'">true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='' OR '$(TargetGroup)'=='net463'">true</IsPartialFacadeAssembly>
     <GeneratePlatformNotSupportedAssembly Condition="'$(TargetsUnix)' == 'true'">true</GeneratePlatformNotSupportedAssembly>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
     <ProjectJson>unix/project.json</ProjectJson>
@@ -19,10 +19,8 @@
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)'=='' AND '$(TargetsWindows)' == 'true'">
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj">
       <Project>{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}</Project>
@@ -35,12 +33,12 @@
       <Link>Common\System\HResults.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="('$(TargetGroup)'=='' AND '$(TargetsWindows)' == 'true') OR '$(TargetGroup)'=='net46'">
+  <ItemGroup Condition="('$(TargetGroup)'=='' AND '$(TargetsWindows)' == 'true') OR '$(TargetGroup)'=='net463'">
     <Compile Include="System\Threading\ClrThreadPoolBoundHandle.cs" />
     <Compile Include="System\Threading\ClrThreadPoolBoundHandleOverlapped.cs" />
     <Compile Include="System\Threading\ClrThreadPoolPreAllocatedOverlapped.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='net46'">
+  <ItemGroup Condition="'$(TargetGroup)'=='net463'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">
