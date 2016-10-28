@@ -301,3 +301,6 @@ cross/rootfs/*
 
 # JIT32 files
 src/jit32
+
+# performance testing sandbox
+sandbox

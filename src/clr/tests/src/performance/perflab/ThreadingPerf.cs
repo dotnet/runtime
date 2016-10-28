@@ -10,59 +10,65 @@ public class JITIntrinsics
     private static int s_i;
     private static string s_s;
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=100000)]
     public static void CompareExchangeIntNoMatch()
     {
         s_i = 0;
         foreach (var iteration in Benchmark.Iterations)
             using (iteration.StartMeasurement())
-                Interlocked.CompareExchange(ref s_i, 5, -1);
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    Interlocked.CompareExchange(ref s_i, 5, -1);
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=100000)]
     public static void CompareExchangeIntMatch()
     {
         foreach (var iteration in Benchmark.Iterations)
         {
             s_i = 1;
             using (iteration.StartMeasurement())
-                Interlocked.CompareExchange(ref s_i, 5, 1);
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    Interlocked.CompareExchange(ref s_i, 5, 1);
         }
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=100000)]
     public static void CompareExchangeObjNoMatch()
     {
         s_s = "Hello";
         foreach (var iteration in Benchmark.Iterations)
             using (iteration.StartMeasurement())
-                Interlocked.CompareExchange(ref s_s, "World", "What?");
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    Interlocked.CompareExchange(ref s_s, "World", "What?");
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=100000)]
     public static void CompareExchangeObjMatch()
     {
         foreach (var iteration in Benchmark.Iterations)
         {
             s_s = "What?";
             using (iteration.StartMeasurement())
-                Interlocked.CompareExchange(ref s_s, "World", "What?");
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    Interlocked.CompareExchange(ref s_s, "World", "What?");
         }
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=100000)]
     public static void InterlockedIncrement()
     {
         foreach (var iteration in Benchmark.Iterations)
             using (iteration.StartMeasurement())
-                Interlocked.Increment(ref s_i);
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    Interlocked.Increment(ref s_i);
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=100000)]
     public static void InterlockedDecrement()
     {
         foreach (var iteration in Benchmark.Iterations)
             using (iteration.StartMeasurement())
-                Interlocked.Decrement(ref s_i);
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    Interlocked.Decrement(ref s_i);
     }
 }
