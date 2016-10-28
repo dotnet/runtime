@@ -46,12 +46,13 @@
   <ItemGroup Condition="'$(TargetGroup)'==''">
     <Compile Include="AuthorizationTest.cs" />
     <Compile Include="AuthenticationManagerTest.cs" />
-    <Compile Include="FileWebRequestTest.cs" />
     <Compile Include="GlobalProxySelectionTest.cs" />
+    <Compile Include="FileWebRequestTest.cs" />
+    <Compile Include="FtpWebRequestTest.cs" />
+    <Compile Include="LoggingTest.cs" />
     <Compile Include="HttpRequestCachePolicyTest.cs" />
     <Compile Include="HttpWebRequestHeaderTest.cs" />
     <Compile Include="HttpWebResponseHeaderTest.cs" />
-    <Compile Include="FtpWebRequestTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.Net.Requests.pkgproj">

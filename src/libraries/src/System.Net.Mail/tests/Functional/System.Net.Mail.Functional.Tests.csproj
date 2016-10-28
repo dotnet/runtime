@@ -17,6 +17,7 @@
     <Compile Include="ContentTypeTest.cs" />
     <Compile Include="LinkedResourceCollectionTest.cs" />
     <Compile Include="LinkedResourceTest.cs" />
+    <Compile Include="LoggingTest.cs" />
     <Compile Include="MailAddressCollectionTest.cs" />
     <Compile Include="MailAddressTest.cs" />
     <Compile Include="MailMessageTest.cs" />

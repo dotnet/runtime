@@ -57,11 +57,7 @@ namespace System.Net.NetworkInformation
         {
             if (callback == null)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Assert("UnsafeNotifyStableUnicastIpAddressTable called without specifying callback!");
-                }
-                Debug.Fail("UnsafeNotifyStableUnicastIpAddressTable called without specifying callback!");
+                NetEventSource.Fail(null, "UnsafeNotifyStableUnicastIpAddressTable called without specifying callback!");
             }
 
             TeredoHelper helper = new TeredoHelper(callback, state);
@@ -91,11 +87,7 @@ namespace System.Net.NetworkInformation
                 {
                     if (helper._cancelHandle.IsInvalid)
                     {
-                        if (GlobalLog.IsEnabled)
-                        {
-                            GlobalLog.Assert("CancelHandle invalid despite returning ERROR_IO_PENDING");
-                        }
-                        Debug.Fail("CancelHandle invalid despite returning ERROR_IO_PENDING");
+                        NetEventSource.Fail(null, "CancelHandle invalid despite returning ERROR_IO_PENDING");
                     }
 
                     // Async completion: add us to the s_pendingNotifications list so we'll be canceled in the
@@ -117,11 +109,7 @@ namespace System.Net.NetworkInformation
         {
             if (!_runCallbackCalled)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Assert("RunCallback called without setting runCallbackCalled!");
-                }
-                Debug.Fail("RunCallback called without setting runCallbackCalled!");
+                NetEventSource.Fail(null, "RunCallback called without setting runCallbackCalled!");
             }
 
             // If OnAppDomainUnload beats us to the lock, do nothing: the AppDomain is going down soon anyways.
@@ -137,11 +125,7 @@ namespace System.Net.NetworkInformation
                 bool successfullyRemoved = s_pendingNotifications.Remove(this);
                 if (!successfullyRemoved)
                 {
-                    if (GlobalLog.IsEnabled)
-                    {
-                        GlobalLog.Assert("RunCallback for a TeredoHelper which is not in s_pendingNotifications!");
-                    }
-                    Debug.Fail("RunCallback for a TeredoHelper which is not in s_pendingNotifications!");
+                    NetEventSource.Fail(null, "RunCallback for a TeredoHelper which is not in s_pendingNotifications!");
                 }
 #else
                 s_pendingNotifications.Remove(this);
@@ -149,11 +133,7 @@ namespace System.Net.NetworkInformation
 
                 if ((_cancelHandle == null || _cancelHandle.IsInvalid))
                 {
-                    if (GlobalLog.IsEnabled)
-                    {
-                        GlobalLog.Assert("Invalid cancelHandle in RunCallback");
-                    }
-                    Debug.Fail("Invalid cancelHandle in RunCallback");
+                    NetEventSource.Fail(null, "Invalid cancelHandle in RunCallback");
                 }
 
                 _cancelHandle.Dispose();

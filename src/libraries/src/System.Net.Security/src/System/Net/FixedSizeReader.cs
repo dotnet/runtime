@@ -105,12 +105,7 @@ namespace System.Net
 
             if (_totalRead + bytes > _request.Count)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.AssertFormat("FixedSizeReader::CheckCompletion()|State got out of range. Total:{0} Count:{1}", _totalRead + bytes, _request.Count);
-                }
-
-                Debug.Fail("FixedSizeReader::CheckCompletion()|State got out of range. Total:" + (_totalRead + bytes) + " Count:" + _request.Count);
+                NetEventSource.Fail(this, $"State got out of range. Total:{_totalRead + bytes} Count:{_request.Count}");
             }
 
             if ((_totalRead += bytes) == _request.Count)
@@ -126,12 +121,7 @@ namespace System.Net
         {
             if (!(transportResult.AsyncState is FixedSizeReader))
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Assert("ReadCallback|State type is wrong, expected FixedSizeReader.");
-                }
-
-                Debug.Fail("ReadCallback|State type is wrong, expected FixedSizeReader.");
+                NetEventSource.Fail(null, "State type is wrong, expected FixedSizeReader.");
             }
 
             if (transportResult.CompletedSynchronously)

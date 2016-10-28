@@ -162,10 +162,7 @@ namespace System.Net.NetworkInformation
                     }
                     catch (NetworkInformationException nie)
                     {
-                        if (NetEventSource.Log.IsEnabled())
-                        {
-                            NetEventSource.Exception(NetEventSource.ComponentType.NetworkInformation, "AddressChangeListener", "AddressChangedCallback", nie);
-                        }
+                        NetEventSource.Error(null, nie);
                     }
 
                     foreach (var handler in copy.Keys)

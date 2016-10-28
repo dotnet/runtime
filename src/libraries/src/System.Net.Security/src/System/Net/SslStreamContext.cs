@@ -14,12 +14,7 @@ namespace System.Net
         {
             if (sslStream == null)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Assert("SslStreamContext..ctor(): Not expecting a null sslStream!");
-                }
-
-                Debug.Fail("SslStreamContext..ctor(): Not expecting a null sslStream!");
+                NetEventSource.Fail(this, "Not expecting a null sslStream!");
             }
 
             _sslStream = sslStream;

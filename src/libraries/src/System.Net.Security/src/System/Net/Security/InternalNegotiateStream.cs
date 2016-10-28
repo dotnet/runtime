@@ -292,12 +292,7 @@ namespace System.Net.Security
 
             if (!(readBytes == _ReadHeader.Length))
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.AssertFormat("NegoStream::ProcessHeader()|Frame size must be 4 but received {0} bytes.", readBytes);
-                }
-
-                Debug.Fail("NegoStream::ProcessHeader()|Frame size must be 4 but received " + readBytes + " bytes.");
+                NetEventSource.Fail(this, $"Frame size must be 4 but received {readBytes} bytes.");
             }
 
             // Replace readBytes with the body size recovered from the header content.
@@ -390,12 +385,7 @@ namespace System.Net.Security
 
             if (!(transportResult.AsyncState is AsyncProtocolRequest))
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Assert("NegotiateSteam::WriteCallback|State type is wrong, expected AsyncProtocolRequest.");
-                }
-
-                Debug.Fail("NegotiateSteam::WriteCallback|State type is wrong, expected AsyncProtocolRequest.");
+                NetEventSource.Fail(transportResult, "State type is wrong, expected AsyncProtocolRequest.");
             }
 
             AsyncProtocolRequest asyncRequest = (AsyncProtocolRequest)transportResult.AsyncState;

@@ -40,10 +40,7 @@ namespace System.Net
                 return null;
             }
 
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Enter("CertificateValidationPal.Unix SecureChannel#" + LoggingHash.HashString(securityContext) + "::GetRemoteCertificate()");
-            }
+            NetEventSource.Enter(securityContext);
 
             X509Certificate2 result = null;
             SafeFreeCertContext remoteContext = null;
@@ -93,15 +90,8 @@ namespace System.Net
                 }
             }
 
-            if (SecurityEventSource.Log.IsEnabled())
-            {
-                SecurityEventSource.Log.RemoteCertificate(result == null ? "null" : result.ToString(true));
-            }
-
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Leave("CertificateValidationPal.Unix SecureChannel#" + LoggingHash.HashString(securityContext) + "::GetRemoteCertificate()", (result == null ? "null" : result.Subject));
-            }
+            NetEventSource.Log.RemoteCertificate(result);
+            NetEventSource.Exit(securityContext, result);
             return result;
         }      
 
@@ -172,24 +162,11 @@ namespace System.Net
 
                             Volatile.Write(ref storeField, store);
 
-                            if (GlobalLog.IsEnabled)
-                            {
-                                GlobalLog.Print(
-                                    "CertModule::EnsureStoreOpened() storeLocation:" + storeLocation +
-                                        " returned store:" + store.GetHashCode().ToString("x"));
-                            }
+                            NetEventSource.Info(null, $"storeLocation: {storeLocation} returned store {store}");
                         }
                         catch (CryptographicException e)
                         {
-                            if (GlobalLog.IsEnabled)
-                            {
-                                GlobalLog.Assert(
-                                    "CertModule::EnsureStoreOpened()",
-                                    "Failed to open cert store, location:" + storeLocation + " exception:" + e);
-                            }
-                            Debug.Fail(
-                                "CertModule::EnsureStoreOpened()",
-                                "Failed to open cert store, location:" + storeLocation + " exception:" + e);
+                            NetEventSource.Fail(null, $"Failed to open cert store, location: {storeLocation} exception {e}");
                             throw;
                         }
                     }

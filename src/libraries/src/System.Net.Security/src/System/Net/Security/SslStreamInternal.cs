@@ -532,12 +532,7 @@ namespace System.Net.Security
 
             if (InternalBufferCount != 0)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.AssertFormat("SslStream::StartReading()|Previous frame was not consumed. InternalBufferCount:{0}", InternalBufferCount);
-                }
-
-                Debug.Fail("SslStream::StartReading()|Previous frame was not consumed. InternalBufferCount:" + InternalBufferCount);
+                NetEventSource.Fail(this, $"Previous frame was not consumed. InternalBufferCount: {InternalBufferCount}");
             }
 
             do
@@ -715,11 +710,7 @@ namespace System.Net.Security
         private int ProcessReadErrorCode(SecurityStatusPal status, byte[] buffer, int offset, int count, AsyncProtocolRequest asyncRequest, byte[] extraBuffer)
         {
             ProtocolToken message = new ProtocolToken(null, status);
-
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("SecureChannel#" + LoggingHash.HashString(this) + "::***Processing an error Status = " + message.Status.ToString());
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"***Processing an error Status = {message.Status}");
 
             if (message.Renegotiate)
             {
@@ -752,12 +743,7 @@ namespace System.Net.Security
 
             if (!(transportResult.AsyncState is AsyncProtocolRequest))
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Assert("SslStream::WriteCallback | State type is wrong, expected AsyncProtocolRequest.");
-                }
-
-                Debug.Fail("SslStream::WriteCallback|State type is wrong, expected AsyncProtocolRequest.");
+                NetEventSource.Fail(transportResult, "State type is wrong, expected AsyncProtocolRequest.");
             }
 
             AsyncProtocolRequest asyncRequest = (AsyncProtocolRequest)transportResult.AsyncState;
