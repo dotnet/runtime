@@ -132,6 +132,9 @@
     <Compile Include="Sha512Tests.cs" />
     <Compile Include="TripleDesProvider.cs" />
     <Compile Include="TripleDesTests.cs" />
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'==''">
     <Compile Include="AesManagedTests.cs" />
