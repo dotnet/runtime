@@ -2784,11 +2784,19 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
 
     if (callType == CT_INDIRECT)
     {
+#if !defined(_TARGET_64BIT_)
+        // On 32-bit targets, indirect calls need the size of the stack args in InlinedCallFrame.m_Datum.
+        const unsigned numStkArgBytes = call->fgArgInfo->GetNextSlotNum() * TARGET_POINTER_SIZE;
+
+        src = comp->gtNewIconNode(numStkArgBytes, TYP_INT);
+#else
+        // On 64-bit targets, indirect calls may need the stub parameter value in InlinedCallFrame.m_Datum.
+        // If the stub parameter value is not needed, m_Datum will be initialized by the VM.
         if (comp->info.compPublishStubParam)
         {
-            src = new (comp, GT_LCL_VAR) GenTreeLclVar(TYP_I_IMPL, comp->lvaStubArgumentVar, BAD_IL_OFFSET);
+            src = comp->gtNewLclvNode(comp->lvaStubArgumentVar, TYP_I_IMPL);
         }
-        // else { If we don't have secret parameter, m_Datum will be initialized by VM code }
+#endif // !defined(_TARGET_64BIT_)
     }
     else
     {
@@ -3018,7 +3026,7 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
 #if COR_JIT_EE_VERSION > 460
         comp->info.compCompHnd->getAddressOfPInvokeTarget(methHnd, &lookup);
 #else
-        void*          pIndirection;
+        void* pIndirection;
         lookup.accessType = IAT_PVALUE;
         lookup.addr       = comp->info.compCompHnd->getAddressOfPInvokeFixup(methHnd, &pIndirection);
         if (lookup.addr == nullptr)
