@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace System.Buffers
@@ -11,7 +12,7 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int SelectBucketIndex(int bufferSize)
         {
-            BCLDebug.Assert(bufferSize > 0);
+            Debug.Assert(bufferSize > 0);
 
             uint bitsRemaining = ((uint)bufferSize - 1) >> 4;
 
@@ -29,7 +30,7 @@ namespace System.Buffers
         internal static int GetMaxSizeForBucket(int binIndex)
         {
             int maxSize = 16 << binIndex;
-            BCLDebug.Assert(maxSize >= 0);
+            Debug.Assert(maxSize >= 0);
             return maxSize;
         }
     }
