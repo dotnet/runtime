@@ -6997,9 +6997,9 @@
     <Type Name="System.Runtime.InteropServices.PrimaryInteropAssemblyAttribute">
       <Member Name="#ctor(System.Int32,System.Int32)" />
       <Member Name="get_MajorVersion" />
-      <Member MemberType="Property" Name="MajorVersion" />      
+      <Member MemberType="Property" Name="MajorVersion" />
       <Member Name="get_MinorVersion" />
-      <Member MemberType="Property" Name="MinorVersion" />      
+      <Member MemberType="Property" Name="MinorVersion" />
     </Type>    
     <Type Name="System.Runtime.InteropServices.ProgIdAttribute">
       <Member Name="#ctor(System.String)" />
@@ -7033,9 +7033,9 @@
     <Type Name="System.Runtime.InteropServices.TypeLibVersionAttribute">
       <Member Name="#ctor(System.Int32,System.Int32)" />
       <Member Name="get_MajorVersion" />
-      <Member MemberType="Property" Name="MajorVersion" />      
+      <Member MemberType="Property" Name="MajorVersion" />
       <Member Name="get_MinorVersion" />
-      <Member MemberType="Property" Name="MinorVersion" />      
+      <Member MemberType="Property" Name="MinorVersion" />
     </Type>       
     <Type Name="System.Runtime.InteropServices.CriticalHandle">
       <Member MemberType="Field" Name="handle" />
@@ -7069,6 +7069,9 @@
     <Type Name="Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid">
       <Member Name="#ctor(System.Boolean)" />
       <Member Name="get_IsInvalid" />
+    </Type>
+    <Type Name="Microsoft.Win32.SafeHandles.SafeFileHandle">
+      <Member Name="#ctor(System.IntPtr,System.Boolean)" />
     </Type>
     <Type Name="Microsoft.Win32.SafeHandles.SafeWaitHandle">
       <Member Name="#ctor(System.IntPtr,System.Boolean)" />
@@ -9270,11 +9273,61 @@
       <Member Name="#ctor(System.String,System.String)" />
       <Member Name="#ctor(System.String,System.String,System.Exception)" />
       <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
-      <Member Name="get_FileName" />      
+      <Member Name="get_FileName" />
       <Member Name="get_FusionLog" />
       <Member MemberType="Property" Name="FileName" />
       <Member MemberType="Property" Name="FusionLog" />
       <Member Status="ImplRoot" Name="#ctor(System.String,System.String,System.Int32)" />
+    </Type>
+    <Type Name="System.IO.FileStream">
+      <Member Name="#ctor(Microsoft.Win32.SafeHandles.SafeFileHandle,System.IO.FileAccess)" />
+      <Member Name="#ctor(Microsoft.Win32.SafeHandles.SafeFileHandle,System.IO.FileAccess,System.Int32)" />
+      <Member Name="#ctor(Microsoft.Win32.SafeHandles.SafeFileHandle,System.IO.FileAccess,System.Int32,System.Boolean)" />
+      <Member Name="#ctor(System.String,System.IO.FileMode)" />
+      <Member Name="#ctor(System.String,System.IO.FileMode,System.IO.FileAccess)" />
+      <Member Name="#ctor(System.String,System.IO.FileMode,System.IO.FileAccess,System.IO.FileShare)" />
+      <Member Name="#ctor(System.String,System.IO.FileMode,System.IO.FileAccess,System.IO.FileShare,System.Int32)" />
+      <Member Name="#ctor(System.String,System.IO.FileMode,System.IO.FileAccess,System.IO.FileShare,System.Int32,System.Boolean)" />
+      <Member Name="#ctor(System.String,System.IO.FileMode,System.IO.FileAccess,System.IO.FileShare,System.Int32,System.IO.FileOptions)" />
+      <Member Name="BeginRead(System.Byte[],System.Int32,System.Int32,System.AsyncCallback,System.Object)" />
+      <Member Name="BeginWrite(System.Byte[],System.Int32,System.Int32,System.AsyncCallback,System.Object)" />
+      <Member Name="CopyToAsync(System.IO.Stream,System.Int32,System.Threading.CancellationToken)" />
+      <Member Name="Dispose(System.Boolean)" />
+      <Member Name="EndRead(System.IAsyncResult)" />
+      <Member Name="EndWrite(System.IAsyncResult)" />
+      <Member Name="Finalize" />
+      <Member Name="Flush" />
+      <Member Name="Flush(System.Boolean)" />
+      <Member Name="FlushAsync(System.Threading.CancellationToken)" />
+      <Member Name="get_CanRead" />
+      <Member Name="get_CanSeek" />
+      <Member Name="get_CanWrite" />
+      <Member Name="get_Handle" />
+      <Member Name="get_IsAsync" />
+      <Member Name="get_Length" />
+      <Member Name="get_Name" />
+      <Member Name="get_Position" />
+      <Member Name="get_SafeFileHandle" />
+      <Member Name="Lock(System.Int64,System.Int64)" />
+      <Member Name="Read(System.Byte[],System.Int32,System.Int32)" />
+      <Member Name="ReadAsync(System.Byte[],System.Int32,System.Int32,System.Threading.CancellationToken)" />
+      <Member Name="ReadByte" />
+      <Member Name="Seek(System.Int64,System.IO.SeekOrigin)" />
+      <Member Name="set_Position(System.Int64)" />
+      <Member Name="SetLength(System.Int64)" />
+      <Member Name="Unlock(System.Int64,System.Int64)" />
+      <Member Name="Write(System.Byte[],System.Int32,System.Int32)" />
+      <Member Name="WriteAsync(System.Byte[],System.Int32,System.Int32,System.Threading.CancellationToken)" />
+      <Member Name="WriteByte(System.Byte)" />
+      <Member MemberType="Property" Name="CanRead" />
+      <Member MemberType="Property" Name="CanSeek" />
+      <Member MemberType="Property" Name="CanWrite" />
+      <Member MemberType="Property" Name="Handle" />
+      <Member MemberType="Property" Name="IsAsync" />
+      <Member MemberType="Property" Name="Length" />
+      <Member MemberType="Property" Name="Name" />
+      <Member MemberType="Property" Name="Position" />
+      <Member MemberType="Property" Name="SafeFileHandle" />
     </Type>
     <Type Name="System.IO.IOException">
       <Member Name="#ctor" />

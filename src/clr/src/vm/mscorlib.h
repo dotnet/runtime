@@ -773,6 +773,7 @@ DEFINE_CLASS(I_RT_FIELD_INFO,       System,                 IRuntimeFieldInfo)
 
 DEFINE_CLASS(FIELD_INFO,            Reflection,             FieldInfo)
 
+#ifndef FEATURE_CORECLR
 DEFINE_CLASS_U(IO,               FileStreamAsyncResult, AsyncResultBase)
 DEFINE_FIELD_U(_userCallback,          AsyncResultBase,    _userCallback)
 DEFINE_FIELD_U(_userStateObject,       AsyncResultBase,    _userStateObject)
@@ -787,6 +788,7 @@ DEFINE_FIELD_U(_isWrite,               AsyncResultBase,    _isWrite)
 DEFINE_FIELD_U(_isComplete,            AsyncResultBase,    _isComplete)
 DEFINE_FIELD_U(_completedSynchronously, AsyncResultBase, _completedSynchronously)
 DEFINE_CLASS(FILESTREAM_ASYNCRESULT, IO,               FileStreamAsyncResult)
+#endif // !FEATURE_CORECLR
 
 DEFINE_CLASS_U(Security,           FrameSecurityDescriptor, FrameSecurityDescriptorBaseObject)
 DEFINE_FIELD_U(m_assertions,       FrameSecurityDescriptorBaseObject,  m_assertions)

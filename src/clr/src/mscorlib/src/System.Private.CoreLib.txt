@@ -630,6 +630,10 @@ Argument_UnmanagedMemAccessorWrapAround = The UnmanagedMemoryAccessor capacity a
 Argument_UnrecognizedLoaderOptimization = Unrecognized LOADER_OPTIMIZATION property value.  Supported values may include "SingleDomain", "MultiDomain", "MultiDomainHost", and "NotSpecified".
 ArgumentException_NotAllCustomSortingFuncsDefined = Implementations of all the NLS functions must be provided.
 ArgumentException_MinSortingVersion = The runtime does not support a version of "{0}" less than {1}.
+Argument_PreAllocatedAlreadyAllocated = 'preAllocated' is already in use.
+Argument_NativeOverlappedWrongBoundHandle = 'overlapped' was not allocated by this ThreadPoolBoundHandle instance.
+Argument_NativeOverlappedAlreadyFree = 'overlapped' has already been freed.
+Argument_AlreadyBoundOrSyncHandle = 'handle' has already been bound to the thread pool, or was not opened for asynchronous I/O.
 
 ;
 ; =====================================================
@@ -1157,6 +1161,7 @@ InvalidOperation_MethodBaked = Type definition of the method is complete.
 InvalidOperation_MethodHasBody = Method already has a body.
 InvalidOperation_ModificationOfNonCanonicalAcl = This access control list is not in canonical form and therefore cannot be modified.
 InvalidOperation_Method = This method is not supported by the current object.
+InvalidOperation_NativeOverlappedReused = NativeOverlapped cannot be reused for multiple operations.
 InvalidOperation_NotADebugModule = Not a debug ModuleBuilder.
 InvalidOperation_NoMultiModuleAssembly = You cannot have more than one dynamic module in each dynamic assembly in this version of the runtime.
 InvalidOperation_OpenLocalVariableScope = Local variable scope was not properly closed.
@@ -1874,7 +1879,7 @@ IO.PathNotFound_Path = Could not find a part of the path '{0}'.
 IO.PathNotFound_NoPathName = Could not find a part of the path.
 
 ; PathTooLongException
-IO.PathTooLong = The specified path, file name, or both are too long. The fully qualified file name must be less than 260 characters, and the directory name must be less than 248 characters.
+IO.PathTooLong = The specified file name or path is too long, or a component of the specified path is too long.
 
 #if FEATURE_CORECLR
 ; SecurityException

@@ -1,6 +1,7 @@
 using System;
+using System.Globalization;
 
-namespace System.Globalization
+namespace System
 {
     internal static class SR
     {
@@ -287,6 +288,211 @@ namespace System.Globalization
         public static string Serialization_MemberOutOfRange
         {
             get { return Environment.GetResourceString("Serialization_MemberOutOfRange"); }
+        }
+
+        public static string Arg_InvalidHandle
+        {
+            get { return Environment.GetResourceString("Arg_InvalidHandle"); }
+        }
+
+        public static string ObjectDisposed_FileClosed
+        {
+            get { return Environment.GetResourceString("ObjectDisposed_FileClosed"); }
+        }
+
+        public static string Arg_HandleNotAsync
+        {
+            get { return Environment.GetResourceString("Arg_HandleNotAsync"); }
+        }
+
+        public static string ArgumentNull_Path
+        {
+            get { return Environment.GetResourceString("ArgumentNull_Path"); }
+        }
+
+        public static string Argument_EmptyPath
+        {
+            get { return Environment.GetResourceString("Argument_EmptyPath"); }
+        }
+
+        public static string Argument_InvalidFileModeAndAccessCombo
+        {
+            get { return Environment.GetResourceString("Argument_InvalidFileMode&AccessCombo"); }
+        }
+
+        public static string Argument_InvalidAppendMode
+        {
+            get { return Environment.GetResourceString("Argument_InvalidAppendMode"); }
+        }
+
+        public static string ArgumentNull_Buffer
+        {
+            get { return Environment.GetResourceString("ArgumentNull_Buffer"); }
+        }
+
+        public static string Argument_InvalidOffLen
+        {
+            get { return Environment.GetResourceString("Argument_InvalidOffLen"); }
+        }
+
+        public static string IO_UnknownFileName
+        {
+            get { return Environment.GetResourceString("IO_UnknownFileName"); }
+        }
+
+        public static string IO_FileStreamHandlePosition
+        {
+            get { return Environment.GetResourceString("IO.IO_FileStreamHandlePosition"); }
+        }
+
+        public static string NotSupported_FileStreamOnNonFiles
+        {
+            get { return Environment.GetResourceString("NotSupported_FileStreamOnNonFiles"); }
+        }
+
+        public static string IO_BindHandleFailed
+        {
+            get { return Environment.GetResourceString("IO.IO_BindHandleFailed"); }
+        }
+
+        public static string Arg_HandleNotSync
+        {
+            get { return Environment.GetResourceString("Arg_HandleNotSync"); }
+        }
+
+        public static string IO_SetLengthAppendTruncate
+        {
+            get { return Environment.GetResourceString("IO.IO_SetLengthAppendTruncate"); }
+        }
+
+        public static string ArgumentOutOfRange_FileLengthTooBig
+        {
+            get { return Environment.GetResourceString("ArgumentOutOfRange_FileLengthTooBig"); }
+        }
+
+        public static string Argument_InvalidSeekOrigin
+        {
+            get { return Environment.GetResourceString("Argument_InvalidSeekOrigin"); }
+        }
+
+        public static string IO_SeekAppendOverwrite
+        {
+            get { return Environment.GetResourceString("IO.IO_SeekAppendOverwrite"); }
+        }
+
+        public static string IO_FileTooLongOrHandleNotSync
+        {
+            get { return Environment.GetResourceString("IO_FileTooLongOrHandleNotSync"); }
+        }
+
+        public static string IndexOutOfRange_IORaceCondition
+        {
+            get { return Environment.GetResourceString("IndexOutOfRange_IORaceCondition"); }
+        }
+
+        public static string IO_FileNotFound
+        {
+            get { return Environment.GetResourceString("IO.FileNotFound"); }
+        }
+
+        public static string IO_FileNotFound_FileName
+        {
+            get { return Environment.GetResourceString("IO.FileNotFound_FileName"); }
+        }
+
+        public static string IO_PathNotFound_NoPathName
+        {
+            get { return Environment.GetResourceString("IO.PathNotFound_NoPathName"); }
+        }
+
+        public static string IO_PathNotFound_Path
+        {
+            get { return Environment.GetResourceString("IO.PathNotFound_Path"); }
+        }
+
+        public static string UnauthorizedAccess_IODenied_NoPathName
+        {
+            get { return Environment.GetResourceString("UnauthorizedAccess_IODenied_NoPathName"); }
+        }
+
+        public static string UnauthorizedAccess_IODenied_Path
+        {
+            get { return Environment.GetResourceString("UnauthorizedAccess_IODenied_Path"); }
+        }
+
+        public static string IO_AlreadyExists_Name
+        {
+            get { return Environment.GetResourceString("IO.IO_AlreadyExists_Name"); }
+        }
+
+        public static string IO_PathTooLong
+        {
+            get { return Environment.GetResourceString("IO.PathTooLong"); }
+        }
+
+        public static string IO_SharingViolation_NoFileName
+        {
+            get { return Environment.GetResourceString("IO.IO_SharingViolation_NoFileName"); }
+        }
+
+        public static string IO_SharingViolation_File
+        {
+            get { return Environment.GetResourceString("IO.IO_SharingViolation_File"); }
+        }
+
+        public static string IO_FileExists_Name
+        {
+            get { return Environment.GetResourceString("IO.IO_FileExists_Name"); }
+        }
+
+        public static string NotSupported_UnwritableStream
+        {
+            get { return Environment.GetResourceString("NotSupported_UnwritableStream"); }
+        }
+
+        public static string NotSupported_UnreadableStream
+        {
+            get { return Environment.GetResourceString("NotSupported_UnreadableStream"); }
+        }
+
+        public static string NotSupported_UnseekableStream
+        {
+            get { return Environment.GetResourceString("NotSupported_UnseekableStream"); }
+        }
+
+        public static string IO_EOF_ReadBeyondEOF
+        {
+            get { return Environment.GetResourceString("IO.EOF_ReadBeyondEOF"); }
+        }
+
+        public static string Argument_InvalidHandle
+        {
+            get { return Environment.GetResourceString("Argument_InvalidHandle"); }
+        }
+
+        public static string Argument_AlreadyBoundOrSyncHandle
+        {
+            get { return Environment.GetResourceString("Argument_AlreadyBoundOrSyncHandle"); }
+        }
+
+        public static string Argument_PreAllocatedAlreadyAllocated
+        {
+            get { return Environment.GetResourceString("Argument_PreAllocatedAlreadyAllocated"); }
+        }
+
+        public static string Argument_NativeOverlappedAlreadyFree
+        {
+            get { return Environment.GetResourceString("Argument_NativeOverlappedAlreadyFree"); }
+        }
+
+        public static string Argument_NativeOverlappedWrongBoundHandle
+        {
+            get { return Environment.GetResourceString("Argument_NativeOverlappedWrongBoundHandle"); }
+        }
+
+        public static string InvalidOperation_NativeOverlappedReused
+        {
+            get { return Environment.GetResourceString("InvalidOperation_NativeOverlappedReused"); }
         }
 
         public static string Format(string formatString, params object[] args)
