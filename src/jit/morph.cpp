@@ -16214,7 +16214,7 @@ GenTreePtr Compiler::fgInitThisClass()
         if (opts.IsReadyToRun() && eeGetEEInfo()->targetAbi == CORINFO_CORERT_ABI)
         {
             CORINFO_RESOLVED_TOKEN resolvedToken;
-            ZeroMemory(&resolvedToken, sizeof(resolvedToken));
+            memset(&resolvedToken, 0, sizeof(resolvedToken));
 
             GenTreePtr ctxTree = getRuntimeContextTree(kind.runtimeLookupKind);
 

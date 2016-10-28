@@ -6924,7 +6924,7 @@ GenTreePtr Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
     if (opts.IsReadyToRun())
     {
         CORINFO_RESOLVED_TOKEN resolvedToken;
-        ZeroMemory(&resolvedToken, sizeof(resolvedToken));
+        memset(&resolvedToken, 0, sizeof(resolvedToken));
         resolvedToken.hClass = cls;
 
         return impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_STATIC_BASE, TYP_BYREF);
