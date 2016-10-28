@@ -28,16 +28,34 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [MemberData(nameof(StorageFlags))]
         public static void TestConstructor(X509KeyStorageFlags keyStorageFlags)
         {
-            byte[] expectedThumbprint = "71cb4e2b02738ad44f8b382c93bd17ba665f9914".HexToByteArray();
-
             using (var c = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, keyStorageFlags))
             {
+                byte[] expectedThumbprint = "71cb4e2b02738ad44f8b382c93bd17ba665f9914".HexToByteArray();
+
                 string subject = c.Subject;
                 Assert.Equal("CN=MyName", subject);
                 byte[] thumbPrint = c.GetCertHash();
                 Assert.Equal(expectedThumbprint, thumbPrint);
             }
         }
+
+#if netcoreapp11
+        [Theory]
+        [MemberData(nameof(StorageFlags))]
+        public static void TestConstructor_SecureString(X509KeyStorageFlags keyStorageFlags)
+        {
+            using (SecureString password = TestData.CreatePfxDataPasswordSecureString())
+            using (var c = new X509Certificate2(TestData.PfxData, password, keyStorageFlags))
+            {
+                byte[] expectedThumbprint = "71cb4e2b02738ad44f8b382c93bd17ba665f9914".HexToByteArray();
+
+                string subject = c.Subject;
+                Assert.Equal("CN=MyName", subject);
+                byte[] thumbPrint = c.GetCertHash();
+                Assert.Equal(expectedThumbprint, thumbPrint);
+            }
+        }
+#endif
 
         [Theory]
         [MemberData(nameof(StorageFlags))]
