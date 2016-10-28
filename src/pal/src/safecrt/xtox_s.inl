@@ -26,7 +26,6 @@
 #define _ultox     _ultow
 #define x64tox     x64tow
 #define _i64tox    _i64tow
-#define _ui64tox   _ui64tow
 #else  /* _UNICODE */
 #define xtox_s     xtoa_s
 #define _itox_s    _itoa_s
@@ -41,7 +40,6 @@
 #define _ultox     _ultoa
 #define x64tox     x64toa
 #define _i64tox    _i64toa
-#define _ui64tox   _ui64toa
 #endif  /* _UNICODE */
 
 /***
