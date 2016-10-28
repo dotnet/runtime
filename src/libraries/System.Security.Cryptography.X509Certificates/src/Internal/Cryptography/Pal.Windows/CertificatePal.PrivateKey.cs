@@ -22,6 +22,21 @@ namespace Internal.Cryptography.Pal
             }
         }
 
+        public AsymmetricAlgorithm GetPrivateKey()
+        {
+            switch (KeyAlgorithm)
+            {
+                case Oids.RsaRsa:
+                    return GetRSAPrivateKey();
+                case Oids.DsaDsa:
+                    return GetDSAPrivateKey();
+                case Oids.Ecc:
+                    return GetECDsaPrivateKey();
+            }
+
+            throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
+        }
+
         public RSA GetRSAPrivateKey()
         {
             return GetPrivateKey<RSA>(
@@ -40,6 +55,28 @@ namespace Internal.Cryptography.Pal
                 delegate (CngKey cngKey)
                 {
                     return new RSACng(cngKey);
+                }
+            );
+        }
+
+        public DSA GetDSAPrivateKey()
+        {
+            return GetPrivateKey<DSA>(
+                delegate (CspParameters csp)
+                {
+#if NETNATIVE
+                    // In .NET Native (UWP) we don't have access to CAPI, so it's CNG-or-nothing.
+                    // But we don't expect to get here, so it shouldn't be a problem.
+    
+                    Debug.Fail("A CAPI provider type code was specified");
+                    return null;
+#else
+                    return new DSACryptoServiceProvider(csp);
+#endif
+                },
+                delegate (CngKey cngKey)
+                {
+                    return new DSACng(cngKey);
                 }
             );
         }
@@ -68,7 +105,7 @@ namespace Internal.Cryptography.Pal
                 return createCng(cngKey);
             }
  
-            CspParameters cspParameters = GetPrivateKey();
+            CspParameters cspParameters = GetPrivateKeyCsp();
             if (cspParameters == null)
                 return null;
 
@@ -187,7 +224,7 @@ namespace Internal.Cryptography.Pal
         // It would have been nice not to let this ugliness escape out of this helper method. But X509Certificate2.ToString() calls this 
         // method too so we cannot just change it without breaking its output.
         // 
-        private CspParameters GetPrivateKey()
+        private CspParameters GetPrivateKeyCsp()
         {
             int cbData = 0;
             if (!Interop.crypt32.CertGetCertificateContextProperty(_certContext, CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID, null, ref cbData))

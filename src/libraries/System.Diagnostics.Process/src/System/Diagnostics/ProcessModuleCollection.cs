@@ -3,61 +3,36 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
-using System.Collections.Generic;
 
 namespace System.Diagnostics
 {
-    /// <devdoc>
-    ///    <para>[To be supplied.]</para>
-    /// </devdoc>
     public class ProcessModuleCollection : ReadOnlyCollectionBase
     {
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         protected ProcessModuleCollection()
         {
         }
 
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public ProcessModuleCollection(ProcessModule[] processModules)
         {
             InnerList.AddRange(processModules);
         }
 
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
-        public ProcessModule this[int index]
+        internal ProcessModuleCollection(int capacity)
         {
-            get { return (ProcessModule)InnerList[index]; }
+            if (capacity > 0)
+            {
+                InnerList.Capacity = capacity;
+            }
         }
 
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
-        public int IndexOf(ProcessModule module)
-        {
-            return InnerList.IndexOf(module);
-        }
+        internal void Add(ProcessModule module) => InnerList.Add(module);
 
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
-        public bool Contains(ProcessModule module)
-        {
-            return InnerList.Contains(module);
-        }
+        public ProcessModule this[int index] => (ProcessModule)InnerList[index];
 
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
-        public void CopyTo(ProcessModule[] array, int index)
-        {
-            InnerList.CopyTo(array, index);
-        }
+        public int IndexOf(ProcessModule module) => InnerList.IndexOf(module);
+
+        public bool Contains(ProcessModule module) => InnerList.Contains(module);
+
+        public void CopyTo(ProcessModule[] array, int index) => InnerList.CopyTo(array, index);
     }
 }
-

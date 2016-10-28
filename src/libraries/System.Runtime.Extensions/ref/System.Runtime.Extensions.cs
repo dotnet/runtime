@@ -134,7 +134,13 @@ namespace System
         public static byte[] GetBytes(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static byte[] GetBytes(ulong value) { throw null; }
+#if netcoreapp11
+        public static float Int32BitsToSingle(int value) { throw null; }
+#endif
         public static double Int64BitsToDouble(long value) { throw null; }
+#if netcoreapp11
+        public static int SingleToInt32Bits(float value) { throw null; }
+#endif
         public static bool ToBoolean(byte[] value, int startIndex) { throw null; }
         public static char ToChar(byte[] value, int startIndex) { throw null; }
         public static double ToDouble(byte[] value, int startIndex) { throw null; }
@@ -790,6 +796,39 @@ namespace System
         public static decimal Truncate(decimal d) { throw null; }
         public static double Truncate(double d) { throw null; }
     }
+#if netcoreapp11
+    public static partial class MathF
+    {
+        public static float Abs(float x) { throw null; }
+        public static float Acos(float x) { throw null; }
+        public static float Asin(float x) { throw null; }
+        public static float Atan(float x) { throw null; }
+        public static float Atan2(float y, float x) { throw null; }
+        public static float Ceiling(float x) { throw null; }
+        public static float Cos(float x) { throw null; }
+        public static float Cosh(float x) { throw null; }
+        public static float Exp(float x) { throw null; }
+        public static float Floor(float x) { throw null; }
+        public static float IEEERemainder(float x, float y) { throw null; }
+        public static float Log(float x) { throw null; }
+        public static float Log(float x, float y) { throw null; }
+        public static float Log10(float x) { throw null; }        
+        public static float Max(float x, float y) { throw null; }
+        public static float Min(float x, float y) { throw null; }
+        public static float Pow(float x, float y) { throw null; }
+        public static float Round(float x) { throw null; }
+        public static float Round(float x, int digits) { throw null; }
+        public static float Round(float x, int digits, System.MidpointRounding mode) { throw null; }
+        public static float Round(float x, System.MidpointRounding mode) { throw null; }
+        public static int Sign(float x) { return default(int); }
+        public static float Sin(float x) { throw null; }
+        public static float Sinh(float x) { throw null; }
+        public static float Sqrt(float x) { throw null; }
+        public static float Tan(float x) { throw null; }
+        public static float Tanh(float x) { throw null; }
+        public static float Truncate(float x) { throw null; }
+    }
+#endif
     public sealed class OperatingSystem : System.ICloneable, System.Runtime.Serialization.ISerializable
     {
         private OperatingSystem() { }
@@ -872,7 +911,23 @@ namespace System
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
     }
+    public abstract partial class ContextBoundObject : System.MarshalByRefObject
+    {
+        protected ContextBoundObject() { }
+    }
+    public partial class ContextMarshalException : System.SystemException
+    {
+        public ContextMarshalException() { }
+        protected ContextMarshalException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public ContextMarshalException(string message) { }
+        public ContextMarshalException(string message, System.Exception inner) { }
+    }
+    public partial class ContextStaticAttribute : System.Attribute
+    {
+        public ContextStaticAttribute() { }
+    }
 }
+
 namespace System.Diagnostics
 {
     public partial class Stopwatch
@@ -934,6 +989,14 @@ namespace System.Net
         public static byte[] UrlDecodeToBytes(byte[] encodedValue, int offset, int count) { throw null; }
         public static string UrlEncode(string value) { throw null; }
         public static byte[] UrlEncodeToBytes(byte[] value, int offset, int count) { throw null; }
+    }
+}
+namespace  System.Reflection
+{
+    public class AssemblyNameProxy : System.MarshalByRefObject
+    {
+        public AssemblyNameProxy() { }
+        public System.Reflection.AssemblyName GetAssemblyName(System.String assemblyFile) { throw null; }
     }
 }
 namespace System.Runtime.Versioning

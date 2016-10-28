@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Diagnostics;
-
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
@@ -17,9 +14,7 @@ namespace System.Security.Cryptography
 
     public abstract class SHA256 : HashAlgorithm
     {
-        protected SHA256()
-        {
-        }
+        protected SHA256() { }
 
         public static SHA256 Create()
         {
@@ -28,6 +23,8 @@ namespace System.Security.Cryptography
 
         private sealed class Implementation : SHA256
         {
+            private readonly HashProvider _hashProvider;
+
             public Implementation()
             {
                 _hashProvider = HashProviderDispenser.CreateHashProvider(HashAlgorithmNames.SHA256);
@@ -63,8 +60,6 @@ namespace System.Security.Cryptography
                 _hashProvider.Dispose(disposing);
                 base.Dispose(disposing);
             }
-
-            private readonly HashProvider _hashProvider;
         }
     }
 }

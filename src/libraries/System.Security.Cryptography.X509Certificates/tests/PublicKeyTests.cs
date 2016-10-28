@@ -63,6 +63,62 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Equal("1.2.840.10040.4.1", pk.Oid.Value);
         }
 
+#if netcoreapp11
+        [Fact]
+        public static void TestPublicKey_Key_RSA()
+        {
+            PublicKey pk = GetTestRsaKey();
+            AsymmetricAlgorithm alg = pk.Key;
+            Assert.NotNull(alg);
+            Assert.Same(alg, pk.Key);
+            Assert.Equal(2048, alg.KeySize);
+
+            Assert.IsAssignableFrom(typeof(RSA), alg);
+            VerifyKey_RSA((RSA)alg);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Until DSA interop support added
+        public static void TestPublicKey_Key_DSA()
+        {
+            PublicKey pk = GetTestDsaKey();
+            AsymmetricAlgorithm alg = pk.Key;
+            Assert.NotNull(alg);
+            Assert.Same(alg, pk.Key);
+            Assert.Equal(1024, alg.KeySize);
+
+            Assert.IsAssignableFrom(typeof(DSA), alg);
+            VerifyKey_DSA((DSA)alg);
+        }
+
+        private static void VerifyKey_DSA(DSA dsa)
+        {
+            DSAParameters dsaParameters = dsa.ExportParameters(false);
+
+            byte[] expected_g = (
+                "859B5AEB351CF8AD3FABAC22AE0350148FD1D55128472691709EC08481584413" +
+                "E9E5E2F61345043B05D3519D88C021582CCEF808AF8F4B15BD901A310FEFD518" +
+                "AF90ABA6F85F6563DB47AE214A84D0B7740C9394AA8E3C7BFEF1BEEDD0DAFDA0" +
+                "79BF75B2AE4EDB7480C18B9CDFA22E68A06C0685785F5CFB09C2B80B1D05431D").HexToByteArray();
+            byte[] expected_p = (
+                "871018CC42552D14A5A9286AF283F3CFBA959B8835EC2180511D0DCEB8B97928" +
+                "5708C800FC10CB15337A4AC1A48ED31394072015A7A6B525986B49E5E1139737" +
+                "A794833C1AA1E0EAAA7E9D4EFEB1E37A65DBC79F51269BA41E8F0763AA613E29" +
+                "C81C3B977AEEB3D3C3F6FEB25C270CDCB6AEE8CD205928DFB33C44D2F2DBE819").HexToByteArray();
+            byte[] expected_q = "E241EDCF37C1C0E20AADB7B4E8FF7AA8FDE4E75D".HexToByteArray();
+            byte[] expected_y = (
+                "089A43F439B924BEF3529D8D6206D1FCA56A55CAF52B41D6CE371EBF07BDA132" +
+                "C8EADC040007FCF4DA06C1F30504EBD8A77D301F5A4702F01F0D2A0707AC1DA3" +
+                "8DD3251883286E12456234DA62EDA0DF5FE2FA07CD5B16F3638BECCA7786312D" +
+                "A7D3594A4BB14E353884DA0E9AECB86E3C9BDB66FCA78EA85E1CC3F2F8BF0963").HexToByteArray();
+
+            Assert.Equal(expected_g, dsaParameters.G);
+            Assert.Equal(expected_p, dsaParameters.P);
+            Assert.Equal(expected_q, dsaParameters.Q);
+            Assert.Equal(expected_y, dsaParameters.Y);
+        }
+#endif
+
         [Fact]
         public static void TestEncodedKeyValue_RSA()
         {
@@ -132,23 +188,28 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
             {
                 RSA rsa = cert.GetRSAPublicKey();
-                RSAParameters rsaParameters = rsa.ExportParameters(false);
-
-                byte[] expectedModulus = (
-                    "E8AF5CA2200DF8287CBC057B7FADEEEB76AC28533F3ADB407DB38E33E6573FA5" +
-                    "51153454A5CFB48BA93FA837E12D50ED35164EEF4D7ADB137688B02CF0595CA9" +
-                    "EBE1D72975E41B85279BF3F82D9E41362B0B40FBBE3BBAB95C759316524BCA33" +
-                    "C537B0F3EB7EA8F541155C08651D2137F02CBA220B10B1109D772285847C4FB9" +
-                    "1B90B0F5A3FE8BF40C9A4EA0F5C90A21E2AAE3013647FD2F826A8103F5A935DC" +
-                    "94579DFB4BD40E82DB388F12FEE3D67A748864E162C4252E2AAE9D181F0E1EB6" +
-                    "C2AF24B40E50BCDE1C935C49A679B5B6DBCEF9707B280184B82A29CFBFA90505" +
-                    "E1E00F714DFDAD5C238329EBC7C54AC8E82784D37EC6430B950005B14F6571C5").HexToByteArray();
-
-                byte[] expectedExponent = new byte[] { 0x01, 0x00, 0x01 };
-
-                Assert.Equal(expectedModulus, rsaParameters.Modulus);
-                Assert.Equal(expectedExponent, rsaParameters.Exponent);
+                VerifyKey_RSA(rsa);
             }
+        }
+
+        private static void VerifyKey_RSA(RSA rsa)
+        {
+            RSAParameters rsaParameters = rsa.ExportParameters(false);
+
+            byte[] expectedModulus = (
+                "E8AF5CA2200DF8287CBC057B7FADEEEB76AC28533F3ADB407DB38E33E6573FA5" +
+                "51153454A5CFB48BA93FA837E12D50ED35164EEF4D7ADB137688B02CF0595CA9" +
+                "EBE1D72975E41B85279BF3F82D9E41362B0B40FBBE3BBAB95C759316524BCA33" +
+                "C537B0F3EB7EA8F541155C08651D2137F02CBA220B10B1109D772285847C4FB9" +
+                "1B90B0F5A3FE8BF40C9A4EA0F5C90A21E2AAE3013647FD2F826A8103F5A935DC" +
+                "94579DFB4BD40E82DB388F12FEE3D67A748864E162C4252E2AAE9D181F0E1EB6" +
+                "C2AF24B40E50BCDE1C935C49A679B5B6DBCEF9707B280184B82A29CFBFA90505" +
+                "E1E00F714DFDAD5C238329EBC7C54AC8E82784D37EC6430B950005B14F6571C5").HexToByteArray();
+
+            byte[] expectedExponent = new byte[] { 0x01, 0x00, 0x01 };
+
+            Assert.Equal(expectedModulus, rsaParameters.Modulus);
+            Assert.Equal(expectedExponent, rsaParameters.Exponent);
         }
 
         [Fact]
@@ -217,6 +278,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.ThrowsAny<CryptographicException>(() => publicKey.SignData(helloBytes, HashAlgorithmName.SHA256));
             }
         }
+
+#if netcoreapp11
+        [Fact]
+        public static void TestPublicKey_Key_ECDsa()
+        {
+            using (var cert = new X509Certificate2(TestData.ECDsa384Certificate))
+            {
+                // Currently unable to support PublicKey.Key on ECC
+                Assert.Throws<NotSupportedException>(() => cert.PublicKey.Key);
+            }
+        }
+#endif
 
         [Fact]
         public static void TestECDsaPublicKey_ValidatesSignature()

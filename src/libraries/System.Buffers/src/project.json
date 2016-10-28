@@ -1,13 +1,19 @@
 {
-  "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1",
-    "System.Diagnostics.Debug": "4.0.11",
-    "System.Diagnostics.Tracing": "4.1.0",
-    "System.Resources.ResourceManager": "4.0.1",
-    "System.Runtime": "4.1.0",
-    "System.Threading": "4.0.11"
-  },
   "frameworks": {
-    "netstandard1.1": {}
+    "netstandard1.1": {
+      "dependencies": {
+        "Microsoft.NETCore.Platforms": "1.0.1",
+        "System.Diagnostics.Debug": "4.0.11",
+        "System.Diagnostics.Tracing": "4.1.0",
+        "System.Resources.ResourceManager": "4.0.1",
+        "System.Runtime": "4.1.0",
+        "System.Threading": "4.0.11"
+      }
+    },
+    "netcoreapp1.1": {
+      "dependencies": {
+        "Microsoft.TargetingPack.Private.CoreCLR": "1.2.0-beta-24628-03"
+      }
+    }
   }
 }

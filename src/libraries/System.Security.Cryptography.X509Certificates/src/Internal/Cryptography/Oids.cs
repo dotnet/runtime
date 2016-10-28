@@ -28,6 +28,7 @@ namespace Internal.Cryptography
         public const string InhibitAnyPolicyExtension   = "2.5.29.54";
         public const string Ecc                         = "1.2.840.10045.2.1";
         public const string RsaRsa                      = "1.2.840.113549.1.1.1";
+        public const string DsaDsa                      = "1.2.840.10040.4.1";
         public const string EmailAddress                = "1.2.840.113549.1.9.1";
         public const string EnrollCertTypeExtension     = "1.3.6.1.4.1.311.20.2";
         public const string CertificateTemplate         = "1.3.6.1.4.1.311.21.7";

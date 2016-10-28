@@ -59,6 +59,7 @@ namespace System.Security.Cryptography
         /// </summary>
         /// <param name="dwKeySize">The size of the key for the cryptographic algorithm in bits.</param>
         /// <param name="parameters">The parameters for the CSP.</param>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 is required by the FIPS 186-2 DSA spec.")]
         public DSACryptoServiceProvider(int dwKeySize, CspParameters parameters)
         {
             if (dwKeySize < 0)

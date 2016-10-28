@@ -56,15 +56,16 @@ namespace System.Net.Tests
             Assert.True(request.UsePassive);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void GetResponse_ServerNameNotInDns_ThrowsWebException()
         {
             string serverUrl = string.Format("ftp://www.{0}.com/", Guid.NewGuid().ToString());
             FtpWebRequest request = (FtpWebRequest)WebRequest.Create(serverUrl);
             WebException ex = Assert.Throws<WebException>(() => request.GetResponse());
-            Assert.Equal(WebExceptionStatus.NameResolutionFailure, ex.Status);
         }
 
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void GetResponse_ConnectFailure_ThrowsWebException()
         {

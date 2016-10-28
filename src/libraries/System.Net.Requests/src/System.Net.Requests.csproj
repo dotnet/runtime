@@ -25,6 +25,7 @@
     <Compile Include="System\Net\Authorization.cs" />
     <Compile Include="System\Net\FileWebRequest.cs" />
     <Compile Include="System\Net\FileWebResponse.cs" />
+    <Compile Include="System\Net\GlobalProxySelection.cs" />
     <Compile Include="System\Net\HttpRequestHeader.cs" />
     <Compile Include="System\Net\HttpWebRequest.cs" />
     <Compile Include="System\Net\HttpWebResponse.cs" />

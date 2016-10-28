@@ -1296,6 +1296,8 @@ namespace Internal.NativeCrypto
         /// <summary>
         /// Helper for signing and verifications that accept a string/Type/HashAlgorithm to specify a hashing algorithm.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "MD5 is used when the user asks for it.")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 is used when the user asks for it.")]
         internal static HashAlgorithm ObjToHashAlgorithm(Object hashAlg)
         {
             int algId = ObjToHashAlgId(hashAlg);

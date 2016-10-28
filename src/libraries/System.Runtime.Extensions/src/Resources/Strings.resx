@@ -369,4 +369,7 @@
   <data name="AppDomain_ResMonNotAvail" xml:space="preserve">
     <value>This API is not available when AppDomain Resource Monitoring is not turned on.</value>
   </data>
+  <data name="Arg_ContextMarshalException" xml:space="preserve">
+    <value>Attempted to marshal an object across a context boundary.</value>
+  </data>
 </root>

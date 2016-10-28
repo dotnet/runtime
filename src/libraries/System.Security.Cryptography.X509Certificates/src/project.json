@@ -3,7 +3,8 @@
     "netstandard1.7": {
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.1",
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.2.0-beta-24625-02"
+        "Microsoft.TargetingPack.Private.CoreCLR": "1.2.0-beta-24628-03",
+        "System.Diagnostics.Tools": "4.4.0-beta-24628-02"
       }
     },
     "net463": {

@@ -419,44 +419,49 @@ def osShortName = ['Windows 10': 'win10',
 [true, false].each { isPR ->
     ['Debug', 'Release'].each { configurationGroup ->
         ['LinuxARMEmulator'].each { osName ->
-            def osGroup = osGroupMap[osName]
-            def newJobName = "${osName.toLowerCase()}_cross_${configurationGroup.toLowerCase()}"
-            def arch = "arm-softfp"
+            (isPR ? ['SoftFP'] : ['HardFP', 'SoftFP']).each { abi ->
+                def osGroup = osGroupMap[osName]
+                def newJobName = "${osName.toLowerCase()}_${abi.toLowerCase()}_cross_${configurationGroup.toLowerCase()}"
 
-        // Setup variables to hold emulator folder path and the rootfs mount path
-        def armemul_path = '/opt/linux-arm-emulator'
-        def armrootfs_mountpath = '/opt/linux-arm-emulator-root'
+                // Setup variables to hold emulator folder path and the rootfs mount path
+                def armemul_path = '/opt/linux-arm-emulator'
+                def armrootfs_mountpath = '/opt/linux-arm-emulator-root'
 
-            def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
-                steps {
-                    // Call the arm32_ci_script.sh script to perform the cross build of native corefx
-                    shell("./scripts/arm32_ci_script.sh --emulatorPath=${armemul_path} --mountPath=${armrootfs_mountpath} --buildConfig=${configurationGroup.toLowerCase()} --softfp --verbose")
+                def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
+                    steps {
+                        // Call the arm32_ci_script.sh script to perform the cross build of native corefx
+                        def script = "./scripts/arm32_ci_script.sh --emulatorPath=${armemul_path} --mountPath=${armrootfs_mountpath} --buildConfig=${configurationGroup.toLowerCase()} --verbose"
+                        if (abi == "SoftFP") {
+                            script += " --softfp"
+                        }
+                        shell(script)
 
-                    // Archive the native and managed binaries
-                    shell("tar -czf bin/build.tar.gz bin/*.${configurationGroup} bin/ref bin/packages --exclude=*.Tests")
+                        // Archive the native and managed binaries
+                        shell("tar -czf bin/build.tar.gz bin/*.${configurationGroup} bin/ref bin/packages --exclude=*.Tests")
+                    }
                 }
-            }
 
-            // The cross build jobs run on Ubuntu. The arm-cross-latest version
-            // contains the packages needed for cross building corefx
-            Utilities.setMachineAffinity(newJob, 'Ubuntu14.04', 'arm-cross-latest')
+                // The cross build jobs run on Ubuntu. The arm-cross-latest version
+                // contains the packages needed for cross building corefx
+                Utilities.setMachineAffinity(newJob, 'Ubuntu14.04', 'arm-cross-latest')
 
-            // Set up standard options.
-            Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
+                // Set up standard options.
+                Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
 
-            // Add archival for the built binaries
-            def archiveContents = "bin/build.tar.gz"
-            Utilities.addArchival(newJob, archiveContents)
+                // Add archival for the built binaries
+                def archiveContents = "bin/build.tar.gz"
+                Utilities.addArchival(newJob, archiveContents)
 
-            // Set up triggers
-            if (isPR) {
-                if (osName == 'LinuxARMEmulator') {
-                    Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop Linux ARM Emulator ${configurationGroup} Cross Build")
+                // Set up triggers
+                if (isPR) {
+                    if (osName == 'LinuxARMEmulator') {
+                        Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop Linux ARM Emulator ${abi} ${configurationGroup} Cross Build")
+                    }
                 }
-            }
-            else {
-                // Set a push trigger
-                Utilities.addGithubPushTrigger(newJob)
+                else {
+                    // Set a push trigger
+                    Utilities.addGithubPushTrigger(newJob)
+                }
             }
         }
     }

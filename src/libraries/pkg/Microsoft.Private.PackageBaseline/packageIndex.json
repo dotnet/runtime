@@ -82,6 +82,12 @@
       ],
       "BaselineVersion": "1.6.2"
     },
+    "runtime.alpine.3.4.3-x64.runtime.native.System.Security.Cryptography": {
+      "BaselineVersion": "4.4.0"
+    },
+    "runtime.alpine.3.4.3-x64.runtime.native.System.Security.Cryptography.OpenSsl": {
+      "BaselineVersion": "4.4.0"
+    },
     "runtime.any.System.Collections": {
       "StableVersions": [
         "4.0.11"
@@ -831,9 +837,10 @@
     },
     "runtime.win7-x64.runtime.native.System.Data.SqlClient.sni": {
       "StableVersions": [
-        "4.0.1"
+        "4.0.1",
+        "4.3.0"
       ],
-      "BaselineVersion": "4.4.0"
+      "BaselineVersion": "4.3.0"
     },
     "runtime.win7-x64.runtime.native.System.IO.Compression": {
       "StableVersions": [
@@ -843,9 +850,10 @@
     },
     "runtime.win7-x86.runtime.native.System.Data.SqlClient.sni": {
       "StableVersions": [
-        "4.0.1"
+        "4.0.1",
+        "4.3.0"
       ],
-      "BaselineVersion": "4.4.0"
+      "BaselineVersion": "4.3.0"
     },
     "runtime.win7-x86.runtime.native.System.IO.Compression": {
       "StableVersions": [

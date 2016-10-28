@@ -13,6 +13,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
+using System.Text;
 using System.Xml;
 using System.Xml.Linq;
 using Xunit;
@@ -2196,6 +2197,48 @@ public static partial class DataContractJsonSerializerTests
     }
 
     #endregion
+
+    [Fact]
+    public static void DCJS_CreateJsonReaderTest()
+    {
+        const string json = @"{
+                                ""Toy"":""Car"",
+                                ""School"": {
+                                ""Student"":""Mike""
+                                }
+                                }";
+        byte[] bytes = Encoding.ASCII.GetBytes(json);
+        using (var stream = new MemoryStream(bytes))
+        {
+            var quotas = new XmlDictionaryReaderQuotas();
+            var jsonReader = JsonReaderWriterFactory.CreateJsonReader(stream, quotas);
+            var xml = XDocument.Load(jsonReader);
+            string expected = "<root type=\"object\">\r\n  <Toy type=\"string\">Car</Toy>\r\n  <School type=\"object\">\r\n    <Student type=\"string\">Mike</Student>\r\n  </School>\r\n</root>";
+            Utils.CompareResult result = Utils.Compare(expected, xml.ToString());
+            Assert.True(result.Equal);
+        }
+    }
+
+    [Fact]
+    public static void DCJS_CreateJsonWriterTest()
+    {
+        using (var mo = new MemoryStream())
+        {
+            var p = new Person1();
+            p.Name = "David";
+            p.Age = 15;
+            XmlDictionaryWriter writer = JsonReaderWriterFactory.CreateJsonWriter(mo, Encoding.UTF8);
+            var serializer = new DataContractJsonSerializer(typeof(Person1));
+            var sr = new StreamReader(mo);
+            serializer.WriteObject(writer, p);
+            writer.Flush();
+            mo.Position = 0;
+            var output = sr.ReadToEnd();
+            string expected = "{\"Age\":15,\"Name\":\"David\"}";
+            Utils.CompareResult result = Utils.Compare(expected, output);
+            Assert.True(result.Equal);
+        }
+    }
 
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractJsonSerializerSettings settings = null, Func<DataContractJsonSerializer> serializerFactory = null, bool skipStringCompare = false)
     {

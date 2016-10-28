@@ -5,13 +5,14 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-namespace System.Net
+namespace System.Buffers
 {
-    public partial class WebHeaderCollection : System.Collections.IEnumerable
+    public abstract class ArrayPool<T>
     {
-        public string this[string name] { get { throw null; } set { } }
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
-        public void Remove(string name) { }
+        public static ArrayPool<T> Shared { get { throw null; } }
+        public static ArrayPool<T> Create() { throw null; }
+        public static ArrayPool<T> Create(int maxArrayLength, int maxArraysPerBucket) { throw null; }
+        public abstract T[] Rent(int minimumLength);
+        public abstract void Return(T[] array, bool clearArray = false);
     }
 }
-

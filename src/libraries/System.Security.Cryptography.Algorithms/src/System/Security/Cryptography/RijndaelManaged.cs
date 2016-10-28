@@ -62,6 +62,7 @@ namespace System.Security.Cryptography
             set { _impl.Padding = value; }
         }
 
+        // LegalBlockSizes not forwarded because base has correct information
         public override KeySizes[] LegalKeySizes => _impl.LegalKeySizes;
         public override ICryptoTransform CreateEncryptor() => _impl.CreateEncryptor();
         public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV) => _impl.CreateEncryptor(rgbKey, rgbIV);
@@ -75,6 +76,7 @@ namespace System.Security.Cryptography
             if (disposing)
             {
                 _impl.Dispose();
+                base.Dispose(disposing);
             }
         }
     }

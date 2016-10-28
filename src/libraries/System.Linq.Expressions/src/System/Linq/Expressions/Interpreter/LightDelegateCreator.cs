@@ -25,7 +25,7 @@ namespace System.Linq.Expressions.Interpreter
 
         internal Interpreter Interpreter { get; }
 
-        public Delegate CreateDelegate() => CreateDelegate(null);
+        public Delegate CreateDelegate() => CreateDelegate(closure: null);
 
         internal Delegate CreateDelegate(IStrongBox[] closure)
         {

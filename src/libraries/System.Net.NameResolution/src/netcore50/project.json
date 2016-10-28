@@ -22,9 +22,5 @@
         "System.Threading.Tasks": "4.0.11"
       }
     }
-  },
-  "runtimes": {
-    "win8-x86": {},
-    "win8-x64": {}
   }
 }

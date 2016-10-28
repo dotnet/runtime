@@ -82,7 +82,7 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="CatchBlock"/>.</returns>
         public static CatchBlock Catch(Type type, Expression body)
         {
-            return MakeCatchBlock(type, null, body, null);
+            return MakeCatchBlock(type, null, body, filter: null);
         }
 
         /// <summary>
@@ -94,7 +94,7 @@ namespace System.Linq.Expressions
         public static CatchBlock Catch(ParameterExpression variable, Expression body)
         {
             ContractUtils.RequiresNotNull(variable, nameof(variable));
-            return MakeCatchBlock(variable.Type, variable, body, null);
+            return MakeCatchBlock(variable.Type, variable, body, filter: null);
         }
 
         /// <summary>

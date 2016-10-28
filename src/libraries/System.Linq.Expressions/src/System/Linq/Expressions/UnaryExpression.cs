@@ -168,7 +168,7 @@ namespace System.Linq.Expressions
             // temp = var
             // var = op(var)
             // temp
-            ParameterExpression temp = Parameter(Operand.Type, null);
+            ParameterExpression temp = Parameter(Operand.Type, name: null);
             return Block(
                 new[] { temp },
                 Assign(temp, Operand),
@@ -187,7 +187,7 @@ namespace System.Linq.Expressions
             }
             else
             {
-                ParameterExpression temp1 = Parameter(member.Expression.Type, null);
+                ParameterExpression temp1 = Parameter(member.Expression.Type, name: null);
                 BinaryExpression initTemp1 = Assign(temp1, member.Expression);
                 member = MakeMemberAccess(temp1, member.Member);
 
@@ -210,7 +210,7 @@ namespace System.Linq.Expressions
                 // temp2 = temp1.member
                 // temp1.member = op(temp2)
                 // temp2
-                ParameterExpression temp2 = Parameter(member.Type, null);
+                ParameterExpression temp2 = Parameter(member.Type, name: null);
                 return Block(
                     new[] { temp1, temp2 },
                     initTemp1,
@@ -243,20 +243,20 @@ namespace System.Linq.Expressions
             var args = new ParameterExpression[count];
 
             int i = 0;
-            temps[i] = Parameter(index.Object.Type, null);
+            temps[i] = Parameter(index.Object.Type, name: null);
             block[i] = Assign(temps[i], index.Object);
             i++;
             while (i <= count)
             {
                 Expression arg = index.GetArgument(i - 1);
-                args[i - 1] = temps[i] = Parameter(arg.Type, null);
+                args[i - 1] = temps[i] = Parameter(arg.Type, name: null);
                 block[i] = Assign(temps[i], arg);
                 i++;
             }
             index = MakeIndex(temps[0], index.Indexer, new TrueReadOnlyCollection<Expression>(args));
             if (!prefix)
             {
-                ParameterExpression lastTemp = temps[i] = Parameter(index.Type, null);
+                ParameterExpression lastTemp = temps[i] = Parameter(index.Type, name: null);
                 block[i] = Assign(temps[i], index);
                 i++;
                 Debug.Assert(i == temps.Length);
@@ -302,7 +302,7 @@ namespace System.Linq.Expressions
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="operand"/> is null.</exception>
         public static UnaryExpression MakeUnary(ExpressionType unaryType, Expression operand, Type type)
         {
-            return MakeUnary(unaryType, operand, type, null);
+            return MakeUnary(unaryType, operand, type, method: null);
         }
 
         /// <summary>
@@ -434,7 +434,7 @@ namespace System.Linq.Expressions
 
         private static UnaryExpression GetUserDefinedCoercion(ExpressionType coercionType, Expression expression, Type convertToType)
         {
-            MethodInfo method = TypeUtils.GetUserDefinedCoercionMethod(expression.Type, convertToType, false);
+            MethodInfo method = TypeUtils.GetUserDefinedCoercionMethod(expression.Type, convertToType, implicitOnly: false);
             if (method != null)
             {
                 return new UnaryExpression(coercionType, expression, convertToType, method);
@@ -477,7 +477,7 @@ namespace System.Linq.Expressions
         /// <exception cref="InvalidOperationException">Thrown when the unary minus operator is not defined for <paramref name="expression"/>.Type.</exception>
         public static UnaryExpression Negate(Expression expression)
         {
-            return Negate(expression, null);
+            return Negate(expression, method: null);
         }
 
         /// <summary>
@@ -512,7 +512,7 @@ namespace System.Linq.Expressions
         /// <exception cref="InvalidOperationException">Thrown when the unary minus operator is not defined for <paramref name="expression"/>.Type.</exception>
         public static UnaryExpression UnaryPlus(Expression expression)
         {
-            return UnaryPlus(expression, null);
+            return UnaryPlus(expression, method: null);
         }
 
         /// <summary>
@@ -545,7 +545,7 @@ namespace System.Linq.Expressions
         /// <exception cref="InvalidOperationException">Thrown when the unary minus operator is not defined for <paramref name="expression"/>.Type.</exception> 
         public static UnaryExpression NegateChecked(Expression expression)
         {
-            return NegateChecked(expression, null);
+            return NegateChecked(expression, method: null);
         }
 
         /// <summary>Creates a <see cref="UnaryExpression"/> that represents an arithmetic negation operation that has overflow checking. The implementing method can be specified.</summary>
@@ -580,7 +580,7 @@ namespace System.Linq.Expressions
         /// <exception cref="InvalidOperationException">The unary not operator is not defined for <paramref name="expression"/>.Type.</exception>
         public static UnaryExpression Not(Expression expression)
         {
-            return Not(expression, null);
+            return Not(expression, method: null);
         }
 
         /// <summary>Creates a <see cref="UnaryExpression"/> that represents a bitwise complement operation. The implementing method can be specified.</summary>
@@ -619,7 +619,7 @@ namespace System.Linq.Expressions
         /// <returns>An instance of <see cref="UnaryExpression"/>.</returns>
         public static UnaryExpression IsFalse(Expression expression)
         {
-            return IsFalse(expression, null);
+            return IsFalse(expression, method: null);
         }
 
         /// <summary>
@@ -649,7 +649,7 @@ namespace System.Linq.Expressions
         /// <returns>An instance of <see cref="UnaryExpression"/>.</returns>
         public static UnaryExpression IsTrue(Expression expression)
         {
-            return IsTrue(expression, null);
+            return IsTrue(expression, method: null);
         }
 
         /// <summary>
@@ -679,7 +679,7 @@ namespace System.Linq.Expressions
         /// <returns>An instance of <see cref="UnaryExpression"/>.</returns>
         public static UnaryExpression OnesComplement(Expression expression)
         {
-            return OnesComplement(expression, null);
+            return OnesComplement(expression, method: null);
         }
 
         /// <summary>
@@ -749,7 +749,7 @@ namespace System.Linq.Expressions
         /// <exception cref="InvalidOperationException">No conversion operator is defined between <paramref name="expression"/>.Type and <paramref name="type"/>.</exception>
         public static UnaryExpression Convert(Expression expression, Type type)
         {
-            return Convert(expression, type, null);
+            return Convert(expression, type, method: null);
         }
 
         /// <summary>Creates a <see cref="UnaryExpression"/> that represents a conversion operation for which the implementing method is specified.</summary>
@@ -799,7 +799,7 @@ namespace System.Linq.Expressions
         /// <exception cref="InvalidOperationException">No conversion operator is defined between <paramref name="expression"/>.Type and <paramref name="type"/>.</exception>
         public static UnaryExpression ConvertChecked(Expression expression, Type type)
         {
-            return ConvertChecked(expression, type, null);
+            return ConvertChecked(expression, type, method: null);
         }
 
         /// <summary>Creates a <see cref="UnaryExpression"/> that represents a conversion operation that throws an exception if the target type is overflowed and for which the implementing method is specified.</summary>
@@ -883,7 +883,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="UnaryExpression"/> that represents a rethrowing of an exception.</returns>
         public static UnaryExpression Rethrow()
         {
-            return Throw(null);
+            return Throw(value: null);
         }
 
         /// <summary>
@@ -932,7 +932,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="UnaryExpression"/> that represents the incremented expression.</returns>
         public static UnaryExpression Increment(Expression expression)
         {
-            return Increment(expression, null);
+            return Increment(expression, method: null);
         }
 
         /// <summary>
@@ -962,7 +962,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="UnaryExpression"/> that represents the decremented expression.</returns>
         public static UnaryExpression Decrement(Expression expression)
         {
-            return Decrement(expression, null);
+            return Decrement(expression, method: null);
         }
 
         /// <summary>
@@ -993,7 +993,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="UnaryExpression"/> that represents the resultant expression.</returns>
         public static UnaryExpression PreIncrementAssign(Expression expression)
         {
-            return MakeOpAssignUnary(ExpressionType.PreIncrementAssign, expression, null);
+            return MakeOpAssignUnary(ExpressionType.PreIncrementAssign, expression, method: null);
         }
 
         /// <summary>
@@ -1016,7 +1016,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="UnaryExpression"/> that represents the resultant expression.</returns>
         public static UnaryExpression PreDecrementAssign(Expression expression)
         {
-            return MakeOpAssignUnary(ExpressionType.PreDecrementAssign, expression, null);
+            return MakeOpAssignUnary(ExpressionType.PreDecrementAssign, expression, method: null);
         }
 
         /// <summary>
@@ -1039,7 +1039,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="UnaryExpression"/> that represents the resultant expression.</returns>
         public static UnaryExpression PostIncrementAssign(Expression expression)
         {
-            return MakeOpAssignUnary(ExpressionType.PostIncrementAssign, expression, null);
+            return MakeOpAssignUnary(ExpressionType.PostIncrementAssign, expression, method: null);
         }
 
         /// <summary>
@@ -1062,7 +1062,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="UnaryExpression"/> that represents the resultant expression.</returns>
         public static UnaryExpression PostDecrementAssign(Expression expression)
         {
-            return MakeOpAssignUnary(ExpressionType.PostDecrementAssign, expression, null);
+            return MakeOpAssignUnary(ExpressionType.PostDecrementAssign, expression, method: null);
         }
 
         /// <summary>

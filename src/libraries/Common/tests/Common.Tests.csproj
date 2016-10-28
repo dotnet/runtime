@@ -69,6 +69,7 @@
     </Compile>
     <Compile Include="Tests\Interop\procfsTests.cs" />
     <Compile Include="Tests\System\CharArrayHelpersTests.cs" />
+    <Compile Include="Tests\System\IO\StringParserTests.cs" />
     <Compile Include="Tests\System\StringExtensions.Tests.cs" />
     <Compile Include="Tests\System\Collections\Generic\ArrayBuilderTests.cs" />
     <Compile Include="Tests\System\IO\PathInternal_Unix_Tests.cs" />

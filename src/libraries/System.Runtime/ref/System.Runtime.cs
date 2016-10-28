@@ -1147,6 +1147,7 @@ namespace System
         public virtual string Source { get { throw null; } set { } }
         public virtual string StackTrace { get { throw null; } }
         public System.Reflection.MethodBase TargetSite { get { throw null; } } 
+        protected event System.EventHandler<System.Runtime.Serialization.SafeSerializationEventArgs> SerializeObjectState { add { } remove { } }
         public virtual System.Exception GetBaseException() { throw null; }
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
@@ -1565,6 +1566,9 @@ namespace System
     public abstract partial class MarshalByRefObject
     {
         protected MarshalByRefObject() { }
+        public object GetLifetimeService() { throw null; }
+        public virtual object InitializeLifetimeService() { throw null; }
+        protected System.MarshalByRefObject MemberwiseClone(bool cloneIdentity) { throw null; }
     }
     public partial class Lazy<T, TMetadata> : System.Lazy<T>
     {
@@ -4538,11 +4542,15 @@ namespace System.Reflection
         public virtual System.Collections.Generic.IEnumerable<System.Type> ExportedTypes { get { throw null; } }
         public virtual MethodInfo EntryPoint { get { throw null; } }
         public virtual string FullName { get { throw null; } }
+        public virtual bool GlobalAssemblyCache { get { throw null; } }
+        public virtual long HostContext { get { throw null; } }
         public virtual bool IsDynamic { get { throw null; } }
+        public bool IsFullyTrusted { get { throw null; } }
         public virtual System.Reflection.Module ManifestModule { get { throw null; } }
         public virtual event ModuleResolveEventHandler ModuleResolve { add { } remove { } }
         public virtual System.Collections.Generic.IEnumerable<System.Reflection.Module> Modules { get; }
         public virtual bool ReflectionOnly { get { throw null; } }
+        public virtual System.Security.SecurityRuleSet SecurityRuleSet { get { throw null; } }
         public override bool Equals(object o) { throw null; }
         public static bool operator ==(System.Reflection.Assembly left, System.Reflection.Assembly right) { throw null; }
         public static bool operator !=(System.Reflection.Assembly left, System.Reflection.Assembly right) { throw null; }
@@ -4565,12 +4573,20 @@ namespace System.Reflection
         public static System.Reflection.Assembly Load(byte[] rawAssembly, byte[] rawSymbolStore) { throw null; }
         public static System.Reflection.Assembly Load(System.Reflection.AssemblyName assemblyRef) { throw null; }
         public static System.Reflection.Assembly Load(string assemblyString) { throw null; }
+        public static System.Reflection.Assembly LoadFile(String path) { throw null; }
+        public static System.Reflection.Assembly LoadFrom(String path) { throw null; }
+        public static Assembly LoadFrom(string assemblyFile, byte[] hashValue, System.Configuration.Assemblies.AssemblyHashAlgorithm hashAlgorithm) { throw null; }
+        public System.Reflection.Module LoadModule(String moduleName, byte[] rawModule) { throw null; }
+        public System.Reflection.Module LoadModule(String moduleName, byte[] rawModule, byte[] rawSymbolStore) { throw null; }
+        [ObsoleteAttribute("This method has been deprecated. Please use Assembly.Load() instead.")]
+        public static Assembly LoadWithPartialName(string partialName) { throw null; }
         public static System.Reflection.Assembly GetEntryAssembly() { throw null; }
         public static System.Reflection.Assembly GetExecutingAssembly() { throw null; }
         public System.Reflection.Module[] GetLoadedModules() { throw null; }
         public virtual System.Reflection.Module[] GetLoadedModules(bool getResourceModules) { throw null; }
         public virtual string Location { get { throw null; } }
         public override string ToString() { throw null; }
+        public static Assembly UnsafeLoadFrom(string assemblyFile) { throw null; }
         public virtual string CodeBase { get { throw null; } }
         public virtual string ImageRuntimeVersion { get { throw null; } }
         public object CreateInstance(string typeName) { throw null; }
@@ -4725,11 +4741,6 @@ namespace System.Reflection
         None = 0,
         PublicKey = 1,
         Retargetable = 256,
-    }
-    public class AssemblyNameProxy : System.MarshalByRefObject
-    {
-        public AssemblyNameProxy() { }
-        public System.Reflection.AssemblyName GetAssemblyName(System.String assemblyFile) { throw null; }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(1), Inherited = false)]
     public sealed partial class AssemblyProductAttribute : System.Attribute
@@ -5664,6 +5675,25 @@ namespace System.Runtime
 }
 namespace System.Runtime.CompilerServices
 {
+    [System.AttributeUsageAttribute((System.AttributeTargets)(972))]
+    public sealed partial class SpecialNameAttribute : System.Attribute
+    {
+        public SpecialNameAttribute() { }
+    }
+    public enum MethodCodeType
+    {
+        IL = System.Reflection.MethodImplAttributes.IL,
+        Native = System.Reflection.MethodImplAttributes.Native,
+        OPTIL = System.Reflection.MethodImplAttributes.OPTIL,
+        Runtime = System.Reflection.MethodImplAttributes.Runtime  
+    }
+    [Flags]
+    public enum CompilationRelaxations : int
+    { 
+        NoStringInterning       = 0x0008, // Start in 0x0008, we had other non public flags in this enum before,
+                                          // so we'll start here just in case somebody used them. This flag is only
+                                          // valid when set for Assemblies.
+    };
     [System.AttributeUsageAttribute((System.AttributeTargets)(256))]
     public sealed partial class AccessedThroughPropertyAttribute : System.Attribute
     {
@@ -5695,6 +5725,7 @@ namespace System.Runtime.CompilerServices
     {
         public CompilationRelaxationsAttribute(int relaxations) { }
         public int CompilationRelaxations { get { throw null; } }
+        public CompilationRelaxationsAttribute (System.Runtime.CompilerServices.CompilationRelaxations relaxations) { }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(32767), Inherited = true)]
     public sealed partial class CompilerGeneratedAttribute : System.Attribute
@@ -5762,6 +5793,7 @@ namespace System.Runtime.CompilerServices
     public sealed partial class InternalsVisibleToAttribute : System.Attribute
     {
         public InternalsVisibleToAttribute(string assemblyName) { }
+        public bool AllInternalsVisible { get { throw null; } set { } }
         public string AssemblyName { get { throw null; } }
     }
     public static partial class IsConst
@@ -5782,8 +5814,11 @@ namespace System.Runtime.CompilerServices
     [System.AttributeUsageAttribute((System.AttributeTargets)(96), Inherited = false)]
     public sealed partial class MethodImplAttribute : System.Attribute
     {
+        public MethodImplAttribute() { }
+        public MethodImplAttribute(short value) { }
         public MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions methodImplOptions) { }
         public System.Runtime.CompilerServices.MethodImplOptions Value { get { throw null; } }
+        public System.Runtime.CompilerServices.MethodCodeType MethodCodeType;
     }
     [System.FlagsAttribute]
     public enum MethodImplOptions
@@ -5812,6 +5847,7 @@ namespace System.Runtime.CompilerServices
     }
     public static partial class RuntimeHelpers
     {
+        public static new bool Equals(object o1, object o2) { throw null; }        
         public static int OffsetToStringData { get { throw null; } }
         public static void EnsureSufficientExecutionStack() { }
         public static int GetHashCode(object o) { throw null; }
@@ -5843,7 +5879,7 @@ namespace System.Runtime.CompilerServices
         public static object GetUninitializedObject(Type type) { return default(object); }
 #endif
    }
-   [System.AttributeUsageAttribute((System.AttributeTargets)(64), Inherited = false, AllowMultiple = false)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(64), Inherited = false, AllowMultiple = false)]
     public partial class StateMachineAttribute : System.Attribute
     {
         public StateMachineAttribute(System.Type stateMachineType) { }
@@ -6153,6 +6189,16 @@ namespace System.Runtime.Serialization
         Clone = 0x40,
         CrossAppDomain = 0x80,
         All = 0xFF,
+    }
+    public sealed partial class SafeSerializationEventArgs : System.EventArgs
+    {
+        internal SafeSerializationEventArgs() { }
+        public System.Runtime.Serialization.StreamingContext StreamingContext { get { throw null; } }
+        public void AddSerializedState(System.Runtime.Serialization.ISafeSerializationData serializedState) { }
+    }
+    public partial interface ISafeSerializationData
+    {
+        void CompleteDeserialization(object deserialized);
     }
 }
 namespace System.Runtime.Versioning

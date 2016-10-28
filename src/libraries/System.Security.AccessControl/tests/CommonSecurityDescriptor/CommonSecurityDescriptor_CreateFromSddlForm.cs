@@ -83,7 +83,6 @@ namespace System.Security.AccessControl.Tests
 
         [Theory]
         [MemberData(nameof(CommonSecurityDescriptor_CreateFromSddlForm_TestData))]
-        [ActiveIssue(15)]
         private static void TestCreateFromSddlForm(bool isContainer, bool isDS, string sddl, string verifierSddl)
         {
             CommonSecurityDescriptor commonSecurityDescriptor = null;

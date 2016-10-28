@@ -70,6 +70,8 @@ namespace System.IO.Pipes
         public NamedPipeServerStream(string pipeName, System.IO.Pipes.PipeDirection direction, int maxNumberOfServerInstances, System.IO.Pipes.PipeTransmissionMode transmissionMode, System.IO.Pipes.PipeOptions options, int inBufferSize, int outBufferSize) : base(default(System.IO.Pipes.PipeDirection), default(int)) { }
         public void Disconnect() { }
         ~NamedPipeServerStream() { }
+        public System.IAsyncResult BeginWaitForConnection(System.AsyncCallback callback, object state) { throw null; }
+        public void EndWaitForConnection(System.IAsyncResult asyncResult) { throw null; }
         public string GetImpersonationUserName() { throw null; }
         public void RunAsClient(System.IO.Pipes.PipeStreamImpersonationWorker impersonationWorker) { }
         public void WaitForConnection() { }
@@ -106,11 +108,15 @@ namespace System.IO.Pipes
         public virtual System.IO.Pipes.PipeTransmissionMode ReadMode { get { throw null; } set { } }
         public Microsoft.Win32.SafeHandles.SafePipeHandle SafePipeHandle { get { throw null; } }
         public virtual System.IO.Pipes.PipeTransmissionMode TransmissionMode { get { throw null; } }
+        public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback callback, object state) { throw null; }
+        public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback callback, object state) { throw null; }
         protected internal virtual void CheckPipePropertyOperations() { }
         protected internal void CheckReadOperations() { }
         protected internal void CheckWriteOperations() { }
         protected bool IsHandleExposed { get { throw null; } }
         protected override void Dispose(bool disposing) { }
+        public override int EndRead(System.IAsyncResult asyncResult) { throw null; }
+        public override void EndWrite(System.IAsyncResult asyncResult) { throw null; }
         public override void Flush() { }
         public override int Read(byte[] buffer, int offset, int count) { throw null; }
         public override int ReadByte() { throw null; }
