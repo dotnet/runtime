@@ -3216,6 +3216,7 @@ typebuilder_setup_fields (MonoClass *klass, MonoError *error)
 		MonoArray *rva_data;
 		fb = (MonoReflectionFieldBuilder *)mono_array_get (tb->fields, gpointer, i);
 		field = &klass->fields [i];
+		field->parent = klass;
 		field->name = mono_string_to_utf8_image (image, fb->name, error);
 		if (!mono_error_ok (error))
 			return;
@@ -3238,7 +3239,6 @@ typebuilder_setup_fields (MonoClass *klass, MonoError *error)
 		}
 		if (fb->offset != -1)
 			field->offset = fb->offset;
-		field->parent = klass;
 		fb->handle = field;
 		mono_save_custom_attrs (klass->image, field, fb->cattrs);
 

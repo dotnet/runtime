@@ -272,8 +272,6 @@ struct _MonoClass {
 	int        instance_size; /* object instance size */
 
 	guint inited          : 1;
-	/* We use init_pending to detect cyclic calls to mono_class_init */
-	guint init_pending    : 1;
 
 	/* A class contains static and non static data. Static data can be
 	 * of the same type as the class itselfs, but it does not influence
