@@ -15,10 +15,8 @@ c_runtime/_getw/test1,1
 c_runtime/_isnan/test1,1
 c_runtime/_isnanf/test1,1
 c_runtime/_itow/test1,1
-c_runtime/_makepath/test1,1
 c_runtime/_mbsdec/test1,1
 c_runtime/_mbsinc/test1,1
-c_runtime/_mbslen/test1,1
 c_runtime/_mbsninc/test1,1
 c_runtime/_open_osfhandle/test1,1
 c_runtime/_open_osfhandle/test2,1
@@ -67,11 +65,9 @@ c_runtime/_snwprintf/test16,1
 c_runtime/_snwprintf/test17,1
 c_runtime/_snwprintf/test18,1
 c_runtime/_snwprintf/test19,1
-c_runtime/_splitpath/test1,1
 c_runtime/_stricmp/test1,1
 c_runtime/_strlwr/test1,1
 c_runtime/_strnicmp/test1,1
-c_runtime/_swab/test1,1
 c_runtime/_vsnprintf/test1,1
 c_runtime/_vsnprintf/test2,1
 c_runtime/_vsnprintf/test3,1
@@ -120,8 +116,6 @@ c_runtime/_wfopen/test4,1
 c_runtime/_wfopen/test5,1
 c_runtime/_wfopen/test6,1
 c_runtime/_wfopen/test7,1
-c_runtime/_wmakepath/test1,1
-c_runtime/_wsplitpath/test1,1
 c_runtime/_wtoi/test1,1
 c_runtime/abs/test1,1
 c_runtime/acos/test1,1
@@ -734,8 +728,6 @@ locale_info/widechartomultibyte/test1,1
 locale_info/widechartomultibyte/test2,1
 locale_info/widechartomultibyte/test3,1
 miscellaneous/_i64tow/test1,1
-miscellaneous/_ui64tow/test1,1
-miscellaneous/_ui64tow/test2,1
 miscellaneous/charnexta/test1,1
 miscellaneous/charnexta/test2,1
 miscellaneous/charnextexa/test1,1

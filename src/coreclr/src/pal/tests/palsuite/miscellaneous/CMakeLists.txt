@@ -40,5 +40,4 @@ add_subdirectory(SetLastError)
 add_subdirectory(wsprintfA)
 add_subdirectory(wsprintfW)
 add_subdirectory(_i64tow)
-add_subdirectory(_ui64tow)
 

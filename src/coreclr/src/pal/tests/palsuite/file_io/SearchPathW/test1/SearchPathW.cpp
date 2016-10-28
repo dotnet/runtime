@@ -127,15 +127,10 @@ int __cdecl main(int argc, char *argv[]) {
      */
     memset(fullPath, 0, _MAX_DIR);
 
-    /* Get the full path to the library (DLL).
-     */
-  
-	if ( NULL != _fullpath( fullPath, argv[0], _MAX_DIR )) {
-        _splitpath(fullPath,drive,dir,fname,ext);
-        _makepath(fullPath,drive,dir,"","");
-	} else {
-		Fail("ERROR: conversion from relative path \" %s \" to absolute path failed. _fullpath returned NULL\n",argv[0]);
-	}
+    if (GetTempPathA(_MAX_DIR, fullPath) == 0)
+    {
+        Fail("ERROR: GetTempPathA failed to get a path\n");
+    }
 
     memset(fileloc, 0, _MAX_PATH);
     sprintf(fileloc, "%s%s", fullPath, szFileNameExistsWithExt);

@@ -2258,13 +2258,9 @@ void GetMethodName(mdMethodDef methodDef, IMetaDataImport * pImport, CQuickBytes
 #ifndef _TARGET_WIN64_
 #define     itoa_s_ptr _itoa_s
 #define     itow_s_ptr _itow_s
-#define     itoa_ptr   _itoa
-#define     itow_ptr   _itow
 #else
 #define     itoa_s_ptr _i64toa_s
 #define     itow_s_ptr _i64tow_s
-#define     itoa_ptr   _i64toa
-#define     itow_ptr   _i64tow
 #endif
 
 #ifdef FEATURE_PAL
