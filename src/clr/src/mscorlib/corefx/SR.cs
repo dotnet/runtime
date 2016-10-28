@@ -494,6 +494,26 @@ namespace System
         {
             get { return Environment.GetResourceString("InvalidOperation_NativeOverlappedReused"); }
         }
+        
+        public static string ArgumentOutOfRange_Length
+        {
+            get { return Environment.GetResourceString("ArgumentOutOfRange_Length"); }
+        }
+
+        public static string ArgumentOutOfRange_IndexString 
+        {
+            get { return Environment.GetResourceString("ArgumentOutOfRange_IndexString"); }
+        }
+
+        public static string ArgumentOutOfRange_Capacity 
+        {
+            get { return Environment.GetResourceString("ArgumentOutOfRange_Capacity"); }
+        }
+
+        public static string Arg_CryptographyException 
+        {
+            get { return Environment.GetResourceString("Arg_CryptographyException"); }
+        }
 
         public static string Format(string formatString, params object[] args)
         {
