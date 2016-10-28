@@ -61,4 +61,5 @@ clean-local:
 	-rm -rf build-shared
 
 install-exec-local:
-	$(install_sh) build-shared/libmono-btls-shared.* "$(DESTDIR)/$(libdir)"
+	$(mkinstalldirs) "$(DESTDIR)$(libdir)"
+	$(install_sh) build-shared/libmono-btls-shared.* "$(DESTDIR)$(libdir)"
