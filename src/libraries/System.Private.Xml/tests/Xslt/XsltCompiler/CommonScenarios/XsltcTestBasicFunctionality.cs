@@ -50,20 +50,9 @@ namespace System.Xml.Tests
         //[InlineData("bft26.xsl", "bft26", "bft26.txt")] /*sd problems \u0400\u0400\u0400\u0400bft26.xsl, coverage addded to other test cases*/ //Skipping this, it tries to load System.dll
         //[Variation("31", Desc = "Exercise options with “-“", Pri = 1, Params = new object[] { "-out:bft31.dll /class:bft31 -debug- bft31.xsl", "bft31", "bft31.txt" })]
         //[InlineData("-out:bft31.dll /class:bft31 -debug- bft31.xsl", "bft31", "bft31.txt")] //Skipping this, it tries to load System.dll
-        [Theory]
+        [ConditionalTheory(nameof(xsltcExeFound))]
         public void Var1(object param0, object param1, object param2)
         {
-            try
-            {
-                // Verify xsltc.exe is available
-                XmlCoreTest.Common.XsltVerificationLibrary.SearchPath("xsltc.exe");
-            }
-            catch (FileNotFoundException)
-            {
-                _output.WriteLine("Could not find 'xsltc.exe'.  Make sure that the .NET SDK is installed");
-                Assert.True(false);
-            }
-
             String cmdLine = ReplaceCurrentWorkingDirectory(param0.ToString());
             String asmName = param1 + ".dll";
             String typeName = param1.ToString();
@@ -110,20 +99,9 @@ namespace System.Xml.Tests
         [InlineData("/debug+", "bft37.txt")]
         //[Variation("38", Desc = "Empty string in arguments", Pri = 1, Params = new object[] { "\"\"", "bft38.txt" })]
         [InlineData("\"\"", "bft38.txt")]
-        [Theory]
+        [ConditionalTheory(nameof(xsltcExeFound))]
         public void Var2(object param0, object param1)
         {
-            try
-            {
-                // Verify xsltc.exe is available
-                XmlCoreTest.Common.XsltVerificationLibrary.SearchPath("xsltc.exe");
-            }
-            catch (FileNotFoundException)
-            {
-                _output.WriteLine("Could not find 'xsltc.exe'.  Make sure that the .NET SDK is installed");
-                Assert.True(false);
-            }
-
             if (ShouldSkip(new object[] { param0, param1 }))
             {
                 return;// TEST_SKIPPED;
