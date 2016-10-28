@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Reflection;
+using System.Linq;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -86,18 +87,15 @@ namespace System.Globalization.Tests
         public void GetCulturesTest(string cultureName, int lcid, string specificCultureName, string threeLetterISOLanguageName, string threeLetterWindowsLanguageName, string alternativeCultureName)
         {
             bool found = false;
-            foreach (CultureInfo ci in CultureInfo.GetCultures(CultureTypes.NeutralCultures))
-            {
-                Assert.True(ci.IsNeutralCulture || ci.Equals(CultureInfo.InvariantCulture), "Expected Neutral Cultures or invariant");
-                if (!found && (ci.Name.Equals(cultureName, StringComparison.OrdinalIgnoreCase) || ci.Name.Equals(alternativeCultureName, StringComparison.OrdinalIgnoreCase)))
-                    found = true;
-            }
+            Assert.All(CultureInfo.GetCultures(CultureTypes.NeutralCultures), c => Assert.True(c.IsNeutralCulture || c.Equals(CultureInfo.InvariantCulture)));
+            found = CultureInfo.GetCultures(CultureTypes.NeutralCultures).Any(c => c.Name.Equals(cultureName, StringComparison.OrdinalIgnoreCase) || 
+                                                                                   c.Name.Equals(alternativeCultureName, StringComparison.OrdinalIgnoreCase));
 
-            foreach (CultureInfo ci in CultureInfo.GetCultures(CultureTypes.SpecificCultures))
+            Assert.All(CultureInfo.GetCultures(CultureTypes.SpecificCultures), c => Assert.False(c.IsNeutralCulture));
+            if (!found)
             {
-                Assert.False(ci.IsNeutralCulture, "Expected specific cultures only");
-                if (!found && (ci.Name.Equals(cultureName, StringComparison.OrdinalIgnoreCase) || ci.Name.Equals(alternativeCultureName, StringComparison.OrdinalIgnoreCase)))
-                    found = true;
+                found = CultureInfo.GetCultures(CultureTypes.SpecificCultures).Any(c => c.Name.Equals(cultureName, StringComparison.OrdinalIgnoreCase) || 
+                                                                                       c.Name.Equals(alternativeCultureName, StringComparison.OrdinalIgnoreCase));
             }
             
             Assert.True(found, $"Expected to find the culture {cultureName} in the enumerated list");
