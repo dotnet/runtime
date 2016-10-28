@@ -6,7 +6,7 @@ using System;
 
 namespace System.Net
 {
-    internal static class HttpVersion
+    public static class HttpVersion
     {
         public static readonly Version Unknown = new Version(0, 0);
         public static readonly Version Version10 = new Version(1, 0);
