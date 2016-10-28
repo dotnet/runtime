@@ -167,7 +167,7 @@ namespace System.Security
                     int resultLength = Encoding.UTF8.GetByteCount((char*)bufferPtr, length) + 1;
                     stringPtr = globalAlloc ? Marshal.AllocHGlobal(resultLength) : Marshal.AllocCoTaskMem(resultLength);
                     int encodedLength = Encoding.UTF8.GetBytes((char*)bufferPtr, length, (byte*)stringPtr, resultLength);
-                    BCLDebug.Assert(encodedLength + 1 == resultLength, $"Expected encoded length to match result, got {encodedLength} != {resultLength}");
+                    Debug.Assert(encodedLength + 1 == resultLength, $"Expected encoded length to match result, got {encodedLength} != {resultLength}");
                     *(resultLength - 1 + (byte*)stringPtr) = 0;
                 }
 
@@ -228,7 +228,7 @@ namespace System.Security
 
             internal static UnmanagedBuffer Allocate(int bytes)
             {
-                BCLDebug.Assert(bytes >= 0);
+                Debug.Assert(bytes >= 0);
                 UnmanagedBuffer buffer = new UnmanagedBuffer();
                 buffer.SetHandle(Marshal.AllocHGlobal(bytes));
                 buffer.Initialize((ulong)bytes);

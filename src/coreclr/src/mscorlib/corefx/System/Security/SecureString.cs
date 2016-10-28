@@ -148,7 +148,7 @@ namespace System.Security
                 {
                     throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexString);
                 }
-                BCLDebug.Assert(index <= Int32.MaxValue / sizeof(char));
+                Debug.Assert(index <= Int32.MaxValue / sizeof(char));
 
                 EnsureNotDisposed();
                 EnsureNotReadOnly();
