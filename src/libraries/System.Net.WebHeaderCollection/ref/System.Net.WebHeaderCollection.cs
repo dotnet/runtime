@@ -85,16 +85,38 @@ namespace System.Net
         Warning = 9,
         WwwAuthenticate = 29,
     }
-    public partial class WebHeaderCollection : System.Runtime.Serialization.ISerializable
+    
+    public partial class WebHeaderCollection : System.Collections.Specialized.NameValueCollection,
+                                               System.Collections.IEnumerable, System.Runtime.Serialization.ISerializable
     {
         public WebHeaderCollection() { }
-        protected WebHeaderCollection(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
-        public string[] AllKeys { get { throw null; } }
-        public int Count { get { throw null; } }
+        public override string[] AllKeys { get { throw null; } }
+        public override int Count { get { throw null; } }
         public string this[System.Net.HttpRequestHeader header] { get { throw null; } set { } }
         public string this[System.Net.HttpResponseHeader header] { get { throw null; } set { } }
-        public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public override string ToString() { throw null; }
+        protected WebHeaderCollection(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
+        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
+        public new string this[string name] { get { throw null; } set { } }
+        public override System.Collections.IEnumerator GetEnumerator() { throw null; }
+        public override void Remove(string name) { }
+        public byte[] ToByteArray() { throw null; }
+        public static bool IsRestricted(string headerName, bool response) { throw null; }
+        public static bool IsRestricted(string headerName) { throw null; }
+        public override void OnDeserialization(object sender) { }
+        public void Remove(HttpResponseHeader header) { }
+        public void Remove(HttpRequestHeader header) { }
+        public override string[] GetValues(int index) { throw null; }
+        public override string[] GetValues(string header) { throw null; }
+        public override string GetKey(int index) { throw null; }
+        public override void Clear() { }
+        public override string Get(int index) { throw null; }
+        public override string Get(string name) { throw null; }
+        public void Add(HttpRequestHeader header, string value) { }
+        public void Add(HttpResponseHeader header, string value) { }
+        public void Add(string header) { }
+        public override void Add(string name, string value) { }
+        protected void AddWithoutValidate(string headerName, string headerValue) { }
     }
 }
