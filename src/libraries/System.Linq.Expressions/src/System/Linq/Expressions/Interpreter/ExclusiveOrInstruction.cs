@@ -17,7 +17,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private ExclusiveOrInstruction() { }
 
-        internal sealed class ExclusiveOrSByte : ExclusiveOrInstruction
+        private sealed class ExclusiveOrSByte : ExclusiveOrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -33,7 +33,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class ExclusiveOrInt16 : ExclusiveOrInstruction
+        private sealed class ExclusiveOrInt16 : ExclusiveOrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -49,7 +49,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class ExclusiveOrInt32 : ExclusiveOrInstruction
+        private sealed class ExclusiveOrInt32 : ExclusiveOrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -65,7 +65,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class ExclusiveOrInt64 : ExclusiveOrInstruction
+        private sealed class ExclusiveOrInt64 : ExclusiveOrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -81,7 +81,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class ExclusiveOrByte : ExclusiveOrInstruction
+        private sealed class ExclusiveOrByte : ExclusiveOrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -97,7 +97,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class ExclusiveOrUInt16 : ExclusiveOrInstruction
+        private sealed class ExclusiveOrUInt16 : ExclusiveOrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -113,7 +113,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class ExclusiveOrUInt32 : ExclusiveOrInstruction
+        private sealed class ExclusiveOrUInt32 : ExclusiveOrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -129,7 +129,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class ExclusiveOrUInt64 : ExclusiveOrInstruction
+        private sealed class ExclusiveOrUInt64 : ExclusiveOrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -145,7 +145,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class ExclusiveOrBool : ExclusiveOrInstruction
+        private sealed class ExclusiveOrBool : ExclusiveOrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {

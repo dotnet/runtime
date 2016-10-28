@@ -18,7 +18,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private OnesComplementInstruction() { }
 
-        internal sealed class OnesComplementInt32 : OnesComplementInstruction
+        private sealed class OnesComplementInt32 : OnesComplementInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -35,7 +35,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class OnesComplementInt16 : OnesComplementInstruction
+        private sealed class OnesComplementInt16 : OnesComplementInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -52,7 +52,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class OnesComplementInt64 : OnesComplementInstruction
+        private sealed class OnesComplementInt64 : OnesComplementInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -69,7 +69,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class OnesComplementUInt16 : OnesComplementInstruction
+        private sealed class OnesComplementUInt16 : OnesComplementInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -86,7 +86,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class OnesComplementUInt32 : OnesComplementInstruction
+        private sealed class OnesComplementUInt32 : OnesComplementInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -103,7 +103,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class OnesComplementUInt64 : OnesComplementInstruction
+        private sealed class OnesComplementUInt64 : OnesComplementInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -120,7 +120,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class OnesComplementByte : OnesComplementInstruction
+        private sealed class OnesComplementByte : OnesComplementInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -137,7 +137,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class OnesComplementSByte : OnesComplementInstruction
+        private sealed class OnesComplementSByte : OnesComplementInstruction
         {
             public override int Run(InterpretedFrame frame)
             {

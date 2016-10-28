@@ -10,6 +10,7 @@ namespace System.Linq.Expressions.Interpreter
     {
         internal readonly TypeCode _from, _to;
         private readonly bool _isLiftedToNull;
+
         protected NumericConvertInstruction(TypeCode from, TypeCode to, bool isLiftedToNull)
         {
             _from = from;
