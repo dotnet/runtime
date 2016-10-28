@@ -8,8 +8,8 @@ include_directories("../inc")
 # add_definitions(-DALT_JIT)
 
 if (CLR_CMAKE_TARGET_ARCH_AMD64)
-  add_definitions(-DFEATURE_SIMD) 
-  add_definitions(-DFEATURE_AVX_SUPPORT) 
+  add_definitions(-DFEATURE_SIMD)
+  add_definitions(-DFEATURE_AVX_SUPPORT)
 endif ()
 
 
