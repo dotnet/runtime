@@ -495,6 +495,11 @@ namespace System
             get { return Environment.GetResourceString("InvalidOperation_NativeOverlappedReused"); }
         }
 
+        public static string ArgumentException_BufferNotFromPool
+        {
+            get { return Environment.GetResourceString("ArgumentException_BufferNotFromPool"); }
+        }
+
         public static string Format(string formatString, params object[] args)
         {
             return string.Format(CultureInfo.CurrentCulture, formatString, args);
