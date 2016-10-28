@@ -30,9 +30,9 @@
  */
 #include <config.h>
 #include <glib.h>
-#include <gmodule.h>
 #include <windows.h>
 #include <psapi.h>
+#include <gmodule-win32-internals.h>
 
 #define LIBSUFFIX ".dll"
 #define LIBPREFIX ""
@@ -70,7 +70,7 @@ g_module_open (const gchar *file, GModuleFlags flags)
 }
 
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
-static gpointer
+gpointer
 w32_find_symbol (const gchar *symbol_name)
 {
 	HMODULE *modules;
@@ -116,16 +116,6 @@ w32_find_symbol (const gchar *symbol_name)
 	g_free (modules);
 	return NULL;
 }
-
-#else /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
-
-static gpointer
-w32_find_symbol (const gchar *symbol_name)
-{
-	g_unsupported_api ("EnumProcessModules");
-	SetLastError (ERROR_NOT_SUPPORTED);
-	return NULL;
-}
 #endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
 
 gboolean
@@ -164,34 +154,6 @@ g_module_error (void)
 
 	return ret;
 }
-
-#elif G_HAVE_API_SUPPORT(HAVE_UWP_WINAPI_SUPPORT)   /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
-
-const gchar *
-g_module_error (void)
-{
-	gchar* ret = NULL;
-	TCHAR buf[1024];
-	DWORD code = GetLastError ();
-
-	if (!FormatMessage (FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
-		code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), buf, G_N_ELEMENTS(buf) - 1, NULL) )
-		buf[0] = TEXT('\0');
-
-	ret = u16to8 (buf);
-	return ret;
-}
-
-#else
-
-const gchar *
-g_module_error (void)
-{
-	g_unsupported_api ("FormatMessage");
-	SetLastError (ERROR_NOT_SUPPORTED);
-	return NULL;
-}
-
 #endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
 
 gboolean

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -178,11 +178,13 @@
     <ClCompile Include="..\eglib\src\gstr.c" />
     <ClCompile Include="..\eglib\src\gstring.c" />
     <ClCompile Include="..\eglib\src\gtimer-win32.c" />
+    <ClCompile Include="..\eglib\src\gunicode-win32.c" />
     <ClCompile Include="..\eglib\src\gunicode.c" />
     <ClCompile Include="..\eglib\src\gutf8.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\eglib\src\glib.h" />
+    <ClInclude Include="..\eglib\src\gmodule-win32-internals.h" />
     <ClInclude Include="..\eglib\src\gmodule.h" />
     <ClInclude Include="..\eglib\src\sort.frag.h" />
   </ItemGroup>
@@ -190,6 +192,9 @@
     <ProjectReference Include="build-init.vcxproj">
       <Project>{92ae7622-5f58-4234-9a26-9ec71876b3f4}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\eglib\src\Makefile.am" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

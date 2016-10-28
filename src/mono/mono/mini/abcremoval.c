@@ -13,6 +13,7 @@
 #include <mono/metadata/mempool.h>
 #include <mono/metadata/opcodes.h>
 #include <mono/metadata/mempool-internals.h>
+#include <mono/utils/mono-compiler.h>
 
 #include <config.h>
 
@@ -1380,4 +1381,8 @@ mono_perform_abc_removal (MonoCompile *cfg)
 	process_block (cfg, cfg->bblocks [0], &area);
 }
 
-#endif /* DISABLE_JIT */
+#else /* !DISABLE_JIT */
+
+MONO_EMPTY_SOURCE_FILE (abcremoval);
+
+#endif /* !DISABLE_JIT */

@@ -101,27 +101,6 @@ g_win32_getlocale(void)
 	ccBuf += GetLocaleInfoA(lcid, LOCALE_SISO3166CTRYNAME, buf + ccBuf, 9);
 	return g_strdup (buf);
 }
-
-#else /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
-
-gchar*
-g_win32_getlocale(void)
-{
-	gunichar2 buf[19];
-	gint ccBuf = GetLocaleInfoEx (LOCALE_NAME_USER_DEFAULT, LOCALE_SISO639LANGNAME, buf, 9);
-	assert (ccBuf <= 9);
-	if (ccBuf != 0) {
-		buf[ccBuf - 1] = L'-';
-		ccBuf = GetLocaleInfoEx (LOCALE_NAME_USER_DEFAULT, LOCALE_SISO3166CTRYNAME, buf + ccBuf, 9);
-		assert (ccBuf <= 9);
-	}
-
-	// Check for GetLocaleInfoEx failure.
-	if (ccBuf == 0)
-		buf[0] = L'\0';
-
-	return u16to8 (buf);
-}
 #endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
 
 gboolean
@@ -142,19 +121,34 @@ g_path_is_absolute (const char *filename)
 	return FALSE;
 }
 
-const gchar *
-g_get_home_dir (void)
-{
-	gchar *home_dir = NULL;
-
 #if _MSC_VER && G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+static gchar*
+g_get_known_folder_path (void)
+{
+	gchar *folder_path = NULL;
 	PWSTR profile_path = NULL;
 	HRESULT hr = SHGetKnownFolderPath (&FOLDERID_Profile, KF_FLAG_DEFAULT, NULL, &profile_path);
 	if (SUCCEEDED(hr)) {
-		home_dir = u16to8 (profile_path);
+		folder_path = u16to8 (profile_path);
 		CoTaskMemFree (profile_path);
 	}
+
+	return folder_path;
+}
+
+#else
+
+static inline gchar *
+g_get_known_folder_path (void)
+{
+	return NULL;
+}
 #endif
+
+const gchar *
+g_get_home_dir (void)
+{
+	gchar *home_dir = g_get_known_folder_path ();
 
 	if (!home_dir) {
 		home_dir = (gchar *) g_getenv ("USERPROFILE");

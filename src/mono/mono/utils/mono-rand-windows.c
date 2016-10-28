@@ -12,7 +12,7 @@
 
 #if defined(HOST_WIN32)
 #include <windows.h>
-#include "mono/utils/mono-rand-windows.h"
+#include "mono/utils/mono-rand-windows-internals.h"
 
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 #ifndef PROV_INTEL_SEC

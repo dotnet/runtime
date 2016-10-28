@@ -10,6 +10,7 @@
  */
 
 #include "config.h"
+#include <mono/utils/mono-compiler.h>
 #ifndef DISABLE_JIT
 
 #include "mini.h"
@@ -1479,4 +1480,8 @@ mono_optimize_branches (MonoCompile *cfg)
 	} while (changed && (niterations > 0));
 }
 
-#endif /* DISABLE_JIT */
+#else /* !DISABLE_JIT */
+
+MONO_EMPTY_SOURCE_FILE (branch_opts);
+
+#endif /* !DISABLE_JIT */

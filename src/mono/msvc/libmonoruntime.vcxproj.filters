@@ -576,4 +576,9 @@
       <UniqueIdentifier>{e37c9a88-bfb3-47dd-948c-a74dea25b3ad}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\mono\metadata\Makefile.am">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
 </Project>

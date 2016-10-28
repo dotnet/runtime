@@ -13,6 +13,7 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/mempool.h>
 #include <mono/metadata/mempool-internals.h>
+#include <mono/utils/mono-compiler.h>
 
 #ifndef DISABLE_JIT
 
@@ -1515,4 +1516,8 @@ mono_ssa_loop_invariant_code_motion (MonoCompile *cfg)
 	}
 }
 
-#endif /* DISABLE_JIT */
+#else /* !DISABLE_JIT */
+
+MONO_EMPTY_SOURCE_FILE (ssa);
+
+#endif /* !DISABLE_JIT */

@@ -12,6 +12,7 @@
 #include <glib.h>
 
 #include <mono/utils/atomic.h>
+#include <mono/utils/mono-compiler.h>
 
 #if defined (WAPI_NO_ATOMIC_ASM) || defined (BROKEN_64BIT_ATOMICS_INTRINSIC)
 
@@ -584,7 +585,6 @@ InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp)
 #endif
 #endif
 
-#if defined(HOST_WIN32) && defined(_MSC_VER)
-// Quiet Visual Studio linker warning, LNK4221, in cases when this source file intentional ends up empty.
-void __mono_win32_atomic_lnk4221(void) {}
+#if !defined (WAPI_NO_ATOMIC_ASM) && !defined (BROKEN_64BIT_ATOMICS_INTRINSIC) && !defined (NEED_64BIT_CMPXCHG_FALLBACK)
+MONO_EMPTY_SOURCE_FILE (atomic);
 #endif

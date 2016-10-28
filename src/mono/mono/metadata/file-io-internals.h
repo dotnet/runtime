@@ -29,4 +29,13 @@ mono_file_io_replace_file (gunichar2 *destinationFileName, gunichar2 *sourceFile
 gboolean
 mono_file_io_unlock_file (HANDLE handle, gint64 position, gint64 length, gint32 *error);
 
+HANDLE
+mono_file_io_get_console_output (void);
+
+HANDLE
+mono_file_io_get_console_error (void);
+
+HANDLE
+mono_file_io_get_console_input (void);
+
 #endif /* __MONO_FILE_IO_INTERNALS_H__ */

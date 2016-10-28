@@ -33,6 +33,7 @@
 #include <mono/utils/gc_wrapper.h>
 #include <mono/utils/mono-os-mutex.h>
 #include <mono/utils/mono-counters.h>
+#include <mono/utils/mono-compiler.h>
 
 #if HAVE_BOEHM_GC
 
@@ -1938,8 +1939,5 @@ mono_gchandle_free_domain (MonoDomain *domain)
 }
 #else
 
-#ifdef _MSC_VER
-// Quiet Visual Studio linker warning, LNK4221, in cases when this source file intentional ends up empty.
-void __mono_win32_boehm_gc_quiet_lnk4221(void) {}
-#endif
+MONO_EMPTY_SOURCE_FILE (boehm_gc);
 #endif /* no Boehm GC */

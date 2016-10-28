@@ -552,8 +552,5 @@ mono_gc_is_null (void)
 }
 #else
 
-#ifdef _MSC_VER
-// Quiet Visual Studio linker warning, LNK4221, in cases when this source file intentional ends up empty.
-void __mono_win32_null_gc_quiet_lnk4221(void) {}
-#endif
+MONO_EMPTY_SOURCE_FILE (null_gc);
 #endif /* HAVE_NULL_GC */

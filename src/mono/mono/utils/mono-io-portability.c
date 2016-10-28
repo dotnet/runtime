@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <mono/utils/mono-io-portability.h>
 #include <mono/metadata/profiler-private.h>
+#include <mono/utils/mono-compiler.h>
 
 #ifndef DISABLE_PORTABILITY
 
@@ -390,8 +391,6 @@ static inline gchar *mono_portability_find_file_internal (GString **report, cons
 
 #else /* DISABLE_PORTABILITY */
 
-#ifdef _MSC_VER
-// Quiet Visual Studio linker warning, LNK4221, in cases when this source file intentional ends up empty.
-void __mono_win32_mono_io_portability_quiet_lnk4221(void) {}
-#endif
+MONO_EMPTY_SOURCE_FILE (mono_io_portability);
+
 #endif /* DISABLE_PORTABILITY */

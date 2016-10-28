@@ -13,7 +13,7 @@
 
 #if defined(HOST_WIN32)
 #include <windows.h>
-#include "mono/utils/mono-mmap-windows.h"
+#include "mono/utils/mono-mmap-windows-internals.h"
 #include <mono/utils/mono-counters.h>
 #include <io.h>
 

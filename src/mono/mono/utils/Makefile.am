@@ -40,7 +40,7 @@ monoutils_sources = \
 	mono-dl-darwin.c	\
 	mono-dl-posix.c		\
 	mono-dl.h		\
-	mono-dl-windows.h	\
+	mono-dl-windows-internals.h	\
 	mono-log-windows.c	\
 	mono-log-common.c	\
 	mono-log-posix.c	\
@@ -57,7 +57,7 @@ monoutils_sources = \
 	mono-mmap-windows.c  		\
 	mono-mmap.h  		\
 	mono-mmap-internals.h	\
-	mono-mmap-windows.h	\
+	mono-mmap-windows-internals.h	\
 	mono-os-mutex.h		\
 	mono-coop-mutex.h		\
 	mono-once.h		\
@@ -67,7 +67,7 @@ monoutils_sources = \
 	mono-proclib.c		\
 	mono-proclib-windows.c		\
 	mono-proclib.h		\
-	mono-proclib-windows.h		\
+	mono-proclib-windows-internals.h		\
 	mono-publib.c		\
 	mono-string.h		\
 	mono-time.c  		\
@@ -166,7 +166,7 @@ monoutils_sources = \
 	mono-rand.c	\
 	mono-rand-windows.c	\
 	mono-rand.h \
-	mono-rand-windows.h \
+	mono-rand-windows-internals.h \
 	memfuncs.c \
 	memfuncs.h \
 	parse.c \

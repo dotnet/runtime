@@ -1085,22 +1085,46 @@ ves_icall_System_IO_MonoIO_SetFileTime (HANDLE handle, gint64 creation_time,
 	return(ret);
 }
 
-HANDLE 
-ves_icall_System_IO_MonoIO_get_ConsoleOutput ()
+#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+HANDLE
+mono_file_io_get_console_output (void)
 {
 	return GetStdHandle (STD_OUTPUT_HANDLE);
 }
+#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
+
+HANDLE 
+ves_icall_System_IO_MonoIO_get_ConsoleOutput ()
+{
+	return mono_file_io_get_console_output ();
+}
+
+#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+HANDLE
+mono_file_io_get_console_input (void)
+{
+	return GetStdHandle (STD_INPUT_HANDLE);
+}
+#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
 
 HANDLE 
 ves_icall_System_IO_MonoIO_get_ConsoleInput ()
 {
-	return GetStdHandle (STD_INPUT_HANDLE);
+	return mono_file_io_get_console_input ();
 }
+
+#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+HANDLE
+mono_file_io_get_console_error (void)
+{
+	return GetStdHandle (STD_ERROR_HANDLE);
+}
+#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
 
 HANDLE 
 ves_icall_System_IO_MonoIO_get_ConsoleError ()
 {
-	return GetStdHandle (STD_ERROR_HANDLE);
+	return mono_file_io_get_console_error ();
 }
 
 MonoBoolean

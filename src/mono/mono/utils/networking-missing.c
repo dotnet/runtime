@@ -8,6 +8,7 @@
  */
 
 #include <mono/utils/networking.h>
+#include <mono/utils/mono-compiler.h>
 #include <glib.h>
 
 #ifdef HAVE_NETDB_H
@@ -55,8 +56,5 @@ inet_pton (int family, const char *address, void *inaddrp)
 
 #else /* !HAVE_INET_PTON */
 
-#ifdef _MSC_VER
-// Quiet Visual Studio linker warning, LNK4221, in cases when this source file intentional ends up empty.
-void __mono_win32_networking_missing_lnk4221(void) {}
-#endif
+MONO_EMPTY_SOURCE_FILE (networking_missing);
 #endif /* !HAVE_INET_PTON */
