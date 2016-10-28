@@ -382,6 +382,8 @@ size_t emitter::AddRexPrefix(instruction ins, size_t code)
     return code | 0x4000000000ULL;
 }
 
+#endif //_TARGET_AMD64_
+
 bool isPrefix(BYTE b)
 {
     assert(b != 0);    // Caller should check this
@@ -398,8 +400,6 @@ bool isPrefix(BYTE b)
     //      Scalar Double  Scalar Single  Packed Double
     return ((b == 0xF2) || (b == 0xF3) || (b == 0x66));
 }
-
-#endif //_TARGET_AMD64_
 
 // Outputs VEX prefix (in case of AVX instructions) and REX.R/X/W/B otherwise.
 unsigned emitter::emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, size_t& code)
@@ -3483,7 +3483,7 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
         sz += emitGetRexPrefixSize(ins);
     }
 
-#ifdef _TARGET_X86_
+#if defined(_TARGET_X86_) && defined(LEGACY_BACKEND)
     assert(reg < 8);
 #endif
 

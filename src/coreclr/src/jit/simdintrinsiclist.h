@@ -20,7 +20,7 @@
             e) TODO-Cleanup: when we plumb TYP_SIMD through front-end, replace TYP_STRUCT with TYP_SIMD.
      */
 
-#ifdef _TARGET_AMD64_
+#ifdef _TARGET_XARCH_
 
 // Max number of parameters that we model in the table for SIMD intrinsic methods.
 #define SIMD_INTRINSIC_MAX_MODELED_PARAM_COUNT       3
@@ -138,9 +138,9 @@ SIMD_INTRINSIC("UpperRestore",              false,       UpperRestore,          
 SIMD_INTRINSIC(nullptr,                     false,       Invalid,                  "Invalid",                TYP_UNDEF,      0,      {TYP_UNDEF,  TYP_UNDEF,  TYP_UNDEF},   {TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
 #undef SIMD_INTRINSIC
 
-#else //_TARGET_AMD64_
+#else //_TARGET_XARCH_
 #error SIMD intrinsics not defined for target arch
-#endif //!_TARGET_AMD64_
+#endif //!_TARGET_XARCH_
 
 #endif //FEATURE_SIMD
 // clang-format on

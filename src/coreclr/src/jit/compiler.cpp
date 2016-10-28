@@ -2274,7 +2274,7 @@ void Compiler::compSetProcessor()
 #if defined(_TARGET_ARM_)
     info.genCPU = CPU_ARM;
 #elif defined(_TARGET_AMD64_)
-    info.genCPU = CPU_X64;
+    info.genCPU         = CPU_X64;
 #elif defined(_TARGET_X86_)
     if (jitFlags.IsSet(JitFlags::JIT_FLAG_TARGET_P4))
         info.genCPU = CPU_X86_PENTIUM_4;
@@ -2287,11 +2287,7 @@ void Compiler::compSetProcessor()
     //
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef _TARGET_AMD64_
-    opts.compUseFCOMI   = false;
-    opts.compUseCMOV    = true;
-    opts.compCanUseSSE2 = true;
-
+#ifdef _TARGET_XARCH_
 #ifdef FEATURE_AVX_SUPPORT
     // COMPlus_EnableAVX can be used to disable using AVX if available on a target machine.
     // Note that FEATURE_AVX_SUPPORT is not enabled for ctpjit
@@ -2307,10 +2303,14 @@ void Compiler::compSetProcessor()
             }
         }
     }
-#endif
-#endif //_TARGET_AMD64_
+#endif // FEATURE_AVX_SUPPORT
+#endif // _TARGET_XARCH_
 
-#ifdef _TARGET_X86_
+#ifdef _TARGET_AMD64_
+    opts.compUseFCOMI   = false;
+    opts.compUseCMOV    = true;
+    opts.compCanUseSSE2 = true;
+#elif defined(_TARGET_X86_)
     opts.compUseFCOMI   = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_FCOMI);
     opts.compUseCMOV    = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_CMOV);
     opts.compCanUseSSE2 = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE2);
@@ -2981,10 +2981,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #endif // DEBUG
 
 #ifdef FEATURE_SIMD
-#ifdef _TARGET_AMD64_
-    // Minimum bar for availing SIMD benefits is SSE2 on AMD64.
+    // Minimum bar for availing SIMD benefits is SSE2 on AMD64/x86.
     featureSIMD = jitFlags->IsSet(JitFlags::JIT_FLAG_FEATURE_SIMD);
-#endif // _TARGET_AMD64_
 #endif // FEATURE_SIMD
 
     if (compIsForInlining() || compIsForImportOnly())
