@@ -77,7 +77,7 @@ class Constants {
                                         'r2r_jitstressregs4', 'r2r_jitstressregs8', 'r2r_jitstressregsx10', 'r2r_jitstressregsx80',
                                         'r2r_jitminopts', 'r2r_jitforcerelocs']
     // This is the basic set of scenarios
-    def static basicScenarios = ['default', 'pri1', 'ilrt', 'r2r', 'pri1r2r', 'gcstress15_pri1r2r', 'longgc', 'coverage', 'formatting', 'gcsimulator', 'standalone_gc'] + r2rJitStressScenarios
+    def static basicScenarios = ['default', 'pri1', 'ilrt', 'r2r', 'pri1r2r', 'gcstress15_pri1r2r', 'longgc', 'coverage', 'formatting', 'gcsimulator', 'jitdiff', 'standalone_gc'] + r2rJitStressScenarios
     def static configurationList = ['Debug', 'Checked', 'Release']
     // This is the set of architectures
     def static architectureList = ['arm', 'arm64', 'x64', 'x86ryujit', 'x86lb']
@@ -140,6 +140,10 @@ def static isLongGc(def scenario) {
     return (scenario == 'longgc' || scenario == 'gcsimulator')
 }
 
+def static isJitDiff(def scenario) {
+    return (scenario == 'jitdiff')
+}
+
 def static setTestJobTimeOut(newJob, scenario) {
     if (isGCStressRelatedTesting(scenario)) {
         Utilities.setJobTimeout(newJob, 4320)
@@ -158,6 +162,9 @@ def static setTestJobTimeOut(newJob, scenario) {
     }
     else if (isLongGc(scenario)) {
         Utilities.setJobTimeout(newJob, 1440)
+    }
+    else if (isJitDiff(scenario)) {
+        Utilities.setJobTimeout(newJob, 240)
     }
     // Non-test jobs use the default timeout value.
 }
@@ -453,6 +460,12 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     }
                 }
                 break
+            case 'jitdiff':
+                assert (os == 'Ubuntu' || os == 'Windows_NT' || os == 'OSX')
+                assert configuration == 'Checked'
+                assert (architecture == 'x64' || architecture == 'x86') 
+                Utilities.addGithubPushTrigger(job)
+                break
             case 'coverage':
                 assert (os == 'Ubuntu' || os == 'Windows_NT')
                 assert configuration == 'Release'
@@ -604,6 +617,11 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                         case 'pri1':
                             if (configuration == 'Release') {
                                 Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Priority 1 Build and Test", "(?i).*test\\W+${os}\\W+${scenario}.*")
+                            }
+                            break
+                        case 'jitdiff':
+                            if (configuration == 'Checked') {
+                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Jit Diff Build and Test", "(?i).*test\\W+${os}\\W+${scenario}.*")
                             }
                             break
                         case 'ilrt':
@@ -881,6 +899,11 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                             // Default trigger
                             if (configuration == 'Release') {
                                 Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Priority 1 Build and Test")
+                            }
+                            break
+                        case 'jitdiff':
+                            if (configuration == 'Checked') {
+                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Jit Diff Build and Test", "(?i).*test\\W+${os}\\W+${scenario}.*")
                             }
                             break
                         case 'ilrt':
@@ -1580,7 +1603,7 @@ combinedScenarios.each { scenario ->
                         }
                     }
                     else {
-                        // If this is a r2r jitstress, jitstressregs, jitminopts or forcerelocs scenario
+                        // If this is a r2r jitstress, jitstressregs, jitminopts, or forcerelocs scenario
                         // and configuration is not Checked, bail out.
                         if (configuration != 'Checked' && Constants.r2rJitStressScenarios.indexOf(scenario) != -1) {
                             return;
@@ -1611,6 +1634,17 @@ combinedScenarios.each { scenario ->
                                 }
                                 // Release only
                                 if (configuration != 'Release') {
+                                    return
+                                }
+                                break
+                            case 'jitdiff':
+                                if (os != 'Windows_NT' && os != 'Ubuntu' && os != 'OSX') {
+                                    return
+                                }
+                                if (architecture != 'x64' && architecture != 'x86') {
+                                    return
+                                }
+                                if (configuration != 'Checked') {
                                     return
                                 }
                                 break
@@ -1756,6 +1790,7 @@ combinedScenarios.each { scenario ->
                                     if (Constants.jitStressModeScenarios.containsKey(scenario) ||
                                             scenario == 'default' ||
                                             scenario == 'r2r' ||
+                                            scenario == 'jitdiff' ||
                                             Constants.r2rJitStressScenarios.indexOf(scenario) != -1) {
                                         buildOpts += enableCorefxTesting ? ' skiptests' : ''
                                         buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${arch} ${buildOpts}"
@@ -1803,6 +1838,7 @@ combinedScenarios.each { scenario ->
                                         def runjitstressregsStr = ''
                                         def runjitmioptsStr = ''
                                         def runjitforcerelocsStr = ''
+                                        def runjitdisasmStr = ''
                                         def gcstressStr = ''
                                         def runtestArguments = ''
                                         def gcTestArguments = ''
@@ -1853,11 +1889,16 @@ combinedScenarios.each { scenario ->
                                            gcstressStr = 'gcstresslevel 0xF'
                                         }
 
+                                        if (scenario == 'jitdiff')
+                                        {
+                                            runjitdisasmStr = 'jitdisasm crossgen'
+                                        }
+
                                         if (isLongGc(scenario)) {
                                             gcTestArguments = "${scenario} sequential"
                                         }
 
-                                        runtestArguments = "${lowerConfiguration} ${arch} ${gcstressStr} ${crossgenStr} ${runcrossgentestsStr} ${runjitstressStr} ${runjitstressregsStr} ${runjitmioptsStr} ${runjitforcerelocsStr} ${gcTestArguments}"
+                                        runtestArguments = "${lowerConfiguration} ${arch} ${gcstressStr} ${crossgenStr} ${runcrossgentestsStr} ${runjitstressStr} ${runjitstressregsStr} ${runjitmioptsStr} ${runjitforcerelocsStr} ${runjitdisasmStr} ${gcTestArguments}"
                                         if (Constants.jitStressModeScenarios.containsKey(scenario)) {
                                             if (enableCorefxTesting) {
                                                 // Sync to corefx repo
@@ -1906,15 +1947,21 @@ combinedScenarios.each { scenario ->
                                         buildCommands += "build.cmd ${lowerConfiguration} ${arch} linuxmscorlib"
                                         buildCommands += "build.cmd ${lowerConfiguration} ${arch} freebsdmscorlib"
                                         buildCommands += "build.cmd ${lowerConfiguration} ${arch} osxmscorlib"
-                                    
+
                                         // Zip up the tests directory so that we don't use so much space/time copying
                                         // 10s of thousands of files around.
                                         buildCommands += "powershell -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('.\\bin\\tests\\${osGroup}.${arch}.${configuration}', '.\\bin\\tests\\tests.zip')\"";
-                                        
-                                        if (!Constants.jitStressModeScenarios.containsKey(scenario)) {
+
+                                        if (!Constants.jitStressModeScenarios.containsKey(scenario) && scenario != 'jitdiff') {
                                             // For windows, pull full test results and test drops for x86/x64.
                                             // No need to pull for stress mode scenarios (downstream builds use the default scenario)
                                             Utilities.addArchival(newJob, "bin/Product/**,bin/tests/tests.zip")
+                                        }
+
+                                        if (scenario == 'jitdiff') {
+                                            // retrive jit-dasm output for base commit, and run jit-diff
+
+                                            Utilities.addArchival(newJob, "bin/tests/${osGroup}.${arch}.${configuration}/dasm/**")
                                         }
                                         
                                         if (!isBuildOnly) {
@@ -2227,6 +2274,10 @@ combinedScenarios.each { scenario ->
                                     return
                                 }
                                 break
+                            case 'jitdiff':
+                                if (configuration != 'Checked') {
+                                    return;
+                                }
                             case 'r2r':
                                 //Skip configs that aren't Checked or Release (so just Debug, for now)
                                 if (configuration != 'Checked' && configuration != 'Release') {
@@ -2344,6 +2395,7 @@ combinedScenarios.each { scenario ->
                     def runjitstressregsStr = ''
                     def runjitmioptsStr = ''
                     def runjitforcerelocsStr = ''
+                    def runjitdisasmStr = ''
                     def gcstressStr = ''
 
                     if (scenario == 'r2r' ||
@@ -2392,6 +2444,11 @@ combinedScenarios.each { scenario ->
                         gcstressStr = '--gcstresslevel=0xF'
                     }
 
+                    if (scenario == 'jitdiff')
+                    {
+                        runjitdisasmStr = '--jitdisasm --crossgen'
+                    }
+                    
                     if (isLongGc(scenario)) {
                         // Long GC tests behave very poorly when they are not
                         // the only test running (many of them allocate until OOM).
@@ -2557,7 +2614,7 @@ combinedScenarios.each { scenario ->
                 --coreFxBinDir=\"\${WORKSPACE}/bin/${osGroup}.AnyCPU.Release;\${WORKSPACE}/bin/Unix.AnyCPU.Release;\${WORKSPACE}/bin/AnyOS.AnyCPU.Release\" \\
                 --coreFxNativeBinDir=\"\${WORKSPACE}/bin/${osGroup}.${architecture}.Release\" \\
                 --limitedDumpGeneration \\
-                ${testEnvOpt} ${serverGCString} ${gcstressStr} ${crossgenStr} ${runcrossgentestsStr} ${runjitstressStr} ${runjitstressregsStr} ${runjitmioptsStr} ${runjitforcerelocsStr} ${sequentialString} ${playlistString}""")
+                ${testEnvOpt} ${serverGCString} ${gcstressStr} ${crossgenStr} ${runcrossgentestsStr} ${runjitstressStr} ${runjitstressregsStr} ${runjitmioptsStr} ${runjitforcerelocsStr} ${runjitdisasmStr} ${sequentialString} ${playlistString}""")
                             }
                         }
                     }
@@ -2567,6 +2624,10 @@ combinedScenarios.each { scenario ->
                         Utilities.addHtmlPublisher(newJob, '${WORKSPACE}/coverage/Coverage/reports', 'Code Coverage Report', 'coreclr.html')
                         // TODO: Add once external email sending is available again
                         // addEmailPublisher(newJob, 'clrcoverage@microsoft.com')
+                    }
+
+                    if (scenario == 'jitdiff') {
+                        Utilities.addArchival(newJob, "bin/tests/${osGroup}.${architecture}.${configuration}/dasm/**")
                     }
 
                     // Experimental: If on Ubuntu 14.04, then attempt to pull in crash dump links
