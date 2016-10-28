@@ -156,13 +156,15 @@ namespace System.IO {
                     // depends on the security check in get_CreationTimeUtc
                     return CreationTimeUtc.ToLocalTime();
             }
-
-            set {
+#if !FEATURE_CORECLR
+            set
+            {
                 CreationTimeUtc = value.ToUniversalTime();
             }
+#endif // !FEATURE_CORECLR
         }
 
-       [ComVisible(false)]
+        [ComVisible(false)]
        public DateTime CreationTimeUtc {
            [System.Security.SecuritySafeCritical]
             get {
@@ -183,7 +185,7 @@ namespace System.IO {
                 return DateTime.FromFileTimeUtc(fileTime);
                 
             }
-        
+#if !FEATURE_CORECLR
             set {
                 if (this is DirectoryInfo)
                     Directory.SetCreationTimeUtc(FullPath,value);
@@ -191,11 +193,12 @@ namespace System.IO {
                     File.SetCreationTimeUtc(FullPath,value);
                 _dataInitialised = -1;
             }
+#endif // !FEATURE_CORECLR
         }
 
 
         public DateTime LastAccessTime
-       {
+        {
            get {
                 // depends on the security check in get_LastAccessTimeUtc
                 return LastAccessTimeUtc.ToLocalTime();
@@ -228,11 +231,13 @@ namespace System.IO {
             }
 
             set {
+#if !FEATURE_CORECLR
                 if (this is DirectoryInfo)
                     Directory.SetLastAccessTimeUtc(FullPath,value);
                 else
                     File.SetLastAccessTimeUtc(FullPath,value);
                 _dataInitialised = -1;
+#endif // !FEATURE_CORECLR
             }
         }
 
@@ -271,11 +276,13 @@ namespace System.IO {
             }
 
             set {
+#if !FEATURE_CORECLR
                 if (this is DirectoryInfo)
                     Directory.SetLastWriteTimeUtc(FullPath,value);
                 else
                     File.SetLastWriteTimeUtc(FullPath,value);
                 _dataInitialised = -1;
+#endif // !FEATURE_CORECLR
             }
         }
 

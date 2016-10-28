@@ -80,7 +80,9 @@ GPTR_IMPL(MethodTable,      g_pValueTypeClass);
 GPTR_IMPL(MethodTable,      g_pEnumClass);
 GPTR_IMPL(MethodTable,      g_pThreadClass);
 GPTR_IMPL(MethodTable,      g_pCriticalFinalizerObjectClass);
+#ifndef FEATURE_CORECLR
 GPTR_IMPL(MethodTable,      g_pAsyncFileStream_AsyncResultClass);
+#endif // !FEATURE_CORECLR
 GPTR_IMPL(MethodTable,      g_pFreeObjectMethodTable);
 GPTR_IMPL(MethodTable,      g_pOverlappedDataClass);
 

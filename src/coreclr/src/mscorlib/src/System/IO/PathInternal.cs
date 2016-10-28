@@ -201,6 +201,22 @@ namespace System.IO
         }
 
         /// <summary>
+        /// Adds the extended path prefix (\\?\) if not already a device path, IF the path is not relative,
+        /// AND the path is more than 259 characters. (> MAX_PATH + null)
+        /// </summary>
+        internal static string EnsureExtendedPrefixOverMaxPath(string path)
+        {
+            if (path != null && path.Length >= MaxShortPath)
+            {
+                return EnsureExtendedPrefix(path);
+            }
+            else
+            {
+                return path;
+            }
+        }
+
+        /// <summary>
         /// Removes the extended path prefix (\\?\) if present.
         /// </summary>
         internal static string RemoveExtendedPrefix(string path)
