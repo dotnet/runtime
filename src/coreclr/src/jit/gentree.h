@@ -1902,10 +1902,10 @@ public:
     // Returns an iterator that will produce the use edge to each operand of this node. Differs
     // from the sequence of nodes produced by a loop over `GetChild` in its handling of call, phi,
     // and block op nodes.
-    GenTreeUseEdgeIterator GenTree::UseEdgesBegin();
-    GenTreeUseEdgeIterator GenTree::UseEdgesEnd();
+    GenTreeUseEdgeIterator UseEdgesBegin();
+    GenTreeUseEdgeIterator UseEdgesEnd();
 
-    IteratorPair<GenTreeUseEdgeIterator> GenTree::UseEdges();
+    IteratorPair<GenTreeUseEdgeIterator> UseEdges();
 
     // Returns an iterator that will produce each operand of this node. Differs from the sequence
     // of nodes produced by a loop over `GetChild` in its handling of call, phi, and block op
@@ -2207,7 +2207,7 @@ struct GenTreeIntConCommon : public GenTree
     }
 
     bool ImmedValNeedsReloc(Compiler* comp);
-    bool GenTreeIntConCommon::ImmedValCanBeFolded(Compiler* comp, genTreeOps op);
+    bool ImmedValCanBeFolded(Compiler* comp, genTreeOps op);
 
 #ifdef _TARGET_XARCH_
     bool FitsInAddrBase(Compiler* comp);

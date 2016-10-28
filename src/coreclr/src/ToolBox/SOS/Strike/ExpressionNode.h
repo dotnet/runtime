@@ -134,13 +134,13 @@ private:
     };
 
     // Creates a new expression with a given debuggee value and frame
-    ExpressionNode(__in_z WCHAR* pExpression, ICorDebugValue* pValue, ICorDebugILFrame* pFrame);
+    ExpressionNode(__in_z const WCHAR* pExpression, ICorDebugValue* pValue, ICorDebugILFrame* pFrame);
 
     // Creates a new expression that has an error and no value
-    ExpressionNode(__in_z WCHAR* pExpression, __in_z WCHAR* pErrorMessage);
+    ExpressionNode(__in_z const WCHAR* pExpression, __in_z const WCHAR* pErrorMessage);
 
     // Creates a new child expression
-    ExpressionNode(__in_z WCHAR* pParentExpression, ChildKind ck, __in_z WCHAR* pRelativeExpression, ICorDebugValue* pValue, ICorDebugType* pType, ICorDebugILFrame* pFrame, UVCP_CONSTANT pDefaultValue = NULL, ULONG cchDefaultValue = 0);
+    ExpressionNode(__in_z const WCHAR* pParentExpression, ChildKind ck, __in_z const WCHAR* pRelativeExpression, ICorDebugValue* pValue, ICorDebugType* pType, ICorDebugILFrame* pFrame, UVCP_CONSTANT pDefaultValue = NULL, ULONG cchDefaultValue = 0);
 
     // Common member initialization for the constructors
     VOID Init(ICorDebugValue* pValue, ICorDebugType* pTypeCast, ICorDebugILFrame* pFrame);
@@ -288,17 +288,17 @@ private:
 
     // Searches the debuggee for any ICorDebugType that matches the given fully qualified name
     // This will search across all AppDomains and Assemblies
-    static HRESULT FindTypeByName(__in_z WCHAR* pTypeName, ICorDebugType** ppType);
+    static HRESULT FindTypeByName(__in_z const WCHAR* pTypeName, ICorDebugType** ppType);
 
     // Searches the debuggee for any ICorDebugType that matches the given fully qualified name
     // This will search across all Assemblies in the given AppDomain
-    static HRESULT FindTypeByName(ICorDebugAppDomain* pAppDomain, __in_z WCHAR* pTypeName, ICorDebugType** ppType);
+    static HRESULT FindTypeByName(ICorDebugAppDomain* pAppDomain, __in_z const WCHAR* pTypeName, ICorDebugType** ppType);
 
     // Searches the assembly for any ICorDebugType that matches the given fully qualified name
-    static HRESULT FindTypeByName(ICorDebugAssembly* pAssembly, __in_z WCHAR* pTypeName, ICorDebugType** ppType);
+    static HRESULT FindTypeByName(ICorDebugAssembly* pAssembly, __in_z const WCHAR* pTypeName, ICorDebugType** ppType);
 
     // Searches a given module for any ICorDebugType that matches the given fully qualified type name
-    static HRESULT FindTypeByName(ICorDebugModule* pModule, __in_z WCHAR* pTypeName, ICorDebugType** ppType);
+    static HRESULT FindTypeByName(ICorDebugModule* pModule, __in_z const WCHAR* pTypeName, ICorDebugType** ppType);
 
     // Checks whether the given token is or refers to type System.ValueType or System.Enum
     static HRESULT IsTokenValueTypeOrEnum(mdToken token, IMetaDataImport* pMetadata, BOOL* pResult);

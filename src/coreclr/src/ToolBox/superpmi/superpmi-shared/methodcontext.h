@@ -513,9 +513,9 @@ public:
     void dmpGetMethodName(DLD key, DD value);
     const char *repGetMethodName(CORINFO_METHOD_HANDLE ftn, const char **moduleName);
 
-    void MethodContext::recGetJitFlags(CORJIT_FLAGS *jitFlags, DWORD sizeInBytes, DWORD result);
-    void MethodContext::dmpGetJitFlags(DWORD key, DD value);
-    DWORD MethodContext::repGetJitFlags(CORJIT_FLAGS *jitFlags, DWORD sizeInBytes);
+    void recGetJitFlags(CORJIT_FLAGS *jitFlags, DWORD sizeInBytes, DWORD result);
+    void dmpGetJitFlags(DWORD key, DD value);
+    DWORD repGetJitFlags(CORJIT_FLAGS *jitFlags, DWORD sizeInBytes);
 
     void recGetJitTimeLogFilename(LPCWSTR tempFileName);
     void dmpGetJitTimeLogFilename(DWORD key, DWORD value);

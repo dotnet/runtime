@@ -129,7 +129,7 @@ VOID ExpressionNode::DFSVisit(ExpressionNodeVisitorCallback pFunc, VOID* pUserDa
 
 
 // Creates a new expression with a given debuggee value and frame
-ExpressionNode::ExpressionNode(__in_z WCHAR* pExpression, ICorDebugValue* pValue, ICorDebugILFrame* pFrame)
+ExpressionNode::ExpressionNode(__in_z const WCHAR* pExpression, ICorDebugValue* pValue, ICorDebugILFrame* pFrame)
 {
     Init(pValue, NULL, pFrame);
     _snwprintf_s(pAbsoluteExpression, MAX_EXPRESSION, _TRUNCATE, L"%s", pExpression);
@@ -137,7 +137,7 @@ ExpressionNode::ExpressionNode(__in_z WCHAR* pExpression, ICorDebugValue* pValue
 }
 
 // Creates a new expression that has an error and no value
-ExpressionNode::ExpressionNode(__in_z WCHAR* pExpression, __in_z WCHAR* pErrorMessage)
+ExpressionNode::ExpressionNode(__in_z const WCHAR* pExpression, __in_z const WCHAR* pErrorMessage)
 {
     Init(NULL, NULL, NULL);
     _snwprintf_s(pAbsoluteExpression, MAX_EXPRESSION, _TRUNCATE, L"%s", pExpression);
@@ -146,7 +146,7 @@ ExpressionNode::ExpressionNode(__in_z WCHAR* pExpression, __in_z WCHAR* pErrorMe
 }
 
 // Creates a new child expression
-ExpressionNode::ExpressionNode(__in_z WCHAR* pParentExpression, ChildKind ck, __in_z WCHAR* pRelativeExpression, ICorDebugValue* pValue, ICorDebugType* pType, ICorDebugILFrame* pFrame, UVCP_CONSTANT pDefaultValue, ULONG cchDefaultValue)
+ExpressionNode::ExpressionNode(__in_z const WCHAR* pParentExpression, ChildKind ck, __in_z const WCHAR* pRelativeExpression, ICorDebugValue* pValue, ICorDebugType* pType, ICorDebugILFrame* pFrame, UVCP_CONSTANT pDefaultValue, ULONG cchDefaultValue)
 {
     Init(pValue, pType, pFrame);
     if(ck == ChildKind_BaseClass)
@@ -1979,7 +1979,7 @@ HRESULT ExpressionNode::GetCanonicalElementTypeForTypeName(__in_z WCHAR* pTypeNa
 
 // Searches the debuggee for any ICorDebugType that matches the given fully qualified name
 // This will search across all AppDomains and Assemblies
-HRESULT ExpressionNode::FindTypeByName(__in_z  WCHAR* pTypeName, ICorDebugType** ppType)
+HRESULT ExpressionNode::FindTypeByName(__in_z const WCHAR* pTypeName, ICorDebugType** ppType)
 {
     HRESULT Status = S_OK;
     ToRelease<ICorDebugAppDomainEnum> pAppDomainEnum;
@@ -2001,7 +2001,7 @@ HRESULT ExpressionNode::FindTypeByName(__in_z  WCHAR* pTypeName, ICorDebugType**
 
 // Searches the debuggee for any ICorDebugType that matches the given fully qualified name
 // This will search across all Assemblies in the given AppDomain
-HRESULT ExpressionNode::FindTypeByName(ICorDebugAppDomain* pAppDomain, __in_z WCHAR* pTypeName, ICorDebugType** ppType)
+HRESULT ExpressionNode::FindTypeByName(ICorDebugAppDomain* pAppDomain, __in_z const WCHAR* pTypeName, ICorDebugType** ppType)
 {
     HRESULT Status = S_OK;
     ToRelease<ICorDebugAssemblyEnum> pAssemblyEnum;
@@ -2022,7 +2022,7 @@ HRESULT ExpressionNode::FindTypeByName(ICorDebugAppDomain* pAppDomain, __in_z WC
 }
 
 // Searches the assembly for any ICorDebugType that matches the given fully qualified name
-HRESULT ExpressionNode::FindTypeByName(ICorDebugAssembly* pAssembly, __in_z WCHAR* pTypeName, ICorDebugType** ppType)
+HRESULT ExpressionNode::FindTypeByName(ICorDebugAssembly* pAssembly, __in_z const WCHAR* pTypeName, ICorDebugType** ppType)
 {
     HRESULT Status = S_OK;
     ToRelease<ICorDebugModuleEnum> pModuleEnum;
@@ -2043,7 +2043,7 @@ HRESULT ExpressionNode::FindTypeByName(ICorDebugAssembly* pAssembly, __in_z WCHA
 }
 
 // Searches a given module for any ICorDebugType that matches the given fully qualified type name
-HRESULT ExpressionNode::FindTypeByName(ICorDebugModule* pModule, __in_z WCHAR* pTypeName, ICorDebugType** ppType)
+HRESULT ExpressionNode::FindTypeByName(ICorDebugModule* pModule, __in_z const WCHAR* pTypeName, ICorDebugType** ppType)
 {
     HRESULT Status = S_OK;
     ToRelease<IUnknown> pMDUnknown;
@@ -2054,7 +2054,7 @@ HRESULT ExpressionNode::FindTypeByName(ICorDebugModule* pModule, __in_z WCHAR* p
     // If the name contains a generic argument list, extract the type name from
     // before the list
     WCHAR rootName[mdNameLen];
-    WCHAR* pRootName = NULL;
+    const WCHAR* pRootName = NULL;
     int typeNameLen = (int) _wcslen(pTypeName);
     int genericParamListStart = (int) _wcscspn(pTypeName, L"<");
     if(genericParamListStart != typeNameLen)
@@ -2107,11 +2107,11 @@ HRESULT ExpressionNode::FindTypeByName(ICorDebugModule* pModule, __in_z WCHAR* p
         }
         typeParams = new ToRelease<ICorDebugType>[countTypeParams];
 
-        WCHAR* pCurName = pTypeName + genericParamListStart+1;
+        const WCHAR* pCurName = pTypeName + genericParamListStart+1;
         for(int i = 0; i < countTypeParams; i++)
         {
             WCHAR typeParamName[mdNameLen];
-            WCHAR* pNextComma = _wcschr(pCurName, L',');
+            const WCHAR* pNextComma = _wcschr(pCurName, L',');
             int len = (pNextComma != NULL) ? (int)(pNextComma - pCurName) : (int)_wcslen(pCurName)-1;
             if(len > mdNameLen)
                 return E_FAIL;
