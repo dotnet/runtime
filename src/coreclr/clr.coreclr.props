@@ -77,6 +77,9 @@
      -->
     <FeatureImplicitTls Condition="'$(TargetArch)' == 'arm64'">true</FeatureImplicitTls>
     <FeatureSvrGc Condition="'$(TargetArch)' != 'arm'">true</FeatureSvrGc>
+    <FeatureCoreFxFileStream>true</FeatureCoreFxFileStream>
+    <FeatureCoreFxShim>true</FeatureCoreFxShim>
+    <FeatureCoreFxOverlapped>true</FeatureCoreFxOverlapped>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
@@ -101,5 +104,11 @@
   <PropertyGroup Condition="'$(TargetsUnix)' != 'true'">
     <FeatureUseLcid>true</FeatureUseLcid>
     <FeatureImplicitLongPath>true</FeatureImplicitLongPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsUnix)' != 'true' and '$(ClrProduct)' == 'core_clr'">
+    <FeatureCoreFxWindowsInterop>true</FeatureCoreFxWindowsInterop>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsUnix)' == 'true' and '$(ClrProduct)' == 'core_clr'">
+    <FeatureCoreFxUnixInterop>true</FeatureCoreFxUnixInterop>
   </PropertyGroup>
 </Project>

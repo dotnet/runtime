@@ -404,6 +404,7 @@ namespace System.IO {
                     && ((data.fileAttributes & Win32Native.FILE_ATTRIBUTE_DIRECTORY) != 0);
         }
 
+#if !FEATURE_CORECLR
         public static void SetCreationTime(String path,DateTime creationTime)
         {
             SetCreationTimeUtc(path, creationTime.ToUniversalTime());
@@ -422,6 +423,7 @@ namespace System.IO {
                 }
             }
         }
+#endif // !FEATURE_CORECLR
 
         public static DateTime GetCreationTime(String path)
         {
@@ -433,6 +435,7 @@ namespace System.IO {
             return File.GetCreationTimeUtc(path);
         }
 
+#if !FEATURE_CORECLR
         public static void SetLastWriteTime(String path,DateTime lastWriteTime)
         {
             SetLastWriteTimeUtc(path, lastWriteTime.ToUniversalTime());
@@ -451,6 +454,7 @@ namespace System.IO {
                 }
             }
         }
+#endif // !FEATURE_CORECLR
 
         public static DateTime GetLastWriteTime(String path)
         {
@@ -462,6 +466,7 @@ namespace System.IO {
             return File.GetLastWriteTimeUtc(path);
         }
 
+#if !FEATURE_CORECLR
         public static void SetLastAccessTime(String path,DateTime lastAccessTime)
         {
             SetLastAccessTimeUtc(path, lastAccessTime.ToUniversalTime());
@@ -480,6 +485,7 @@ namespace System.IO {
                 }
             }
         }
+#endif // !FEATURE_CORECLR
 
         public static DateTime GetLastAccessTime(String path)
         {
@@ -1040,11 +1046,11 @@ namespace System.IO {
             }
         }
 
-        #if FEATURE_CORECLR
+#if FEATURE_CORECLR
         [System.Security.SecurityCritical] // auto-generated
-        #else
+#else
         [System.Security.SecuritySafeCritical]
-        #endif
+#endif
         public static void SetCurrentDirectory(String path)
         {
             if (path==null)
@@ -1347,6 +1353,7 @@ namespace System.IO {
             }
         }
 
+#if !FEATURE_CORECLR
         // WinNT only. Win9x this code will not work.
         [System.Security.SecurityCritical]  // auto-generated
         private static SafeFileHandle OpenHandle(String path)
@@ -1376,6 +1383,7 @@ namespace System.IO {
             }
             return handle;
         }
+#endif // !FEATURE_CORECLR
 
         private const int FILE_ATTRIBUTE_DIRECTORY = 0x00000010;    
         private const int GENERIC_WRITE = unchecked((int)0x40000000);
@@ -1384,6 +1392,5 @@ namespace System.IO {
         private const int OPEN_EXISTING = 0x00000003;
         private const int FILE_FLAG_BACKUP_SEMANTICS = 0x02000000;
     }
-
 }
 

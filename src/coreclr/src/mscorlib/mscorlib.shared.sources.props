@@ -613,8 +613,10 @@
     <GlobalizationSources Condition="'$(FeatureOnlyCoreCalendars)'==''" Include="$(BclSourcesRoot)\System\Globalization\KoreanLunisolarCalendar.cs" />
     <GlobalizationSources Condition="'$(FeatureOnlyCoreCalendars)'==''" Include="$(BclSourcesRoot)\System\Globalization\TaiwanLunisolarCalendar.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureCoreFxGlobalization)' == 'true'">
+  <ItemGroup Condition="'$(FeatureCoreFxGlobalization)' == 'true' or '$(FeatureCoreFxFileStream)' == 'true'">
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\SR.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureCoreFxGlobalization)' == 'true'">
     <GlobalizationSources Condition="'$(FeatureCoreClr)'=='true'" Include="$(CoreFxSourcesRoot)\System\Globalization\STUBS.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\Calendar.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\CalendarAlgorithmType.cs" />
@@ -664,7 +666,6 @@
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\EncodingDataItem.Unix.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Text\Normalization.Unix.cs" />
 
-    <GlobalizationSources Include="$(CoreFxSourcesRoot)\Interop\Unix\Interop.Libraries.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Calendar.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Casing.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Collation.cs" />
@@ -680,7 +681,7 @@
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\DigitShapes.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\HijriCalendar.Unix.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\JapaneseCalendar.Unix.cs" />
-    <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\LocaleData.Unix.cs" />    
+    <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\LocaleData.Unix.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\TextInfo.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -754,6 +755,32 @@
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\Tasks\TaskToApm.cs" />
     <ThreadingSources Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Threading\Tasks\IAsyncCausalityTracerStatics.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(FeatureCoreFxFileStream)' != 'true'">
+    <FileStreamSources Include="$(BclSourcesRoot)\System\IO\FileStream.cs" />
+    <SafehandleSources Include="$(BclSourcesRoot)\Microsoft\Win32\SafeHandles\SafeFileHandle.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureCoreFxFileStream)' == 'true'">
+    <FileStreamSources Include="$(CoreFxSourcesRoot)\System\IO\FileStream.cs" />
+    <FileStreamSources Include="$(CoreFxSourcesRoot)\System\IO\FileStream.NetStandard17.cs" />
+    <FileStreamSources Include="$(CoreFxSourcesRoot)\System\IO\Error.cs" />
+    <FileStreamSources Include="$(CoreFxSourcesRoot)\System\IO\StreamHelpers.ArrayPoolCopy.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureCoreFxFileStream)' == 'true' and '$(TargetsUnix)' == 'true'">
+    <SafehandleSources Include="$(CoreFxSourcesRoot)\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs" />
+    <FileStreamSources Include="$(CoreFxSourcesRoot)\System\IO\FileStream.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureCoreFxFileStream)' == 'true' and '$(TargetsUnix)' != 'true'">
+    <SafehandleSources Include="$(CoreFxSourcesRoot)\Microsoft\Win32\SafeHandles\SafeFileHandle.Windows.cs" />
+    <FileStreamSources Include="$(CoreFxSourcesRoot)\System\IO\FileStream.Win32.cs" />
+    <FileStreamSources Include="$(CoreFxSourcesRoot)\System\IO\FileStreamCompletionSource.Win32.cs" />
+    <FileStreamSources Include="$(CoreFxSourcesRoot)\System\IO\Win32Marshal.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureCoreFxOverlapped)' == 'true'" >
+    <ThreadingSources Include="$(CoreFxSourcesRoot)\System\Threading\DeferredDisposableLifetime.cs" />
+    <ThreadingSources Include="$(CoreFxSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.cs" />
+    <ThreadingSources Include="$(CoreFxSourcesRoot)\System\Threading\ClrThreadPoolBoundHandleOverlapped.cs" />
+    <ThreadingSources Include="$(CoreFxSourcesRoot)\System\Threading\ClrThreadPoolPreAllocatedOverlapped.cs" />
+  </ItemGroup>
   <ItemGroup>
     <IoSources Include="$(BclSourcesRoot)\System\IO\__Error.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\__HResults.cs" />
@@ -774,7 +801,6 @@
     <IoSources Include="$(BclSourcesRoot)\System\IO\FileNotFoundException.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\FileOptions.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\FileShare.cs" />
-    <IoSources Include="$(BclSourcesRoot)\System\IO\FileStream.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\FileSystemEnumerable.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\FileSystemInfo.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\FileAttributes.cs" />
@@ -1120,7 +1146,6 @@
     <GenericsSources Include="$(BclSourcesRoot)\System\Collections\Concurrent\PartitionerStatic.cs" />
   </ItemGroup>
   <ItemGroup>
-    <SafehandleSources Include="$(BclSourcesRoot)\Microsoft\Win32\SafeHandles\SafeFileHandle.cs" />
     <SafehandleSources Include="$(BclSourcesRoot)\Microsoft\Win32\SafeHandles\SafeFileMappingHandle.cs" />
     <SafehandleSources Include="$(BclSourcesRoot)\Microsoft\Win32\SafeHandles\SafeFindHandle.cs" />
     <SafehandleSources Include="$(BclSourcesRoot)\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs" />
@@ -1139,6 +1164,56 @@
     <BuffersSources Condition="'$(FeatureCoreClr)'=='true'" Include="$(BclSourcesRoot)\System\Buffers\DefaultArrayPool.cs" />
     <BuffersSources Condition="'$(FeatureCoreClr)'=='true'" Include="$(BclSourcesRoot)\System\Buffers\DefaultArrayPoolBucket.cs" />
     <BuffersSources Condition="'$(FeatureCoreClr)'=='true'" Include="$(BclSourcesRoot)\System\Buffers\Utilities.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureCoreFxWindowsInterop)' == 'true'">
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\System\HResults.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\Interop.BOOL.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\Interop.Libraries.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.CancelIoEx.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.CloseHandle.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.CreateFile.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.Errors.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.FileTypes.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.FileOperations.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.FlushFileBuffers.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.FormatMessage.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.GetFileInformationByHandleEx.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.GetFileType_SafeHandle.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.LockFile.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.ReadFile_SafeHandle_IntPtr.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.ReadFile_SafeHandle_NativeOverlapped.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.SafeCreateFile.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.SECURITY_ATTRIBUTES.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.SecurityOptions.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.SetEndOfFile.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.SetErrorMode.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.SetFileInformationByHandle.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.SetFilePointerEx.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.UnsafeCreateFile.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.WriteFile_SafeHandle_IntPtr.cs" />
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.WriteFile_SafeHandle_NativeOverlapped.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureCoreFxUnixInterop)' == 'true'">
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\System\HResults.cs" />
+    <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\Interop.Errors.cs" />
+    <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\Interop.IOErrors.cs" />
+    <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\Interop.Libraries.cs" />
+    <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.Close.cs" />
+    <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.FLock.cs" />
+    <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.FSync.cs" />
+    <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.FTruncate.cs" />
+    <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.LSeek.cs" />
+    <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.Open.cs" />
+    <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.OpenFlags.cs" />
+    <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.Permissions.cs" />
+    <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.PosixFAdvise.cs" />
+    <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.Read.cs" />
+    <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.Stat.cs" />
+    <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.Unlink.cs" />
+    <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.Write.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureCoreFxShim)' == 'true'">
+    <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Debug.cs" />
   </ItemGroup>
   <ItemGroup>
     <MscorlibSources Include="@(SystemSources)"/>
@@ -1170,6 +1245,7 @@
     <MscorlibSources Include="@(WinRTTSources)"/>
     <MscorlibSources Include="@(WinRTCollectionSources)"/>
     <MscorlibSources Include="@(IoSources)"/>
+    <MscorlibSources Include="@(FileStreamSources)"/>
     <MscorlibSources Include="@(CompilerServicesSources)"/>
     <MscorlibSources Include="@(RuntimeSources)"/>
     <MscorlibSources Include="@(XmlSources)"/>
@@ -1193,5 +1269,7 @@
     <MscorlibSources Include="@(NumericsSources)"/>
     <MscorlibSources Include="$(BclSourcesRoot)\GlobalSuppressions.cs"/>
     <MscorlibSources Include="@(BuffersSources)"/>
+    <MscorlibSources Include="@(WindowsInteropSources)"/>
+    <MscorlibSources Include="@(UnixInteropSources)"/>
   </ItemGroup>
 </Project>
