@@ -383,7 +383,7 @@ extern "C" int32_t SystemNative_ReadDirR(DIR* dir, void* buffer, int32_t bufferS
     }
 
     assert(result->d_reclen <= bufferSize);
-    memcpy(entry, result, static_cast<size_t>(result->d_reclen));
+    memcpy_s(entry, sizeof(dirent), result, static_cast<size_t>(result->d_reclen));
 #endif
     ConvertDirent(*entry, outputEntry);
     return 0;

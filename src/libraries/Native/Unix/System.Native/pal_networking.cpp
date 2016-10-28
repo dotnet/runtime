@@ -6,6 +6,7 @@
 #include "pal_networking.h"
 #include "pal_io.h"
 #include "pal_utilities.h"
+#include "pal_safecrt.h"
 
 #include <stdlib.h>
 #include <pthread.h>
@@ -159,13 +160,13 @@ static void ConvertByteArrayToIn6Addr(in6_addr& addr, const uint8_t* buffer, int
 {
 #if HAVE_IN6_U
     assert(bufferLength == ARRAY_SIZE(addr.__in6_u.__u6_addr8));
-    memcpy(addr.__in6_u.__u6_addr8, buffer, UnsignedCast(bufferLength));
+    memcpy_s(addr.__in6_u.__u6_addr8, ARRAY_SIZE(addr.__in6_u.__u6_addr8), buffer, UnsignedCast(bufferLength));
 #elif HAVE_U6_ADDR
     assert(bufferLength == ARRAY_SIZE(addr.__u6_addr.__u6_addr8));
-    memcpy(addr.__u6_addr.__u6_addr8, buffer, UnsignedCast(bufferLength));
+    memcpy_s(addr.__u6_addr.__u6_addr8, ARRAY_SIZE(addr.__u6_addr.__u6_addr8), buffer, UnsignedCast(bufferLength));
 #else
     assert(bufferLength == ARRAY_SIZE(addr.s6_addr));
-    memcpy(addr.s6_addr, buffer, UnsignedCast(bufferLength));
+    memcpy_s(addr.s6_addr, ARRAY_SIZE(addr.s6_addr), buffer, UnsignedCast(bufferLength));
 #endif
 }
 
@@ -173,13 +174,13 @@ static void ConvertIn6AddrToByteArray(uint8_t* buffer, int32_t bufferLength, con
 {
 #if HAVE_IN6_U
     assert(bufferLength == ARRAY_SIZE(addr.__in6_u.__u6_addr8));
-    memcpy(buffer, addr.__in6_u.__u6_addr8, UnsignedCast(bufferLength));
+    memcpy_s(buffer, UnsignedCast(bufferLength), addr.__in6_u.__u6_addr8, ARRAY_SIZE(addr.__in6_u.__u6_addr8));
 #elif HAVE_U6_ADDR
     assert(bufferLength == ARRAY_SIZE(addr.__u6_addr.__u6_addr8));
-    memcpy(buffer, addr.__u6_addr.__u6_addr8, UnsignedCast(bufferLength));
+    memcpy_s(buffer, UnsignedCast(bufferLength), addr.__u6_addr.__u6_addr8, ARRAY_SIZE(addr.__u6_addr.__u6_addr8));
 #else
     assert(bufferLength == ARRAY_SIZE(addr.s6_addr));
-    memcpy(buffer, addr.s6_addr, UnsignedCast(bufferLength));
+    memcpy_s(buffer, UnsignedCast(bufferLength), addr.s6_addr, ARRAY_SIZE(addr.s6_addr));
 #endif
 }
 
@@ -1648,11 +1649,11 @@ extern "C" Error SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* mes
 
     assert(static_cast<int32_t>(header.msg_namelen) <= messageHeader->SocketAddressLen);
     messageHeader->SocketAddressLen = Min(static_cast<int32_t>(header.msg_namelen), messageHeader->SocketAddressLen);
-    memcpy(messageHeader->SocketAddress, header.msg_name, static_cast<size_t>(messageHeader->SocketAddressLen));
+    memcpy_s(messageHeader->SocketAddress, static_cast<size_t>(messageHeader->SocketAddressLen), header.msg_name, static_cast<size_t>(messageHeader->SocketAddressLen));
 
     assert(header.msg_controllen <= static_cast<size_t>(messageHeader->ControlBufferLen));
     messageHeader->ControlBufferLen = Min(static_cast<int32_t>(header.msg_controllen), messageHeader->ControlBufferLen);
-    memcpy(messageHeader->ControlBuffer, header.msg_control, static_cast<size_t>(messageHeader->ControlBufferLen));
+    memcpy_s(messageHeader->ControlBuffer, static_cast<size_t>(messageHeader->ControlBufferLen), header.msg_control, static_cast<size_t>(messageHeader->ControlBufferLen));
 
     messageHeader->Flags = ConvertSocketFlagsPlatformToPal(header.msg_flags);
 
