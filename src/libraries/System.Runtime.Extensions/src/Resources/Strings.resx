@@ -372,4 +372,7 @@
   <data name="Arg_ContextMarshalException" xml:space="preserve">
     <value>Attempted to marshal an object across a context boundary.</value>
   </data>
+  <data name="AppDomain_Policy_PrincipalTwice" xml:space="preserve">
+    <value>Default principal object cannot be set twice.</value>
+  </data>
 </root>
