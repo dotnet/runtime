@@ -291,7 +291,7 @@ namespace System.Linq.Expressions.Compiler
             if (node.Indexer != null)
             {
                 // For indexed properties, just call the getter
-                MethodInfo method = node.Indexer.GetGetMethod(true);
+                MethodInfo method = node.Indexer.GetGetMethod(nonPublic: true);
                 EmitCall(objectType, method);
             }
             else
@@ -319,7 +319,7 @@ namespace System.Linq.Expressions.Compiler
             if (node.Indexer != null)
             {
                 // For indexed properties, just call the setter
-                MethodInfo method = node.Indexer.GetSetMethod(true);
+                MethodInfo method = node.Indexer.GetSetMethod(nonPublic: true);
                 EmitCall(objectType, method);
             }
             else
@@ -800,7 +800,7 @@ namespace System.Linq.Expressions.Compiler
                 // MemberExpression.Member can only be a FieldInfo or a PropertyInfo
                 Debug.Assert(member is PropertyInfo);
                 var prop = (PropertyInfo)member;
-                EmitCall(objectType, prop.GetSetMethod(true));
+                EmitCall(objectType, prop.GetSetMethod(nonPublic: true));
             }
 
             if (emitAs != CompilationFlags.EmitAsVoidType)
@@ -846,7 +846,7 @@ namespace System.Linq.Expressions.Compiler
                 // MemberExpression.Member or MemberBinding.Member can only be a FieldInfo or a PropertyInfo
                 Debug.Assert(member is PropertyInfo);
                 var prop = (PropertyInfo)member;
-                EmitCall(objectType, prop.GetGetMethod(true));
+                EmitCall(objectType, prop.GetGetMethod(nonPublic: true));
             }
         }
 
@@ -858,7 +858,7 @@ namespace System.Linq.Expressions.Compiler
 
             try
             {
-                value = fi.GetValue(null);
+                value = fi.GetValue(obj: null);
                 return true;
             }
             catch
@@ -908,7 +908,7 @@ namespace System.Linq.Expressions.Compiler
                 {
                     Expression x = expressions[i];
                     EmitExpression(x);
-                    _ilg.EmitConvertToType(x.Type, typeof(int), true);
+                    _ilg.EmitConvertToType(x.Type, typeof(int), isChecked: true);
                 }
                 _ilg.EmitArray(node.Type);
             }
@@ -968,7 +968,7 @@ namespace System.Linq.Expressions.Compiler
                 PropertyInfo pi = binding.Member as PropertyInfo;
                 if (pi != null)
                 {
-                    EmitCall(objectType, pi.GetSetMethod(true));
+                    EmitCall(objectType, pi.GetSetMethod(nonPublic: true));
                 }
                 else
                 {

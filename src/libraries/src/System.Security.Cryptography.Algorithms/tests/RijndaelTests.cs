@@ -11,7 +11,8 @@ namespace System.Security.Cryptography.Encryption.Rijndael.Tests
     using Rijndael = System.Security.Cryptography.Rijndael;
 
     /// <summary>
-    /// Since the Rijndael classes wrap Aes, we only test minimally here since Aes has the full test suite.
+    /// Since RijndaelImplementation (from Rijndael.Create()) and RijndaelManaged classes wrap Aes,
+    /// we only test minimally here.
     /// </summary>
     public class RijndaelTests
     {

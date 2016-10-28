@@ -36,6 +36,7 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net462' And '$(TargetGroup)' != 'net463'">
     <Compile Include="System\AppDomain.cs" />
+    <Compile Include="System\Context.cs" />
     <Compile Include="System\AppDomainUnloadedException.cs" />
     <Compile Include="System\ApplicationId.cs" />
     <Compile Include="System\CannotUnloadAppDomainException.cs" />
@@ -45,10 +46,12 @@
     <Compile Include="System\Environment.SpecialFolder.cs" />
     <Compile Include="System\Environment.SpecialFolderOption.cs" />
     <Compile Include="System\EnvironmentVariableTarget.cs" />
+    <Compile Include="System\MathF.cs" /> <!-- https://github.com/dotnet/buildtools/issues/1041 -->
     <Compile Include="System\OperatingSystem.cs" />
     <Compile Include="System\PlatformID.cs" />
     <Compile Include="System\IO\Path.cs" />
     <Compile Include="System\Net\WebUtility.cs" />
+    <Compile Include="System\Reflection\AssemblyNameProxy.cs" />
     <Compile Include="System\Runtime\Versioning\FrameworkName.cs" />
     <Compile Include="System\Runtime\Versioning\ComponentGuaranteesAttribute.cs" />
     <Compile Include="System\Runtime\Versioning\ResourceConsumptionAttribute.cs" />
@@ -79,6 +82,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Runtime\InteropServices\StringBuffer.cs">
       <Link>Common\System\Runtime\InteropServices\StringBuffer.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\HResults.cs">
+      <Link>Common\System\HResults.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- WINDOWS: Shared CoreCLR and .NET Native -->

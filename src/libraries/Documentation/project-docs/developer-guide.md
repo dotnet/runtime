@@ -118,7 +118,7 @@ Under the src directory is a set of directories, each of which represents a part
   
 For example the src\System.Diagnostics.DiagnosticSource directory holds the source code for the System.Diagnostics.DiagnosticSource.dll assembly. Each of these directories includes two projects, one for the DLL being built and one for the tests, both specified by a .builds file.
 
-You can build the DLL for System.Diagnostics.DiagnosticSource.dll by going to the src\System.Diagnostics.DiagnosticsSource\src directory and typing `msbuild System.Diagnostics.DiagnosticSource.builds`. The DLL ends up as  bin\AnyOS.AnyCPU.Debug\System.Diagnostics.DiagnosticSource\System.DiagnosticSource.dll.
+You can build the DLL for System.Diagnostics.DiagnosticSource.dll by going to the src\System.Diagnostics.DiagnosticsSource\src directory and typing `msbuild System.Diagnostics.DiagnosticSource.builds`. The DLL ends up in bin\AnyOS.AnyCPU.Debug\System.Diagnostics.DiagnosticSource.
 
 You can build the tests for System.Diagnostics.DiagnosticSource.dll by going to 
 src\System.Diagnostics.DiagnosticSource\tests and typing `msbuild System.Diagnostics.DiagnosticSource.Tests.builds`.

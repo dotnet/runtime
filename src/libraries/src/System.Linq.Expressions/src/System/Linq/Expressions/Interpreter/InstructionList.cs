@@ -321,7 +321,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public void EmitLoad(object value)
         {
-            EmitLoad(value, null);
+            EmitLoad(value, type: null);
         }
 
         public void EmitLoad(bool value)

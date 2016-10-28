@@ -156,6 +156,12 @@ namespace System.IO.Pipes
             return WaitForConnectionAsync(CancellationToken.None);
         }
 
+        public System.IAsyncResult BeginWaitForConnection(AsyncCallback callback, object state) =>
+            TaskToApm.Begin(WaitForConnectionAsync(), callback, state);
+
+        public void EndWaitForConnection(IAsyncResult asyncResult) =>
+            TaskToApm.End(asyncResult);
+
         // Server can only connect from Disconnected state
         [SecurityCritical]
         [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Consistent with security model")]

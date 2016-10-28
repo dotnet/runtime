@@ -937,7 +937,7 @@ namespace System.Linq.Expressions.Compiler
             // begin the catch, clear the exception, we've 
             // already saved it
             _ilg.MarkLabel(endFilter);
-            _ilg.BeginCatchBlock(null);
+            _ilg.BeginCatchBlock(exceptionType: null);
             _ilg.Emit(OpCodes.Pop);
         }
 

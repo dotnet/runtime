@@ -5,8 +5,5 @@
   },
   "frameworks": {
     "netcore50": {}
-  },
-  "runtimes": {
-    "win8": {}
   }
 }

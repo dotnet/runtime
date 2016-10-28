@@ -233,13 +233,24 @@ Wry5FNNo
         }
 
         [Fact]
-        public static void TestPrivateKey()
+        public static void TestHasPrivateKey()
         {
             using (var c = new X509Certificate2(TestData.MsCertificate))
             {
                 Assert.False(c.HasPrivateKey);
             }
         }
+
+#if netcoreapp11
+        [Fact]
+        public static void TestPrivateKey()
+        {
+            using (var c = new X509Certificate2(TestData.MsCertificate))
+            {
+                Assert.Null(c.PrivateKey);
+            }
+        }
+#endif
 
         [Fact]
         public static void TestVersion()

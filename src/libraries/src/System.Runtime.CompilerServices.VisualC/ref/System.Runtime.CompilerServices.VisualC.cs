@@ -12,22 +12,22 @@ namespace System.Runtime.CompilerServices
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class CallConvCdecl
     {
-        internal CallConvCdecl() { }
+        public CallConvCdecl() { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class CallConvFastcall
     {
-        internal CallConvFastcall() { }
+        public CallConvFastcall() { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class CallConvStdcall
     {
-        internal CallConvStdcall() { }
+        public CallConvStdcall() { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class CallConvThiscall
     {
-        internal CallConvThiscall() { }
+        public CallConvThiscall() { }
     }
     public static partial class IsBoxed
     {

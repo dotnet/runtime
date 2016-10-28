@@ -16,6 +16,8 @@ using System.Threading.Tasks;
 
 namespace System.Net
 {
+    public delegate void HttpContinueDelegate(int StatusCode, WebHeaderCollection httpHeaders);
+
     [Serializable]
     public class HttpWebRequest : WebRequest, ISerializable
     {
@@ -47,6 +49,7 @@ namespace System.Net
         private int _maximumAllowedRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
         private int _maximumResponseHeaderLen = _defaultMaxResponseHeaderLength;
         private ServicePoint _servicePoint;
+        private HttpContinueDelegate _continueDelegate;
 
         private RequestStream _requestStream;
         private TaskCompletionSource<Stream> _requestStreamOperation = null;
@@ -700,6 +703,19 @@ namespace System.Net
                 {
                     _Booleans &= ~Booleans.SendChunked;
                 }
+            }
+        }
+     
+        public HttpContinueDelegate ContinueDelegate
+        {
+            // Nop since the underlying API do not expose 100 continue.
+            get
+            {
+                return _continueDelegate;
+            }
+            set
+            {
+                _continueDelegate = value;
             }
         }
 

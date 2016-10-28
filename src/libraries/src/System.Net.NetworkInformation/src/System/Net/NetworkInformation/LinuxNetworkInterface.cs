@@ -29,26 +29,67 @@ namespace System.Net.NetworkInformation
         public unsafe static NetworkInterface[] GetLinuxNetworkInterfaces()
         {
             Dictionary<string, LinuxNetworkInterface> interfacesByName = new Dictionary<string, LinuxNetworkInterface>();
+            List<Exception> exceptions = null;
             const int MaxTries = 3;
             for (int attempt = 0; attempt < MaxTries; attempt++)
             {
+                // Because these callbacks are executed in a reverse-PInvoke, we do not want any exceptions
+                // to propogate out, because they will not be catchable. Instead, we track all the exceptions
+                // that are thrown in these callbacks, and aggregate them at the end.
                 int result = Interop.Sys.EnumerateInterfaceAddresses(
                     (name, ipAddr, maskAddr) =>
                     {
-                        LinuxNetworkInterface lni = GetOrCreate(interfacesByName, name);
-                        lni.ProcessIpv4Address(ipAddr, maskAddr);
+                        try
+                        {
+                            LinuxNetworkInterface lni = GetOrCreate(interfacesByName, name);
+                            lni.ProcessIpv4Address(ipAddr, maskAddr);
+                        }
+                        catch (Exception e)
+                        {
+                            if (exceptions == null)
+                            {
+                                exceptions = new List<Exception>();
+                            }
+                            exceptions.Add(e);
+                        }
                     },
                     (name, ipAddr, scopeId) =>
                     {
-                        LinuxNetworkInterface lni = GetOrCreate(interfacesByName, name);
-                        lni.ProcessIpv6Address( ipAddr, *scopeId);
+                        try
+                        {
+                            LinuxNetworkInterface lni = GetOrCreate(interfacesByName, name);
+                            lni.ProcessIpv6Address(ipAddr, *scopeId);
+                        }
+                        catch (Exception e)
+                        {
+                            if (exceptions == null)
+                            {
+                                exceptions = new List<Exception>();
+                            }
+                            exceptions.Add(e);
+                        }
                     },
                     (name, llAddr) =>
                     {
-                        LinuxNetworkInterface lni = GetOrCreate(interfacesByName, name);
-                        lni.ProcessLinkLayerAddress(llAddr);
+                        try
+                        {
+                            LinuxNetworkInterface lni = GetOrCreate(interfacesByName, name);
+                            lni.ProcessLinkLayerAddress(llAddr);
+                        }
+                        catch (Exception e)
+                        {
+                            if (exceptions == null)
+                            {
+                                exceptions = new List<Exception>();
+                            }
+                            exceptions.Add(e);
+                        }
                     });
-                if (result == 0)
+                if (exceptions != null)
+                {
+                    throw new NetworkInformationException(SR.net_PInvokeError, new AggregateException(exceptions));
+                }
+                else if (result == 0)
                 {
                     return interfacesByName.Values.ToArray();
                 }
@@ -107,7 +148,7 @@ namespace System.Net.NetworkInformation
                     Interop.LinuxNetDeviceFlags flags = (Interop.LinuxNetDeviceFlags)StringParsingHelpers.ParseRawHexFileAsInt(path);
                     return (flags & Interop.LinuxNetDeviceFlags.IFF_MULTICAST) == Interop.LinuxNetDeviceFlags.IFF_MULTICAST;
                 }
-                catch (FileNotFoundException)
+                catch (Exception) // Ignore any problems accessing or parsing the file.
                 {
                 }
             }
@@ -156,7 +197,7 @@ namespace System.Net.NetworkInformation
                 string path = Path.Combine(NetworkFiles.SysClassNetFolder, name, NetworkFiles.SpeedFileName);
                 return StringParsingHelpers.ParseRawLongFile(path);
             }
-            catch (IOException) // Some interfaces may give an "Invalid argument" error when opening this file.
+            catch (Exception) // Ignore any problems accessing or parsing the file.
             {
                 return null;
             }
@@ -173,7 +214,7 @@ namespace System.Net.NetworkInformation
                     string state = File.ReadAllText(path).Trim();
                     return MapState(state);
                 }
-                catch (FileNotFoundException)
+                catch (Exception) // Ignore any problems accessing or parsing the file.
                 {
                 }
             }

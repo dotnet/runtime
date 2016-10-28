@@ -106,7 +106,6 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Theory]
-        [ActiveIssue(8362, TestPlatforms.OSX)]
         [InlineData("0.0.0.089")] // Octal (leading zero) but with 8 or 9
         public void ParseIPv4_InvalidOctal_Failure(string address)
         {

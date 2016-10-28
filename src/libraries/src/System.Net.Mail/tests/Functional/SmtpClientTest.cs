@@ -292,7 +292,6 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
-        [ActiveIssue(12740, TestPlatforms.AnyUnix)]
         public void TestMailDeliveryAsync()
         {
             SmtpServer server = new SmtpServer();

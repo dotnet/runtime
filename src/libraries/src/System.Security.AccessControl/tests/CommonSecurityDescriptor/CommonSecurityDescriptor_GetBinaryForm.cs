@@ -84,7 +84,6 @@ namespace System.Security.AccessControl.Tests
 
         [Theory]
         [MemberData(nameof(CommonSecurityDescriptor_GetBinaryForm_TestData))]
-        [ActiveIssue(15)]
         public static void TestGetBinaryForm(bool isContainer, bool isDS, string sddl, string verifierSddl, int offset)
         {
             CommonSecurityDescriptor commonSecurityDescriptor = null;

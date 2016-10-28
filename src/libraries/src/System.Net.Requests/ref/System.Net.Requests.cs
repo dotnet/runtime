@@ -8,6 +8,7 @@
 
 namespace System.Net
 {
+    public delegate void HttpContinueDelegate(int StatusCode, WebHeaderCollection httpHeaders);
     public class AuthenticationManager
     {
         private AuthenticationManager() { }
@@ -174,6 +175,7 @@ namespace System.Net
         public string Host { get { throw null; } set { } }
         public override string ConnectionGroupName { get { throw null; } set { } }
         public System.Net.Security.RemoteCertificateValidationCallback ServerCertificateValidationCallback { get; set; }
+        public HttpContinueDelegate ContinueDelegate { get { throw null; } set { } }
     }
     public partial class HttpWebResponse : System.Net.WebResponse
     {
@@ -348,6 +350,11 @@ namespace System.Net
         public virtual System.IO.Stream GetResponseStream() { throw null; }
         protected virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
+    }
+    public class GlobalProxySelection
+    {
+        public static IWebProxy Select { get { throw null; } set { } }
+        public static IWebProxy GetEmptyWebProxy() { throw null; }
     }
 }
 namespace System.Net.Cache

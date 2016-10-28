@@ -70,7 +70,7 @@ including the MSRC PGP key, can be found in the
 
 ## .NET Core Library Components
 
-The repo contains the source for each of the assemblies that comprises .NET Core.  Each ```Microsoft.*``` or ```System.``` folder under
+The repo contains the source for each of the assemblies that comprises .NET Core.  Each ```Microsoft.*``` or ```System.*``` folder under
 [src](https://github.com/dotnet/corefx/tree/master/src) represents an individual library.  Each such folder may contain a ```ref``` folder,
 which contains the source representing the "contract" or "reference assembly" for that library.  It may also contain a ```src``` folder,
 which contains the source for some or all of the implementation for that library (some implementation may live in mscorlib in the 

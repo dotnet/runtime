@@ -97,11 +97,38 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 using (RSA rsa = c.GetRSAPrivateKey())
                 {
-                    byte[] hash = new byte[20];
-                    byte[] sig = rsa.SignHash(hash, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
-                    Assert.Equal(TestData.PfxSha1Empty_ExpectedSig, sig);
+                    VerifyPrivateKey(rsa);
                 }
             }
+        }
+
+#if netcoreapp11
+        [Fact]
+        public static void TestPrivateKeyProperty()
+        {
+            using (var c = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.EphemeralKeySet))
+            {
+                bool hasPrivateKey = c.HasPrivateKey;
+                Assert.True(hasPrivateKey);
+
+                AsymmetricAlgorithm alg = c.PrivateKey;
+                Assert.NotNull(alg);
+                Assert.Same(alg, c.PrivateKey);
+                Assert.IsAssignableFrom(typeof(RSA), alg);
+                VerifyPrivateKey((RSA)alg);
+
+                // Currently unable to set PrivateKey
+                Assert.Throws<PlatformNotSupportedException>(() => c.PrivateKey = null);
+                Assert.Throws<PlatformNotSupportedException>(() => c.PrivateKey = alg);
+            }
+        }
+#endif
+
+        private static void VerifyPrivateKey(RSA rsa)
+        {
+            byte[] hash = new byte[20];
+            byte[] sig = rsa.SignHash(hash, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
+            Assert.Equal(TestData.PfxSha1Empty_ExpectedSig, sig);
         }
 
         [Theory]
@@ -127,14 +154,40 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static void ReadECDsaPrivateKey_WindowsPfx(X509KeyStorageFlags keyStorageFlags)
         {
             using (var cert = new X509Certificate2(TestData.ECDsaP256_DigitalSignature_Pfx_Windows, "Test", keyStorageFlags))
-            using (ECDsa ecdsa = cert.GetECDsaPrivateKey())
             {
-                Assert.NotNull(ecdsa);
-
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                using (ECDsa ecdsa = cert.GetECDsaPrivateKey())
                 {
-                    AssertEccAlgorithm(ecdsa, "ECDSA_P256");
+                    Verify_ECDsaPrivateKey_WindowsPfx(ecdsa);
                 }
+            }
+        }
+
+#if netcoreapp11
+        [Fact]
+        public static void ECDsaPrivateKeyProperty_WindowsPfx()
+        {
+            using (var cert = new X509Certificate2(TestData.ECDsaP256_DigitalSignature_Pfx_Windows, "Test", X509KeyStorageFlags.EphemeralKeySet))
+            {
+                AsymmetricAlgorithm alg = cert.PrivateKey;
+                Assert.NotNull(alg);
+                Assert.Same(alg, cert.PrivateKey);
+                Assert.IsAssignableFrom(typeof(ECDsa), alg);
+                Verify_ECDsaPrivateKey_WindowsPfx((ECDsa)alg);
+
+                // Currently unable to set PrivateKey
+                Assert.Throws<PlatformNotSupportedException>(() => cert.PrivateKey = null);
+                Assert.Throws<PlatformNotSupportedException>(() => cert.PrivateKey = alg);
+            }
+        }
+#endif
+
+        private static void Verify_ECDsaPrivateKey_WindowsPfx(ECDsa ecdsa)
+        {
+            Assert.NotNull(ecdsa);
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                AssertEccAlgorithm(ecdsa, "ECDSA_P256");
             }
         }
 

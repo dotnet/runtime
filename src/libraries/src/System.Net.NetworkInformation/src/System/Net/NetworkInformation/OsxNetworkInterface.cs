@@ -27,26 +27,67 @@ namespace System.Net.NetworkInformation
         public unsafe static NetworkInterface[] GetOsxNetworkInterfaces()
         {
             Dictionary<string, OsxNetworkInterface> interfacesByName = new Dictionary<string, OsxNetworkInterface>();
+            List<Exception> exceptions = null;
             const int MaxTries = 3;
             for (int attempt = 0; attempt < MaxTries; attempt++)
             {
+                // Because these callbacks are executed in a reverse-PInvoke, we do not want any exceptions
+                // to propogate out, because they will not be catchable. Instead, we track all the exceptions
+                // that are thrown in these callbacks, and aggregate them at the end.
                 int result = Interop.Sys.EnumerateInterfaceAddresses(
                     (name, ipAddr, maskAddr) =>
                     {
-                        OsxNetworkInterface oni = GetOrCreate(interfacesByName, name);
-                        oni.ProcessIpv4Address(ipAddr, maskAddr);
+                        try
+                        {
+                            OsxNetworkInterface oni = GetOrCreate(interfacesByName, name);
+                            oni.ProcessIpv4Address(ipAddr, maskAddr);
+                        }
+                        catch (Exception e)
+                        {
+                            if (exceptions == null)
+                            {
+                                exceptions = new List<Exception>();
+                            }
+                            exceptions.Add(e);
+                        }
                     },
                     (name, ipAddr, scopeId) =>
                     {
-                        OsxNetworkInterface oni = GetOrCreate(interfacesByName, name);
-                        oni.ProcessIpv6Address( ipAddr, *scopeId);
+                        try
+                        {
+                            OsxNetworkInterface oni = GetOrCreate(interfacesByName, name);
+                            oni.ProcessIpv6Address(ipAddr, *scopeId);
+                        }
+                        catch (Exception e)
+                        {
+                            if (exceptions == null)
+                            {
+                                exceptions = new List<Exception>();
+                            }
+                            exceptions.Add(e);
+                        }
                     },
                     (name, llAddr) =>
                     {
-                        OsxNetworkInterface oni = GetOrCreate(interfacesByName, name);
-                        oni.ProcessLinkLayerAddress(llAddr);
+                        try
+                        {
+                            OsxNetworkInterface oni = GetOrCreate(interfacesByName, name);
+                            oni.ProcessLinkLayerAddress(llAddr);
+                        }
+                        catch (Exception e)
+                        {
+                            if (exceptions == null)
+                            {
+                                exceptions = new List<Exception>();
+                            }
+                            exceptions.Add(e);
+                        }
                     });
-                if (result == 0)
+                if (exceptions != null)
+                {
+                    throw new NetworkInformationException(SR.net_PInvokeError, new AggregateException(exceptions));
+                }
+                else if (result == 0)
                 {
                     return interfacesByName.Values.ToArray();
                 }
