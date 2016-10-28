@@ -137,7 +137,7 @@ public:
     if ((corJitFlags & (oldf)) != 0)                                                                                   \
         this->Set(JitFlags::newf);
 #define CONVERT_OLD_FLAG2(oldf, newf)                                                                                  \
-    if ((corJitFlags & (oldf)) != 0)                                                                                   \
+    if ((corJitFlags2 & (oldf)) != 0)                                                                                  \
         this->Set(JitFlags::newf);
 
         CONVERT_OLD_FLAG(CORJIT_FLG_SPEED_OPT, JIT_FLAG_SPEED_OPT)
