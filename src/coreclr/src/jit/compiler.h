@@ -7113,7 +7113,7 @@ private:
     // and small int base type vectors.
     SIMDIntrinsicID impSIMDIntegralRelOpGreaterThanOrEqual(
         CORINFO_CLASS_HANDLE typeHnd, unsigned simdVectorSize, var_types baseType, GenTree** op1, GenTree** op2);
-#endif // defined(_TARGET_AMD64_) && !defined(LEGACY_BACKEND)
+#endif // defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
 
     void setLclRelatedToSIMDIntrinsic(GenTreePtr tree);
     bool areFieldsContiguous(GenTreePtr op1, GenTreePtr op2);
@@ -7446,8 +7446,8 @@ public:
 
 #ifdef FEATURE_AVX_SUPPORT
         bool compCanUseAVX; // Allow CodeGen to use AVX 256-bit vectors for SIMD operations
-#endif
-#endif
+#endif                      // FEATURE_AVX_SUPPORT
+#endif                      // _TARGET_XARCH_
 
 // optimize maximally and/or favor speed over size?
 

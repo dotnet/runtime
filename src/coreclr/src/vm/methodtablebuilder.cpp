@@ -1218,7 +1218,7 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef _TARGET_AMD64_
+#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
     if (!GetAssembly()->IsSIMDVectorAssembly())
         return false;
 
@@ -1262,7 +1262,7 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
         }
     }
 #endif // !CROSSGEN_COMPILE
-#endif // _TARGET_AMD64_
+#endif // defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
     return false;
 }
 

@@ -3395,7 +3395,7 @@ void CodeGen::genStructPutArgRepMovs(GenTreePutArgStk* putArgNode)
 // must be cleared to zeroes. The native compiler doesn't clear the upper bits
 // and there is no way to know if the caller is native or not. So, the upper
 // 32 bits of Vector argument on stack are always cleared to zero.
-#ifdef FEATURE_SIMD
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) && defined(FEATURE_SIMD)
 void CodeGen::genClearStackVec3ArgUpperBits()
 {
 #ifdef DEBUG
@@ -3439,7 +3439,7 @@ void CodeGen::genClearStackVec3ArgUpperBits()
         }
     }
 }
-#endif // FEATURE_SIMD
+#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) && defined(FEATURE_SIMD)
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 
 // Generate code for CpObj nodes wich copy structs that have interleaved
