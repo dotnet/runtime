@@ -95,143 +95,158 @@ namespace CastingPerf2
         public static IFoo ifo, ifo1, ifo2, ifo3, ifo4, ifo5, ifo6, ifo7, ifo8, ifo9;
         public static IFoo_5 if_0, if_1, if_2, if_3, if_4, if_5, if_6, if_7, if_8, if_9;
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount=200000)]
         public static void ObjFooIsObj()
         {
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                    o = foo;
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                        o = foo;
         }
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount=200000)]
         public static void FooObjIsFoo()
         {
             o = foo;
 
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                    f = (Foo)o;
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                        f = (Foo)o;
         }
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount=200000)]
         public static void FooObjIsNull()
         {
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                    o = (Foo)n;
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                        o = (Foo)n;
         }
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount=100000)]
         public static void FooObjIsDescendant()
         {
             o = foo_5;
 
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                    f = (Foo)o;
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                        f = (Foo)o;
         }
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount=200000)]
         public static void IFooFooIsIFoo()
         {
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                    ifo = foo;
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                        ifo = foo;
         }
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount=100000)]
         public static void IFooObjIsIFoo()
         {
             o = foo;
 
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                    ifo = (IFoo)o;
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                        ifo = (IFoo)o;
         }
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount=100000)]
         public static void IFooObjIsIFooInterAlia()
         {
             o = foo2;
 
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                    if_0 = (IFoo_5)o;
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                        if_0 = (IFoo_5)o;
         }
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount=100000)]
         public static void IFooObjIsDescendantOfIFoo()
         {
             o = foo_5;
 
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                    ifo = (IFoo)o;
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                        ifo = (IFoo)o;
         }
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount=100000)]
         public static void ObjInt()
         {
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                    o = (Object)j;
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                        o = (Object)j;
         }
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount=200000)]
         public static void IntObj()
         {
             o = (Object)1;
 
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                    j = (int)o;
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                        j = (int)o;
         }
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount=100000)]
         public static void ObjScalarValueType()
         {
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                    o = svt;
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                        o = svt;
         }
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount=300000)]
         public static void ScalarValueTypeObj()
         {
             o = svt;
 
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                    svt = (FooSVT)o;
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                        svt = (FooSVT)o;
         }
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount=100000)]
         public static void ObjObjrefValueType()
         {
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                    o = (Object)orvt;
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                        o = (Object)orvt;
         }
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount=200000)]
         public static void ObjrefValueTypeObj()
         {
             o = (Object)orvt;
 
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                    orvt = (FooORVT)o;
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                        orvt = (FooORVT)o;
         }
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount=100000)]
         public static void FooObjCastIfIsa()
         {
             o = foo;
 
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                    if (o is Foo)
-                        f = (Foo)o;
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                        if (o is Foo)
+                            f = (Foo)o;
         }
     }
 }
