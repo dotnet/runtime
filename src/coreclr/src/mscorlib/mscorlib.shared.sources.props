@@ -1158,12 +1158,12 @@
   <ItemGroup>
     <NumericsSources Include="$(BclSourcesRoot)\System\Numerics\Hashing\HashHelpers.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <BuffersSources Condition="'$(FeatureCoreClr)'=='true'" Include="$(BclSourcesRoot)\System\Buffers\ArrayPool.cs" />
-    <BuffersSources Condition="'$(FeatureCoreClr)'=='true'" Include="$(BclSourcesRoot)\System\Buffers\ArrayPoolEventSource.cs" />
-    <BuffersSources Condition="'$(FeatureCoreClr)'=='true'" Include="$(BclSourcesRoot)\System\Buffers\DefaultArrayPool.cs" />
-    <BuffersSources Condition="'$(FeatureCoreClr)'=='true'" Include="$(BclSourcesRoot)\System\Buffers\DefaultArrayPoolBucket.cs" />
-    <BuffersSources Condition="'$(FeatureCoreClr)'=='true'" Include="$(BclSourcesRoot)\System\Buffers\Utilities.cs" />
+  <ItemGroup Condition="'$(FeatureCoreClr)'=='true'">
+    <BuffersSources Include="$(CoreFxSourcesRoot)\System\Buffers\ArrayPool.cs" />
+    <BuffersSources Include="$(CoreFxSourcesRoot)\System\Buffers\ArrayPoolEventSource.cs" />
+    <BuffersSources Include="$(CoreFxSourcesRoot)\System\Buffers\DefaultArrayPool.cs" />
+    <BuffersSources Include="$(CoreFxSourcesRoot)\System\Buffers\DefaultArrayPoolBucket.cs" />
+    <BuffersSources Include="$(CoreFxSourcesRoot)\System\Buffers\Utilities.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCoreFxWindowsInterop)' == 'true'">
     <WindowsInteropSources Include="$(CoreFxSourcesRoot)\System\HResults.cs" />
