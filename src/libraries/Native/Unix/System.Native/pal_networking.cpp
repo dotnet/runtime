@@ -1647,13 +1647,14 @@ extern "C" Error SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* mes
     ssize_t res;
     while (CheckInterrupted(res = recvmsg(fd, &header, socketFlags)));
 
+    assert(header.msg_name == messageHeader->SocketAddress); // should still be the same location as set in ConvertMessageHeaderToMsghdr
+    assert(header.msg_control == messageHeader->ControlBuffer);
+
     assert(static_cast<int32_t>(header.msg_namelen) <= messageHeader->SocketAddressLen);
     messageHeader->SocketAddressLen = Min(static_cast<int32_t>(header.msg_namelen), messageHeader->SocketAddressLen);
-    memcpy_s(messageHeader->SocketAddress, static_cast<size_t>(messageHeader->SocketAddressLen), header.msg_name, static_cast<size_t>(messageHeader->SocketAddressLen));
-
+    
     assert(header.msg_controllen <= static_cast<size_t>(messageHeader->ControlBufferLen));
     messageHeader->ControlBufferLen = Min(static_cast<int32_t>(header.msg_controllen), messageHeader->ControlBufferLen);
-    memcpy_s(messageHeader->ControlBuffer, static_cast<size_t>(messageHeader->ControlBufferLen), header.msg_control, static_cast<size_t>(messageHeader->ControlBufferLen));
 
     messageHeader->Flags = ConvertSocketFlagsPlatformToPal(header.msg_flags);
 
