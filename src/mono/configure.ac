@@ -763,7 +763,7 @@ DISABLED_FEATURES=none
 # Set the build profiles and options before things which use them
 #
 
-AC_ARG_WITH(profile4_x,      [  --with-profile4=yes,no          If you want to install the 4.x FX (defaults to yes)],                 [], [with_profile4_x=default])
+AC_ARG_WITH(profile4_x,      [  --with-profile4_x=yes,no        If you want to install the 4.x FX (defaults to yes)],                 [], [with_profile4_x=default])
 AC_ARG_WITH(monodroid,       [  --with-monodroid=yes,no         If you want to build the MonoDroid assemblies (defaults to no)],      [], [with_monodroid=default])
 AC_ARG_WITH(monotouch,       [  --with-monotouch=yes,no         If you want to build the Xamarin.iOS assemblies (defaults to no)],    [], [with_monotouch=default])
 AC_ARG_WITH(monotouch_watch, [  --with-monotouch_watch=yes,no   If you want to build the Xamarin.WatchOS assemblies (defaults to no)],[], [with_monotouch_watch=default])
