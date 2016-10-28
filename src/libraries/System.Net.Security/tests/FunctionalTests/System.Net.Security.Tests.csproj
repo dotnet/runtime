@@ -97,6 +97,9 @@
       <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'==''">
+    <Compile Include="LoggingTest.cs" />
+  </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="IdentityValidator.Windows.cs" />
   </ItemGroup>

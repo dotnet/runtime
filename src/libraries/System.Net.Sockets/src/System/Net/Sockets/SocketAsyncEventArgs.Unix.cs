@@ -244,11 +244,11 @@ namespace System.Net.Sockets
         {
             if (_buffer != null)
             {
-                SocketsEventSource.Dump(_buffer, _offset, size);
+                NetEventSource.DumpArray(this, _buffer, _offset, size);
             }
             else if (_acceptBuffer != null)
             {
-                SocketsEventSource.Dump(_acceptBuffer, 0, size);
+                NetEventSource.DumpArray(this, _acceptBuffer, 0, size);
             }
         }
 

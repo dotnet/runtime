@@ -226,9 +226,9 @@ namespace System.Net
 #if DEBUG
         internal void Dump()
         {
-            if (GlobalLog.IsEnabled)
+            if (NetEventSource.IsEnabled)
             {
-                GlobalLog.Print("CookieCollection:");
+                NetEventSource.Enter(this);
                 foreach (Cookie cookie in this)
                 {
                     cookie.Dump();

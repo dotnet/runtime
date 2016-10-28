@@ -37,6 +37,7 @@
     <Compile Include="SocketAddressTest.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == ''">
+    <Compile Include="LoggingTest.cs" />
     <Compile Include="SerializationTest.cs" />
     <Compile Include="CookieContainerAddTest.cs" />
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">

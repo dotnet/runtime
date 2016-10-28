@@ -38,12 +38,7 @@ namespace System.Net
                 }
                 catch (OverflowException)
                 {
-                    if (GlobalLog.IsEnabled)
-                    {
-                        GlobalLog.Assert("SslConnectionInfo::.ctor", "Negative size.");
-                    }
-
-                    Debug.Fail("SslConnectionInfo::.ctor", "Negative size.");
+                    NetEventSource.Fail(this, "Negative size");
                     throw;
                 }
             }

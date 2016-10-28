@@ -9,6 +9,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{0D174EA9-9E61-4519-8D31-7BD2331A1982}</ProjectGuid>
     <OutputType>Library</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <NugetTargetMoniker>.NETStandard,Version=v1.7</NugetTargetMoniker>
     <!-- 
@@ -63,11 +64,8 @@
     <Compile Include="$(CommonPath)\System\Net\Shims\TraceSource.cs">
       <Link>ProductionCode\Common\System\Net\Shims\TraceSource.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\GlobalLog.cs">
-      <Link>ProductionCode\Common\System\Net\Logging\GlobalLog.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\EventSourceLogging.cs">
-      <Link>ProductionCode\Common\System\Net\Logging\EventSourceLogging.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
+      <Link>ProductionCode\Common\System\Net\Logging\NetEventSource.Common.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
       <Link>ProductionCode\Common\System\Net\InternalException.cs</Link>

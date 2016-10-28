@@ -22,19 +22,19 @@ namespace System.Net.Http
 
         public HttpMessageInvoker(HttpMessageHandler handler, bool disposeHandler)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.Http, this, ".ctor", handler);
+            NetEventSource.Enter(this, handler);
 
             if (handler == null)
             {
                 throw new ArgumentNullException(nameof(handler));
             }
 
-            if (HttpEventSource.Log.IsEnabled()) HttpEventSource.Associate(this, handler);
+            NetEventSource.Associate(this, handler);
 
             _handler = handler;
             _disposeHandler = disposeHandler;
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.Http, this, ".ctor", null);
+            NetEventSource.Exit(this);
         }
 
         public virtual Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
@@ -46,13 +46,11 @@ namespace System.Net.Http
             }
             CheckDisposed();
 
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Enter(NetEventSource.ComponentType.Http, this, "SendAsync",
-    LoggingHash.GetObjectLogHash(request) + ": " + request);
+            NetEventSource.Enter(this, request);
 
             Task<HttpResponseMessage> task = _handler.SendAsync(request, cancellationToken);
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.Http, this, "SendAsync", task);
+            NetEventSource.Exit(this, task);
 
             return task;
         }
