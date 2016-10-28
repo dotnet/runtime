@@ -912,7 +912,7 @@ suspend_sync (MonoNativeThreadId tid, gboolean interrupt_kernel)
 		}
 		break;
 	case AsyncSuspendBlocking:
-		if (interrupt_kernel)
+		if (interrupt_kernel && mono_threads_suspend_needs_abort_syscall ())
 			mono_threads_suspend_abort_syscall (info);
 
 		break;
