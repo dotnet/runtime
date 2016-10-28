@@ -1720,7 +1720,7 @@ BOOL EEJitManager::LoadJIT()
         {
             // Now, load the compat jit and initialize it.
 
-            LPWSTR pwzJitName = MAKEDLLNAME_W(L"compatjit");
+            LPCWSTR pwzJitName = MAKEDLLNAME_W(L"compatjit");
 
             // Note: if the compatjit fails to load, we ignore it, and continue to use the main JIT for
             // everything. You can imagine a policy where if the user requests the compatjit, and we fail

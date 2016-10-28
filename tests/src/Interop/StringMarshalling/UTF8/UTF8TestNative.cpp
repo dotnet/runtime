@@ -6,7 +6,7 @@
 
 const int NSTRINGS = 6;
 #ifdef _WIN32
-wchar_t  *utf8strings[] = { L"Managed",
+const wchar_t  *utf8strings[] = { L"Managed",
 L"S\x00EEne kl\x00E2wen durh die wolken sint geslagen" ,
 L"\x0915\x093E\x091A\x0902 \x0936\x0915\x094D\x0928\x094B\x092E\x094D\x092F\x0924\x094D\x0924\x0941\x092E\x094D \x0964 \x0928\x094B\x092A\x0939\x093F\x0928\x0938\x094D\x0924\x093F \x092E\x093E\x092E\x094D",
 L"\x6211\x80FD\x541E\x4E0B\x73BB\x7483\x800C\x4E0D\x4F24\x8EAB\x4F53",
@@ -17,7 +17,7 @@ L"\0"
 
 
 
-char* utf16_to_utf8(wchar_t *srcstring)
+char* utf16_to_utf8(const wchar_t *srcstring)
 {
     if ((srcstring == NULL) || (*srcstring == L'\0')) {
         return 0;

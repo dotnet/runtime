@@ -136,7 +136,7 @@ public:
     static BOOL ConvertWellKnownTypeNameFromClrToWinRT(LPCSTR *pszFullName);
 
     // Map a well-known CLR typename to WinRT typename
-    static BOOL WinMDAdapter::ConvertWellKnownTypeNameFromClrToWinRT(LPCSTR *pszNamespace, LPCSTR *pszName);
+    static BOOL ConvertWellKnownTypeNameFromClrToWinRT(LPCSTR *pszNamespace, LPCSTR *pszName);
         
     // Returns names of redirected type 'index'.
     static void GetRedirectedTypeInfo(
