@@ -12,9 +12,9 @@ namespace System.Security
     {
         internal SecureString(SecureString str)
         {
-            BCLDebug.Assert(str != null, "Expected non-null SecureString");
-            BCLDebug.Assert(str._buffer != null, "Expected other SecureString's buffer to be non-null");
-            BCLDebug.Assert(str._encrypted, "Expected to be used only on encrypted SecureStrings");
+            Debug.Assert(str != null, "Expected non-null SecureString");
+            Debug.Assert(str._buffer != null, "Expected other SecureString's buffer to be non-null");
+            Debug.Assert(str._encrypted, "Expected to be used only on encrypted SecureStrings");
 
             AllocateBuffer(str._buffer.Length);
             SafeBSTRHandle.Copy(str._buffer, _buffer, str._buffer.Length * sizeof(char));
@@ -25,7 +25,7 @@ namespace System.Security
 
         private unsafe void InitializeSecureString(char* value, int length)
         {
-            BCLDebug.Assert(length >= 0, $"Expected non-negative length, got {length}");
+            Debug.Assert(length >= 0, $"Expected non-negative length, got {length}");
 
             AllocateBuffer((uint)length);
             _decryptedLength = length;
@@ -239,7 +239,7 @@ namespace System.Security
 
         private void ProtectMemory()
         {
-            BCLDebug.Assert(!_buffer.IsInvalid, "Invalid buffer!");
+            Debug.Assert(!_buffer.IsInvalid, "Invalid buffer!");
 
             if (_decryptedLength != 0 &&
                 !_encrypted &&
@@ -253,7 +253,7 @@ namespace System.Security
 
         private void UnprotectMemory()
         {
-            BCLDebug.Assert(!_buffer.IsInvalid, "Invalid buffer!");
+            Debug.Assert(!_buffer.IsInvalid, "Invalid buffer!");
 
             if (_decryptedLength != 0 &&
                 _encrypted &&

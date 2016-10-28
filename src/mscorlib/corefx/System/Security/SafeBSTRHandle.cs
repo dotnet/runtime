@@ -62,7 +62,7 @@ namespace System.Security
                 source.AcquirePointer(ref sourcePtr);
                 target.AcquirePointer(ref targetPtr);
 
-                BCLDebug.Assert(source.ByteLength >= bytesToCopy, "Source buffer is too small.");
+                Debug.Assert(source.ByteLength >= bytesToCopy, "Source buffer is too small.");
                 Buffer.MemoryCopy(sourcePtr, targetPtr, target.ByteLength, bytesToCopy);
             }
             finally
