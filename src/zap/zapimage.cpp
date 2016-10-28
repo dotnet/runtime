@@ -291,6 +291,12 @@ void ZapImage::InitializeSectionsForReadyToRun()
     // Always allocate slot for module - it is used to determine that the image is used
     //
     m_pImportTable->GetPlacedHelperImport(READYTORUN_HELPER_Module);
+
+    //
+    // Make sure the import sections table is in the image, so we can find the slot for module
+    //
+    _ASSERTE(m_pImportSectionsTable->GetSize() != 0);
+    GetReadyToRunHeader()->RegisterSection(READYTORUN_SECTION_IMPORT_SECTIONS, m_pImportSectionsTable);
 }
 #endif // FEATURE_READYTORUN_COMPILER
 
