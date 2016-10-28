@@ -17,7 +17,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private RightShiftInstruction() { }
 
-        internal sealed class RightShiftSByte : RightShiftInstruction
+        private sealed class RightShiftSByte : RightShiftInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -35,7 +35,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class RightShiftInt16 : RightShiftInstruction
+        private sealed class RightShiftInt16 : RightShiftInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -53,7 +53,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class RightShiftInt32 : RightShiftInstruction
+        private sealed class RightShiftInt32 : RightShiftInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -71,7 +71,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class RightShiftInt64 : RightShiftInstruction
+        private sealed class RightShiftInt64 : RightShiftInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -89,7 +89,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class RightShiftByte : RightShiftInstruction
+        private sealed class RightShiftByte : RightShiftInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -107,7 +107,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class RightShiftUInt16 : RightShiftInstruction
+        private sealed class RightShiftUInt16 : RightShiftInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -125,7 +125,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class RightShiftUInt32 : RightShiftInstruction
+        private sealed class RightShiftUInt32 : RightShiftInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -143,7 +143,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class RightShiftUInt64 : RightShiftInstruction
+        private sealed class RightShiftUInt64 : RightShiftInstruction
         {
             public override int Run(InterpretedFrame frame)
             {

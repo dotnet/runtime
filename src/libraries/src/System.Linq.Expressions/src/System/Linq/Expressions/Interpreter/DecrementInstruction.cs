@@ -18,7 +18,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private DecrementInstruction() { }
 
-        internal sealed class DecrementInt32 : DecrementInstruction
+        private sealed class DecrementInt32 : DecrementInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -35,7 +35,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class DecrementInt16 : DecrementInstruction
+        private sealed class DecrementInt16 : DecrementInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -52,7 +52,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class DecrementInt64 : DecrementInstruction
+        private sealed class DecrementInt64 : DecrementInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -69,7 +69,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class DecrementUInt16 : DecrementInstruction
+        private sealed class DecrementUInt16 : DecrementInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -86,7 +86,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class DecrementUInt32 : DecrementInstruction
+        private sealed class DecrementUInt32 : DecrementInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -103,7 +103,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class DecrementUInt64 : DecrementInstruction
+        private sealed class DecrementUInt64 : DecrementInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -120,7 +120,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class DecrementSingle : DecrementInstruction
+        private sealed class DecrementSingle : DecrementInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -137,7 +137,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class DecrementDouble : DecrementInstruction
+        private sealed class DecrementDouble : DecrementInstruction
         {
             public override int Run(InterpretedFrame frame)
             {

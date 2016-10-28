@@ -17,7 +17,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private OrInstruction() { }
 
-        internal sealed class OrSByte : OrInstruction
+        private sealed class OrSByte : OrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -33,7 +33,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class OrInt16 : OrInstruction
+        private sealed class OrInt16 : OrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -49,7 +49,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class OrInt32 : OrInstruction
+        private sealed class OrInt32 : OrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -65,7 +65,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class OrInt64 : OrInstruction
+        private sealed class OrInt64 : OrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -81,7 +81,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class OrByte : OrInstruction
+        private sealed class OrByte : OrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -97,7 +97,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class OrUInt16 : OrInstruction
+        private sealed class OrUInt16 : OrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -113,7 +113,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class OrUInt32 : OrInstruction
+        private sealed class OrUInt32 : OrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -129,7 +129,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class OrUInt64 : OrInstruction
+        private sealed class OrUInt64 : OrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -145,7 +145,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class OrBool : OrInstruction
+        private sealed class OrBool : OrInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -159,13 +159,13 @@ namespace System.Linq.Expressions.Interpreter
                     }
                     else
                     {
-                        frame.Push((bool)right ? ScriptingRuntimeHelpers.True : null);
+                        frame.Push((bool)right ? ScriptingRuntimeHelpers.Boolean_True : null);
                     }
                     return +1;
                 }
                 else if (right == null)
                 {
-                    frame.Push((bool)left ? ScriptingRuntimeHelpers.True : null);
+                    frame.Push((bool)left ? ScriptingRuntimeHelpers.Boolean_True : null);
                     return +1;
                 }
                 frame.Push(((bool)left) | ((bool)right));

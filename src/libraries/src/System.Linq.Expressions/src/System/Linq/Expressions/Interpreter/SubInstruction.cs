@@ -17,7 +17,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private SubInstruction() { }
 
-        internal sealed class SubInt32 : SubInstruction
+        private sealed class SubInt32 : SubInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -36,7 +36,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class SubInt16 : SubInstruction
+        private sealed class SubInt16 : SubInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -55,7 +55,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class SubInt64 : SubInstruction
+        private sealed class SubInt64 : SubInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -74,7 +74,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class SubUInt16 : SubInstruction
+        private sealed class SubUInt16 : SubInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -93,7 +93,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class SubUInt32 : SubInstruction
+        private sealed class SubUInt32 : SubInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -112,7 +112,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class SubUInt64 : SubInstruction
+        private sealed class SubUInt64 : SubInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -131,7 +131,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class SubSingle : SubInstruction
+        private sealed class SubSingle : SubInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -150,7 +150,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class SubDouble : SubInstruction
+        private sealed class SubDouble : SubInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -198,7 +198,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private SubOvfInstruction() { }
 
-        internal sealed class SubOvfInt32 : SubOvfInstruction
+        private sealed class SubOvfInt32 : SubOvfInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -217,7 +217,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class SubOvfInt16 : SubOvfInstruction
+        private sealed class SubOvfInt16 : SubOvfInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -236,7 +236,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class SubOvfInt64 : SubOvfInstruction
+        private sealed class SubOvfInt64 : SubOvfInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -255,7 +255,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class SubOvfUInt16 : SubOvfInstruction
+        private sealed class SubOvfUInt16 : SubOvfInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -274,7 +274,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class SubOvfUInt32 : SubOvfInstruction
+        private sealed class SubOvfUInt32 : SubOvfInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -293,7 +293,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class SubOvfUInt64 : SubOvfInstruction
+        private sealed class SubOvfUInt64 : SubOvfInstruction
         {
             public override int Run(InterpretedFrame frame)
             {

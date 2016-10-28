@@ -17,7 +17,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private AndInstruction() { }
 
-        internal sealed class AndSByte : AndInstruction
+        private sealed class AndSByte : AndInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -33,7 +33,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class AndInt16 : AndInstruction
+        private sealed class AndInt16 : AndInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -49,7 +49,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class AndInt32 : AndInstruction
+        private sealed class AndInt32 : AndInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -65,7 +65,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class AndInt64 : AndInstruction
+        private sealed class AndInt64 : AndInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -81,7 +81,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class AndByte : AndInstruction
+        private sealed class AndByte : AndInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -97,7 +97,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class AndUInt16 : AndInstruction
+        private sealed class AndUInt16 : AndInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -113,7 +113,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class AndUInt32 : AndInstruction
+        private sealed class AndUInt32 : AndInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -129,7 +129,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class AndUInt64 : AndInstruction
+        private sealed class AndUInt64 : AndInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -145,7 +145,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class AndBool : AndInstruction
+        private sealed class AndBool : AndInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -159,13 +159,13 @@ namespace System.Linq.Expressions.Interpreter
                     }
                     else
                     {
-                        frame.Push((bool)right ? null : ScriptingRuntimeHelpers.False);
+                        frame.Push((bool)right ? null : ScriptingRuntimeHelpers.Boolean_False);
                     }
                     return +1;
                 }
                 else if (right == null)
                 {
-                    frame.Push((bool)left ? null : ScriptingRuntimeHelpers.False);
+                    frame.Push((bool)left ? null : ScriptingRuntimeHelpers.Boolean_False);
                     return +1;
                 }
                 frame.Push(((bool)left) & ((bool)right));
@@ -186,7 +186,6 @@ namespace System.Linq.Expressions.Interpreter
                 case TypeCode.Int16: return s_int16 ?? (s_int16 = new AndInt16());
                 case TypeCode.Int32: return s_int32 ?? (s_int32 = new AndInt32());
                 case TypeCode.Int64: return s_int64 ?? (s_int64 = new AndInt64());
-
                 case TypeCode.UInt16: return s_UInt16 ?? (s_UInt16 = new AndUInt16());
                 case TypeCode.UInt32: return s_UInt32 ?? (s_UInt32 = new AndUInt32());
                 case TypeCode.UInt64: return s_UInt64 ?? (s_UInt64 = new AndUInt64());

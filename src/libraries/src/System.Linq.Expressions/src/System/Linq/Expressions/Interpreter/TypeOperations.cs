@@ -146,7 +146,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private NullableMethodCallInstruction() { }
 
-        private class HasValue : NullableMethodCallInstruction
+        private sealed class HasValue : NullableMethodCallInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -156,7 +156,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        private class GetValue : NullableMethodCallInstruction
+        private sealed class GetValue : NullableMethodCallInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -169,7 +169,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        private class GetValueOrDefault : NullableMethodCallInstruction
+        private sealed class GetValueOrDefault : NullableMethodCallInstruction
         {
             private readonly Type defaultValueType;
 
@@ -189,7 +189,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        private class GetValueOrDefault1 : NullableMethodCallInstruction
+        private sealed class GetValueOrDefault1 : NullableMethodCallInstruction
         {
             public override int ConsumedStack => 2;
 
@@ -209,7 +209,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        private class EqualsClass : NullableMethodCallInstruction
+        private sealed class EqualsClass : NullableMethodCallInstruction
         {
             public override int ConsumedStack => 2;
 
@@ -223,7 +223,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else if (other == null)
                 {
-                    frame.Push(ScriptingRuntimeHelpers.False);
+                    frame.Push(ScriptingRuntimeHelpers.Boolean_False);
                 }
                 else
                 {
@@ -233,7 +233,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        private class ToStringClass : NullableMethodCallInstruction
+        private sealed class ToStringClass : NullableMethodCallInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -250,7 +250,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        private class GetHashCodeClass : NullableMethodCallInstruction
+        private sealed class GetHashCodeClass : NullableMethodCallInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -305,7 +305,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ProducedStack => 1;
         public override string InstructionName => "Cast";
 
-        private class CastInstructionT<T> : CastInstruction
+        private sealed class CastInstructionT<T> : CastInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -318,6 +318,7 @@ namespace System.Linq.Expressions.Interpreter
         private abstract class CastInstructionNoT : CastInstruction
         {
             private readonly Type _t;
+
             protected CastInstructionNoT(Type t)
             {
                 _t = t;
@@ -364,7 +365,7 @@ namespace System.Linq.Expressions.Interpreter
 
             protected abstract void ConvertNull(InterpretedFrame frame);
 
-            class Ref : CastInstructionNoT
+            private sealed class Ref : CastInstructionNoT
             {
                 public Ref(Type t)
                     : base(t)
@@ -377,7 +378,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
             }
 
-            class Value : CastInstructionNoT
+            private sealed class Value : CastInstructionNoT
             {
                 public Value(Type t)
                     : base(t)
@@ -419,7 +420,7 @@ namespace System.Linq.Expressions.Interpreter
         }
     }
 
-    internal class CastToEnumInstruction : CastInstruction
+    internal sealed class CastToEnumInstruction : CastInstruction
     {
         private readonly Type _t;
 
@@ -535,7 +536,7 @@ namespace System.Linq.Expressions.Interpreter
         }
     }
 
-    internal class QuoteInstruction : Instruction
+    internal sealed class QuoteInstruction : Instruction
     {
         private readonly Expression _operand;
         private readonly Dictionary<ParameterExpression, LocalVariable> _hoistedVariables;
@@ -623,7 +624,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 if (node.Variable != null)
                 {
-                    _shadowedVars.Push(new HashSet<ParameterExpression>{ node.Variable });
+                    _shadowedVars.Push(new HashSet<ParameterExpression> { node.Variable });
                 }
                 Expression b = Visit(node.Body);
                 Expression f = Visit(node.Filter);
@@ -659,7 +660,7 @@ namespace System.Linq.Expressions.Interpreter
                     }
                 }
 
-                // No variables were rewritten. Just return the original node
+                // No variables were rewritten. Just return the original node.
                 if (boxes.Count == 0)
                 {
                     return node;
@@ -672,7 +673,7 @@ namespace System.Linq.Expressions.Interpreter
                     return boxesConst;
                 }
 
-                // Otherwise, we need to return an object that merges them
+                // Otherwise, we need to return an object that merges them.
                 return Expression.Invoke(
                     Expression.Constant(new Func<IRuntimeVariables, IRuntimeVariables, int[], IRuntimeVariables>(MergeRuntimeVariables)),
                     Expression.RuntimeVariables(new TrueReadOnlyCollection<ParameterExpression>(vars.ToArray())),

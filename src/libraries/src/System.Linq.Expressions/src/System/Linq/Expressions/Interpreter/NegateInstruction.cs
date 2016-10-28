@@ -18,7 +18,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private NegateInstruction() { }
 
-        internal sealed class NegateInt32 : NegateInstruction
+        private sealed class NegateInt32 : NegateInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -35,7 +35,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class NegateInt16 : NegateInstruction
+        private sealed class NegateInt16 : NegateInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -52,7 +52,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class NegateInt64 : NegateInstruction
+        private sealed class NegateInt64 : NegateInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -69,7 +69,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class NegateSingle : NegateInstruction
+        private sealed class NegateSingle : NegateInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -86,7 +86,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class NegateDouble : NegateInstruction
+        private sealed class NegateDouble : NegateInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -130,7 +130,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private NegateCheckedInstruction() { }
 
-        internal sealed class NegateCheckedInt32 : NegateCheckedInstruction
+        private sealed class NegateCheckedInt32 : NegateCheckedInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -147,7 +147,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class NegateCheckedInt16 : NegateCheckedInstruction
+        private sealed class NegateCheckedInt16 : NegateCheckedInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -164,7 +164,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class NegateCheckedInt64 : NegateCheckedInstruction
+        private sealed class NegateCheckedInt64 : NegateCheckedInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -180,7 +180,7 @@ namespace System.Linq.Expressions.Interpreter
                 return +1;
             }
         }
-        internal sealed class NegateCheckedSingle : NegateCheckedInstruction
+        private sealed class NegateCheckedSingle : NegateCheckedInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -197,7 +197,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class NegateCheckedDouble : NegateCheckedInstruction
+        private sealed class NegateCheckedDouble : NegateCheckedInstruction
         {
             public override int Run(InterpretedFrame frame)
             {

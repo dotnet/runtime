@@ -18,7 +18,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private IncrementInstruction() { }
 
-        internal sealed class IncrementInt32 : IncrementInstruction
+        private sealed class IncrementInt32 : IncrementInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -35,7 +35,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class IncrementInt16 : IncrementInstruction
+        private sealed class IncrementInt16 : IncrementInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -52,7 +52,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class IncrementInt64 : IncrementInstruction
+        private sealed class IncrementInt64 : IncrementInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -69,7 +69,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class IncrementUInt16 : IncrementInstruction
+        private sealed class IncrementUInt16 : IncrementInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -86,7 +86,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class IncrementUInt32 : IncrementInstruction
+        private sealed class IncrementUInt32 : IncrementInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -103,7 +103,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class IncrementUInt64 : IncrementInstruction
+        private sealed class IncrementUInt64 : IncrementInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -120,7 +120,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class IncrementSingle : IncrementInstruction
+        private sealed class IncrementSingle : IncrementInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -137,7 +137,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class IncrementDouble : IncrementInstruction
+        private sealed class IncrementDouble : IncrementInstruction
         {
             public override int Run(InterpretedFrame frame)
             {

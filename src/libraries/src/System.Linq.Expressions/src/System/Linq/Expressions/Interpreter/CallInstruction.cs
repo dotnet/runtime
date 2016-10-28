@@ -49,9 +49,9 @@ namespace System.Linq.Expressions.Interpreter
                 return GetArrayAccessor(info, argumentCount);
             }
 
+#if !FEATURE_DLG_INVOKE
             return new MethodInfoCallInstruction(info, argumentCount);
-#if FEATURE_DLG_INVOKE
-
+#else
             if (!info.IsStatic && info.DeclaringType.GetTypeInfo().IsValueType)
             {
                 return new MethodInfoCallInstruction(info, argumentCount);

@@ -16,7 +16,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ProducedStack => 1;
         public override string InstructionName => "Not";
 
-        private class BoolNot : NotInstruction
+        private sealed class BoolNot : NotInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -27,13 +27,13 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push((bool)value ? ScriptingRuntimeHelpers.False : ScriptingRuntimeHelpers.True);
+                    frame.Push((bool)value ? ScriptingRuntimeHelpers.Boolean_False : ScriptingRuntimeHelpers.Boolean_True);
                 }
                 return +1;
             }
         }
 
-        private class Int64Not : NotInstruction
+        private sealed class Int64Not : NotInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -50,7 +50,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        private class Int32Not : NotInstruction
+        private sealed class Int32Not : NotInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -67,7 +67,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        private class Int16Not : NotInstruction
+        private sealed class Int16Not : NotInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -84,7 +84,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        private class UInt64Not : NotInstruction
+        private sealed class UInt64Not : NotInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -101,7 +101,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        private class UInt32Not : NotInstruction
+        private sealed class UInt32Not : NotInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -118,7 +118,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        private class UInt16Not : NotInstruction
+        private sealed class UInt16Not : NotInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -135,7 +135,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        private class ByteNot : NotInstruction
+        private sealed class ByteNot : NotInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -152,7 +152,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        private class SByteNot : NotInstruction
+        private sealed class SByteNot : NotInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -169,9 +169,9 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        public static Instruction Create(Type t)
+        public static Instruction Create(Type type)
         {
-            switch (TypeUtils.GetNonNullableType(t).GetTypeCode())
+            switch (TypeUtils.GetNonNullableType(type).GetTypeCode())
             {
                 case TypeCode.Boolean: return _Bool ?? (_Bool = new BoolNot());
                 case TypeCode.Int64: return _Int64 ?? (_Int64 = new Int64Not());
@@ -182,8 +182,9 @@ namespace System.Linq.Expressions.Interpreter
                 case TypeCode.UInt16: return _UInt16 ?? (_UInt16 = new UInt16Not());
                 case TypeCode.Byte: return _Byte ?? (_Byte = new ByteNot());
                 case TypeCode.SByte: return _SByte ?? (_SByte = new SByteNot());
+
                 default:
-                    throw new InvalidOperationException("Not for " + t.ToString());
+                    throw Error.ExpressionNotSupportedForType("Not", type);
             }
         }
     }

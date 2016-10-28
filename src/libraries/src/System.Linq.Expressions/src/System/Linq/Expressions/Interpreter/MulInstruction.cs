@@ -17,7 +17,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private MulInstruction() { }
 
-        internal sealed class MulInt32 : MulInstruction
+        private sealed class MulInt32 : MulInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -36,7 +36,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class MulInt16 : MulInstruction
+        private sealed class MulInt16 : MulInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -55,7 +55,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class MulInt64 : MulInstruction
+        private sealed class MulInt64 : MulInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -74,7 +74,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class MulUInt16 : MulInstruction
+        private sealed class MulUInt16 : MulInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -93,7 +93,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class MulUInt32 : MulInstruction
+        private sealed class MulUInt32 : MulInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -112,7 +112,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class MulUInt64 : MulInstruction
+        private sealed class MulUInt64 : MulInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -131,7 +131,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class MulSingle : MulInstruction
+        private sealed class MulSingle : MulInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -150,7 +150,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class MulDouble : MulInstruction
+        private sealed class MulDouble : MulInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -199,7 +199,7 @@ namespace System.Linq.Expressions.Interpreter
         
         private MulOvfInstruction() { }
 
-        internal sealed class MulOvfInt32 : MulOvfInstruction
+        private sealed class MulOvfInt32 : MulOvfInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -218,7 +218,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class MulOvfInt16 : MulOvfInstruction
+        private sealed class MulOvfInt16 : MulOvfInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -237,7 +237,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class MulOvfInt64 : MulOvfInstruction
+        private sealed class MulOvfInt64 : MulOvfInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -256,7 +256,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class MulOvfUInt16 : MulOvfInstruction
+        private sealed class MulOvfUInt16 : MulOvfInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -275,7 +275,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class MulOvfUInt32 : MulOvfInstruction
+        private sealed class MulOvfUInt32 : MulOvfInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
@@ -294,7 +294,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class MulOvfUInt64 : MulOvfInstruction
+        private sealed class MulOvfUInt64 : MulOvfInstruction
         {
             public override int Run(InterpretedFrame frame)
             {
