@@ -83,16 +83,18 @@ extern "C" SSL_CTX* CryptoNative_SslCtxCreate(SSL_METHOD* method)
     return ctx;
 }
 
+
 extern "C" void CryptoNative_SetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols)
 {
+    // protocols may be 0 (default). Less secure protocols should be excluded in this case.    
     long protocolOptions = 0;
 
-    if ((protocols & PAL_SSL_SSL2) != PAL_SSL_SSL2)
+    if (!protocols || ((protocols & PAL_SSL_SSL2) != PAL_SSL_SSL2))
     {
         protocolOptions |= SSL_OP_NO_SSLv2;
     }
 #ifndef OPENSSL_NO_SSL3
-    if ((protocols & PAL_SSL_SSL3) != PAL_SSL_SSL3)
+    if (!protocols || ((protocols & PAL_SSL_SSL3) != PAL_SSL_SSL3))
     {
         protocolOptions |= SSL_OP_NO_SSLv3;
     }
