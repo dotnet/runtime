@@ -890,9 +890,6 @@ static gsize WINAPI start_wrapper(void *data)
 {
 	volatile gsize dummy;
 
-	/* Avoid scanning the frames above this frame during a GC */
-	mono_gc_set_stack_end ((void*)&dummy);
-
 	return start_wrapper_internal ((StartInfo*) data, (gsize*) &dummy);
 }
 
