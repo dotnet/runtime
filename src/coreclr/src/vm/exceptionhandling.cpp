@@ -4730,7 +4730,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
         }
     }
 
-    throw ex;
+    throw std::move(ex);
 }
 
 #ifdef _AMD64_
