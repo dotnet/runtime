@@ -35,7 +35,7 @@ The first thing we want to do is setup the .NET Core app we want to dump. Here a
 }
 ```
 
-You can find a list of RIDs and their corresponding OSes [here](http://dotnet.github.io/docs/core-concepts/rid-catalog.html).
+You can find a list of RIDs and their corresponding OSes [here](https://docs.microsoft.com/en-us/dotnet/articles/core/rid-catalog).
 
 * Edit `Program.cs`, and call the method(s) you want to dump in there. Make sure they are, directly or indirectly, called from `Main`. In this example, we'll be looking at the disassembly of our custom function `InefficientJoin`:
 
