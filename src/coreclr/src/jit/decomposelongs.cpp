@@ -1350,25 +1350,11 @@ GenTree* DecomposeLongs::DecomposeRotate(LIR::Use& use)
     GenTree* loOp1;
     GenTree* hiOp1;
 
-    if (count > 32)
-    {
-        // If count > 32, we swap hi and lo, and subtract 32 from count
-        hiOp1 = gtLong->gtGetOp1();
-        loOp1 = gtLong->gtGetOp2();
-        count -= 32;
-    }
-    else
-    {
-        loOp1 = gtLong->gtGetOp1();
-        hiOp1 = gtLong->gtGetOp2();
-    }
-
-    GenTree* loResult;
-    GenTree* hiResult;
-
     if (count == 32)
     {
         // If the rotate amount is 32, then swap hi and lo
+        loOp1              = gtLong->gtGetOp1();
+        hiOp1              = gtLong->gtGetOp2();
         gtLong->gtOp.gtOp1 = hiOp1;
         gtLong->gtOp.gtOp2 = loOp1;
 
@@ -1380,23 +1366,36 @@ GenTree* DecomposeLongs::DecomposeRotate(LIR::Use& use)
     }
     else
     {
-        Range().Remove(gtLong);
-        loOp1 = RepresentOpAsLocalVar(loOp1, gtLong, &gtLong->gtOp.gtOp1);
-        hiOp1 = RepresentOpAsLocalVar(hiOp1, gtLong, &gtLong->gtOp.gtOp2);
+        GenTree* loResult;
+        GenTree* hiResult;
+
+        if (count > 32)
+        {
+            // If count > 32, we swap hi and lo, and subtract 32 from count
+            hiOp1 = gtLong->gtGetOp1();
+            loOp1 = gtLong->gtGetOp2();
+
+            Range().Remove(gtLong);
+            loOp1 = RepresentOpAsLocalVar(loOp1, gtLong, &gtLong->gtOp.gtOp2);
+            hiOp1 = RepresentOpAsLocalVar(hiOp1, gtLong, &gtLong->gtOp.gtOp1);
+
+            count -= 32;
+        }
+        else
+        {
+            loOp1 = gtLong->gtGetOp1();
+            hiOp1 = gtLong->gtGetOp2();
+
+            Range().Remove(gtLong);
+            loOp1 = RepresentOpAsLocalVar(loOp1, gtLong, &gtLong->gtOp.gtOp1);
+            hiOp1 = RepresentOpAsLocalVar(hiOp1, gtLong, &gtLong->gtOp.gtOp2);
+        }
 
         unsigned loOp1LclNum = loOp1->AsLclVarCommon()->gtLclNum;
         unsigned hiOp1LclNum = hiOp1->AsLclVarCommon()->gtLclNum;
 
-        if (count > 32)
-        {
-            Range().Remove(hiOp1);
-            Range().Remove(loOp1);
-        }
-        else
-        {
-            Range().Remove(loOp1);
-            Range().Remove(hiOp1);
-        }
+        Range().Remove(loOp1);
+        Range().Remove(hiOp1);
 
         GenTree* rotateByHi = m_compiler->gtNewIconNode(count, TYP_INT);
         GenTree* rotateByLo = m_compiler->gtNewIconNode(count, TYP_INT);
@@ -1420,11 +1419,11 @@ GenTree* DecomposeLongs::DecomposeRotate(LIR::Use& use)
         Range().InsertBefore(tree, rotateByLo, loResult);
         Range().InsertBefore(tree, loCopy, hiOp1, hiOp);
         Range().InsertBefore(tree, rotateByHi, hiResult);
+
+        Range().Remove(tree);
+
+        return FinalizeDecomposition(use, loResult, hiResult, hiResult);
     }
-
-    Range().Remove(tree);
-
-    return FinalizeDecomposition(use, loResult, hiResult, hiResult);
 }
 
 //------------------------------------------------------------------------
