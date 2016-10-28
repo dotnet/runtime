@@ -32,6 +32,7 @@ set __msbuildExtraArgs=
 set __LongGCTests=
 set __GCSimulatorTests=
 set __AgainstPackages=
+set __JitDisasm=
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
@@ -67,6 +68,7 @@ if /i "%1" == "jitstress"             (set COMPlus_JitStress=%2&shift&shift&goto
 if /i "%1" == "jitstressregs"         (set COMPlus_JitStressRegs=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "jitminopts"            (set COMPlus_JITMinOpts=1&shift&shift&goto Arg_Loop)
 if /i "%1" == "jitforcerelocs"        (set COMPlus_ForceRelocs=1&shift&shift&goto Arg_Loop)
+if /i "%1" == "jitdisasm"             (set __JitDisasm=1&shift&goto Arg_Loop)
 if /i "%1" == "GenerateLayoutOnly"    (set __GenerateLayoutOnly=1&set __SkipWrapperGeneration=true&shift&goto Arg_Loop)
 if /i "%1" == "PerfTests"             (set __PerfTests=true&set __SkipWrapperGeneration=true&shift&goto Arg_Loop)
 if /i "%1" == "runcrossgentests"      (set RunCrossGen=true&shift&goto Arg_Loop)
@@ -256,6 +258,8 @@ REM ============================================================================
 REM Compile the managed assemblies in Core_ROOT before running the tests
 :PrecompileAssembly
 
+if defined __JitDisasm goto :jitdisasm
+
 REM Skip mscorlib since it is already precompiled.
 if /I "%3" == "mscorlib.dll" exit /b 0
 if /I "%3" == "mscorlib.ni.dll" exit /b 0
@@ -273,6 +277,27 @@ if %__exitCode% neq 0 (
 )
     
 echo Successfully precompiled %2
+exit /b 0
+
+:jitdisasm
+
+if /I "%3" == "mscorlib.ni.dll" exit /b 0
+
+echo "%1\corerun" "%1\jit-dasm.dll" --crossgen %1\crossgen.exe --platform %CORE_ROOT% --output %__TestWorkingDir%\dasm "%2"
+"%1\corerun" "%1\jit-dasm.dll" --crossgen %1\crossgen.exe --platform %CORE_ROOT% --output %__TestWorkingDir%\dasm "%2"
+set /a __exitCode = %errorlevel%
+
+if "%__exitCode%" == "-2146230517" (
+    echo %2 is not a managed assembly.
+    exit /b 0
+)
+
+if %__exitCode% neq 0 (
+    echo Unable to precompile %2
+    exit /b 0
+)
+
+echo Successfully precompiled and generated dasm for %2
 exit /b 0
 
 :PrecompileFX
@@ -305,6 +330,7 @@ set __msbuildLogArgs=^
 set __msbuildArgs=%* %__msbuildCommonArgs% %__msbuildLogArgs%
 
 @REM The next line will overwrite the existing log file, if any.
+echo %_msbuildexe% %__msbuildArgs%
 echo Invoking: %_msbuildexe% %__msbuildArgs% > "%__BuildLog%"
 
 %_msbuildexe% %__msbuildArgs%
@@ -342,13 +368,23 @@ if defined __GCSimulatorTests (
     set RunningGCSimulatorTests=1
 )
 
+if defined __JitDisasm (
+    if defined __DoCrossgen (
+        echo Running jit disasm on framework and test assemblies
+    )
+    if not defined __DoCrossgen (
+       echo Running jit disasm on test assemblies only
+    )
+    set RunningJitDisasm=1
+)
+
 set __BuildLogRootName=Tests_GenerateRuntimeLayout
 call :msbuild "%__ProjectFilesDir%\runtest.proj" /p:GenerateRuntimeLayout=true 
 if errorlevel 1 (
     echo Test Dependency Resolution Failed
     exit /b 1
 )
-echo %__MsgPrefix% Created the runtime layout with all dependencies in %CORE_ROOT%
+echo %__MsgPrefix%Created the runtime layout with all dependencies in %CORE_ROOT%
 exit /b 0
 
 
@@ -375,6 +411,7 @@ echo jitstress n        - Runs the tests with COMPlus_JitStress=n
 echo jitstressregs n    - Runs the tests with COMPlus_JitStressRegs=n
 echo jitminopts         - Runs the tests with COMPlus_JITMinOpts=1
 echo jitforcerelocs     - Runs the tests with COMPlus_ForceRelocs=1
+echo jitdisasm          - Runs jit-dasm on the tests
 echo gcstresslevel n    - Runs the tests with COMPlus_GCStress=n
 echo     0: None                                1: GC on all allocs and 'easy' places
 echo     2: GC on transitions to preemptive GC  4: GC on every allowable JITed instr

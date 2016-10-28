@@ -1,6 +1,9 @@
 {
   "dependencies": {
     "Microsoft.DotNet.CoreCLR.TestDependencies": "1.0.0-prerelease",
+    "jit-dasm": "0.0.1.1",
+    "cijobs": "0.0.1.2",
+    "jit-analyze": "0.0.1.0"
   },
   "frameworks": {
     "netcoreapp1.1": {
