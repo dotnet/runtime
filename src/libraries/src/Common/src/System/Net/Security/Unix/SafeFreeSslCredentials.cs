@@ -19,6 +19,7 @@ namespace System.Net.Security
         private SafeEvpPKeyHandle _certKeyHandle;
         private SslProtocols _protocols = SslProtocols.None;
         private EncryptionPolicy _policy;
+        private bool _isInvalid = false;
 
         internal SafeX509Handle CertHandle
         {
@@ -89,7 +90,7 @@ namespace System.Net.Security
 
         public override bool IsInvalid
         {
-            get { return SslProtocols.None == _protocols; }
+            get { return _isInvalid; }
         }
 
         protected override bool ReleaseHandle()
@@ -104,9 +105,8 @@ namespace System.Net.Security
                 _certKeyHandle.Dispose();
             }
 
-            _protocols = SslProtocols.None;
+            _isInvalid = true;
             return true;
         }
-
     }
 }

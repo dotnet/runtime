@@ -337,8 +337,6 @@ internal static partial class Interop
 
         private static IntPtr GetSslMethod(SslProtocols protocols)
         {
-            Debug.Assert(protocols != SslProtocols.None, "All protocols are disabled");
-
 #pragma warning disable 0618 // Ssl2, Ssl3 are deprecated.
             bool ssl2 = (protocols & SslProtocols.Ssl2) == SslProtocols.Ssl2;
             bool ssl3 = (protocols & SslProtocols.Ssl3) == SslProtocols.Ssl3;
