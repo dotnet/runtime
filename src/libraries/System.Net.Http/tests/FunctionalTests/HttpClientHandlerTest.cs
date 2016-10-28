@@ -496,6 +496,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
+        [ActiveIssue(8945, TestPlatforms.Windows)]
         [Theory]
         [InlineData(3, 2)]
         [InlineData(3, 3)]
