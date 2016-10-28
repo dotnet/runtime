@@ -9,49 +9,55 @@ using System.Runtime.CompilerServices;
 
 public class LowLevelPerf
 {
-    [Benchmark]
+    [Benchmark(InnerIterationCount=100000)]
     public static void EmptyStaticFunction()
     {
         foreach (var iteration in Benchmark.Iterations)
         {
             using (iteration.StartMeasurement())
             {
-                Class.EmptyStaticFunction();
-                Class.EmptyStaticFunction();
-                Class.EmptyStaticFunction();
-                Class.EmptyStaticFunction();
-                Class.EmptyStaticFunction();
-                Class.EmptyStaticFunction();
-                Class.EmptyStaticFunction();
-                Class.EmptyStaticFunction();
-                Class.EmptyStaticFunction();
-                Class.EmptyStaticFunction();
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                {
+                    Class.EmptyStaticFunction();
+                    Class.EmptyStaticFunction();
+                    Class.EmptyStaticFunction();
+                    Class.EmptyStaticFunction();
+                    Class.EmptyStaticFunction();
+                    Class.EmptyStaticFunction();
+                    Class.EmptyStaticFunction();
+                    Class.EmptyStaticFunction();
+                    Class.EmptyStaticFunction();
+                    Class.EmptyStaticFunction();
+                }
             }
         }
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=100000)]
     public static void EmptyStaticFunction5Arg()
     {
         foreach (var iteration in Benchmark.Iterations)
         {
             using (iteration.StartMeasurement())
             {
-                Class.EmptyStaticFunction5Arg(1, 2, 3, 4, 5);
-                Class.EmptyStaticFunction5Arg(1, 2, 3, 4, 5);
-                Class.EmptyStaticFunction5Arg(1, 2, 3, 4, 5);
-                Class.EmptyStaticFunction5Arg(1, 2, 3, 4, 5);
-                Class.EmptyStaticFunction5Arg(1, 2, 3, 4, 5);
-                Class.EmptyStaticFunction5Arg(1, 2, 3, 4, 5);
-                Class.EmptyStaticFunction5Arg(1, 2, 3, 4, 5);
-                Class.EmptyStaticFunction5Arg(1, 2, 3, 4, 5);
-                Class.EmptyStaticFunction5Arg(1, 2, 3, 4, 5);
-                Class.EmptyStaticFunction5Arg(1, 2, 3, 4, 5);
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                {
+                    Class.EmptyStaticFunction5Arg(1, 2, 3, 4, 5);
+                    Class.EmptyStaticFunction5Arg(1, 2, 3, 4, 5);
+                    Class.EmptyStaticFunction5Arg(1, 2, 3, 4, 5);
+                    Class.EmptyStaticFunction5Arg(1, 2, 3, 4, 5);
+                    Class.EmptyStaticFunction5Arg(1, 2, 3, 4, 5);
+                    Class.EmptyStaticFunction5Arg(1, 2, 3, 4, 5);
+                    Class.EmptyStaticFunction5Arg(1, 2, 3, 4, 5);
+                    Class.EmptyStaticFunction5Arg(1, 2, 3, 4, 5);
+                    Class.EmptyStaticFunction5Arg(1, 2, 3, 4, 5);
+                    Class.EmptyStaticFunction5Arg(1, 2, 3, 4, 5);
+                }
             }
         }
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=100000)]
     public static void EmptyInstanceFunction()
     {
         Class aClass = new Class();
@@ -60,21 +66,24 @@ public class LowLevelPerf
         {
             using (iteration.StartMeasurement())
             {
-                aClass.EmptyInstanceFunction();
-                aClass.EmptyInstanceFunction();
-                aClass.EmptyInstanceFunction();
-                aClass.EmptyInstanceFunction();
-                aClass.EmptyInstanceFunction();
-                aClass.EmptyInstanceFunction();
-                aClass.EmptyInstanceFunction();
-                aClass.EmptyInstanceFunction();
-                aClass.EmptyInstanceFunction();
-                aClass.EmptyInstanceFunction();
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                {
+                    aClass.EmptyInstanceFunction();
+                    aClass.EmptyInstanceFunction();
+                    aClass.EmptyInstanceFunction();
+                    aClass.EmptyInstanceFunction();
+                    aClass.EmptyInstanceFunction();
+                    aClass.EmptyInstanceFunction();
+                    aClass.EmptyInstanceFunction();
+                    aClass.EmptyInstanceFunction();
+                    aClass.EmptyInstanceFunction();
+                    aClass.EmptyInstanceFunction();
+                }
             }
         }
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=100000)]
     public static void InterfaceInterfaceMethod()
     {
         AnInterface aInterface = new Class();
@@ -83,16 +92,19 @@ public class LowLevelPerf
         {
             using (iteration.StartMeasurement())
             {
-                CallInterfaceMethod(aInterface);
-                CallInterfaceMethod(aInterface);
-                CallInterfaceMethod(aInterface);
-                CallInterfaceMethod(aInterface);
-                CallInterfaceMethod(aInterface);
-                CallInterfaceMethod(aInterface);
-                CallInterfaceMethod(aInterface);
-                CallInterfaceMethod(aInterface);
-                CallInterfaceMethod(aInterface);
-                CallInterfaceMethod(aInterface);
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                {
+                    CallInterfaceMethod(aInterface);
+                    CallInterfaceMethod(aInterface);
+                    CallInterfaceMethod(aInterface);
+                    CallInterfaceMethod(aInterface);
+                    CallInterfaceMethod(aInterface);
+                    CallInterfaceMethod(aInterface);
+                    CallInterfaceMethod(aInterface);
+                    CallInterfaceMethod(aInterface);
+                    CallInterfaceMethod(aInterface);
+                    CallInterfaceMethod(aInterface);
+                }
             }
         }
     }
@@ -103,7 +115,7 @@ public class LowLevelPerf
         aInterface.InterfaceMethod();
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=100000)]
     public static void InterfaceInterfaceMethodLongHierarchy()
     {
         AnInterface aInterface = new LongHierarchyChildClass();
@@ -123,10 +135,11 @@ public class LowLevelPerf
 
         foreach (var iteration in Benchmark.Iterations)
             using (iteration.StartMeasurement())
-                CallInterfaceMethod(aInterface);
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    CallInterfaceMethod(aInterface);
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=100000)]
     public static void InterfaceInterfaceMethodSwitchCallType()
     {
         AnInterface aInterface = new LongHierarchyChildClass();
@@ -136,13 +149,16 @@ public class LowLevelPerf
         {
             using (iteration.StartMeasurement())
             {
-                CallInterfaceMethod(aInterface);
-                CallInterfaceMethod(aInterface1);
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                {
+                    CallInterfaceMethod(aInterface);
+                    CallInterfaceMethod(aInterface1);
+                }
             }
         }
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=100000)]
     public static int ClassVirtualMethod()
     {
         SuperClass aClass = new Class();
@@ -150,42 +166,46 @@ public class LowLevelPerf
         int x = 0;
         foreach (var iteration in Benchmark.Iterations)
             using (iteration.StartMeasurement())
-                x = aClass.VirtualMethod();
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    x = aClass.VirtualMethod();
 
         return x;
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=100000)]
     public static void SealedClassInterfaceMethod()
     {
         SealedClass aSealedClass = new SealedClass();
 
         foreach (var iteration in Benchmark.Iterations)
             using (iteration.StartMeasurement())
-                aSealedClass.InterfaceMethod();
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    aSealedClass.InterfaceMethod();
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=100000)]
     public static void StructWithInterfaceInterfaceMethod()
     {
         StructWithInterface aStructWithInterface = new StructWithInterface();
 
         foreach (var iteration in Benchmark.Iterations)
             using (iteration.StartMeasurement())
-                aStructWithInterface.InterfaceMethod();
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    aStructWithInterface.InterfaceMethod();
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=100000)]
     public static void StaticIntPlus()
     {
         Class aClass = new Class();
 
         foreach (var iteration in Benchmark.Iterations)
             using (iteration.StartMeasurement())
-                Class.aStaticInt += 1;
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    Class.aStaticInt += 1;
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=100000)]
     public static bool ObjectStringIsString()
     {
         object aObjectString = "aString1";
@@ -193,12 +213,13 @@ public class LowLevelPerf
 
         foreach (var iteration in Benchmark.Iterations)
             using (iteration.StartMeasurement())
-                b = aObjectString is String;
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    b = aObjectString is String;
 
         return b;
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=100000)]
     public static void NewDelegateClassEmptyInstanceFn()
     {
         Class aClass = new Class();
@@ -206,10 +227,11 @@ public class LowLevelPerf
 
         foreach (var iteration in Benchmark.Iterations)
             using (iteration.StartMeasurement())
-                aMyDelegate = new MyDelegate(aClass.EmptyInstanceFunction);
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    aMyDelegate = new MyDelegate(aClass.EmptyInstanceFunction);
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=100000)]
     public static void NewDelegateClassEmptyStaticFn()
     {
         Class aClass = new Class();
@@ -217,10 +239,11 @@ public class LowLevelPerf
 
         foreach (var iteration in Benchmark.Iterations)
             using (iteration.StartMeasurement())
-                aMyDelegate = new MyDelegate(Class.EmptyStaticFunction);
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    aMyDelegate = new MyDelegate(Class.EmptyStaticFunction);
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=100000)]
     public static void InstanceDelegate()
     {
         Class aClass = new Class();
@@ -228,10 +251,11 @@ public class LowLevelPerf
 
         foreach (var iteration in Benchmark.Iterations)
             using (iteration.StartMeasurement())
-                aInstanceDelegate();
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    aInstanceDelegate();
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=100000)]
     public static void StaticDelegate()
     {
         Class aClass = new Class();
@@ -239,10 +263,11 @@ public class LowLevelPerf
 
         foreach (var iteration in Benchmark.Iterations)
             using (iteration.StartMeasurement())
-                aStaticDelegate();
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    aStaticDelegate();
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=100000)]
     public static void MeasureEvents()
     {
         Class aClass = new Class();
@@ -250,28 +275,31 @@ public class LowLevelPerf
 
         foreach (var iteration in Benchmark.Iterations)
             using (iteration.StartMeasurement())
-                aClass.MeasureFire100();
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    aClass.MeasureFire100();
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=100000)]
     public static void GenericClassWithIntGenericInstanceField()
     {
         GenericClass<int> aGenericClassWithInt = new GenericClass<int>();
 
         foreach (var iteration in Benchmark.Iterations)
             using (iteration.StartMeasurement())
-                aGenericClassWithInt.aGenericInstanceFieldT = 1;
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    aGenericClassWithInt.aGenericInstanceFieldT = 1;
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=100000)]
     public static void GenericClassGenericStaticField()
     {
         foreach (var iteration in Benchmark.Iterations)
             using (iteration.StartMeasurement())
-                GenericClass<int>.aGenericStaticFieldT = 1;
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    GenericClass<int>.aGenericStaticFieldT = 1;
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=100000)]
     public static int GenericClassGenericInstanceMethod()
     {
         GenericClass<int> aGenericClassWithInt = new GenericClass<int>();
@@ -279,35 +307,38 @@ public class LowLevelPerf
         int x = 0;
         foreach (var iteration in Benchmark.Iterations)
             using (iteration.StartMeasurement())
-                x = aGenericClassWithInt.ClassGenericInstanceMethod();
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    x = aGenericClassWithInt.ClassGenericInstanceMethod();
 
         return x;
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=100000)]
     public static int GenericClassGenericStaticMethod()
     {
         int x = 0;
         foreach (var iteration in Benchmark.Iterations)
             using (iteration.StartMeasurement())
-                x = GenericClass<int>.ClassGenericStaticMethod();
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    x = GenericClass<int>.ClassGenericStaticMethod();
 
         return x;
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=100000)]
     public static int GenericGenericMethod()
     {
         // Warmup
         int x = 0;
         foreach (var iteration in Benchmark.Iterations)
             using (iteration.StartMeasurement())
-                x = Class.GenericMethod<int>();
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    x = Class.GenericMethod<int>();
 
         return x;
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=100000)]
     public static void GenericClassWithSTringGenericInstanceMethod()
     {
         GenericClass<string> aGenericClassWithString = new GenericClass<string>();
@@ -315,10 +346,11 @@ public class LowLevelPerf
 
         foreach (var iteration in Benchmark.Iterations)
             using (iteration.StartMeasurement())
-                aGenericClassWithString.aGenericInstanceFieldT = aString;
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    aGenericClassWithString.aGenericInstanceFieldT = aString;
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=100000)]
     public static int ForeachOverList100Elements()
     {
         List<int> iList = new List<int>();
@@ -328,13 +360,14 @@ public class LowLevelPerf
         int iResult = 0;
         foreach (var iteration in Benchmark.Iterations)
             using (iteration.StartMeasurement())
-                foreach (int i in iList)
-                    iResult = i;
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    foreach (int j in iList)
+                        iResult = j;
 
         return iResult;
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=100000)]
     public static Type TypeReflectionObjectGetType()
     {
         Type type = null;
@@ -342,12 +375,13 @@ public class LowLevelPerf
 
         foreach (var iteration in Benchmark.Iterations)
             using (iteration.StartMeasurement())
-                type = anObject.GetType();
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    type = anObject.GetType();
 
         return type;
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=100000)]
     public static Type TypeReflectionArrayGetType()
     {
         Type type = null;
@@ -355,12 +389,13 @@ public class LowLevelPerf
 
         foreach (var iteration in Benchmark.Iterations)
             using (iteration.StartMeasurement())
-                type = anArray.GetType();
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    type = anArray.GetType();
 
         return type;
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount=100000)]
     public static string IntegerFormatting()
     {
         int number = Int32.MaxValue;
@@ -368,7 +403,8 @@ public class LowLevelPerf
         string result = null;
         foreach (var iteration in Benchmark.Iterations)
             using (iteration.StartMeasurement())
-                result = number.ToString();
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    result = number.ToString();
 
         return result;
     }
