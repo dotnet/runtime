@@ -7192,6 +7192,21 @@
       <Member MemberType="Field" Name="value__" />
       <Member MemberType="Field" Name="VisibleToAllHosts" />
     </Type>
+    <Type Name="System.Security.SecureString">
+      <Member Name="#ctor" />
+      <Member Name="#ctor(System.Char*,System.Int32)" />
+      <Member Name="get_Length" />
+      <Member MemberType="Property" Name="Length" />
+      <Member Name="AppendChar(System.Char)" />
+      <Member Name="Clear" />
+      <Member Name="Copy" />
+      <Member Name="Dispose" />
+      <Member Name="InsertAt(System.Int32,System.Char)" />
+      <Member Name="IsReadOnly" />
+      <Member Name="MakeReadOnly" />
+      <Member Name="RemoveAt(System.Int32)" />
+      <Member Name="SetAt(System.Int32,System.Char)" />
+    </Type>
     <Type Name="System.Security.SecurityCriticalAttribute">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.Security.SecurityCriticalScope)" />

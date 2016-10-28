@@ -80,6 +80,9 @@
     <FeatureCoreFxFileStream>true</FeatureCoreFxFileStream>
     <FeatureCoreFxShim>true</FeatureCoreFxShim>
     <FeatureCoreFxOverlapped>true</FeatureCoreFxOverlapped>
+
+    <!-- We only want to use the CoreFx implementation of SecureString when we are not building the legacy surface area -->
+    <FeatureCoreFxSecureString Condition="'$(FeatureLegacySurface)'==''" >true</FeatureCoreFxSecureString>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
@@ -105,6 +108,7 @@
     <FeatureUseLcid>true</FeatureUseLcid>
     <FeatureImplicitLongPath>true</FeatureImplicitLongPath>
   </PropertyGroup>
+
   <PropertyGroup Condition="'$(TargetsUnix)' != 'true' and '$(ClrProduct)' == 'core_clr'">
     <FeatureCoreFxWindowsInterop>true</FeatureCoreFxWindowsInterop>
   </PropertyGroup>
