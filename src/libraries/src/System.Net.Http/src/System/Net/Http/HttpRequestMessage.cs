@@ -131,7 +131,7 @@ namespace System.Net.Http
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, method, requestUri);
             InitializeValues(method, requestUri);
-            NetEventSource.Exit(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         [SuppressMessage("Microsoft.Design", "CA1057:StringUriOverloadsCallSystemUriOverloads",
@@ -152,7 +152,7 @@ namespace System.Net.Http
                 InitializeValues(method, new Uri(requestUri, UriKind.RelativeOrAbsolute));
             }
 
-            NetEventSource.Exit(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         public override string ToString()

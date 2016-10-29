@@ -21,7 +21,7 @@ namespace System.Net
             }
 
             IntPtr packageInfo = safeHandle.DangerousGetHandle();
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"packageInfo:{packageInfo} negotiationState:{negotiationState:X}");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"packageInfo:{packageInfo} negotiationState:{negotiationState:x}");
 
             if (negotiationState == Interop.SspiCli.SECPKG_NEGOTIATION_COMPLETE
                 || negotiationState == Interop.SspiCli.SECPKG_NEGOTIATION_OPTIMISTIC)
@@ -33,7 +33,7 @@ namespace System.Net
                     name = Marshal.PtrToStringUni(unmanagedString);
                 }
 
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"packageInfo:{packageInfo} negotiationState:{negotiationState} name:{name}");
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"packageInfo:{packageInfo} negotiationState:{negotiationState:x} name:{name}");
 
                 // An optimization for future string comparisons.
                 if (string.Compare(name, Kerberos, StringComparison.OrdinalIgnoreCase) == 0)

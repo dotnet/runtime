@@ -307,7 +307,7 @@ namespace System.Net.Http.Headers
             }
             catch (FormatException e)
             {
-                NetEventSource.Error(null, SR.Format(SR.net_http_log_headers_wrong_email_format, value, e.Message));
+                if (NetEventSource.IsEnabled) NetEventSource.Error(null, SR.Format(SR.net_http_log_headers_wrong_email_format, value, e.Message));
             }
             return false;
         }

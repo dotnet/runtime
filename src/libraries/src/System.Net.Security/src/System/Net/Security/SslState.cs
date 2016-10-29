@@ -595,7 +595,7 @@ namespace System.Net.Security
                 // Not aync so the connection is completed at this point.
                 if (lazyResult == null && NetEventSource.IsEnabled)
                 {
-                    NetEventSource.Log.SspiSelectedCipherSuite(nameof(ProcessAuthentication),
+                    if (NetEventSource.IsEnabled) NetEventSource.Log.SspiSelectedCipherSuite(nameof(ProcessAuthentication),
                         SslProtocol,
                         CipherAlgorithm,
                         CipherStrength,
@@ -729,7 +729,7 @@ namespace System.Net.Security
             // Connection is completed at this point.
             if (NetEventSource.IsEnabled)
             {
-                NetEventSource.Log.SspiSelectedCipherSuite(nameof(EndProcessAuthentication),
+                if (NetEventSource.IsEnabled) NetEventSource.Log.SspiSelectedCipherSuite(nameof(EndProcessAuthentication),
                     SslProtocol,
                     CipherAlgorithm,
                     CipherStrength,
@@ -1016,7 +1016,7 @@ namespace System.Net.Security
         //
         private bool CompleteHandshake(ref ProtocolToken alertToken)
         {
-            NetEventSource.Enter(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             Context.ProcessHandshakeSuccess();
 
@@ -1090,7 +1090,7 @@ namespace System.Net.Security
 
         private static void PartialFrameCallback(AsyncProtocolRequest asyncRequest)
         {
-            NetEventSource.Enter(null);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null);
 
             // Async ONLY completion.
             SslState sslState = (SslState)asyncRequest.AsyncObject;
@@ -1114,7 +1114,7 @@ namespace System.Net.Security
         //
         private static void ReadFrameCallback(AsyncProtocolRequest asyncRequest)
         {
-            NetEventSource.Enter(null);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null);
 
             // Async ONLY completion.
             SslState sslState = (SslState)asyncRequest.AsyncObject;
@@ -1584,7 +1584,7 @@ namespace System.Net.Security
 #if TRACE_VERBOSE
                 if (bytes[1] != 3 && NetEventSource.IsEnabled)
                 {
-                    NetEventSource.Info(this, $"WARNING: SslState::DetectFraming() SSL protocol is > 3, trying SSL3 framing in retail = {bytes[i]:x}");
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"WARNING: SslState::DetectFraming() SSL protocol is > 3, trying SSL3 framing in retail = {bytes[i]:x}");
                 }
 #endif
 
@@ -1604,7 +1604,7 @@ namespace System.Net.Security
             if ((bytes[0] & 0x80) == 0 && NetEventSource.IsEnabled)
             {
                 // We have a three-byte header format
-                NetEventSource.Info(this, $"WARNING: SslState::DetectFraming() SSL v <=2 HELLO has no high bit set for 3 bytes header, we are broken, received byte = {bytes[0]:x}");
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"WARNING: SslState::DetectFraming() SSL v <=2 HELLO has no high bit set for 3 bytes header, we are broken, received byte = {bytes[0]:x}");
             }
 #endif
 

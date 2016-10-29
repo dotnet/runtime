@@ -159,7 +159,7 @@ namespace System.Net
                 if (IPAddress.TryParse(hostName, out address))
                 {
                     IPHostEntry ipHostEntry = NameResolutionUtilities.GetUnresolvedAnswer(address);
-                    NetEventSource.Exit(null, ipHostEntry);
+                    if (NetEventSource.IsEnabled) NetEventSource.Exit(null, ipHostEntry);
                     return ipHostEntry;
                 }
 

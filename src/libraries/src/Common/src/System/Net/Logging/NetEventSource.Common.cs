@@ -22,23 +22,24 @@ namespace System.Net
     // Those partials can then also add additional events if needed, starting numbering from the NextAvailableEventId defined by this partial.
 
     // Usage:
-    // - Operations that have zero allocations / measurable computations at call sites can use a simple pattern, calling methods like:
+    // - Operations that may allocate (e.g. boxing a value type, using string interpolation, etc.) or that may have computations
+    //   at call sites should guard access like:
+    //       if (NetEventSource.IsEnabled) NetEventSource.Enter(this, refArg1, valueTypeArg2); // entering an instance method with a value type arg
+    //       if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"Found certificate: {cert}"); // info logging with a formattable string
+    // - Operations that have zero allocations / measurable computations at call sites can use a simpler pattern, calling methods like:
     //       NetEventSource.Enter(this);                   // entering an instance method
     //       NetEventSource.Info(this, "literal string");  // arbitrary message with a literal string
     //       NetEventSource.Enter(this, refArg1, regArg2); // entering an instance method with two reference type arguments
     //       NetEventSource.Enter(null);                   // entering a static method
     //       NetEventSource.Enter(null, refArg1);          // entering a static method with one reference type argument
-    // - Operations that may allocate (e.g. boxing a value type, using string interpolation, etc.) or that may have computations
-    //   at call sites should guard access like:
-    //       if (NetEventSource.IsEnabled) NetEventSource.Enter(this, refArg1, valueTypeArg2); // entering an instance method with a value type arg
-    //       if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"Found certificate: {cert}"); // info logging with a formattable string
     //   Debug.Asserts inside the logging methods will help to flag some misuse if the DEBUG_NETEVENTSOURCE_MISUSE compilation constant is defined.
-    // - Messages can be strings, formattable strings, or any other object.  Objects (including those used in formattable strings) have special
-    //   formatting applied, controlled by the Format method.  Partial specializations can also override this formatting by implementing a partial
-    //   method that takes an object and optionally provides a string representation of it, in case a particular library wants to customize further.
+    //   However, because it can be difficult by observation to understand all of the costs involved, guarding can be done everywhere.
     // - NetEventSource.Fail calls typically do not need to be prefixed with an IsEnabled check, even if they allocate, as FailMessage
     //   should only be used in cases similar to Debug.Fail, where they are not expected to happen in retail builds, and thus extra costs
     //   don't matter.
+    // - Messages can be strings, formattable strings, or any other object.  Objects (including those used in formattable strings) have special
+    //   formatting applied, controlled by the Format method.  Partial specializations can also override this formatting by implementing a partial
+    //   method that takes an object and optionally provides a string representation of it, in case a particular library wants to customize further.
 
     /// <summary>Provides logging facilities for System.Net libraries.</summary>
     internal sealed partial class NetEventSource : EventSource
@@ -270,15 +271,15 @@ namespace System.Net
             WriteEvent(InfoEventId, thisOrContextObject, memberName ?? MissingMember, message);
         #endregion
 
-        #region DumpArray
+        #region DumpBuffer
         /// <summary>Logs the contents of a buffer.</summary>
         /// <param name="thisOrContextObject">`this`, or another object that serves to provide context for the operation.</param>
         /// <param name="buffer">The buffer to be logged.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void DumpArray(object thisOrContextObject, byte[] buffer, [CallerMemberName] string memberName = null)
+        public static void DumpBuffer(object thisOrContextObject, byte[] buffer, [CallerMemberName] string memberName = null)
         {
-            DumpArray(thisOrContextObject, buffer, 0, buffer.Length, memberName);
+            DumpBuffer(thisOrContextObject, buffer, 0, buffer.Length, memberName);
         }
 
         /// <summary>Logs the contents of a buffer.</summary>
@@ -288,13 +289,13 @@ namespace System.Net
         /// <param name="count">The number of bytes to log.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void DumpArray(object thisOrContextObject, byte[] buffer, int offset, int count, [CallerMemberName] string memberName = null)
+        public static void DumpBuffer(object thisOrContextObject, byte[] buffer, int offset, int count, [CallerMemberName] string memberName = null)
         {
             if (IsEnabled)
             {
                 if (offset < 0 || offset > buffer.Length - count)
                 {
-                    Fail(thisOrContextObject, $"Invalid {nameof(DumpArray)} Args. Length={buffer.Length}, Offset={offset}, Count={count}", memberName);
+                    Fail(thisOrContextObject, $"Invalid {nameof(DumpBuffer)} Args. Length={buffer.Length}, Offset={offset}, Count={count}", memberName);
                     return;
                 }
 
@@ -307,7 +308,7 @@ namespace System.Net
                     Buffer.BlockCopy(buffer, offset, slice, 0, count);
                 }
 
-                Log.DumpArray(IdOf(thisOrContextObject), memberName, slice);
+                Log.DumpBuffer(IdOf(thisOrContextObject), memberName, slice);
             }
         }
 
@@ -317,7 +318,7 @@ namespace System.Net
         /// <param name="count">The number of bytes to log.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static unsafe void DumpArray(object thisOrContextObject, IntPtr bufferPtr, int count, [CallerMemberName] string memberName = null)
+        public static unsafe void DumpBuffer(object thisOrContextObject, IntPtr bufferPtr, int count, [CallerMemberName] string memberName = null)
         {
             Debug.Assert(bufferPtr != IntPtr.Zero);
             Debug.Assert(count >= 0);
@@ -329,12 +330,12 @@ namespace System.Net
                 {
                     Buffer.MemoryCopy((byte*)bufferPtr, targetPtr, buffer.Length, buffer.Length);
                 }
-                Log.DumpArray(IdOf(thisOrContextObject), memberName, buffer);
+                Log.DumpBuffer(IdOf(thisOrContextObject), memberName, buffer);
             }
         }
 
         [Event(DumpArrayEventId, Level = EventLevel.Verbose, Keywords = Keywords.Debug)]
-        private unsafe void DumpArray(string thisOrContextObject, string memberName, byte[] buffer) =>
+        private unsafe void DumpBuffer(string thisOrContextObject, string memberName, byte[] buffer) =>
             WriteEvent(DumpArrayEventId, thisOrContextObject, memberName ?? MissingMember, buffer);
         #endregion
 

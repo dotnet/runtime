@@ -40,7 +40,7 @@ namespace System.Net
                 return null;
             }
 
-            NetEventSource.Enter(securityContext);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(securityContext);
 
             X509Certificate2 result = null;
             SafeFreeCertContext remoteContext = null;
@@ -90,8 +90,11 @@ namespace System.Net
                 }
             }
 
-            NetEventSource.Log.RemoteCertificate(result);
-            NetEventSource.Exit(securityContext, result);
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Log.RemoteCertificate(result);
+                NetEventSource.Exit(securityContext, result);
+            }
             return result;
         }      
 
@@ -162,7 +165,7 @@ namespace System.Net
 
                             Volatile.Write(ref storeField, store);
 
-                            NetEventSource.Info(null, $"storeLocation: {storeLocation} returned store {store}");
+                            if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"storeLocation: {storeLocation} returned store {store}");
                         }
                         catch (CryptographicException e)
                         {

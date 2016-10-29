@@ -55,7 +55,7 @@ namespace System.Net.Http
                 CheckBaseAddress(value, "value");
                 CheckDisposedOrStarted();
 
-                NetEventSource.UriBaseAddress(this, value);
+                if (NetEventSource.IsEnabled) NetEventSource.UriBaseAddress(this, value);
 
                 _baseAddress = value;
             }
@@ -112,13 +112,13 @@ namespace System.Net.Http
         public HttpClient(HttpMessageHandler handler, bool disposeHandler)
             : base(handler, disposeHandler)
         {
-            NetEventSource.Enter(this, handler);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, handler);
 
             _timeout = s_defaultTimeout;
             _maxResponseContentBufferSize = HttpContent.MaxBufferSize;
             _pendingRequestsCts = new CancellationTokenSource();
 
-            NetEventSource.Exit(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         #endregion Constructors
@@ -359,7 +359,7 @@ namespace System.Net.Http
                     await response.Content.LoadIntoBufferAsync(_maxResponseContentBufferSize).ConfigureAwait(false);
                 }
 
-                NetEventSource.ClientSendCompleted(this, response, request);
+                if (NetEventSource.IsEnabled) NetEventSource.ClientSendCompleted(this, response, request);
                 return response;
             }
             catch (Exception e)
@@ -376,7 +376,7 @@ namespace System.Net.Http
                 else
                 {
                     LogSendError(request, linkedCts, nameof(SendAsync), e);
-                    NetEventSource.Error(this, e);
+                    if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
                     throw;
                 }
             }
@@ -399,7 +399,7 @@ namespace System.Net.Http
         public void CancelPendingRequests()
         {
             CheckDisposed();
-            NetEventSource.Enter(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             // With every request we link this cancellation token source.
             CancellationTokenSource currentCts = Interlocked.Exchange(ref _pendingRequestsCts,
@@ -408,7 +408,7 @@ namespace System.Net.Http
             currentCts.Cancel();
             currentCts.Dispose();
 
-            NetEventSource.Exit(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         #endregion Advanced Send Overloads
@@ -549,12 +549,12 @@ namespace System.Net.Http
             {
                 if (cancellationTokenSource.IsCancellationRequested)
                 {
-                    NetEventSource.Error(this, $"Method={method} Error{SR.Format(SR.net_http_client_send_canceled, NetEventSource.GetHashCode(request))}");
+                    if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"Method={method} Error{SR.Format(SR.net_http_client_send_canceled, NetEventSource.GetHashCode(request))}");
                 }
                 else
                 {
                     Debug.Assert(e != null);
-                    NetEventSource.Error(this, $"Method={method} Error{SR.Format(SR.net_http_client_send_error, NetEventSource.GetHashCode(request), e)}");
+                    if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"Method={method} Error{SR.Format(SR.net_http_client_send_error, NetEventSource.GetHashCode(request), e)}");
                 }
             }
         }

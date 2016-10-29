@@ -196,7 +196,7 @@ namespace System.Net.Http
             }
             catch (Exception ex)
             {
-                NetEventSource.Error(this, ex);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, ex);
                 throw;
             }
         }
@@ -237,7 +237,7 @@ namespace System.Net.Http
             }
             catch (Exception ex)
             {
-                NetEventSource.Error(this, ex);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, ex);
                 throw;
             }
         }

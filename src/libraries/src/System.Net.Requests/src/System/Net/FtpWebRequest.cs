@@ -513,7 +513,7 @@ namespace System.Net
 
         internal FtpWebRequest(Uri uri)
         {
-            NetEventSource.Info(this, uri);
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, uri);
 
             if ((object)uri.Scheme != (object)Uri.UriSchemeFtp)
                 throw new ArgumentOutOfRangeException("uri");
@@ -552,8 +552,8 @@ namespace System.Net
         {
             if (NetEventSource.IsEnabled)
             {
-                NetEventSource.Enter(this);
-                NetEventSource.Info(this, $"Method: {_methodInfo.Method}");
+                if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Method: {_methodInfo.Method}");
             }
 
             try
@@ -617,14 +617,14 @@ namespace System.Net
             }
             catch (Exception exception)
             {
-                NetEventSource.Error(this, exception);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception);
 
                 // if _exception == null, we are about to throw an exception to the user
                 // and we haven't saved the exception, which also means we haven't dealt
                 // with it. So just release the connection and log this for investigation.
                 if (_exception == null)
                 {
-                    NetEventSource.Error(this, exception);
+                    if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception);
                     SetException(exception);
                     FinishRequestStage(RequestStage.CheckForError);
                 }
@@ -632,7 +632,7 @@ namespace System.Net
             }
             finally
             {
-                NetEventSource.Exit(this, _ftpWebResponse);
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this, _ftpWebResponse);
             }
             return _ftpWebResponse;
         }
@@ -709,12 +709,12 @@ namespace System.Net
             }
             catch (Exception exception)
             {
-                NetEventSource.Error(this, exception);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception);
                 throw;
             }
             finally
             {
-                NetEventSource.Exit(this);
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
 
             return asyncResult;
@@ -725,7 +725,7 @@ namespace System.Net
         /// </summary>
         public override WebResponse EndGetResponse(IAsyncResult asyncResult)
         {
-            NetEventSource.Enter(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             try
             {
                 // parameter validation
@@ -749,12 +749,12 @@ namespace System.Net
             }
             catch (Exception exception)
             {
-                NetEventSource.Error(this, exception);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception);
                 throw;
             }
             finally
             {
-                NetEventSource.Exit(this);
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
 
             return _ftpWebResponse;
@@ -810,12 +810,12 @@ namespace System.Net
             }
             catch (Exception exception)
             {
-                NetEventSource.Error(this, exception);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception);
                 throw;
             }
             finally
             {
-                NetEventSource.Exit(this);
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
             return _stream;
         }
@@ -857,12 +857,12 @@ namespace System.Net
             }
             catch (Exception exception)
             {
-                NetEventSource.Error(this, exception);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception);
                 throw;
             }
             finally
             {
-                NetEventSource.Exit(this);
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
 
             return asyncResult;
@@ -870,7 +870,7 @@ namespace System.Net
 
         public override Stream EndGetRequestStream(IAsyncResult asyncResult)
         {
-            NetEventSource.Enter(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             Stream requestStream = null;
             try
             {
@@ -905,12 +905,12 @@ namespace System.Net
             }
             catch (Exception exception)
             {
-                NetEventSource.Error(this, exception);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception);
                 throw;
             }
             finally
             {
-                NetEventSource.Exit(this);
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
             return requestStream;
         }
@@ -959,7 +959,7 @@ namespace System.Net
                         }
                     }
 
-                    NetEventSource.Info(this, "Request being submitted");
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Request being submitted");
 
                     connection.SetSocketTimeoutOption(RemainingTimeout);
 
@@ -1129,12 +1129,12 @@ namespace System.Net
         /// </summary>
         private void TimerCallback(TimerThread.Timer timer, int timeNoticed, object context)
         {
-            NetEventSource.Info(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
 
             FtpControlStream connection = _connection;
             if (connection != null)
             {
-                NetEventSource.Info(this, "aborting connection");
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "aborting connection");
                 connection.AbortConnect();
             }
         }
@@ -1189,7 +1189,7 @@ namespace System.Net
         /// </summary>
         private void SetException(Exception exception)
         {
-            NetEventSource.Info(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
 
             if (exception is OutOfMemoryException)
             {
@@ -1248,7 +1248,7 @@ namespace System.Net
         //
         private void SyncRequestCallback(object obj)
         {
-            NetEventSource.Enter(this, obj);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, obj);
 
             RequestStage stageMode = RequestStage.CheckForError;
             try
@@ -1289,7 +1289,7 @@ namespace System.Net
             finally
             {
                 FinishRequestStage(stageMode);
-                NetEventSource.Exit(this);
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
                 CheckError(); //will throw on error
             }
         }
@@ -1299,7 +1299,7 @@ namespace System.Net
         //
         private void AsyncRequestCallback(object obj)
         {
-            NetEventSource.Enter(this, obj);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, obj);
             RequestStage stageMode = RequestStage.CheckForError;
 
             try
@@ -1342,7 +1342,7 @@ namespace System.Net
                                 break;
                             }
                             _connection = connection;
-                            NetEventSource.Associate(this, _connection);
+                            if (NetEventSource.IsEnabled) NetEventSource.Associate(this, _connection);
                         }
 
                         try
@@ -1402,7 +1402,7 @@ namespace System.Net
             finally
             {
                 FinishRequestStage(stageMode);
-                NetEventSource.Exit(this);
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
         }
 
@@ -1531,7 +1531,7 @@ namespace System.Net
             if (_aborted)
                 return;
 
-            NetEventSource.Enter(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             try
             {
@@ -1561,12 +1561,12 @@ namespace System.Net
             }
             catch (Exception exception)
             {
-                NetEventSource.Error(this, exception);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception);
                 throw;
             }
             finally
             {
-                NetEventSource.Exit(this);
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
         }
 

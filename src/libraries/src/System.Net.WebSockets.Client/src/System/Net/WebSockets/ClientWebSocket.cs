@@ -27,13 +27,13 @@ namespace System.Net.WebSockets
 
         public ClientWebSocket()
         {
-            NetEventSource.Enter(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             WebSocketHandle.CheckPlatformSupport();
 
             _state = (int)InternalState.Created;
             _options = new ClientWebSocketOptions();
 
-            NetEventSource.Exit(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         #region Properties
@@ -153,7 +153,7 @@ namespace System.Net.WebSockets
             }
             catch (Exception ex)
             {
-                NetEventSource.Error(this, ex);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, ex);
                 throw;
             }
         }

@@ -1141,7 +1141,7 @@ namespace System.Net.Sockets
         {
             if (_streamSocket != null)
             {
-                NetEventSource.Info(this, _streamSocket);
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, _streamSocket);
                 _streamSocket.DebugMembers();
             }
         }

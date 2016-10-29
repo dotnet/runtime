@@ -101,13 +101,15 @@ namespace System.Net.Sockets
 
         private void LogBuffer(long size)
         {
+            if (!NetEventSource.IsEnabled) return;
+
             if (size > -1)
             {
-                NetEventSource.DumpArray(this, _buffer, 0, Math.Min((int)size, _buffer.Length));
+                NetEventSource.DumpBuffer(this, _buffer, 0, Math.Min((int)size, _buffer.Length));
             }
             else
             {
-                NetEventSource.DumpArray(this, _buffer);
+                NetEventSource.DumpBuffer(this, _buffer);
             }
         }
 

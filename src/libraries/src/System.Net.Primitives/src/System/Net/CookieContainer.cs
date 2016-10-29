@@ -639,7 +639,7 @@ namespace System.Net
         {
             if (NetEventSource.IsEnabled)
             {
-                NetEventSource.Info(this, $"uri:{uri} headerName:{headerName} setCookieHeader:{setCookieHeader} isThrow:{isThrow}");
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"uri:{uri} headerName:{headerName} setCookieHeader:{setCookieHeader} isThrow:{isThrow}");
             }
 
             CookieCollection cookies = new CookieCollection();

@@ -233,7 +233,7 @@ namespace System.Net.Sockets
         {
             if (disposing)
             {
-                NetEventSource.Info(this);
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this);
                 FreeResources();
                 GC.SuppressFinalize(this);
             }

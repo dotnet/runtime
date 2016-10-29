@@ -463,7 +463,7 @@ namespace System.Net
             bool resetLoggedInState = false;
             FtpWebRequest request = (FtpWebRequest)req;
 
-            NetEventSource.Info(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
 
             _responseUri = request.RequestUri;
             ArrayList commandList = new ArrayList();
@@ -699,7 +699,7 @@ namespace System.Net
             {
                 IPEndPoint passiveEndPoint = _passiveEndPoint;
                 _passiveEndPoint = null;
-                NetEventSource.Info(this, "starting Connect()");
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "starting Connect()");
                 if (_isAsync)
                 {
                     _dataSocket.BeginConnect(passiveEndPoint, s_connectCallbackDelegate, this);
@@ -713,7 +713,7 @@ namespace System.Net
             }
             else
             {
-                NetEventSource.Info(this, "starting Accept()");
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "starting Accept()");
 
                 if (_isAsync)
                 {

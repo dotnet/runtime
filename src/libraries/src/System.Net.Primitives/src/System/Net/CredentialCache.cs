@@ -93,7 +93,7 @@ namespace System.Net
 
             if (_cache == null)
             {
-                NetEventSource.Info(this, "Short-circuiting because the dictionary is null.");
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Short-circuiting because the dictionary is null.");
                 return;
             }
 
@@ -122,7 +122,7 @@ namespace System.Net
 
             if (_cacheForHosts == null)
             {
-                NetEventSource.Info(this, "Short-circuiting because the dictionary is null.");
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Short-circuiting because the dictionary is null.");
                 return;
             }
 
@@ -150,7 +150,7 @@ namespace System.Net
 
             if (_cache == null)
             {
-                NetEventSource.Info(this, "CredentialCache::GetCredential short-circuiting because the dictionary is null.");
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "CredentialCache::GetCredential short-circuiting because the dictionary is null.");
                 return null;
             }
 
@@ -205,7 +205,7 @@ namespace System.Net
 
             if (_cacheForHosts == null)
             {
-                NetEventSource.Info(this, "CredentialCache::GetCredential short-circuiting because the dictionary is null.");
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "CredentialCache::GetCredential short-circuiting because the dictionary is null.");
                 return null;
             }
 

@@ -723,7 +723,7 @@ namespace System.Net.Http
                 agent = easy._associatedMultiAgent;
             }
 
-            NetEventSource.Log.HandlerMessage(
+            if (NetEventSource.IsEnabled) NetEventSource.Log.HandlerMessage(
                 (agent?.RunningWorkerId).GetValueOrDefault(),
                 easy != null ? easy.Task.Id : 0,
                 memberName,

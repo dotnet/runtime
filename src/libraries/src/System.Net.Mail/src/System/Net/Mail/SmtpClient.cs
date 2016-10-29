@@ -64,20 +64,20 @@ namespace System.Net.Mail
 
         public SmtpClient()
         {
-            NetEventSource.Enter(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             try
             {
                 Initialize();
             }
             finally
             {
-                NetEventSource.Exit(this);
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
         }
 
         public SmtpClient(string host)
         {
-            NetEventSource.Enter(this, host);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, host);
             try
             {
                 _host = host;
@@ -85,7 +85,7 @@ namespace System.Net.Mail
             }
             finally
             {
-                NetEventSource.Exit(this);
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
         }
 
@@ -105,7 +105,7 @@ namespace System.Net.Mail
             }
             finally
             {
-                NetEventSource.Exit(this);
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
         }
 
@@ -121,7 +121,7 @@ namespace System.Net.Mail
             }
 
             _transport = new SmtpTransport(this);
-            NetEventSource.Associate(this, _transport);
+            if (NetEventSource.IsEnabled) NetEventSource.Associate(this, _transport);
             _onSendCompletedDelegate = new SendOrPostCallback(SendCompletedWaitCallback);
 
             if (_host != null && _host.Length != 0)
@@ -403,7 +403,7 @@ namespace System.Net.Mail
 
         internal MailWriter GetFileMailWriter(string pickupDirectory)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"pickupDirectornameof={pickupDirectory}");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"{nameof(pickupDirectory)}={pickupDirectory}");
 
             if (!Path.IsPathRooted(pickupDirectory))
                 throw new SmtpException(SR.SmtpNeedAbsolutePickupDirectory);
@@ -444,7 +444,7 @@ namespace System.Net.Mail
 
         public void Send(MailMessage message)
         {
-            NetEventSource.Enter(this, message);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, message);
 
             if (_disposed)
             {
@@ -452,8 +452,11 @@ namespace System.Net.Mail
             }
             try
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"DeliveryMethod={DeliveryMethod}");
-                NetEventSource.Associate(this, message);
+                if (NetEventSource.IsEnabled)
+                {
+                    NetEventSource.Info(this, $"DeliveryMethod={DeliveryMethod}");
+                    NetEventSource.Associate(this, message);
+                }
 
                 SmtpFailedRecipientException recipientException = null;
 
@@ -554,7 +557,7 @@ namespace System.Net.Mail
                 }
                 catch (Exception e)
                 {
-                    NetEventSource.Error(this, e);
+                    if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
 
                     if (e is SmtpFailedRecipientException && !((SmtpFailedRecipientException)e).fatal)
                     {
@@ -587,7 +590,7 @@ namespace System.Net.Mail
             }
             finally
             {
-                NetEventSource.Exit(this);
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
         }
 
@@ -609,7 +612,7 @@ namespace System.Net.Mail
                 throw new ObjectDisposedException(GetType().FullName);
             }
 
-            NetEventSource.Enter(this, message, userToken, _transport);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, message, userToken, _transport);
 
             try
             {
@@ -716,7 +719,7 @@ namespace System.Net.Mail
                 {
                     InCall = false;
 
-                    NetEventSource.Error(this, e);
+                    if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
 
                     if (e is SmtpFailedRecipientException && !((SmtpFailedRecipientException)e).fatal)
                     {
@@ -741,7 +744,7 @@ namespace System.Net.Mail
             }
             finally
             {
-                NetEventSource.Exit(this);
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
         }
 
@@ -752,7 +755,7 @@ namespace System.Net.Mail
                 throw new ObjectDisposedException(GetType().FullName);
             }
 
-            NetEventSource.Enter(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             try
             {
@@ -766,7 +769,7 @@ namespace System.Net.Mail
             }
             finally
             {
-                NetEventSource.Exit(this);
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
         }
 
@@ -859,7 +862,7 @@ namespace System.Net.Mail
         private void Complete(Exception exception, IAsyncResult result)
         {
             ContextAwareResult operationCompletedResult = (ContextAwareResult)result.AsyncState;
-            NetEventSource.Enter(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             try
             {
                 if (_cancelled)
@@ -871,7 +874,7 @@ namespace System.Net.Mail
                 // An individual failed recipient exception is benign, only abort here if ALL the recipients failed.
                 else if (exception != null && (!(exception is SmtpFailedRecipientException) || ((SmtpFailedRecipientException)exception).fatal))
                 {
-                    NetEventSource.Error(this, exception);
+                    if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception);
                     Abort();
 
                     if (!(exception is SmtpException))
@@ -901,7 +904,7 @@ namespace System.Net.Mail
                 operationCompletedResult.InvokeCallback(exception);
             }
 
-            NetEventSource.Info(this, "Complete");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Complete");
         }
 
         private static void ContextSafeCompleteCallback(IAsyncResult ar)
@@ -918,7 +921,7 @@ namespace System.Net.Mail
 
         private void SendMessageCallback(IAsyncResult result)
         {
-            NetEventSource.Enter(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             try
             {
                 _message.EndSend(result);
@@ -931,14 +934,14 @@ namespace System.Net.Mail
             }
             finally
             {
-                NetEventSource.Exit(this);
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
         }
 
 
         private void SendMailCallback(IAsyncResult result)
         {
-            NetEventSource.Enter(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             try
             {
                 _writer = _transport.EndSendMail(result);
@@ -952,7 +955,7 @@ namespace System.Net.Mail
             catch (Exception e)
             {
                 Complete(e, result);
-                NetEventSource.Exit(this);
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
                 return;
             }
 
@@ -974,13 +977,13 @@ namespace System.Net.Mail
             }
             finally
             {
-                NetEventSource.Exit(this);
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
         }
 
         private void ConnectCallback(IAsyncResult result)
         {
-            NetEventSource.Enter(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             try
             {
                 _transport.EndGetConnection(result);
@@ -1004,7 +1007,7 @@ namespace System.Net.Mail
             }
             finally
             {
-                NetEventSource.Exit(this);
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
         }
 

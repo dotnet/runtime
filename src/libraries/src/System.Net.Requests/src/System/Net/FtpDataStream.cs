@@ -25,7 +25,7 @@ namespace System.Net
 
         internal FtpDataStream(NetworkStream networkStream, FtpWebRequest request, TriState writeOnly)
         {
-            NetEventSource.Info(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
 
             _readable = true;
             _writeable = true;

@@ -961,7 +961,9 @@ namespace System.Net
         internal void Dump()
         {
 #if !NETNative_SystemNetHttp
-            NetEventSource.Info(this, "Cookie: " + ToString() + "->\n"
+            if (NetEventSource.IsEnabled)
+                NetEventSource.Info(this, 
+                              "Cookie: " + ToString() + "->\n"
                             + "\tComment    = " + Comment + "\n"
                             + "\tCommentUri = " + CommentUri + "\n"
                             + "\tDiscard    = " + Discard + "\n"

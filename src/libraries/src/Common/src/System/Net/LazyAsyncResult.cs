@@ -64,7 +64,7 @@ namespace System.Net
             _asyncState = myState;
             _asyncCallback = myCallBack;
             _result = DBNull.Value;
-            NetEventSource.Info(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
         }
 
         // Allows creating a pre-completed result with less interlockeds.  Beware!  Constructor calls the callback.
@@ -84,15 +84,15 @@ namespace System.Net
 
             if (_asyncCallback != null)
             {
-                NetEventSource.Info(this, "Invoking callback");
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Invoking callback");
                 _asyncCallback(this);
             }
             else
             {
-                NetEventSource.Info(this, "No callback to invoke");
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "No callback to invoke");
             }
 
-            NetEventSource.Info(this, "(pre-completed)");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, "(pre-completed)");
         }
 
         // Interface method to return the original async object.
@@ -136,7 +136,7 @@ namespace System.Net
         {
             get
             {
-                NetEventSource.Enter(this);
+                if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
 #if DEBUG
                 // Can't be called when state is protected.
@@ -167,7 +167,7 @@ namespace System.Net
                     LazilyCreateEvent(out asyncEvent);
                 }
 
-                NetEventSource.Exit(this, asyncEvent);
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this, asyncEvent);
                 return asyncEvent;
             }
         }
@@ -226,7 +226,7 @@ namespace System.Net
         {
             get
             {
-                NetEventSource.Enter(this);
+                if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
 #if DEBUG
                 // Can't be called when state is protected.
@@ -253,7 +253,7 @@ namespace System.Net
         {
             get
             {
-                NetEventSource.Enter(this);
+                if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
 #if DEBUG
                 // Can't be called when state is protected.
@@ -409,11 +409,11 @@ namespace System.Net
                 ++threadContext._nestedIOCount;
                 if (_asyncCallback != null)
                 {
-                    NetEventSource.Info(this, "Invoking callback");
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Invoking callback");
 
                     if (threadContext._nestedIOCount >= ForceAsyncCount)
                     {
-                        NetEventSource.Info(this, "*** OFFLOADED the user callback ****");
+                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, "*** OFFLOADED the user callback ****");
 
                         Task.Factory.StartNew(
                             s => WorkerThreadComplete(s),
@@ -431,7 +431,7 @@ namespace System.Net
                 }
                 else
                 {
-                    NetEventSource.Info(this, "No callback to invoke");
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, "No callback to invoke");
                 }
             }
             finally

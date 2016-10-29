@@ -690,7 +690,7 @@ namespace System.Net.Sockets
                     {
                         _acceptSocket = _currentSocket.UpdateAcceptSocket(_acceptSocket, _currentSocket._rightEndPoint.Create(remoteSocketAddress));
 
-                        NetEventSource.Accepted(_acceptSocket, _acceptSocket.RemoteEndPoint, _acceptSocket.LocalEndPoint);
+                        if (NetEventSource.IsEnabled) NetEventSource.Accepted(_acceptSocket, _acceptSocket.RemoteEndPoint, _acceptSocket.LocalEndPoint);
                     }
                     else
                     {
@@ -718,7 +718,7 @@ namespace System.Net.Sockets
                     // Mark socket connected.
                     if (socketError == SocketError.Success)
                     {
-                        NetEventSource.Connected(_currentSocket, _currentSocket.LocalEndPoint, _currentSocket.RemoteEndPoint);
+                        if (NetEventSource.IsEnabled) NetEventSource.Connected(_currentSocket, _currentSocket.LocalEndPoint, _currentSocket.RemoteEndPoint);
 
                         _currentSocket.SetToConnected();
                         _connectSocket = _currentSocket;

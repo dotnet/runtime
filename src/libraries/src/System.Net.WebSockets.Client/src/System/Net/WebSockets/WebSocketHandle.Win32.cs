@@ -56,7 +56,7 @@ namespace System.Net.WebSockets
             catch (Win32Exception ex)
             {
                 var wex = new WebSocketException(SR.net_webstatus_ConnectFailure, ex);
-                NetEventSource.Error(_webSocket, wex);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(_webSocket, wex);
                 throw wex;
             }
         }

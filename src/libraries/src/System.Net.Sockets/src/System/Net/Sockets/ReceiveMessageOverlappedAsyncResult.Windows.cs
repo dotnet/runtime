@@ -162,7 +162,7 @@ namespace System.Net.Sockets
 
         private void LogBuffer(int size)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.DumpArray(this, _wsaBuffer->Pointer, Math.Min(_wsaBuffer->Length, size));
+            if (NetEventSource.IsEnabled) NetEventSource.DumpBuffer(this, _wsaBuffer->Pointer, Math.Min(_wsaBuffer->Length, size));
         }
     }
 }

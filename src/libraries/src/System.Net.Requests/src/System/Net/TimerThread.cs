@@ -471,7 +471,7 @@ namespace System.Net
             {
                 if (_timerState == TimerState.Sentinel)
                 {
-                    NetEventSource.Info(this, "TimerQueue tried to Fire a Sentinel.");
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, "TimerQueue tried to Fire a Sentinel.");
                 }
 
                 if (_timerState != TimerState.Ready)
@@ -521,7 +521,7 @@ namespace System.Net
                         if (ExceptionCheck.IsFatal(exception))
                             throw;
 
-                        NetEventSource.Error(this, $"exception in callback: {exception}");
+                        if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"exception in callback: {exception}");
 
                         // This thread is not allowed to go into user code, so we should never get an exception here.
                         // So, in debug, throw it up, killing the AppDomain.  In release, we'll just ignore it.
@@ -584,7 +584,7 @@ namespace System.Net
         /// </summary>
         private static void ThreadProc()
         {
-            NetEventSource.Enter(null);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null);
 #if DEBUG
             DebugThreadTracking.SetThreadSource(ThreadKinds.Timer);
             using (DebugThreadTracking.SetThreadKind(ThreadKinds.System | ThreadKinds.Async))
@@ -668,7 +668,7 @@ namespace System.Net
                                 // 0 is s_ThreadShutdownEvent - die.
                                 if (waitResult == 0)
                                 {
-                                    NetEventSource.Info(null, "Awoke, cause: Shutdown");
+                                    if (NetEventSource.IsEnabled) NetEventSource.Info(null, "Awoke, cause: Shutdown");
                                     running = false;
                                     break;
                                 }
@@ -699,7 +699,7 @@ namespace System.Net
                             if (ExceptionCheck.IsFatal(exception))
                                 throw;
 
-                            NetEventSource.Error(null, exception);
+                            if (NetEventSource.IsEnabled) NetEventSource.Error(null, exception);
 
                             // The only options are to continue processing and likely enter an error-loop,
                             // shut down timers for this AppDomain, or shut down the AppDomain.  Go with shutting
@@ -715,7 +715,7 @@ namespace System.Net
                     }
                 }
 
-                NetEventSource.Info(null, "Stop");
+                if (NetEventSource.IsEnabled) NetEventSource.Info(null, "Stop");
 #if DEBUG
             }
 #endif

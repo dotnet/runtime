@@ -95,7 +95,7 @@ namespace System.Net
                 return null;
             }
 
-            NetEventSource.Enter(securityContext);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(securityContext);
 
             X509Certificate2 result = null;
             SafeFreeCertContext remoteContext = null;
@@ -117,8 +117,11 @@ namespace System.Net
                 }
             }
 
-            NetEventSource.Log.RemoteCertificate(result);
-            NetEventSource.Exit(null, result, securityContext);
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Log.RemoteCertificate(result);
+                NetEventSource.Exit(null, result, securityContext);
+            }
             return result;
         }
 
@@ -229,7 +232,7 @@ namespace System.Net
                         {
                             if (exception is CryptographicException || exception is SecurityException)
                             {
-                                if (NetEventSource.IsEnabled) NetEventSource.Fail(null, $"Failed to open cert store, location: {storeLocation} exception: {exception}");
+                                NetEventSource.Fail(null, $"Failed to open cert store, location: {storeLocation} exception: {exception}");
                                 return null;
                             }
 

@@ -13,7 +13,7 @@ namespace System.Net.Sockets
         protected SocketException(SerializationInfo serializationInfo, StreamingContext streamingContext)
             : base(serializationInfo, streamingContext)
         {
-            NetEventSource.Info(this, $"{NativeErrorCode}:{Message}");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"{NativeErrorCode}:{Message}");
         }
 
         public override int ErrorCode => base.NativeErrorCode;

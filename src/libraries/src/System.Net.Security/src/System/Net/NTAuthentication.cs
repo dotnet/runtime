@@ -245,7 +245,7 @@ namespace System.Net
             Debug.Assert(CredentialCache.DefaultCredentials == CredentialCache.DefaultNetworkCredentials);
             if (credential == CredentialCache.DefaultCredentials)
             {
-                NetEventSource.Info(this, "using DefaultCredentials");
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "using DefaultCredentials");
                 _credentialsHandle = NegotiateStreamPal.AcquireDefaultCredential(package, _isServer);
             }
             else
@@ -287,7 +287,7 @@ namespace System.Net
         // Accepts an incoming binary security blob and returns an outgoing binary security blob.
         internal byte[] GetOutgoingBlob(byte[] incomingBlob, bool throwOnError, out SecurityStatusPal statusCode)
         {
-            NetEventSource.Enter(this, incomingBlob);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, incomingBlob);
 
             var list = new List<SecurityBuffer>(2);
 
@@ -374,7 +374,7 @@ namespace System.Net
                 if (throwOnError)
                 {
                     Exception exception = NegotiateStreamPal.CreateExceptionFromError(statusCode);
-                    NetEventSource.Exit(this, exception);
+                    if (NetEventSource.IsEnabled) NetEventSource.Exit(this, exception);
                     throw exception;
                 }
 
@@ -396,12 +396,12 @@ namespace System.Net
             else if (NetEventSource.IsEnabled)
             {
                 // We need to continue.
-                NetEventSource.Info(this, $"need continue statusCode:0x{((int)statusCode.ErrorCode):x8} ({statusCode}) _securityContext:{_securityContext}");
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"need continue statusCode:0x{((int)statusCode.ErrorCode):x8} ({statusCode}) _securityContext:{_securityContext}");
             }
 
             if (NetEventSource.IsEnabled)
             {
-                NetEventSource.Exit(this, $"IsCompleted: {IsCompleted}");
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this, $"IsCompleted: {IsCompleted}");
             }
 
             return outSecurityBuffer.token;
