@@ -548,6 +548,14 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void TestRootGetProcessById()
+        {
+            Process p = Process.GetProcessById(1);
+            Assert.Equal(1, p.Id);
+        }
+
+        [Fact]
         public void TestGetProcesses()
         {
             Process currentProcess = Process.GetCurrentProcess();
