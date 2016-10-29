@@ -344,7 +344,7 @@ namespace System.Xml.Xsl.Xslt
                 }
                 else
                 {
-                    throw e;
+                    throw;
                 }
             }
 
