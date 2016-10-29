@@ -362,7 +362,7 @@ namespace System
 #if BIT64
             Buffer.Memmove(destination, source, (ulong)elementsCount * (ulong)JitHelpers.SizeOf<T>());
 #else
-            Buffer.Memmove(destination, source, elementsCount * (uint)JitHelpers.SizeOf<T>());
+            Buffer.Memmove(destination, source, (uint)elementsCount * (uint)JitHelpers.SizeOf<T>());
 #endif
         }
     }
