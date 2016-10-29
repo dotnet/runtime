@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 #include "pal_types.h"
+#include "pal_utilities.h"
+#include "pal_safecrt.h"
 
 #include <assert.h>
 #include <limits.h>
@@ -69,7 +71,7 @@ Return values:
 1: Data was copied
 Any negative value: The input buffer size was reported as insufficient. A buffer of size ABS(return) is required.
 */
-extern int32_t CryptoNative_GetX509Thumbprint(X509* x509, uint8_t* pBuf, int32_t cBuf)
+extern "C" int32_t CryptoNative_GetX509Thumbprint(X509* x509, uint8_t* pBuf, int32_t cBuf)
 {
     if (!x509)
     {
@@ -81,7 +83,7 @@ extern int32_t CryptoNative_GetX509Thumbprint(X509* x509, uint8_t* pBuf, int32_t
         return -SHA_DIGEST_LENGTH;
     }
 
-    memcpy(pBuf, x509->sha1_hash, SHA_DIGEST_LENGTH);
+    memcpy_s(pBuf, UnsignedCast(cBuf), x509->sha1_hash, SHA_DIGEST_LENGTH);
     return 1;
 }
 
@@ -96,7 +98,7 @@ Return values:
 NULL if the validity cannot be determined, a pointer to the ASN1_TIME structure for the NotBefore value
 otherwise.
 */
-extern ASN1_TIME* CryptoNative_GetX509NotBefore(X509* x509)
+extern "C" ASN1_TIME* CryptoNative_GetX509NotBefore(X509* x509)
 {
     if (x509 && x509->cert_info && x509->cert_info->validity)
     {
@@ -117,7 +119,7 @@ Return values:
 NULL if the validity cannot be determined, a pointer to the ASN1_TIME structure for the NotAfter value
 otherwise.
 */
-extern ASN1_TIME* CryptoNative_GetX509NotAfter(X509* x509)
+extern "C" ASN1_TIME* CryptoNative_GetX509NotAfter(X509* x509)
 {
     if (x509 && x509->cert_info && x509->cert_info->validity)
     {
@@ -138,7 +140,7 @@ Return values:
 NULL if the validity cannot be determined, a pointer to the ASN1_TIME structure for the NextUpdate value
 otherwise.
 */
-extern ASN1_TIME* CryptoNative_GetX509CrlNextUpdate(X509_CRL* crl)
+extern "C" ASN1_TIME* CryptoNative_GetX509CrlNextUpdate(X509_CRL* crl)
 {
     if (crl)
     {
@@ -162,12 +164,12 @@ The encoded value of the version, otherwise:
   1: X509v2
   2: X509v3
 */
-extern int CryptoNative_GetX509Version(X509* x509)
+extern "C" int32_t CryptoNative_GetX509Version(X509* x509)
 {
     if (x509 && x509->cert_info)
     {
         long ver = ASN1_INTEGER_get(x509->cert_info->version);
-        return (int)ver;
+        return static_cast<int32_t>(ver);
     }
 
     return -1;
@@ -184,7 +186,7 @@ Return values:
 NULL if the algorithm cannot be determined, otherwise a pointer to the OpenSSL ASN1_OBJECT structure
 describing the object type.
 */
-extern ASN1_OBJECT* CryptoNative_GetX509PublicKeyAlgorithm(X509* x509)
+extern "C" ASN1_OBJECT* CryptoNative_GetX509PublicKeyAlgorithm(X509* x509)
 {
     if (x509 && x509->cert_info && x509->cert_info->key && x509->cert_info->key->algor)
     {
@@ -205,7 +207,7 @@ Return values:
 NULL if the algorithm cannot be determined, otherwise a pointer to the OpenSSL ASN1_OBJECT structure
 describing the object type.
 */
-extern ASN1_OBJECT* CryptoNative_GetX509SignatureAlgorithm(X509* x509)
+extern "C" ASN1_OBJECT* CryptoNative_GetX509SignatureAlgorithm(X509* x509)
 {
     if (x509 && x509->sig_alg && x509->sig_alg->algorithm)
     {
@@ -227,7 +229,7 @@ Return values:
 1: Data was copied
 Any negative value: The input buffer size was reported as insufficient. A buffer of size ABS(return) is required.
 */
-extern int32_t CryptoNative_GetX509PublicKeyParameterBytes(X509* x509, uint8_t* pBuf, int32_t cBuf)
+extern "C" int32_t CryptoNative_GetX509PublicKeyParameterBytes(X509* x509, uint8_t* pBuf, int32_t cBuf)
 {
     if (!x509 || !x509->cert_info || !x509->cert_info->key || !x509->cert_info->key->algor)
     {
@@ -272,7 +274,7 @@ Return values:
 NULL if the public key cannot be determined, a pointer to the ASN1_BIT_STRING structure representing
 the public key.
 */
-extern ASN1_BIT_STRING* CryptoNative_GetX509PublicKeyBytes(X509* x509)
+extern "C" ASN1_BIT_STRING* CryptoNative_GetX509PublicKeyBytes(X509* x509)
 {
     if (x509 && x509->cert_info && x509->cert_info->key)
     {
@@ -315,7 +317,7 @@ Remarks:
 
  So this function will really work on all of them.
 */
-extern int32_t CryptoNative_GetAsn1StringBytes(ASN1_STRING* asn1, uint8_t* pBuf, int32_t cBuf)
+extern "C" int32_t CryptoNative_GetAsn1StringBytes(ASN1_STRING* asn1, uint8_t* pBuf, int32_t cBuf)
 {
     if (!asn1 || cBuf < 0)
     {
@@ -334,7 +336,7 @@ extern int32_t CryptoNative_GetAsn1StringBytes(ASN1_STRING* asn1, uint8_t* pBuf,
         return -length;
     }
 
-    memcpy(pBuf, asn1->data, (unsigned int)length);
+    memcpy_s(pBuf, UnsignedCast(cBuf), asn1->data, UnsignedCast(length));
     return 1;
 }
 
@@ -350,7 +352,7 @@ Return values:
 1: Data was copied
 Any negative value: The input buffer size was reported as insufficient. A buffer of size ABS(return) is required.
 */
-extern int32_t CryptoNative_GetX509NameRawBytes(X509_NAME* x509Name, uint8_t* pBuf, int32_t cBuf)
+extern "C" int32_t CryptoNative_GetX509NameRawBytes(X509_NAME* x509Name, uint8_t* pBuf, int32_t cBuf)
 {
     if (!x509Name || !x509Name->bytes || cBuf < 0)
     {
@@ -372,7 +374,7 @@ extern int32_t CryptoNative_GetX509NameRawBytes(X509_NAME* x509Name, uint8_t* pB
         return 0;
     }
 
-    int length = (int)(x509Name->bytes->length);
+    int length = static_cast<int>(x509Name->bytes->length);
 
     if (length < 0)
     {
@@ -385,7 +387,7 @@ extern int32_t CryptoNative_GetX509NameRawBytes(X509_NAME* x509Name, uint8_t* pB
         return -length;
     }
 
-    memcpy(pBuf, x509Name->bytes->data, (unsigned int)length);
+    memcpy_s(pBuf, UnsignedCast(cBuf), x509Name->bytes->data, UnsignedCast(length));
     return 1;
 }
 
@@ -400,7 +402,7 @@ Return values:
 0 if the field count cannot be determined, or the count of OIDs present in the EKU.
 Note that 0 does not always indicate an error, merely that GetX509EkuField should not be called.
 */
-extern int CryptoNative_GetX509EkuFieldCount(EXTENDED_KEY_USAGE* eku)
+extern "C" int32_t CryptoNative_GetX509EkuFieldCount(EXTENDED_KEY_USAGE* eku)
 {
     return sk_ASN1_OBJECT_num(eku);
 }
@@ -416,7 +418,7 @@ Return values:
 NULL if eku is NULL or loc is out of bounds, otherwise a pointer to the ASN1_OBJECT structure encoding
 that particular OID.
 */
-extern ASN1_OBJECT* CryptoNative_GetX509EkuField(EXTENDED_KEY_USAGE* eku, int32_t loc)
+extern "C" ASN1_OBJECT* CryptoNative_GetX509EkuField(EXTENDED_KEY_USAGE* eku, int32_t loc)
 {
     return sk_ASN1_OBJECT_value(eku, loc);
 }
@@ -432,7 +434,7 @@ Return values:
 NULL if the certificate is invalid or no name information could be found, otherwise a pointer to a
 memory-backed BIO structure which contains the answer to the GetNameInfo query
 */
-extern BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssuer)
+extern "C" BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssuer)
 {
     static const char szOidUpn[] = "1.3.6.1.4.1.311.20.2.3";
 
@@ -562,8 +564,8 @@ extern BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t f
                 break;
         }
 
-        STACK_OF(GENERAL_NAME)* altNames =
-            X509_get_ext_d2i(x509, forIssuer ? NID_issuer_alt_name : NID_subject_alt_name, NULL, NULL);
+        STACK_OF(GENERAL_NAME)* altNames = static_cast<STACK_OF(GENERAL_NAME)*>(
+            X509_get_ext_d2i(x509, forIssuer ? NID_issuer_alt_name : NID_subject_alt_name, NULL, NULL));
 
         if (altNames)
         {
@@ -732,7 +734,7 @@ static int CheckX509HostnameMatch(ASN1_STRING* candidate, const char* hostname, 
         }
 
         // Great, candidateStr is just candidate->data!
-        candidateStr = (char*)candidate->data;
+        candidateStr = reinterpret_cast<char*>(candidate->data);
 
         // First, verify that the string is alphanumeric, plus hyphens or periods and maybe starting with an asterisk.
         for (i = 0; i < candidate->length; ++i)
@@ -752,7 +754,7 @@ static int CheckX509HostnameMatch(ASN1_STRING* candidate, const char* hostname, 
                 return 0;
             }
 
-            return !memcmp(candidateStr, hostname, (size_t)cchHostname);
+            return !memcmp(candidateStr, hostname, static_cast<size_t>(cchHostname));
         }
 
         for (i = 0; i < cchHostname; ++i)
@@ -785,7 +787,7 @@ static int CheckX509HostnameMatch(ASN1_STRING* candidate, const char* hostname, 
                 return 0;
             }
 
-            return !memcmp(candidateStr + 1, hostname + hostnameFirstDot, (size_t)matchLength);
+            return !memcmp(candidateStr + 1, hostname + hostnameFirstDot, static_cast<size_t>(matchLength));
         }
     }
 
@@ -796,7 +798,7 @@ static int CheckX509HostnameMatch(ASN1_STRING* candidate, const char* hostname, 
         return 0;
     }
 
-    return !memcmp(candidate->data, hostname, (size_t)cchHostname);
+    return !memcmp(candidate->data, hostname, static_cast<size_t>(cchHostname));
 }
 
 /*
@@ -811,7 +813,7 @@ Return values:
 0 if the hostname is not a match
 Any negative number indicates an error in the arguments.
 */
-extern int32_t CryptoNative_CheckX509Hostname(X509* x509, const char* hostname, int32_t cchHostname)
+extern "C" int32_t CryptoNative_CheckX509Hostname(X509* x509, const char* hostname, int32_t cchHostname)
 {
     if (!x509)
         return -2;
@@ -822,7 +824,8 @@ extern int32_t CryptoNative_CheckX509Hostname(X509* x509, const char* hostname, 
 
     int subjectNid = NID_commonName;
     int sanGenType = GEN_DNS;
-    GENERAL_NAMES* san = X509_get_ext_d2i(x509, NID_subject_alt_name, NULL, NULL);
+    GENERAL_NAMES* san = static_cast<GENERAL_NAMES*>(
+        X509_get_ext_d2i(x509, NID_subject_alt_name, NULL, NULL));
     char readSubject = 1;
     int success = 0;
 
@@ -894,7 +897,7 @@ Return values:
 0 if the hostname is not a match
 Any negative number indicates an error in the arguments.
 */
-extern int32_t CryptoNative_CheckX509IpAddress(
+extern "C" int32_t CryptoNative_CheckX509IpAddress(
     X509* x509, const uint8_t* addressBytes, int32_t addressBytesLen, const char* hostname, int32_t cchHostname)
 {
     if (!x509)
@@ -910,7 +913,7 @@ extern int32_t CryptoNative_CheckX509IpAddress(
 
     int subjectNid = NID_commonName;
     int sanGenType = GEN_IPADD;
-    GENERAL_NAMES* san = X509_get_ext_d2i(x509, NID_subject_alt_name, NULL, NULL);
+    GENERAL_NAMES* san = static_cast<GENERAL_NAMES*>(X509_get_ext_d2i(x509, NID_subject_alt_name, NULL, NULL));
     int success = 0;
 
     if (san)
@@ -935,7 +938,7 @@ extern int32_t CryptoNative_CheckX509IpAddress(
                 continue;
             }
 
-            if (!memcmp(addressBytes, ipAddr->data, (size_t)addressBytesLen))
+            if (!memcmp(addressBytes, ipAddr->data, static_cast<size_t>(addressBytesLen)))
             {
                 success = 1;
                 break;
@@ -982,7 +985,7 @@ Return values:
 0 if the field count cannot be determined, or the count of certificates in STACK_OF(X509)
 Note that 0 does not always indicate an error, merely that GetX509StackField should not be called.
 */
-extern int32_t CryptoNative_GetX509StackFieldCount(STACK_OF(X509) * stack)
+extern "C" int32_t CryptoNative_GetX509StackFieldCount(STACK_OF(X509) * stack)
 {
     return sk_X509_num(stack);
 }
@@ -998,7 +1001,7 @@ Return values:
 NULL if stack is NULL or loc is out of bounds, otherwise a pointer to the X509 structure encoding
 that particular element.
 */
-extern X509* CryptoNative_GetX509StackField(STACK_OF(X509) * stack, int loc)
+extern "C" X509* CryptoNative_GetX509StackField(STACK_OF(X509) * stack, int loc)
 {
     return sk_X509_value(stack, loc);
 }
@@ -1010,7 +1013,7 @@ RecursiveFreeX509Stack
 Used by System.Security.Cryptography.X509Certificates' OpenSslX509ChainProcessor to free a stack
 when done with it.
 */
-extern void CryptoNative_RecursiveFreeX509Stack(STACK_OF(X509) * stack)
+extern "C" void CryptoNative_RecursiveFreeX509Stack(STACK_OF(X509) * stack)
 {
     sk_X509_pop_free(stack, X509_free);
 }
@@ -1026,7 +1029,7 @@ Return values:
 0 if ctx is NULL, if ctx has no X509_VERIFY_PARAM, or the date inputs don't produce a valid time_t;
 1 on success.
 */
-extern int32_t CryptoNative_SetX509ChainVerifyTime(X509_STORE_CTX* ctx,
+extern "C" int32_t CryptoNative_SetX509ChainVerifyTime(X509_STORE_CTX* ctx,
                                                    int32_t year,
                                                    int32_t month,
                                                    int32_t day,
@@ -1042,7 +1045,7 @@ extern int32_t CryptoNative_SetX509ChainVerifyTime(X509_STORE_CTX* ctx,
 
     time_t verifyTime = MakeTimeT(year, month, day, hour, minute, second, isDst);
 
-    if (verifyTime == (time_t)-1)
+    if (verifyTime == static_cast<time_t>(-1))
     {
         return 0;
     }
@@ -1069,7 +1072,7 @@ Return values:
 If bio containns a valid DER-encoded X509 object, a pointer to that X509 structure that was deserialized,
 otherwise NULL.
 */
-extern X509* CryptoNative_ReadX509AsDerFromBio(BIO* bio)
+extern "C" X509* CryptoNative_ReadX509AsDerFromBio(BIO* bio)
 {
     return d2i_X509_bio(bio, NULL);
 }
@@ -1089,7 +1092,7 @@ behavior on non-file, non-null BIO objects.
 See also:
 OpenSSL's BIO_tell
 */
-extern int32_t CryptoNative_BioTell(BIO* bio)
+extern "C" int32_t CryptoNative_BioTell(BIO* bio)
 {
     if (!bio)
     {
@@ -1116,7 +1119,7 @@ otherwise unspecified
 See also:
 OpenSSL's BIO_seek
 */
-extern int32_t CryptoNative_BioSeek(BIO* bio, int32_t ofs)
+extern "C" int32_t CryptoNative_BioSeek(BIO* bio, int32_t ofs)
 {
     if (!bio)
     {
@@ -1136,7 +1139,7 @@ of X509* to OpenSSL.
 Return values:
 A STACK_OF(X509*) with no comparator.
 */
-extern STACK_OF(X509) * CryptoNative_NewX509Stack()
+extern "C" STACK_OF(X509) * CryptoNative_NewX509Stack()
 {
     return sk_X509_new_null();
 }
@@ -1152,7 +1155,7 @@ Return values:
 1 on success
 0 on a NULL stack, or an error within sk_X509_push
 */
-extern int32_t CryptoNative_PushX509StackField(STACK_OF(X509) * stack, X509* x509)
+extern "C" int32_t CryptoNative_PushX509StackField(STACK_OF(X509) * stack, X509* x509)
 {
     if (!stack)
     {
@@ -1173,7 +1176,7 @@ Returns a bool to managed code.
 1 for success
 0 for failure
 */
-extern int32_t CryptoNative_GetRandomBytes(uint8_t* buf, int32_t num)
+extern "C" int32_t CryptoNative_GetRandomBytes(uint8_t* buf, int32_t num)
 {
     int ret = RAND_bytes(buf, num);
 
@@ -1193,7 +1196,7 @@ Return values:
 -1 indicates OpenSSL signalled an error, CryptographicException should be raised.
 -2 indicates an error in the input arguments
 */
-extern int32_t CryptoNative_LookupFriendlyNameByOid(const char* oidValue, const char** friendlyName)
+extern "C" int32_t CryptoNative_LookupFriendlyNameByOid(const char* oidValue, const char** friendlyName)
 {
     ASN1_OBJECT* oid;
     int nid;
@@ -1303,7 +1306,7 @@ Return values:
 0 on success
 non-zero on failure
 */
-extern int32_t CryptoNative_EnsureOpenSslInitialized()
+extern "C" int32_t CryptoNative_EnsureOpenSslInitialized()
 {
     int ret = 0;
     int numLocks = 0;
@@ -1328,7 +1331,7 @@ extern int32_t CryptoNative_EnsureOpenSslInitialized()
     }
 
     // Create the locks array
-    g_locks = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t) * (unsigned int)numLocks);
+    g_locks = static_cast<pthread_mutex_t*>(malloc(sizeof(pthread_mutex_t) * UnsignedCast(numLocks)));
     if (g_locks == NULL)
     {
         ret = 2;
