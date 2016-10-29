@@ -775,7 +775,9 @@ namespace System {
                 offset = offset.Negate();
             }
 
-            result.AppendFormat(CultureInfo.InvariantCulture, "{0:00}:{1:00}", offset.Hours, offset.Minutes);
+            AppendNumber(result, offset.Hours, 2);
+            result.Append(':');
+            AppendNumber(result, offset.Minutes, 2);
         }
         
     
@@ -957,12 +959,59 @@ namespace System {
             }
 
             if (format.Length == 1) {
+                if (format[0] == 'o' || format[0] == 'O') {
+                        return FastFormatRoundtrip(dateTime, offset);
+                }
+
                 format = ExpandPredefinedFormat(format, ref dateTime, ref dtfi, ref offset);
-            }            
+            }      
 
             return (FormatCustomized(dateTime, format, dtfi, offset));
         }
-    
+
+        internal static string FastFormatRoundtrip(DateTime dateTime, TimeSpan offset)
+        {
+            StringBuilder result = StringBuilderCache.Acquire();
+
+            AppendNumber(result, dateTime.Year, 4);
+            result.Append('-');
+            AppendNumber(result, dateTime.Month, 2);
+            result.Append('-');
+            AppendNumber(result, dateTime.Day, 2);
+            result.Append('T');
+            AppendNumber(result, dateTime.Hour, 2);
+            result.Append(':');
+            AppendNumber(result, dateTime.Minute, 2);
+            result.Append(':');
+            AppendNumber(result, dateTime.Second, 2);
+            result.Append('.');
+
+            long fraction = dateTime.Ticks % TimeSpan.TicksPerSecond;
+            AppendNumber(result, fraction, 7);
+
+            FormatCustomizedRoundripTimeZone(dateTime, offset, result);
+
+            return StringBuilderCache.GetStringAndRelease(result);
+        }
+        
+        internal static void AppendNumber(StringBuilder builder, long val, int digits)
+        {
+            for (int i = 0; i < digits; i++)
+            {
+                builder.Append('0');
+            }
+
+            int index = 1;
+            while (val > 0 && index <= digits)
+            {
+                builder[builder.Length - index] = (char)('0' + (val % 10));
+                val = val / 10;
+                index++;
+            }
+
+            Contract.Assert(val == 0, "DateTimeFormat.AppendNumber(): digits less than size of val");
+        }
+
         internal static String[] GetAllDateTimes(DateTime dateTime, char format, DateTimeFormatInfo dtfi)
         {
             Contract.Requires(dtfi != null);
