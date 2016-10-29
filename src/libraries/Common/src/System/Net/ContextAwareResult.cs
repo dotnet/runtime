@@ -276,7 +276,7 @@ namespace System.Net
         protected override void Cleanup()
         {
             base.Cleanup();
-            NetEventSource.Info(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
             CleanupInternal();
         }
 
@@ -300,7 +300,7 @@ namespace System.Net
             // capturing the context won't be sufficient.
             if ((_flags & StateFlags.CaptureIdentity) != 0 && !InternalPeekCompleted && (!capturingContext))
             {
-                NetEventSource.Info(this, "starting identity capture");
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "starting identity capture");
                 SafeCaptureIdentity();
             }
 
@@ -308,7 +308,7 @@ namespace System.Net
             // Note that Capture() can return null, for example if SuppressFlow() is in effect.
             if (capturingContext && !InternalPeekCompleted)
             {
-                NetEventSource.Info(this, "starting capture");
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "starting capture");
 
                 if (cachedContext == null)
                 {
@@ -333,7 +333,7 @@ namespace System.Net
             else
             {
                 // Otherwise we have to have completed synchronously, or not needed the context.
-                NetEventSource.Info(this, "Skipping capture");
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Skipping capture");
 
                 cachedContext = null;
                 if (AsyncCallback != null && !CompletedSynchronously)
@@ -349,7 +349,7 @@ namespace System.Net
             DebugProtectState(false);
             if (CompletedSynchronously)
             {
-                NetEventSource.Info(this, "Completing synchronously");
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Completing synchronously");
                 base.Complete(IntPtr.Zero);
                 return true;
             }
@@ -392,7 +392,7 @@ namespace System.Net
 
         private void CompleteCallback()
         {
-            NetEventSource.Info(this, "Context set, calling callback.");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Context set, calling callback.");
             base.Complete(IntPtr.Zero);
         }
     }

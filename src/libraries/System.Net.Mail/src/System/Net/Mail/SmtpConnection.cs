@@ -416,7 +416,7 @@ namespace System.Net.Mail
 
             private static void ConnectionCreatedCallback(object request, object state)
             {
-                NetEventSource.Enter(null, request);
+                if (NetEventSource.IsEnabled) NetEventSource.Enter(null, request);
                 ConnectAndHandshakeAsyncResult ConnectAndHandshakeAsyncResult = (ConnectAndHandshakeAsyncResult)request;
                 if (state is Exception)
                 {
@@ -445,7 +445,7 @@ namespace System.Net.Mail
                     ConnectAndHandshakeAsyncResult.InvokeCallback(e);
                 }
 
-                NetEventSource.Exit(null, request);
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(null, request);
             }
 
 
@@ -461,7 +461,7 @@ namespace System.Net.Mail
 
             internal void GetConnection()
             {
-                NetEventSource.Enter(this);
+                if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
                 if (_connection._isConnected)
                 {
                     throw new InvalidOperationException(SR.SmtpAlreadyConnected);
@@ -476,7 +476,7 @@ namespace System.Net.Mail
                 if (result.CompletedSynchronously)
                 {
                     _connection.EndInitializeConnection(result);
-                    NetEventSource.Info(this, "Connect returned");
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Connect returned");
 
                     try
                     {

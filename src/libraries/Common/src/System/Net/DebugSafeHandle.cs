@@ -44,7 +44,7 @@ namespace System.Net
         ~DebugSafeHandle()
         {
             DebugThreadTracking.SetThreadSource(ThreadKinds.Finalization);
-            NetEventSource.Info(this, _trace);
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, _trace);
         }
     }
 #endif // DEBUG

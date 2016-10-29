@@ -142,7 +142,7 @@ namespace System.Net.Http
             _statusCode = statusCode;
             _version = HttpUtilities.DefaultResponseVersion;
 
-            NetEventSource.Exit(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         public HttpResponseMessage EnsureSuccessStatusCode()

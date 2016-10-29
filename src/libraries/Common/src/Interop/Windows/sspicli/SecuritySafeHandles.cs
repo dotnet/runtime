@@ -637,7 +637,7 @@ namespace System.Net.Security
                                             outFreeContextBuffer);
                         }
 
-                        NetEventSource.Info(null, "Marshalling OUT buffer");
+                        if (NetEventSource.IsEnabled) NetEventSource.Info(null, "Marshalling OUT buffer");
 
                         // Get unmanaged buffer with index 0 as the only one passed into PInvoke.
                         outSecBuffer.size = outUnmanagedBuffer[0].cbBuffer;
@@ -918,7 +918,7 @@ namespace System.Net.Security
                                         ref outFlags,
                                         outFreeContextBuffer);
 
-                        NetEventSource.Info(null, "Marshaling OUT buffer");
+                        if (NetEventSource.IsEnabled) NetEventSource.Info(null, "Marshaling OUT buffer");
                         
                         // Get unmanaged buffer with index 0 as the only one passed into PInvoke.
                         outSecBuffer.size = outUnmanagedBuffer[0].cbBuffer;

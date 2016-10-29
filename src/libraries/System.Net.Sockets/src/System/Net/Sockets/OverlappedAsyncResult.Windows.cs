@@ -125,7 +125,7 @@ namespace System.Net.Sockets
                 {
                     foreach (WSABuffer wsaBuffer in _wsaBuffers)
                     {
-                        NetEventSource.DumpArray(this, wsaBuffer.Pointer, Math.Min(wsaBuffer.Length, size));
+                        if (NetEventSource.IsEnabled) NetEventSource.DumpBuffer(this, wsaBuffer.Pointer, Math.Min(wsaBuffer.Length, size));
                         if ((size -= wsaBuffer.Length) <= 0)
                         {
                             break;
@@ -134,7 +134,7 @@ namespace System.Net.Sockets
                 }
                 else
                 {
-                    NetEventSource.DumpArray(this, _singleBuffer.Pointer, Math.Min(_singleBuffer.Length, size));
+                    if (NetEventSource.IsEnabled) NetEventSource.DumpBuffer(this, _singleBuffer.Pointer, Math.Min(_singleBuffer.Length, size));
                 }
             }
         }

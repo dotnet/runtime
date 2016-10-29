@@ -26,7 +26,7 @@ namespace System.Net
 
         public int EnumerateSecurityPackages(out int pkgnum, out SafeFreeContextBuffer pkgArray)
         {
-            NetEventSource.Info(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
             return SafeFreeContextBuffer.EnumeratePackages(out pkgnum, out pkgArray);
         }
 

@@ -1033,20 +1033,22 @@ namespace System.Net.Sockets
 
         internal void LogBuffer(int size)
         {
+            if (!NetEventSource.IsEnabled) return;
+
             switch (_pinState)
             {
                 case PinState.SingleAcceptBuffer:
-                    NetEventSource.DumpArray(this, _acceptBuffer, 0, size);
+                    NetEventSource.DumpBuffer(this, _acceptBuffer, 0, size);
                     break;
 
                 case PinState.SingleBuffer:
-                    NetEventSource.DumpArray(this, _buffer, _offset, size);
+                    NetEventSource.DumpBuffer(this, _buffer, _offset, size);
                     break;
 
                 case PinState.MultipleBuffer:
                     foreach (WSABuffer wsaBuffer in _wsaBufferArray)
                     {
-                        NetEventSource.DumpArray(this, wsaBuffer.Pointer, Math.Min(wsaBuffer.Length, size));
+                        NetEventSource.DumpBuffer(this, wsaBuffer.Pointer, Math.Min(wsaBuffer.Length, size));
                         if ((size -= wsaBuffer.Length) <= 0)
                         {
                             break;
@@ -1061,6 +1063,8 @@ namespace System.Net.Sockets
 
         internal void LogSendPacketsBuffers(int size)
         {
+            if (!NetEventSource.IsEnabled) return;
+
             foreach (SendPacketsElement spe in _sendPacketsElementsInternal)
             {
                 if (spe != null)
@@ -1068,7 +1072,7 @@ namespace System.Net.Sockets
                     if (spe._buffer != null && spe._count > 0)
                     {
                         // This element is a buffer.
-                        NetEventSource.DumpArray(this, spe._buffer, spe._offset, Math.Min(spe._count, size));
+                        NetEventSource.DumpBuffer(this, spe._buffer, spe._offset, Math.Min(spe._count, size));
                     }
                     else if (spe._filePath != null)
                     {
@@ -1259,7 +1263,7 @@ namespace System.Net.Sockets
                 }
 
 #if DEBUG
-                NetEventSource.Exit(this);
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
 #endif
         }

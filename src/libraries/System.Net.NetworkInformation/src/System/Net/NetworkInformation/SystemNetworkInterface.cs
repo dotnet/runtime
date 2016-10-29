@@ -73,7 +73,7 @@ namespace System.Net.NetworkInformation
             }
             catch (NetworkInformationException nie)
             {
-                NetEventSource.Error(null, nie);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(null, nie);
             }
 
             return false;

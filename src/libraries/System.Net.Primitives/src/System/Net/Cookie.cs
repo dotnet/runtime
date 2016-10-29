@@ -855,7 +855,7 @@ namespace System.Net
 #if !NETNative_SystemNetHttp
             if (NetEventSource.IsEnabled)
             {
-                NetEventSource.Info(this, 
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, 
                                   "Cookie: "        + ToString() + "->\n"
                                 + "\tComment    = " + Comment + "\n"
                                 + "\tCommentUri = " + CommentUri + "\n"

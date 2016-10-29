@@ -35,16 +35,16 @@ namespace System.Net
             // Special warnings when doing dangerous things on a thread.
             if ((threadKind & ThreadKinds.User) != 0 && (kind & ThreadKinds.System) != 0)
             {
-                NetEventSource.Error(null, "Thread changed from User to System; user's thread shouldn't be hijacked.");
+                if (NetEventSource.IsEnabled) NetEventSource.Error(null, "Thread changed from User to System; user's thread shouldn't be hijacked.");
             }
 
             if ((threadKind & ThreadKinds.Async) != 0 && (kind & ThreadKinds.Sync) != 0)
             {
-                NetEventSource.Error(null, "Thread changed from Async to Sync, may block an Async thread.");
+                if (NetEventSource.IsEnabled) NetEventSource.Error(null, "Thread changed from Async to Sync, may block an Async thread.");
             }
             else if ((threadKind & (ThreadKinds.Other | ThreadKinds.CompletionPort)) == 0 && (kind & ThreadKinds.Sync) != 0)
             {
-                NetEventSource.Error(null, "Thread from a limited resource changed to Sync, may deadlock or bottleneck.");
+                if (NetEventSource.IsEnabled) NetEventSource.Error(null, "Thread from a limited resource changed to Sync, may deadlock or bottleneck.");
             }
 
             ThreadKindStack.Push(
@@ -87,7 +87,7 @@ namespace System.Net
 
                 if (CurrentThreadKind != previous && NetEventSource.IsEnabled)
                 {
-                    NetEventSource.Info(this, $"Thread reverts:({CurrentThreadKind})");
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Thread reverts:({CurrentThreadKind})");
                 }
             }
         }
@@ -107,7 +107,7 @@ namespace System.Net
 
             if (ThreadKindStack.Count > 1)
             {
-                NetEventSource.Error(null, "SetThreadSource must be called at the base of the stack, or the stack has been corrupted.");
+                if (NetEventSource.IsEnabled) NetEventSource.Error(null, "SetThreadSource must be called at the base of the stack, or the stack has been corrupted.");
                 while (ThreadKindStack.Count > 1)
                 {
                     ThreadKindStack.Pop();
@@ -116,7 +116,7 @@ namespace System.Net
 
             if (ThreadKindStack.Peek() != source)
             {
-                NetEventSource.Error(null, "The stack has been corrupted.");
+                if (NetEventSource.IsEnabled) NetEventSource.Error(null, "The stack has been corrupted.");
                 ThreadKinds last = ThreadKindStack.Pop() & ThreadKinds.SourceMask;
                 if (last != source && last != ThreadKinds.Other && NetEventSource.IsEnabled)
                 {

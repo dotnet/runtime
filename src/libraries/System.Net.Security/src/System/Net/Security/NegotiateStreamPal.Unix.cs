@@ -396,7 +396,7 @@ namespace System.Net.Security
             }
             catch(Exception ex)
             {
-                NetEventSource.Error(null, ex);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(null, ex);
                 return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, ex);
             }
         }

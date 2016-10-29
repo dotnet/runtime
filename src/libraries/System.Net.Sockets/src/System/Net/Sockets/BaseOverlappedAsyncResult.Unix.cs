@@ -20,7 +20,7 @@ namespace System.Net.Sockets
         public BaseOverlappedAsyncResult(Socket socket, Object asyncState, AsyncCallback asyncCallback)
             : base(socket, asyncState, asyncCallback)
         {
-            NetEventSource.Info(this, socket);
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, socket);
         }
 
         public void CompletionCallback(int numBytes, SocketError errorCode)

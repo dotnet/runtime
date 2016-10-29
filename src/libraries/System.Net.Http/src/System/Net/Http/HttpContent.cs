@@ -151,12 +151,12 @@ namespace System.Net.Http
         protected HttpContent()
         {
             // Log to get an ID for the current content. This ID is used when the content gets associated to a message.
-            NetEventSource.Enter(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             // We start with the assumption that we can calculate the content length.
             _canCalculateLength = true;
 
-            NetEventSource.Exit(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         public Task<string> ReadAsStringAsync()
@@ -375,7 +375,7 @@ namespace System.Net.Http
             }
             catch (Exception e)
             {
-                NetEventSource.Error(this, e);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
                 throw;
             }
         }
@@ -491,7 +491,7 @@ namespace System.Net.Http
             if (task == null)
             {
                 var e = new InvalidOperationException(SR.net_http_content_no_task_returned);
-                NetEventSource.Error(this, e);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
                 throw e;
             }
         }

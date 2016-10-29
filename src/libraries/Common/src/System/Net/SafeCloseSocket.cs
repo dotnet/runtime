@@ -97,7 +97,7 @@ namespace System.Net.Sockets
             SafeCloseSocket ret = new SafeCloseSocket();
             CreateSocket(socket, ret);
 
-            NetEventSource.Info(null, ret);
+            if (NetEventSource.IsEnabled) NetEventSource.Info(null, ret);
 
             return ret;
         }

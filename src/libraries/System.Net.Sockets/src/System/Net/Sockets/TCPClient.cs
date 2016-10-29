@@ -37,18 +37,18 @@ namespace System.Net.Sockets
             _family = family;
             InitializeClientSocket();
 
-            NetEventSource.Exit(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         // Used by TcpListener.Accept().
         internal TcpClient(Socket acceptedSocket)
         {
-            NetEventSource.Enter(this, acceptedSocket);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, acceptedSocket);
 
             _clientSocket = acceptedSocket;
             _active = true;
 
-            NetEventSource.Exit(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         // Used by the class to indicate that a connection has been made.
@@ -84,37 +84,37 @@ namespace System.Net.Sockets
 
         public IAsyncResult BeginConnect(IPAddress address, int port, AsyncCallback requestCallback, object state)
         {
-            NetEventSource.Enter(this, address);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, address);
 
             IAsyncResult result = BeginConnectCore(address, port, requestCallback, state);
 
-            NetEventSource.Exit(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             return result;
         }
 
         public IAsyncResult BeginConnect(string host, int port, AsyncCallback requestCallback, object state)
         {
-            NetEventSource.Enter(this, (string)host);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, (string)host);
 
             IAsyncResult result = BeginConnectCore(host, port, requestCallback, state);
 
-            NetEventSource.Exit(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             return result;
         }
 
         public IAsyncResult BeginConnect(IPAddress[] addresses, int port, AsyncCallback requestCallback, object state)
         {
-            NetEventSource.Enter(this, addresses);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, addresses);
 
             IAsyncResult result = BeginConnectCore(addresses, port, requestCallback, state);
 
-            NetEventSource.Exit(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             return result;
         }
 
         public void EndConnect(IAsyncResult asyncResult)
         {
-            NetEventSource.Enter(this, asyncResult);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, asyncResult);
 
             Socket s = Client;
             if (s == null)
@@ -127,13 +127,13 @@ namespace System.Net.Sockets
 
             _active = true;
 
-            NetEventSource.Exit(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         // Returns the stream used to read and write data to the remote host.
         public NetworkStream GetStream()
         {
-            NetEventSource.Enter(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             if (_cleanedUp)
             {
@@ -149,18 +149,18 @@ namespace System.Net.Sockets
                 _dataStream = new NetworkStream(Client, true);
             }
 
-            NetEventSource.Exit(this, _dataStream);
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, _dataStream);
             return _dataStream;
         }
 
         // Disposes the Tcp connection.
         protected virtual void Dispose(bool disposing)
         {
-            NetEventSource.Enter(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             if (_cleanedUp)
             {
-                NetEventSource.Exit(this);
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
                 return;
             }
 
@@ -198,7 +198,7 @@ namespace System.Net.Sockets
             }
 
             _cleanedUp = true;
-            NetEventSource.Exit(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         public void Dispose()

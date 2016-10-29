@@ -27,7 +27,7 @@ namespace System.Net.Sockets
             : base(socket, asyncState, asyncCallback)
         {
             _cleanupCount = 1;
-            NetEventSource.Info(this, socket);
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, socket);
         }
 
         internal SafeNativeOverlapped NativeOverlapped
@@ -186,7 +186,7 @@ namespace System.Net.Sockets
         protected virtual void ForceReleaseUnmanagedStructures()
         {
             // Free the unmanaged memory if allocated.
-            NetEventSource.Enter(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             _nativeOverlapped.Dispose();
             _nativeOverlapped = null;
             GC.SuppressFinalize(this);

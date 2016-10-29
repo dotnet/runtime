@@ -814,7 +814,7 @@ namespace System.Net.Http.Headers
                 {
                     if (!TryParseAndAddRawHeaderValue(name, info, rawValue, true))
                     {
-                        NetEventSource.Log.HeadersInvalidValue(name, rawValue);
+                        if (NetEventSource.IsEnabled) NetEventSource.Log.HeadersInvalidValue(name, rawValue);
                     }
                 }
             }
@@ -836,7 +836,7 @@ namespace System.Net.Http.Headers
             {
                 if (!TryParseAndAddRawHeaderValue(name, info, rawValue, true))
                 {
-                    NetEventSource.Log.HeadersInvalidValue(name, rawValue);
+                    if (NetEventSource.IsEnabled) NetEventSource.Log.HeadersInvalidValue(name, rawValue);
                 }
             }
         }

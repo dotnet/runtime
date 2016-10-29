@@ -228,7 +228,7 @@ namespace System.Net
         {
             if (NetEventSource.IsEnabled)
             {
-                NetEventSource.Enter(this);
+                if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
                 foreach (Cookie cookie in this)
                 {
                     cookie.Dump();

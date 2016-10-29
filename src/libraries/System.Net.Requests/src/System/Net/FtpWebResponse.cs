@@ -82,9 +82,9 @@ namespace System.Net
         /// </summary>
         public override void Close()
         {
-            NetEventSource.Enter(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             _responseStream?.Close();
-            NetEventSource.Exit(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         /// <summary>

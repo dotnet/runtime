@@ -20,12 +20,12 @@ namespace System.Net.Security
         {
             if (offset < 0 || offset > (data == null ? 0 : data.Length))
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Fail(this, $"'offset' out of range.  [{offset}]");
+                NetEventSource.Fail(this, $"'offset' out of range.  [{offset}]");
             }
 
             if (size < 0 || size > (data == null ? 0 : data.Length - offset))
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Fail(this, $"'size' out of range.  [{size}]");
+                NetEventSource.Fail(this, $"'size' out of range.  [{size}]");
             }
 
             this.offset = data == null || offset < 0 ? 0 : Math.Min(offset, data.Length);
@@ -45,7 +45,7 @@ namespace System.Net.Security
         {
             if (size < 0)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Fail(this, $"'size' out of range.  [{size}]");
+                NetEventSource.Fail(this, $"'size' out of range.  [{size}]");
             }
 
             this.size = size;

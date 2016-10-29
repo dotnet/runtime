@@ -48,7 +48,7 @@ namespace System.Net
 
         internal virtual void Abort(Exception e)
         {
-            NetEventSource.Info(this, "closing control Stream");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, "closing control Stream");
 
             lock (this)
             {
@@ -76,7 +76,7 @@ namespace System.Net
 
         protected override void Dispose(bool disposing)
         {
-            NetEventSource.Info(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
 
             InvokeRequestCallback(null);
 

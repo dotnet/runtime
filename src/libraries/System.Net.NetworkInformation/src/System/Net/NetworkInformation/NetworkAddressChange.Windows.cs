@@ -162,7 +162,7 @@ namespace System.Net.NetworkInformation
                     }
                     catch (NetworkInformationException nie)
                     {
-                        NetEventSource.Error(null, nie);
+                        if (NetEventSource.IsEnabled) NetEventSource.Error(null, nie);
                     }
 
                     foreach (var handler in copy.Keys)

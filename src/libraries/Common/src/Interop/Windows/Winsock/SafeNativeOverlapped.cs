@@ -15,7 +15,7 @@ namespace System.Net.Sockets
         private SafeNativeOverlapped()
             : this(IntPtr.Zero)
         {
-            NetEventSource.Info(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
         }
 
         private SafeNativeOverlapped(IntPtr handle)
@@ -51,7 +51,7 @@ namespace System.Net.Sockets
 
         protected override bool ReleaseHandle()
         {
-            NetEventSource.Info(this);
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
 
             FreeNativeOverlapped();
 

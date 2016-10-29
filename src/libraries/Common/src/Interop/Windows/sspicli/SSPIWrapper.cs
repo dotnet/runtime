@@ -14,7 +14,7 @@ namespace System.Net
     {
         internal static SecurityPackageInfoClass[] EnumerateSecurityPackages(SSPIInterface secModule)
         {
-            NetEventSource.Enter(null);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null);
 
             if (secModule.SecurityPackages == null)
             {
@@ -39,7 +39,7 @@ namespace System.Net
                             for (i = 0; i < moduleCount; i++)
                             {
                                 securityPackages[i] = new SecurityPackageInfoClass(arrayBaseHandle, i);
-                                NetEventSource.Log.EnumerateSecurityPackages(securityPackages[i].Name);
+                                if (NetEventSource.IsEnabled) NetEventSource.Log.EnumerateSecurityPackages(securityPackages[i].Name);
                             }
 
                             secModule.SecurityPackages = securityPackages;
@@ -55,7 +55,7 @@ namespace System.Net
                 }
             }
 
-            NetEventSource.Exit(null);
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(null);
             return secModule.SecurityPackages;
         }
 
@@ -78,7 +78,7 @@ namespace System.Net
                 }
             }
 
-            NetEventSource.Log.SspiPackageNotFound(packageName);
+            if (NetEventSource.IsEnabled) NetEventSource.Log.SspiPackageNotFound(packageName);
 
             if (throwIfMissing)
             {
@@ -90,9 +90,11 @@ namespace System.Net
 
         public static SafeFreeCredentials AcquireDefaultCredential(SSPIInterface secModule, string package, Interop.SspiCli.CredentialUse intent)
         {
-            NetEventSource.Enter(null, package);
-
-            NetEventSource.Log.AcquireDefaultCredential(package, intent);
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Enter(null, package);
+                NetEventSource.Log.AcquireDefaultCredential(package, intent);
+            }
 
             SafeFreeCredentials outCredential = null;
             int errorCode = secModule.AcquireDefaultCredential(package, intent, out outCredential);
@@ -107,8 +109,11 @@ namespace System.Net
 
         public static SafeFreeCredentials AcquireCredentialsHandle(SSPIInterface secModule, string package, Interop.SspiCli.CredentialUse intent, ref Interop.SspiCli.SEC_WINNT_AUTH_IDENTITY_W authdata)
         {
-            NetEventSource.Enter(null, package);
-            NetEventSource.Log.AcquireCredentialsHandle(package, intent, authdata);
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Enter(null, package);
+                NetEventSource.Log.AcquireCredentialsHandle(package, intent, authdata);
+            }
 
             SafeFreeCredentials credentialsHandle = null;
             int errorCode = secModule.AcquireCredentialsHandle(package,
@@ -127,7 +132,7 @@ namespace System.Net
 
         public static SafeFreeCredentials AcquireCredentialsHandle(SSPIInterface secModule, string package, Interop.SspiCli.CredentialUse intent, ref SafeSspiAuthDataHandle authdata)
         {
-            NetEventSource.Log.AcquireCredentialsHandle(package, intent, authdata);
+            if (NetEventSource.IsEnabled) NetEventSource.Log.AcquireCredentialsHandle(package, intent, authdata);
 
             SafeFreeCredentials credentialsHandle = null;
             int errorCode = secModule.AcquireCredentialsHandle(package, intent, ref authdata, out credentialsHandle);
@@ -143,8 +148,11 @@ namespace System.Net
 
         public static SafeFreeCredentials AcquireCredentialsHandle(SSPIInterface secModule, string package, Interop.SspiCli.CredentialUse intent, Interop.SspiCli.SCHANNEL_CRED scc)
         {
-            NetEventSource.Enter(null, package);
-            NetEventSource.Log.AcquireCredentialsHandle(package, intent, scc);
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Enter(null, package);
+                NetEventSource.Log.AcquireCredentialsHandle(package, intent, scc);
+            }
 
             SafeFreeCredentials outCredential = null;
             int errorCode = secModule.AcquireCredentialsHandle(
@@ -159,50 +167,50 @@ namespace System.Net
                 throw new Win32Exception(errorCode);
             }
 
-            NetEventSource.Exit(null, outCredential);
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, outCredential);
             return outCredential;
         }
 
         internal static int InitializeSecurityContext(SSPIInterface secModule, ref SafeFreeCredentials credential, ref SafeDeleteContext context, string targetName, Interop.SspiCli.ContextFlags inFlags, Interop.SspiCli.Endianness datarep, SecurityBuffer inputBuffer, SecurityBuffer outputBuffer, ref Interop.SspiCli.ContextFlags outFlags)
         {
-            NetEventSource.Log.InitializeSecurityContext(credential, context, targetName, inFlags);
+            if (NetEventSource.IsEnabled) NetEventSource.Log.InitializeSecurityContext(credential, context, targetName, inFlags);
 
             int errorCode = secModule.InitializeSecurityContext(ref credential, ref context, targetName, inFlags, datarep, inputBuffer, outputBuffer, ref outFlags);
 
-            NetEventSource.Log.SecurityContextInputBuffer(nameof(InitializeSecurityContext), inputBuffer?.size ?? 0, outputBuffer.size, (Interop.SECURITY_STATUS)errorCode);
+            if (NetEventSource.IsEnabled) NetEventSource.Log.SecurityContextInputBuffer(nameof(InitializeSecurityContext), inputBuffer?.size ?? 0, outputBuffer.size, (Interop.SECURITY_STATUS)errorCode);
             
             return errorCode;
         }
 
         internal static int InitializeSecurityContext(SSPIInterface secModule, SafeFreeCredentials credential, ref SafeDeleteContext context, string targetName, Interop.SspiCli.ContextFlags inFlags, Interop.SspiCli.Endianness datarep, SecurityBuffer[] inputBuffers, SecurityBuffer outputBuffer, ref Interop.SspiCli.ContextFlags outFlags)
         {
-            NetEventSource.Log.InitializeSecurityContext(credential, context, targetName, inFlags);
+            if (NetEventSource.IsEnabled) NetEventSource.Log.InitializeSecurityContext(credential, context, targetName, inFlags);
 
             int errorCode = secModule.InitializeSecurityContext(credential, ref context, targetName, inFlags, datarep, inputBuffers, outputBuffer, ref outFlags);
 
-            NetEventSource.Log.SecurityContextInputBuffers(nameof(InitializeSecurityContext), inputBuffers?.Length ?? 0, outputBuffer.size, (Interop.SECURITY_STATUS)errorCode);
+            if (NetEventSource.IsEnabled) NetEventSource.Log.SecurityContextInputBuffers(nameof(InitializeSecurityContext), inputBuffers?.Length ?? 0, outputBuffer.size, (Interop.SECURITY_STATUS)errorCode);
 
             return errorCode;
         }
 
         internal static int AcceptSecurityContext(SSPIInterface secModule, ref SafeFreeCredentials credential, ref SafeDeleteContext context, Interop.SspiCli.ContextFlags inFlags, Interop.SspiCli.Endianness datarep, SecurityBuffer inputBuffer, SecurityBuffer outputBuffer, ref Interop.SspiCli.ContextFlags outFlags)
         {
-            NetEventSource.Log.AcceptSecurityContext(credential, context, inFlags);
+            if (NetEventSource.IsEnabled) NetEventSource.Log.AcceptSecurityContext(credential, context, inFlags);
 
             int errorCode = secModule.AcceptSecurityContext(ref credential, ref context, inputBuffer, inFlags, datarep, outputBuffer, ref outFlags);
 
-            NetEventSource.Log.SecurityContextInputBuffer(nameof(AcceptSecurityContext), inputBuffer?.size ?? 0, outputBuffer.size, (Interop.SECURITY_STATUS)errorCode);
+            if (NetEventSource.IsEnabled) NetEventSource.Log.SecurityContextInputBuffer(nameof(AcceptSecurityContext), inputBuffer?.size ?? 0, outputBuffer.size, (Interop.SECURITY_STATUS)errorCode);
 
             return errorCode;
         }
 
         internal static int AcceptSecurityContext(SSPIInterface secModule, SafeFreeCredentials credential, ref SafeDeleteContext context, Interop.SspiCli.ContextFlags inFlags, Interop.SspiCli.Endianness datarep, SecurityBuffer[] inputBuffers, SecurityBuffer outputBuffer, ref Interop.SspiCli.ContextFlags outFlags)
         {
-            NetEventSource.Log.AcceptSecurityContext(credential, context, inFlags);
+            if (NetEventSource.IsEnabled) NetEventSource.Log.AcceptSecurityContext(credential, context, inFlags);
 
             int errorCode = secModule.AcceptSecurityContext(credential, ref context, inputBuffers, inFlags, datarep, outputBuffer, ref outFlags);
 
-            NetEventSource.Log.SecurityContextInputBuffers(nameof(AcceptSecurityContext), inputBuffers?.Length ?? 0, outputBuffer.size, (Interop.SECURITY_STATUS)errorCode);
+            if (NetEventSource.IsEnabled) NetEventSource.Log.SecurityContextInputBuffers(nameof(AcceptSecurityContext), inputBuffers?.Length ?? 0, outputBuffer.size, (Interop.SECURITY_STATUS)errorCode);
 
             return errorCode;
         }
@@ -211,7 +219,7 @@ namespace System.Net
         {
             int errorCode = secModule.CompleteAuthToken(ref context, inputBuffers);
 
-            NetEventSource.Log.OperationReturnedSomething(nameof(CompleteAuthToken), (Interop.SECURITY_STATUS)errorCode);
+            if (NetEventSource.IsEnabled) NetEventSource.Log.OperationReturnedSomething(nameof(CompleteAuthToken), (Interop.SECURITY_STATUS)errorCode);
 
             return errorCode;
         }
@@ -220,7 +228,7 @@ namespace System.Net
         {
             int errorCode = secModule.ApplyControlToken(ref context, inputBuffers);
 
-            NetEventSource.Log.OperationReturnedSomething(nameof(ApplyControlToken), (Interop.SECURITY_STATUS)errorCode);
+            if (NetEventSource.IsEnabled) NetEventSource.Log.OperationReturnedSomething(nameof(ApplyControlToken), (Interop.SECURITY_STATUS)errorCode);
 
             return errorCode;
         }
@@ -308,7 +316,7 @@ namespace System.Net
                             break;
 
                         default:
-                            if (NetEventSource.IsEnabled) NetEventSource.Fail(null, $"Unknown OP: {op}");
+                            NetEventSource.Fail(null, $"Unknown OP: {op}");
                             throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
                     }
 
@@ -369,7 +377,7 @@ namespace System.Net
                         }
                     }
 
-                    if (errorCode != 0 && NetEventSource.IsEnabled)
+                    if (NetEventSource.IsEnabled && errorCode != 0)
                     {                         
                         if (errorCode == Interop.SspiCli.SEC_I_RENEGOTIATE)
                         {
@@ -408,7 +416,7 @@ namespace System.Net
                 return null;
             }
 
-            NetEventSource.Exit(null, result);
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, result);
             return result;
         }
 
