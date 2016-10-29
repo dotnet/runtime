@@ -152,5 +152,170 @@ namespace System.Runtime.InteropServices
                 Marshal.GetExceptionForHR(e.HResult);
             }
         }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Net46)]
+        public static void GenerateGuidForType()
+        {
+            Assert.Equal(typeof(int).GUID, Marshal.GenerateGuidForType(typeof(int)));
+            Assert.Equal(typeof(string).GUID, Marshal.GenerateGuidForType(typeof(string)));
+        }
+
+        [ProgId("TestProgID")]
+        public class ClassWithProgID
+        {
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Net46)]
+        public static void GenerateProgIdForType()
+        {
+             Assert.Throws<ArgumentNullException>(() => Marshal.GenerateProgIdForType(null));
+             Assert.Equal("TestProgID", Marshal.GenerateProgIdForType(typeof(ClassWithProgID)));       
+        }        
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Net46)]
+        public static void GetComObjectData()
+        {
+             Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetComObjectData(null, null));        
+        }        
+
+        [Fact]
+        public static void GetHINSTANCE()
+        {
+             Assert.Throws<ArgumentNullException>(() => Marshal.GetHINSTANCE(null));
+             IntPtr ptr = Marshal.GetHINSTANCE(typeof(int).Module);
+             IntPtr ptr2 = Marshal.GetHINSTANCE(typeof(string).Module);
+             Assert.Equal(ptr, ptr2);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Net46)]
+        public static void GetIDispatchForObject()
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetIDispatchForObject(null));   
+        }
+                
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Net46)]
+        public static void GetTypedObjectForIUnknown()
+        {
+            if(PlatformDetection.IsWindows)
+            {
+                Assert.Throws<ArgumentNullException>(() => Marshal.GetTypedObjectForIUnknown(IntPtr.Zero, typeof(int)));
+            }  
+            else 
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetTypedObjectForIUnknown(IntPtr.Zero, typeof(int)));
+            }
+        }
+
+        [Fact]
+        public static void Prelink()
+        {
+            Assert.Throws<ArgumentNullException>(() => Marshal.Prelink(null));
+        }
+
+        [Fact]
+        public static void PrelinkAll()
+        {
+            Assert.Throws<ArgumentNullException>(() => Marshal.PrelinkAll(null));
+        }
+        
+        [Fact]
+        public static void PtrToStringAuto()
+        {
+            Assert.Null(Marshal.PtrToStringAuto(IntPtr.Zero));
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Net46)]
+        public static void SetComObjectData()
+        {
+             Assert.Throws<PlatformNotSupportedException>(() => Marshal.SetComObjectData(null, null, null));        
+        }
+
+        [Fact]
+        public static void StringToCoTaskMemAuto()
+        {
+            String s = null;
+
+            // passing null string should return 0
+            Assert.Equal(0, (long)Marshal.StringToCoTaskMemAuto(s));        
+            
+            s = "Hello World";
+            IntPtr ptr = Marshal.StringToCoTaskMemAuto(s);
+
+            // make sure the native memory is correctly laid out
+            for (int i=0; i < s.Length; i++)
+            {
+                char c = (char)Marshal.ReadInt16(IntPtr.Add(ptr, i<<1));
+                Assert.Equal(s[i], c);    
+            }
+
+            // make sure if we convert back to string we get the same value
+            String s2 = Marshal.PtrToStringAuto(ptr);
+            Assert.Equal(s, s2);
+
+            // free the native memory
+            Marshal.FreeCoTaskMem(ptr);  
+        }
+
+        [Fact]
+        public static void StringToHGlobalAuto()
+        {
+            String s = null;
+
+            // passing null string should return 0
+            Assert.Equal(0, (long)Marshal.StringToHGlobalAuto(s));        
+            
+            s = "Hello World";
+            IntPtr ptr = Marshal.StringToHGlobalAuto(s);
+
+            // make sure the native memory is correctly laid out
+            for (int i=0; i < s.Length; i++)
+            {
+                char c = (char)Marshal.ReadInt16(IntPtr.Add(ptr, i<<1));
+                Assert.Equal(s[i], c);    
+            }
+            
+            // make sure if we convert back to string we get the same value
+            String s2 = Marshal.PtrToStringAuto(ptr);
+            Assert.Equal(s, s2);
+
+            // free the native memory
+            Marshal.FreeCoTaskMem(ptr);                          
+        }
+        
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Net46)]
+        public static void BindToMoniker()
+        {
+            String monikerName = null;
+            if(PlatformDetection.IsWindows)
+            {
+                Assert.Throws<ArgumentException>(() => Marshal.BindToMoniker(monikerName));
+            }  
+            else 
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => Marshal.BindToMoniker(monikerName));
+            }        
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Net46)]
+        public static void ChangeWrapperHandleStrength() 
+        {
+            if(PlatformDetection.IsWindows)
+            {
+                Assert.Throws<ArgumentNullException>(() => Marshal.ChangeWrapperHandleStrength(null, true));
+            }  
+            else 
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => Marshal.ChangeWrapperHandleStrength(null, true));
+            }        
+        }    
+        
     }
 }

@@ -17,6 +17,10 @@
     <Compile Include="System\Runtime\InteropServices\DefaultParameterValueAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\HandleCollectorTests.cs" />
     <Compile Include="System\Runtime\InteropServices\MarshalTests.cs" />
+   <!-- Helpers -->
+    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
+      <Link>Common\System\PlatformDetection.cs</Link>
+    </Compile>    
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == ''">
     <Compile Include="System\Runtime\InteropServices\RuntimeEnvironmentTest.netstandard1.7.cs" />
