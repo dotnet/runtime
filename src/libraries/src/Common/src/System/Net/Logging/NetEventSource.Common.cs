@@ -630,17 +630,17 @@ namespace System.Net
                     descrs[3].DataPointer = (IntPtr)(&arg4);
                     descrs[3].Size = sizeof(int);
 
-                    descrs[3].DataPointer = (IntPtr)(&arg5);
-                    descrs[3].Size = sizeof(int);
+                    descrs[4].DataPointer = (IntPtr)(&arg5);
+                    descrs[4].Size = sizeof(int);
 
-                    descrs[3].DataPointer = (IntPtr)(&arg6);
-                    descrs[3].Size = sizeof(int);
+                    descrs[5].DataPointer = (IntPtr)(&arg6);
+                    descrs[5].Size = sizeof(int);
 
-                    descrs[3].DataPointer = (IntPtr)(&arg7);
-                    descrs[3].Size = sizeof(int);
+                    descrs[6].DataPointer = (IntPtr)(&arg7);
+                    descrs[6].Size = sizeof(int);
 
-                    descrs[3].DataPointer = (IntPtr)(&arg8);
-                    descrs[3].Size = sizeof(int);
+                    descrs[7].DataPointer = (IntPtr)(&arg8);
+                    descrs[7].Size = sizeof(int);
 
                     WriteEventCore(eventId, NumEventDatas, descrs);
                 }
@@ -725,8 +725,8 @@ namespace System.Net
                     descrs[1].DataPointer = (IntPtr)(arg2Ptr);
                     descrs[1].Size = (arg2.Length + 1) * sizeof(char);
 
-                    descrs[1].DataPointer = (IntPtr)(arg3Ptr);
-                    descrs[1].Size = (arg3.Length + 1) * sizeof(char);
+                    descrs[2].DataPointer = (IntPtr)(arg3Ptr);
+                    descrs[2].Size = (arg3.Length + 1) * sizeof(char);
 
                     descrs[3].DataPointer = (IntPtr)(&arg4);
                     descrs[3].Size = sizeof(int);

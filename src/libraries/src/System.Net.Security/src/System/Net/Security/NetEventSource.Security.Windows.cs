@@ -48,7 +48,7 @@ namespace System.Net
         private void InitializeSecurityContext(string credential, string context, string targetName, Interop.SspiCli.ContextFlags inFlags) =>
             WriteEvent(InitializeSecurityContextId, credential, context, targetName, (int)inFlags);
 
-        [Event(AcceptSecuritContextId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [NonEvent]
         public void AcceptSecurityContext(SafeFreeCredentials credential, SafeDeleteContext context, Interop.SspiCli.ContextFlags inFlags)
         {
             if (IsEnabled())

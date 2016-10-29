@@ -171,7 +171,7 @@ namespace System.Net
         private void NoDelegateButClientCert(int secureChannelHash) =>
             WriteEvent(NoDelegateButClientCertId, secureChannelHash);
 
-        [Event(AttemptingRestartUsingCertId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [NonEvent]
         public void AttemptingRestartUsingCert(X509Certificate clientCertificate, SecureChannel secureChannel)
         {
             if (IsEnabled())
