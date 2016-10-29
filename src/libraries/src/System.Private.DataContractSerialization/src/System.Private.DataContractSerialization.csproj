@@ -158,8 +158,6 @@
     <Compile Include="System\Runtime\Serialization\XPathQueryGenerator.cs" />
     <Compile Include="System\Runtime\Serialization\XsdDataContractExporter.cs" />
     <Compile Include="System\Xml\IFragmentCapableXmlDictionaryWriter.cs" />
-    <Compile Include="System\Xml\XmlMtomReader.cs" />
-    <Compile Include="System\Xml\XmlMtomWriter.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='uap101aot'">
     <TargetingPackReference Include="System.Private.CoreLib.Augments" />
