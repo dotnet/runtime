@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -31,12 +31,16 @@
     <Compile Include="CodeGroupTests.cs" />
     <Compile Include="MembershipConditionTests.cs" />
     <Compile Include="EvidenceBaseTests.cs" />
+    <Compile Include="SerializationTests.cs" />
     <Compile Include="PolicyTests.cs" />
     <Compile Include="TrustManagerContextTests.cs" />
     <Compile Include="PermissionSetTests.cs" />
     <Compile Include="PermissionTests.cs" />
     <Compile Include="HostSecurityManagerTests.cs" />
     <Compile Include="HostProtectionTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
+      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
+    </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
