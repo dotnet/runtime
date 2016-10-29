@@ -4336,32 +4336,6 @@ namespace System
 namespace System.Collections
 {
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public sealed partial class BitArray : System.Collections.ICollection, System.Collections.IEnumerable, System.ICloneable
-    {
-        public BitArray(bool[] values) { }
-        public BitArray(byte[] bytes) { }
-        public BitArray(System.Collections.BitArray bits) { }
-        public BitArray(int length) { }
-        public BitArray(int length, bool defaultValue) { }
-        public BitArray(int[] values) { }
-        public int Count { get { throw null; } }
-        public bool IsReadOnly { get { throw null; } }
-        public bool IsSynchronized { get { throw null; } }
-        public bool this[int index] { get { throw null; } set { } }
-        public int Length { get { throw null; } set { } }
-        public object SyncRoot { get { throw null; } }
-        public System.Collections.BitArray And(System.Collections.BitArray value) { throw null; }
-        public object Clone() { throw null; }
-        public void CopyTo(System.Array array, int index) { }
-        public bool Get(int index) { throw null; }
-        public System.Collections.IEnumerator GetEnumerator() { throw null; }
-        public System.Collections.BitArray Not() { throw null; }
-        public System.Collections.BitArray Or(System.Collections.BitArray value) { throw null; }
-        public void Set(int index, bool value) { }
-        public void SetAll(bool value) { }
-        public System.Collections.BitArray Xor(System.Collections.BitArray value) { throw null; }
-    }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public abstract partial class CollectionBase : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
     {
         protected CollectionBase() { }
