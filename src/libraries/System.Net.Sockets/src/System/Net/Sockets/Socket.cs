@@ -4625,11 +4625,11 @@ namespace System.Net.Sockets
             {
                 socketError = e.DoOperationAccept(this, _handle, acceptHandle, out bytesTransferred);
             }
-            catch (Exception ex)
+            catch
             {
                 // Clear in-use flag on event args object.
                 e.Complete();
-                throw ex;
+                throw;
             }
 
             // Handle completion when completion port is not posted.
@@ -4747,13 +4747,13 @@ namespace System.Net.Sockets
                 {
                     socketError = e.DoOperationConnect(this, _handle, out bytesTransferred);
                 }
-                catch (Exception ex)
+                catch
                 {
                     _rightEndPoint = oldEndPoint;
 
                     // Clear in-use flag on event args object. 
                     e.Complete();
-                    throw ex;
+                    throw;
                 }
 
                 // Handle failure where completion port is not posted.
@@ -4877,11 +4877,11 @@ namespace System.Net.Sockets
             {
                 socketError = e.DoOperationDisconnect(this, _handle);
             }
-            catch (Exception ex)
+            catch
             {
                 // clear in-use on event arg object 
                 e.Complete();
-                throw ex;
+                throw;
             }
 
             // Handle completion when completion port is not posted.
@@ -4936,11 +4936,11 @@ namespace System.Net.Sockets
             {
                 socketError = e.DoOperationReceive(_handle, out flags, out bytesTransferred);
             }
-            catch (Exception ex)
+            catch
             {
                 // Clear in-use flag on event args object. 
                 e.Complete();
-                throw ex;
+                throw;
             }
 
             // Handle completion when completion port is not posted.
@@ -5013,11 +5013,11 @@ namespace System.Net.Sockets
             {
                 socketError = e.DoOperationReceiveFrom(_handle, out flags, out bytesTransferred);
             }
-            catch (Exception ex)
+            catch
             {
                 // Clear in-use flag on event args object. 
                 e.Complete();
-                throw ex;
+                throw;
             }
 
             // Handle completion when completion port is not posted.
@@ -5091,11 +5091,11 @@ namespace System.Net.Sockets
             {
                 socketError = e.DoOperationReceiveMessageFrom(this, _handle, out bytesTransferred);
             }
-            catch (Exception ex)
+            catch
             {
                 // Clear in-use flag on event args object. 
                 e.Complete();
-                throw ex;
+                throw;
             }
 
             // Handle completion when completion port is not posted.
@@ -5149,11 +5149,11 @@ namespace System.Net.Sockets
             {
                 socketError = e.DoOperationSend(_handle, out bytesTransferred);
             }
-            catch (Exception ex)
+            catch
             {
                 // Clear in-use flag on event args object. 
                 e.Complete();
-                throw ex;
+                throw;
             }
 
             // Handle completion when completion port is not posted.
@@ -5291,11 +5291,11 @@ namespace System.Net.Sockets
             {
                 socketError = e.DoOperationSendTo(_handle, out bytesTransferred);
             }
-            catch (Exception ex)
+            catch
             {
                 // Clear in-use flag on event args object. 
                 e.Complete();
-                throw ex;
+                throw;
             }
 
             // Handle completion when completion port is not posted.
