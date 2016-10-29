@@ -197,6 +197,7 @@
     <Compile Include="System\ActivatorTest.netstandard1.7.cs" />
     <Compile Include="System\ExceptionTests.netstandard1.7.cs" />
     <Compile Include="System\TypeTests.netstandard1.7.cs" />
+    <Compile Include="System\Runtime\Tests.netstandard.1.7.cs" />
     <Compile Include="System\GCTests.netstandard1.7.cs" />
     <Compile Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorTestBase.cs">
       <Link>Common\System\Diagnostics\RemoteExecutorTestBase.cs</Link>
