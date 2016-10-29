@@ -101,6 +101,14 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentException>(null, () => variable.ReduceAndCheck());
         }
 
+        [Theory]
+        [ClassData(typeof(InvalidTypesData))]
+        public void OpenGenericType_ThrowsArgumentException(Type type)
+        {
+            Assert.Throws<ArgumentException>("type", () => Expression.Variable(type));
+            Assert.Throws<ArgumentException>("type", () => Expression.Variable(type, "name"));
+        }
+
         [Fact]
         public void CannotBePointerType()
         {

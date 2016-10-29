@@ -178,6 +178,7 @@ namespace System.Linq.Expressions
         public static ParameterExpression Parameter(Type type, string name)
         {
             ContractUtils.RequiresNotNull(type, nameof(type));
+            TypeUtils.ValidateType(type, nameof(type));
 
             if (type == typeof(void))
             {
@@ -207,6 +208,7 @@ namespace System.Linq.Expressions
         public static ParameterExpression Variable(Type type, string name)
         {
             ContractUtils.RequiresNotNull(type, nameof(type));
+            TypeUtils.ValidateType(type, nameof(type));
             if (type == typeof(void)) throw Error.ArgumentCannotBeOfTypeVoid(nameof(type));
             if (type.IsByRef) throw Error.TypeMustNotBeByRef(nameof(type));
 
