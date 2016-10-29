@@ -19,7 +19,7 @@ namespace System.Net.NameResolution.Tests
             Assert.Equal("Microsoft-System-Net-NameResolution", EventSource.GetName(esType));
             Assert.Equal(Guid.Parse("5f302add-3825-520e-8fa0-627b206e2e7e"), EventSource.GetGuid(esType));
 
-            Assert.NotEmpty(EventSource.GenerateManifest(esType, esType.GetTypeInfo().Assembly.Location));
+            Assert.NotEmpty(EventSource.GenerateManifest(esType, "assemblyPathToIncludeInManifest"));
         }
     }
 }
