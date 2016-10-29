@@ -60,7 +60,7 @@
   <ItemGroup>
     <CollectionsSources Include="$(BclSourcesRoot)\System\Collections\CollectionBase.cs" />
     <CollectionsSources Include="$(BclSourcesRoot)\System\Collections\ArrayList.cs" />
-    <CollectionsSources Include="$(BclSourcesRoot)\System\Collections\BitArray.cs" />
+    <CollectionsSources Condition="'$(FeatureCoreClr)'!='true'" Include="$(BclSourcesRoot)\System\Collections\BitArray.cs" />
     <CollectionsSources Include="$(BclSourcesRoot)\System\Collections\Stack.cs" />
     <CollectionsSources Include="$(BclSourcesRoot)\System\Collections\Comparer.cs" />
     <CollectionsSources Include="$(BclSourcesRoot)\System\Collections\CompatibleComparer.cs" />

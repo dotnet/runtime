@@ -618,38 +618,6 @@
       <Member Name="get_IsCompliant" />
       <Member MemberType="Property" Name="IsCompliant" />
     </Type>
-    <Type Name="System.Collections.BitArray">
-      <Member Name="#ctor(System.Int32)" />
-      <Member Name="#ctor(System.Int32,System.Boolean)" />
-      <Member Name="#ctor(System.Byte[])" />
-      <Member Name="#ctor(System.Boolean[])" />
-      <Member Name="#ctor(System.Int32[])" />
-      <Member Name="#ctor(System.Collections.BitArray)" />
-      <Member Name="Get(System.Int32)" />
-      <Member Name="Set(System.Int32,System.Boolean)" />
-      <Member Name="SetAll(System.Boolean)" />
-      <Member Name="And(System.Collections.BitArray)" />
-      <Member Name="Or(System.Collections.BitArray)" />
-      <Member Name="Xor(System.Collections.BitArray)" />
-      <Member Name="Not" />
-      <Member Name="set_Item(System.Int32,System.Boolean)" />
-      <Member Name="get_Item(System.Int32)" />
-      <Member MemberType="Property" Name="Item(System.Int32)" />
-      <Member Name="get_Length" />
-      <Member Name="set_Length(System.Int32)" />
-      <Member MemberType="Property" Name="Length" />
-      <Member Name="CopyTo(System.Array,System.Int32)" />
-      <Member Name="get_Count" />
-      <Member MemberType="Property" Name="Count" />
-      <Member Name="get_IsReadOnly" />
-      <Member MemberType="Property" Name="IsReadOnly" />
-      <Member Name="get_IsSynchronized" />
-      <Member MemberType="Property" Name="IsSynchronized" />
-      <Member Name="get_SyncRoot" />
-      <Member MemberType="Property" Name="SyncRoot" />
-      <Member Name="Clone" />
-      <Member Name="GetEnumerator" />
-    </Type>
     <Type Name="System.Collections.CollectionBase">
       <Member Name="#ctor" />
       <Member Name="get_List" />
