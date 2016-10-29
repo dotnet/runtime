@@ -185,6 +185,8 @@ namespace System.Xml.Linq
         public void Save(System.IO.TextWriter textWriter) { }
         public void Save(System.IO.TextWriter textWriter, System.Xml.Linq.SaveOptions options) { }
         public void Save(System.Xml.XmlWriter writer) { }
+        public void Save(System.String fileName) { }
+        public void Save(System.String fileName, System.Xml.Linq.SaveOptions options) { }
         public override void WriteTo(System.Xml.XmlWriter writer) { }
     }
     public partial class XDocumentType : System.Xml.Linq.XNode
@@ -296,6 +298,8 @@ namespace System.Xml.Linq
         public void Save(System.IO.TextWriter textWriter) { }
         public void Save(System.IO.TextWriter textWriter, System.Xml.Linq.SaveOptions options) { }
         public void Save(System.Xml.XmlWriter writer) { }
+        public void Save(System.String fileName) { }
+        public void Save(System.String fileName, System.Xml.Linq.SaveOptions options) { }
         public void SetAttributeValue(System.Xml.Linq.XName name, object value) { }
         public void SetElementValue(System.Xml.Linq.XName name, object value) { }
         public void SetValue(object value) { }
@@ -445,6 +449,8 @@ namespace System.Xml.Linq
         public void Save(System.IO.TextWriter textWriter) { }
         public void Save(System.IO.TextWriter textWriter, System.Xml.Linq.SaveOptions options) { }
         public void Save(System.Xml.XmlWriter writer) { }
+        public void Save(System.String fileName) { }
+        public void Save(System.String fileName, System.Xml.Linq.SaveOptions options) { }
         public override string ToString() { throw null; }
         public string ToString(System.Xml.Linq.SaveOptions options) { throw null; }
         public void WriteTo(System.Xml.XmlWriter writer) { }
