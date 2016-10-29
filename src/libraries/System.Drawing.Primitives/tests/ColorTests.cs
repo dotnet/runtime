@@ -316,7 +316,9 @@ namespace System.Drawing.Primitives.Tests
         }
 
         [Theory]
+        [InlineData("Color [A=0, R=0, G=0, B=0]", 0, 0, 0, 0)]
         [InlineData("Color [A=1, R=2, G=3, B=4]", 1, 2, 3, 4)]
+        [InlineData("Color [A=255, R=255, G=255, B=255]", 255, 255, 255, 255)]
         public void ToStringArgb(string expected, int alpha, int red, int green, int blue)
         {
             Assert.Equal(expected, Color.FromArgb(alpha, red, green, blue).ToString());

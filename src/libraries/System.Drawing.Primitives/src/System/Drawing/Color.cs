@@ -597,38 +597,18 @@ namespace System.Drawing
 
         public override string ToString()
         {
-            StringBuilder sb = new StringBuilder(32);
-            sb.Append(nameof(Color));
-            sb.Append(" [");
-
-            if ((state & s_stateNameValid) != 0)
+            if ((state & s_stateNameValid) != 0 || (state & s_stateKnownColorValid) != 0)
             {
-                sb.Append(Name);
-            }
-            else if ((state & s_stateKnownColorValid) != 0)
-            {
-                sb.Append(Name);
+                return nameof(Color) + " [" + Name + "]";
             }
             else if ((state & s_stateValueMask) != 0)
             {
-                sb.Append("A=");
-                sb.Append(A);
-                sb.Append(", R=");
-                sb.Append(R);
-                sb.Append(", G=");
-                sb.Append(G);
-                sb.Append(", B=");
-                sb.Append(B);
+                return nameof(Color) + " [A=" + A.ToString() + ", R=" + R.ToString() + ", G=" + G.ToString() + ", B=" + B.ToString() + "]";
             }
             else
             {
-                sb.Append("Empty");
+                return nameof(Color) + " [Empty]";
             }
-
-
-            sb.Append(']');
-
-            return sb.ToString();
         }
 
         public static bool operator ==(Color left, Color right)
