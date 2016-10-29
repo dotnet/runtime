@@ -7,15 +7,18 @@ using Xunit;
 
 namespace System.Net.Tests
 {
-    public static class LoggingTest
+    public class LoggingTest
     {
         [Fact]
-        public static void EventSource_ExistsWithCorrectId()
+        public void EventSource_ExistsWithCorrectId()
         {
             Type esType = typeof(WebHeaderCollection).Assembly.GetType("System.Net.NetEventSource", throwOnError: true, ignoreCase: false);
             Assert.NotNull(esType);
+
             Assert.Equal("Microsoft-System-Net-WebHeaderCollection", EventSource.GetName(esType));
             Assert.Equal(Guid.Parse("fd36452f-9f2b-5850-d212-6c436231e3dc"), EventSource.GetGuid(esType));
+
+            Assert.NotEmpty(EventSource.GenerateManifest(esType, esType.Assembly.Location));
         }
     }
 }
