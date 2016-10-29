@@ -266,6 +266,18 @@ namespace System.Net
         protected TransportContext() { }
         public abstract System.Security.Authentication.ExtendedProtection.ChannelBinding GetChannelBinding(System.Security.Authentication.ExtendedProtection.ChannelBindingKind kind);
     }
+
+    public static class HttpVersion
+    {
+#if netcoreapp11
+        public static readonly Version Unknown = new Version(0, 0);
+#endif
+        public static readonly Version Version10 = new Version(1, 0);
+        public static readonly Version Version11 = new Version(1, 1);
+#if netcoreapp11
+        public static readonly Version Version20 = new Version(2, 0);
+#endif
+    }
 }
 namespace System.Net.Cache
 {
