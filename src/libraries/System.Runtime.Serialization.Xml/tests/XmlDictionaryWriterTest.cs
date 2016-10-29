@@ -295,28 +295,6 @@ public static class XmlDictionaryWriterTest
         binaryReader.Close();
     }
 
-    [ActiveIssue(12901)]
-    [Fact]
-    public static void IXmlMtomReaderWriterInitializerTest()
-    {
-        DataContractSerializer serializer = new DataContractSerializer(typeof(TestData));
-        MemoryStream ms = new MemoryStream();
-        TestData td = new TestData();
-        XmlDictionaryWriter binaryWriter = XmlDictionaryWriter.CreateMtomWriter(ms, Encoding.UTF8, int.MaxValue, "application/soap+xml", null, null, true, false);
-        IXmlMtomWriterInitializer writerInitializer = (IXmlMtomWriterInitializer)binaryWriter;
-        writerInitializer.SetOutput(ms, Encoding.UTF8, int.MaxValue, "application/soap+xml", null, null, true, false);
-        serializer.WriteObject(ms, td);
-        binaryWriter.Flush();
-        byte[] xmlDoc = ms.ToArray();
-        binaryWriter.Close();
-        Encoding[] allEncodings = new Encoding[] { Encoding.Unicode, Encoding.BigEndianUnicode, Encoding.UTF8 };
-        XmlDictionaryReader mtomReader = XmlDictionaryReader.CreateMtomReader(xmlDoc, 0, xmlDoc.Length, allEncodings, null, XmlDictionaryReaderQuotas.Max, int.MaxValue, new OnXmlDictionaryReaderClose((XmlDictionaryReader reader) => { }));
-        IXmlMtomReaderInitializer readerInitializer = (IXmlMtomReaderInitializer)mtomReader;
-        readerInitializer.SetInput(xmlDoc, 0, xmlDoc.Length, allEncodings, null, XmlDictionaryReaderQuotas.Max, int.MaxValue, new OnXmlDictionaryReaderClose((XmlDictionaryReader reader) => { }));
-        var b = mtomReader.ReadContentAsObject();
-        mtomReader.Close();
-    }
-
     [ActiveIssue(12902)]
     [Fact]
     public static void IXmlTextReaderInitializerTest()

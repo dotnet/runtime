@@ -150,15 +150,6 @@ namespace System.Xml
         bool TryLookup(string value, out System.Xml.XmlDictionaryString result);
         bool TryLookup(System.Xml.XmlDictionaryString value, out System.Xml.XmlDictionaryString result);
     }
-    public partial interface IXmlMtomReaderInitializer
-    {
-        void SetInput(byte[] buffer, int offset, int count, System.Text.Encoding[] encodings, string contentType, System.Xml.XmlDictionaryReaderQuotas quotas, int maxBufferSize, System.Xml.OnXmlDictionaryReaderClose onClose);
-        void SetInput(System.IO.Stream stream, System.Text.Encoding[] encodings, string contentType, System.Xml.XmlDictionaryReaderQuotas quotas, int maxBufferSize, System.Xml.OnXmlDictionaryReaderClose onClose);
-    }
-    public partial interface IXmlMtomWriterInitializer
-    {
-        void SetOutput(System.IO.Stream stream, System.Text.Encoding encoding, int maxSizeInBytes, string startInfo, string boundary, string startUri, bool writeMessageHeaders, bool ownsStream);
-    }
     public partial interface IXmlTextReaderInitializer
     {
         void SetInput(byte[] buffer, int offset, int count, System.Text.Encoding encoding, System.Xml.XmlDictionaryReaderQuotas quotas, System.Xml.OnXmlDictionaryReaderClose onClose);

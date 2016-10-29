@@ -66,9 +66,7 @@ namespace System.Xml
 
         public static XmlDictionaryWriter CreateMtomWriter(Stream stream, Encoding encoding, int maxSizeInBytes, string startInfo, string boundary, string startUri, bool writeMessageHeaders, bool ownsStream)
         {
-            XmlMtomWriter writer = new XmlMtomWriter();
-            writer.SetOutput(stream, encoding, maxSizeInBytes, startInfo, boundary, startUri, writeMessageHeaders, ownsStream);
-            return writer;
+            throw new PlatformNotSupportedException();
         }
 
         public static XmlDictionaryWriter CreateDictionaryWriter(XmlWriter writer)
