@@ -2303,9 +2303,9 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
 
     MethodTable* pMT = VMClsHnd.GetMethodTable();
 
-    if (pMT->IsByRefLike())
+    if (pMT == g_TypedReferenceMT) // if (pMT->IsByRefLike()) // TODO-SPAN: Proper GC reporting
     {
-        if (pMT == g_TypedReferenceMT 
+        if (pMT == g_TypedReferenceMT
 #ifdef FEATURE_SPAN_OF_T
             || pMT->HasSameTypeDefAs(g_pSpanClass) || pMT->HasSameTypeDefAs(g_pReadOnlySpanClass)
 #endif
@@ -6914,7 +6914,7 @@ bool getILIntrinsicImplementation(MethodDesc * ftn,
 #ifdef FEATURE_SPAN_OF_T
     else if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__GET_BYREF)->GetMemberDef())
     {
-        // TODO: This has potential GC hole. It needs to be JIT intrinsic instead
+        // TODO-SPAN: This has potential GC hole. It needs to be JIT intrinsic instead
         static const BYTE ilcode[] = { CEE_LDARG_0, CEE_LDIND_I, CEE_RET };
         methInfo->ILCode = const_cast<BYTE*>(ilcode);
         methInfo->ILCodeSize = sizeof(ilcode);
@@ -6925,7 +6925,7 @@ bool getILIntrinsicImplementation(MethodDesc * ftn,
     }
     else if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__SET_BYREF)->GetMemberDef())
     {
-        // TODO: This has potential GC hole. It needs to be JIT intrinsic instead
+        // TODO-SPAN: This has potential GC hole. It needs to be JIT intrinsic instead
         static const BYTE ilcode[] = { CEE_LDARG_0, CEE_LDARG_1, CEE_STIND_I, CEE_RET };
         methInfo->ILCode = const_cast<BYTE*>(ilcode);
         methInfo->ILCodeSize = sizeof(ilcode);
