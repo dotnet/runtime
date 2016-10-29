@@ -78,6 +78,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == ''">
+    <Compile Include="LoggingTest.cs" />
     <Compile Include="NetworkAvailabilityChangedTests.cs" />
     <Compile Include="NetworkInterfaceIPv4Statistics.cs" />
   </ItemGroup>

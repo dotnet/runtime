@@ -141,11 +141,7 @@ namespace System.Net.Security
             }
             catch
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Assert("SslStreamPal.Windows: SecureChannel#" + LoggingHash.HashString(securityContext) + "::Encrypt", "Arguments out of range.");
-                }
-                Debug.Fail("SslStreamPal.Windows: SecureChannel#" + LoggingHash.HashString(securityContext) + "::Encrypt", "Arguments out of range.");
+                NetEventSource.Fail(securityContext, "Arguments out of range");
                 throw;
             }
             if (output == null || output.Length < bufferSizeNeeded)
@@ -186,11 +182,7 @@ namespace System.Net.Security
 
                 if (errorCode != 0)
                 {
-                    if (GlobalLog.IsEnabled)
-                    {
-                        GlobalLog.Print("SslStreamPal.Windows: SecureChannel#" + LoggingHash.HashString(securityContext) + "::Encrypt ERROR" + errorCode.ToString("x"));
-                    }
-
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(securityContext, $"Encrypt ERROR {errorCode:X}");
                     resultSize = 0;
                     return SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);
                 }

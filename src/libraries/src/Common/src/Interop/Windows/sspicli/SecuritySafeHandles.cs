@@ -226,13 +226,7 @@ namespace System.Net.Security
             ref Interop.SspiCli.SEC_WINNT_AUTH_IDENTITY_W authdata,
             out SafeFreeCredentials outCredential)
         {
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("SafeFreeCredentials::AcquireCredentialsHandle#1("
-                                + package + ", "
-                                + intent + ", "
-                                + authdata + ")");
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null, package, intent, authdata);
 
             int errorCode = -1;
             long timeStamp;
@@ -250,12 +244,7 @@ namespace System.Net.Security
                             ref outCredential._handle,
                             out timeStamp);
 #if TRACE_VERBOSE
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("Unmanaged::AcquireCredentialsHandle() returns 0x"
-                                + String.Format("{0:x}", errorCode)
-                                + ", handle = " + outCredential.ToString());
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"{nameof(Interop.SspiCli.AcquireCredentialsHandleW)} returns 0x{errorCode:x}, handle:{outCredential}");
 #endif
 
             if (errorCode != 0)
@@ -271,12 +260,7 @@ namespace System.Net.Security
             Interop.SspiCli.CredentialUse intent,
             out SafeFreeCredentials outCredential)
         {
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("SafeFreeCredentials::AcquireDefaultCredential("
-                                + package + ", "
-                                + intent + ")");
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null, package, intent);
 
             int errorCode = -1;
             long timeStamp;
@@ -295,12 +279,7 @@ namespace System.Net.Security
                             out timeStamp);
 
 #if TRACE_VERBOSE
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("Unmanaged::AcquireCredentialsHandle() returns 0x"
-                                + errorCode.ToString("x")
-                                + ", handle = " + outCredential.ToString());
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"{nameof(Interop.SspiCli.AcquireCredentialsHandleW)} returns 0x{errorCode:x}, handle = {outCredential}");
 #endif
 
             if (errorCode != 0)
@@ -346,13 +325,7 @@ namespace System.Net.Security
             ref Interop.SspiCli.SCHANNEL_CRED authdata,
             out SafeFreeCredentials outCredential)
         {
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("SafeFreeCredentials::AcquireCredentialsHandle#2("
-                                + package + ", "
-                                + intent + ", "
-                                + authdata + ")");
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null, package, intent, authdata);
 
             int errorCode = -1;
             long timeStamp;
@@ -388,12 +361,7 @@ namespace System.Net.Security
             }
 
 #if TRACE_VERBOSE
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("Unmanaged::AcquireCredentialsHandle() returns 0x"
-                                + errorCode.ToString("x")
-                                + ", handle = " + outCredential.ToString());
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"{nameof(Interop.SspiCli.AcquireCredentialsHandleW)} returns 0x{errorCode:x}, handle = {outCredential}");
 #endif
 
             if (errorCode != 0)
@@ -524,43 +492,27 @@ namespace System.Net.Security
             ref Interop.SspiCli.ContextFlags outFlags)
         {
 #if TRACE_VERBOSE
-            if (GlobalLog.IsEnabled)
+            if (NetEventSource.IsEnabled)
             {
-                GlobalLog.Enter("SafeDeleteContext::InitializeSecurityContext");
-                GlobalLog.Print("    credential       = " + inCredentials.ToString());
-                GlobalLog.Print("    refContext       = " + LoggingHash.ObjectToString(refContext));
-                GlobalLog.Print("    targetName       = " + targetName);
-                GlobalLog.Print("    inFlags          = " + inFlags);
-                GlobalLog.Print("    reservedI        = 0x0");
-                GlobalLog.Print("    endianness       = " + endianness);
-
+                NetEventSource.Enter(null, $"credential:{inCredentials}, crefContext:{refContext}, targetName:{targetName}, inFlags:{inFlags}, endianness:{endianness}");
                 if (inSecBuffers == null)
                 {
-                    GlobalLog.Print("    inSecBuffers     = (null)");
+                    NetEventSource.Info(null, $"inSecBuffers = (null)");
                 }
                 else
                 {
-                    GlobalLog.Print("    inSecBuffers[]   = length:" + inSecBuffers.Length);
+                    NetEventSource.Info(null, $"inSecBuffers = {inSecBuffers}");
                 }
             }
 #endif
+
             if (outSecBuffer == null)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Assert("SafeDeleteContext::InitializeSecurityContext()|outSecBuffer != null");
-                }
-
-                Debug.Fail("SafeDeleteContext::InitializeSecurityContext()|outSecBuffer != null");
+                NetEventSource.Fail(null, "outSecBuffer != null");
             }
             if (inSecBuffer != null && inSecBuffers != null)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Assert("SafeDeleteContext::InitializeSecurityContext()|inSecBuffer == null || inSecBuffers == null");
-                }
-
-                Debug.Fail("SafeDeleteContext::InitializeSecurityContext()|inSecBuffer == null || inSecBuffers == null");
+                NetEventSource.Fail(null, "inSecBuffer == null || inSecBuffers == null");
             }
 
             if (inCredentials == null)
@@ -633,10 +585,7 @@ namespace System.Net.Security
                                     inUnmanagedBuffer[index].pvBuffer = Marshal.UnsafeAddrOfPinnedArrayElement(securityBuffer.token, securityBuffer.offset);
                                 }
 #if TRACE_VERBOSE
-                                if (GlobalLog.IsEnabled)
-                                {
-                                    GlobalLog.Print("SecBuffer: cbBuffer:" + securityBuffer.size + " BufferType:" + securityBuffer.type);
-                                }
+                                if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"SecBuffer: cbBuffer:{securityBuffer.size} BufferType:{securityBuffer.type}");
 #endif
                             }
                         }
@@ -688,11 +637,8 @@ namespace System.Net.Security
                                             outFreeContextBuffer);
                         }
 
-                        if (GlobalLog.IsEnabled)
-                        {
-                            GlobalLog.Print("SafeDeleteContext:InitializeSecurityContext  Marshalling OUT buffer");
-                        }
-                        
+                        if (NetEventSource.IsEnabled) NetEventSource.Info(null, "Marshalling OUT buffer");
+
                         // Get unmanaged buffer with index 0 as the only one passed into PInvoke.
                         outSecBuffer.size = outUnmanagedBuffer[0].cbBuffer;
                         outSecBuffer.type = outUnmanagedBuffer[0].BufferType;
@@ -731,11 +677,7 @@ namespace System.Net.Security
                 }
             }
 
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Leave("SafeDeleteContext::InitializeSecurityContext() unmanaged InitializeSecurityContext()", "errorCode:0x" + errorCode.ToString("x8") + " refContext:" + LoggingHash.ObjectToString(refContext));
-            }
-
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, $"errorCode:0x{errorCode:x8}, refContext:{refContext}");
             return errorCode;
         }
 
@@ -838,41 +780,27 @@ namespace System.Net.Security
             ref Interop.SspiCli.ContextFlags outFlags)
         {
 #if TRACE_VERBOSE
-            if (GlobalLog.IsEnabled)
+            if (NetEventSource.IsEnabled)
             {
-                GlobalLog.Enter("SafeDeleteContext::AcceptSecurityContex");
-                GlobalLog.Print("    credential       = " + inCredentials.ToString());
-                GlobalLog.Print("    refContext       = " + LoggingHash.ObjectToString(refContext));
-
-                GlobalLog.Print("    inFlags          = " + inFlags);
-
+                NetEventSource.Enter(null, $"credential={inCredentials}, refContext={refContext}, inFlags={inFlags}");
                 if (inSecBuffers == null)
                 {
-                    GlobalLog.Print("    inSecBuffers     = (null)");
+                    NetEventSource.Info(null, "inSecBuffers = (null)");
                 }
                 else
                 {
-                    GlobalLog.Print("    inSecBuffers[]   = length:" + inSecBuffers.Length);
+                    NetEventSource.Info(null, $"inSecBuffers[] = (inSecBuffers)");
                 }
             }
 #endif
+
             if (outSecBuffer == null)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Assert("SafeDeleteContext::AcceptSecurityContext()|outSecBuffer != null");
-                }
-
-                Debug.Fail("SafeDeleteContext::AcceptSecurityContext()|outSecBuffer != null");
+                NetEventSource.Fail(null, "outSecBuffer != null");
             }
             if (inSecBuffer != null && inSecBuffers != null)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Assert("SafeDeleteContext::AcceptSecurityContext()|inSecBuffer == null || inSecBuffers == null");
-                }
-
-                Debug.Fail("SafeDeleteContext::AcceptSecurityContext()|inSecBuffer == null || inSecBuffers == null");
+                NetEventSource.Fail(null, "inSecBuffer == null || inSecBuffers == null");
             }
 
             if (inCredentials == null)
@@ -945,10 +873,7 @@ namespace System.Net.Security
                                     inUnmanagedBuffer[index].pvBuffer = Marshal.UnsafeAddrOfPinnedArrayElement(securityBuffer.token, securityBuffer.offset);
                                 }
 #if TRACE_VERBOSE
-                                if (GlobalLog.IsEnabled)
-                                {
-                                    GlobalLog.Print("SecBuffer: cbBuffer:" + securityBuffer.size + " BufferType:" + securityBuffer.type);
-                                }
+                                if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"SecBuffer: cbBuffer:{securityBuffer.size} BufferType:{securityBuffer.type}");
 #endif
                             }
                         }
@@ -993,10 +918,7 @@ namespace System.Net.Security
                                         ref outFlags,
                                         outFreeContextBuffer);
 
-                        if (GlobalLog.IsEnabled)
-                        {
-                            GlobalLog.Print("SafeDeleteContext:AcceptSecurityContext  Marshalling OUT buffer");
-                        }
+                        if (NetEventSource.IsEnabled) NetEventSource.Info(null, "Marshaling OUT buffer");
                         
                         // Get unmanaged buffer with index 0 as the only one passed into PInvoke.
                         outSecBuffer.size = outUnmanagedBuffer[0].cbBuffer;
@@ -1037,11 +959,7 @@ namespace System.Net.Security
                 }
             }
 
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Leave("SafeDeleteContext::AcceptSecurityContex() unmanaged AcceptSecurityContex()", "errorCode:0x" + errorCode.ToString("x8") + " refContext:" + LoggingHash.ObjectToString(refContext));
-            }
-
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, $"errorCode:0x{errorCode:x8}, refContext:{refContext}");
             return errorCode;
         }
 
@@ -1133,22 +1051,15 @@ namespace System.Net.Security
             ref SafeDeleteContext refContext,
             SecurityBuffer[] inSecBuffers)
         {
-            if (GlobalLog.IsEnabled)
+            if (NetEventSource.IsEnabled)
             {
-                GlobalLog.Enter("SafeDeleteContext::CompleteAuthToken");
-                GlobalLog.Print("    refContext       = " + LoggingHash.ObjectToString(refContext));
-#if TRACE_VERBOSE
-                GlobalLog.Print("    inSecBuffers[]   = length:" + inSecBuffers.Length);
-#endif
+                NetEventSource.Enter(null, "SafeDeleteContext::CompleteAuthToken");
+                NetEventSource.Info(null, $"    refContext       = {refContext}");
+                NetEventSource.Info(null, $"    inSecBuffers[]   = {inSecBuffers}");
             }
             if (inSecBuffers == null)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Assert("SafeDeleteContext::CompleteAuthToken()|inSecBuffers == null");
-                }
-
-                Debug.Fail("SafeDeleteContext::CompleteAuthToken()|inSecBuffers == null");
+                NetEventSource.Fail(null, "inSecBuffers == null");
             }
 
             var inSecurityBufferDescriptor = new Interop.SspiCli.SecBufferDesc(inSecBuffers.Length);
@@ -1188,10 +1099,7 @@ namespace System.Net.Security
                             inUnmanagedBuffer[index].pvBuffer = Marshal.UnsafeAddrOfPinnedArrayElement(securityBuffer.token, securityBuffer.offset);
                         }
 #if TRACE_VERBOSE
-                        if (GlobalLog.IsEnabled)
-                        {
-                            GlobalLog.Print("SecBuffer: cbBuffer:" + securityBuffer.size + " BufferType:" + securityBuffer.type);
-                        }
+                        if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"SecBuffer: cbBuffer:{securityBuffer.size} BufferType: {securityBuffer.type}");
 #endif
                     }
                 }
@@ -1234,11 +1142,7 @@ namespace System.Net.Security
                 }
             }
 
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Leave("SafeDeleteContext::CompleteAuthToken() unmanaged CompleteAuthToken()", "errorCode:0x" + errorCode.ToString("x8") + " refContext:" + LoggingHash.ObjectToString(refContext));
-            }
-
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, $"unmanaged CompleteAuthToken() errorCode:0x{errorCode:x8} refContext:{refContext}");
             return errorCode;
         }
 
@@ -1246,23 +1150,16 @@ namespace System.Net.Security
             ref SafeDeleteContext refContext,
             SecurityBuffer[] inSecBuffers)
         {
-            if (GlobalLog.IsEnabled)
+            if (NetEventSource.IsEnabled)
             {
-                GlobalLog.Enter("SafeDeleteContext::ApplyControlToken");
-                GlobalLog.Print("    refContext       = " + LoggingHash.ObjectToString(refContext));
-#if TRACE_VERBOSE
-                GlobalLog.Print("    inSecBuffers[]   = length:" + inSecBuffers.Length);
-#endif
+                NetEventSource.Enter(null);
+                NetEventSource.Info(null, $"    refContext       = {refContext}");
+                NetEventSource.Info(null, $"    inSecBuffers[]   = length:{inSecBuffers.Length}");
             }
 
             if (inSecBuffers == null)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Assert("SafeDeleteContext::ApplyControlToken()|inSecBuffers == null");
-                }
-
-                Debug.Fail("SafeDeleteContext::ApplyControlToken()|inSecBuffers == null");
+                NetEventSource.Fail(null, "inSecBuffers == null");
             }
 
             var inSecurityBufferDescriptor = new Interop.SspiCli.SecBufferDesc(inSecBuffers.Length);
@@ -1302,10 +1199,7 @@ namespace System.Net.Security
                             inUnmanagedBuffer[index].pvBuffer = Marshal.UnsafeAddrOfPinnedArrayElement(securityBuffer.token, securityBuffer.offset);
                         }
 #if TRACE_VERBOSE
-                        if (GlobalLog.IsEnabled)
-                        {
-                            GlobalLog.Print("SecBuffer: cbBuffer:" + securityBuffer.size + " BufferType:" + securityBuffer.type);
-                        }
+                        if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"SecBuffer: cbBuffer:{securityBuffer.size} BufferType:{securityBuffer.type}");
 #endif
                     }
                 }
@@ -1351,11 +1245,7 @@ namespace System.Net.Security
                 }
             }
 
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Leave("SafeDeleteContext::ApplyControlToken() unmanaged ApplyControlToken()", "errorCode:0x" + errorCode.ToString("x8") + " refContext:" + LoggingHash.ObjectToString(refContext));
-            }
-
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, $"unmanaged ApplyControlToken() errorCode:0x{errorCode:x8} refContext: {refContext}");
             return errorCode;
         }
     }

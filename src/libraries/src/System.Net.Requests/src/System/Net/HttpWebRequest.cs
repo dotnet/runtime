@@ -94,7 +94,7 @@ namespace System.Net
         protected HttpWebRequest(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User)) {
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User)) {
 #endif
             _webHeaderCollection = (WebHeaderCollection)serializationInfo.GetValue("_HttpRequestHeaders", typeof(WebHeaderCollection));
             Proxy = (IWebProxy)serializationInfo.GetValue("_Proxy", typeof(IWebProxy));
@@ -139,7 +139,7 @@ namespace System.Net
         void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User)) {
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User)) {
 #endif
             GetObjectData(serializationInfo, streamingContext);
 #if DEBUG
@@ -150,7 +150,7 @@ namespace System.Net
         protected override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User)) {
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User)) {
 #endif           
             serializationInfo.AddValue("_HttpRequestHeaders", _webHeaderCollection, typeof(WebHeaderCollection));
             serializationInfo.AddValue("_Proxy", _proxy, typeof(IWebProxy));
@@ -363,7 +363,7 @@ namespace System.Net
             set
             {
 #if DEBUG
-                using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Async)) {
+                using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async)) {
 #endif
                 bool fChunked;
                 //
@@ -528,7 +528,7 @@ namespace System.Net
             set
             {
 #if DEBUG
-                using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Async)) {
+                using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async)) {
 #endif
                 bool fKeepAlive;
                 bool fClose;
@@ -587,7 +587,7 @@ namespace System.Net
             set
             {
 #if DEBUG
-                using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Async)) {
+                using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async)) {
 #endif
                 // only remove everything other than 100-cont
                 bool fContinue100;
@@ -1431,7 +1431,7 @@ namespace System.Net
         private DateTime GetDateHeaderHelper(string headerName)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Async)) {
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async)) {
 #endif
             string headerValue = _webHeaderCollection[headerName];
 
@@ -1448,7 +1448,7 @@ namespace System.Net
         private void SetDateHeaderHelper(string headerName, DateTime dateTime)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Async)) {
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async)) {
 #endif
             if (dateTime == DateTime.MinValue)
                 SetSpecialHeaders(headerName, null); // remove header

@@ -321,25 +321,13 @@ namespace System.Net.Security
         {
             if (offset < 0 || offset > (buffer == null ? 0 : buffer.Length))
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Assert("NTAuthentication#" + LoggingHash.HashString(securityContext) + "::Decrypt", "Argument 'offset' out of range.");
-                }
-
-                Debug.Fail("NTAuthentication#" + LoggingHash.HashString(securityContext) + "::Decrypt", "Argument 'offset' out of range.");
-
+                NetEventSource.Fail(securityContext, "Argument 'offset' out of range");
                 throw new ArgumentOutOfRangeException(nameof(offset));
             }
 
             if (count < 0 || count > (buffer == null ? 0 : buffer.Length - offset))
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Assert("NTAuthentication#" + LoggingHash.HashString(securityContext) + "::Decrypt", "Argument 'count' out of range.");
-                }
-
-                Debug.Fail("NTAuthentication#" + LoggingHash.HashString(securityContext) + "::Decrypt", "Argument 'count' out of range.");
-
+                NetEventSource.Fail(securityContext, "Argument 'count' out of range.");
                 throw new ArgumentOutOfRangeException(nameof(count));
             }
 
@@ -408,11 +396,7 @@ namespace System.Net.Security
             }
             catch(Exception ex)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Print("Exception Caught. - " + ex);
-                }
-
+                if (NetEventSource.IsEnabled) NetEventSource.Error(null, ex);
                 return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, ex);
             }
         }

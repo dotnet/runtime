@@ -28,12 +28,7 @@ namespace System.Net
                 {
                     if ((_flags & StateFlags.ThreadSafeContextCopy) == 0)
                     {
-                        if (GlobalLog.IsEnabled)
-                        {
-                            GlobalLog.AssertFormat("ContextAwareResult#{0}::Identity|Called on completed result.", LoggingHash.HashString(this));
-                        }
-
-                        Debug.Fail("ContextAwareResult#" + LoggingHash.HashString(this) + "::Identity |Called on completed result.");
+                        NetEventSource.Fail(this, "Called on completed result.");
                     }
 
                     throw new InvalidOperationException(SR.net_completed_result);
@@ -47,12 +42,7 @@ namespace System.Net
                 // Make sure the identity was requested.
                 if ((_flags & StateFlags.CaptureIdentity) == 0)
                 {
-                    if (GlobalLog.IsEnabled)
-                    {
-                        GlobalLog.AssertFormat("ContextAwareResult#{0}::Identity|No identity captured - specify captureIdentity.", LoggingHash.HashString(this));
-                    }
-
-                    Debug.Fail("ContextAwareResult#" + LoggingHash.HashString(this) + "::Identity |No identity captured - specify captureIdentity.");
+                    NetEventSource.Fail(this, "No identity captured - specify captureIdentity.");
                 }
 
                 // Just use the lock to block.  We might be on the thread that owns the lock which is great, it means we
@@ -61,12 +51,7 @@ namespace System.Net
                 {
                     if (_lock == null)
                     {
-                        if (GlobalLog.IsEnabled)
-                        {
-                            GlobalLog.AssertFormat("ContextAwareResult#{0}::Identity|Must lock (StartPostingAsyncOp()) { ... FinishPostingAsyncOp(); } when calling Identity (unless it's only called after FinishPostingAsyncOp).", LoggingHash.HashString(this));
-                        }
-
-                        Debug.Fail("ContextAwareResult#" + LoggingHash.HashString(this) + "::Identity |Must lock (StartPostingAsyncOp()) { ... FinishPostingAsyncOp(); } when calling Identity (unless it's only called after FinishPostingAsyncOp).");
+                        NetEventSource.Fail(this, "Must lock (StartPostingAsyncOp()) { ... FinishPostingAsyncOp(); } when calling Identity (unless it's only called after FinishPostingAsyncOp).");
                     }
 
                     lock (_lock) { }
@@ -76,12 +61,7 @@ namespace System.Net
                 {
                     if ((_flags & StateFlags.ThreadSafeContextCopy) == 0)
                     {
-                        if (GlobalLog.IsEnabled)
-                        {
-                            GlobalLog.AssertFormat("ContextAwareResult#{0}::Identity|Result became completed during call.", LoggingHash.HashString(this));
-                        }
-
-                        Debug.Fail("ContextAwareResult#" + LoggingHash.HashString(this) + "::Identity |Result became completed during call.");
+                        NetEventSource.Fail(this, "Result became completed during call.");
                     }
 
                     throw new InvalidOperationException(SR.net_completed_result);

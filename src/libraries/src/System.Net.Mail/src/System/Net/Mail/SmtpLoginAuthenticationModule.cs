@@ -21,7 +21,7 @@ namespace System.Net.Mail
         [SecurityPermission(SecurityAction.Assert, Flags = SecurityPermissionFlag.UnmanagedCode)]
         public Authorization Authenticate(string challenge, NetworkCredential credential, object sessionCookie, string spn, ChannelBinding channelBindingToken)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.Web, this, nameof(Authenticate), null);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             try
             {
                 lock (_sessions)
@@ -56,7 +56,7 @@ namespace System.Net.Mail
             }
             finally
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.Web, this, "Authenticate", null);
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
         }
 

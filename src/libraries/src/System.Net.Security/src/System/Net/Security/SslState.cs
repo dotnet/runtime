@@ -593,9 +593,9 @@ namespace System.Net.Security
                 ForceAuthentication(Context.IsServer, null, asyncRequest);
 
                 // Not aync so the connection is completed at this point.
-                if (lazyResult == null && SecurityEventSource.Log.IsEnabled())
+                if (lazyResult == null && NetEventSource.IsEnabled)
                 {
-                    SecurityEventSource.Log.SspiSelectedCipherSuite("ProcessAuthentication",
+                    if (NetEventSource.IsEnabled) NetEventSource.Log.SspiSelectedCipherSuite(nameof(ProcessAuthentication),
                         SslProtocol,
                         CipherAlgorithm,
                         CipherStrength,
@@ -727,9 +727,9 @@ namespace System.Net.Security
             InternalEndProcessAuthentication(lazyResult);
 
             // Connection is completed at this point.
-            if (SecurityEventSource.Log.IsEnabled())
+            if (NetEventSource.IsEnabled)
             {
-                SecurityEventSource.Log.SspiSelectedCipherSuite("EndProcessAuthentication",
+                if (NetEventSource.IsEnabled) NetEventSource.Log.SspiSelectedCipherSuite(nameof(EndProcessAuthentication),
                     SslProtocol,
                     CipherAlgorithm,
                     CipherStrength,
@@ -1016,10 +1016,7 @@ namespace System.Net.Security
         //
         private bool CompleteHandshake(ref ProtocolToken alertToken)
         {
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Enter("CompleteHandshake");
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             Context.ProcessHandshakeSuccess();
 
@@ -1028,22 +1025,14 @@ namespace System.Net.Security
                 _handshakeCompleted = false;
                 _certValidationFailed = true;
 
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Leave("CompleteHandshake", false);
-                }
-
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this, false);
                 return false;
             }
 
             _certValidationFailed = false;
             _handshakeCompleted = true;
 
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Leave("CompleteHandshake", true);
-            }
-
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, true);
             return true;
         }
 
@@ -1065,18 +1054,9 @@ namespace System.Net.Security
                 sslState = (SslState)asyncRequest.AsyncObject;
 #if DEBUG
             }
-            catch (Exception exception)
+            catch (Exception exception) when (!ExceptionCheck.IsFatal(exception))
             {
-                if (!ExceptionCheck.IsFatal(exception))
-                {
-                    if (GlobalLog.IsEnabled)
-                    {
-                        GlobalLog.Assert("SslState::WriteCallback", "Exception while decoding context. type:" + exception.GetType().ToString() + " message:" + exception.Message);
-                    }
-
-                    Debug.Fail("SslState::WriteCallback", "Exception while decoding context. type:" + exception.GetType().ToString() + " message:" + exception.Message);
-                }
-
+                NetEventSource.Fail(null, $"Exception while decoding context: {exception}");
                 throw;
             }
 #endif
@@ -1110,10 +1090,7 @@ namespace System.Net.Security
 
         private static void PartialFrameCallback(AsyncProtocolRequest asyncRequest)
         {
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("SslState::PartialFrameCallback()");
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null);
 
             // Async ONLY completion.
             SslState sslState = (SslState)asyncRequest.AsyncObject;
@@ -1137,10 +1114,7 @@ namespace System.Net.Security
         //
         private static void ReadFrameCallback(AsyncProtocolRequest asyncRequest)
         {
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("SslState::ReadFrameCallback()");
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null);
 
             // Async ONLY completion.
             SslState sslState = (SslState)asyncRequest.AsyncObject;
@@ -1595,12 +1569,7 @@ namespace System.Net.Security
 
             if ((bytes == null || bytes.Length <= 0))
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Assert("SslState::DetectFraming()|Header buffer is not allocated.");
-                }
-
-                Debug.Fail("SslState::DetectFraming()|Header buffer is not allocated.");
+                NetEventSource.Fail(this, "Header buffer is not allocated.");
             }
 
             // If the first byte is SSL3 HandShake, then check if we have a SSLv3 Type3 client hello.
@@ -1613,12 +1582,9 @@ namespace System.Net.Security
                 }
 
 #if TRACE_VERBOSE
-                if (bytes[1] != 3) 
+                if (bytes[1] != 3 && NetEventSource.IsEnabled)
                 {
-                    if (GlobalLog.IsEnabled)
-                    {
-                        GlobalLog.Print("WARNING: SslState::DetectFraming() SSL protocol is > 3, trying SSL3 framing in retail = " + bytes[1].ToString("x", NumberFormatInfo.InvariantInfo));
-                    }
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"WARNING: SslState::DetectFraming() SSL protocol is > 3, trying SSL3 framing in retail = {bytes[i]:x}");
                 }
 #endif
 
@@ -1635,10 +1601,10 @@ namespace System.Net.Security
             }
 
 #if TRACE_VERBOSE
-            if ((bytes[0] & 0x80) == 0 && GlobalLog.IsEnabled)
+            if ((bytes[0] & 0x80) == 0 && NetEventSource.IsEnabled)
             {
                 // We have a three-byte header format
-                GlobalLog.Print("WARNING: SslState::DetectFraming() SSL v <=2 HELLO has no high bit set for 3 bytes header, we are broken, received byte = " + bytes[0].ToString("x", NumberFormatInfo.InvariantInfo));
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"WARNING: SslState::DetectFraming() SSL v <=2 HELLO has no high bit set for 3 bytes header, we are broken, received byte = {bytes[0]:x}");
             }
 #endif
 
@@ -1701,10 +1667,7 @@ namespace System.Net.Security
         // This is called from SslStream class too.
         internal int GetRemainingFrameSize(byte[] buffer, int dataSize)
         {
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Enter("GetRemainingFrameSize", "dataSize = " + dataSize);
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, buffer, dataSize);
 
             int payloadSize = -1;
             switch (_Framing)
@@ -1744,10 +1707,7 @@ namespace System.Net.Security
                     break;
             }
 
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Leave("GetRemainingFrameSize", payloadSize);
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, payloadSize);
             return payloadSize;
         }
 
@@ -1821,22 +1781,12 @@ namespace System.Net.Security
             LazyAsyncResult lazyAsyncResult = (LazyAsyncResult)result;
             if (lazyAsyncResult == null)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Assert("SslState::RehandshakeCompleteCallback()|result is null!");
-                }
-
-                Debug.Fail("SslState::RehandshakeCompleteCallback()|result is null!");
+                NetEventSource.Fail(this, "result is null!");
             }
 
             if (!lazyAsyncResult.InternalPeekCompleted)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Assert("SslState::RehandshakeCompleteCallback()|result is not completed!");
-                }
-
-                Debug.Fail("SslState::RehandshakeCompleteCallback()|result is not completed!");
+                NetEventSource.Fail(this, "result is not completed!");
             }
 
             // If the rehandshake succeeded, FinishHandshake has already been called; if there was a SocketException

@@ -270,12 +270,7 @@ namespace System.Net
                 {
                     if (!(_timers.Prev.Next == _timers))
                     {
-                        if (GlobalLog.IsEnabled)
-                        {
-                            GlobalLog.AssertFormat("TimerThread#{0}::CreateTimer()|Tail corruption.", Thread.CurrentThread.ManagedThreadId.ToString());
-                        }
-
-                        Debug.Fail(string.Format("TimerThread#{0}::CreateTimer()|Tail corruption.", Thread.CurrentThread.ManagedThreadId.ToString()));
+                        NetEventSource.Fail(this, $"Tail corruption.");
                     }
 
                     // If this is the first timer in the list, we need to create a queue handle and prod the timer thread.
@@ -390,10 +385,7 @@ namespace System.Net
                 }
                 _timerState = TimerState.Ready;
                 _queueLock = queueLock;
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Print("TimerThreadTimer#" + StartTime.ToString() + "::.ctor()");
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"TimerThreadTimer#{StartTime}");
             }
 
             // A sentinel node - both the head and tail are one, which prevent the head and tail from ever having to be updated.
@@ -461,19 +453,13 @@ namespace System.Net
 
                             _timerState = TimerState.Cancelled;
 
-                            if (GlobalLog.IsEnabled)
-                            {
-                                GlobalLog.Print("TimerThreadTimer#" + StartTime.ToString() + "::Cancel() (success)");
-                            }
+                            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"TimerThreadTimer#{StartTime} Cancel (success)");
                             return true;
                         }
                     }
                 }
 
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Print("TimerThreadTimer#" + StartTime.ToString() + "::Cancel() (failure)");
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"TimerThreadTimer#{StartTime} Cancel (failure)");
                 return false;
             }
 
@@ -485,12 +471,7 @@ namespace System.Net
             {
                 if (_timerState == TimerState.Sentinel)
                 {
-                    if (GlobalLog.IsEnabled)
-                    {
-                        GlobalLog.AssertFormat("TimerThread#{0}::Fire()|TimerQueue tried to Fire a Sentinel.", Thread.CurrentThread.ManagedThreadId.ToString());
-                    }
-
-                    Debug.Fail(string.Format("TimerThread#{0}::Fire()|TimerQueue tried to Fire a Sentinel.", Thread.CurrentThread.ManagedThreadId.ToString()));
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, "TimerQueue tried to Fire a Sentinel.");
                 }
 
                 if (_timerState != TimerState.Ready)
@@ -503,10 +484,7 @@ namespace System.Net
                 int nowMilliseconds = Environment.TickCount;
                 if (IsTickBetween(StartTime, Expiration, nowMilliseconds))
                 {
-                    if (GlobalLog.IsEnabled)
-                    {
-                        GlobalLog.Print("TimerThreadTimer#" + StartTime + "::Fire() Not firing (" + StartTime + " <= " + nowMilliseconds + " < " + Expiration + ")");
-                    }
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"TimerThreadTimer#{StartTime}::Fire() Not firing ({StartTime} <= {nowMilliseconds} < {Expiration})");
                     return false;
                 }
 
@@ -515,10 +493,7 @@ namespace System.Net
                 {
                     if (_timerState == TimerState.Ready)
                     {
-                        if (GlobalLog.IsEnabled)
-                        {
-                            GlobalLog.Print("TimerThreadTimer#" + StartTime + "::Fire() Firing (" + StartTime + " <= " + nowMilliseconds + " >= " + Expiration + ")");
-                        }
+                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"TimerThreadTimer#{StartTime}::Fire() Firing ({StartTime} <= {nowMilliseconds} >= " + Expiration + ")");
                         _timerState = TimerState.Fired;
 
                         // Remove it from the list.
@@ -546,13 +521,7 @@ namespace System.Net
                         if (ExceptionCheck.IsFatal(exception))
                             throw;
 
-                        if (NetEventSource.Log.IsEnabled())
-                            NetEventSource.PrintError(NetEventSource.ComponentType.Web, "TimerThreadTimer#" + StartTime.ToString(NumberFormatInfo.InvariantInfo) + "::Fire() - exception in callback: " + exception);
-
-                        if (GlobalLog.IsEnabled)
-                        {
-                            GlobalLog.Print("TimerThreadTimer#" + StartTime + "::Fire() exception in callback: " + exception);
-                        }
+                        if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"exception in callback: {exception}");
 
                         // This thread is not allowed to go into user code, so we should never get an exception here.
                         // So, in debug, throw it up, killing the AppDomain.  In release, we'll just ignore it.
@@ -615,16 +584,12 @@ namespace System.Net
         /// </summary>
         private static void ThreadProc()
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null);
 #if DEBUG
-            GlobalLog.SetThreadSource(ThreadKinds.Timer);
-            using (GlobalLog.SetThreadKind(ThreadKinds.System | ThreadKinds.Async))
+            DebugThreadTracking.SetThreadSource(ThreadKinds.Timer);
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.System | ThreadKinds.Async))
             {
 #endif
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Print("TimerThread#" + Thread.CurrentThread.ManagedThreadId.ToString() + "::ThreadProc() Start");
-                }
-
                 // Set this thread as a background thread.  On AppDomain/Process shutdown, the thread will just be killed.
                 Thread.CurrentThread.IsBackground = true;
 
@@ -696,28 +661,19 @@ namespace System.Net
                                         0) :
                                     c_ThreadIdleTimeoutMilliseconds;
 
-                                if (GlobalLog.IsEnabled)
-                                {
-                                    GlobalLog.Print("TimerThread#" + Thread.CurrentThread.ManagedThreadId.ToString() + "::ThreadProc() Waiting for " + waitDuration + "ms");
-                                }
+                                if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"Waiting for {waitDuration}ms");
 
                                 int waitResult = WaitHandle.WaitAny(s_ThreadEvents, waitDuration, false);
 
                                 // 0 is s_ThreadShutdownEvent - die.
                                 if (waitResult == 0)
                                 {
-                                    if (GlobalLog.IsEnabled)
-                                    {
-                                        GlobalLog.Print("TimerThread#" + Thread.CurrentThread.ManagedThreadId.ToString() + "::ThreadProc() Awoke, cause: Shutdown");
-                                    }
+                                    if (NetEventSource.IsEnabled) NetEventSource.Info(null, "Awoke, cause: Shutdown");
                                     running = false;
                                     break;
                                 }
 
-                                if (GlobalLog.IsEnabled)
-                                {
-                                    GlobalLog.Print("TimerThread#" + Thread.CurrentThread.ManagedThreadId.ToString() + "::ThreadProc() Awoke, cause: " + (waitResult == WaitHandle.WaitTimeout ? "Timeout" : "Prod"));
-                                }
+                                if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"Awoke, cause {(waitResult == WaitHandle.WaitTimeout ? "Timeout" : "Prod")}");
 
                                 // If we timed out with nothing to do, shut down. 
                                 if (waitResult == WaitHandle.WaitTimeout && !haveNextTick)
@@ -743,13 +699,7 @@ namespace System.Net
                             if (ExceptionCheck.IsFatal(exception))
                                 throw;
 
-                            if (NetEventSource.Log.IsEnabled())
-                                NetEventSource.PrintError(NetEventSource.ComponentType.Web, "TimerThread#" + Thread.CurrentThread.ManagedThreadId.ToString(NumberFormatInfo.InvariantInfo) + "::ThreadProc() - Exception:" + exception.ToString());
-
-                            if (GlobalLog.IsEnabled)
-                            {
-                                GlobalLog.Print("TimerThread#" + Thread.CurrentThread.ManagedThreadId.ToString() + "::ThreadProc() exception: " + exception);
-                            }
+                            if (NetEventSource.IsEnabled) NetEventSource.Error(null, exception);
 
                             // The only options are to continue processing and likely enter an error-loop,
                             // shut down timers for this AppDomain, or shut down the AppDomain.  Go with shutting
@@ -765,10 +715,7 @@ namespace System.Net
                     }
                 }
 
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Print("TimerThread#" + Thread.CurrentThread.ManagedThreadId.ToString() + "::ThreadProc() Stop");
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Info(null, "Stop");
 #if DEBUG
             }
 #endif

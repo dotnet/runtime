@@ -37,7 +37,7 @@ namespace System.Net.Security
         public NegotiateStream(Stream innerStream, bool leaveInnerStreamOpen) : base(innerStream, leaveInnerStreamOpen)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User))
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User))
             {
 #endif
                 _negoState = new NegoState(innerStream, leaveInnerStreamOpen);
@@ -92,7 +92,7 @@ namespace System.Net.Security
             object asyncState)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
             {
 #endif
                 _negoState.ValidateCreateContext(_package, false, credential, targetName, binding, requiredProtectionLevel, allowedImpersonationLevel);
@@ -109,7 +109,7 @@ namespace System.Net.Security
         public virtual void EndAuthenticateAsClient(IAsyncResult asyncResult)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User))
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User))
             {
 #endif
                 _negoState.EndProcessAuthentication(asyncResult);
@@ -136,7 +136,7 @@ namespace System.Net.Security
         public virtual void AuthenticateAsServer(NetworkCredential credential, ExtendedProtectionPolicy policy, ProtectionLevel requiredProtectionLevel, TokenImpersonationLevel requiredImpersonationLevel)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Sync))
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Sync))
             {
 #endif
                 _negoState.ValidateCreateContext(_package, credential, string.Empty, policy, requiredProtectionLevel, requiredImpersonationLevel);
@@ -175,7 +175,7 @@ namespace System.Net.Security
             object asyncState)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
             {
 #endif
                 _negoState.ValidateCreateContext(_package, credential, string.Empty, policy, requiredProtectionLevel, requiredImpersonationLevel);
@@ -192,7 +192,7 @@ namespace System.Net.Security
         public virtual void EndAuthenticateAsServer(IAsyncResult asyncResult)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User))
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User))
             {
 #endif
                 _negoState.EndProcessAuthentication(asyncResult);
@@ -226,7 +226,7 @@ namespace System.Net.Security
             NetworkCredential credential, ChannelBinding binding, string targetName, ProtectionLevel requiredProtectionLevel, TokenImpersonationLevel allowedImpersonationLevel)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Sync))
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Sync))
             {
 #endif
                 _negoState.ValidateCreateContext(_package, false, credential, targetName, binding, requiredProtectionLevel, allowedImpersonationLevel);
@@ -295,7 +295,7 @@ namespace System.Net.Security
             get
             {
 #if DEBUG
-                using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
+                using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
                 {
 #endif
                     return _negoState.IsAuthenticated;
@@ -310,7 +310,7 @@ namespace System.Net.Security
             get
             {
 #if DEBUG
-                using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
+                using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
                 {
 #endif
                     return _negoState.IsMutuallyAuthenticated;
@@ -325,7 +325,7 @@ namespace System.Net.Security
             get
             {
 #if DEBUG
-                using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
+                using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
                 {
 #endif
                     return _negoState.IsEncrypted;
@@ -340,7 +340,7 @@ namespace System.Net.Security
             get
             {
 #if DEBUG
-                using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
+                using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
                 {
 #endif
                     return _negoState.IsSigned;
@@ -355,7 +355,7 @@ namespace System.Net.Security
             get
             {
 #if DEBUG
-                using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
+                using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
                 {
 #endif
                     return _negoState.IsServer;
@@ -370,7 +370,7 @@ namespace System.Net.Security
             get
             {
 #if DEBUG
-                using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
+                using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
                 {
 #endif
                     return _negoState.AllowedImpersonation;
@@ -385,7 +385,7 @@ namespace System.Net.Security
             get
             {
 #if DEBUG
-                using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
+                using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
                 {
 #endif
 
@@ -493,7 +493,7 @@ namespace System.Net.Security
         public override void Flush()
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Sync))
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Sync))
             {
 #endif
                 InnerStream.Flush();
@@ -505,7 +505,7 @@ namespace System.Net.Security
         protected override void Dispose(bool disposing)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User))
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User))
             {
 #endif
                 try
@@ -524,7 +524,7 @@ namespace System.Net.Security
         public override int Read(byte[] buffer, int offset, int count)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Sync))
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Sync))
             {
 #endif
                 _negoState.CheckThrow(true);
@@ -543,7 +543,7 @@ namespace System.Net.Security
         public override void Write(byte[] buffer, int offset, int count)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Sync))
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Sync))
             {
 #endif
                 _negoState.CheckThrow(true);
@@ -563,7 +563,7 @@ namespace System.Net.Security
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
             {
 #endif
                 _negoState.CheckThrow(true);
@@ -585,7 +585,7 @@ namespace System.Net.Security
         public override int EndRead(IAsyncResult asyncResult)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User))
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User))
             {
 #endif
                 _negoState.CheckThrow(true);
@@ -635,7 +635,7 @@ namespace System.Net.Security
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
             {
 #endif
                 _negoState.CheckThrow(true);
@@ -658,7 +658,7 @@ namespace System.Net.Security
         public override void EndWrite(IAsyncResult asyncResult)
         {
 #if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User))
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User))
             {
 #endif
                 _negoState.CheckThrow(true);
