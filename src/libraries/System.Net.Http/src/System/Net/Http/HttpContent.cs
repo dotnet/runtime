@@ -151,12 +151,12 @@ namespace System.Net.Http
         protected HttpContent()
         {
             // Log to get an ID for the current content. This ID is used when the content gets associated to a message.
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.Http, this, ".ctor", null);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             // We start with the assumption that we can calculate the content length.
             _canCalculateLength = true;
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.Http, this, ".ctor", null);
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         public Task<string> ReadAsStringAsync()
@@ -375,7 +375,7 @@ namespace System.Net.Http
             }
             catch (Exception e)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exception(NetEventSource.ComponentType.Http, this, nameof(LoadIntoBufferAsync), e);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
                 throw;
             }
         }
@@ -490,8 +490,9 @@ namespace System.Net.Http
         {
             if (task == null)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.PrintError(NetEventSource.ComponentType.Http, string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_log_content_no_task_returned_copytoasync, this.GetType().ToString()));
-                throw new InvalidOperationException(SR.net_http_content_no_task_returned);
+                var e = new InvalidOperationException(SR.net_http_content_no_task_returned);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
+                throw e;
             }
         }
 

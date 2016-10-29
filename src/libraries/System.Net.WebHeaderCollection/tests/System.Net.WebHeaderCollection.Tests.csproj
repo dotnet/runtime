@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetGroup)' == ''">
+    <Compile Include="LoggingTest.cs" />
     <Compile Include="WebHeaderCollectionTest.netstandard17.cs" />
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
       <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>

@@ -32,7 +32,7 @@
     <Compile Include="HostInformationPalTest.cs" />
     <Compile Include="SocketAddressPalTest.cs" />
 
-    <Compile Include="Fakes\GlobalLog.cs" />
+    <Compile Include="Fakes\NetEventSource.cs" />
     <Compile Include="Fakes\Serialization.cs" Condition="'$(TargetGroup)' != ''"/>
 
     <Compile Include="..\..\src\System\Net\EndPoint.cs" >

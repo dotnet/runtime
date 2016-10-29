@@ -43,6 +43,9 @@
     <Compile Include="..\..\src\System\Net\Mail\MailAddress.cs">
       <Link>ProductionCode\MailAddress.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\System\Net\Mail\NetEventSource.Mail.cs">
+      <Link>ProductionCode\NetEventSource.Mail.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\System\Net\Mail\SmtpConnection.Auth.cs">
       <Link>ProductionCode\SmtpConnection.Auth.cs</Link>
     </Compile>
@@ -142,20 +145,8 @@
     <Compile Include="$(CommonPath)\System\Net\Mail\MailBnfHelper.cs">
       <Link>ProductionCode\Common\System\Net\Mail\MailBnfHelper.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\LoggingHash.cs">
-      <Link>ProductionCode\Common\System\Net\Logging\LoggingHash.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\GlobalLog.cs">
-      <Link>ProductionCode\Common\System\Net\Logging\GlobalLog.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\MailEventSource.cs">
-      <Link>ProductionCode\Common\System\Net\Logging\MailEventSource.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.cs">
-      <Link>ProductionCode\Common\System\Net\Logging\NetEventSource.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\EventSourceLogging.cs">
-      <Link>ProductionCode\Common\System\Net\Logging\EventSourceLogging.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
+      <Link>ProductionCode\Common\System\Net\Logging\NetEventSource.Common..cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Mail\DomainLiteralReader.cs">
       <Link>ProductionCode\Common\System\Net\Mail\DomainLiteralReader.cs</Link>

@@ -48,6 +48,7 @@
     <Compile Include="System\Net\NetworkInformation\MulticastIPAddressInformation.cs" />
     <Compile Include="System\Net\NetworkInformation\MulticastIPAddressInformationCollection.cs" />
     <Compile Include="System\Net\NetworkInformation\NetBiosNodeType.cs" />
+    <Compile Include="System\Net\NetworkInformation\NetEventSource.NetworkInformation.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkAvailabilityEventArgs.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkChangeDelegates.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkInterface.cs" />
@@ -80,17 +81,11 @@
     <Compile Include="$(CommonPath)\System\Net\Shims\TraceSource.cs">
       <Link>Common\System\Net\Shims\TraceSource.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\LoggingHash.cs">
-      <Link>Common\System\Net\Logging\LoggingHash.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\Logging\DebugThreadTracking.cs">
+      <Link>Common\System\Net\Logging\DebugThreadTracking.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\GlobalLog.cs">
-      <Link>Common\System\Net\Logging\GlobalLog.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\EventSourceLogging.cs">
-      <Link>Common\System\Net\Logging\EventSourceLogging.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.cs">
-      <Link>Common\System\Net\Logging\NetEventSource.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
+      <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
       <Link>Common\System\Net\InternalException.cs</Link>

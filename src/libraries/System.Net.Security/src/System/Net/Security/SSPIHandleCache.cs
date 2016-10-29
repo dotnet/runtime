@@ -27,7 +27,7 @@ namespace System.Net.Security
                 {
                     return;
                 }
-                
+
                 unchecked
                 {
                     int index = Interlocked.Increment(ref s_current) & c_MaxCacheSize;
@@ -43,12 +43,7 @@ namespace System.Net.Security
             {
                 if (!ExceptionCheck.IsFatal(e))
                 {
-                    if (GlobalLog.IsEnabled)
-                    {
-                        GlobalLog.Assert("SSPIHandlCache", "Attempted to throw: " + e.ToString());
-                    }
-
-                    Debug.Fail("SSPIHandlCache", "Attempted to throw: " + e.ToString());
+                    NetEventSource.Fail(null, "Attempted to throw: {e}");
                 }
             }
         }

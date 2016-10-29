@@ -59,10 +59,7 @@ namespace System.Net
         //     Newly created WebRequest.
         private static WebRequest Create(Uri requestUri, bool useUriBase)
         {
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Enter(NetEventSource.ComponentType.Requests, "WebRequest", "Create", requestUri.ToString());
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null, requestUri);
 
             string LookupUri;
             WebRequestPrefixElement Current = null;
@@ -123,19 +120,12 @@ namespace System.Net
             {
                 // We found a match, so just call the creator and return what it does.
                 webRequest = Current.Creator.Create(requestUri);
-                if (NetEventSource.Log.IsEnabled())
-                {
-                    NetEventSource.Exit(NetEventSource.ComponentType.Requests, "WebRequest", "Create", webRequest);
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(null, webRequest);
                 return webRequest;
             }
 
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Exit(NetEventSource.ComponentType.Requests, "WebRequest", "Create", null);
-            }
-
             // Otherwise no match, throw an exception.
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(null);
             throw new NotSupportedException(SR.net_unknown_prefix);
         }
 

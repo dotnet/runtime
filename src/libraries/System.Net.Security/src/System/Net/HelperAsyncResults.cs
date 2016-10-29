@@ -44,21 +44,11 @@ namespace System.Net
         {
             if (userAsyncResult == null)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Assert("AsyncProtocolRequest()|userAsyncResult == null");
-                }
-
-                Debug.Fail("AsyncProtocolRequest()|userAsyncResult == null");
+                NetEventSource.Fail(this, "userAsyncResult == null");
             }
             if (userAsyncResult.InternalPeekCompleted)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Assert("AsyncProtocolRequest()|userAsyncResult is already completed.");
-                }
-
-                Debug.Fail("AsyncProtocolRequest()|userAsyncResult is already completed.");
+                NetEventSource.Fail(this, "userAsyncResult is already completed.");
             }
             UserAsyncResult = userAsyncResult;
         }

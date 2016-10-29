@@ -35,6 +35,7 @@
     <Compile Include="System\Net\SecurityStatusPal.cs" />
     <Compile Include="System\Net\SslStreamContext.cs" />
     <Compile Include="System\Net\Security\AuthenticatedStream.cs" />
+    <Compile Include="System\Net\Security\NetEventSource.Security.cs" />
     <Compile Include="System\Net\Security\SecurityBuffer.cs" />
     <Compile Include="System\Net\Security\SecurityBufferType.cs" />
     <Compile Include="System\Net\Security\SecureChannel.cs" />
@@ -64,23 +65,14 @@
     <Compile Include="System\Security\Authentication\ExtendedProtection\ProtectionScenario.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\ServiceNameCollection.cs" />
     <!-- Logging -->
+    <Compile Include="$(CommonPath)\System\Net\Logging\DebugThreadTracking.cs">
+      <Link>Common\System\Net\Logging\DebugThreadTracking.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\Shims\TraceSource.cs">
       <Link>Common\System\Net\Shims\TraceSource.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\LoggingHash.cs">
-      <Link>Common\System\Net\Logging\LogginHash.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\GlobalLog.cs">
-      <Link>Common\System\Net\Logging\GlobalLog.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\EventSourceLogging.cs">
-      <Link>Common\System\Net\Logging\EventSourceLogging.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.cs">
-      <Link>Common\System\Net\Logging\NetEventSource.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\SecurityEventSource.cs">
-      <Link>Common\System\Net\Logging\SecurityEventSource.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
+      <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
       <Link>Common\System\Net\InternalException.cs</Link>
@@ -134,6 +126,7 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'net463' ">
     <Compile Include="System\Net\CertificateValidationPal.Windows.cs" />
+    <Compile Include="System\Net\Security\NetEventSource.Security.Windows.cs" />
     <Compile Include="System\Net\SecurityStatusAdapterPal.Windows.cs" />
     <Compile Include="System\Net\Security\SecurityContextTokenHandle.cs" />
     <Compile Include="System\Net\Security\SslStreamPal.Windows.cs" />
@@ -193,9 +186,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Collections\Generic\BidirectionalDictionary.cs">
       <Link>Common\System\Collections\Generic\BidirectionalDictionary.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\SecurityEventSource.Windows.cs">
-      <Link>Common\System\Net\Logging\SecurityEventSource.Windows.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\sspicli\SecurityPackageInfo.cs">
       <Link>Common\Interop\Windows\sspicli\SecurityPackageInfo.cs</Link>

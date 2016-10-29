@@ -4,21 +4,11 @@
 
 namespace System.Net
 {
-    public static class GlobalLog
+    public static class DebugThreadTracking
     {
-        public static void Assert(string message)
-        {
-        }
-
-        public static void Print(string message)
-        {
-        }
-
         internal static void SetThreadSource(ThreadKinds source)
         {
         }
-
-        public static bool IsEnabled { get { return false; } }
     }
 
     [Flags]

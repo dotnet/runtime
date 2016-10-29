@@ -125,7 +125,7 @@ namespace System.Net.Mail
             {
                 _connection = new SmtpConnection(this, _client, _credentials, _authenticationModules);
                 _connection.Timeout = _timeout;
-                if (MailEventSource.Log.IsEnabled()) MailEventSource.Log.Associate(this, _connection);
+                if (NetEventSource.IsEnabled) NetEventSource.Associate(this, _connection);
 
                 if (EnableSsl)
                 {
@@ -140,19 +140,13 @@ namespace System.Net.Mail
 
         internal IAsyncResult BeginGetConnection(ContextAwareResult outerResult, AsyncCallback callback, object state, string host, int port)
         {
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Enter("SmtpTransport#" + LoggingHash.HashString(this) + "::BeginConnect");
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             IAsyncResult result = null;
             try
             {
                 _connection = new SmtpConnection(this, _client, _credentials, _authenticationModules);
                 _connection.Timeout = _timeout;
-                if (MailEventSource.Log.IsEnabled())
-                {
-                    MailEventSource.Log.Associate(this, _connection);
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Associate(this, _connection);
                 if (EnableSsl)
                 {
                     _connection.EnableSsl = true;
@@ -166,29 +160,24 @@ namespace System.Net.Mail
                 throw new SmtpException(SR.MailHostNotFound, innerException);
             }
 
-            if (GlobalLog.IsEnabled)
+            if (NetEventSource.IsEnabled)
             {
-                GlobalLog.Leave("SmtpTransport#" + LoggingHash.HashString(this) + "::BeginConnect Sync Completion");
+                NetEventSource.Info(this, "Sync completion");
+                NetEventSource.Exit(this);
             }
             return result;
         }
 
         internal void EndGetConnection(IAsyncResult result)
         {
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Enter("SmtpTransport#" + LoggingHash.HashString(this) + "::EndGetConnection");
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             try
             {
                 _connection.EndGetConnection(result);
             }
             finally
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Leave("SmtpTransport#" + LoggingHash.HashString(this) + "::EndConnect");
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
         }
 

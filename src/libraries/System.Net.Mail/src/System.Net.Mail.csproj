@@ -52,6 +52,7 @@
     <Compile Include="System\Net\Mail\LinkedResourceCollection.cs" />
     <Compile Include="System\Net\Mail\MailAddress.cs" />
     <Compile Include="System\Net\Mail\MailAddressCollection.cs" />
+    <Compile Include="System\Net\Mail\NetEventSource.Mail.cs" />
     <Compile Include="System\Net\Mail\MailMessage.cs" />
     <Compile Include="System\Net\Mail\MailPriority.cs" />
     <Compile Include="System\Net\Mail\MailWriter.cs" />
@@ -88,14 +89,8 @@
     <Compile Include="$(CommonPath)\System\Net\Mail\MailBnfHelper.cs">
       <Link>Common\System\Net\Mail\MailBnfHelper.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\LoggingHash.cs">
-      <Link>Common\System\Net\Logging\LoggingHash.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\GlobalLog.cs">
-      <Link>Common\System\Net\Logging\GlobalLog.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\EventSourceLogging.cs">
-      <Link>Common\System\Net\Logging\EventSourceLogging.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
+      <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Mail\DotAtomReader.cs">
       <Link>Common\System\Net\Mail\DotAtomReader.cs</Link>
@@ -114,12 +109,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Mail\DomainLiteralReader.cs">
       <Link>Common\System\Net\Mail\DomainLiteralReader.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.cs">
-      <Link>Common\System\Net\Logging\NetEventSource.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\MailEventSource.cs">
-      <Link>Common\System\Net\Logging\MailEventSource.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\SecurityProtocol.cs">
       <Link>Common\System\Net\SecurityProtocol.cs</Link>

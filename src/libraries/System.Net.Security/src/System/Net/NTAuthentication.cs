@@ -61,10 +61,7 @@ namespace System.Net
                 }
 
                 string name = NegotiateStreamPal.QueryContextAssociatedName(_securityContext);
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Print("NTAuthentication: The context is associated with [" + name + "]");
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"NTAuthentication: The context is associated with [{name}]");
                 return name;
             }
         }
@@ -229,10 +226,7 @@ namespace System.Net
 
         private void Initialize(bool isServer, string package, NetworkCredential credential, string spn, ContextFlagsPal requestedContextFlags, ChannelBinding channelBinding)
         {
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("NTAuthentication#" + LoggingHash.HashString(this) + "::.ctor() package:" + LoggingHash.ObjectToString(package) + " spn:" + LoggingHash.ObjectToString(spn) + " flags :" + requestedContextFlags.ToString());
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, package, spn, requestedContextFlags);
 
             _tokenSize = NegotiateStreamPal.QueryMaxTokenSize(package);
             _isServer = isServer;
@@ -242,10 +236,7 @@ namespace System.Net
             _package = package;
             _channelBinding = channelBinding;
 
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("Peer SPN-> '" + _spn + "'");
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Peer SPN-> '{_spn}'");
 
             //
             // Check if we're using DefaultCredentials.
@@ -254,11 +245,7 @@ namespace System.Net
             Debug.Assert(CredentialCache.DefaultCredentials == CredentialCache.DefaultNetworkCredentials);
             if (credential == CredentialCache.DefaultCredentials)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Print("NTAuthentication#" + LoggingHash.HashString(this) + "::.ctor(): using DefaultCredentials");
-                }
-
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "using DefaultCredentials");
                 _credentialsHandle = NegotiateStreamPal.AcquireDefaultCredential(package, _isServer);
             }
             else
@@ -272,22 +259,12 @@ namespace System.Net
             status = new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
             if (!(IsCompleted && IsValidContext))
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.AssertFormat("NTAuthentication#{0}::GetContextToken|Should be called only when completed with success, currently is not!", LoggingHash.HashString(this));
-                }
-
-                Debug.Fail("NTAuthentication#" + LoggingHash.HashString(this) + "::GetContextToken |Should be called only when completed with success, currently is not!");
+                NetEventSource.Fail(this, "Should be called only when completed with success, currently is not!");
             }
 
             if (!IsServer)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.AssertFormat("NTAuthentication#{0}::GetContextToken|The method must not be called by the client side!", LoggingHash.HashString(this));
-                }
-
-                Debug.Fail("NTAuthentication#" + LoggingHash.HashString(this) + "::GetContextToken |The method must not be called by the client side!");
+                NetEventSource.Fail(this, "The method must not be called by the client side!");
             }
 
             if (!IsValidContext)
@@ -310,10 +287,7 @@ namespace System.Net
         // Accepts an incoming binary security blob and returns an outgoing binary security blob.
         internal byte[] GetOutgoingBlob(byte[] incomingBlob, bool throwOnError, out SecurityStatusPal statusCode)
         {
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Enter("NTAuthentication#" + LoggingHash.HashString(this) + "::GetOutgoingBlob", ((incomingBlob == null) ? "0" : incomingBlob.Length.ToString(NumberFormatInfo.InvariantInfo)) + " bytes");
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, incomingBlob);
 
             var list = new List<SecurityBuffer>(2);
 
@@ -350,10 +324,7 @@ namespace System.Net
                         outSecurityBuffer,
                         ref _contextFlags);
 
-                    if (GlobalLog.IsEnabled)
-                    {
-                        GlobalLog.Print("NTAuthentication#" + LoggingHash.HashString(this) + "::GetOutgoingBlob() SSPIWrapper.InitializeSecurityContext() returns statusCode:0x" + ((int)statusCode.ErrorCode).ToString("x8", NumberFormatInfo.InvariantInfo) + " (" + statusCode.ToString() + ")");
-                    }
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SSPIWrapper.InitializeSecurityContext() returns statusCode:0x{((int)statusCode.ErrorCode):x8} ({statusCode})");
 
                     if (statusCode.ErrorCode == SecurityStatusPalErrorCode.CompleteNeeded)
                     {
@@ -362,11 +333,8 @@ namespace System.Net
 
                         statusCode = NegotiateStreamPal.CompleteAuthToken(ref _securityContext, inSecurityBuffers);
 
-                        if (GlobalLog.IsEnabled)
-                        {
-                            GlobalLog.Print("NTAuthentication#" + LoggingHash.HashString(this) + "::GetOutgoingDigestBlob() SSPIWrapper.CompleteAuthToken() returns statusCode:0x" + ((int)statusCode.ErrorCode).ToString("x8", NumberFormatInfo.InvariantInfo) + " (" + statusCode.ToString() + ")");
-                        }
-
+                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SSPIWrapper.CompleteAuthToken() returns statusCode:0x{((int)statusCode.ErrorCode):x8} ({statusCode})");
+                        
                         outSecurityBuffer.token = null;
                     }
                 }
@@ -381,10 +349,7 @@ namespace System.Net
                         outSecurityBuffer,
                         ref _contextFlags);
 
-                    if (GlobalLog.IsEnabled)
-                    {
-                        GlobalLog.Print("NTAuthentication#" + LoggingHash.HashString(this) + "::GetOutgoingBlob() SSPIWrapper.AcceptSecurityContext() returns statusCode:0x" + ((int)statusCode.ErrorCode).ToString("x8", NumberFormatInfo.InvariantInfo) + " (" + statusCode.ToString() + ")");
-                    }
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SSPIWrapper.AcceptSecurityContext() returns statusCode:0x{((int)statusCode.ErrorCode):x8} ({statusCode})");
                 }
             }
             finally
@@ -409,17 +374,11 @@ namespace System.Net
                 if (throwOnError)
                 {
                     Exception exception = NegotiateStreamPal.CreateExceptionFromError(statusCode);
-                    if (GlobalLog.IsEnabled)
-                    {
-                        GlobalLog.Leave("NTAuthentication#" + LoggingHash.HashString(this) + "::GetOutgoingBlob", "Win32Exception:" + exception);
-                    }
+                    if (NetEventSource.IsEnabled) NetEventSource.Exit(this, exception);
                     throw exception;
                 }
 
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Leave("NTAuthentication#" + LoggingHash.HashString(this) + "::GetOutgoingBlob", "null statusCode:0x" + ((int)statusCode.ErrorCode).ToString("x8", NumberFormatInfo.InvariantInfo) + " (" + statusCode.ToString() + ")");
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this, $"null statusCode:0x{((int)statusCode.ErrorCode):x8} ({statusCode})");
                 return null;
             }
             else if (firstTime && _credentialsHandle != null)
@@ -434,15 +393,15 @@ namespace System.Net
                 // Success.
                 _isCompleted = true;
             }
-            else if (GlobalLog.IsEnabled)
+            else if (NetEventSource.IsEnabled)
             {
                 // We need to continue.
-                GlobalLog.Print("NTAuthentication#" + LoggingHash.HashString(this) + "::GetOutgoingBlob() need continue statusCode:[0x" + ((int)statusCode.ErrorCode).ToString("x8", NumberFormatInfo.InvariantInfo) + "] (" + statusCode.ToString() + ") m_SecurityContext#" + LoggingHash.HashString(_securityContext) + "::Handle:" + LoggingHash.ObjectToString(_securityContext) + "]");
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"need continue statusCode:0x{((int)statusCode.ErrorCode):x8} ({statusCode}) _securityContext:{_securityContext}");
             }
 
-            if (GlobalLog.IsEnabled)
+            if (NetEventSource.IsEnabled)
             {
-                GlobalLog.Leave("NTAuthentication#" + LoggingHash.HashString(this) + "::GetOutgoingBlob", "IsCompleted:" + IsCompleted.ToString());
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this, $"IsCompleted: {IsCompleted}");
             }
 
             return outSecurityBuffer.token;
@@ -470,20 +429,13 @@ namespace System.Net
         {
             if (!(IsValidContext && IsCompleted))
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Assert("NTAuthentication: Trying to get the client SPN before handshaking is done!");
-                }
-
-                Debug.Fail("NTAuthentication: Trying to get the client SPN before handshaking is done!");
+                NetEventSource.Fail(this, "Trying to get the client SPN before handshaking is done!");
             }
 
             string spn = NegotiateStreamPal.QueryContextClientSpecifiedSpn(_securityContext);
 
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("NTAuthentication: The client specified SPN is [" + spn + "]");
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"The client specified SPN is [{spn}]");
+
             return spn;
         }
     }

@@ -116,16 +116,7 @@ namespace System.Net.Security
 
                 if (result != Interop.SECURITY_STATUS.OK)
                 {
-                    if (NetEventSource.Log.IsEnabled())
-                    {
-                        NetEventSource.PrintError(
-                            NetEventSource.ComponentType.Security,
-                            SR.Format(
-                                SR.net_log_operation_failed_with_error,
-                                "SspiEncodeStringsAsAuthIdentity()",
-                                String.Format(CultureInfo.CurrentCulture, "0x{0:X}", (int)result)));
-                    }
-
+                    if (NetEventSource.IsEnabled) NetEventSource.Error(null, SR.Format(SR.net_log_operation_failed_with_error, nameof(Interop.SspiCli.SspiEncodeStringsAsAuthIdentity), $"0x{(int)result:X}"));
                     throw new Win32Exception((int)result);
                 }
 
@@ -240,18 +231,9 @@ namespace System.Net.Security
                     throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.net_io_out_range, maxCount));
                 }
             }
-            catch (Exception e)
+            catch (Exception e) when (!ExceptionCheck.IsFatal(e))
             {
-                if (!ExceptionCheck.IsFatal(e))
-                {
-                    if (GlobalLog.IsEnabled)
-                    {
-                        GlobalLog.Assert("NTAuthentication#" + LoggingHash.HashString(securityContext) + "::Encrypt", "Arguments out of range.");
-                    }
-
-                    Debug.Fail("NTAuthentication#" + LoggingHash.HashString(securityContext) + "::Encrypt", "Arguments out of range.");
-                }
-
+                NetEventSource.Fail(null, "Arguments out of range.");
                 throw;
             }
 
@@ -287,11 +269,9 @@ namespace System.Net.Security
 
             if (errorCode != 0)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Print("NTAuthentication#" + LoggingHash.HashString(securityContext) + "::Encrypt() throw Error = " + errorCode.ToString("x", NumberFormatInfo.InvariantInfo));
-                }
-                throw new Win32Exception(errorCode);
+                Exception e = new Win32Exception(errorCode);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(null, e);
+                throw e;
             }
 
             // Compacting the result.
@@ -333,25 +313,13 @@ namespace System.Net.Security
         {
             if (offset < 0 || offset > (buffer == null ? 0 : buffer.Length))
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Assert("NTAuthentication#" + LoggingHash.HashString(securityContext) + "::Decrypt", "Argument 'offset' out of range.");
-                }
-
-                Debug.Fail("NTAuthentication#" + LoggingHash.HashString(securityContext) + "::Decrypt", "Argument 'offset' out of range.");
-
+                NetEventSource.Fail(null, "Argument 'offset' out of range.");
                 throw new ArgumentOutOfRangeException(nameof(offset));
             }
 
             if (count < 0 || count > (buffer == null ? 0 : buffer.Length - offset))
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Assert("NTAuthentication#" + LoggingHash.HashString(securityContext) + "::Decrypt", "Argument 'count' out of range.");
-                }
-
-                Debug.Fail("NTAuthentication#" + LoggingHash.HashString(securityContext) + "::Decrypt", "Argument 'count' out of range.");
-
+                NetEventSource.Fail(null, "Argument 'count' out of range.");
                 throw new ArgumentOutOfRangeException(nameof(count));
             }
 
@@ -379,11 +347,9 @@ namespace System.Net.Security
 
             if (errorCode != 0)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Print("NTAuthentication#"+ "::Decrypt() throw Error = " + errorCode.ToString("x", NumberFormatInfo.InvariantInfo));
-                }
-                throw new Win32Exception(errorCode);
+                Exception e = new Win32Exception(errorCode);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(null, e);
+                throw e;
             }
 
             if (securityBuffer[1].type != SecurityBufferType.SECBUFFER_DATA)
@@ -408,13 +374,7 @@ namespace System.Net.Security
             // For the most part the arguments are verified in Decrypt().
             if (count < ntlmSignatureLength)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Assert("NTAuthentication#" + LoggingHash.HashString(securityContext) + "::DecryptNtlm", "Argument 'count' out of range.");
-                }
-
-                Debug.Fail("NTAuthentication#" + LoggingHash.HashString(securityContext) + "::DecryptNtlm", "Argument 'count' out of range.");
-
+                NetEventSource.Fail(null, "Argument 'count' out of range.");
                 throw new ArgumentOutOfRangeException(nameof(count));
             }
 
@@ -438,10 +398,8 @@ namespace System.Net.Security
 
             if (errorCode != 0)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Print("NTAuthentication#" + LoggingHash.HashString(securityContext) + "::Decrypt() throw Error = " + errorCode.ToString("x", NumberFormatInfo.InvariantInfo));
-                }
+                Exception e = new Win32Exception(errorCode);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(null, e);
                 throw new Win32Exception(errorCode);
             }
 

@@ -687,10 +687,7 @@ namespace System.Net.Sockets
                         IntPtr.Zero);
             }
 
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("Socket::Select() Interop.Winsock.select returns socketCount:" + socketCount);
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"Interop.Winsock.select returns socketCount:{socketCount}");
 
             if ((SocketError)socketCount == SocketError.SocketError)
             {

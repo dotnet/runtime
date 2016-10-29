@@ -44,14 +44,8 @@
     <Compile Include="$(CommonPath)\System\Net\HttpVersion.cs">
       <Link>ProductionCode\Common\System\Net\HttpVersion.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\LoggingHash.cs">
-      <Link>ProductionCode\Common\System\Net\Logging\LoggingHash.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\HttpEventSource.cs">
-      <Link>ProductionCode\Common\System\Net\Logging\HttpEventSource.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.cs">
-      <Link>ProductionCode\Common\System\Net\Logging\NetEventSource.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
+      <Link>ProductionCode\Common\System\Net\Logging\NetEventSource.Common.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\ShouldNotBeInvokedException.cs">
       <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
@@ -268,6 +262,9 @@
     </Compile>
     <Compile Include="..\..\src\System\Net\Http\MultipartFormDataContent.cs">
       <Link>ProductionCode\System\Net\Http\MultipartFormDataContent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Http\NetEventSource.Http.cs">
+      <Link>ProductionCode\System\Net\Http\NetEventSource.Http.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\Http\StreamContent.cs">
       <Link>ProductionCode\System\Net\Http\StreamContent.cs</Link>

@@ -27,20 +27,13 @@ namespace System.Net.WebSockets
 
         public ClientWebSocket()
         {
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Enter(NetEventSource.ComponentType.WebSocket, this, ".ctor", null);
-            }
-
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             WebSocketHandle.CheckPlatformSupport();
 
             _state = (int)InternalState.Created;
             _options = new ClientWebSocketOptions();
 
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Exit(NetEventSource.ComponentType.WebSocket, this, ".ctor", null);
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         #region Properties
@@ -160,10 +153,7 @@ namespace System.Net.WebSockets
             }
             catch (Exception ex)
             {
-                if (NetEventSource.Log.IsEnabled())
-                {
-                    NetEventSource.Exception(NetEventSource.ComponentType.WebSocket, this, nameof(ConnectAsync), ex);
-                }
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, ex);
                 throw;
             }
         }

@@ -28,10 +28,7 @@ namespace System.Net
 
         public int EnumerateSecurityPackages(out int pkgnum, out SafeFreeContextBuffer pkgArray)
         {
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("SSPIAuthType::EnumerateSecurityPackages()");
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
             return SafeFreeContextBuffer.EnumeratePackages(out pkgnum, out pkgArray);
         }
 
@@ -108,15 +105,9 @@ namespace System.Net
 
             if (status == 0 && qop == Interop.SspiCli.SECQOP_WRAP_NO_ENCRYPT)
             {
-                if (GlobalLog.IsEnabled)
-                {
-                    GlobalLog.Assert("SspiCli.DecryptMessage", "Expected qop = 0, returned value = " + qop.ToString("x", CultureInfo.InvariantCulture));
-                }
-
-                Debug.Fail("SspiCli.DecryptMessage", "Expected qop = 0, returned value = " + qop.ToString("x", CultureInfo.InvariantCulture));
+                NetEventSource.Fail(this, $"Expected qop = 0, returned value = {qop}");
                 throw new InvalidOperationException(SR.net_auth_message_not_encrypted);
             }
-
 
             return status;
         }
