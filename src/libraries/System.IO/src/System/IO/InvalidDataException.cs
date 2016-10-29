@@ -24,7 +24,7 @@ namespace System.IO
         {
         }
 
-        internal InvalidDataException(SerializationInfo info, StreamingContext context) : base(info, context)
+        private InvalidDataException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
     }
