@@ -2418,7 +2418,7 @@ static Error WaitForSocketEventsInner(int32_t port, SocketEvent* buffer, int32_t
     // that case, the wait will block until a file descriptor is added and an event occurs
     // on the added file descriptor.
     assert(numEvents != 0);
-    assert(numEvents < *count);
+    assert(numEvents <= *count);
 
     if (sizeof(epoll_event) < sizeof(SocketEvent))
     {
