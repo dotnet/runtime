@@ -188,6 +188,8 @@ namespace Microsoft.DotNet.Host.Build
 
                 // Why does Windows directly call cmake but Linux/Mac calls "build.sh" in the corehost dir?
                 // See the comment in "src/corehost/build.sh" for details. It doesn't work for some reason.
+                List<string> cmakeArgList = new List<string>();
+
                 string cmakeBaseRid, visualStudio, archMacro, arch;
                 string ridMacro = $"-DCLI_CMAKE_RUNTIME_ID:STRING={rid}";
                 string cmakeHostVer = $"-DCLI_CMAKE_HOST_VER:STRING={hostVersion.LatestHostVersion.ToString()}";
@@ -195,7 +197,8 @@ namespace Microsoft.DotNet.Host.Build
                 string cmakeHostFxrVer = $"-DCLI_CMAKE_HOST_FXR_VER:STRING={hostVersion.LatestHostFxrVersion.ToString()}";
                 string cmakeCommitHash = $"-DCLI_CMAKE_COMMIT_HASH:STRING={commitHash}";
                 string cmakeResourceDir = $"-DCLI_CMAKE_RESOURCE_DIR:STRING={resourceDir}";
-                
+                string cmakeExtraArgs = null;
+
                 switch (platform.ToLower())
                 {
                     case "x86":
@@ -207,7 +210,8 @@ namespace Microsoft.DotNet.Host.Build
                     case "arm":
                         cmakeBaseRid = "-DCLI_CMAKE_PKG_RID:STRING=win8-arm";
                         visualStudio = "Visual Studio 14 2015 ARM";
-                        archMacro = "-DCLI_CMAKE_PLATFORM_ARCH_ARM=1 -DCMAKE_SYSTEM_VERSION=10.0";
+                        archMacro = "-DCLI_CMAKE_PLATFORM_ARCH_ARM=1";
+                        cmakeExtraArgs ="-DCMAKE_SYSTEM_VERSION=10.0";
                         arch = "arm";
                         break;
                     case "arm64":
@@ -230,18 +234,24 @@ namespace Microsoft.DotNet.Host.Build
                         throw new PlatformNotSupportedException("Target Architecture: " + platform + " is not currently supported.");
                 }
 
-                ExecIn(cmakeOut, "cmake",
-                    corehostSrcDir,
-                    archMacro,
-                    ridMacro,
-                    cmakeHostVer,
-                    cmakeHostFxrVer,
-                    cmakeHostPolicyVer,
-                    cmakeBaseRid,
-                    cmakeCommitHash,
-                    cmakeResourceDir,
-                    "-G",
-                    visualStudio);
+                cmakeArgList.Add(corehostSrcDir);
+                cmakeArgList.Add(archMacro);
+                cmakeArgList.Add(ridMacro);
+                cmakeArgList.Add(cmakeHostVer);
+                cmakeArgList.Add(cmakeHostFxrVer);
+                cmakeArgList.Add(cmakeHostPolicyVer);
+                cmakeArgList.Add(cmakeBaseRid);
+                cmakeArgList.Add(cmakeCommitHash);
+                cmakeArgList.Add(cmakeResourceDir);
+                cmakeArgList.Add("-G");
+                cmakeArgList.Add(visualStudio);
+                
+                if (!String.IsNullOrEmpty(cmakeExtraArgs))
+                {
+                    cmakeArgList.Add(cmakeExtraArgs);
+                }
+
+                ExecIn(cmakeOut, "cmake", cmakeArgList);
 
                 var pf32 = RuntimeInformation.OSArchitecture == Architecture.X64 ?
                     Environment.GetEnvironmentVariable("ProgramFiles(x86)") :
