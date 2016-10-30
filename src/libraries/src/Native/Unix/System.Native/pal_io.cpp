@@ -6,6 +6,9 @@
 #include "pal_errno.h"
 #include "pal_io.h"
 #include "pal_utilities.h"
+#if !HAVE_READDIR_R
+#include "pal_safecrt.h"
+#endif
 
 #include <assert.h>
 #include <errno.h>
