@@ -94,31 +94,49 @@ namespace System
             _length = length;
         }
 
+        /// <summary>
+        /// Defines an implicit conversion of a <see cref="Span{T}"/> to a <see cref="ReadOnlySpan{T}"/>
+        /// </summary>
         public static implicit operator ReadOnlySpan<T>(Span<T> slice)
         {
             return new ReadOnlySpan<T>(ref JitHelpers.GetByRef<T>(ref slice._rawPointer), slice._length);
         }
 
+        /// <summary>
+        /// Defines an implicit conversion of an array to a <see cref="ReadOnlySpan{T}"/>
+        /// </summary>
         public static implicit operator ReadOnlySpan<T>(T[] array)
         {
             return new ReadOnlySpan<T>(array);
         }
 
+        /// <summary>
+        /// Defines an implicit conversion of a <see cref="ArraySegment{T}"/> to a <see cref="ReadOnlySpan{T}"/>
+        /// </summary>
         public static implicit operator ReadOnlySpan<T>(ArraySegment<T> arraySegment)
         {
             return new ReadOnlySpan<T>(arraySegment.Array, arraySegment.Offset, arraySegment.Count);
         }
 
+        /// <summary>
+        /// Gets the number of elements contained in the <see cref="ReadOnlySpan{T}"/>
+        /// </summary>
         public int Length
         {
             get { return _length; }
         }
 
+        /// <summary>
+        /// Returns an empty <see cref="ReadOnlySpan{T}"/>
+        /// </summary>
         public static ReadOnlySpan<T> Empty
         {
             get { return default(ReadOnlySpan<T>); }
         }
 
+        /// <summary>
+        /// Returns whether the <see cref="ReadOnlySpan{T}"/> is empty.
+        /// </summary>
         public bool IsEmpty
         {
             get { return _length == 0; }
