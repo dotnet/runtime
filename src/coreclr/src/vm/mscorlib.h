@@ -1345,8 +1345,6 @@ DEFINE_METHOD(JIT_HELPERS,          UNSAFE_ENUM_CAST_LONG,  UnsafeEnumCastLong, 
 DEFINE_METHOD(JIT_HELPERS,          UNSAFE_CAST_TO_STACKPTR,UnsafeCastToStackPointer, NoSig)
 #endif // _DEBUG
 #ifdef FEATURE_SPAN_OF_T
-DEFINE_METHOD(JIT_HELPERS,          GET_BYREF,              GetByRef, NoSig)
-DEFINE_METHOD(JIT_HELPERS,          SET_BYREF,              SetByRef, NoSig)
 DEFINE_METHOD(JIT_HELPERS,          BYREF_LESSTHAN,         ByRefLessThan, NoSig)
 DEFINE_METHOD(JIT_HELPERS,          GET_ARRAY_DATA,         GetArrayData, NoSig)
 DEFINE_METHOD(JIT_HELPERS,          CONTAINSREFERENCES,     ContainsReferences, NoSig)
@@ -1354,6 +1352,7 @@ DEFINE_METHOD(JIT_HELPERS,          CONTAINSREFERENCES,     ContainsReferences, 
 
 #ifdef FEATURE_SPAN_OF_T
 DEFINE_CLASS(UNSAFE,                CompilerServices,       Unsafe)
+DEFINE_METHOD(UNSAFE,               AS_POINTER,             AsPointer, NoSig)
 DEFINE_METHOD(UNSAFE,               SIZEOF,                 SizeOf, NoSig)
 DEFINE_METHOD(UNSAFE,               BYREF_AS,               As, NoSig)
 DEFINE_METHOD(UNSAFE,               BYREF_ADD,              Add, NoSig)

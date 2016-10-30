@@ -6912,28 +6912,6 @@ bool getILIntrinsicImplementation(MethodDesc * ftn,
         }
     }
 #ifdef FEATURE_SPAN_OF_T
-    else if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__GET_BYREF)->GetMemberDef())
-    {
-        // TODO-SPAN: This has potential GC hole. It needs to be JIT intrinsic instead
-        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_LDIND_I, CEE_RET };
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 1;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
-        return true;
-    }
-    else if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__SET_BYREF)->GetMemberDef())
-    {
-        // TODO-SPAN: This has potential GC hole. It needs to be JIT intrinsic instead
-        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_LDARG_1, CEE_STIND_I, CEE_RET };
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 2;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
-        return true;
-    }
     else if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__BYREF_LESSTHAN)->GetMemberDef())
     {
         // Compare the two arguments
@@ -7008,6 +6986,17 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 
     mdMethodDef tk = ftn->GetMemberDef();
 
+    if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__AS_POINTER)->GetMemberDef())
+    {
+        // Return the argument that was passed in.
+        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_CONV_U, CEE_RET };
+        methInfo->ILCode = const_cast<BYTE*>(ilcode);
+        methInfo->ILCodeSize = sizeof(ilcode);
+        methInfo->maxStack = 1;
+        methInfo->EHcount = 0;
+        methInfo->options = (CorInfoOptions)0;
+        return true;
+    }
     if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__SIZEOF)->GetMemberDef())
     {
         _ASSERTE(ftn->HasMethodInstantiation());
