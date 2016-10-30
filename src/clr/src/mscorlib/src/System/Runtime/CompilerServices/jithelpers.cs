@@ -242,31 +242,9 @@ namespace System.Runtime.CompilerServices {
             throw new InvalidOperationException();
         }
 
-        static internal ref T AddByRef<T>(ref T pointer, int count)
-        {
-            // The body of this function will be replaced by the EE with unsafe code!!!
-            // See getILIntrinsicImplementation for how this happens.
-            typeof(T).ToString(); // Type used by the actual method body
-            throw new InvalidOperationException();
-        }
-
-        static internal bool ByRefEquals<T>(ref T refA, ref T refB)
-        {
-            // The body of this function will be replaced by the EE with unsafe code!!!
-            // See getILIntrinsicImplementation for how this happens.  
-            throw new InvalidOperationException();
-        }
-
         static internal bool ByRefLessThan<T>(ref T refA, ref T refB)
         {
             // The body of this function will be replaced by the EE with unsafe code!!!
-            // See getILIntrinsicImplementation for how this happens.  
-            throw new InvalidOperationException();
-        }
-
-        static internal int SizeOf<T>()
-        {
-            // The body of this function will be replaced by the EE with unsafe code that just returns sizeof !!T
             // See getILIntrinsicImplementation for how this happens.  
             throw new InvalidOperationException();
         }
