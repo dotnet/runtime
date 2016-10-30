@@ -228,31 +228,18 @@ namespace System.Runtime.CompilerServices {
 #endif
 
 #if FEATURE_SPAN_OF_T
-        static internal ref T GetByRef<T>(ref IntPtr byref)
-        {
-            // The body of this function will be replaced by the EE with unsafe code!!!
-            // See getILIntrinsicImplementation for how this happens.
-            throw new InvalidOperationException();
-        }
-
-        static internal void SetByRef<T>(out IntPtr byref, ref T value)
-        {
-            // The body of this function will be replaced by the EE with unsafe code!!!
-            // See getILIntrinsicImplementation for how this happens.
-            throw new InvalidOperationException();
-        }
-
         static internal bool ByRefLessThan<T>(ref T refA, ref T refB)
         {
             // The body of this function will be replaced by the EE with unsafe code!!!
-            // See getILIntrinsicImplementation for how this happens.  
+            // See getILIntrinsicImplementation for how this happens.
             throw new InvalidOperationException();
         }
 
         /// <returns>true if given type is reference type or value type that contains references</returns>
         static internal bool ContainsReferences<T>()
         {
-            // See getILIntrinsicImplementation for how this happens.  
+            // The body of this function will be replaced by the EE with unsafe code!!!
+            // See getILIntrinsicImplementation for how this happens.
             throw new InvalidOperationException();
         }
 

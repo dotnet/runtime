@@ -42,6 +42,8 @@ class My
 
         Test(CanAccessItemsViaIndexer, "CanAccessItemsViaIndexer", ref failedTestsCount);
 
+        Test(TestBoundaryEmptySpan, "TestBoundaryEmptySpan", ref failedTestsCount);
+
         Test(ReferenceTypesAreSupported, "ReferenceTypesAreSupported", ref failedTestsCount);
 
         Test(CanUpdateUnderlyingArray, "CanUpdateUnderlyingArray", ref failedTestsCount);
@@ -89,6 +91,17 @@ class My
         AssertTrue(Sum(subslice) == 5, "Failed to sum subslice");
     }
 
+    static TestBoundaryEmptySpan()
+    {
+        int[] a = new byte[5];
+
+        Span<int> slice = new Span<int>(a, a.Length, 0);
+        AssertEqual(slice.Length, 0);
+
+        Span<int> subSlice = new Span<int>(a).Slice(a.Length, 0);
+        AssertEqual(subSlice.Length, 0);
+    }
+
     static void ReferenceTypesAreSupported()
     {
         var underlyingArray = new ReferenceType[] { new ReferenceType(0), new ReferenceType(1), new ReferenceType(2) };
@@ -112,7 +125,7 @@ class My
         }
         catch (System.ArgumentException ex)
         {
-            AssertTrue(ex.Message == "Cannot use type 'ValueTypeWithPointers'. Only value types without pointers are supported.",
+            AssertTrue(ex.Message == "Cannot use type 'ValueTypeWithPointers'. Only value types without pointers or references are supported.",
                 "Exception message is incorrect");
         }
 
@@ -123,7 +136,7 @@ class My
         }
         catch (System.ArgumentException ex)
         {
-            AssertTrue(ex.Message == "Cannot use type 'ReferenceType'. Only value types without pointers are supported.",
+            AssertTrue(ex.Message == "Cannot use type 'ReferenceType'. Only value types without pointers or references are supported.",
                 "Exception message is incorrect");
         }
     }
@@ -497,7 +510,7 @@ class My
         }
         catch (System.ArgumentException ex)
         {
-            AssertTrue(ex.Message == "Cannot use type 'ValueTypeWithPointers'. Only value types without pointers are supported.",
+            AssertTrue(ex.Message == "Cannot use type 'ValueTypeWithPointers'. Only value types without pointers or references are supported.",
                 "Exception message is incorrect");
         }
 
@@ -508,7 +521,7 @@ class My
         }
         catch (System.ArgumentException ex)
         {
-            AssertTrue(ex.Message == "Cannot use type 'ValueTypeWithPointers'. Only value types without pointers are supported.",
+            AssertTrue(ex.Message == "Cannot use type 'ValueTypeWithPointers'. Only value types without pointers or references are supported.",
                 "Exception message is incorrect");
         }
 
@@ -520,7 +533,7 @@ class My
         }
         catch (System.ArgumentException ex)
         {
-            AssertTrue(ex.Message == "Cannot use type 'ValueTypeWithPointers'. Only value types without pointers are supported.",
+            AssertTrue(ex.Message == "Cannot use type 'ValueTypeWithPointers'. Only value types without pointers or references are supported.",
                 "Exception message is incorrect");
         }
     }

@@ -9,17 +9,16 @@ using System.Runtime.CompilerServices;
 namespace System
 {
     /// <summary>
-    /// ReadOnlySpan is a uniform API for dealing with arrays and subarrays, strings
-    /// and substrings, and unmanaged memory buffers.  It adds minimal overhead
-    /// to regular accesses and is a struct so that creation and subslicing do
-    /// not require additional allocations.  It is type- and memory-safe.
+    /// ReadOnlySpan represents contiguous read-only region of arbitrary memory, with performance
+    /// characteristics on par with T[]. Unlike arrays, it can point to either managed
+    /// or native memory, or to memory allocated on the stack. It is type- and memory-safe.
     /// </summary>
-    public struct ReadOnlySpan<T>
+    public unsafe struct ReadOnlySpan<T>
     {
         /// <summary>A byref or a native ptr. Do not access directly</summary>
-        internal /* readonly */ IntPtr _rawPointer;
+        private readonly IntPtr _rawPointer;
         /// <summary>The number of elements this ReadOnlySpan contains.</summary>
-        internal readonly int _length;
+        private readonly int _length;
 
         /// <summary>
         /// Creates a new span over the entirety of the target array.
@@ -32,7 +31,8 @@ namespace System
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
 
-            JitHelpers.SetByRef(out _rawPointer, ref JitHelpers.GetArrayData(array));
+            // TODO-SPAN: This has GC hole. It needs to be JIT intrinsic instead
+            _rawPointer = (IntPtr)Unsafe.AsPointer(ref JitHelpers.GetArrayData(array));
             _length = array.Length;
         }
 
@@ -52,10 +52,11 @@ namespace System
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            if ((uint)start >= (uint)array.Length || (uint)length > (uint)(array.Length - start))
+            if ((uint)start > (uint)array.Length || (uint)length > (uint)(array.Length - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            JitHelpers.SetByRef(out _rawPointer, ref Unsafe.Add(ref JitHelpers.GetArrayData(array), start));
+            // TODO-SPAN: This has GC hole. It needs to be JIT intrinsic instead
+            _rawPointer = (IntPtr)Unsafe.AsPointer(ref Unsafe.Add(ref JitHelpers.GetArrayData(array), start));
             _length = length;
         }
 
@@ -74,24 +75,34 @@ namespace System
         /// Thrown when the specified <paramref name="length"/> is negative.
         /// </exception>
         [CLSCompliant(false)]
-        public unsafe ReadOnlySpan(void* ptr, int length)
+        public unsafe ReadOnlySpan(void* pointer, int length)
         {
             if (JitHelpers.ContainsReferences<T>())
                 ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
             if (length < 0)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            _rawPointer = (IntPtr)ptr;
+            _rawPointer = (IntPtr)pointer;
             _length = length;
         }
 
         /// <summary>
-        /// An internal helper for creating spans. Not for public use.
+        /// An internal helper for creating spans.
         /// </summary>
         internal ReadOnlySpan(ref T ptr, int length)
         {
-            JitHelpers.SetByRef(out _rawPointer, ref ptr);
+            // TODO-SPAN: This has GC hole. It needs to be JIT intrinsic instead
+            _rawPointer = (IntPtr)Unsafe.AsPointer(ref ptr);
             _length = length;
+        }
+
+        /// <summary>
+        /// An internal helper for accessing spans.
+        /// </summary>
+        internal unsafe ref T GetRawPointer()
+        {
+            // TODO-SPAN: This has GC hole. It needs to be JIT intrinsic instead
+            return ref Unsafe.As<IntPtr, T>(ref *(IntPtr *)_rawPointer);
         }
 
         /// <summary>
@@ -99,7 +110,7 @@ namespace System
         /// </summary>
         public static implicit operator ReadOnlySpan<T>(Span<T> slice)
         {
-            return new ReadOnlySpan<T>(ref JitHelpers.GetByRef<T>(ref slice._rawPointer), slice._length);
+            return new ReadOnlySpan<T>(ref slice.GetRawPointer(), slice.Length);
         }
 
         /// <summary>
@@ -155,7 +166,7 @@ namespace System
                 if ((uint)index >= (uint)_length)
                     ThrowHelper.ThrowIndexOutOfRangeException();
 
-                return Unsafe.Add(ref JitHelpers.GetByRef<T>(ref _rawPointer), index);
+                return Unsafe.Add(ref GetRawPointer(), index);
             }
         }
 
@@ -170,7 +181,7 @@ namespace System
                 return Array.Empty<T>();
 
             var destination = new T[_length];
-            SpanHelper.CopyTo<T>(ref JitHelpers.GetArrayData(destination), ref JitHelpers.GetByRef<T>(ref _rawPointer), _length);
+            SpanHelper.CopyTo<T>(ref JitHelpers.GetArrayData(destination), ref GetRawPointer(), _length);
             return destination;
         }
 
@@ -186,7 +197,7 @@ namespace System
             if ((uint)start > (uint)_length)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            return new ReadOnlySpan<T>(ref Unsafe.Add(ref JitHelpers.GetByRef<T>(ref _rawPointer), start), _length - start);
+            return new ReadOnlySpan<T>(ref Unsafe.Add(ref GetRawPointer(), start), _length - start);
         }
 
         /// <summary>
@@ -199,10 +210,10 @@ namespace System
         /// </exception>
         public ReadOnlySpan<T> Slice(int start, int length)
         {
-            if ((uint)start >= (uint)_length || (uint)length > (uint)(_length - start))
+            if ((uint)start > (uint)_length || (uint)length > (uint)(_length - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            return new ReadOnlySpan<T>(ref Unsafe.Add(ref JitHelpers.GetByRef<T>(ref _rawPointer), start), length);
+            return new ReadOnlySpan<T>(ref Unsafe.Add(ref GetRawPointer(), start), length);
         }
 
         /// <summary>
@@ -211,8 +222,8 @@ namespace System
         /// </summary>
         public bool Equals(ReadOnlySpan<T> other)
         {
-            return (_length == other._length) &&
-                (_length == 0 || Unsafe.AreSame(ref JitHelpers.GetByRef<T>(ref _rawPointer), ref JitHelpers.GetByRef<T>(ref other._rawPointer)));
+            return (_length == other.Length) &&
+                (_length == 0 || Unsafe.AreSame(ref GetRawPointer(), ref other.GetRawPointer()));
         }
 
         /// <summary>
@@ -222,10 +233,10 @@ namespace System
         /// <param name="destination">The span to copy items into.</param>
         public bool TryCopyTo(Span<T> destination)
         {
-            if (_length > destination._length)
+            if ((uint)_length > (uint)destination.Length)
                 return false;
 
-            SpanHelper.CopyTo<T>(ref JitHelpers.GetByRef<T>(ref destination._rawPointer), ref JitHelpers.GetByRef<T>(ref _rawPointer), _length);
+            SpanHelper.CopyTo<T>(ref destination.GetRawPointer(), ref GetRawPointer(), _length);
             return true;
         }
     }
@@ -281,7 +292,7 @@ namespace System
         {
             if (text == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
-            if ((uint)start >= (uint)text.Length || (uint)length > (uint)(text.Length - start))
+            if ((uint)start > (uint)text.Length || (uint)length > (uint)(text.Length - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
             return new ReadOnlySpan<char>(ref Unsafe.Add(ref text.GetFirstCharRef(), start), length);
