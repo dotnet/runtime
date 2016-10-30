@@ -7394,11 +7394,15 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
 
     // If the callee wants debuggable code, don't allow it to be inlined
 
-    if (GetDebuggerCompileFlags(pCallee->GetModule(), CORJIT_FLAGS()).IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE))
     {
-        result = INLINE_NEVER;
-        szFailReason = "Inlinee is debuggable";
-        goto exit;
+        // Combining the next two lines, and eliminating jitDebuggerFlags, leads to bad codegen in x86 Release builds using Visual C++ 19.00.24215.1.
+        CORJIT_FLAGS jitDebuggerFlags = GetDebuggerCompileFlags(pCallee->GetModule(), CORJIT_FLAGS());
+        if (jitDebuggerFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE))
+        {
+            result = INLINE_NEVER;
+            szFailReason = "Inlinee is debuggable";
+            goto exit;
+        }
     }
 #endif
 
