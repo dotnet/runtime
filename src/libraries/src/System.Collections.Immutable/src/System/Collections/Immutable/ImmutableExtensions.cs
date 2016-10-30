@@ -87,6 +87,58 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
+        /// Tries to copy the elements in the sequence to the specified array,
+        /// if the sequence is a well-known collection type. Otherwise, does
+        /// nothing and returns <c>false</c>.
+        /// </summary>
+        /// <typeparam name="T">The type of element in the sequence.</typeparam>
+        /// <param name="sequence">The sequence to copy.</param>
+        /// <param name="array">The array to copy the elements to.</param>
+        /// <param name="arrayIndex">The index in the array to start copying.</param>
+        /// <returns><c>true</c> if the elements were successfully copied; <c>false</c> otherwise.</returns>
+        /// <remarks>
+        /// <para>
+        /// The reason we don't copy anything other than for well-known types is that a malicious interface
+        /// implementation of <see cref="ICollection{T}"/> could hold on to the array when its <see cref="ICollection{T}.CopyTo"/>
+        /// method is called. If the array it holds onto underlies an <see cref="ImmutableArray{T}"/>, it could violate
+        /// immutability by modifying the array.
+        /// </para>
+        /// </remarks>
+        internal static bool TryCopyTo<T>(this IEnumerable<T> sequence, T[] array, int arrayIndex)
+        {
+            // IList is the GCD of what the following 3 types implement.
+            var listInterface = sequence as IList<T>;
+            if (listInterface != null)
+            {
+                var sourceArray = sequence as T[];
+                if (sourceArray != null)
+                {
+                    // Note: This can have issues if T is a value type, but the underlying type
+                    // of the T[] is not typeof(T[]).
+                    // More discussion here: https://github.com/dotnet/corefx/issues/2241
+                    Array.Copy(sourceArray, 0, array, arrayIndex, sourceArray.Length);
+                    return true;
+                }
+
+                var list = sequence as List<T>;
+                if (list != null)
+                {
+                    list.CopyTo(array, arrayIndex);
+                    return true;
+                }
+
+                if (sequence is ImmutableArray<T>)
+                {
+                    var immutable = (ImmutableArray<T>)sequence;
+                    Array.Copy(immutable.array, 0, array, arrayIndex, immutable.Length);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Gets a copy of a sequence as an array.
         /// </summary>
         /// <typeparam name="T">The type of element.</typeparam>
@@ -103,15 +155,25 @@ namespace System.Collections.Immutable
             Requires.NotNull(sequence, nameof(sequence));
             Requires.Range(count >= 0, nameof(count));
 
-            T[] array = new T[count];
-            int i = 0;
-            foreach (var item in sequence)
+            if (count == 0)
             {
-                Requires.Argument(i < count);
-                array[i++] = item;
+                return ImmutableArray<T>.Empty.array;
             }
 
-            Requires.Argument(i == count);
+            T[] array = new T[count];
+
+            if (!sequence.TryCopyTo(array, 0))
+            {
+                int i = 0;
+                foreach (var item in sequence)
+                {
+                    Requires.Argument(i < count);
+                    array[i++] = item;
+                }
+
+                Requires.Argument(i == count);
+            }
+
             return array;
         }
 
