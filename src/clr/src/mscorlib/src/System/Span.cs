@@ -104,26 +104,41 @@ namespace System
             _length = length;
         }
 
+        /// <summary>
+        /// Defines an implicit conversion of an array to a <see cref="Span{T}"/>
+        /// </summary>
         public static implicit operator Span<T>(T[] array)
         {
             return new Span<T>(array);
         }
 
+        /// <summary>
+        /// Defines an implicit conversion of a <see cref="ArraySegment{T}"/> to a <see cref="Span{T}"/>
+        /// </summary>
         public static implicit operator Span<T>(ArraySegment<T> arraySegment)
         {
             return new Span<T>(arraySegment.Array, arraySegment.Offset, arraySegment.Count);
         }
 
+        /// <summary>
+        /// Gets the number of elements contained in the <see cref="Span{T}"/>
+        /// </summary>
         public int Length
         {
             get { return _length; }
         }
 
+        /// <summary>
+        /// Returns an empty <see cref="Span{T}"/>
+        /// </summary>
         public static Span<T> Empty
         {
             get { return default(Span<T>); }
         }
 
+        /// <summary>
+        /// Returns whether the <see cref="Span{T}"/> is empty.
+        /// </summary>
         public bool IsEmpty
         {
             get { return _length == 0; }
