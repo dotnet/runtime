@@ -27,7 +27,6 @@ namespace System.Net.Security.Tests
         }
 
         [Theory]
-        [ActiveIssue(12893)]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
         public void SslStream_AuthenticateAsClientAsync_Supported_Success(SslProtocols protocol)
         {
@@ -36,7 +35,6 @@ namespace System.Net.Security.Tests
         }
 
         [Theory]
-        [ActiveIssue(12893)]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
         public void SslStream_AuthenticateAsClient_Supported_Success(SslProtocols protocol)
         {
@@ -65,7 +63,6 @@ namespace System.Net.Security.Tests
             Assert.Throws<NotSupportedException>(() => AuthenticateAsClient(stream, false, "host", null, SslProtocolSupport.UnsupportedSslProtocols, false));
         }
 
-        [ActiveIssue(12893)]
         [Fact]
         public void SslStream_AuthenticateAsClientAsync_AllSupported_Success()
         {
@@ -73,7 +70,6 @@ namespace System.Net.Security.Tests
             AuthenticateAsClient(stream, true, "host", null, SslProtocolSupport.SupportedSslProtocols, false);
         }
 
-        [ActiveIssue(12893)]
         [Fact]
         public void SslStream_AuthenticateAsClientAsync_None_Success()
         {
@@ -81,7 +77,6 @@ namespace System.Net.Security.Tests
             AuthenticateAsClient(stream, true, "host", null, SslProtocols.None, false);
         }
 
-        [ActiveIssue(12893)]
         [Fact]
         public void SslStream_AuthenticateAsClientAsync_Default_Success()
         {
