@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
     <PackageTargetFramework Condition="'$(TargetGroup)'==''">netstandard1.7;uap10.1</PackageTargetFramework>
     <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp1.1'">$(DefineConstants);netcoreapp11</DefineConstants>
   </PropertyGroup>
