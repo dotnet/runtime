@@ -65,7 +65,7 @@ namespace System
             if ((uint)start >= (uint)array.Length || (uint)length > (uint)(array.Length - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            JitHelpers.SetByRef(out _rawPointer, ref JitHelpers.AddByRef(ref JitHelpers.GetArrayData(array), start));
+            JitHelpers.SetByRef(out _rawPointer, ref Unsafe.Add(ref JitHelpers.GetArrayData(array), start));
             _length = length;
         }
 
@@ -142,14 +142,14 @@ namespace System
                 if ((uint)index >= (uint)_length)
                     ThrowHelper.ThrowIndexOutOfRangeException();
 
-                return JitHelpers.AddByRef(ref JitHelpers.GetByRef<T>(ref _rawPointer), index);
+                return Unsafe.Add(ref JitHelpers.GetByRef<T>(ref _rawPointer), index);
             }
             set
             {
                 if ((uint)index >= (uint)_length)
                     ThrowHelper.ThrowIndexOutOfRangeException();
 
-                JitHelpers.AddByRef(ref JitHelpers.GetByRef<T>(ref _rawPointer), index) = value;
+                Unsafe.Add(ref JitHelpers.GetByRef<T>(ref _rawPointer), index) = value;
             }
         }
 
@@ -160,8 +160,11 @@ namespace System
         /// </summary>
         public T[] ToArray()
         {
+            if (_length == 0)
+                return Array.Empty<T>();
+
             var destination = new T[_length];
-            TryCopyTo(destination);
+            SpanHelper.CopyTo<T>(ref JitHelpers.GetArrayData(destination), ref JitHelpers.GetByRef<T>(ref _rawPointer), _length);
             return destination;
         }
 
@@ -177,7 +180,7 @@ namespace System
             if ((uint)start > (uint)_length)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            return new Span<T>(ref JitHelpers.AddByRef(ref JitHelpers.GetByRef<T>(ref _rawPointer), start), Length - start);
+            return new Span<T>(ref Unsafe.Add(ref JitHelpers.GetByRef<T>(ref _rawPointer), start), _length - start);
         }
 
         /// <summary>
@@ -193,7 +196,7 @@ namespace System
             if ((uint)start >= (uint)_length || (uint)length > (uint)(_length - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            return new Span<T>(ref JitHelpers.AddByRef(ref JitHelpers.GetByRef<T>(ref _rawPointer), start), length);
+            return new Span<T>(ref Unsafe.Add(ref JitHelpers.GetByRef<T>(ref _rawPointer), start), length);
         }
 
         /// <summary>
@@ -203,7 +206,7 @@ namespace System
         public bool Equals(Span<T> other)
         {
             return (_length == other._length) &&
-                (_length == 0 || JitHelpers.ByRefEquals(ref JitHelpers.GetByRef<T>(ref _rawPointer), ref JitHelpers.GetByRef<T>(ref other._rawPointer)));
+                (_length == 0 || Unsafe.AreSame(ref JitHelpers.GetByRef<T>(ref _rawPointer), ref JitHelpers.GetByRef<T>(ref other._rawPointer)));
         }
 
         /// <summary>
@@ -216,7 +219,7 @@ namespace System
             if (Length > destination.Length)
                 return false;
 
-            SpanHelper.CopyTo<T>(ref destination._rawPointer, ref _rawPointer, Length);
+            SpanHelper.CopyTo<T>(ref JitHelpers.GetByRef<T>(ref destination._rawPointer), ref JitHelpers.GetByRef<T>(ref _rawPointer), _length);
             return true;
         }
 
@@ -228,7 +231,7 @@ namespace System
             if ((uint)values._length > (uint)_length)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            SpanHelper.CopyTo<T>(ref _rawPointer, ref values._rawPointer, values.Length);
+            SpanHelper.CopyTo<T>(ref JitHelpers.GetByRef<T>(ref _rawPointer), ref JitHelpers.GetByRef<T>(ref values._rawPointer), values._length);
         }
     }
 
@@ -250,7 +253,7 @@ namespace System
 
             return new Span<byte>(
                 ref JitHelpers.GetByRef<byte>(ref source._rawPointer),
-                checked((int)(source._length * JitHelpers.SizeOf<T>())));
+                checked((int)(source._length * Unsafe.SizeOf<T>())));
         }
 
         /// <summary>
@@ -269,7 +272,7 @@ namespace System
 
             return new ReadOnlySpan<byte>(
                 ref JitHelpers.GetByRef<byte>(ref source._rawPointer),
-                checked((int)(source._length * JitHelpers.SizeOf<T>())));
+                checked((int)(source._length * Unsafe.SizeOf<T>())));
         }
 
         /// <summary>
@@ -294,7 +297,7 @@ namespace System
 
             return new Span<TTo>(
                 ref JitHelpers.GetByRef<TTo>(ref source._rawPointer),
-                checked((int)(source._length * JitHelpers.SizeOf<TFrom>() / JitHelpers.SizeOf<TTo>())));
+                checked((int)(source._length * Unsafe.SizeOf<TFrom>() / Unsafe.SizeOf<TTo>())));
         }
 
         /// <summary>
@@ -319,51 +322,47 @@ namespace System
 
             return new ReadOnlySpan<TTo>(
                 ref JitHelpers.GetByRef<TTo>(ref source._rawPointer),
-                checked((int)(source._length * JitHelpers.SizeOf<TFrom>() / JitHelpers.SizeOf<TTo>())));
+                checked((int)(source._length * Unsafe.SizeOf<TFrom>() / Unsafe.SizeOf<TTo>())));
         }
     }
 
     internal static class SpanHelper
     {
-        internal static void CopyTo<T>(ref IntPtr destination, ref IntPtr source, int elementsCount)
+        internal static unsafe void CopyTo<T>(ref T destination, ref T source, int elementsCount)
         {
             if (elementsCount == 0)
                 return;
 
-            ref T dest = ref JitHelpers.GetByRef<T>(ref destination);
-            ref T src = ref JitHelpers.GetByRef<T>(ref source);
-            if (JitHelpers.ByRefEquals(ref dest, ref src))
+            if (Unsafe.AreSame(ref destination, ref source))
                 return;
 
             if (!JitHelpers.ContainsReferences<T>())
             {
-                unsafe
+                fixed (byte* pDestination = &Unsafe.As<T, byte>(ref destination))
                 {
-                    Memmove<T>((byte*)destination, (byte*)source, elementsCount);
+                    fixed (byte* pSource = &Unsafe.As<T, byte>(ref source))
+                    {
+#if BIT64
+                        Buffer.Memmove(pDestination, pSource, (ulong)elementsCount * (ulong)Unsafe.SizeOf<T>());
+#else
+                        Buffer.Memmove(pDestination, pSource, (uint)elementsCount * (uint)Unsafe.SizeOf<T>());
+#endif
+                    }
                 }
             }
             else
             {
-                if (JitHelpers.ByRefLessThan(ref dest, ref src)) // copy forward
+                if (JitHelpers.ByRefLessThan(ref destination, ref source)) // copy forward
                 {
                     for (int i = 0; i < elementsCount; i++)
-                        JitHelpers.AddByRef(ref dest, i) = JitHelpers.AddByRef(ref src, i);
+                        Unsafe.Add(ref destination, i) = Unsafe.Add(ref source, i);
                 }
                 else // copy backward to avoid overlapping issues
                 {
                     for (int i = elementsCount - 1; i >= 0; i--)
-                        JitHelpers.AddByRef(ref dest, i) = JitHelpers.AddByRef(ref src, i);
+                        Unsafe.Add(ref destination, i) = Unsafe.Add(ref source, i);
                 }
             }
-        }
-
-        private static unsafe void Memmove<T>(byte* destination, byte* source, int elementsCount)
-        {
-#if BIT64
-            Buffer.Memmove(destination, source, (ulong)elementsCount * (ulong)JitHelpers.SizeOf<T>());
-#else
-            Buffer.Memmove(destination, source, (uint)elementsCount * (uint)JitHelpers.SizeOf<T>());
-#endif
         }
     }
 }
