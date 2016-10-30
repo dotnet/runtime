@@ -2,10 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
-using System.Net;
-using System.Net.Sockets;
 using System.Net.Sockets.Tests;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -70,9 +67,12 @@ namespace System.Net.Sockets.Performance.Tests
 
             _timeProgramStart = timeProgramStart;
 
-            _timeInit.Start();
-            _s = new Socket(SocketType.Stream, ProtocolType.Tcp);
-            _timeInit.Stop();
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // on Unix, socket will be created in Socket.ConnectAsync
+            {
+                _timeInit.Start();
+                _s = new Socket(SocketType.Stream, ProtocolType.Tcp);
+                _timeInit.Stop();
+            }
 
             _iterations = iterations;
         }
@@ -239,8 +239,8 @@ namespace System.Net.Sockets.Performance.Tests
                     ImplementationName(),
                     _bufferLen,
                     _receive_iterations,
-                    _timeInit.ElapsedMilliseconds,
-                    _timeConnect.ElapsedMilliseconds,
+                    _timeInit.ElapsedMilliseconds, // only relevant on Windows
+                    _timeConnect.ElapsedMilliseconds, // on Unix this includes socket creation time
                     _timeSendRecv.ElapsedMilliseconds,
                     _timeClose.ElapsedMilliseconds,
                     _timeProgramStart.ElapsedMilliseconds);
