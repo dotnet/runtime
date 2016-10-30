@@ -55,7 +55,7 @@ namespace System
             if ((uint)start >= (uint)array.Length || (uint)length > (uint)(array.Length - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            JitHelpers.SetByRef(out _rawPointer, ref JitHelpers.AddByRef(ref JitHelpers.GetArrayData(array), start));
+            JitHelpers.SetByRef(out _rawPointer, ref Unsafe.Add(ref JitHelpers.GetArrayData(array), start));
             _length = length;
         }
 
@@ -96,7 +96,7 @@ namespace System
 
         public static implicit operator ReadOnlySpan<T>(Span<T> slice)
         {
-            return new ReadOnlySpan<T>(ref JitHelpers.GetByRef<T>(ref slice._rawPointer), slice.Length);
+            return new ReadOnlySpan<T>(ref JitHelpers.GetByRef<T>(ref slice._rawPointer), slice._length);
         }
 
         public static implicit operator ReadOnlySpan<T>(T[] array)
@@ -137,7 +137,7 @@ namespace System
                 if ((uint)index >= (uint)_length)
                     ThrowHelper.ThrowIndexOutOfRangeException();
 
-                return JitHelpers.AddByRef(ref JitHelpers.GetByRef<T>(ref _rawPointer), index);
+                return Unsafe.Add(ref JitHelpers.GetByRef<T>(ref _rawPointer), index);
             }
         }
 
@@ -148,8 +148,11 @@ namespace System
         /// </summary>
         public T[] ToArray()
         {
+            if (_length == 0)
+                return Array.Empty<T>();
+
             var destination = new T[_length];
-            TryCopyTo(destination);
+            SpanHelper.CopyTo<T>(ref JitHelpers.GetArrayData(destination), ref JitHelpers.GetByRef<T>(ref _rawPointer), _length);
             return destination;
         }
 
@@ -165,7 +168,7 @@ namespace System
             if ((uint)start > (uint)_length)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            return new ReadOnlySpan<T>(ref JitHelpers.AddByRef(ref JitHelpers.GetByRef<T>(ref _rawPointer), start), Length - start);
+            return new ReadOnlySpan<T>(ref Unsafe.Add(ref JitHelpers.GetByRef<T>(ref _rawPointer), start), _length - start);
         }
 
         /// <summary>
@@ -181,7 +184,7 @@ namespace System
             if ((uint)start >= (uint)_length || (uint)length > (uint)(_length - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            return new ReadOnlySpan<T>(ref JitHelpers.AddByRef(ref JitHelpers.GetByRef<T>(ref _rawPointer), start), length);
+            return new ReadOnlySpan<T>(ref Unsafe.Add(ref JitHelpers.GetByRef<T>(ref _rawPointer), start), length);
         }
 
         /// <summary>
@@ -191,7 +194,7 @@ namespace System
         public bool Equals(ReadOnlySpan<T> other)
         {
             return (_length == other._length) &&
-                (_length == 0 || JitHelpers.ByRefEquals(ref JitHelpers.GetByRef<T>(ref _rawPointer), ref JitHelpers.GetByRef<T>(ref other._rawPointer)));
+                (_length == 0 || Unsafe.AreSame(ref JitHelpers.GetByRef<T>(ref _rawPointer), ref JitHelpers.GetByRef<T>(ref other._rawPointer)));
         }
 
         /// <summary>
@@ -201,10 +204,10 @@ namespace System
         /// <param name="destination">The span to copy items into.</param>
         public bool TryCopyTo(Span<T> destination)
         {
-            if (Length > destination.Length)
+            if (_length > destination._length)
                 return false;
 
-            SpanHelper.CopyTo<T>(ref destination._rawPointer, ref _rawPointer, Length);
+            SpanHelper.CopyTo<T>(ref JitHelpers.GetByRef<T>(ref destination._rawPointer), ref JitHelpers.GetByRef<T>(ref _rawPointer), _length);
             return true;
         }
     }
@@ -242,7 +245,7 @@ namespace System
             if ((uint)start > (uint)text.Length)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            return new ReadOnlySpan<char>(ref JitHelpers.AddByRef(ref text.GetFirstCharRef(), start), text.Length - start);
+            return new ReadOnlySpan<char>(ref Unsafe.Add(ref text.GetFirstCharRef(), start), text.Length - start);
         }
 
         /// <summary>
@@ -263,7 +266,7 @@ namespace System
             if ((uint)start >= (uint)text.Length || (uint)length > (uint)(text.Length - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            return new ReadOnlySpan<char>(ref JitHelpers.AddByRef(ref text.GetFirstCharRef(), start), length);
+            return new ReadOnlySpan<char>(ref Unsafe.Add(ref text.GetFirstCharRef(), start), length);
         }
     }
 }

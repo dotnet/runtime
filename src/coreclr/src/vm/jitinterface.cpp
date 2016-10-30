@@ -6934,41 +6934,6 @@ bool getILIntrinsicImplementation(MethodDesc * ftn,
         methInfo->options = (CorInfoOptions)0;
         return true;
     }
-    else if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__ADD_BYREF)->GetMemberDef())
-    {
-        mdToken tokGenericArg = FindGenericMethodArgTypeSpec(MscorlibBinder::GetModule()->GetMDImport());
-
-        static BYTE ilcode[] = { CEE_LDARG_1,
-                                 CEE_PREFIX1,(BYTE)CEE_SIZEOF,0,0,0,0,
-                                 CEE_CONV_I,
-                                 CEE_MUL,
-                                 CEE_LDARG_0,
-                                 CEE_ADD,
-                                 CEE_RET };
-
-        ilcode[3] = (BYTE)(tokGenericArg);
-        ilcode[4] = (BYTE)(tokGenericArg >> 8);
-        ilcode[5] = (BYTE)(tokGenericArg >> 16);
-        ilcode[6] = (BYTE)(tokGenericArg >> 24);
-
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 2;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
-        return true;
-    }
-    else if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__BYREF_EQUALS)->GetMemberDef())
-    {
-        // Compare the two arguments
-        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_LDARG_1, CEE_PREFIX1, (BYTE)CEE_CEQ, CEE_RET };
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 2;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
-        return true;
-    }
     else if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__BYREF_LESSTHAN)->GetMemberDef())
     {
         // Compare the two arguments
@@ -6992,24 +6957,6 @@ bool getILIntrinsicImplementation(MethodDesc * ftn,
         ilcode[3] = (BYTE)(tokArrayPinningHelper >> 8);
         ilcode[4] = (BYTE)(tokArrayPinningHelper >> 16);
         ilcode[5] = (BYTE)(tokArrayPinningHelper >> 24);
-
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 1;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
-        return true;
-    }
-    else if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__SIZEOF)->GetMemberDef())
-    {
-        _ASSERTE(ftn->HasMethodInstantiation());
-        Instantiation inst = ftn->GetMethodInstantiation();
-
-        _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
-        mdToken tokGenericArg = FindGenericMethodArgTypeSpec(MscorlibBinder::GetModule()->GetMDImport());
-
-        static const BYTE ilcode[] = { CEE_PREFIX1, (BYTE)CEE_SIZEOF, (BYTE)(tokGenericArg), (BYTE)(tokGenericArg >> 8), (BYTE)(tokGenericArg >> 16), (BYTE)(tokGenericArg >> 24),
-                                       CEE_RET }; 
 
         methInfo->ILCode = const_cast<BYTE*>(ilcode);
         methInfo->ILCodeSize = sizeof(ilcode);
@@ -7045,10 +6992,90 @@ bool getILIntrinsicImplementation(MethodDesc * ftn,
         methInfo->options = (CorInfoOptions)0;
         return true;
     }
-#endif
+#endif // FEATURE_SPAN_OF_T
 
     return false;
 }
+
+#ifdef FEATURE_SPAN_OF_T
+bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
+                                           CORINFO_METHOD_INFO * methInfo)
+{
+    STANDARD_VM_CONTRACT;
+
+    // Precondition: ftn is a method in mscorlib 
+    _ASSERTE(ftn->GetModule()->IsSystem());
+
+    mdMethodDef tk = ftn->GetMemberDef();
+
+    if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__SIZEOF)->GetMemberDef())
+    {
+        _ASSERTE(ftn->HasMethodInstantiation());
+        Instantiation inst = ftn->GetMethodInstantiation();
+
+        _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
+        mdToken tokGenericArg = FindGenericMethodArgTypeSpec(MscorlibBinder::GetModule()->GetMDImport());
+
+        static const BYTE ilcode[] = { CEE_PREFIX1, (BYTE)CEE_SIZEOF, (BYTE)(tokGenericArg), (BYTE)(tokGenericArg >> 8), (BYTE)(tokGenericArg >> 16), (BYTE)(tokGenericArg >> 24),
+            CEE_RET };
+
+        methInfo->ILCode = const_cast<BYTE*>(ilcode);
+        methInfo->ILCodeSize = sizeof(ilcode);
+        methInfo->maxStack = 1;
+        methInfo->EHcount = 0;
+        methInfo->options = (CorInfoOptions)0;
+        return true;
+    }
+    else if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__BYREF_AS)->GetMemberDef())
+    {
+        // Return the argument that was passed in.
+        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_RET };
+        methInfo->ILCode = const_cast<BYTE*>(ilcode);
+        methInfo->ILCodeSize = sizeof(ilcode);
+        methInfo->maxStack = 1;
+        methInfo->EHcount = 0;
+        methInfo->options = (CorInfoOptions)0;
+        return true;
+    }
+    else if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__BYREF_ADD)->GetMemberDef())
+    {
+        mdToken tokGenericArg = FindGenericMethodArgTypeSpec(MscorlibBinder::GetModule()->GetMDImport());
+
+        static BYTE ilcode[] = { CEE_LDARG_1,
+            CEE_PREFIX1,(BYTE)CEE_SIZEOF,0,0,0,0,
+            CEE_CONV_I,
+            CEE_MUL,
+            CEE_LDARG_0,
+            CEE_ADD,
+            CEE_RET };
+
+        ilcode[3] = (BYTE)(tokGenericArg);
+        ilcode[4] = (BYTE)(tokGenericArg >> 8);
+        ilcode[5] = (BYTE)(tokGenericArg >> 16);
+        ilcode[6] = (BYTE)(tokGenericArg >> 24);
+
+        methInfo->ILCode = const_cast<BYTE*>(ilcode);
+        methInfo->ILCodeSize = sizeof(ilcode);
+        methInfo->maxStack = 2;
+        methInfo->EHcount = 0;
+        methInfo->options = (CorInfoOptions)0;
+        return true;
+    }
+    else if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__BYREF_ARE_SAME)->GetMemberDef())
+    {
+        // Compare the two arguments
+        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_LDARG_1, CEE_PREFIX1, (BYTE)CEE_CEQ, CEE_RET };
+        methInfo->ILCode = const_cast<BYTE*>(ilcode);
+        methInfo->ILCodeSize = sizeof(ilcode);
+        methInfo->maxStack = 2;
+        methInfo->EHcount = 0;
+        methInfo->options = (CorInfoOptions)0;
+        return true;
+    }
+
+    return false;
+}
+#endif // FEATURE_SPAN_OF_T
 
 bool getILIntrinsicImplementationForVolatile(MethodDesc * ftn,
                                              CORINFO_METHOD_INFO * methInfo)
@@ -7230,6 +7257,12 @@ getMethodInfoHelper(
         {
             fILIntrinsic = getILIntrinsicImplementation(ftn, methInfo);
         }
+#ifdef FEATURE_SPAN_OF_T
+        else if (MscorlibBinder::IsClass(pMT, CLASS__UNSAFE))
+        {
+            fILIntrinsic = getILIntrinsicImplementationForUnsafe(ftn, methInfo);
+        }
+#endif
         else if (MscorlibBinder::IsClass(pMT, CLASS__INTERLOCKED))
         {
             fILIntrinsic = getILIntrinsicImplementationForInterlocked(ftn, methInfo);
