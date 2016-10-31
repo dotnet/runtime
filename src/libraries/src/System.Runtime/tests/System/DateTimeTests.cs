@@ -645,6 +645,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void ParseExact_String_String_FormatProvider_DateTimeStyles_R()
+        {
+            DateTime expected = DateTime.MaxValue;
+            string expectedString = expected.ToString("r");
+
+            DateTime result = DateTime.ParseExact(expectedString, "r", null, DateTimeStyles.None);
+            Assert.Equal(expectedString, result.ToString("r"));
+        }
+
+        [Fact]
         public static void ParseExact_String_String_FormatProvider_DateTimeStyles_CustomFormatProvider()
         {
             var formatter = new MyFormatter();
