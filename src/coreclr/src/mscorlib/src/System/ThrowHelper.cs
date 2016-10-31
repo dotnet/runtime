@@ -43,6 +43,24 @@ namespace System {
 
     [Pure]
     internal static class ThrowHelper {    
+#if FEATURE_SPAN_OF_T
+        internal static void ThrowArrayTypeMismatchException() {
+            throw new ArrayTypeMismatchException();
+        }
+
+        internal static void ThrowInvalidTypeWithPointersNotSupported(Type targetType) {
+            throw new ArgumentException(Environment.GetResourceString("Argument_InvalidTypeWithPointersNotSupported", targetType));
+        }
+
+        internal static void ThrowIndexOutOfRangeException() {
+            throw new IndexOutOfRangeException();
+        }
+
+        internal static void ThrowArgumentOutOfRangeException() {
+            throw new ArgumentOutOfRangeException();
+        }
+#endif
+
         internal static void ThrowArgumentOutOfRange_IndexException() {
             throw GetArgumentOutOfRangeException(ExceptionArgument.index, 
                                                     ExceptionResource.ArgumentOutOfRange_Index);
@@ -334,6 +352,7 @@ namespace System {
         addValueFactory,
         updateValueFactory,
         concurrencyLevel,
+        text,
 
     }
 

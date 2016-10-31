@@ -16,6 +16,10 @@
 #define g_ArrayClassName "System.Array"
 
 #define g_NullableName "Nullable`1"
+#ifdef FEATURE_SPAN_OF_T
+#define g_SpanName "Span`1"
+#define g_ReadOnlySpanName "ReadOnlySpan`1"
+#endif
 
 #define g_CollectionsEnumerableItfName "System.Collections.IEnumerable"
 #define g_CollectionsEnumeratorClassName "System.Collections.IEnumerator"
