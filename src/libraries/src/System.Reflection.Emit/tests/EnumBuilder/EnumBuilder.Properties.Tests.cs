@@ -30,13 +30,5 @@ namespace System.Reflection.Emit.Tests
             enumBuilder.AsType();
             Assert.Empty(enumBuilder.Namespace);
         }
-
-        [Fact]
-        public void UnderlyingField_TypeCreated()
-        {
-            EnumBuilder enumBuilder = Helpers.DynamicEnum(TypeAttributes.Public, typeof(int));
-            enumBuilder.AsType();
-            Assert.Equal(typeof(int), enumBuilder.UnderlyingField.FieldType);
-        }
     }
 }
