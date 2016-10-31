@@ -13,7 +13,7 @@ internal partial class Interop
         //  Idn APIs
         //
 
-        [DllImport("api-ms-win-core-localization-l1-2-0.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [DllImport(Libraries.Normaliz, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern int IdnToAscii(
                                         uint dwFlags,
                                         IntPtr lpUnicodeCharStr,
@@ -22,7 +22,7 @@ internal partial class Interop
                                         IntPtr lpASCIICharStr,
                                         int cchASCIIChar);
 
-        [DllImport("api-ms-win-core-localization-l1-2-0.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [DllImport(Libraries.Normaliz, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern int IdnToUnicode(
                                         uint dwFlags,
                                         IntPtr lpASCIICharStr,

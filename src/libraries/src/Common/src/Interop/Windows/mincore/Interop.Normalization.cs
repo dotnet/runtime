@@ -25,10 +25,10 @@ internal partial class Interop
         //  Normalization APIs
         //
 
-        [DllImport("api-ms-win-core-normalization-l1-1-0.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [DllImport(Libraries.Normalization, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern bool IsNormalizedString(int normForm, string source, int length);
 
-        [DllImport("api-ms-win-core-normalization-l1-1-0.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [DllImport(Libraries.Normalization, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern int NormalizeString(
                                         int normForm,
                                         string source,

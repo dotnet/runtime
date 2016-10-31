@@ -10,7 +10,7 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        [DllImport("api-ms-win-core-file-l1-2-0.dll", EntryPoint = "CreateFile2", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
+        [DllImport(Libraries.CoreFile_L1_2, EntryPoint = "CreateFile2", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
         internal static extern SafeFileHandle CreateFile2(
             string lpFileName,
             int dwDesiredAccess,

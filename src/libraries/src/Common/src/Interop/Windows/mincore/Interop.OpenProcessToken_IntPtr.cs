@@ -11,7 +11,7 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        [DllImport(Libraries.ProcessThread_L1, CharSet = CharSet.Unicode, SetLastError = true)]
+        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern bool OpenProcessToken(
         IntPtr ProcessToken,
         TokenAccessLevels DesiredAccess,
