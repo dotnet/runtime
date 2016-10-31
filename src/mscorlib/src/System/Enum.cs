@@ -841,8 +841,9 @@ namespace System
         [System.Security.SecuritySafeCritical]
         public override unsafe int GetHashCode()
         {
-            // Avoid boxing by inlining GetValue()
-            // return GetValue().GetHashCode();
+            // CONTRACT with the runtime: GetHashCode of enum types is implemented as GetHashCode of the underlying type.
+            // The runtime can bypass calls to Enum::GetHashCode and call the underlying type's GetHashCode directly
+            // to avoid boxing the enum.
 
             fixed (void* pValue = &JitHelpers.GetPinningHelper(this).m_data)
             {
