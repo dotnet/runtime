@@ -7,11 +7,11 @@ using System.Threading;
 
 namespace System.Net
 {
-    unsafe class HttpResponseStreamAsyncResult : LazyAsyncResult
+    internal unsafe class HttpResponseStreamAsyncResult : LazyAsyncResult
     {
-        private readonly ThreadPoolBoundHandle m_boundHandle;
+        private readonly ThreadPoolBoundHandle _boundHandle;
         internal NativeOverlapped* m_pOverlapped;
-        private Interop.HttpApi.HTTP_DATA_CHUNK[] m_DataChunks;
+        private Interop.HttpApi.HTTP_DATA_CHUNK[] _dataChunks;
         internal bool m_SentHeaders;
 
         private static readonly IOCompletionCallback s_IOCallback = new IOCompletionCallback(Callback);
@@ -20,13 +20,13 @@ namespace System.Net
         {
             get
             {
-                if (m_DataChunks == null)
+                if (_dataChunks == null)
                 {
                     return 0;
                 }
                 else
                 {
-                    return (ushort)m_DataChunks.Length;
+                    return (ushort)_dataChunks.Length;
                 }
             }
         }
@@ -35,13 +35,13 @@ namespace System.Net
         {
             get
             {
-                if (m_DataChunks == null)
+                if (_dataChunks == null)
                 {
                     return null;
                 }
                 else
                 {
-                    return (Interop.HttpApi.HTTP_DATA_CHUNK*)(Marshal.UnsafeAddrOfPinnedArrayElement(m_DataChunks, 0));
+                    return (Interop.HttpApi.HTTP_DATA_CHUNK*)(Marshal.UnsafeAddrOfPinnedArrayElement(_dataChunks, 0));
                 }
             }
         }
@@ -111,27 +111,27 @@ namespace System.Net
             return Header;
         }
 
-        const string CRLF = "\r\n";
-        private static readonly byte[] CRLFArray = new byte[] { (byte)'\r', (byte)'\n' };
+        private const string CRLF = "\r\n";
+        private static readonly byte[] s_CRLFArray = new byte[] { (byte)'\r', (byte)'\n' };
 
         internal HttpResponseStreamAsyncResult(object asyncObject, object userState, AsyncCallback callback, byte[] buffer, int offset, int size, bool chunked, bool sentHeaders, ThreadPoolBoundHandle boundHandle) : base(asyncObject, userState, callback)
         {
-            m_boundHandle = boundHandle;
+            _boundHandle = boundHandle;
             m_SentHeaders = sentHeaders;
 
             if (size == 0)
             {
-                m_DataChunks = null;
+                _dataChunks = null;
                 m_pOverlapped = boundHandle.AllocateNativeOverlapped(s_IOCallback, state: this, pinData: null);
             }
             else
             {
-                m_DataChunks = new Interop.HttpApi.HTTP_DATA_CHUNK[chunked ? 3 : 1];
+                _dataChunks = new Interop.HttpApi.HTTP_DATA_CHUNK[chunked ? 3 : 1];
 
                 //GlobalLog.Print("HttpResponseStreamAsyncResult#" + LoggingHash.HashString(this) + "::.ctor() m_pOverlapped:0x" + ((IntPtr)m_pOverlapped).ToString("x8"));
 
-                object[] objectsToPin = new object[1 + m_DataChunks.Length];
-                objectsToPin[m_DataChunks.Length] = m_DataChunks;
+                object[] objectsToPin = new object[1 + _dataChunks.Length];
+                objectsToPin[_dataChunks.Length] = _dataChunks;
 
 
                 int chunkHeaderOffset = 0;
@@ -140,30 +140,29 @@ namespace System.Net
                 {
                     chunkHeaderBuffer = GetChunkHeader(size, out chunkHeaderOffset);
 
-                    m_DataChunks[0] = new Interop.HttpApi.HTTP_DATA_CHUNK();
-                    m_DataChunks[0].DataChunkType = Interop.HttpApi.HTTP_DATA_CHUNK_TYPE.HttpDataChunkFromMemory;
-                    m_DataChunks[0].BufferLength = (uint)(chunkHeaderBuffer.Length - chunkHeaderOffset);
+                    _dataChunks[0] = new Interop.HttpApi.HTTP_DATA_CHUNK();
+                    _dataChunks[0].DataChunkType = Interop.HttpApi.HTTP_DATA_CHUNK_TYPE.HttpDataChunkFromMemory;
+                    _dataChunks[0].BufferLength = (uint)(chunkHeaderBuffer.Length - chunkHeaderOffset);
 
                     objectsToPin[0] = chunkHeaderBuffer;
 
-                    m_DataChunks[1] = new Interop.HttpApi.HTTP_DATA_CHUNK();
-                    m_DataChunks[1].DataChunkType = Interop.HttpApi.HTTP_DATA_CHUNK_TYPE.HttpDataChunkFromMemory;
-                    m_DataChunks[1].BufferLength = (uint)size;
+                    _dataChunks[1] = new Interop.HttpApi.HTTP_DATA_CHUNK();
+                    _dataChunks[1].DataChunkType = Interop.HttpApi.HTTP_DATA_CHUNK_TYPE.HttpDataChunkFromMemory;
+                    _dataChunks[1].BufferLength = (uint)size;
 
                     objectsToPin[1] = buffer;
 
-                    m_DataChunks[2] = new Interop.HttpApi.HTTP_DATA_CHUNK();
-                    m_DataChunks[2].DataChunkType = Interop.HttpApi.HTTP_DATA_CHUNK_TYPE.HttpDataChunkFromMemory;
-                    m_DataChunks[2].BufferLength = (uint)CRLFArray.Length;
+                    _dataChunks[2] = new Interop.HttpApi.HTTP_DATA_CHUNK();
+                    _dataChunks[2].DataChunkType = Interop.HttpApi.HTTP_DATA_CHUNK_TYPE.HttpDataChunkFromMemory;
+                    _dataChunks[2].BufferLength = (uint)s_CRLFArray.Length;
 
-                    objectsToPin[2] = CRLFArray;
-
+                    objectsToPin[2] = s_CRLFArray;
                 }
                 else
                 {
-                    m_DataChunks[0] = new Interop.HttpApi.HTTP_DATA_CHUNK();
-                    m_DataChunks[0].DataChunkType = Interop.HttpApi.HTTP_DATA_CHUNK_TYPE.HttpDataChunkFromMemory;
-                    m_DataChunks[0].BufferLength = (uint)size;
+                    _dataChunks[0] = new Interop.HttpApi.HTTP_DATA_CHUNK();
+                    _dataChunks[0].DataChunkType = Interop.HttpApi.HTTP_DATA_CHUNK_TYPE.HttpDataChunkFromMemory;
+                    _dataChunks[0].BufferLength = (uint)size;
 
                     objectsToPin[0] = buffer;
                 }
@@ -173,15 +172,14 @@ namespace System.Net
 
                 if (chunked)
                 {
-                    m_DataChunks[0].pBuffer = (byte*)(Marshal.UnsafeAddrOfPinnedArrayElement(chunkHeaderBuffer, chunkHeaderOffset));
-                    m_DataChunks[1].pBuffer = (byte*)(Marshal.UnsafeAddrOfPinnedArrayElement(buffer, offset));
-                    m_DataChunks[2].pBuffer = (byte*)(Marshal.UnsafeAddrOfPinnedArrayElement(CRLFArray, 0));
+                    _dataChunks[0].pBuffer = (byte*)(Marshal.UnsafeAddrOfPinnedArrayElement(chunkHeaderBuffer, chunkHeaderOffset));
+                    _dataChunks[1].pBuffer = (byte*)(Marshal.UnsafeAddrOfPinnedArrayElement(buffer, offset));
+                    _dataChunks[2].pBuffer = (byte*)(Marshal.UnsafeAddrOfPinnedArrayElement(s_CRLFArray, 0));
                 }
                 else
                 {
-                    m_DataChunks[0].pBuffer = (byte*)(Marshal.UnsafeAddrOfPinnedArrayElement(buffer, offset));
+                    _dataChunks[0].pBuffer = (byte*)(Marshal.UnsafeAddrOfPinnedArrayElement(buffer, offset));
                 }
-
             }
         }
 
@@ -205,14 +203,14 @@ namespace System.Net
                 {
                     // if we sent headers and body together, numBytes will be the total, but we need to only account for the data
                     // result = numBytes;
-                    if (asyncResult.m_DataChunks == null)
+                    if (asyncResult._dataChunks == null)
                     {
                         result = (uint)0;
                         //if (NetEventSource.Log.IsEnabled()) { NetEventSource.Dump(NetEventSource.ComponentType.HttpListener, asyncResult, "Callback", IntPtr.Zero, 0); }
                     }
                     else
                     {
-                        result = asyncResult.m_DataChunks.Length == 1 ? asyncResult.m_DataChunks[0].BufferLength : 0;
+                        result = asyncResult._dataChunks.Length == 1 ? asyncResult._dataChunks[0].BufferLength : 0;
                         //if (NetEventSource.Log.IsEnabled()) { for (int i = 0; i < asyncResult.m_DataChunks.Length; i++) { NetEventSource.Dump(NetEventSource.ComponentType.HttpListener, asyncResult, "Callback", (IntPtr)asyncResult.m_DataChunks[0].pBuffer, (int)asyncResult.m_DataChunks[0].BufferLength); } }
                     }
                 }
@@ -240,7 +238,7 @@ namespace System.Net
             base.Cleanup();
             if (m_pOverlapped != null)
             {
-                m_boundHandle.FreeNativeOverlapped(m_pOverlapped);
+                _boundHandle.FreeNativeOverlapped(m_pOverlapped);
             }
         }
     }

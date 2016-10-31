@@ -13,7 +13,7 @@ namespace System.Net
         internal HttpListenerRequestContext(HttpListenerRequest request)
         {
             Debug.Assert(request != null, "HttpListenerRequestContext..ctor(): Not expecting a null request!");
-            this.request = request;
+            _request = request;
         }
 
         public override ChannelBinding GetChannelBinding(ChannelBindingKind kind)
@@ -23,11 +23,10 @@ namespace System.Net
                 throw new NotSupportedException(SR.Format(
                     SR.net_listener_invalid_cbt_type, kind.ToString()));
             }
-            return request.GetChannelBinding();
+            return _request.GetChannelBinding();
         }
 
-        private HttpListenerRequest request;
+        private HttpListenerRequest _request;
     }
-
 }
 

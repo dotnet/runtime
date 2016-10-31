@@ -9,7 +9,7 @@ namespace System.Net
 {
     internal unsafe class SyncRequestContext : RequestContextBase
     {
-        private GCHandle m_PinnedHandle;
+        private GCHandle _pinnedHandle;
 
         internal SyncRequestContext(int size)
         {
@@ -18,20 +18,20 @@ namespace System.Net
 
         private Interop.HttpApi.HTTP_REQUEST* Allocate(int size)
         {
-            if (m_PinnedHandle.IsAllocated)
+            if (_pinnedHandle.IsAllocated)
             {
                 if (RequestBuffer.Length == size)
                 {
                     return RequestBlob;
                 }
-                m_PinnedHandle.Free();
+                _pinnedHandle.Free();
             }
             SetBuffer(size);
             if (RequestBuffer == null)
             {
                 return null;
             }
-            m_PinnedHandle = GCHandle.Alloc(RequestBuffer, GCHandleType.Pinned);
+            _pinnedHandle = GCHandle.Alloc(RequestBuffer, GCHandleType.Pinned);
             return (Interop.HttpApi.HTTP_REQUEST*)Marshal.UnsafeAddrOfPinnedArrayElement(RequestBuffer, 0);
         }
 
@@ -42,20 +42,20 @@ namespace System.Net
 
         protected override void OnReleasePins()
         {
-            if (m_PinnedHandle.IsAllocated)
+            if (_pinnedHandle.IsAllocated)
             {
-                m_PinnedHandle.Free();
+                _pinnedHandle.Free();
             }
         }
 
         protected override void Dispose(bool disposing)
         {
-            if (m_PinnedHandle.IsAllocated)
+            if (_pinnedHandle.IsAllocated)
             {
                 Debug.Assert(!disposing, "AsyncRequestContext::Dispose()|Must call ReleasePins() before calling Dispose().");
                 if (!Environment.HasShutdownStarted || disposing)
                 {
-                    m_PinnedHandle.Free();
+                    _pinnedHandle.Free();
                 }
             }
             base.Dispose(disposing);

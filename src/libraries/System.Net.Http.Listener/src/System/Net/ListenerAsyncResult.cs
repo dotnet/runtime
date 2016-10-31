@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Net
 {
-    unsafe class ListenerAsyncResult : LazyAsyncResult
+    internal unsafe class ListenerAsyncResult : LazyAsyncResult
     {
         private static readonly IOCompletionCallback s_IOCallback = new IOCompletionCallback(WaitCallback);
 
@@ -20,12 +20,12 @@ namespace System.Net
             }
         }
 
-        private AsyncRequestContext m_RequestContext;
+        private AsyncRequestContext _requestContext;
 
-        internal ListenerAsyncResult(ThreadPoolBoundHandle boundHandle, object asyncObject, object userState, AsyncCallback callback) :
-            base(asyncObject, userState, callback)
+        internal ListenerAsyncResult(HttpListener listener, object userState, AsyncCallback callback) :
+            base(listener, userState, callback)
         {
-            m_RequestContext = new AsyncRequestContext(this, boundHandle);
+            _requestContext = new AsyncRequestContext(listener.RequestQueueBoundHandle, this);
         }
 
         private static void IOCompleted(ListenerAsyncResult asyncResult, uint errorCode, uint numBytes)
@@ -51,9 +51,9 @@ namespace System.Net
                         bool stoleBlob = false;
                         try
                         {
-                            if (httpWebListener.ValidateRequest(asyncResult.m_RequestContext))
+                            if (httpWebListener.ValidateRequest(asyncResult._requestContext))
                             {
-                                result = httpWebListener.HandleAuthentication(asyncResult.m_RequestContext, out stoleBlob);
+                                result = httpWebListener.HandleAuthentication(asyncResult._requestContext, out stoleBlob);
                             }
                         }
                         finally
@@ -61,17 +61,17 @@ namespace System.Net
                             if (stoleBlob)
                             {
                                 // The request has been handed to the user, which means this code can't reuse the blob.  Reset it here.
-                                asyncResult.m_RequestContext = result == null ? new AsyncRequestContext(asyncResult, asyncResult.m_RequestContext.m_boundHandle) : null;
+                                asyncResult._requestContext = result == null ? new AsyncRequestContext(httpWebListener.RequestQueueBoundHandle, asyncResult) : null;
                             }
                             else
                             {
-                                asyncResult.m_RequestContext.Reset(0, 0);
+                                asyncResult._requestContext.Reset(httpWebListener.RequestQueueBoundHandle, 0, 0);
                             }
                         }
                     }
                     else
                     {
-                        asyncResult.m_RequestContext.Reset(asyncResult.m_RequestContext.RequestBlob->RequestId, numBytes);
+                        asyncResult._requestContext.Reset(httpWebListener.RequestQueueBoundHandle, asyncResult._requestContext.RequestBlob->RequestId, numBytes);
                     }
 
                     // We need to issue a new request, either because auth failed, or because our buffer was too small the first time.
@@ -115,31 +115,31 @@ namespace System.Net
             while (true)
             {
                 //GlobalLog.Print("ListenerAsyncResult#" + LoggingHash.HashString(this) + "::QueueBeginGetContext() calling Interop.HttpApi.HttpReceiveHttpRequest RequestId:" + m_RequestContext.RequestBlob->RequestId + " Buffer:0x" + ((IntPtr)m_RequestContext.RequestBlob).ToString("x") + " Size:" + m_RequestContext.Size.ToString());
-                (AsyncObject as HttpListener).EnsureBoundHandle();
                 uint bytesTransferred = 0;
+                HttpListener listener = (HttpListener)AsyncObject;
                 statusCode = Interop.HttpApi.HttpReceiveHttpRequest(
-                    (AsyncObject as HttpListener).RequestQueueHandle,
-                    m_RequestContext.RequestBlob->RequestId,
+                    listener.RequestQueueHandle,
+                    _requestContext.RequestBlob->RequestId,
                     (uint)Interop.HttpApi.HTTP_FLAGS.HTTP_RECEIVE_REQUEST_FLAG_COPY_BODY,
-                    m_RequestContext.RequestBlob,
-                    m_RequestContext.Size,
+                    _requestContext.RequestBlob,
+                    _requestContext.Size,
                     &bytesTransferred,
-                    m_RequestContext.NativeOverlapped);
+                    _requestContext.NativeOverlapped);
 
                 //GlobalLog.Print("ListenerAsyncResult#" + LoggingHash.HashString(this) + "::QueueBeginGetContext() call to Interop.HttpApi.HttpReceiveHttpRequest returned:" + statusCode);
-                if (statusCode == Interop.HttpApi.ERROR_INVALID_PARAMETER && m_RequestContext.RequestBlob->RequestId != 0)
+                if (statusCode == Interop.HttpApi.ERROR_INVALID_PARAMETER && _requestContext.RequestBlob->RequestId != 0)
                 {
                     // we might get this if somebody stole our RequestId,
                     // set RequestId to 0 and start all over again with the buffer we just allocated
                     // BUGBUG: how can someone steal our request ID?  seems really bad and in need of fix.
-                    m_RequestContext.RequestBlob->RequestId = 0;
+                    _requestContext.RequestBlob->RequestId = 0;
                     continue;
                 }
                 else if (statusCode == Interop.HttpApi.ERROR_MORE_DATA)
                 {
                     // the buffer was not big enough to fit the headers, we need
                     // to read the RequestId returned, allocate a new buffer of the required size
-                    m_RequestContext.Reset(m_RequestContext.RequestBlob->RequestId, bytesTransferred);
+                    _requestContext.Reset(listener.RequestQueueBoundHandle, _requestContext.RequestBlob->RequestId, bytesTransferred);
                     continue;
                 }
                 else if (statusCode == Interop.HttpApi.ERROR_SUCCESS &&
@@ -156,10 +156,10 @@ namespace System.Net
         // Will be called from the base class upon InvokeCallback()
         protected override void Cleanup()
         {
-            if (m_RequestContext != null)
+            if (_requestContext != null)
             {
-                m_RequestContext.ReleasePins();
-                m_RequestContext.Close();
+                _requestContext.ReleasePins();
+                _requestContext.Close();
             }
             base.Cleanup();
         }

@@ -2740,6 +2740,11 @@
         "4.0.0.0": "4.4.0"
       }
     },
+    "System.Net.Http.Listener": {
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.4.0"
+      }
+    },
     "Microsoft.Private.CoreFx.NETCoreApp": {}
   },
   "ModulesToPackages": {

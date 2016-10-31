@@ -10,59 +10,59 @@ namespace System.Net
 {
     internal unsafe class AsyncRequestContext : RequestContextBase
     {
-        internal readonly ThreadPoolBoundHandle m_boundHandle;
-        private NativeOverlapped* m_NativeOverlapped;
-        private ListenerAsyncResult m_Result;
+        private NativeOverlapped* _nativeOverlapped;
+        private ThreadPoolBoundHandle _boundHandle;
+        private ListenerAsyncResult _result;
 
-        internal AsyncRequestContext(ListenerAsyncResult result, ThreadPoolBoundHandle boundHandle)
+        internal AsyncRequestContext(ThreadPoolBoundHandle boundHandle, ListenerAsyncResult result)
         {
-            m_boundHandle = boundHandle;
-            m_Result = result;
-            BaseConstruction(Allocate(0));
+            _result = result;
+            BaseConstruction(Allocate(boundHandle, 0));
         }
 
-        private Interop.HttpApi.HTTP_REQUEST* Allocate(uint size)
+        private Interop.HttpApi.HTTP_REQUEST* Allocate(ThreadPoolBoundHandle boundHandle, uint size)
         {
             uint newSize = size != 0 ? size : RequestBuffer == null ? 4096 : Size;
-            if (m_NativeOverlapped != null && newSize != RequestBuffer.Length)
+            if (_nativeOverlapped != null && newSize != RequestBuffer.Length)
             {
-                NativeOverlapped* nativeOverlapped = m_NativeOverlapped;
-                m_NativeOverlapped = null;
-                m_boundHandle.FreeNativeOverlapped(nativeOverlapped);
+                NativeOverlapped* nativeOverlapped = _nativeOverlapped;
+                _nativeOverlapped = null;
+                _boundHandle.FreeNativeOverlapped(nativeOverlapped);
             }
-            if (m_NativeOverlapped == null)
+            if (_nativeOverlapped == null)
             {
                 SetBuffer(checked((int)newSize));
-                m_NativeOverlapped = m_boundHandle.AllocateNativeOverlapped(ListenerAsyncResult.IOCallback, state: m_Result, pinData: RequestBuffer);
+                _boundHandle = boundHandle;
+                _nativeOverlapped = boundHandle.AllocateNativeOverlapped(ListenerAsyncResult.IOCallback, state: _result, pinData: RequestBuffer);
                 return (Interop.HttpApi.HTTP_REQUEST*)Marshal.UnsafeAddrOfPinnedArrayElement(RequestBuffer, 0);
             }
             return RequestBlob;
         }
 
-        internal void Reset(ulong requestId, uint size)
+        internal void Reset(ThreadPoolBoundHandle boundHandle, ulong requestId, uint size)
         {
-            SetBlob(Allocate(size));
+            SetBlob(Allocate(boundHandle, size));
             RequestBlob->RequestId = requestId;
         }
 
         protected override void OnReleasePins()
         {
-            if (m_NativeOverlapped != null)
+            if (_nativeOverlapped != null)
             {
-                NativeOverlapped* nativeOverlapped = m_NativeOverlapped;
-                m_NativeOverlapped = null;
-                m_boundHandle.FreeNativeOverlapped(nativeOverlapped);
+                NativeOverlapped* nativeOverlapped = _nativeOverlapped;
+                _nativeOverlapped = null;
+                _boundHandle.FreeNativeOverlapped(nativeOverlapped);
             }
         }
 
         protected override void Dispose(bool disposing)
         {
-            if (m_NativeOverlapped != null)
+            if (_nativeOverlapped != null)
             {
                 Debug.Assert(!disposing, "AsyncRequestContext::Dispose()|Must call ReleasePins() before calling Dispose().");
                 if (!Environment.HasShutdownStarted || disposing)
                 {
-                    m_boundHandle.FreeNativeOverlapped(m_NativeOverlapped);
+                    _boundHandle.FreeNativeOverlapped(_nativeOverlapped);
                 }
             }
             base.Dispose(disposing);
@@ -72,7 +72,7 @@ namespace System.Net
         {
             get
             {
-                return m_NativeOverlapped;
+                return _nativeOverlapped;
             }
         }
     }

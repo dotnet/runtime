@@ -13,11 +13,11 @@ namespace System.Net
     //
     internal sealed class HttpServerSessionHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        private ulong serverSessionId;
+        private ulong _serverSessionId;
 
         internal HttpServerSessionHandle(ulong id) : base(true)
         {
-            serverSessionId = id;
+            _serverSessionId = id;
 
             // This class uses no real handle so we need to set a dummy handle. Otherwise, IsInvalid always remains             
             // true.
@@ -26,16 +26,15 @@ namespace System.Net
 
         internal ulong DangerousGetServerSessionId()
         {
-            return serverSessionId;
+            return _serverSessionId;
         }
 
         protected override bool ReleaseHandle()
         {
             // Closing server session also closes all open url groups under that server session.
-            return (Interop.HttpApi.HttpCloseServerSession(serverSessionId) ==
+            return (Interop.HttpApi.HttpCloseServerSession(_serverSessionId) ==
                 Interop.HttpApi.ERROR_SUCCESS);
         }
     }
-
 }
 

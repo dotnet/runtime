@@ -8,9 +8,9 @@ namespace System.Net
 {
     internal abstract unsafe class RequestContextBase : IDisposable
     {
-        private Interop.HttpApi.HTTP_REQUEST* m_MemoryBlob;
-        private Interop.HttpApi.HTTP_REQUEST* m_OriginalBlobAddress;
-        private byte[] m_BackingBuffer;
+        private Interop.HttpApi.HTTP_REQUEST* _memoryBlob;
+        private Interop.HttpApi.HTTP_REQUEST* _originalBlobAddress;
+        private byte[] _backingBuffer;
 
         // Must call this from derived class' constructors.
         protected void BaseConstruction(Interop.HttpApi.HTTP_REQUEST* requestBlob)
@@ -21,7 +21,7 @@ namespace System.Net
             }
             else
             {
-                m_MemoryBlob = requestBlob;
+                _memoryBlob = requestBlob;
             }
         }
 
@@ -29,8 +29,8 @@ namespace System.Net
         // before an object (HttpListenerReqeust) which closes the RequestContext on demand is returned to the application.
         internal void ReleasePins()
         {
-            Debug.Assert(m_MemoryBlob != null || m_BackingBuffer == null, "RequestContextBase::ReleasePins()|ReleasePins() called twice.");
-            m_OriginalBlobAddress = m_MemoryBlob;
+            Debug.Assert(_memoryBlob != null || _backingBuffer == null, "RequestContextBase::ReleasePins()|ReleasePins() called twice.");
+            _originalBlobAddress = _memoryBlob;
             UnsetBlob();
             OnReleasePins();
         }
@@ -44,7 +44,7 @@ namespace System.Net
 
         public void Dispose()
         {
-            Debug.Assert(m_MemoryBlob == null, "RequestContextBase::Dispose()|Dispose() called before ReleasePins().");
+            Debug.Assert(_memoryBlob == null, "RequestContextBase::Dispose()|Dispose() called before ReleasePins().");
             Dispose(true);
         }
 
@@ -59,8 +59,8 @@ namespace System.Net
         {
             get
             {
-                Debug.Assert(m_MemoryBlob != null || m_BackingBuffer == null, "RequestContextBase::Dispose()|RequestBlob requested after ReleasePins().");
-                return m_MemoryBlob;
+                Debug.Assert(_memoryBlob != null || _backingBuffer == null, "RequestContextBase::Dispose()|RequestBlob requested after ReleasePins().");
+                return _memoryBlob;
             }
         }
 
@@ -68,7 +68,7 @@ namespace System.Net
         {
             get
             {
-                return m_BackingBuffer;
+                return _backingBuffer;
             }
         }
 
@@ -76,7 +76,7 @@ namespace System.Net
         {
             get
             {
-                return (uint)m_BackingBuffer.Length;
+                return (uint)_backingBuffer.Length;
             }
         }
 
@@ -84,39 +84,39 @@ namespace System.Net
         {
             get
             {
-                Interop.HttpApi.HTTP_REQUEST* blob = m_MemoryBlob;
-                return (IntPtr)(blob == null ? m_OriginalBlobAddress : blob);
+                Interop.HttpApi.HTTP_REQUEST* blob = _memoryBlob;
+                return (IntPtr)(blob == null ? _originalBlobAddress : blob);
             }
         }
 
         protected void SetBlob(Interop.HttpApi.HTTP_REQUEST* requestBlob)
         {
-            Debug.Assert(m_MemoryBlob != null || m_BackingBuffer == null, "RequestContextBase::Dispose()|SetBlob() called after ReleasePins().");
+            Debug.Assert(_memoryBlob != null || _backingBuffer == null, "RequestContextBase::Dispose()|SetBlob() called after ReleasePins().");
             if (requestBlob == null)
             {
                 UnsetBlob();
                 return;
             }
 
-            if (m_MemoryBlob == null)
+            if (_memoryBlob == null)
             {
                 GC.ReRegisterForFinalize(this);
             }
-            m_MemoryBlob = requestBlob;
+            _memoryBlob = requestBlob;
         }
 
         protected void UnsetBlob()
         {
-            if (m_MemoryBlob != null)
+            if (_memoryBlob != null)
             {
                 GC.SuppressFinalize(this);
             }
-            m_MemoryBlob = null;
+            _memoryBlob = null;
         }
 
         protected void SetBuffer(int size)
         {
-            m_BackingBuffer = size == 0 ? null : new byte[size];
+            _backingBuffer = size == 0 ? null : new byte[size];
         }
     }
 }

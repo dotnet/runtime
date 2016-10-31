@@ -418,17 +418,17 @@ internal static partial class Interop
             HTTP_SEND_RESPONSE_FLAG_OPAQUE = 0x00000040,
         }
 
-        const int HttpHeaderRequestMaximum = (int)HttpRequestHeader.UserAgent + 1;
-        const int HttpHeaderResponseMaximum = (int)HttpResponseHeader.WwwAuthenticate + 1;
+        private const int HttpHeaderRequestMaximum = (int)HttpRequestHeader.UserAgent + 1;
+        private const int HttpHeaderResponseMaximum = (int)HttpResponseHeader.WwwAuthenticate + 1;
 
         internal static class HTTP_REQUEST_HEADER_ID
         {
             internal static string ToString(int position)
             {
-                return m_Strings[position];
+                return s_strings[position];
             }
 
-            private static string[] m_Strings = {
+            private static string[] s_strings = {
                     "Cache-Control",
                     "Connection",
                     "Date",
@@ -565,11 +565,11 @@ internal static partial class Interop
         internal class SafeLocalFreeChannelBinding : ChannelBinding
         {
             private const int LMEM_FIXED = 0;
-            private int size;
+            private int _size;
 
             public override int Size
             {
-                get { return size; }
+                get { return _size; }
             }
 
             public static SafeLocalFreeChannelBinding LocalAlloc(int cb)
@@ -583,7 +583,7 @@ internal static partial class Interop
                     throw new OutOfMemoryException();
                 }
 
-                result.size = cb;
+                result._size = cb;
                 return result;
             }
 
@@ -617,7 +617,7 @@ internal static partial class Interop
         [DllImport(Libraries.Kernel32_L2, SetLastError = true)]
         internal static unsafe extern bool SetFileCompletionNotificationModes(SafeHandle handle, FileCompletionNotificationModes modes);
 
-        internal static readonly string[] HttpVerbs = new string[] 
+        internal static readonly string[] HttpVerbs = new string[]
         {
             null,
             "Unknown",
@@ -643,26 +643,26 @@ internal static partial class Interop
 
         internal static class HTTP_RESPONSE_HEADER_ID
         {
-            private static Dictionary<string, int> m_Hashtable;
+            private static Dictionary<string, int> s_hashtable;
 
             static HTTP_RESPONSE_HEADER_ID()
             {
-                m_Hashtable = new Dictionary<string, int>((int)Enum.HttpHeaderResponseMaximum);
+                s_hashtable = new Dictionary<string, int>((int)Enum.HttpHeaderResponseMaximum);
                 for (int i = 0; i < (int)Enum.HttpHeaderResponseMaximum; i++)
                 {
-                    m_Hashtable.Add(m_Strings[i], i);
+                    s_hashtable.Add(s_strings[i], i);
                 }
             }
 
             internal static int IndexOfKnownHeader(string HeaderName)
             {
-                object index = m_Hashtable[HeaderName];
+                object index = s_hashtable[HeaderName];
                 return index == null ? -1 : (int)index;
             }
 
             internal static string ToString(int position)
             {
-                return m_Strings[position];
+                return s_strings[position];
             }
 
             internal enum Enum
@@ -709,7 +709,7 @@ internal static partial class Interop
                 HttpHeaderMaximum = 41
             }
 
-            private static string[] m_Strings = {
+            private static string[] s_strings = {
                     "Cache-Control",
                     "Connection",
                     "Date",
@@ -852,7 +852,7 @@ internal static partial class Interop
                             {
                                 headerValue = string.Empty;
                             }
-                            headerCollection[headerName] = headerValue;
+                            headerCollection.Add(headerName, headerValue);
                         }
                         pUnknownHeader++;
                     }
@@ -867,7 +867,7 @@ internal static partial class Interop
                     if (pKnownHeader->pRawValue != null)
                     {
                         string headerValue = new string(pKnownHeader->pRawValue + fixup, 0, pKnownHeader->RawValueLength);
-                        headerCollection[HTTP_REQUEST_HEADER_ID.ToString(index)] = headerValue;
+                        headerCollection.Add(HTTP_REQUEST_HEADER_ID.ToString(index), headerValue);
                     }
                     pKnownHeader++;
                 }
@@ -962,58 +962,60 @@ internal static partial class Interop
 
         internal static IPEndPoint GetRemoteEndPoint(byte[] memoryBlob, IntPtr originalAddress)
         {
-            NetEventSource.Enter(null);
+            throw new NotImplementedException();
+            //NetEventSource.Enter(null);
 
-            SocketAddress v4address = new SocketAddress(AddressFamily.InterNetwork, SocketAddress.IPv4AddressSize);
-            SocketAddress v6address = new SocketAddress(AddressFamily.InterNetworkV6, SocketAddress.IPv6AddressSize);
+            //SocketAddress v4address = new SocketAddress(AddressFamily.InterNetwork, SocketAddress.IPv4AddressSize);
+            //SocketAddress v6address = new SocketAddress(AddressFamily.InterNetworkV6, SocketAddress.IPv6AddressSize);
 
-            fixed (byte* pMemoryBlob = memoryBlob)
-            {
-                HTTP_REQUEST* request = (HTTP_REQUEST*)pMemoryBlob;
-                IntPtr address = request->Address.pRemoteAddress != null ? (IntPtr)(pMemoryBlob - (byte*)originalAddress + (byte*)request->Address.pRemoteAddress) : IntPtr.Zero;
-                CopyOutAddress(address, ref v4address, ref v6address);
-            }
+            //fixed (byte* pMemoryBlob = memoryBlob)
+            //{
+            //    HTTP_REQUEST* request = (HTTP_REQUEST*)pMemoryBlob;
+            //    IntPtr address = request->Address.pRemoteAddress != null ? (IntPtr)(pMemoryBlob - (byte*)originalAddress + (byte*)request->Address.pRemoteAddress) : IntPtr.Zero;
+            //    CopyOutAddress(address, ref v4address, ref v6address);
+            //}
 
-            IPEndPoint endpoint = null;
-            if (v4address != null)
-            {
-                endpoint = IPEndPoint.Any.Create(v4address) as IPEndPoint;
-            }
-            else if (v6address != null)
-            {
-                endpoint = IPEndPoint.IPv6Any.Create(v6address) as IPEndPoint;
-            }
+            //IPEndPoint endpoint = null;
+            //if (v4address != null)
+            //{
+            //    endpoint = IPEndPoint.Any.Create(v4address) as IPEndPoint;
+            //}
+            //else if (v6address != null)
+            //{
+            //    endpoint = IPEndPoint.IPv6Any.Create(v6address) as IPEndPoint;
+            //}
 
-            NetEventSource.Exit(null);
-            return endpoint;
+            //NetEventSource.Exit(null);
+            //return endpoint;
         }
 
         internal static IPEndPoint GetLocalEndPoint(byte[] memoryBlob, IntPtr originalAddress)
         {
-            NetEventSource.Enter(null);
+            throw new NotImplementedException();
+            //NetEventSource.Enter(null);
 
-            SocketAddress v4address = new SocketAddress(AddressFamily.InterNetwork, SocketAddress.IPv4AddressSize);
-            SocketAddress v6address = new SocketAddress(AddressFamily.InterNetworkV6, SocketAddress.IPv6AddressSize);
+            //SocketAddress v4address = new SocketAddress(AddressFamily.InterNetwork, SocketAddress.IPv4AddressSize);
+            //SocketAddress v6address = new SocketAddress(AddressFamily.InterNetworkV6, SocketAddress.IPv6AddressSize);
 
-            fixed (byte* pMemoryBlob = memoryBlob)
-            {
-                HTTP_REQUEST* request = (HTTP_REQUEST*)pMemoryBlob;
-                IntPtr address = request->Address.pLocalAddress != null ? (IntPtr)(pMemoryBlob - (byte*)originalAddress + (byte*)request->Address.pLocalAddress) : IntPtr.Zero;
-                CopyOutAddress(address, ref v4address, ref v6address);
-            }
+            //fixed (byte* pMemoryBlob = memoryBlob)
+            //{
+            //    HTTP_REQUEST* request = (HTTP_REQUEST*)pMemoryBlob;
+            //    IntPtr address = request->Address.pLocalAddress != null ? (IntPtr)(pMemoryBlob - (byte*)originalAddress + (byte*)request->Address.pLocalAddress) : IntPtr.Zero;
+            //    CopyOutAddress(address, ref v4address, ref v6address);
+            //}
 
-            IPEndPoint endpoint = null;
-            if (v4address != null)
-            {
-                endpoint = IPEndPoint.Any.Create(v4address) as IPEndPoint;
-            }
-            else if (v6address != null)
-            {
-                endpoint = IPEndPoint.IPv6Any.Create(v6address) as IPEndPoint;
-            }
+            //IPEndPoint endpoint = null;
+            //if (v4address != null)
+            //{
+            //    endpoint = IPEndPoint.Any.Create(v4address) as IPEndPoint;
+            //}
+            //else if (v6address != null)
+            //{
+            //    endpoint = IPEndPoint.IPv6Any.Create(v6address) as IPEndPoint;
+            //}
 
-            NetEventSource.Exit(null);
-            return endpoint;
+            //NetEventSource.Exit(null);
+            //return endpoint;
         }
     }
 }

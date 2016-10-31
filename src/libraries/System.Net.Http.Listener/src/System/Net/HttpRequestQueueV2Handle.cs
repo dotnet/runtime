@@ -18,6 +18,5 @@ namespace System.Net
             return (Interop.HttpApi.HttpCloseRequestQueue(handle) == Interop.HttpApi.ERROR_SUCCESS);
         }
     }
-
 }
 

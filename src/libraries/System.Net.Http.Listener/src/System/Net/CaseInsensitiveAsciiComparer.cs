@@ -86,7 +86,7 @@ namespace System.Net
         }
 
         // ASCII string case insensitive hash function
-        int FastGetHashCode(string myString)
+        private int FastGetHashCode(string myString)
         {
             int myHashCode = myString.Length;
             if (myHashCode != 0)

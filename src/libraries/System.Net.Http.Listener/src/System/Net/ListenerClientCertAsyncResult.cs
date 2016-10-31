@@ -12,17 +12,17 @@ namespace System.Net
 {
     unsafe internal class ListenerClientCertAsyncResult : LazyAsyncResult
     {
-        private ThreadPoolBoundHandle m_boundHandle;
-        private NativeOverlapped* m_pOverlapped;
-        private byte[] m_BackingBuffer;
-        private Interop.HttpApi.HTTP_SSL_CLIENT_CERT_INFO* m_MemoryBlob;
-        private uint m_Size;
+        private ThreadPoolBoundHandle _boundHandle;
+        private NativeOverlapped* _pOverlapped;
+        private byte[] _backingBuffer;
+        private Interop.HttpApi.HTTP_SSL_CLIENT_CERT_INFO* _memoryBlob;
+        private uint _size;
 
         internal NativeOverlapped* NativeOverlapped
         {
             get
             {
-                return m_pOverlapped;
+                return _pOverlapped;
             }
         }
 
@@ -30,7 +30,7 @@ namespace System.Net
         {
             get
             {
-                return m_MemoryBlob;
+                return _memoryBlob;
             }
         }
 
@@ -40,31 +40,31 @@ namespace System.Net
         {
             // we will use this overlapped structure to issue async IO to ul
             // the event handle will be put in by the BeginHttpApi2.ERROR_SUCCESS() method
-            m_boundHandle = boundHandle;
+            _boundHandle = boundHandle;
             Reset(size);
         }
 
         internal void Reset(uint size)
         {
-            if (size == m_Size)
+            if (size == _size)
             {
                 return;
             }
-            if (m_Size != 0)
+            if (_size != 0)
             {
-                m_boundHandle.FreeNativeOverlapped(m_pOverlapped);
+                _boundHandle.FreeNativeOverlapped(_pOverlapped);
             }
-            m_Size = size;
+            _size = size;
             if (size == 0)
             {
-                m_pOverlapped = null;
-                m_MemoryBlob = null;
-                m_BackingBuffer = null;
+                _pOverlapped = null;
+                _memoryBlob = null;
+                _backingBuffer = null;
                 return;
             }
-            m_BackingBuffer = new byte[checked((int)size)];
-            m_pOverlapped = m_boundHandle.AllocateNativeOverlapped(s_IOCallback, state: this, pinData: m_BackingBuffer);
-            m_MemoryBlob = (Interop.HttpApi.HTTP_SSL_CLIENT_CERT_INFO*)Marshal.UnsafeAddrOfPinnedArrayElement(m_BackingBuffer, 0);
+            _backingBuffer = new byte[checked((int)size)];
+            _pOverlapped = _boundHandle.AllocateNativeOverlapped(s_IOCallback, state: this, pinData: _backingBuffer);
+            _memoryBlob = (Interop.HttpApi.HTTP_SSL_CLIENT_CERT_INFO*)Marshal.UnsafeAddrOfPinnedArrayElement(_backingBuffer, 0);
         }
 
         internal unsafe void IOCompleted(uint errorCode, uint numBytes)
@@ -93,10 +93,10 @@ namespace System.Net
                             httpListenerRequest.HttpListenerContext.RequestQueueHandle,
                             httpListenerRequest.m_ConnectionId,
                             (uint)Interop.HttpApi.HTTP_FLAGS.NONE,
-                            asyncResult.m_MemoryBlob,
-                            asyncResult.m_Size,
+                            asyncResult._memoryBlob,
+                            asyncResult._size,
                             &bytesReceived,
-                            asyncResult.m_pOverlapped);
+                            asyncResult._pOverlapped);
 
                     if (errorCode == Interop.HttpApi.ERROR_IO_PENDING ||
                        (errorCode == Interop.HttpApi.ERROR_SUCCESS && !HttpListener.SkipIOCPCallbackOnSuccess))
@@ -112,7 +112,7 @@ namespace System.Net
                 }
                 else
                 {
-                    Interop.HttpApi.HTTP_SSL_CLIENT_CERT_INFO* pClientCertInfo = asyncResult.m_MemoryBlob;
+                    Interop.HttpApi.HTTP_SSL_CLIENT_CERT_INFO* pClientCertInfo = asyncResult._memoryBlob;
                     if (pClientCertInfo != null)
                     {
                         //GlobalLog.Print("HttpListenerRequest#" + LoggingHash.HashString(httpListenerRequest) + "::ProcessClientCertificate() pClientCertInfo:" + LoggingHash.ObjectToString((IntPtr)pClientCertInfo)
@@ -142,7 +142,6 @@ namespace System.Net
                         }
                         httpListenerRequest.SetClientCertificateError((int)pClientCertInfo->CertFlags);
                     }
-
                 }
 
                 // complete the async IO and invoke the callback
@@ -175,12 +174,12 @@ namespace System.Net
         // Will be called from the base class upon InvokeCallback()
         protected override void Cleanup()
         {
-            if (m_pOverlapped != null)
+            if (_pOverlapped != null)
             {
-                m_MemoryBlob = null;
-                m_boundHandle.FreeNativeOverlapped(m_pOverlapped);
-                m_pOverlapped = null;
-                m_boundHandle = null;
+                _memoryBlob = null;
+                _boundHandle.FreeNativeOverlapped(_pOverlapped);
+                _pOverlapped = null;
+                _boundHandle = null;
             }
             GC.SuppressFinalize(this);
             base.Cleanup();
@@ -188,14 +187,13 @@ namespace System.Net
 
         ~ListenerClientCertAsyncResult()
         {
-            if (m_pOverlapped != null && !Environment.HasShutdownStarted)
+            if (_pOverlapped != null && !Environment.HasShutdownStarted)
             {
-                m_boundHandle.FreeNativeOverlapped(m_pOverlapped);
-                m_pOverlapped = null;  // Must do this in case application calls GC.ReRegisterForFinalize().
-                m_boundHandle = null;
+                _boundHandle.FreeNativeOverlapped(_pOverlapped);
+                _pOverlapped = null;  // Must do this in case application calls GC.ReRegisterForFinalize().
+                _boundHandle = null;
             }
         }
     }
-
 }
 

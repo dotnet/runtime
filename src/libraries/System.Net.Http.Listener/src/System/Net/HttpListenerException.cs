@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
-using System.Runtime.Serialization;
 using System.Runtime.InteropServices;
 
 namespace System.Net
