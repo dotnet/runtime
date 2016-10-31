@@ -4,6 +4,7 @@
 
 namespace System.Transactions.Diagnostics
 {
+    /*
     internal static class DiagnosticTraceCode
     {
         private const string Prefix = "http://msdn.microsoft.com/TraceCodes/System/ActivityTracing/2004/07/";
@@ -16,4 +17,5 @@ namespace System.Transactions.Diagnostics
         internal const string NewActivityIdIssued = Prefix + DiagnosticsFeature + "ActivityId/IssuedNew";
         internal const string UnhandledException = Prefix + ReliabilityFeature + "Exception/Unhandled";
     }
+    */
 }

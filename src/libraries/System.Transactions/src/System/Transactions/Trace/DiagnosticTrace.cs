@@ -18,6 +18,8 @@ namespace System.Transactions.Diagnostics
     /// that can be accessed by Indigo infrastructure code to provide 
     /// instrumentation.
     /// </summary>
+    /// 
+    /*
     internal static class DiagnosticTrace
     {
         internal const string DefaultTraceListenerName = "Default";
@@ -682,4 +684,5 @@ namespace System.Transactions.Diagnostics
             return encodedText.ToString();
         }
     }
+    */
 }

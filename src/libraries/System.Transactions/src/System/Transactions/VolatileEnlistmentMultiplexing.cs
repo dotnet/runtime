@@ -4,7 +4,6 @@
 
 using System.Diagnostics;
 using System.Threading;
-using System.Transactions.Diagnostics;
 
 namespace System.Transactions
 {
@@ -115,7 +114,6 @@ namespace System.Transactions
                     if (!ThreadPool.QueueUserWorkItem(PrepareCallback, demux))
                     {
                         throw TransactionException.CreateInvalidOperationException(
-                            SR.TraceSourceLtm,
                             SR.UnexpectedFailureOfThreadPool,
                             null
                             );
@@ -173,7 +171,6 @@ namespace System.Transactions
                     if (!ThreadPool.QueueUserWorkItem(CommitCallback, demux))
                     {
                         throw TransactionException.CreateInvalidOperationException(
-                            SR.TraceSourceLtm,
                             SR.UnexpectedFailureOfThreadPool,
                             null
                             );
@@ -231,7 +228,6 @@ namespace System.Transactions
                     if (!ThreadPool.QueueUserWorkItem(RollbackCallback, demux))
                     {
                         throw TransactionException.CreateInvalidOperationException(
-                            SR.TraceSourceLtm,
                             SR.UnexpectedFailureOfThreadPool,
                             null
                             );
@@ -289,7 +285,6 @@ namespace System.Transactions
                     if (!ThreadPool.QueueUserWorkItem(InDoubtCallback, demux))
                     {
                         throw TransactionException.CreateInvalidOperationException(
-                            SR.TraceSourceLtm,
                             SR.UnexpectedFailureOfThreadPool,
                             null
                             );
@@ -339,19 +334,19 @@ namespace System.Transactions
             catch (TransactionAbortedException e)
             {
                 _promotedEnlistment.ForceRollback(e);
-                if (DiagnosticTrace.Verbose)
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
                 {
-                    ExceptionConsumedTraceRecord.Trace(SR.TraceSourceLtm,
-                        e);
+                    etwLog.ExceptionConsumed(e);
                 }
             }
             catch (TransactionInDoubtException e)
             {
                 _promotedEnlistment.EnlistmentDone();
-                if (DiagnosticTrace.Verbose)
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
                 {
-                    ExceptionConsumedTraceRecord.Trace(SR.TraceSourceLtm,
-                        e);
+                    etwLog.ExceptionConsumed(e);
                 }
             }
         }
@@ -424,19 +419,19 @@ namespace System.Transactions
             catch (TransactionAbortedException e)
             {
                 _promotedEnlistment.ForceRollback(e);
-                if (DiagnosticTrace.Verbose)
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
                 {
-                    ExceptionConsumedTraceRecord.Trace(SR.TraceSourceLtm,
-                        e);
+                    etwLog.ExceptionConsumed(e);
                 }
             }
             catch (TransactionInDoubtException e)
             {
                 _promotedEnlistment.EnlistmentDone();
-                if (DiagnosticTrace.Verbose)
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
                 {
-                    ExceptionConsumedTraceRecord.Trace(SR.TraceSourceLtm,
-                        e);
+                    etwLog.ExceptionConsumed(e);
                 }
             }
         }

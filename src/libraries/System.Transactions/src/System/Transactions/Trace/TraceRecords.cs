@@ -46,7 +46,7 @@ namespace System.Transactions.Diagnostics
         DependentTransactionPassed = 3,
         NoTransaction = 4
     }
-
+    /*
     /// <summary>
     /// TraceHelper is an internal class that is used by TraceRecord classes to write
     /// TransactionTraceIdentifiers and EnlistmentTraceIdentifiers to XmlWriters.
@@ -1303,4 +1303,5 @@ namespace System.Transactions.Diagnostics
     }
 
     #endregion
+    */
 }

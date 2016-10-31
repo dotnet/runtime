@@ -9,6 +9,7 @@ using System.Xml.XPath;
 
 namespace System.Transactions.Diagnostics
 {
+    /*
     /// <summary>
     /// Very basic performance-oriented XmlWriter implementation. No validation/encoding is made.
     /// Namespaces are not supported
@@ -209,4 +210,5 @@ namespace System.Transactions.Diagnostics
         {
         }
     }
+    */
 }

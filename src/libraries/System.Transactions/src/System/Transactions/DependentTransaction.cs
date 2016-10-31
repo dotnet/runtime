@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Transactions.Diagnostics;
 
 namespace System.Transactions
 {
@@ -32,9 +31,10 @@ namespace System.Transactions
 
         public void Complete()
         {
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "DependentTransaction.Complete");
+                etwLog.MethodEnter("DependentTransaction.Complete");
             }
 
             lock (_internalTransaction)
@@ -46,7 +46,7 @@ namespace System.Transactions
 
                 if (_complete)
                 {
-                    throw TransactionException.CreateTransactionCompletedException(SR.TraceSourceLtm, DistributedTxId);
+                    throw TransactionException.CreateTransactionCompletedException(DistributedTxId);
                 }
 
                 _complete = true;
@@ -61,13 +61,10 @@ namespace System.Transactions
                 }
             }
 
-            if (DiagnosticTrace.Information)
+            if (etwLog.IsEnabled())
             {
-                DependentCloneCompleteTraceRecord.Trace(SR.TraceSourceLtm, TransactionTraceId);
-            }
-            if (DiagnosticTrace.Verbose)
-            {
-                MethodExitedTraceRecord.Trace(SR.TraceSourceLtm, "DependentTransaction.Complete");
+                etwLog.TransactionDependentCloneComplete(this, "DependentTransaction");
+                etwLog.MethodExit("DependentTransaction.Complete");
             }
         }
     }

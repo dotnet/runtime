@@ -4,6 +4,7 @@
 
 namespace System.Transactions.Diagnostics
 {
+    /*
     internal sealed class Activity : IDisposable
     {
         private readonly Guid _oldGuid;
@@ -55,4 +56,5 @@ namespace System.Transactions.Diagnostics
             }
         }
     }
+    */
 }

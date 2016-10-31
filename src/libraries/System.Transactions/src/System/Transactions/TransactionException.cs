@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.Serialization;
-using System.Transactions.Diagnostics;
 using System.Transactions.Configuration;
 
 namespace System.Transactions
@@ -19,38 +18,42 @@ namespace System.Transactions
             return (distributedTxId != Guid.Empty && AppSettings.IncludeDistributedTxIdInExceptionMessage);
         }
 
-        internal static TransactionException Create(string traceSource, string message, Exception innerException)
+        internal static TransactionException Create(string message, Exception innerException)
         {
-            if (DiagnosticTrace.Error)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                TransactionExceptionTraceRecord.Trace(traceSource, message);
+                etwLog.TransactionExceptionTrace("TransactionException", message, innerException.ToString());
             }
+
             return new TransactionException(message, innerException);
         }
 
-        internal static TransactionException CreateTransactionStateException(string traceSource, Exception innerException)
+        internal static TransactionException CreateTransactionStateException(Exception innerException)
         {
-            return Create(traceSource, SR.TransactionStateException, innerException);
+            return Create(SR.TransactionStateException, innerException);
         }
 
-        internal static Exception CreateEnlistmentStateException(string traceSource, Exception innerException, Guid distributedTxId)
+        internal static Exception CreateEnlistmentStateException(Exception innerException, Guid distributedTxId)
         {
             string messagewithTxId = SR.EnlistmentStateException;
             if (IncludeDistributedTxId(distributedTxId))
                 messagewithTxId = string.Format(SR.DistributedTxIDInTransactionException, messagewithTxId, distributedTxId);
 
-            if (DiagnosticTrace.Error)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                InvalidOperationExceptionTraceRecord.Trace(traceSource, messagewithTxId);
+                etwLog.TransactionExceptionTrace("InvalidOperationException", messagewithTxId, innerException.ToString());
             }
             return new InvalidOperationException(messagewithTxId, innerException);
         }
 
-        internal static Exception CreateInvalidOperationException(string traceSource, string message, Exception innerException)
+        internal static Exception CreateInvalidOperationException(string message, Exception innerException)
         {
-            if (DiagnosticTrace.Error)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                InvalidOperationExceptionTraceRecord.Trace(traceSource, message);
+                etwLog.TransactionExceptionTrace("InvalidOperationException", message, innerException.ToString());
             }
 
             return new InvalidOperationException(message, innerException);
@@ -98,41 +101,42 @@ namespace System.Transactions
             return new TransactionException(message);
         }
 
-        internal static TransactionException Create(string traceSource, string message, Exception innerException, Guid distributedTxId)
+        internal static TransactionException Create(string message, Exception innerException, Guid distributedTxId)
         {
             string messagewithTxId = message;
             if (IncludeDistributedTxId(distributedTxId))
                 messagewithTxId = string.Format(SR.DistributedTxIDInTransactionException, messagewithTxId, distributedTxId);
 
-            return Create(traceSource, messagewithTxId, innerException);
+            return Create(messagewithTxId, innerException);
         }
 
-        internal static TransactionException CreateTransactionStateException(string traceSource, Exception innerException, Guid distributedTxId)
+        internal static TransactionException CreateTransactionStateException(Exception innerException, Guid distributedTxId)
         {
-            return Create(traceSource, SR.TransactionStateException, innerException, distributedTxId);
+            return Create(SR.TransactionStateException, innerException, distributedTxId);
         }
 
-        internal static Exception CreateTransactionCompletedException(string traceSource, Guid distributedTxId)
+        internal static Exception CreateTransactionCompletedException(Guid distributedTxId)
         {
             string messagewithTxId = SR.TransactionAlreadyCompleted;
             if (IncludeDistributedTxId(distributedTxId))
                 messagewithTxId = string.Format(SR.DistributedTxIDInTransactionException, messagewithTxId, distributedTxId);
 
-            if (DiagnosticTrace.Error)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                InvalidOperationExceptionTraceRecord.Trace(traceSource, messagewithTxId);
+                etwLog.TransactionExceptionTrace("InvalidOperationException", messagewithTxId, string.Empty);
             }
 
             return new InvalidOperationException(messagewithTxId);
         }
 
-        internal static Exception CreateInvalidOperationException(string traceSource, string message, Exception innerException, Guid distributedTxId)
+        internal static Exception CreateInvalidOperationException(string message, Exception innerException, Guid distributedTxId)
         {
             string messagewithTxId = message;
             if (IncludeDistributedTxId(distributedTxId))
                 messagewithTxId = string.Format(SR.DistributedTxIDInTransactionException, messagewithTxId, distributedTxId);
 
-            return CreateInvalidOperationException(traceSource, messagewithTxId, innerException);
+            return CreateInvalidOperationException(messagewithTxId, innerException);
         }
     }
 
@@ -143,20 +147,21 @@ namespace System.Transactions
     [Serializable]
     public class TransactionAbortedException : TransactionException
     {
-        internal static new TransactionAbortedException Create(string traceSource, string message, Exception innerException, Guid distributedTxId)
+        internal static new TransactionAbortedException Create(string message, Exception innerException, Guid distributedTxId)
         {
             string messagewithTxId = message;
             if (IncludeDistributedTxId(distributedTxId))
                 messagewithTxId = string.Format(SR.DistributedTxIDInTransactionException, messagewithTxId, distributedTxId);
 
-            return TransactionAbortedException.Create(traceSource, messagewithTxId, innerException);
+            return TransactionAbortedException.Create(messagewithTxId, innerException);
         }
 
-        internal static new TransactionAbortedException Create(string traceSource, string message, Exception innerException)
+        internal static new TransactionAbortedException Create(string message, Exception innerException)
         {
-            if (DiagnosticTrace.Error)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                TransactionExceptionTraceRecord.Trace(traceSource, message);
+                etwLog.TransactionExceptionTrace("TransactionAbortedException", message, innerException.ToString());
             }
 
             return new TransactionAbortedException(message, innerException);
@@ -217,20 +222,21 @@ namespace System.Transactions
     [Serializable]
     public class TransactionInDoubtException : TransactionException
     {
-        internal static new TransactionInDoubtException Create(string traceSource, string message, Exception innerException, Guid distributedTxId)
+        internal static new TransactionInDoubtException Create(string message, Exception innerException, Guid distributedTxId)
         {
             string messagewithTxId = message;
             if (IncludeDistributedTxId(distributedTxId))
                 messagewithTxId = string.Format(SR.DistributedTxIDInTransactionException, messagewithTxId, distributedTxId);
 
-            return TransactionInDoubtException.Create(traceSource, messagewithTxId, innerException);
+            return TransactionInDoubtException.Create(messagewithTxId, innerException);
         }
 
-        internal static new TransactionInDoubtException Create(string traceSource, string message, Exception innerException)
+        internal static new TransactionInDoubtException Create(string message, Exception innerException)
         {
-            if (DiagnosticTrace.Error)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                TransactionExceptionTraceRecord.Trace(traceSource, message);
+                etwLog.TransactionExceptionTrace("TransactionInDoubtException", message, innerException.ToString());
             }
 
             return new TransactionInDoubtException(message, innerException);
@@ -276,19 +282,20 @@ namespace System.Transactions
     [Serializable]
     public class TransactionManagerCommunicationException : TransactionException
     {
-        internal static new TransactionManagerCommunicationException Create(string traceSource, string message, Exception innerException)
+        internal static new TransactionManagerCommunicationException Create(string message, Exception innerException)
         {
-            if (DiagnosticTrace.Error)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                TransactionExceptionTraceRecord.Trace(traceSource, message);
+                etwLog.TransactionExceptionTrace("TransactionManagerCommunicationException", message, innerException.ToString());
             }
-
+ 
             return new TransactionManagerCommunicationException(message, innerException);
         }
 
-        internal static TransactionManagerCommunicationException Create(string traceSource, Exception innerException)
+        internal static TransactionManagerCommunicationException Create(Exception innerException)
         {
-            return Create(traceSource, SR.TransactionManagerCommunicationException, innerException);
+            return Create(SR.TransactionManagerCommunicationException, innerException);
         }
 
         /// <summary>
