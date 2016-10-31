@@ -340,11 +340,11 @@ namespace System.Collections.Generic
         [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe override int IndexOf(byte[] array, byte value, int startIndex, int count) {
             if (array==null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             if (startIndex < 0)
-                throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_Count"));
+                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_Count"));
             if (count > array.Length - startIndex)
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
             Contract.EndContractBlock();

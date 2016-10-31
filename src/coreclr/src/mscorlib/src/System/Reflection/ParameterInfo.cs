@@ -157,7 +157,7 @@ namespace System.Reflection
         public virtual Object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
             if (attributeType == null)
-                throw new ArgumentNullException("attributeType");
+                throw new ArgumentNullException(nameof(attributeType));
             Contract.EndContractBlock();
 
             return EmptyArray<Object>.Value;
@@ -166,7 +166,7 @@ namespace System.Reflection
         public virtual bool IsDefined(Type attributeType, bool inherit)
         {
             if (attributeType == null)
-                throw new ArgumentNullException("attributeType");
+                throw new ArgumentNullException(nameof(attributeType));
             Contract.EndContractBlock();
 
             return false;
@@ -403,7 +403,7 @@ namespace System.Reflection
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info == null)
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
 
             // We could be serializing for consumption by a pre-Whidbey
@@ -728,7 +728,7 @@ namespace System.Reflection
         public override Object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
             if (attributeType == null)
-                throw new ArgumentNullException("attributeType");
+                throw new ArgumentNullException(nameof(attributeType));
             Contract.EndContractBlock();
 
             if (MdToken.IsNullToken(m_tkParamDef))
@@ -737,7 +737,7 @@ namespace System.Reflection
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
             if (attributeRuntimeType == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), "attributeType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
         }
@@ -746,7 +746,7 @@ namespace System.Reflection
         public override bool IsDefined(Type attributeType, bool inherit)
         {
             if (attributeType == null)
-                throw new ArgumentNullException("attributeType");
+                throw new ArgumentNullException(nameof(attributeType));
             Contract.EndContractBlock();
 
             if (MdToken.IsNullToken(m_tkParamDef))
@@ -755,7 +755,7 @@ namespace System.Reflection
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
             if (attributeRuntimeType == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), "attributeType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), nameof(attributeType));
 
             return CustomAttribute.IsDefined(this, attributeRuntimeType);
         }

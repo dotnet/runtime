@@ -39,7 +39,7 @@ namespace System {
             ParameterModifier[] modifiers, CultureInfo cultureInfo, String[] names, out Object state)
         {
             if (match == null || match.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Arg_EmptyArray"), "match");
+                throw new ArgumentException(Environment.GetResourceString("Arg_EmptyArray"), nameof(match));
             Contract.EndContractBlock();
 
             MethodBase[] candidates = (MethodBase[]) match.Clone();
@@ -441,7 +441,7 @@ namespace System {
         public override FieldInfo BindToField(BindingFlags bindingAttr,FieldInfo[] match, Object value,CultureInfo cultureInfo)
         {
             if (match == null) {
-                throw new ArgumentNullException("match");
+                throw new ArgumentNullException(nameof(match));
             }
 
             int i;
@@ -524,13 +524,13 @@ namespace System {
             for (i=0;i<types.Length;i++) {
                 realTypes[i] = types[i].UnderlyingSystemType;
                 if (!(realTypes[i] is RuntimeType))
-                    throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),"types");
+                    throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),nameof(types));
             }
             types = realTypes;
             
             // We don't automatically jump out on exact match.
             if (match == null || match.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Arg_EmptyArray"), "match");
+                throw new ArgumentException(Environment.GetResourceString("Arg_EmptyArray"), nameof(match));
 
             MethodBase[] candidates = (MethodBase[]) match.Clone();
             
@@ -596,10 +596,10 @@ namespace System {
             // Allow a null indexes array. But if it is not null, every element must be non-null as well.
             if (indexes != null && !Contract.ForAll(indexes, delegate(Type t) { return t != null; }))
             {
-                throw new ArgumentNullException("indexes");
+                throw new ArgumentNullException(nameof(indexes));
             }
             if (match == null || match.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Arg_EmptyArray"), "match");
+                throw new ArgumentException(Environment.GetResourceString("Arg_EmptyArray"), nameof(match));
             Contract.EndContractBlock();
 
             PropertyInfo[] candidates = (PropertyInfo[]) match.Clone();
@@ -732,7 +732,7 @@ namespace System {
         public static MethodBase ExactBinding(MethodBase[] match,Type[] types,ParameterModifier[] modifiers)
         {
             if (match==null)
-                throw new ArgumentNullException("match");
+                throw new ArgumentNullException(nameof(match));
             Contract.EndContractBlock();
             MethodBase[] aExactMatches = new MethodBase[match.Length];
             int cExactMatches = 0;
@@ -772,7 +772,7 @@ namespace System {
         public static PropertyInfo ExactPropertyBinding(PropertyInfo[] match,Type returnType,Type[] types,ParameterModifier[] modifiers)
         {
             if (match==null)
-                throw new ArgumentNullException("match");
+                throw new ArgumentNullException(nameof(match));
             Contract.EndContractBlock();
 
             PropertyInfo bestMatch = null;

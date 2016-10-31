@@ -101,12 +101,12 @@ namespace System.Runtime.Loader
         {
             if (assemblyPath == null)
             {
-                throw new ArgumentNullException("assemblyPath");
+                throw new ArgumentNullException(nameof(assemblyPath));
             }
 
             if (Path.IsRelative(assemblyPath))
             {
-                throw new ArgumentException( Environment.GetResourceString("Argument_AbsolutePathRequired"), "assemblyPath");
+                throw new ArgumentException( Environment.GetResourceString("Argument_AbsolutePathRequired"), nameof(assemblyPath));
             }
 
             RuntimeAssembly loadedAssembly = null;
@@ -118,17 +118,17 @@ namespace System.Runtime.Loader
         {
             if (nativeImagePath == null)
             {
-                throw new ArgumentNullException("nativeImagePath");
+                throw new ArgumentNullException(nameof(nativeImagePath));
             }
 
             if (Path.IsRelative(nativeImagePath))
             {
-                throw new ArgumentException( Environment.GetResourceString("Argument_AbsolutePathRequired"), "nativeImagePath");
+                throw new ArgumentException( Environment.GetResourceString("Argument_AbsolutePathRequired"), nameof(nativeImagePath));
             }
 
             if (assemblyPath != null && Path.IsRelative(assemblyPath))
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_AbsolutePathRequired"), "assemblyPath");
+                throw new ArgumentException(Environment.GetResourceString("Argument_AbsolutePathRequired"), nameof(assemblyPath));
             }
 
             // Basic validation has succeeded - lets try to load the NI image.
@@ -147,7 +147,7 @@ namespace System.Runtime.Loader
         {
             if (assembly == null)
             {
-                throw new ArgumentNullException("assembly");
+                throw new ArgumentNullException(nameof(assembly));
             }
             
             int iAssemblyStreamLength = (int)assembly.Length;
@@ -302,15 +302,15 @@ namespace System.Runtime.Loader
         {
             if (unmanagedDllPath == null)
             {
-                throw new ArgumentNullException("unmanagedDllPath");
+                throw new ArgumentNullException(nameof(unmanagedDllPath));
             }
             if (unmanagedDllPath.Length == 0)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyPath"), "unmanagedDllPath");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyPath"), nameof(unmanagedDllPath));
             }
             if (Path.IsRelative(unmanagedDllPath))
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_AbsolutePathRequired"), "unmanagedDllPath");
+                throw new ArgumentException(Environment.GetResourceString("Argument_AbsolutePathRequired"), nameof(unmanagedDllPath));
             }
 
             return InternalLoadUnmanagedDllFromPath(unmanagedDllPath);
@@ -366,7 +366,7 @@ namespace System.Runtime.Loader
         {
             if (context == null)
             {
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
             }
             
             // Try to override the default assembly load context
@@ -389,7 +389,7 @@ namespace System.Runtime.Loader
         {
             if (assemblyPath == null)
             {
-                throw new ArgumentNullException("assemblyPath");
+                throw new ArgumentNullException(nameof(assemblyPath));
             }
             
             String fullPath = Path.GetFullPathInternal(assemblyPath);
@@ -405,7 +405,7 @@ namespace System.Runtime.Loader
         {
             if (assembly == null)
             {
-                throw new ArgumentNullException("assembly");
+                throw new ArgumentNullException(nameof(assembly));
             }
             
             AssemblyLoadContext loadContextForAssembly = null;

@@ -62,19 +62,19 @@ namespace System.IO {
 #pragma warning restore 618
         protected void Initialize(SafeBuffer buffer, Int64 offset, Int64 capacity, FileAccess access) {
             if (buffer == null) {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
             if (offset < 0) {
-                throw new ArgumentOutOfRangeException("offset", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(offset), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
             if (capacity < 0) {
-                throw new ArgumentOutOfRangeException("capacity", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(capacity), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
             if (buffer.ByteLength < (UInt64)(offset + capacity)) {
                 throw new ArgumentException(Environment.GetResourceString("Argument_OffsetAndCapacityOutOfBounds"));
             }
             if (access < FileAccess.Read || access > FileAccess.ReadWrite) {
-                throw new ArgumentOutOfRangeException("access");
+                throw new ArgumentOutOfRangeException(nameof(access));
             }
             Contract.EndContractBlock();
 
@@ -591,7 +591,7 @@ namespace System.IO {
         [System.Security.SecurityCritical]  // auto-generated_required
         public void Read<T>(Int64 position, out T structure) where T : struct {
             if (position < 0) {
-                throw new ArgumentOutOfRangeException("position", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(position), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
             Contract.EndContractBlock();
 
@@ -605,10 +605,10 @@ namespace System.IO {
             UInt32 sizeOfT = Marshal.SizeOfType(typeof(T));
             if (position > _capacity - sizeOfT) { 
                 if (position >= _capacity) {
-                    throw new ArgumentOutOfRangeException("position", Environment.GetResourceString("ArgumentOutOfRange_PositionLessThanCapacityRequired"));
+                    throw new ArgumentOutOfRangeException(nameof(position), Environment.GetResourceString("ArgumentOutOfRange_PositionLessThanCapacityRequired"));
                 }
                 else {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_NotEnoughBytesToRead", typeof(T).FullName), "position");
+                    throw new ArgumentException(Environment.GetResourceString("Argument_NotEnoughBytesToRead", typeof(T).FullName), nameof(position));
                 }
             }
 
@@ -624,13 +624,13 @@ namespace System.IO {
         [System.Security.SecurityCritical]  // auto-generated_required
         public int ReadArray<T>(Int64 position, T[] array, Int32 offset, Int32 count) where T : struct {
             if (array == null) {
-                throw new ArgumentNullException("array", "Buffer cannot be null.");
+                throw new ArgumentNullException(nameof(array), "Buffer cannot be null.");
             }
             if (offset < 0) {
-                throw new ArgumentOutOfRangeException("offset", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(offset), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
             if (count < 0) {
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
             if (array.Length - offset < count) {
                 throw new ArgumentException(Environment.GetResourceString("Argument_OffsetAndLengthOutOfBounds"));
@@ -645,14 +645,14 @@ namespace System.IO {
                 }
             }
             if (position < 0) {
-                throw new ArgumentOutOfRangeException("position", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(position), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
 
             UInt32 sizeOfT = Marshal.AlignedSizeOf<T>();
 
             // only check position and ask for fewer Ts if count is too big
             if (position >= _capacity) {
-                throw new ArgumentOutOfRangeException("position", Environment.GetResourceString("ArgumentOutOfRange_PositionLessThanCapacityRequired"));
+                throw new ArgumentOutOfRangeException(nameof(position), Environment.GetResourceString("ArgumentOutOfRange_PositionLessThanCapacityRequired"));
             }
 
             int n = count;
@@ -1106,7 +1106,7 @@ namespace System.IO {
         [System.Security.SecurityCritical]  // auto-generated_required
         public void Write<T>(Int64 position, ref T structure) where T : struct {
             if (position < 0) {
-                throw new ArgumentOutOfRangeException("position", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(position), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
             Contract.EndContractBlock();
 
@@ -1120,10 +1120,10 @@ namespace System.IO {
             UInt32 sizeOfT = Marshal.SizeOfType(typeof(T));
             if (position > _capacity - sizeOfT) {
                 if (position >= _capacity) {
-                    throw new ArgumentOutOfRangeException("position", Environment.GetResourceString("ArgumentOutOfRange_PositionLessThanCapacityRequired"));
+                    throw new ArgumentOutOfRangeException(nameof(position), Environment.GetResourceString("ArgumentOutOfRange_PositionLessThanCapacityRequired"));
                 }
                 else {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_NotEnoughBytesToWrite", typeof(T).FullName), "position");
+                    throw new ArgumentException(Environment.GetResourceString("Argument_NotEnoughBytesToWrite", typeof(T).FullName), nameof(position));
                 }
             }
 
@@ -1136,22 +1136,22 @@ namespace System.IO {
         [System.Security.SecurityCritical]  // auto-generated_required
         public void WriteArray<T>(Int64 position, T[] array, Int32 offset, Int32 count) where T : struct {
             if (array == null) {
-                throw new ArgumentNullException("array", "Buffer cannot be null.");
+                throw new ArgumentNullException(nameof(array), "Buffer cannot be null.");
             }
             if (offset < 0) {
-                throw new ArgumentOutOfRangeException("offset", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(offset), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
             if (count < 0) {
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
             if (array.Length - offset < count) {
                 throw new ArgumentException(Environment.GetResourceString("Argument_OffsetAndLengthOutOfBounds"));
             }
             if (position < 0) {
-                throw new ArgumentOutOfRangeException("position", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(position), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
             if (position >= Capacity) {
-                throw new ArgumentOutOfRangeException("position", Environment.GetResourceString("ArgumentOutOfRange_PositionLessThanCapacityRequired"));
+                throw new ArgumentOutOfRangeException(nameof(position), Environment.GetResourceString("ArgumentOutOfRange_PositionLessThanCapacityRequired"));
             }
             Contract.EndContractBlock();
 
@@ -1217,15 +1217,15 @@ namespace System.IO {
                 throw new NotSupportedException(Environment.GetResourceString("NotSupported_Reading"));
             }
             if (position < 0) {
-                throw new ArgumentOutOfRangeException("position", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(position), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
             Contract.EndContractBlock();
             if (position > _capacity - sizeOfType) {
                 if (position >= _capacity) {
-                    throw new ArgumentOutOfRangeException("position", Environment.GetResourceString("ArgumentOutOfRange_PositionLessThanCapacityRequired"));
+                    throw new ArgumentOutOfRangeException(nameof(position), Environment.GetResourceString("ArgumentOutOfRange_PositionLessThanCapacityRequired"));
                 }
                 else {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_NotEnoughBytesToRead"), "position");
+                    throw new ArgumentException(Environment.GetResourceString("Argument_NotEnoughBytesToRead"), nameof(position));
                 }
             }
         }
@@ -1238,15 +1238,15 @@ namespace System.IO {
                 throw new NotSupportedException(Environment.GetResourceString("NotSupported_Writing"));
             }
             if (position < 0) {
-                throw new ArgumentOutOfRangeException("position", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(position), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
             Contract.EndContractBlock();
             if (position > _capacity - sizeOfType) {
                 if (position >= _capacity) {
-                    throw new ArgumentOutOfRangeException("position", Environment.GetResourceString("ArgumentOutOfRange_PositionLessThanCapacityRequired"));
+                    throw new ArgumentOutOfRangeException(nameof(position), Environment.GetResourceString("ArgumentOutOfRange_PositionLessThanCapacityRequired"));
                 }
                 else {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_NotEnoughBytesToWrite", "Byte"), "position");
+                    throw new ArgumentException(Environment.GetResourceString("Argument_NotEnoughBytesToWrite", nameof(Byte)), nameof(position));
                 }
             }
         }

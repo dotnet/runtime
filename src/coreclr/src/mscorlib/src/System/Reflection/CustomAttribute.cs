@@ -29,7 +29,7 @@ namespace System.Reflection
         public static IList<CustomAttributeData> GetCustomAttributes(MemberInfo target)
         {
             if (target == null)
-                throw new ArgumentNullException("target");
+                throw new ArgumentNullException(nameof(target));
 
             return target.GetCustomAttributesData();
         }
@@ -37,7 +37,7 @@ namespace System.Reflection
         public static IList<CustomAttributeData> GetCustomAttributes(Module target)
         {
             if (target == null)
-                throw new ArgumentNullException("target");
+                throw new ArgumentNullException(nameof(target));
             Contract.EndContractBlock();
 
             return target.GetCustomAttributesData();
@@ -46,7 +46,7 @@ namespace System.Reflection
         public static IList<CustomAttributeData> GetCustomAttributes(Assembly target)
         {
             if (target == null)
-                throw new ArgumentNullException("target");
+                throw new ArgumentNullException(nameof(target));
             Contract.EndContractBlock();
 
             return target.GetCustomAttributesData();
@@ -55,7 +55,7 @@ namespace System.Reflection
         public static IList<CustomAttributeData> GetCustomAttributes(ParameterInfo target)
         {
             if (target == null)
-                throw new ArgumentNullException("target");
+                throw new ArgumentNullException(nameof(target));
             Contract.EndContractBlock();
 
             return target.GetCustomAttributesData();
@@ -279,7 +279,7 @@ namespace System.Reflection
             if (type.IsValueType)
                 return CustomAttributeEncoding.Undefined;
 
-            throw new ArgumentException(Environment.GetResourceString("Argument_InvalidKindOfTypeForCA"), "type");
+            throw new ArgumentException(Environment.GetResourceString("Argument_InvalidKindOfTypeForCA"), nameof(type));
         }
         private static CustomAttributeType InitCustomAttributeType(RuntimeType parameterType)
         {
@@ -611,7 +611,7 @@ namespace System.Reflection
         public CustomAttributeNamedArgument(MemberInfo memberInfo, object value)
         {
             if (memberInfo == null)
-                throw new ArgumentNullException("memberInfo");
+                throw new ArgumentNullException(nameof(memberInfo));
 
             Type type = null;
             FieldInfo field = memberInfo as FieldInfo;
@@ -631,7 +631,7 @@ namespace System.Reflection
         public CustomAttributeNamedArgument(MemberInfo memberInfo, CustomAttributeTypedArgument typedArgument)
         {
             if (memberInfo == null)
-                throw new ArgumentNullException("memberInfo");
+                throw new ArgumentNullException(nameof(memberInfo));
 
             m_memberInfo = memberInfo;
             m_value = typedArgument;
@@ -749,7 +749,7 @@ namespace System.Reflection
                     return typeof(object);
 
                 default :
-                    throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)encodedType), "encodedType");
+                    throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)encodedType), nameof(encodedType));
             }
         }
 
@@ -795,7 +795,7 @@ namespace System.Reflection
                     unsafe { return *(double*)&val; }
 
                 default:
-                    throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)val), "val");
+                    throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)val), nameof(val));
             }
         }
         private static RuntimeType ResolveType(RuntimeModule scope, string typeName)
@@ -820,7 +820,7 @@ namespace System.Reflection
         {
             // value can be null.
             if (argumentType == null)
-                throw new ArgumentNullException("argumentType");
+                throw new ArgumentNullException(nameof(argumentType));
 
             m_value = (value == null) ? null : CanonicalizeValue(value);
             m_argumentType = argumentType;
@@ -830,7 +830,7 @@ namespace System.Reflection
         {
             // value cannot be null.
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             m_value = CanonicalizeValue(value);
             m_argumentType = value.GetType();
@@ -852,7 +852,7 @@ namespace System.Reflection
             CustomAttributeEncoding encodedType = encodedArg.CustomAttributeType.EncodedType;
 
             if (encodedType == CustomAttributeEncoding.Undefined)
-                throw new ArgumentException("encodedArg");
+                throw new ArgumentException(null, nameof(encodedArg));
 
             else if (encodedType == CustomAttributeEncoding.Enum)
             {
@@ -1031,7 +1031,7 @@ namespace System.Reflection
             RuntimeModule customAttributeModule)
         {
             if (customAttributeModule == null)
-                throw new ArgumentNullException("customAttributeModule");
+                throw new ArgumentNullException(nameof(customAttributeModule));
             Contract.EndContractBlock();
 
             Contract.Assert(customAttributeCtorParameters != null);
@@ -1083,7 +1083,7 @@ namespace System.Reflection
         public CustomAttributeNamedParameter(string argumentName, CustomAttributeEncoding fieldOrProperty, CustomAttributeType type)
         {
             if (argumentName == null)
-                throw new ArgumentNullException("argumentName");
+                throw new ArgumentNullException(nameof(argumentName));
             Contract.EndContractBlock();
 
             m_argumentName = argumentName;

@@ -92,7 +92,7 @@ namespace System.Globalization {
             }
             set {
                 if (null == value) {
-                    throw new ArgumentNullException("String",
+                    throw new ArgumentNullException(nameof(String),
                         Environment.GetResourceString("ArgumentNull_String"));
                 }
                 Contract.EndContractBlock();
@@ -118,11 +118,11 @@ namespace System.Globalization {
             if(null == this.Indexes) {
                 // Just decide which error to give depending on the param they gave us....
                 if(startingTextElement < 0) {
-                    throw new ArgumentOutOfRangeException("startingTextElement",
+                    throw new ArgumentOutOfRangeException(nameof(startingTextElement),
                         Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
                 }
                 else {
-                    throw new ArgumentOutOfRangeException("startingTextElement",
+                    throw new ArgumentOutOfRangeException(nameof(startingTextElement),
                         Environment.GetResourceString("Arg_ArgumentOutOfRangeException"));
                 }
             }
@@ -135,22 +135,22 @@ namespace System.Globalization {
             // Parameter checking
             //
             if(startingTextElement < 0) {
-                throw new ArgumentOutOfRangeException("startingTextElement",
+                throw new ArgumentOutOfRangeException(nameof(startingTextElement),
                     Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
             }
 
             if(this.String.Length == 0 || startingTextElement >= this.Indexes.Length) {
-                throw new ArgumentOutOfRangeException("startingTextElement",
+                throw new ArgumentOutOfRangeException(nameof(startingTextElement),
                     Environment.GetResourceString("Arg_ArgumentOutOfRangeException"));
             }
 
             if(lengthInTextElements < 0) {
-                throw new ArgumentOutOfRangeException("lengthInTextElements",
+                throw new ArgumentOutOfRangeException(nameof(lengthInTextElements),
                     Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
             }
 
             if(startingTextElement > this.Indexes.Length - lengthInTextElements) {
-                throw new ArgumentOutOfRangeException("lengthInTextElements",
+                throw new ArgumentOutOfRangeException(nameof(lengthInTextElements),
                     Environment.GetResourceString("Arg_ArgumentOutOfRangeException"));
             }
 
@@ -268,7 +268,7 @@ namespace System.Globalization {
             // Validate parameters.
             //
             if (str==null) {
-                throw new ArgumentNullException("str");
+                throw new ArgumentNullException(nameof(str));
             }
             Contract.EndContractBlock();
         
@@ -277,7 +277,7 @@ namespace System.Globalization {
                 if (index == len) {
                     return (String.Empty);
                 }            
-                throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
 
             int charLen;
@@ -297,14 +297,14 @@ namespace System.Globalization {
             //
             if (str==null) 
             {
-                throw new ArgumentNullException("str");
+                throw new ArgumentNullException(nameof(str));
             }
             Contract.EndContractBlock();
         
             int len = str.Length;
             if (index < 0 || (index > len))
             {
-                throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
 
             return (new TextElementEnumerator(str, index, len));
@@ -326,7 +326,7 @@ namespace System.Globalization {
         {
             if (str == null)
             {
-                throw new ArgumentNullException("str");
+                throw new ArgumentNullException(nameof(str));
             }
             Contract.EndContractBlock();
             

@@ -20,7 +20,7 @@ namespace System.Runtime.CompilerServices
         {
             if (String.IsNullOrEmpty(assemblyFullName))
             {
-                throw new ArgumentNullException("assemblyFullName");
+                throw new ArgumentNullException(nameof(assemblyFullName));
             }
             this.assemblyFullName = assemblyFullName;    
         }

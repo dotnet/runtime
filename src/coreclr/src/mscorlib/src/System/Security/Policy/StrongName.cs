@@ -42,20 +42,20 @@ namespace System.Security.Policy {
         internal StrongName(StrongNamePublicKeyBlob blob, String name, Version version, Assembly assembly)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             if (String.IsNullOrEmpty(name))
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyStrongName"));
 
             if (blob == null)
-                throw new ArgumentNullException("blob");
+                throw new ArgumentNullException(nameof(blob));
 
             if (version == null)
-                throw new ArgumentNullException("version");
+                throw new ArgumentNullException(nameof(version));
             Contract.EndContractBlock();
 
             RuntimeAssembly rtAssembly = assembly as RuntimeAssembly;
             if (assembly != null && rtAssembly == null)
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeAssembly"), "assembly");
+                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeAssembly"), nameof(assembly));
 
             m_publicKeyBlob = blob;
             m_name = name;
@@ -154,7 +154,7 @@ namespace System.Security.Policy {
         internal void FromXml (SecurityElement element)
         {
             if (element == null)
-                throw new ArgumentNullException("element");
+                throw new ArgumentNullException(nameof(element));
             if (String.Compare(element.Tag, "StrongName", StringComparison.Ordinal) != 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidXML"));
             Contract.EndContractBlock();

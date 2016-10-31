@@ -28,7 +28,7 @@ namespace System.Reflection
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info == null)
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
 
             UnitySerializationHolder.GetUnitySerializationInfo(info, this);

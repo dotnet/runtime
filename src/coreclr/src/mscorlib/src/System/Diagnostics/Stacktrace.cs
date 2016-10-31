@@ -312,7 +312,7 @@ namespace System.Diagnostics {
         {
     
             if (skipFrames < 0)
-                throw new ArgumentOutOfRangeException("skipFrames", 
+                throw new ArgumentOutOfRangeException(nameof(skipFrames), 
                     Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
     
@@ -332,7 +332,7 @@ namespace System.Diagnostics {
         {
     
             if (skipFrames < 0)
-                throw new ArgumentOutOfRangeException("skipFrames", 
+                throw new ArgumentOutOfRangeException(nameof(skipFrames), 
                     Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
     
@@ -347,7 +347,7 @@ namespace System.Diagnostics {
         public StackTrace(Exception e)
         {
             if (e == null)
-                throw new ArgumentNullException("e");
+                throw new ArgumentNullException(nameof(e));
             Contract.EndContractBlock();
 
             m_iNumOfFrames = 0;
@@ -363,7 +363,7 @@ namespace System.Diagnostics {
         public StackTrace(Exception e, bool fNeedFileInfo)
         {
             if (e == null)
-                throw new ArgumentNullException("e");
+                throw new ArgumentNullException(nameof(e));
             Contract.EndContractBlock();
 
             m_iNumOfFrames = 0;
@@ -380,10 +380,10 @@ namespace System.Diagnostics {
         public StackTrace(Exception e, int skipFrames)
         {
             if (e == null)
-                throw new ArgumentNullException("e");
+                throw new ArgumentNullException(nameof(e));
 
             if (skipFrames < 0)
-                throw new ArgumentOutOfRangeException("skipFrames", 
+                throw new ArgumentOutOfRangeException(nameof(skipFrames), 
                     Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
     
@@ -402,10 +402,10 @@ namespace System.Diagnostics {
         public StackTrace(Exception e, int skipFrames, bool fNeedFileInfo)
         {
             if (e == null)
-                throw new ArgumentNullException("e");
+                throw new ArgumentNullException(nameof(e));
 
             if (skipFrames < 0)
-                throw new ArgumentOutOfRangeException("skipFrames", 
+                throw new ArgumentOutOfRangeException(nameof(skipFrames), 
                     Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
     

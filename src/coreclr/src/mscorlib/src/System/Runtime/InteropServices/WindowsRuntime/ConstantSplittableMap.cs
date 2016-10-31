@@ -45,7 +45,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal ConstantSplittableMap(IReadOnlyDictionary<TKey, TValue> data)
         {
             if (data == null)
-                throw new ArgumentNullException("data");
+                throw new ArgumentNullException(nameof(data));
             Contract.EndContractBlock();
 
             this.firstItemIndex = 0;
@@ -56,7 +56,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal ConstantSplittableMap(IMapView<TKey, TValue> data)
         {
             if (data == null)
-                throw new ArgumentNullException("data");
+                throw new ArgumentNullException(nameof(data));
 
             if (((UInt32)Int32.MaxValue) < data.Size)
             {

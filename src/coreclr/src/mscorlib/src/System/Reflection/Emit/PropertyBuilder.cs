@@ -47,11 +47,11 @@ namespace System.Reflection.Emit {
             TypeBuilder         containingType) // the containing type
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(name));
             if (name[0] == '\0')
-                throw new ArgumentException(Environment.GetResourceString("Argument_IllegalName"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_IllegalName"), nameof(name));
             Contract.EndContractBlock();
             
             m_name = name;
@@ -108,7 +108,7 @@ namespace System.Reflection.Emit {
         {
             if (mdBuilder == null)
             {
-                throw new ArgumentNullException("mdBuilder");
+                throw new ArgumentNullException(nameof(mdBuilder));
             }
 
             m_containingType.ThrowIfCreated();
@@ -150,9 +150,9 @@ namespace System.Reflection.Emit {
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             if (con == null)
-                throw new ArgumentNullException("con");
+                throw new ArgumentNullException(nameof(con));
             if (binaryAttribute == null)
-                throw new ArgumentNullException("binaryAttribute");
+                throw new ArgumentNullException(nameof(binaryAttribute));
             
             m_containingType.ThrowIfCreated();
             TypeBuilder.DefineCustomAttribute(
@@ -169,7 +169,7 @@ namespace System.Reflection.Emit {
         {
             if (customBuilder == null)
             {
-                throw new ArgumentNullException("customBuilder");
+                throw new ArgumentNullException(nameof(customBuilder));
             }
             m_containingType.ThrowIfCreated();
             customBuilder.CreateCustomAttribute(m_moduleBuilder, m_prToken.Token);

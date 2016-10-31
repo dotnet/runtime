@@ -200,7 +200,7 @@ namespace System.Text
             // (If they were all invalid chars, this would actually be wrong,
             // but that's a ridiculously large # so we're not concerned about that case)
             if (byteCount < 0)
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_GetByteCountOverflow"));
+                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_GetByteCountOverflow"));
 
             char* charStart = chars;
             char* charEnd = chars + count;
@@ -448,7 +448,7 @@ namespace System.Text
                         // Throw it, using our complete character
                         throw new ArgumentException(
                                     Environment.GetResourceString("Argument_RecursiveFallback",
-                                    charLeftOver), "chars");
+                                    charLeftOver), nameof(chars));
                     }
                     else
                     {
@@ -851,7 +851,7 @@ namespace System.Text
                         // Throw it, using our complete character
                         throw new ArgumentException(
                                     Environment.GetResourceString("Argument_RecursiveFallback",
-                                    charLeftOver), "chars");
+                                    charLeftOver), nameof(chars));
                     }
                     else
                     {
@@ -1697,7 +1697,7 @@ namespace System.Text
         public override int GetMaxByteCount(int charCount)
         {
             if (charCount < 0)
-               throw new ArgumentOutOfRangeException("charCount",
+               throw new ArgumentOutOfRangeException(nameof(charCount),
                     Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
 
@@ -1711,7 +1711,7 @@ namespace System.Text
             byteCount <<= 1;
 
             if (byteCount > 0x7fffffff)
-                throw new ArgumentOutOfRangeException("charCount", Environment.GetResourceString("ArgumentOutOfRange_GetByteCountOverflow"));
+                throw new ArgumentOutOfRangeException(nameof(charCount), Environment.GetResourceString("ArgumentOutOfRange_GetByteCountOverflow"));
 
             return (int)byteCount;
         }
@@ -1720,7 +1720,7 @@ namespace System.Text
         public override int GetMaxCharCount(int byteCount)
         {
             if (byteCount < 0)
-               throw new ArgumentOutOfRangeException("byteCount",
+               throw new ArgumentOutOfRangeException(nameof(byteCount),
                     Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
 
@@ -1735,7 +1735,7 @@ namespace System.Text
                 charCount *= DecoderFallback.MaxCharCount;
 
             if (charCount > 0x7fffffff)
-                throw new ArgumentOutOfRangeException("byteCount", Environment.GetResourceString("ArgumentOutOfRange_GetCharCountOverflow"));
+                throw new ArgumentOutOfRangeException(nameof(byteCount), Environment.GetResourceString("ArgumentOutOfRange_GetCharCountOverflow"));
 
             return (int)charCount;
         }
@@ -1781,7 +1781,7 @@ namespace System.Text
             internal Decoder(SerializationInfo info, StreamingContext context)
             {
                 // Any info?
-                if (info==null) throw new ArgumentNullException("info");
+                if (info==null) throw new ArgumentNullException(nameof(info));
                 Contract.EndContractBlock();
 
                 // Get Common Info
@@ -1807,7 +1807,7 @@ namespace System.Text
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
             {
                 // Any info?
-                if (info==null) throw new ArgumentNullException("info");
+                if (info==null) throw new ArgumentNullException(nameof(info));
                 Contract.EndContractBlock();
 
                 // Save Whidbey data

@@ -41,14 +41,14 @@ namespace System.Reflection {
         [System.Security.SecurityCritical]  // auto-generated
         public static unsafe Object Box(void *ptr,Type type) {
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             if (!type.IsPointer)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBePointer"),"ptr");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBePointer"),nameof(ptr));
             Contract.EndContractBlock();
 
             RuntimeType rt = type as RuntimeType;
             if (rt == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBePointer"), "ptr");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBePointer"), nameof(ptr));
 
             Pointer x = new Pointer();
             x._ptr = ptr;
@@ -60,7 +60,7 @@ namespace System.Reflection {
         [System.Security.SecurityCritical]  // auto-generated
         public static unsafe void* Unbox(Object ptr) {
             if (!(ptr is Pointer))
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBePointer"),"ptr");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBePointer"),nameof(ptr));
             return ((Pointer)ptr)._ptr;
         }
     

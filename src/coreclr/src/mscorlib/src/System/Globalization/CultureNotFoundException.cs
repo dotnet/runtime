@@ -69,7 +69,7 @@ namespace System.Globalization {
         [System.Security.SecurityCritical]  // auto-generated_required
         public override void GetObjectData(SerializationInfo info, StreamingContext context) {
             if (info==null) {
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             }
             Contract.EndContractBlock();
             base.GetObjectData(info, context);

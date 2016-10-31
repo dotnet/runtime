@@ -264,7 +264,7 @@ namespace System {
 
         private void SetBits(int[] bits) {
             if (bits==null)
-                throw new ArgumentNullException("bits");
+                throw new ArgumentNullException(nameof(bits));
             Contract.EndContractBlock();
             if (bits.Length == 4) {
                 int f = bits[3];
@@ -283,7 +283,7 @@ namespace System {
         // 
         public Decimal(int lo, int mid, int hi, bool isNegative, byte scale) {
             if (scale > 28)
-                throw new ArgumentOutOfRangeException("scale", Environment.GetResourceString("ArgumentOutOfRange_DecimalScale"));
+                throw new ArgumentOutOfRangeException(nameof(scale), Environment.GetResourceString("ArgumentOutOfRange_DecimalScale"));
             Contract.EndContractBlock();
             this.lo = lo;
             this.mid = mid;
@@ -760,9 +760,9 @@ namespace System {
         [System.Security.SecuritySafeCritical]  // auto-generated
         public static Decimal Round(Decimal d, int decimals, MidpointRounding mode) {
             if ((decimals < 0) || (decimals > 28))
-                throw new ArgumentOutOfRangeException("decimals", Environment.GetResourceString("ArgumentOutOfRange_DecimalRound"));
+                throw new ArgumentOutOfRangeException(nameof(decimals), Environment.GetResourceString("ArgumentOutOfRange_DecimalRound"));
             if (mode < MidpointRounding.ToEven || mode > MidpointRounding.AwayFromZero) {            
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidEnumValue", mode, "MidpointRounding"), "mode");
+                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidEnumValue", mode, nameof(MidpointRounding)), nameof(mode));
             }
             Contract.EndContractBlock();
 

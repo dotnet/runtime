@@ -73,7 +73,7 @@ namespace System.Security.Util
         public static byte[] DecodeHexString(String hexString)
         {
             if (hexString == null)
-                throw new ArgumentNullException( "hexString" );
+                throw new ArgumentNullException( nameof(hexString) );
             Contract.EndContractBlock();
                     
             bool spaceSkippingMode = false;    

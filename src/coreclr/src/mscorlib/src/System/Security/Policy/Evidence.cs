@@ -355,9 +355,9 @@ namespace System.Security.Policy
         public void AddHost(object id)
         {
             if (id == null)
-                throw new ArgumentNullException("id");
+                throw new ArgumentNullException(nameof(id));
             if (!id.GetType().IsSerializable)
-                throw new ArgumentException(Environment.GetResourceString("Policy_EvidenceMustBeSerializable"), "id");
+                throw new ArgumentException(Environment.GetResourceString("Policy_EvidenceMustBeSerializable"), nameof(id));
             Contract.EndContractBlock();
 
             if (m_locked)
@@ -377,9 +377,9 @@ namespace System.Security.Policy
         public void AddAssembly(object id)
         {
             if (id == null)
-                throw new ArgumentNullException("id");
+                throw new ArgumentNullException(nameof(id));
             if (!id.GetType().IsSerializable)
-                throw new ArgumentException(Environment.GetResourceString("Policy_EvidenceMustBeSerializable"), "id");
+                throw new ArgumentException(Environment.GetResourceString("Policy_EvidenceMustBeSerializable"), nameof(id));
             Contract.EndContractBlock();
 
             EvidenceBase evidence = WrapLegacyEvidence(id);
@@ -398,7 +398,7 @@ namespace System.Security.Policy
         public void AddAssemblyEvidence<T>(T evidence) where T : EvidenceBase
         {
             if (evidence == null)
-                throw new ArgumentNullException("evidence");
+                throw new ArgumentNullException(nameof(evidence));
             Contract.EndContractBlock();
 
             // Index the evidence under the type that the Add function was called with, unless we were given
@@ -455,7 +455,7 @@ namespace System.Security.Policy
         public void AddHostEvidence<T>(T evidence) where T : EvidenceBase
         {
             if (evidence == null)
-                throw new ArgumentNullException("evidence");
+                throw new ArgumentNullException(nameof(evidence));
             Contract.EndContractBlock();
 
             // Index the evidence under the type that the Add function was called with, unless we were given
@@ -1064,9 +1064,9 @@ namespace System.Security.Policy
         public void CopyTo(Array array, int index)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             if (index < 0 || index > array.Length - Count)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             Contract.EndContractBlock();
 
             int currentIndex = index;
@@ -1445,7 +1445,7 @@ namespace System.Security.Policy
         public void RemoveType(Type t)
         {
             if (t == null)
-                throw new ArgumentNullException("t");
+                throw new ArgumentNullException(nameof(t));
             Contract.EndContractBlock();
 
             using (EvidenceLockHolder lockHolder = new EvidenceLockHolder(this, EvidenceLockHolder.LockType.Writer))

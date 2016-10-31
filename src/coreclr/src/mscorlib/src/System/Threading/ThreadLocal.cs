@@ -107,7 +107,7 @@ namespace System.Threading
         public ThreadLocal(Func<T> valueFactory)
         {
             if (valueFactory == null)
-                throw new ArgumentNullException("valueFactory");
+                throw new ArgumentNullException(nameof(valueFactory));
 
             Initialize(valueFactory, false);
         }
@@ -127,7 +127,7 @@ namespace System.Threading
         public ThreadLocal(Func<T> valueFactory, bool trackAllValues)
         {
             if (valueFactory == null)
-                throw new ArgumentNullException("valueFactory");
+                throw new ArgumentNullException(nameof(valueFactory));
 
             Initialize(valueFactory, trackAllValues);
         }

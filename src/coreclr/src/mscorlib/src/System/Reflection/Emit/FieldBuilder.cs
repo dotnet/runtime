@@ -34,16 +34,16 @@ namespace System.Reflection.Emit
             Type[] requiredCustomModifiers, Type[] optionalCustomModifiers, FieldAttributes attributes)
         {
             if (fieldName == null)
-                throw new ArgumentNullException("fieldName");
+                throw new ArgumentNullException(nameof(fieldName));
 
             if (fieldName.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "fieldName");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(fieldName));
 
             if (fieldName[0] == '\0')
-                throw new ArgumentException(Environment.GetResourceString("Argument_IllegalName"), "fieldName");
+                throw new ArgumentException(Environment.GetResourceString("Argument_IllegalName"), nameof(fieldName));
 
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
 
             if (type == typeof(void))
                 throw new ArgumentException(Environment.GetResourceString("Argument_BadFieldType"));
@@ -198,7 +198,7 @@ namespace System.Reflection.Emit
         public void SetMarshal(UnmanagedMarshal unmanagedMarshal)
         {
             if (unmanagedMarshal == null)
-                throw new ArgumentNullException("unmanagedMarshal");
+                throw new ArgumentNullException(nameof(unmanagedMarshal));
             Contract.EndContractBlock();
 
             m_typeBuilder.ThrowIfCreated();
@@ -226,10 +226,10 @@ namespace System.Reflection.Emit
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             if (con == null)
-                throw new ArgumentNullException("con");
+                throw new ArgumentNullException(nameof(con));
 
             if (binaryAttribute == null)
-                throw new ArgumentNullException("binaryAttribute");
+                throw new ArgumentNullException(nameof(binaryAttribute));
             Contract.EndContractBlock();
 
             ModuleBuilder module = m_typeBuilder.Module as ModuleBuilder;
@@ -244,7 +244,7 @@ namespace System.Reflection.Emit
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
             if (customBuilder == null)
-                throw new ArgumentNullException("customBuilder");
+                throw new ArgumentNullException(nameof(customBuilder));
             Contract.EndContractBlock();
 
             m_typeBuilder.ThrowIfCreated();

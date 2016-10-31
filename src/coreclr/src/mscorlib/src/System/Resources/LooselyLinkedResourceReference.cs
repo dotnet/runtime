@@ -36,13 +36,13 @@ namespace System.Resources {
         public LooselyLinkedResourceReference(String looselyLinkedResourceName, String typeName)
         {
             if (looselyLinkedResourceName == null)
-                throw new ArgumentNullException("looselyLinkedResourceName");
+                throw new ArgumentNullException(nameof(looselyLinkedResourceName));
             if (typeName == null)
-                throw new ArgumentNullException("typeName");
+                throw new ArgumentNullException(nameof(typeName));
             if (looselyLinkedResourceName.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "looselyLinkedResourceName");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(looselyLinkedResourceName));
             if (typeName.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "typeName");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(typeName));
             Contract.EndContractBlock();
             
             _manifestResourceName = looselyLinkedResourceName;
@@ -60,7 +60,7 @@ namespace System.Resources {
         public Object Resolve(Assembly assembly)
         {
             if (assembly == null)
-                throw new ArgumentNullException("assembly");
+                throw new ArgumentNullException(nameof(assembly));
             Contract.EndContractBlock();
 
             Stream data = assembly.GetManifestResourceStream(_manifestResourceName);
