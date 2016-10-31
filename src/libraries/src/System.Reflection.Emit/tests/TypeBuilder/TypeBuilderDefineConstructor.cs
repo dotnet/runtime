@@ -2,42 +2,48 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
     public class TypeBuilderDefineConstructor
     {
-        [Theory]
-        [InlineData(MethodAttributes.Public, CallingConventions.HasThis)]
-        [InlineData(MethodAttributes.Family, CallingConventions.HasThis)]
-        [InlineData(MethodAttributes.Assembly, CallingConventions.HasThis)]
-        [InlineData(MethodAttributes.Private, CallingConventions.HasThis)]
-        [InlineData(MethodAttributes.PrivateScope, CallingConventions.HasThis)]
-        [InlineData(MethodAttributes.FamORAssem, CallingConventions.HasThis)]
-        [InlineData(MethodAttributes.FamANDAssem, CallingConventions.HasThis)]
-        [InlineData(MethodAttributes.Final | MethodAttributes.Public, CallingConventions.HasThis)]
-        [InlineData(MethodAttributes.Final | MethodAttributes.Family, CallingConventions.HasThis)]
-        [InlineData(MethodAttributes.SpecialName | MethodAttributes.Family, CallingConventions.HasThis)]
-        [InlineData(MethodAttributes.UnmanagedExport | MethodAttributes.Family, CallingConventions.HasThis)]
-        [InlineData(MethodAttributes.RTSpecialName | MethodAttributes.Family, CallingConventions.HasThis)]
-        [InlineData(MethodAttributes.HideBySig | MethodAttributes.Family, CallingConventions.HasThis)]
-        public void DefineConstructor(MethodAttributes methodAttributes, CallingConventions callingConvention)
+        public static IEnumerable<object[]> TestData()
         {
-            DefineConstructor(methodAttributes, new Type[] { typeof(int), typeof(int) }, callingConvention);
+            yield return new object[] { MethodAttributes.Public, new Type[] { typeof(int), typeof(int) }, CallingConventions.HasThis };
+            yield return new object[] { MethodAttributes.Family, new Type[] { typeof(int), typeof(int) }, CallingConventions.HasThis };
+            yield return new object[] { MethodAttributes.Assembly, new Type[] { typeof(int), typeof(int) }, CallingConventions.HasThis };
+            yield return new object[] { MethodAttributes.Private, new Type[] { typeof(int), typeof(int) }, CallingConventions.HasThis };
+            yield return new object[] { MethodAttributes.PrivateScope, new Type[] { typeof(int), typeof(int) }, CallingConventions.HasThis };
+            yield return new object[] { MethodAttributes.FamORAssem, new Type[] { typeof(int), typeof(int) }, CallingConventions.HasThis };
+            yield return new object[] { MethodAttributes.FamANDAssem, new Type[] { typeof(int), typeof(int) }, CallingConventions.HasThis };
+            yield return new object[] { MethodAttributes.Final | MethodAttributes.Public, new Type[] { typeof(int), typeof(int) }, CallingConventions.HasThis };
+            yield return new object[] { MethodAttributes.Final | MethodAttributes.Family, new Type[] { typeof(int), typeof(int) }, CallingConventions.HasThis };
+            yield return new object[] { MethodAttributes.SpecialName | MethodAttributes.Family, new Type[] { typeof(int), typeof(int) }, CallingConventions.HasThis };
+            yield return new object[] { MethodAttributes.UnmanagedExport | MethodAttributes.Family, new Type[] { typeof(int), typeof(int) }, CallingConventions.HasThis };
+            yield return new object[] { MethodAttributes.RTSpecialName | MethodAttributes.Family, new Type[] { typeof(int), typeof(int) }, CallingConventions.HasThis };
+            yield return new object[] { MethodAttributes.HideBySig | MethodAttributes.Family, new Type[] { typeof(int), typeof(int) }, CallingConventions.HasThis };
+            yield return new object[] { MethodAttributes.Static, new Type[0], CallingConventions.Standard };
+
+            // Ignores any CallingConventions, sets to CallingConventions.Standard
+            yield return new object[] { MethodAttributes.Public, new Type[0], CallingConventions.Any };
+            yield return new object[] { MethodAttributes.Public, new Type[0], CallingConventions.ExplicitThis };
+            yield return new object[] { MethodAttributes.Public, new Type[0], CallingConventions.HasThis };
+            yield return new object[] { MethodAttributes.Public, new Type[0], CallingConventions.Standard };
+            yield return new object[] { MethodAttributes.Public, new Type[0], CallingConventions.VarArgs };
         }
 
         [Theory]
-        [InlineData(MethodAttributes.Static, new Type[0], CallingConventions.Standard)]
-        public void DefineConstructor(MethodAttributes methodAttributes, Type[] parameterTypes, CallingConventions callingConvention)
+        [MemberData(nameof(TestData))]
+        public void DefineConstructor(MethodAttributes attributes, Type[] parameterTypes, CallingConventions callingConvention)
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
 
             FieldBuilder fieldBuilderA = type.DefineField("TestField", typeof(int), FieldAttributes.Private);
             FieldBuilder fieldBuilderB = type.DefineField("TestField", typeof(int), FieldAttributes.Private);
 
-            ConstructorBuilder constructor = type.DefineConstructor(methodAttributes, callingConvention, parameterTypes);
+            ConstructorBuilder constructor = type.DefineConstructor(attributes, callingConvention, parameterTypes);
             ILGenerator ctorIlGenerator = constructor.GetILGenerator();
             if (parameterTypes.Length != 0)
             {
@@ -54,7 +60,18 @@ namespace System.Reflection.Emit.Tests
                 ctorIlGenerator.Emit(OpCodes.Stfld, fieldBuilderB);
             }
             ctorIlGenerator.Emit(OpCodes.Ret);
-            Helpers.VerifyConstructor(constructor, type, methodAttributes, parameterTypes);
+            Helpers.VerifyConstructor(constructor, type, attributes, callingConvention, parameterTypes);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData))]
+        public void DefineConstructor_NullRequiredAndOptionalCustomModifiers(MethodAttributes attributes, Type[] parameterTypes, CallingConventions callingConvention)
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
+            ConstructorBuilder constructor = type.DefineConstructor(attributes, callingConvention, parameterTypes);
+            constructor.GetILGenerator().Emit(OpCodes.Ret);
+
+            Helpers.VerifyConstructor(constructor, type, attributes, callingConvention, parameterTypes);
         }
 
         [Fact]

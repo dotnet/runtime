@@ -23,7 +23,7 @@ namespace System.Reflection.Emit.Tests
             constructorIlGenerator.Emit(OpCodes.Stsfld, greetingField);
             constructorIlGenerator.Emit(OpCodes.Ret);
 
-            Helpers.VerifyConstructor(constructor, type, MethodAttributes.Private | MethodAttributes.Static | MethodAttributes.SpecialName, new Type[0]);
+            Helpers.VerifyConstructor(constructor, type, MethodAttributes.Private | MethodAttributes.Static | MethodAttributes.SpecialName, CallingConventions.Standard, new Type[0]);
 
             Type createdType = type.CreateTypeInfo().AsType();
             FieldInfo createdField = createdType.GetField("Greeting", BindingFlags.NonPublic | BindingFlags.Static);
