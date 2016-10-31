@@ -1969,9 +1969,9 @@ VARSET_VALRET_TP Compiler::fgComputeLifeLIR(VARSET_VALARG_TP lifeArg, BasicBlock
         else if (node->OperIsNonPhiLocal() || node->OperIsLocalAddr())
         {
             bool isDeadStore = fgComputeLifeLocal(life, keepAliveVars, node, node);
-            if (isDeadStore)
+            if (isDeadStore && fgTryRemoveDeadLIRStore(blockRange, node, &next))
             {
-                fgTryRemoveDeadLIRStore(blockRange, node, &next);
+                fgStmtRemoved = true;
             }
         }
     }
