@@ -1,5 +1,8 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 //------------------------------------------------------------------------------
-// <copyright file="WebSocketProtocolComponent.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //------------------------------------------------------------------------------
@@ -18,21 +21,21 @@ namespace System.Net.WebSockets
         private static readonly SafeLibraryHandle s_WebSocketDllHandle;
         private static readonly string s_SupportedVersion;
 
-        private static readonly HttpHeader[] s_InitialClientRequestHeaders = new HttpHeader[] 
+        private static readonly HttpHeader[] s_InitialClientRequestHeaders = new HttpHeader[]
             {
                 new HttpHeader()
-                { 
-                    Name = HttpKnownHeaderNames.Connection, 
-                    NameLength = (uint)HttpKnownHeaderNames.Connection.Length, 
-                    Value = HttpKnownHeaderNames.Upgrade, 
-                    ValueLength = (uint)HttpKnownHeaderNames.Upgrade.Length 
+                {
+                    Name = HttpKnownHeaderNames.Connection,
+                    NameLength = (uint)HttpKnownHeaderNames.Connection.Length,
+                    Value = HttpKnownHeaderNames.Upgrade,
+                    ValueLength = (uint)HttpKnownHeaderNames.Upgrade.Length
                 },
                 new HttpHeader()
-                { 
-                    Name = HttpKnownHeaderNames.Upgrade, 
-                    NameLength = (uint)HttpKnownHeaderNames.Upgrade.Length, 
-                    Value = WebSocketHelpers.WebSocketUpgradeToken, 
-                    ValueLength = (uint)WebSocketHelpers.WebSocketUpgradeToken.Length 
+                {
+                    Name = HttpKnownHeaderNames.Upgrade,
+                    NameLength = (uint)HttpKnownHeaderNames.Upgrade.Length,
+                    Value = WebSocketHelpers.WebSocketUpgradeToken,
+                    ValueLength = (uint)WebSocketHelpers.WebSocketUpgradeToken.Length
                 }
             };
 
@@ -127,42 +130,42 @@ namespace System.Net.WebSockets
             {
                 s_SupportedVersion = GetSupportedVersion();
 
-                s_ServerFakeRequestHeaders = new HttpHeader[] 
+                s_ServerFakeRequestHeaders = new HttpHeader[]
                 {
                     new HttpHeader()
-                    { 
-                        Name = HttpKnownHeaderNames.Connection, 
-                        NameLength = (uint)HttpKnownHeaderNames.Connection.Length, 
-                        Value = HttpKnownHeaderNames.Upgrade, 
-                        ValueLength = (uint)HttpKnownHeaderNames.Upgrade.Length 
+                    {
+                        Name = HttpKnownHeaderNames.Connection,
+                        NameLength = (uint)HttpKnownHeaderNames.Connection.Length,
+                        Value = HttpKnownHeaderNames.Upgrade,
+                        ValueLength = (uint)HttpKnownHeaderNames.Upgrade.Length
                     },
                     new HttpHeader()
-                    { 
-                        Name = HttpKnownHeaderNames.Upgrade, 
-                        NameLength = (uint)HttpKnownHeaderNames.Upgrade.Length, 
-                        Value = WebSocketHelpers.WebSocketUpgradeToken, 
-                        ValueLength = (uint)WebSocketHelpers.WebSocketUpgradeToken.Length 
+                    {
+                        Name = HttpKnownHeaderNames.Upgrade,
+                        NameLength = (uint)HttpKnownHeaderNames.Upgrade.Length,
+                        Value = WebSocketHelpers.WebSocketUpgradeToken,
+                        ValueLength = (uint)WebSocketHelpers.WebSocketUpgradeToken.Length
                     },
                     new HttpHeader()
-                    { 
-                        Name = HttpKnownHeaderNames.Host, 
-                        NameLength = (uint)HttpKnownHeaderNames.Host.Length, 
-                        Value = string.Empty, 
-                        ValueLength = 0 
+                    {
+                        Name = HttpKnownHeaderNames.Host,
+                        NameLength = (uint)HttpKnownHeaderNames.Host.Length,
+                        Value = string.Empty,
+                        ValueLength = 0
                     },
                     new HttpHeader()
-                    { 
-                        Name = HttpKnownHeaderNames.SecWebSocketVersion, 
-                        NameLength = (uint)HttpKnownHeaderNames.SecWebSocketVersion.Length, 
-                        Value = s_SupportedVersion, 
-                        ValueLength = (uint)s_SupportedVersion.Length 
+                    {
+                        Name = HttpKnownHeaderNames.SecWebSocketVersion,
+                        NameLength = (uint)HttpKnownHeaderNames.SecWebSocketVersion.Length,
+                        Value = s_SupportedVersion,
+                        ValueLength = (uint)s_SupportedVersion.Length
                     },
                     new HttpHeader()
-                    { 
-                        Name = HttpKnownHeaderNames.SecWebSocketKey, 
-                        NameLength = (uint)HttpKnownHeaderNames.SecWebSocketKey.Length, 
-                        Value = s_DummyWebsocketKeyBase64, 
-                        ValueLength = (uint)s_DummyWebsocketKeyBase64.Length 
+                    {
+                        Name = HttpKnownHeaderNames.SecWebSocketKey,
+                        NameLength = (uint)HttpKnownHeaderNames.SecWebSocketKey.Length,
+                        Value = s_DummyWebsocketKeyBase64,
+                        ValueLength = (uint)s_DummyWebsocketKeyBase64.Length
                     }
                 };
             }
@@ -283,7 +286,7 @@ namespace System.Net.WebSockets
             [In] SafeHandle webSocketHandle,
             [In] IntPtr actionContext,
             [In] uint bytesTransferred);
-        
+
         internal static string GetSupportedVersion()
         {
             if (s_WebSocketDllHandle.IsInvalid)
@@ -479,7 +482,7 @@ namespace System.Net.WebSockets
             {
                 throw ConvertObjectDisposedException(webSocket, innerException);
             }
-            
+
             ThrowOnError(errorCode);
         }
 
@@ -625,7 +628,7 @@ namespace System.Net.WebSockets
             // NOTE - All fields in the object are pointers to the actual value, hence the use of 
             //        n * IntPtr.Size to get to the correct place in the object. 
             int valueOffset = 2 * IntPtr.Size;
-            int lengthOffset = 3 * IntPtr.Size; 
+            int lengthOffset = 3 * IntPtr.Size;
 
             IntPtr httpHeaderValuePtr =
                 Marshal.ReadIntPtr(IntPtr.Add(httpHeaderPtr, valueOffset));

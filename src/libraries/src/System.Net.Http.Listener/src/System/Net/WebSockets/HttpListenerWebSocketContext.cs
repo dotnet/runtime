@@ -11,20 +11,20 @@ namespace System.Net.WebSockets
 {
     public class HttpListenerWebSocketContext : WebSocketContext
     {
-        private Uri m_RequestUri;
-        private NameValueCollection m_Headers;
-        private CookieCollection m_CookieCollection;
-        private IPrincipal m_User;
-        private bool m_IsAuthenticated;
-        private bool m_IsLocal;
-        private bool m_IsSecureConnection;
+        private Uri _requestUri;
+        private NameValueCollection _headers;
+        private CookieCollection _cookieCollection;
+        private IPrincipal _user;
+        private bool _isAuthenticated;
+        private bool _isLocal;
+        private bool _isSecureConnection;
 
-        private string m_Origin;
-        private IEnumerable<string> m_SecWebSocketProtocols;
-        private string m_SecWebSocketVersion;
-        private string m_SecWebSocketKey;
+        private string _origin;
+        private IEnumerable<string> _secWebSocketProtocols;
+        private string _secWebSocketVersion;
+        private string _secWebSocketKey;
 
-        private WebSocket m_WebSocket;
+        private WebSocket _webSocket;
 
         internal HttpListenerWebSocketContext(
             Uri requestUri,
@@ -44,83 +44,83 @@ namespace System.Net.WebSockets
             Debug.Assert(headers != null, "headers shouldn't be null");
             Debug.Assert(cookieCollection != null, "cookieCollection shouldn't be null");
             Debug.Assert(secWebSocketProtocols != null, "secWebSocketProtocols shouldn't be null");
-            Debug.Assert(webSocket != null, "webSocket shouldn't be null"); 
+            Debug.Assert(webSocket != null, "webSocket shouldn't be null");
 
-            m_CookieCollection = new CookieCollection();
-            m_CookieCollection.Add(cookieCollection);
+            _cookieCollection = new CookieCollection();
+            _cookieCollection.Add(cookieCollection);
 
-            m_Headers = new NameValueCollection(headers);
-            m_User = CopyPrincipal(user); 
+            _headers = new NameValueCollection(headers);
+            _user = CopyPrincipal(user);
 
-            m_RequestUri = requestUri;
-            m_IsAuthenticated = isAuthenticated; 
-            m_IsLocal = isLocal; 
-            m_IsSecureConnection = isSecureConnection; 
-            m_Origin = origin; 
-            m_SecWebSocketProtocols = secWebSocketProtocols;
-            m_SecWebSocketVersion = secWebSocketVersion; 
-            m_SecWebSocketKey = secWebSocketKey;
-            m_WebSocket = webSocket; 
+            _requestUri = requestUri;
+            _isAuthenticated = isAuthenticated;
+            _isLocal = isLocal;
+            _isSecureConnection = isSecureConnection;
+            _origin = origin;
+            _secWebSocketProtocols = secWebSocketProtocols;
+            _secWebSocketVersion = secWebSocketVersion;
+            _secWebSocketKey = secWebSocketKey;
+            _webSocket = webSocket;
         }
 
         public override Uri RequestUri
         {
-            get { return this.m_RequestUri; }
+            get { return _requestUri; }
         }
 
         public override NameValueCollection Headers
         {
-            get { return this.m_Headers; }
+            get { return _headers; }
         }
 
         public override string Origin
         {
-            get { return this.m_Origin; }
+            get { return _origin; }
         }
 
         public override IEnumerable<string> SecWebSocketProtocols
         {
-            get { return this.m_SecWebSocketProtocols; }
+            get { return _secWebSocketProtocols; }
         }
 
         public override string SecWebSocketVersion
         {
-            get { return this.m_SecWebSocketVersion; }
+            get { return _secWebSocketVersion; }
         }
 
         public override string SecWebSocketKey
         {
-            get { return this.m_SecWebSocketKey; }
+            get { return _secWebSocketKey; }
         }
 
         public override CookieCollection CookieCollection
         {
-            get { return this.m_CookieCollection; }
+            get { return _cookieCollection; }
         }
 
         public override IPrincipal User
         {
-            get { return this.m_User; }
+            get { return _user; }
         }
 
         public override bool IsAuthenticated
         {
-            get { return this.m_IsAuthenticated; }
+            get { return _isAuthenticated; }
         }
 
         public override bool IsLocal
         {
-            get { return this.m_IsLocal; }
+            get { return _isLocal; }
         }
 
         public override bool IsSecureConnection
         {
-            get { return this.m_IsSecureConnection; }
+            get { return _isSecureConnection; }
         }
 
         public override WebSocket WebSocket
         {
-            get { return this.m_WebSocket; }
+            get { return _webSocket; }
         }
 
         private static IPrincipal CopyPrincipal(IPrincipal user)
@@ -130,7 +130,7 @@ namespace System.Net.WebSockets
                 throw new NotImplementedException();
             }
 
-            return null; 
+            return null;
         }
     }
 }

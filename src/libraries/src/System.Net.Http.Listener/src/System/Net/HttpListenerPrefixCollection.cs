@@ -9,23 +9,23 @@ namespace System.Net
 {
     internal class ListenerPrefixEnumerator : IEnumerator<string>
     {
-        IEnumerator enumerator;
+        private IEnumerator _enumerator;
 
         internal ListenerPrefixEnumerator(IEnumerator enumerator)
         {
-            this.enumerator = enumerator;
+            _enumerator = enumerator;
         }
 
         public string Current
         {
             get
             {
-                return (string)enumerator.Current;
+                return (string)_enumerator.Current;
             }
         }
         public bool MoveNext()
         {
-            return enumerator.MoveNext();
+            return _enumerator.MoveNext();
         }
 
         public void Dispose()
@@ -34,14 +34,14 @@ namespace System.Net
 
         void System.Collections.IEnumerator.Reset()
         {
-            enumerator.Reset();
+            _enumerator.Reset();
         }
 
         object System.Collections.IEnumerator.Current
         {
             get
             {
-                return enumerator.Current;
+                return _enumerator.Current;
             }
         }
     }
@@ -49,16 +49,16 @@ namespace System.Net
 
     public class HttpListenerPrefixCollection : ICollection<string>
     {
-        private HttpListener m_HttpListener;
+        private HttpListener _httpListener;
 
         internal HttpListenerPrefixCollection(HttpListener listener)
         {
-            m_HttpListener = listener;
+            _httpListener = listener;
         }
 
         public void CopyTo(Array array, int offset)
         {
-            m_HttpListener.CheckDisposed();
+            _httpListener.CheckDisposed();
             if (Count > array.Length)
             {
                 throw new ArgumentOutOfRangeException("array", SR.net_array_too_small);
@@ -68,7 +68,7 @@ namespace System.Net
                 throw new ArgumentOutOfRangeException("offset");
             }
             int index = 0;
-            foreach (string uriPrefix in m_HttpListener.m_UriPrefixes.Keys)
+            foreach (string uriPrefix in _httpListener.PrefixCollection)
             {
                 array.SetValue(uriPrefix, offset + index++);
             }
@@ -76,7 +76,7 @@ namespace System.Net
 
         public void CopyTo(string[] array, int offset)
         {
-            m_HttpListener.CheckDisposed();
+            _httpListener.CheckDisposed();
             if (Count > array.Length)
             {
                 throw new ArgumentOutOfRangeException("array", SR.net_array_too_small);
@@ -86,7 +86,7 @@ namespace System.Net
                 throw new ArgumentOutOfRangeException("offset");
             }
             int index = 0;
-            foreach (string uriPrefix in m_HttpListener.m_UriPrefixes.Keys)
+            foreach (string uriPrefix in _httpListener.PrefixCollection)
             {
                 array[offset + index++] = uriPrefix;
             }
@@ -96,7 +96,7 @@ namespace System.Net
         {
             get
             {
-                return m_HttpListener.m_UriPrefixes.Count;
+                return _httpListener.PrefixCollection.Count;
             }
         }
         public bool IsSynchronized
@@ -117,12 +117,12 @@ namespace System.Net
 
         public void Add(string uriPrefix)
         {
-            m_HttpListener.AddPrefix(uriPrefix);
+            _httpListener.AddPrefix(uriPrefix);
         }
 
         public bool Contains(string uriPrefix)
         {
-            return m_HttpListener.m_UriPrefixes.Contains(uriPrefix);
+            return _httpListener.ContainsPrefix(uriPrefix);
         }
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
@@ -132,17 +132,17 @@ namespace System.Net
 
         public IEnumerator<string> GetEnumerator()
         {
-            return new ListenerPrefixEnumerator(m_HttpListener.m_UriPrefixes.Keys.GetEnumerator());
+            return new ListenerPrefixEnumerator(_httpListener.PrefixCollection.GetEnumerator());
         }
 
         public bool Remove(string uriPrefix)
         {
-            return m_HttpListener.RemovePrefix(uriPrefix);
+            return _httpListener.RemovePrefix(uriPrefix);
         }
 
         public void Clear()
         {
-            m_HttpListener.RemoveAll(true);
+            _httpListener.RemoveAll(true);
         }
     }
 }

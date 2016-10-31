@@ -8,19 +8,19 @@ namespace System.Net
 {
     public class HttpListenerBasicIdentity : GenericIdentity
     {
-        private string m_Password;
+        private string _password;
 
         public HttpListenerBasicIdentity(string username, string password) :
             base(username, "Basic")
         {
-            m_Password = password;
+            _password = password;
         }
 
         public virtual string Password
         {
             get
             {
-                return m_Password;
+                return _password;
             }
         }
     }

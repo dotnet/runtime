@@ -6,7 +6,6 @@ namespace System.Net
 {
     internal static class HttpKnownHeaderNames
     {
-
         public const string CacheControl = "Cache-Control";
         public const string Connection = "Connection";
         public const string Date = "Date";

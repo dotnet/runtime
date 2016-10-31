@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -95,16 +96,17 @@ namespace System.Net.WebSockets
                 if (shouldSendSecWebSocketProtocolHeader)
                 {
                     secWebSocketProtocols.Add(outgoingSecWebSocketProtocolString);
-                    response.Headers[HttpKnownHeaderNames.SecWebSocketProtocol] = outgoingSecWebSocketProtocolString;
+                    response.Headers.Add(HttpKnownHeaderNames.SecWebSocketProtocol,
+                        outgoingSecWebSocketProtocolString);
                 }
 
                 // negotiate the websocket key return value
                 string secWebSocketKey = request.Headers[HttpKnownHeaderNames.SecWebSocketKey];
                 string secWebSocketAccept = WebSocketHelpers.GetSecWebSocketAcceptString(secWebSocketKey);
 
-                response.Headers[HttpKnownHeaderNames.Connection] = HttpKnownHeaderNames.Upgrade;
-                response.Headers[HttpKnownHeaderNames.Upgrade] = WebSocketHelpers.WebSocketUpgradeToken;
-                response.Headers[HttpKnownHeaderNames.SecWebSocketAccept] = secWebSocketAccept;
+                response.Headers.Add(HttpKnownHeaderNames.Connection, HttpKnownHeaderNames.Upgrade);
+                response.Headers.Add(HttpKnownHeaderNames.Upgrade, WebSocketUpgradeToken);
+                response.Headers.Add(HttpKnownHeaderNames.SecWebSocketAccept, secWebSocketAccept);
 
                 response.StatusCode = (int)HttpStatusCode.SwitchingProtocols; // HTTP 101                
                 response.ComputeCoreHeaders();
@@ -188,6 +190,7 @@ namespace System.Net.WebSockets
             return webSocketContext;
         }
 
+        [SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 used only for hashing purposes, not for crypto.")]
         internal static string GetSecWebSocketAcceptString(string secWebSocketKey)
         {
             string retVal;

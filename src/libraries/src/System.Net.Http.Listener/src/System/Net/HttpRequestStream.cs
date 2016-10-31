@@ -9,19 +9,19 @@ using System.Threading.Tasks;
 
 namespace System.Net
 {
-    unsafe class HttpRequestStream : Stream
+    internal unsafe class HttpRequestStream : Stream
     {
-        private HttpListenerContext m_HttpContext;
-        private uint m_DataChunkOffset;
-        private int m_DataChunkIndex;
-        private bool m_Closed;
+        private HttpListenerContext _httpContext;
+        private uint _dataChunkOffset;
+        private int _dataChunkIndex;
+        private bool _closed;
         internal const int MaxReadSize = 0x20000; //http.sys recommends we limit reads to 128k
-        private bool m_InOpaqueMode;
+        private bool _inOpaqueMode;
 
         internal HttpRequestStream(HttpListenerContext httpContext)
         {
             //GlobalLog.Print("HttpRequestStream#" + LoggingHash.HashString(this) + "::.ctor() HttpListenerContext#" + LoggingHash.HashString(httpContext));
-            m_HttpContext = httpContext;
+            _httpContext = httpContext;
         }
 
         public override bool CanSeek
@@ -52,7 +52,7 @@ namespace System.Net
         {
             get
             {
-                return m_Closed;
+                return _closed;
             }
         }
 
@@ -60,7 +60,7 @@ namespace System.Net
         {
             get
             {
-                return m_DataChunkIndex > -1;
+                return _dataChunkIndex > -1;
             }
         }
 
@@ -71,7 +71,7 @@ namespace System.Net
         {
             get
             {
-                return m_HttpContext;
+                return _httpContext;
             }
         }
 
@@ -90,7 +90,6 @@ namespace System.Net
             {
                 throw new NotSupportedException(SR.net_noseek);
             }
-
         }
 
         public override long Position
@@ -131,7 +130,7 @@ namespace System.Net
             {
                 throw new ArgumentOutOfRangeException("size");
             }
-            if (size == 0 || m_Closed)
+            if (size == 0 || _closed)
             {
                 //if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.HttpListener, this, "Read", "dataRead:0");
                 return 0;
@@ -139,12 +138,12 @@ namespace System.Net
 
             uint dataRead = 0;
 
-            if (m_DataChunkIndex != -1)
+            if (_dataChunkIndex != -1)
             {
-                dataRead = Interop.HttpApi.GetChunks(m_HttpContext.Request.RequestBuffer, m_HttpContext.Request.OriginalBlobAddress, ref m_DataChunkIndex, ref m_DataChunkOffset, buffer, offset, size);
+                dataRead = Interop.HttpApi.GetChunks(_httpContext.Request.RequestBuffer, _httpContext.Request.OriginalBlobAddress, ref _dataChunkIndex, ref _dataChunkOffset, buffer, offset, size);
             }
 
-            if (m_DataChunkIndex == -1 && dataRead < size)
+            if (_dataChunkIndex == -1 && dataRead < size)
             {
                 //GlobalLog.Print("HttpRequestStream#" + LoggingHash.HashString(this) + "::Read() size:" + size + " offset:" + offset);
                 uint statusCode = 0;
@@ -165,15 +164,15 @@ namespace System.Net
 
                     uint flags = 0;
 
-                    if (!m_InOpaqueMode)
+                    if (!_inOpaqueMode)
                     {
                         flags = (uint)Interop.HttpApi.HTTP_FLAGS.HTTP_RECEIVE_REQUEST_FLAG_COPY_BODY;
                     }
 
                     statusCode =
                         Interop.HttpApi.HttpReceiveRequestEntityBody(
-                            m_HttpContext.RequestQueueHandle,
-                            m_HttpContext.RequestId,
+                            _httpContext.RequestQueueHandle,
+                            _httpContext.RequestId,
                             flags,
                             (void*)(pBuffer + offset),
                             (uint)size,
@@ -197,7 +196,7 @@ namespace System.Net
             return (int)dataRead;
         }
 
-        void UpdateAfterRead(uint statusCode, uint dataRead)
+        private void UpdateAfterRead(uint statusCode, uint dataRead)
         {
             //GlobalLog.Print("HttpRequestStream#" + LoggingHash.HashString(this) + "::UpdateAfterRead() statusCode:" + statusCode + " m_Closed:" + m_Closed);
             if (statusCode == Interop.HttpApi.ERROR_HANDLE_EOF || dataRead == 0)
@@ -224,7 +223,7 @@ namespace System.Net
             {
                 throw new ArgumentOutOfRangeException("size");
             }
-            if (size == 0 || m_Closed)
+            if (size == 0 || _closed)
             {
                 //if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.HttpListener, this, "BeginRead", "");
                 HttpRequestStreamAsyncResult result = new HttpRequestStreamAsyncResult(this, state, callback);
@@ -235,17 +234,17 @@ namespace System.Net
             HttpRequestStreamAsyncResult asyncResult = null;
 
             uint dataRead = 0;
-            if (m_DataChunkIndex != -1)
+            if (_dataChunkIndex != -1)
             {
-                dataRead = Interop.HttpApi.GetChunks(m_HttpContext.Request.RequestBuffer, m_HttpContext.Request.OriginalBlobAddress, ref m_DataChunkIndex, ref m_DataChunkOffset, buffer, offset, size);
-                if (m_DataChunkIndex != -1 && dataRead == size)
+                dataRead = Interop.HttpApi.GetChunks(_httpContext.Request.RequestBuffer, _httpContext.Request.OriginalBlobAddress, ref _dataChunkIndex, ref _dataChunkOffset, buffer, offset, size);
+                if (_dataChunkIndex != -1 && dataRead == size)
                 {
-                    asyncResult = new HttpRequestStreamAsyncResult(m_HttpContext.RequestQueueBoundHandle, this, state, callback, buffer, offset, (uint)size, 0);
+                    asyncResult = new HttpRequestStreamAsyncResult(_httpContext.RequestQueueBoundHandle, this, state, callback, buffer, offset, (uint)size, 0);
                     asyncResult.InvokeCallback(dataRead);
                 }
             }
 
-            if (m_DataChunkIndex == -1 && dataRead < size)
+            if (_dataChunkIndex == -1 && dataRead < size)
             {
                 //GlobalLog.Print("HttpRequestStream#" + LoggingHash.HashString(this) + "::BeginRead() size:" + size + " offset:" + offset);
                 uint statusCode = 0;
@@ -258,7 +257,7 @@ namespace System.Net
                     size = MaxReadSize;
                 }
 
-                asyncResult = new HttpRequestStreamAsyncResult(m_HttpContext.RequestQueueBoundHandle, this, state, callback, buffer, offset, (uint)size, dataRead);
+                asyncResult = new HttpRequestStreamAsyncResult(_httpContext.RequestQueueBoundHandle, this, state, callback, buffer, offset, (uint)size, dataRead);
                 uint bytesReturned;
 
                 try
@@ -268,18 +267,17 @@ namespace System.Net
                         // issue unmanaged blocking call
                         //GlobalLog.Print("HttpRequestStream#" + LoggingHash.HashString(this) + "::BeginRead() calling Interop.HttpApi.HttpReceiveRequestEntityBody");
 
-                        m_HttpContext.EnsureBoundHandle();
                         uint flags = 0;
 
-                        if (!m_InOpaqueMode)
+                        if (!_inOpaqueMode)
                         {
                             flags = (uint)Interop.HttpApi.HTTP_FLAGS.HTTP_RECEIVE_REQUEST_FLAG_COPY_BODY;
                         }
 
                         statusCode =
                             Interop.HttpApi.HttpReceiveRequestEntityBody(
-                                m_HttpContext.RequestQueueHandle,
-                                m_HttpContext.RequestId,
+                                _httpContext.RequestQueueHandle,
+                                _httpContext.RequestId,
                                 flags,
                                 asyncResult.m_pPinnedBuffer,
                                 (uint)size,
@@ -383,7 +381,7 @@ namespace System.Net
             try
             {
                 //GlobalLog.Print("HttpRequestStream#" + LoggingHash.HashString(this) + "::Dispose(bool) m_Closed:" + m_Closed);
-                m_Closed = true;
+                _closed = true;
             }
             finally
             {
@@ -395,7 +393,7 @@ namespace System.Net
         internal void SwitchToOpaqueMode()
         {
             //GlobalLog.Print("HttpRequestStream#" + LoggingHash.HashString(this) + "::SwitchToOpaqueMode()");
-            m_InOpaqueMode = true;
+            _inOpaqueMode = true;
         }
 
         // This low level API should only be consumed if the caller can make sure that the state is not corrupted
@@ -403,18 +401,18 @@ namespace System.Net
         // is currenlty the only consumer of this API
         internal uint GetChunks(byte[] buffer, int offset, int size)
         {
-            return Interop.HttpApi.GetChunks(m_HttpContext.Request.RequestBuffer,
-                m_HttpContext.Request.OriginalBlobAddress,
-                ref m_DataChunkIndex,
-                ref m_DataChunkOffset,
+            return Interop.HttpApi.GetChunks(_httpContext.Request.RequestBuffer,
+                _httpContext.Request.OriginalBlobAddress,
+                ref _dataChunkIndex,
+                ref _dataChunkOffset,
                 buffer,
                 offset,
                 size);
         }
 
-        unsafe class HttpRequestStreamAsyncResult : LazyAsyncResult
+        private unsafe class HttpRequestStreamAsyncResult : LazyAsyncResult
         {
-            private ThreadPoolBoundHandle m_boundHandle;
+            private ThreadPoolBoundHandle _boundHandle;
             internal NativeOverlapped* m_pOverlapped;
             internal void* m_pPinnedBuffer;
             internal uint m_dataAlreadyRead = 0;
@@ -433,7 +431,7 @@ namespace System.Net
             internal HttpRequestStreamAsyncResult(ThreadPoolBoundHandle boundHandle, object asyncObject, object userState, AsyncCallback callback, byte[] buffer, int offset, uint size, uint dataAlreadyRead) : base(asyncObject, userState, callback)
             {
                 m_dataAlreadyRead = dataAlreadyRead;
-                m_boundHandle = boundHandle;
+                _boundHandle = boundHandle;
                 m_pOverlapped = boundHandle.AllocateNativeOverlapped(s_IOCallback, state: this, pinData: buffer);
                 m_pPinnedBuffer = (void*)(Marshal.UnsafeAddrOfPinnedArrayElement(buffer, offset));
             }
@@ -483,7 +481,7 @@ namespace System.Net
                 base.Cleanup();
                 if (m_pOverlapped != null)
                 {
-                    m_boundHandle.FreeNativeOverlapped(m_pOverlapped);
+                    _boundHandle.FreeNativeOverlapped(m_pOverlapped);
                 }
             }
         }

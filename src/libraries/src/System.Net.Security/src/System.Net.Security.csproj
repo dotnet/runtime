@@ -184,6 +184,9 @@
     <Compile Include="$(CommonPath)\System\Collections\Generic\BidirectionalDictionary.cs">
       <Link>Common\System\Collections\Generic\BidirectionalDictionary.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\sspicli\SafeDeleteContext.cs">
+      <Link>Common\Interop\Windows\sspicli\SafeDeleteContext.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\sspicli\SecurityPackageInfo.cs">
       <Link>Common\Interop\Windows\sspicli\SecurityPackageInfo.cs</Link>
     </Compile>
