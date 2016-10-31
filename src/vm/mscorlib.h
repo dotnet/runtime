@@ -1054,6 +1054,11 @@ DEFINE_FIELD(NULL,                  VALUE,          Value)
 
 DEFINE_CLASS(NULLABLE,              System,                 Nullable`1)
 
+#ifdef FEATURE_SPAN_OF_T
+DEFINE_CLASS(SPAN,                  System,                 Span`1)
+DEFINE_CLASS(READONLY_SPAN,         System,                 ReadOnlySpan`1)
+#endif
+
 // Keep this in sync with System.Globalization.NumberFormatInfo
 DEFINE_CLASS_U(Globalization,       NumberFormatInfo,   NumberFormatInfo)
 DEFINE_FIELD_U(numberGroupSizes,       NumberFormatInfo,   cNumberGroup)
@@ -1339,6 +1344,20 @@ DEFINE_METHOD(JIT_HELPERS,          UNSAFE_ENUM_CAST,       UnsafeEnumCast, NoSi
 DEFINE_METHOD(JIT_HELPERS,          UNSAFE_ENUM_CAST_LONG,  UnsafeEnumCastLong, NoSig)
 DEFINE_METHOD(JIT_HELPERS,          UNSAFE_CAST_TO_STACKPTR,UnsafeCastToStackPointer, NoSig)
 #endif // _DEBUG
+#ifdef FEATURE_SPAN_OF_T
+DEFINE_METHOD(JIT_HELPERS,          BYREF_LESSTHAN,         ByRefLessThan, NoSig)
+DEFINE_METHOD(JIT_HELPERS,          GET_ARRAY_DATA,         GetArrayData, NoSig)
+DEFINE_METHOD(JIT_HELPERS,          CONTAINSREFERENCES,     ContainsReferences, NoSig)
+#endif
+
+#ifdef FEATURE_SPAN_OF_T
+DEFINE_CLASS(UNSAFE,                CompilerServices,       Unsafe)
+DEFINE_METHOD(UNSAFE,               AS_POINTER,             AsPointer, NoSig)
+DEFINE_METHOD(UNSAFE,               SIZEOF,                 SizeOf, NoSig)
+DEFINE_METHOD(UNSAFE,               BYREF_AS,               As, NoSig)
+DEFINE_METHOD(UNSAFE,               BYREF_ADD,              Add, NoSig)
+DEFINE_METHOD(UNSAFE,               BYREF_ARE_SAME,         AreSame, NoSig)
+#endif
 
 DEFINE_CLASS(INTERLOCKED,           Threading,              Interlocked)
 DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_T,     CompareExchange, GM_RefT_T_T_RetT)
@@ -1346,6 +1365,9 @@ DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_OBJECT,CompareExchange, SM_
 
 DEFINE_CLASS(PINNING_HELPER,        CompilerServices,       PinningHelper)
 DEFINE_FIELD(PINNING_HELPER,        M_DATA,                 m_data)
+
+DEFINE_CLASS(ARRAY_PINNING_HELPER,  CompilerServices,       ArrayPinningHelper)
+DEFINE_FIELD(ARRAY_PINNING_HELPER,  M_ARRAY_DATA,           m_arrayData)
 
 DEFINE_CLASS(RUNTIME_WRAPPED_EXCEPTION, CompilerServices,   RuntimeWrappedException)
 DEFINE_METHOD(RUNTIME_WRAPPED_EXCEPTION, OBJ_CTOR,          .ctor,                      IM_Obj_RetVoid)
