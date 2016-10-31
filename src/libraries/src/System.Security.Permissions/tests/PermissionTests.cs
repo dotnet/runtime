@@ -21,12 +21,14 @@ namespace System.Security.Permissions.Tests
             ep.FromXml(se);
             se = ep.ToXml();
         }
+
         [Fact]
         public static void EnvironmentPermissionsAttributeCallMethods()
         {
             EnvironmentPermissionAttribute epa = new EnvironmentPermissionAttribute(new Permissions.SecurityAction());
             IPermission ip = epa.CreatePermission();
         }
+
         [Fact]
         public static void FileDialogPermissionCallMethods()
         {
@@ -40,12 +42,14 @@ namespace System.Security.Permissions.Tests
             fdp.FromXml(se);
             se = fdp.ToXml();
         }
+
         [Fact]
         public static void FileDialogPermissionAttributeCallMethods()
         {
             FileDialogPermissionAttribute fspa = new FileDialogPermissionAttribute(new Permissions.SecurityAction());
             IPermission ip = fspa.CreatePermission();
         }
+
         [Fact]
         public static void FileIOPermissionCallMethods()
         {
@@ -68,6 +72,7 @@ namespace System.Security.Permissions.Tests
             fiop.FromXml(se);
             se = fiop.ToXml();
         }
+
         [Fact]
         public static void GacIdentityPermissionCallMethods()
         {
@@ -80,12 +85,14 @@ namespace System.Security.Permissions.Tests
             gip.FromXml(se);
             se = gip.ToXml();
         }
+
         [Fact]
         public static void GacIdentityPermissionAttributeCallMethods()
         {
             GacIdentityPermissionAttribute gipa = new GacIdentityPermissionAttribute(new Permissions.SecurityAction());
             IPermission ip = gipa.CreatePermission();
         }
+
         [Fact]
         public static void PrincipalPermissionCallMethods()
         {
@@ -104,12 +111,14 @@ namespace System.Security.Permissions.Tests
             pp.FromXml(se);
             se = pp.ToXml();
         }
+
         [Fact]
         public static void PrincipalPermissionAttributeCallMethods()
         {
             PrincipalPermissionAttribute ppa = new PrincipalPermissionAttribute(new Permissions.SecurityAction());
             IPermission ip = ppa.CreatePermission();
         }
+
         [Fact]
         public static void PublisherIdentityPermissionCallMethods()
         {
@@ -123,12 +132,14 @@ namespace System.Security.Permissions.Tests
             pip.FromXml(se);
             se = pip.ToXml();
         }
+
         [Fact]
         public static void PublisherIdentityPermissionAttributeCallMethods()
         {
             PublisherIdentityPermissionAttribute pipa = new PublisherIdentityPermissionAttribute(new Permissions.SecurityAction());
             IPermission ip = pipa.CreatePermission();
         }
+
         [Fact]
         public static void ReflectionPermissionCallMethods()
         {
@@ -143,12 +154,14 @@ namespace System.Security.Permissions.Tests
             rp.FromXml(se);
             se = rp.ToXml();
         }
+
         [Fact]
         public static void ReflectionPermissionAttributeCallMethods()
         {
             ReflectionPermissionAttribute rpa = new ReflectionPermissionAttribute(new Permissions.SecurityAction());
             IPermission ip = rpa.CreatePermission();
         }
+
         [Fact]
         public static void RegistryPermissionCallMethods()
         {
@@ -168,12 +181,14 @@ namespace System.Security.Permissions.Tests
             rp.FromXml(se);
             se = rp.ToXml();
         }
+
         [Fact]
         public static void RegistryPermissionAttributeCallMethods()
         {
             RegistryPermissionAttribute rpa = new RegistryPermissionAttribute(new Permissions.SecurityAction());
             IPermission ip = rpa.CreatePermission();
         }
+
         [Fact]
         public static void SecurityPermissionCallMethods()
         {
@@ -188,12 +203,14 @@ namespace System.Security.Permissions.Tests
             sp.FromXml(se);
             se = sp.ToXml();
         }
+
         [Fact]
         public static void SecurityPermissionAttributeCallMethods()
         {
             SecurityPermissionAttribute spa = new SecurityPermissionAttribute(new Permissions.SecurityAction());
             IPermission ip = spa.CreatePermission();
         }
+
         [Fact]
         public static void SiteIdentityPermissionCallMethods()
         {
@@ -207,12 +224,14 @@ namespace System.Security.Permissions.Tests
             sip.FromXml(se);
             se = sip.ToXml();
         }
+
         [Fact]
         public static void SiteIdentityPermissionAttributeCallMethods()
         {
             SiteIdentityPermissionAttribute sipa = new SiteIdentityPermissionAttribute(new Permissions.SecurityAction());
             IPermission ip = sipa.CreatePermission();
         }
+
         [Fact]
         public static void StrongNameIdentityPermissionCallMethods()
         {
@@ -226,12 +245,14 @@ namespace System.Security.Permissions.Tests
             snip.FromXml(se);
             se = snip.ToXml();
         }
+
         [Fact]
         public static void StrongNameIdentityPermissionAttributeCallMethods()
         {
             StrongNameIdentityPermissionAttribute snipa = new StrongNameIdentityPermissionAttribute(new Permissions.SecurityAction());
             IPermission ip = snipa.CreatePermission();
         }
+
         [Fact]
         public static void StrongNamePublicKeyBlobTests()
         {
@@ -240,6 +261,7 @@ namespace System.Security.Permissions.Tests
             int hash = snpkb.GetHashCode();
             string teststring = snpkb.ToString();
         }
+
         [Fact]
         public static void TypeDescriptorPermissionCallMethods()
         {
@@ -254,6 +276,7 @@ namespace System.Security.Permissions.Tests
             tdp.FromXml(se);
             se = tdp.ToXml();
         }
+
         [Fact]
         public static void UIPermissionCallMethods()
         {
@@ -270,12 +293,14 @@ namespace System.Security.Permissions.Tests
             uip.FromXml(se);
             se = uip.ToXml();
         }
+
         [Fact]
         public static void UIPermissionAttributeCallMethods()
         {
             UIPermissionAttribute uipa = new UIPermissionAttribute(new Permissions.SecurityAction());
             IPermission ip = uipa.CreatePermission();
         }
+
         [Fact]
         public static void UrlIdentityPermissionCallMethods()
         {
@@ -289,12 +314,14 @@ namespace System.Security.Permissions.Tests
             uip.FromXml(se);
             se = uip.ToXml();
         }
+
         [Fact]
         public static void UrlIdentityPermissionAttributeCallMethods()
         {
             UrlIdentityPermissionAttribute uipa = new UrlIdentityPermissionAttribute(new Permissions.SecurityAction());
             IPermission ip = uipa.CreatePermission();
         }
+
         [Fact]
         public static void ZoneIdentityPermissionCallMethods()
         {
@@ -307,6 +334,7 @@ namespace System.Security.Permissions.Tests
             zip.FromXml(se);
             se = zip.ToXml();
         }
+
         [Fact]
         public static void ZoneIdentityPermissionAttributeCallMethods()
         {

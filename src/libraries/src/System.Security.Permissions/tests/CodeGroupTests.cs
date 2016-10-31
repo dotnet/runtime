@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Security.Policy;
 using Xunit;
 
 namespace System.Security.Permissions.Tests
@@ -11,43 +12,46 @@ namespace System.Security.Permissions.Tests
         [Fact]
         public static void FileCodeGroupCallMethods()
         {
-            Policy.FileCodeGroup fcg = new Policy.FileCodeGroup(new Policy.GacMembershipCondition(), new FileIOPermissionAccess());
-            Policy.CodeGroup cg = fcg.Copy();
+            FileCodeGroup fcg = new FileCodeGroup(new GacMembershipCondition(), new FileIOPermissionAccess());
+            CodeGroup cg = fcg.Copy();
             bool equals = fcg.Equals(new object());
             int hash = fcg.GetHashCode();
-            Policy.PolicyStatement ps = fcg.Resolve(new Policy.Evidence());
-            cg = fcg.ResolveMatchingCodeGroups(new Policy.Evidence());
+            PolicyStatement ps = fcg.Resolve(new Evidence());
+            cg = fcg.ResolveMatchingCodeGroups(new Evidence());
         }
+
         [Fact]
         public static void FirstMatchCodeGroupCallMethods()
         {
-            Policy.FirstMatchCodeGroup fmcg = new Policy.FirstMatchCodeGroup(new Policy.GacMembershipCondition(), new Policy.PolicyStatement(new PermissionSet(new PermissionState())));
-            Policy.CodeGroup cg = fmcg.Copy();
-            Policy.PolicyStatement ps = fmcg.Resolve(new Policy.Evidence());
-            cg = fmcg.ResolveMatchingCodeGroups(new Policy.Evidence());
+            FirstMatchCodeGroup fmcg = new FirstMatchCodeGroup(new GacMembershipCondition(), new PolicyStatement(new PermissionSet(new PermissionState())));
+            CodeGroup cg = fmcg.Copy();
+            PolicyStatement ps = fmcg.Resolve(new Evidence());
+            cg = fmcg.ResolveMatchingCodeGroups(new Evidence());
         }
+
         [Fact]
         public static void NetCodeGroupCallMethods()
         {
-            Policy.NetCodeGroup ncg = new Policy.NetCodeGroup(new Policy.GacMembershipCondition());
-            string teststring = Policy.NetCodeGroup.AbsentOriginScheme;
-            teststring = Policy.NetCodeGroup.AnyOtherOriginScheme;
-            ncg.AddConnectAccess("test", new Policy.CodeConnectAccess("test", 0));
-            Policy.CodeGroup cg = ncg.Copy();
+            NetCodeGroup ncg = new NetCodeGroup(new GacMembershipCondition());
+            string teststring = NetCodeGroup.AbsentOriginScheme;
+            teststring = NetCodeGroup.AnyOtherOriginScheme;
+            ncg.AddConnectAccess("test", new CodeConnectAccess("test", 0));
+            CodeGroup cg = ncg.Copy();
             bool equals = ncg.Equals(new object());
             System.Collections.DictionaryEntry[] de = ncg.GetConnectAccessRules();
             int hash = ncg.GetHashCode();
             ncg.ResetConnectAccess();
-            Policy.PolicyStatement ps = ncg.Resolve(new Policy.Evidence());
-            cg = ncg.ResolveMatchingCodeGroups(new Policy.Evidence());
+            PolicyStatement ps = ncg.Resolve(new Evidence());
+            cg = ncg.ResolveMatchingCodeGroups(new Evidence());
         }
+
         [Fact]
         public static void UnionCodeGroupCallMethods()
         {
-            Policy.UnionCodeGroup ucg = new Policy.UnionCodeGroup(new Policy.GacMembershipCondition(), new Policy.PolicyStatement(new PermissionSet(new PermissionState())));
-            Policy.CodeGroup cg = ucg.Copy();
-            Policy.PolicyStatement ps = ucg.Resolve(new Policy.Evidence());
-            cg = ucg.ResolveMatchingCodeGroups(new Policy.Evidence());
+            UnionCodeGroup ucg = new UnionCodeGroup(new GacMembershipCondition(), new PolicyStatement(new PermissionSet(new PermissionState())));
+            CodeGroup cg = ucg.Copy();
+            PolicyStatement ps = ucg.Resolve(new Evidence());
+            cg = ucg.ResolveMatchingCodeGroups(new Evidence());
         }
     }
 }
