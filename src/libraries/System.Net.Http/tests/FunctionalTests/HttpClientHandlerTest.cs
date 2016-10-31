@@ -1746,6 +1746,7 @@ namespace System.Net.Http.Functional.Tests
         #endregion
         
         #region Proxy tests
+        [ActiveIssue(13188)]
         [OuterLoop] // TODO: Issue #11345
         [Theory]
         [MemberData(nameof(CredentialsForProxy))]
