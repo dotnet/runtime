@@ -3905,3 +3905,30 @@ public class TestData
     [DataMember]
     public String TestString;
 }
+
+[Serializable]
+public class MyISerializableType : ISerializable
+{
+    public MyISerializableType()
+    {
+    }
+
+    private string _stringValue;
+
+    public string StringValue
+    {
+        get { return _stringValue; }
+        set { _stringValue = value; }
+    }
+
+    public void GetObjectData(SerializationInfo info, StreamingContext context)
+    {
+        info.AddValue(nameof(_stringValue), _stringValue, typeof(string));
+
+    }
+
+    public MyISerializableType(SerializationInfo info, StreamingContext context)
+    {
+        _stringValue = (string)info.GetValue(nameof(_stringValue), typeof(string));
+    }
+}

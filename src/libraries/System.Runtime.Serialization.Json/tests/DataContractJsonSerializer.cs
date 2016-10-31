@@ -2240,6 +2240,21 @@ public static partial class DataContractJsonSerializerTests
         }
     }
 
+#if ReflectionOnly
+    [ActiveIssue(13071)]
+#endif
+    [Fact]
+    public static void DCJS_MyISerializableType()
+    {
+        var value = new MyISerializableType();
+        value.StringValue = "test string";
+
+        var actual = SerializeAndDeserialize(value, "{\"_stringValue\":\"test string\"}");
+
+        Assert.NotNull(actual);
+        Assert.Equal(value.StringValue, actual.StringValue);
+    }
+
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractJsonSerializerSettings settings = null, Func<DataContractJsonSerializer> serializerFactory = null, bool skipStringCompare = false)
     {
         DataContractJsonSerializer dcjs;

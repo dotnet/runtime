@@ -141,7 +141,14 @@ namespace System.Runtime.Serialization
                     _ilg.Call(_contextArg, XmlFormatGeneratorStatics.AddNewObjectMethod, _objectLocal);
                     InvokeOnDeserializing(classContract);
                     LocalBuilder objectId = null;
-                    ReadClass(classContract);
+                    if (classContract.IsISerializable)
+                    {
+                        ReadISerializable(classContract);
+                    }
+                    else
+                    {
+                        ReadClass(classContract);
+                    }
 
                     InvokeOnDeserialized(classContract);
                     if (objectId == null)
@@ -442,6 +449,16 @@ namespace System.Runtime.Serialization
                 return memberCount;
             }
 
+            private void ReadISerializable(ClassDataContract classContract)
+            {
+                ConstructorInfo ctor = classContract.GetISerializableConstructor();
+                _ilg.LoadAddress(_objectLocal);
+                _ilg.ConvertAddress(_objectLocal.LocalType, _objectType);
+                _ilg.Call(_contextArg, XmlFormatGeneratorStatics.ReadSerializationInfoMethod, _xmlReaderArg, classContract.UnderlyingType);
+                _ilg.Load(_contextArg);
+                _ilg.LoadMember(XmlFormatGeneratorStatics.GetStreamingContextMethod);
+                _ilg.Call(ctor);
+            }
 
             private LocalBuilder ReadValue(Type type, string name, string ns)
             {
