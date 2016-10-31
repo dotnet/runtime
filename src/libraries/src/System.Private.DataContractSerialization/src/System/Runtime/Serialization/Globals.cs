@@ -264,6 +264,16 @@ namespace System.Runtime.Serialization
             }
         }
 
+        private static Type s_typeOfISerializable;
+        internal static Type TypeOfISerializable
+        {
+            get
+            {
+                if (s_typeOfISerializable == null)
+                    s_typeOfISerializable = typeof(ISerializable);
+                return s_typeOfISerializable;
+            }
+        }
 
         [SecurityCritical]
         private static Type s_typeOfXmlFormatClassWriterDelegate;

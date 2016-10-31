@@ -73,7 +73,6 @@
     <Compile Include="$(RuntimeSerializationSources)\SerializationMode.cs" />
     <Compile Include="$(RuntimeSerializationSources)\SpecialTypeDataContract.cs" />
     <Compile Include="$(RuntimeSerializationSources)\TypeCode.cs" />
-    <Compile Include="$(RuntimeSerializationSources)\ExceptionDataContract.cs" />
     <Compile Include="$(RuntimeSerializationSources)\KnownTypeDataContractResolver.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlObjectSerializerReadContextComplex.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlObjectSerializerWriteContextComplex.cs" />

@@ -395,10 +395,18 @@ namespace System.Runtime.Serialization
             return null;
         }
 
-        /// <SecurityNote>
-        /// Critical - Static fields are marked SecurityCritical or readonly to prevent
-        ///            data from being modified or leaked to other components in appdomain.
-        /// </SecurityNote>
+        private static IFormatterConverter s_formatterConverter;
+        internal static IFormatterConverter FormatterConverter
+        {
+            get
+            {
+                if (s_formatterConverter == null)
+                {
+                    s_formatterConverter = new FormatterConverter();
+                }
 
+                return s_formatterConverter;
+            }
+        }
     }
 }
