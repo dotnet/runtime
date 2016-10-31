@@ -96,19 +96,4 @@ class MonoMasterPackage(Package):
             os.symlink('mono-sgen64', '%s/bin/mono64' % self.staged_profile)
             os.symlink('mono-sgen32', '%s/bin/mono32' % self.staged_profile)
 
-        text = " ".join(open('%s/bin/mcs' % self.staged_profile).readlines())
-        regex = os.path.join(
-            self.profile.MONO_ROOT,
-            "Versions",
-            r"(\d+\.\d+\.\d+)")
-        match = re.search(regex, text)
-        if match is None:
-            return
-        token = match.group(1)
-
-        trace(token)
-        trace(self.package_prefix)
-        if self.package_prefix not in token:
-            error("%s references Mono %s\n%s" % ('mcs', match, text))
-
 MonoMasterPackage()
