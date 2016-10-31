@@ -584,6 +584,9 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define REG_PINVOKE_TARGET_PARAM REG_EAX
   #define RBM_PINVOKE_TARGET_PARAM RBM_EAX
 
+  // GenericPInvokeCalliHelper cookie parameter
+  #define REG_PINVOKE_COOKIE_PARAM REG_STK
+
   // IL stub's secret parameter (JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM)
   #define REG_SECRET_STUB_PARAM    REG_EAX
   #define RBM_SECRET_STUB_PARAM    RBM_EAX
