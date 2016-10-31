@@ -212,6 +212,32 @@ sgen_has_critical_method (void)
 	return sgen_has_managed_allocator ();
 }
 
+static gboolean
+ip_in_critical_region (MonoDomain *domain, gpointer ip)
+{
+	MonoJitInfo *ji;
+	MonoMethod *method;
+
+	/*
+	 * We pass false for 'try_aot' so this becomes async safe.
+	 * It won't find aot methods whose jit info is not yet loaded,
+	 * so we preload their jit info in the JIT.
+	 */
+	ji = mono_jit_info_table_find_internal (domain, ip, FALSE, FALSE);
+	if (!ji)
+		return FALSE;
+
+	method = mono_jit_info_get_method (ji);
+
+	return mono_runtime_is_critical_method (method) || sgen_is_critical_method (method);
+}
+
+gboolean
+mono_gc_is_critical_method (MonoMethod *method)
+{
+	return sgen_is_critical_method (method);
+}
+
 #ifndef DISABLE_JIT
 
 static void
@@ -2286,12 +2312,6 @@ mono_gc_set_skip_thread (gboolean skip)
 }
 
 static gboolean
-is_critical_method (MonoMethod *method)
-{
-	return mono_runtime_is_critical_method (method) || sgen_is_critical_method (method);
-}
-
-static gboolean
 thread_in_critical_region (SgenThreadInfo *info)
 {
 	return info->client_info.in_critical_region;
@@ -2845,8 +2865,8 @@ sgen_client_init (void)
 	cb.thread_detach = sgen_thread_detach;
 	cb.thread_unregister = sgen_thread_unregister;
 	cb.thread_attach = sgen_thread_attach;
-	cb.mono_method_is_critical = (gboolean (*)(void *))is_critical_method;
 	cb.mono_thread_in_critical_region = thread_in_critical_region;
+	cb.ip_in_critical_region = ip_in_critical_region;
 
 	mono_threads_init (&cb, sizeof (SgenThreadInfo));
 

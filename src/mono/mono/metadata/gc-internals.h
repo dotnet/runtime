@@ -360,6 +360,8 @@ guint mono_gc_get_vtable_bits (MonoClass *klass);
 
 void mono_gc_register_altstack (gpointer stack, gint32 stack_size, gpointer altstack, gint32 altstack_size);
 
+gboolean mono_gc_is_critical_method (MonoMethod *method);
+
 /* If set, print debugging messages around finalizers. */
 extern gboolean log_finalizers;
 

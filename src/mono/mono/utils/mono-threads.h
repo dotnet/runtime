@@ -229,6 +229,7 @@ typedef struct {
 	void (*thread_detach)(THREAD_INFO_TYPE *info);
 	void (*thread_attach)(THREAD_INFO_TYPE *info);
 	gboolean (*mono_method_is_critical) (void *method);
+	gboolean (*ip_in_critical_region) (MonoDomain *domain, gpointer ip);
 	gboolean (*mono_thread_in_critical_region) (THREAD_INFO_TYPE *info);
 } MonoThreadInfoCallbacks;
 

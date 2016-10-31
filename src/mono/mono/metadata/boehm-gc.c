@@ -1115,7 +1115,7 @@ create_allocator (int atype, int tls_key, gboolean slowpath)
 static MonoMethod* alloc_method_cache [ATYPE_NUM];
 static MonoMethod* slowpath_alloc_method_cache [ATYPE_NUM];
 
-static G_GNUC_UNUSED gboolean
+gboolean
 mono_gc_is_critical_method (MonoMethod *method)
 {
 	int i;
@@ -1234,7 +1234,7 @@ mono_gc_get_write_barrier (void)
 
 #else
 
-static G_GNUC_UNUSED gboolean
+gboolean
 mono_gc_is_critical_method (MonoMethod *method)
 {
 	return FALSE;

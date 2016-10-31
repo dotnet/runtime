@@ -1879,6 +1879,15 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoError *er
 		if ((code = mono_aot_get_method_checked (domain, method, error))) {
 			MonoVTable *vtable;
 
+			if (mono_runtime_is_critical_method (method) || mono_gc_is_critical_method (method)) {
+				/*
+				 * The suspend code needs to be able to lookup these methods by ip in async context,
+				 * so preload their jit info.
+				 */
+				MonoJitInfo *ji = mono_jit_info_table_find (domain, code);
+				g_assert (ji);
+			}
+
 			/*
 			 * In llvm-only mode, method might be a shared method, so we can't initialize its class.
 			 * This is not a problem, since it will be initialized when the method is first
