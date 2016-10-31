@@ -48,7 +48,7 @@ Areas are tracked by labels area-* (e.g. area-System.Collections), or Infrastruc
 | **System contract assemblies** | | | |
 | [System.AppContext](https://github.com/dotnet/corefx/labels/area-System.AppContext)           |  |  |  |
 | [System.Buffers](https://github.com/dotnet/corefx/labels/area-System.Buffers)                 |  |  |  |
-| [System.CodeDom](https://github.com/dotnet/corefx/labels/area-System.CodeDom)                 |  |  |  |
+| [System.CodeDom](https://github.com/dotnet/corefx/labels/area-System.CodeDom)                 | @priya91 |  |  |
 | [System.Collections](https://github.com/dotnet/corefx/labels/area-System.Collections)         | @priya91, @ianhays |  | Triaged |
 | [System.ComponentModel](https://github.com/dotnet/corefx/labels/area-System.ComponentModel)   |  |  |  |
 | [System.ComponentModel.DataAnnotations](https://github.com/dotnet/corefx/labels/area-System.ComponentModel.DataAnnotations) |  |  |  |
@@ -57,7 +57,7 @@ Areas are tracked by labels area-* (e.g. area-System.Collections), or Infrastruc
 | [System.Data](https://github.com/dotnet/corefx/labels/area-System.Data)                       |  |  |  |
 | [System.Data.SqlClient](https://github.com/dotnet/corefx/labels/area-System.Data.SqlClient)   |  |  |  |
 | [System.Diagnostics](https://github.com/dotnet/corefx/labels/area-System.Diagnostics)         |  |  |  |
-| [System.Diagnostics.Process](https://github.com/dotnet/corefx/labels/area-System.Diagnostics.Process) |  |  |  |
+| [System.Diagnostics.Process](https://github.com/dotnet/corefx/labels/area-System.Diagnostics.Process) | @priya91 |  |  |
 | [System.Diagnostics.Tracing](https://github.com/dotnet/corefx/labels/area-System.Diagnostics.Tracing) |  |  |  |
 | [System.DirectoryServices](https://github.com/dotnet/corefx/labels/area-System.DirectoryServices) |  |  |  |
 | [System.Drawing](https://github.com/dotnet/corefx/labels/area-System.Drawing)                 |  |  |  |
