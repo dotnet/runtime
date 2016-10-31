@@ -31,6 +31,11 @@
     <StringResourcesPath>Resources/Strings.netcore50aot.resx</StringResourcesPath>
     <DefineConstants>$(DefineConstants);uap101aot</DefineConstants>
   </PropertyGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
+    <ContractProject Include="..\ref\System.IO.csproj">
+      <TargetGroup>netstandard1.7</TargetGroup>
+    </ContractProject>
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == ''">
     <Compile Include="System\IO\TextReader.netstandard17.cs" />
     <Compile Include="System\IO\TextWriter.netstandard17.cs" />
