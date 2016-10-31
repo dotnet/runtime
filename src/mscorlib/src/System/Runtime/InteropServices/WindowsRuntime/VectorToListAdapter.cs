@@ -34,7 +34,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal T Indexer_Get<T>(int index)
         {
             if (index < 0)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
 
             IVector<T> _this = JitHelpers.UnsafeCast<IVector<T>>(this);
             return GetAt(_this, (uint)index);
@@ -45,7 +45,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal void Indexer_Set<T>(int index, T value)
         {
             if (index < 0)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
 
             IVector<T> _this = JitHelpers.UnsafeCast<IVector<T>>(this);
             SetAt(_this, (uint)index, value);
@@ -76,7 +76,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal void Insert<T>(int index, T item)
         {
             if (index < 0)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
 
             IVector<T> _this = JitHelpers.UnsafeCast<IVector<T>>(this);
             InsertAtHelper<T>(_this, (uint)index, item);
@@ -87,7 +87,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal void RemoveAt<T>(int index)
         {
             if (index < 0)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
 
             IVector<T> _this = JitHelpers.UnsafeCast<IVector<T>>(this);
             RemoveAtHelper<T>(_this, (uint)index);
@@ -107,7 +107,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             catch (Exception ex)
             {
                 if (__HResults.E_BOUNDS == ex._HResult)
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index));
 
                 throw;
             }
@@ -125,7 +125,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             catch (Exception ex)
             {
                 if (__HResults.E_BOUNDS == ex._HResult)
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index));
 
                 throw;
             }
@@ -143,7 +143,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             catch (Exception ex)
             {
                 if (__HResults.E_BOUNDS == ex._HResult)
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index));
 
                 throw;
             }
@@ -161,7 +161,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             catch (Exception ex)
             {
                 if (__HResults.E_BOUNDS == ex._HResult)
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index));
 
                 throw;
             }

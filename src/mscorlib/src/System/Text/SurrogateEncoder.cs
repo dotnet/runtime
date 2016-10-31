@@ -30,7 +30,7 @@ namespace System.Text
         internal SurrogateEncoder(SerializationInfo info, StreamingContext context)
         {
             // Any info?
-            if (info==null) throw new ArgumentNullException("info");
+            if (info==null) throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
 
             // All versions have a code page

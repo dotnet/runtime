@@ -73,9 +73,9 @@ namespace System.IO {
         public BinaryWriter(Stream output, Encoding encoding, bool leaveOpen)
         {
             if (output==null)
-                throw new ArgumentNullException("output");
+                throw new ArgumentNullException(nameof(output));
             if (encoding==null)
-                throw new ArgumentNullException("encoding");
+                throw new ArgumentNullException(nameof(encoding));
             if (!output.CanWrite)
                 throw new ArgumentException(Environment.GetResourceString("Argument_StreamNotWritable"));
             Contract.EndContractBlock();
@@ -166,7 +166,7 @@ namespace System.IO {
         // 
         public virtual void Write(byte[] buffer) {
             if (buffer == null)
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             Contract.EndContractBlock();
             OutStream.Write(buffer, 0, buffer.Length);
         }
@@ -207,7 +207,7 @@ namespace System.IO {
         public virtual void Write(char[] chars) 
         {
             if (chars == null)
-                throw new ArgumentNullException("chars");
+                throw new ArgumentNullException(nameof(chars));
             Contract.EndContractBlock();
 
             byte[] bytes = _encoding.GetBytes(chars, 0, chars.Length);
@@ -353,7 +353,7 @@ namespace System.IO {
         public unsafe virtual void Write(String value) 
         {
             if (value==null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             Contract.EndContractBlock();
 
             int len = _encoding.GetByteCount(value);

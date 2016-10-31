@@ -157,7 +157,7 @@ namespace System.Runtime
         public MemoryFailPoint(int sizeInMegabytes)
         {
             if (sizeInMegabytes <= 0)
-                throw new ArgumentOutOfRangeException("sizeInMegabytes", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(sizeInMegabytes), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
 
             ulong size = ((ulong)sizeInMegabytes) << 20;

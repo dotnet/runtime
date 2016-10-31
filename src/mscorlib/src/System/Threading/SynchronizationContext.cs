@@ -151,7 +151,7 @@ namespace System.Threading
         {
             if (waitHandles == null)
             {
-                throw new ArgumentNullException("waitHandles");
+                throw new ArgumentNullException(nameof(waitHandles));
             }
             Contract.EndContractBlock();
             return WaitHelper(waitHandles, waitAll, millisecondsTimeout);

@@ -167,7 +167,7 @@ namespace System {
 
       public static char Parse(String s) {
           if (s==null) {
-              throw new ArgumentNullException("s");
+              throw new ArgumentNullException(nameof(s));
           } 
           Contract.EndContractBlock();
           
@@ -364,7 +364,7 @@ namespace System {
       // <;<;Not fully implemented>;>;
       public static char ToUpper(char c, CultureInfo culture) {
         if (culture==null)
-            throw new ArgumentNullException("culture");
+            throw new ArgumentNullException(nameof(culture));
         Contract.EndContractBlock();
         return culture.TextInfo.ToUpper(c);
       }
@@ -393,7 +393,7 @@ namespace System {
       // <;<;Not fully implemented>;>;
       public static char ToLower(char c, CultureInfo culture) {
         if (culture==null)
-            throw new ArgumentNullException("culture");
+            throw new ArgumentNullException(nameof(culture));
         Contract.EndContractBlock();
         return culture.TextInfo.ToLower(c);
       }
@@ -508,9 +508,9 @@ namespace System {
   
         public static bool IsControl(String s, int index) {
             if (s==null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             if (((uint)index)>=((uint)s.Length)) {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             Contract.EndContractBlock();
             char c = s[index];
@@ -524,9 +524,9 @@ namespace System {
         public static bool IsDigit(String s, int index)
         {
             if (s==null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             if (((uint)index)>=((uint)s.Length)) {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             Contract.EndContractBlock();
             char c = s[index];
@@ -539,9 +539,9 @@ namespace System {
         public static bool IsLetter(String s, int index)
         {
             if (s==null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             if (((uint)index)>=((uint)s.Length)) {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             Contract.EndContractBlock();
             char c = s[index];
@@ -558,9 +558,9 @@ namespace System {
         public static bool IsLetterOrDigit(String s, int index)
         {   
             if (s==null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             if (((uint)index)>=((uint)s.Length)) {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             Contract.EndContractBlock();
             char c = s[index];
@@ -573,9 +573,9 @@ namespace System {
         public static bool IsLower(String s, int index)
         {
             if (s==null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             if (((uint)index)>=((uint)s.Length)) {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             Contract.EndContractBlock();
             char c = s[index];
@@ -617,9 +617,9 @@ namespace System {
         public static bool IsNumber(String s, int index)
         {
             if (s==null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             if (((uint)index)>=((uint)s.Length)) {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             Contract.EndContractBlock();
             char c = s[index];
@@ -643,9 +643,9 @@ namespace System {
         public static bool IsPunctuation (String s, int index)
         {
             if (s==null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             if (((uint)index)>=((uint)s.Length)) {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             Contract.EndContractBlock();
             char c = s[index];
@@ -688,9 +688,9 @@ namespace System {
         public static bool IsSeparator(String s, int index)
         {
             if (s==null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             if (((uint)index)>=((uint)s.Length)) {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             Contract.EndContractBlock();
             char c = s[index];
@@ -710,10 +710,10 @@ namespace System {
         public static bool IsSurrogate(String s, int index)
         {
             if (s==null) {
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             }
             if (((uint)index)>=((uint)s.Length)) {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             Contract.EndContractBlock();
             return (IsSurrogate(s[index]));
@@ -745,9 +745,9 @@ namespace System {
         public static bool IsSymbol(String s, int index)
         {
             if (s==null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             if (((uint)index)>=((uint)s.Length)) {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             Contract.EndContractBlock();
             if (IsLatin1(s[index])) {
@@ -760,9 +760,9 @@ namespace System {
         public static bool IsUpper(String s, int index)
         {   
             if (s==null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             if (((uint)index)>=((uint)s.Length)) {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             Contract.EndContractBlock();
             char c = s[index];
@@ -779,9 +779,9 @@ namespace System {
         public static bool IsWhiteSpace(String s, int index)
         {
             if (s==null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             if (((uint)index)>=((uint)s.Length)) {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             Contract.EndContractBlock();
 
@@ -803,9 +803,9 @@ namespace System {
         public static UnicodeCategory GetUnicodeCategory(String s, int index)
         {
             if (s==null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             if (((uint)index)>=((uint)s.Length)) {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             Contract.EndContractBlock();
             if (IsLatin1(s[index])) {
@@ -822,9 +822,9 @@ namespace System {
         public static double GetNumericValue(String s, int index)
         {
             if (s==null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             if (((uint)index)>=((uint)s.Length)) {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             Contract.EndContractBlock();
             return CharUnicodeInfo.GetNumericValue(s, index);
@@ -842,10 +842,10 @@ namespace System {
         [Pure]
         public static bool IsHighSurrogate(String s, int index) {
             if (s == null) {
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             }
             if (index < 0 || index >= s.Length) {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             Contract.EndContractBlock();
             return (IsHighSurrogate(s[index]));
@@ -862,10 +862,10 @@ namespace System {
         [Pure]
         public static bool IsLowSurrogate(String s, int index) {
             if (s == null) {
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             }
             if (index < 0 || index >= s.Length) {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             Contract.EndContractBlock();
             return (IsLowSurrogate(s[index]));
@@ -877,10 +877,10 @@ namespace System {
         [Pure]
         public static bool IsSurrogatePair(String s, int index) {
             if (s == null) {
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             }
             if (index < 0 || index >= s.Length) {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             Contract.EndContractBlock();
             if (index + 1 < s.Length) {
@@ -917,7 +917,7 @@ namespace System {
             // For UTF32 values from U+00D800 ~ U+00DFFF, we should throw.  They
             // are considered as irregular code unit sequence, but they are not illegal.
             if ((utf32 < 0 || utf32 > UNICODE_PLANE16_END) || (utf32 >= HIGH_SURROGATE_START && utf32 <= LOW_SURROGATE_END)) {
-                throw new ArgumentOutOfRangeException("utf32", Environment.GetResourceString("ArgumentOutOfRange_InvalidUTF32"));
+                throw new ArgumentOutOfRangeException(nameof(utf32), Environment.GetResourceString("ArgumentOutOfRange_InvalidUTF32"));
             }
             Contract.EndContractBlock();
 
@@ -945,10 +945,10 @@ namespace System {
         
         public static int ConvertToUtf32(char highSurrogate, char lowSurrogate) {
             if (!IsHighSurrogate(highSurrogate)) {
-                throw new ArgumentOutOfRangeException("highSurrogate", Environment.GetResourceString("ArgumentOutOfRange_InvalidHighSurrogate")); 
+                throw new ArgumentOutOfRangeException(nameof(highSurrogate), Environment.GetResourceString("ArgumentOutOfRange_InvalidHighSurrogate")); 
             }
             if (!IsLowSurrogate(lowSurrogate)) {
-                throw new ArgumentOutOfRangeException("lowSurrogate", Environment.GetResourceString("ArgumentOutOfRange_InvalidLowSurrogate"));
+                throw new ArgumentOutOfRangeException(nameof(lowSurrogate), Environment.GetResourceString("ArgumentOutOfRange_InvalidLowSurrogate"));
             }
             Contract.EndContractBlock();
             return (((highSurrogate - CharUnicodeInfo.HIGH_SURROGATE_START) * 0x400) + (lowSurrogate - CharUnicodeInfo.LOW_SURROGATE_START) + UNICODE_PLANE01_START);
@@ -964,11 +964,11 @@ namespace System {
         
         public static int ConvertToUtf32(String s, int index) {
             if (s == null) {
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             }
 
             if (index < 0 || index >= s.Length) {
-                throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
             Contract.EndContractBlock();
             // Check if the character at index is a high surrogate.
@@ -983,15 +983,15 @@ namespace System {
                             // Found a low surrogate.
                             return ((temp1 * 0x400) + temp2 + UNICODE_PLANE01_START);
                         } else {
-                            throw new ArgumentException(Environment.GetResourceString("Argument_InvalidHighSurrogate", index), "s"); 
+                            throw new ArgumentException(Environment.GetResourceString("Argument_InvalidHighSurrogate", index), nameof(s)); 
                         }
                     } else {
                         // Found a high surrogate at the end of the string.
-                        throw new ArgumentException(Environment.GetResourceString("Argument_InvalidHighSurrogate", index), "s"); 
+                        throw new ArgumentException(Environment.GetResourceString("Argument_InvalidHighSurrogate", index), nameof(s)); 
                     }
                 } else {
                     // Find a low surrogate at the character pointed by index.
-                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidLowSurrogate", index), "s"); 
+                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidLowSurrogate", index), nameof(s)); 
                 }
             }
             // Not a high-surrogate or low-surrogate. Genereate the UTF32 value for the BMP characters.

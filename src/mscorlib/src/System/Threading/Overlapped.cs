@@ -392,7 +392,7 @@ namespace System.Threading
         unsafe public static Overlapped Unpack(NativeOverlapped* nativeOverlappedPtr)
         {
             if (nativeOverlappedPtr == null)
-                throw new ArgumentNullException("nativeOverlappedPtr");
+                throw new ArgumentNullException(nameof(nativeOverlappedPtr));
             Contract.EndContractBlock();
 
             Overlapped overlapped = OverlappedData.GetOverlappedFromNative(nativeOverlappedPtr).m_overlapped;
@@ -405,7 +405,7 @@ namespace System.Threading
         unsafe public static void Free(NativeOverlapped* nativeOverlappedPtr)
         {
             if (nativeOverlappedPtr == null)
-                throw new ArgumentNullException("nativeOverlappedPtr");
+                throw new ArgumentNullException(nameof(nativeOverlappedPtr));
             Contract.EndContractBlock();
 
             Overlapped overlapped = OverlappedData.GetOverlappedFromNative(nativeOverlappedPtr).m_overlapped;

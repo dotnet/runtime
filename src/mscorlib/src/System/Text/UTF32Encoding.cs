@@ -296,7 +296,7 @@ namespace System.Text
 
             // Check for overflows.
             if (byteCount < 0)
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString(
+                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString(
                     "ArgumentOutOfRange_GetByteCountOverflow"));
 
             // Shouldn't have anything in fallback buffer for GetByteCount
@@ -635,7 +635,7 @@ namespace System.Text
 
             // Check for overflows.
             if (charCount < 0)
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_GetByteCountOverflow"));
+                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_GetByteCountOverflow"));
 
             // Shouldn't have anything in fallback buffer for GetCharCount
             // (don't have to check m_throwOnOverflow for chars or count)
@@ -885,7 +885,7 @@ namespace System.Text
         public override int GetMaxByteCount(int charCount)
         {
             if (charCount < 0)
-               throw new ArgumentOutOfRangeException("charCount",
+               throw new ArgumentOutOfRangeException(nameof(charCount),
                     Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
 
@@ -899,7 +899,7 @@ namespace System.Text
             byteCount *= 4;
 
             if (byteCount > 0x7fffffff)
-                throw new ArgumentOutOfRangeException("charCount", Environment.GetResourceString("ArgumentOutOfRange_GetByteCountOverflow"));
+                throw new ArgumentOutOfRangeException(nameof(charCount), Environment.GetResourceString("ArgumentOutOfRange_GetByteCountOverflow"));
 
             return (int)byteCount;
         }
@@ -908,7 +908,7 @@ namespace System.Text
         public override int GetMaxCharCount(int byteCount)
         {
             if (byteCount < 0)
-               throw new ArgumentOutOfRangeException("byteCount",
+               throw new ArgumentOutOfRangeException(nameof(byteCount),
                     Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
 
@@ -929,7 +929,7 @@ namespace System.Text
             }
 
             if (charCount > 0x7fffffff)
-                throw new ArgumentOutOfRangeException("byteCount", Environment.GetResourceString("ArgumentOutOfRange_GetCharCountOverflow"));
+                throw new ArgumentOutOfRangeException(nameof(byteCount), Environment.GetResourceString("ArgumentOutOfRange_GetCharCountOverflow"));
 
             return (int)charCount;
         }

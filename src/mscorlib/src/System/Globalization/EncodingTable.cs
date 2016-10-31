@@ -94,7 +94,7 @@ namespace System.Globalization
             throw new ArgumentException(
                 String.Format(
                     CultureInfo.CurrentCulture,
-                    Environment.GetResourceString("Argument_EncodingNotSupported"), name), "name");
+                    Environment.GetResourceString("Argument_EncodingNotSupported"), name), nameof(name));
         }
 
         // Return a list of all EncodingInfo objects describing all of our encodings
@@ -136,7 +136,7 @@ namespace System.Globalization
         internal static int GetCodePageFromName(String name)
         {   
             if (name==null) {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
             Contract.EndContractBlock();
 

@@ -401,7 +401,7 @@ namespace System.IO {
         public virtual int EndRead(IAsyncResult asyncResult)
         {
             if (asyncResult == null)
-                throw new ArgumentNullException("asyncResult");
+                throw new ArgumentNullException(nameof(asyncResult));
             Contract.Ensures(Contract.Result<int>() >= 0);
             Contract.EndContractBlock();
 
@@ -593,7 +593,7 @@ namespace System.IO {
         public virtual void EndWrite(IAsyncResult asyncResult)
         {
             if (asyncResult==null)
-                throw new ArgumentNullException("asyncResult");
+                throw new ArgumentNullException(nameof(asyncResult));
             Contract.EndContractBlock();
 
             var writeTask = _activeReadWriteTask;
@@ -817,7 +817,7 @@ namespace System.IO {
         public static Stream Synchronized(Stream stream) 
         {
             if (stream==null)
-                throw new ArgumentNullException("stream");
+                throw new ArgumentNullException(nameof(stream));
             Contract.Ensures(Contract.Result<Stream>() != null);
             Contract.EndContractBlock();
             if (stream is SyncStream)
@@ -970,7 +970,7 @@ namespace System.IO {
             public override int EndRead(IAsyncResult asyncResult)
             {
                 if (asyncResult == null)
-                    throw new ArgumentNullException("asyncResult");
+                    throw new ArgumentNullException(nameof(asyncResult));
                 Contract.EndContractBlock();
 
                 return BlockingEndRead(asyncResult);
@@ -987,7 +987,7 @@ namespace System.IO {
             public override void EndWrite(IAsyncResult asyncResult)
             {
                 if (asyncResult == null)
-                    throw new ArgumentNullException("asyncResult");
+                    throw new ArgumentNullException(nameof(asyncResult));
                 Contract.EndContractBlock();
 
                 BlockingEndWrite(asyncResult);
@@ -1133,7 +1133,7 @@ namespace System.IO {
             internal SyncStream(Stream stream)
             {
                 if (stream == null)
-                    throw new ArgumentNullException("stream");
+                    throw new ArgumentNullException(nameof(stream));
                 Contract.EndContractBlock();
                 _stream = stream;
             }
@@ -1270,7 +1270,7 @@ namespace System.IO {
             public override int EndRead(IAsyncResult asyncResult)
             {
                 if (asyncResult == null)
-                    throw new ArgumentNullException("asyncResult");
+                    throw new ArgumentNullException(nameof(asyncResult));
                 Contract.Ensures(Contract.Result<int>() >= 0);
                 Contract.EndContractBlock();
 
@@ -1324,7 +1324,7 @@ namespace System.IO {
             public override void EndWrite(IAsyncResult asyncResult)
             {
                 if (asyncResult == null)
-                    throw new ArgumentNullException("asyncResult");
+                    throw new ArgumentNullException(nameof(asyncResult));
                 Contract.EndContractBlock();
 
                 lock(_stream)

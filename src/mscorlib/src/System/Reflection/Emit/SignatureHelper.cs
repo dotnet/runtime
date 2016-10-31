@@ -123,7 +123,7 @@ namespace System.Reflection.Emit
             }
             else
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_UnknownUnmanagedCallConv"), "unmanagedCallConv");                          
+                throw new ArgumentException(Environment.GetResourceString("Argument_UnknownUnmanagedCallConv"), nameof(unmanagedCallConv));                          
             }
             
             sigHelp = new SignatureHelper(mod, intCall, returnType, null, null);
@@ -193,15 +193,15 @@ namespace System.Reflection.Emit
         }
         
         [System.Security.SecurityCritical]  // auto-generated
-        internal static SignatureHelper GetTypeSigToken(Module mod, Type type)
+        internal static SignatureHelper GetTypeSigToken(Module module, Type type)
         {
-            if (mod == null)
-                throw new ArgumentNullException("module");
+            if (module == null)
+                throw new ArgumentNullException(nameof(module));
 
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
 
-            return new SignatureHelper(mod, type);
+            return new SignatureHelper(module, type);
         }
         #endregion
 
@@ -315,13 +315,13 @@ namespace System.Reflection.Emit
                     Type t = optionalCustomModifiers[i];
 
                     if (t == null)
-                        throw new ArgumentNullException("optionalCustomModifiers");
+                        throw new ArgumentNullException(nameof(optionalCustomModifiers));
 
                     if (t.HasElementType)
-                        throw new ArgumentException(Environment.GetResourceString("Argument_ArraysInvalid"), "optionalCustomModifiers");
+                        throw new ArgumentException(Environment.GetResourceString("Argument_ArraysInvalid"), nameof(optionalCustomModifiers));
 
                     if (t.ContainsGenericParameters)
-                        throw new ArgumentException(Environment.GetResourceString("Argument_GenericsInvalid"), "optionalCustomModifiers");
+                        throw new ArgumentException(Environment.GetResourceString("Argument_GenericsInvalid"), nameof(optionalCustomModifiers));
 
                     AddElementType(CorElementType.CModOpt);
 
@@ -338,13 +338,13 @@ namespace System.Reflection.Emit
                     Type t = requiredCustomModifiers[i];
 
                     if (t == null)
-                        throw new ArgumentNullException("requiredCustomModifiers");
+                        throw new ArgumentNullException(nameof(requiredCustomModifiers));
 
                     if (t.HasElementType)
-                        throw new ArgumentException(Environment.GetResourceString("Argument_ArraysInvalid"), "requiredCustomModifiers");
+                        throw new ArgumentException(Environment.GetResourceString("Argument_ArraysInvalid"), nameof(requiredCustomModifiers));
 
                     if (t.ContainsGenericParameters)
-                        throw new ArgumentException(Environment.GetResourceString("Argument_GenericsInvalid"), "requiredCustomModifiers");
+                        throw new ArgumentException(Environment.GetResourceString("Argument_GenericsInvalid"), nameof(requiredCustomModifiers));
 
                     AddElementType(CorElementType.CModReqd);
 
@@ -826,7 +826,7 @@ namespace System.Reflection.Emit
         public void AddArgument(Type argument, bool pinned)
         {
             if (argument == null)
-                throw new ArgumentNullException("argument");
+                throw new ArgumentNullException(nameof(argument));
 
             IncrementArgCounts();
             AddOneArgTypeHelper(argument, pinned);
@@ -835,10 +835,10 @@ namespace System.Reflection.Emit
         public void AddArguments(Type[] arguments, Type[][] requiredCustomModifiers, Type[][] optionalCustomModifiers)
         {
             if (requiredCustomModifiers != null && (arguments == null || requiredCustomModifiers.Length != arguments.Length))
-                throw new ArgumentException(Environment.GetResourceString("Argument_MismatchedArrays", "requiredCustomModifiers", "arguments"));
+                throw new ArgumentException(Environment.GetResourceString("Argument_MismatchedArrays", "requiredCustomModifiers", nameof(arguments)));
 
             if (optionalCustomModifiers != null && (arguments == null || optionalCustomModifiers.Length != arguments.Length))
-                throw new ArgumentException(Environment.GetResourceString("Argument_MismatchedArrays", "optionalCustomModifiers", "arguments"));
+                throw new ArgumentException(Environment.GetResourceString("Argument_MismatchedArrays", "optionalCustomModifiers", nameof(arguments)));
 
             if (arguments != null)
             {
@@ -858,7 +858,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(Environment.GetResourceString("Argument_SigIsFinalized"));
     
             if (argument == null)
-                throw new ArgumentNullException("argument");
+                throw new ArgumentNullException(nameof(argument));
 
             IncrementArgCounts();
     

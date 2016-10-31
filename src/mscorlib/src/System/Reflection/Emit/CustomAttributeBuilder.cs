@@ -109,17 +109,17 @@ namespace System.Reflection.Emit {
                                                  FieldInfo[] namedFields, Object[] fieldValues)
         {
             if (con == null)
-                throw new ArgumentNullException("con");
+                throw new ArgumentNullException(nameof(con));
             if (constructorArgs == null)
-                throw new ArgumentNullException("constructorArgs");
+                throw new ArgumentNullException(nameof(constructorArgs));
             if (namedProperties == null)
-                throw new ArgumentNullException("namedProperties");
+                throw new ArgumentNullException(nameof(namedProperties));
             if (propertyValues == null)
-                throw new ArgumentNullException("propertyValues");
+                throw new ArgumentNullException(nameof(propertyValues));
             if (namedFields == null)
-                throw new ArgumentNullException("namedFields");
+                throw new ArgumentNullException(nameof(namedFields));
             if (fieldValues == null)
-                throw new ArgumentNullException("fieldValues");
+                throw new ArgumentNullException(nameof(fieldValues));
             if (namedProperties.Length != propertyValues.Length)
                 throw new ArgumentException(Environment.GetResourceString("Arg_ArrayLengthsDiffer"), "namedProperties, propertyValues");
             if (namedFields.Length != fieldValues.Length)

@@ -60,7 +60,7 @@ namespace System.Threading
 #if !PLATFORM_UNIX
             if (name != null && System.IO.Path.MaxPath < name.Length)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Path.MaxPath), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Path.MaxPath), nameof(name));
             }
 #endif
             Contract.EndContractBlock();
@@ -94,7 +94,7 @@ namespace System.Threading
 #if !PLATFORM_UNIX
             if (name != null && System.IO.Path.MaxPath < name.Length)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Path.MaxPath), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Path.MaxPath), nameof(name));
             }
 #endif
             Contract.EndContractBlock();
@@ -321,17 +321,17 @@ namespace System.Threading
         {
             if (name == null)
             {
-                throw new ArgumentNullException("name", Environment.GetResourceString("ArgumentNull_WithParamName"));
+                throw new ArgumentNullException(nameof(name), Environment.GetResourceString("ArgumentNull_WithParamName"));
             }
 
             if(name.Length  == 0)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(name));
             }
 #if !PLATFORM_UNIX
             if(System.IO.Path.MaxPath < name.Length)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Path.MaxPath), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Path.MaxPath), nameof(name));
             }
 #endif
             Contract.EndContractBlock();
@@ -357,7 +357,7 @@ namespace System.Threading
                 if (name != null && errorCode == Win32Native.ERROR_FILENAME_EXCED_RANGE)
                 {
                     // On Unix, length validation is done by CoreCLR's PAL after converting to utf-8
-                    throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Path.MaxPathComponentLength), "name");
+                    throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Path.MaxPathComponentLength), nameof(name));
                 }
 #endif
 
@@ -477,7 +477,7 @@ namespace System.Threading
         public void SetAccessControl(MutexSecurity mutexSecurity)
         {
             if (mutexSecurity == null)
-                throw new ArgumentNullException("mutexSecurity");
+                throw new ArgumentNullException(nameof(mutexSecurity));
             Contract.EndContractBlock();
 
             mutexSecurity.Persist(safeWaitHandle);

@@ -347,7 +347,7 @@ namespace System.Reflection
                     if (p == null) 
                         p = GetParametersNoCopy();
                     if (p[i].DefaultValue == System.DBNull.Value)
-                        throw new ArgumentException(Environment.GetResourceString("Arg_VarMissNull"),"parameters");
+                        throw new ArgumentException(Environment.GetResourceString("Arg_VarMissNull"),nameof(parameters));
                     arg = p[i].DefaultValue;
                 }
                 copyOfParameters[i] = argRT.CheckValue(arg, binder, culture, invokeAttr);

@@ -36,7 +36,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal V Indexer_Get<K, V>(K key)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             Contract.EndContractBlock();
 
             IMapView<K, V> _this = JitHelpers.UnsafeCast<IMapView<K, V>>(this);
@@ -67,7 +67,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal bool ContainsKey<K, V>(K key)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
 
             IMapView<K, V> _this = JitHelpers.UnsafeCast<IMapView<K, V>>(this);
             return _this.HasKey(key);
@@ -78,7 +78,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal bool TryGetValue<K, V>(K key, out V value)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
 
             IMapView<K, V> _this = JitHelpers.UnsafeCast<IMapView<K, V>>(this);
 
@@ -137,7 +137,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         public ReadOnlyDictionaryKeyCollection(IReadOnlyDictionary<TKey, TValue> dictionary)
         {
             if (dictionary == null)
-                throw new ArgumentNullException("dictionary");
+                throw new ArgumentNullException(nameof(dictionary));
 
             this.dictionary = dictionary;
         }
@@ -146,9 +146,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         public void CopyTo(TKey[] array, int index)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             if (index < 0)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             if (array.Length <= index && this.Count > 0)
                 throw new ArgumentException(Environment.GetResourceString("Arg_IndexOutOfRangeException"));
             if (array.Length - index < dictionary.Count)
@@ -192,7 +192,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         public ReadOnlyDictionaryKeyEnumerator(IReadOnlyDictionary<TKey, TValue> dictionary)
         {
             if (dictionary == null)
-                throw new ArgumentNullException("dictionary");
+                throw new ArgumentNullException(nameof(dictionary));
 
             this.dictionary = dictionary;
             this.enumeration = dictionary.GetEnumerator();
@@ -232,7 +232,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         public ReadOnlyDictionaryValueCollection(IReadOnlyDictionary<TKey, TValue> dictionary)
         {
             if (dictionary == null)
-                throw new ArgumentNullException("dictionary");
+                throw new ArgumentNullException(nameof(dictionary));
 
             this.dictionary = dictionary;
         }
@@ -241,9 +241,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         public void CopyTo(TValue[] array, int index)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             if (index < 0)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             if (array.Length <= index && this.Count > 0)
                 throw new ArgumentException(Environment.GetResourceString("Arg_IndexOutOfRangeException"));
             if (array.Length - index < dictionary.Count)
@@ -291,7 +291,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         public ReadOnlyDictionaryValueEnumerator(IReadOnlyDictionary<TKey, TValue> dictionary)
         {
             if (dictionary == null)
-                throw new ArgumentNullException("dictionary");
+                throw new ArgumentNullException(nameof(dictionary));
 
             this.dictionary = dictionary;
             this.enumeration = dictionary.GetEnumerator();

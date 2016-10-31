@@ -193,7 +193,7 @@ namespace System.Reflection {
         static public AssemblyName GetAssemblyName(String assemblyFile)
         {
             if(assemblyFile == null)
-                throw new ArgumentNullException("assemblyFile");
+                throw new ArgumentNullException(nameof(assemblyFile));
             Contract.EndContractBlock();
 
             // Assembly.GetNameInternal() will not demand path discovery 
@@ -299,7 +299,7 @@ namespace System.Reflection {
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info == null)
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
 
             //Allocate the serialization info and serialize our static data.
@@ -364,7 +364,7 @@ namespace System.Reflection {
         public AssemblyName(String assemblyName)
         {
             if (assemblyName == null)
-                throw new ArgumentNullException("assemblyName");
+                throw new ArgumentNullException(nameof(assemblyName));
             Contract.EndContractBlock();
             if ((assemblyName.Length == 0) ||
                 (assemblyName[0] == '\0'))

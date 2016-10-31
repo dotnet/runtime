@@ -87,12 +87,12 @@ namespace System {
         public DateTimeOffset(DateTime dateTime, TimeSpan offset) {
             if (dateTime.Kind == DateTimeKind.Local) {
                 if (offset != TimeZoneInfo.GetLocalUtcOffset(dateTime, TimeZoneInfoOptions.NoThrowOnInvalidTime)) {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_OffsetLocalMismatch"), "offset");
+                    throw new ArgumentException(Environment.GetResourceString("Argument_OffsetLocalMismatch"), nameof(offset));
                 }
             }
             else if (dateTime.Kind == DateTimeKind.Utc) {
                 if (offset != TimeSpan.Zero) {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_OffsetUtcMismatch"), "offset");
+                    throw new ArgumentException(Environment.GetResourceString("Argument_OffsetUtcMismatch"), nameof(offset));
                 }
             }
             m_offsetMinutes = ValidateOffset(offset);
@@ -479,7 +479,7 @@ namespace System {
 
         public static DateTimeOffset FromUnixTimeSeconds(long seconds) {
             if (seconds < UnixMinSeconds || seconds > UnixMaxSeconds) {
-                throw new ArgumentOutOfRangeException("seconds",
+                throw new ArgumentOutOfRangeException(nameof(seconds),
                     string.Format(Environment.GetResourceString("ArgumentOutOfRange_Range"), UnixMinSeconds, UnixMaxSeconds));
             }
 
@@ -492,7 +492,7 @@ namespace System {
             const long MaxMilliseconds = DateTime.MaxTicks / TimeSpan.TicksPerMillisecond - UnixEpochMilliseconds;
 
             if (milliseconds < MinMilliseconds || milliseconds > MaxMilliseconds) {
-                throw new ArgumentOutOfRangeException("milliseconds",
+                throw new ArgumentOutOfRangeException(nameof(milliseconds),
                     string.Format(Environment.GetResourceString("ArgumentOutOfRange_Range"), MinMilliseconds, MaxMilliseconds));
             }
 
@@ -516,7 +516,7 @@ namespace System {
         [System.Security.SecurityCritical]  // auto-generated_required
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context) {
             if (info == null) {
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             }
 
             Contract.EndContractBlock();
@@ -528,7 +528,7 @@ namespace System {
 
         DateTimeOffset(SerializationInfo info, StreamingContext context) {
             if (info == null) {
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             }
 
             m_dateTime      = (DateTime)info.GetValue("DateTime", typeof(DateTime));
@@ -739,10 +739,10 @@ namespace System {
         private static Int16 ValidateOffset(TimeSpan offset) {
             Int64 ticks = offset.Ticks;
             if (ticks % TimeSpan.TicksPerMinute != 0) {
-                throw new ArgumentException(Environment.GetResourceString("Argument_OffsetPrecision"), "offset");
+                throw new ArgumentException(Environment.GetResourceString("Argument_OffsetPrecision"), nameof(offset));
             }
             if (ticks < MinOffset || ticks > MaxOffset) {
-                throw new ArgumentOutOfRangeException("offset", Environment.GetResourceString("Argument_OffsetOutOfRange"));
+                throw new ArgumentOutOfRangeException(nameof(offset), Environment.GetResourceString("Argument_OffsetOutOfRange"));
             }
             return (Int16)(offset.Ticks / TimeSpan.TicksPerMinute);
         }
@@ -756,7 +756,7 @@ namespace System {
             // 14 hours and the DateTime instance is more than that distance from the boundaries of Int64.
             Int64 utcTicks = dateTime.Ticks - offset.Ticks;
             if (utcTicks < DateTime.MinTicks || utcTicks > DateTime.MaxTicks) {                
-                throw new ArgumentOutOfRangeException("offset", Environment.GetResourceString("Argument_UTCOutOfRange"));                
+                throw new ArgumentOutOfRangeException(nameof(offset), Environment.GetResourceString("Argument_UTCOutOfRange"));                
             }
             // make sure the Kind is set to Unspecified
             //

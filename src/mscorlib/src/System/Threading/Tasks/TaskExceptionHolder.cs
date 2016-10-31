@@ -297,7 +297,7 @@ namespace System.Threading.Tasks
                             // Anything else is a programming error
                         else
                         {
-                            throw new ArgumentException(Environment.GetResourceString("TaskExceptionHolder_UnknownExceptionType"), "exceptionObject");
+                            throw new ArgumentException(Environment.GetResourceString("TaskExceptionHolder_UnknownExceptionType"), nameof(exceptionObject));
                         }
                     }
                 }

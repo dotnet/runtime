@@ -21,7 +21,7 @@ namespace System.Text
         public DecoderReplacementFallback(String replacement)
         {
             if (replacement == null)
-                throw new ArgumentNullException("replacement");
+                throw new ArgumentNullException(nameof(replacement));
             Contract.EndContractBlock();
 
             // Make sure it doesn't have bad surrogate pairs
@@ -58,7 +58,7 @@ namespace System.Text
                     break;
             }
             if (bFoundHigh)
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidCharSequenceNoIndex", "replacement"));
+                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidCharSequenceNoIndex", nameof(replacement)));
 
             strDefault = replacement;
         }

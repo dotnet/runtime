@@ -223,7 +223,7 @@ namespace System.Reflection.Emit
         public void AddDeclarativeSecurity(SecurityAction action, PermissionSet pset)
         {
             if (pset == null)
-                throw new ArgumentNullException("pset");
+                throw new ArgumentNullException(nameof(pset));
 
 #pragma warning disable 618
             if (!Enum.IsDefined(typeof(SecurityAction), action) ||
@@ -231,7 +231,7 @@ namespace System.Reflection.Emit
                 action == SecurityAction.RequestOptional ||
                 action == SecurityAction.RequestRefuse)
             {
-                throw new ArgumentOutOfRangeException("action");
+                throw new ArgumentOutOfRangeException(nameof(action));
             }
 #pragma warning restore 618
             Contract.EndContractBlock();

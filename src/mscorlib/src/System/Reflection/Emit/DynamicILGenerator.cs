@@ -61,7 +61,7 @@ namespace System.Reflection.Emit
         {
             LocalBuilder localBuilder;
             if (localType == null)
-                throw new ArgumentNullException("localType");
+                throw new ArgumentNullException(nameof(localType));
             Contract.EndContractBlock();
 
             RuntimeType rtType = localType as RuntimeType;
@@ -90,7 +90,7 @@ namespace System.Reflection.Emit
         public override void Emit(OpCode opcode, MethodInfo meth)
         {
             if (meth == null)
-                throw new ArgumentNullException("meth");
+                throw new ArgumentNullException(nameof(meth));
             Contract.EndContractBlock();
 
             int stackchange = 0;
@@ -100,7 +100,7 @@ namespace System.Reflection.Emit
             {
                 RuntimeMethodInfo rtMeth = meth as RuntimeMethodInfo;
                 if (rtMeth == null)
-                    throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeMethodInfo"), "meth");
+                    throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeMethodInfo"), nameof(meth));
 
                 RuntimeType declaringType = rtMeth.GetRuntimeType();
                 if (declaringType != null && (declaringType.IsGenericType || declaringType.IsArray))
@@ -147,12 +147,12 @@ namespace System.Reflection.Emit
         public override void Emit(OpCode opcode, ConstructorInfo con)
         {
             if (con == null)
-                throw new ArgumentNullException("con");
+                throw new ArgumentNullException(nameof(con));
             Contract.EndContractBlock();
 
             RuntimeConstructorInfo rtConstructor = con as RuntimeConstructorInfo;
             if (rtConstructor == null)
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeMethodInfo"), "con");
+                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeMethodInfo"), nameof(con));
 
             RuntimeType declaringType = rtConstructor.GetRuntimeType();
             int token;
@@ -175,7 +175,7 @@ namespace System.Reflection.Emit
         public override void Emit(OpCode opcode, Type type)
         {
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             Contract.EndContractBlock();
 
             RuntimeType rtType = type as RuntimeType;
@@ -192,12 +192,12 @@ namespace System.Reflection.Emit
         public override void Emit(OpCode opcode, FieldInfo field)
         {
             if (field == null)
-                throw new ArgumentNullException("field");
+                throw new ArgumentNullException(nameof(field));
             Contract.EndContractBlock();
 
             RuntimeFieldInfo runtimeField = field as RuntimeFieldInfo;
             if (runtimeField == null)
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeFieldInfo"), "field");
+                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeFieldInfo"), nameof(field));
 
             int token;
             if (field.DeclaringType == null)
@@ -213,7 +213,7 @@ namespace System.Reflection.Emit
         public override void Emit(OpCode opcode, String str)
         {
             if (str == null)
-                throw new ArgumentNullException("str");
+                throw new ArgumentNullException(nameof(str));
             Contract.EndContractBlock();
 
             int tempVal = GetTokenForString(str);
@@ -310,16 +310,16 @@ namespace System.Reflection.Emit
         public override void EmitCall(OpCode opcode, MethodInfo methodInfo, Type[] optionalParameterTypes)
         {
             if (methodInfo == null)
-                throw new ArgumentNullException("methodInfo");
+                throw new ArgumentNullException(nameof(methodInfo));
 
             if (!(opcode.Equals(OpCodes.Call) || opcode.Equals(OpCodes.Callvirt) || opcode.Equals(OpCodes.Newobj)))
-                throw new ArgumentException(Environment.GetResourceString("Argument_NotMethodCallOpcode"), "opcode");
+                throw new ArgumentException(Environment.GetResourceString("Argument_NotMethodCallOpcode"), nameof(opcode));
 
             if (methodInfo.ContainsGenericParameters)
-                throw new ArgumentException(Environment.GetResourceString("Argument_GenericsInvalid"), "methodInfo");
+                throw new ArgumentException(Environment.GetResourceString("Argument_GenericsInvalid"), nameof(methodInfo));
 
             if (methodInfo.DeclaringType != null && methodInfo.DeclaringType.ContainsGenericParameters)
-                throw new ArgumentException(Environment.GetResourceString("Argument_GenericsInvalid"), "methodInfo");
+                throw new ArgumentException(Environment.GetResourceString("Argument_GenericsInvalid"), nameof(methodInfo));
             Contract.EndContractBlock();
 
             int tk;
@@ -350,7 +350,7 @@ namespace System.Reflection.Emit
         public override void Emit(OpCode opcode, SignatureHelper signature)
         {
             if (signature == null)
-                throw new ArgumentNullException("signature");
+                throw new ArgumentNullException(nameof(signature));
             Contract.EndContractBlock();
 
             int stackchange = 0;
@@ -420,7 +420,7 @@ namespace System.Reflection.Emit
             {
                 // execute this branch if previous clause is Catch or Fault
                 if (exceptionType == null)
-                    throw new ArgumentNullException("exceptionType");
+                    throw new ArgumentNullException(nameof(exceptionType));
 
                 if (rtType == null)
                     throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeType"));
@@ -493,7 +493,7 @@ namespace System.Reflection.Emit
             DynamicMethod dm = methodInfo as DynamicMethod;
 
             if (rtMeth == null && dm == null)
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeMethodInfo"), "methodInfo");
+                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeMethodInfo"), nameof(methodInfo));
 
             ParameterInfo[] paramInfo = methodInfo.GetParametersNoCopy();
             if (paramInfo != null && paramInfo.Length != 0)
@@ -1068,10 +1068,10 @@ namespace System.Reflection.Emit
         public unsafe void SetCode(byte* code, int codeSize, int maxStackSize)
         {
             if (codeSize < 0)
-                throw new ArgumentOutOfRangeException("codeSize", Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
+                throw new ArgumentOutOfRangeException(nameof(codeSize), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
 
             if (codeSize > 0 && code == null)
-                throw new ArgumentNullException("code");
+                throw new ArgumentNullException(nameof(code));
             Contract.EndContractBlock();
 
             m_code = new byte[codeSize];
@@ -1094,10 +1094,10 @@ namespace System.Reflection.Emit
         public unsafe void SetExceptions(byte* exceptions, int exceptionsSize)
         {
             if (exceptionsSize < 0)
-                throw new ArgumentOutOfRangeException("exceptionsSize", Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
+                throw new ArgumentOutOfRangeException(nameof(exceptionsSize), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
 
             if (exceptionsSize > 0 && exceptions == null)
-                throw new ArgumentNullException("exceptions");
+                throw new ArgumentNullException(nameof(exceptions));
             Contract.EndContractBlock();
 
             m_exceptions = new byte[exceptionsSize];
@@ -1119,10 +1119,10 @@ namespace System.Reflection.Emit
         public unsafe void SetLocalSignature(byte* localSignature, int signatureSize)
         {
             if (signatureSize < 0)
-                throw new ArgumentOutOfRangeException("signatureSize", Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
+                throw new ArgumentOutOfRangeException(nameof(signatureSize), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
 
             if (signatureSize > 0 && localSignature == null)
-                throw new ArgumentNullException("localSignature");
+                throw new ArgumentNullException(nameof(localSignature));
             Contract.EndContractBlock();
 
             m_localSignature = new byte[signatureSize];

@@ -456,10 +456,10 @@ namespace System {
         public static Attribute[] GetCustomAttributes(MemberInfo element, Type type, bool inherit)
         {
             if (element == null)
-                throw new ArgumentNullException("element");
+                throw new ArgumentNullException(nameof(element));
 
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             
             if (!type.IsSubclassOf(typeof(Attribute)) && type != typeof(Attribute))
                 throw new ArgumentException(Environment.GetResourceString("Argument_MustHaveAttributeBaseClass"));
@@ -486,7 +486,7 @@ namespace System {
         public static Attribute[] GetCustomAttributes(MemberInfo element, bool inherit)
         {
             if (element == null)
-                throw new ArgumentNullException("element");
+                throw new ArgumentNullException(nameof(element));
             Contract.EndContractBlock();
 
             switch (element.MemberType)
@@ -511,10 +511,10 @@ namespace System {
         {
             // Returns true if a custom attribute subclass of attributeType class/interface with inheritance walk
             if (element == null)
-                throw new ArgumentNullException("element");
+                throw new ArgumentNullException(nameof(element));
 
             if (attributeType == null)
-                throw new ArgumentNullException("attributeType");
+                throw new ArgumentNullException(nameof(attributeType));
             
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
                 throw new ArgumentException(Environment.GetResourceString("Argument_MustHaveAttributeBaseClass"));
@@ -568,16 +568,16 @@ namespace System {
         public static Attribute[] GetCustomAttributes(ParameterInfo element, Type attributeType, bool inherit)
         {
             if (element == null)
-                throw new ArgumentNullException("element");
+                throw new ArgumentNullException(nameof(element));
 
             if (attributeType == null)
-                throw new ArgumentNullException("attributeType");
+                throw new ArgumentNullException(nameof(attributeType));
             
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
                 throw new ArgumentException(Environment.GetResourceString("Argument_MustHaveAttributeBaseClass"));
 
             if (element.Member == null)
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidParameterInfo"), "element");
+                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidParameterInfo"), nameof(element));
 
             Contract.EndContractBlock();
 
@@ -591,10 +591,10 @@ namespace System {
         public static Attribute[] GetCustomAttributes(ParameterInfo element, bool inherit)
         {
             if (element == null)
-                throw new ArgumentNullException("element");
+                throw new ArgumentNullException(nameof(element));
 
             if (element.Member == null)
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidParameterInfo"), "element");
+                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidParameterInfo"), nameof(element));
 
             Contract.EndContractBlock();
 
@@ -614,10 +614,10 @@ namespace System {
         {
             // Returns true is a custom attribute subclass of attributeType class/interface with inheritance walk
             if (element == null)
-                throw new ArgumentNullException("element");
+                throw new ArgumentNullException(nameof(element));
 
             if (attributeType == null)
-                throw new ArgumentNullException("attributeType");
+                throw new ArgumentNullException(nameof(attributeType));
             
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
                 throw new ArgumentException(Environment.GetResourceString("Argument_MustHaveAttributeBaseClass"));
@@ -681,7 +681,7 @@ namespace System {
         public static Attribute[] GetCustomAttributes(Module element, bool inherit)
         {
             if (element == null)
-                throw new ArgumentNullException("element");
+                throw new ArgumentNullException(nameof(element));
             Contract.EndContractBlock();
 
             return (Attribute[])element.GetCustomAttributes(typeof(Attribute), inherit);
@@ -690,10 +690,10 @@ namespace System {
         public static Attribute[] GetCustomAttributes(Module element, Type attributeType, bool inherit)
         {
             if (element == null)
-                throw new ArgumentNullException("element");
+                throw new ArgumentNullException(nameof(element));
 
             if (attributeType == null)
-                throw new ArgumentNullException("attributeType");
+                throw new ArgumentNullException(nameof(attributeType));
 
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
                 throw new ArgumentException(Environment.GetResourceString("Argument_MustHaveAttributeBaseClass"));
@@ -711,10 +711,10 @@ namespace System {
         {
             // Returns true is a custom attribute subclass of attributeType class/interface with no inheritance walk
             if (element == null)
-                throw new ArgumentNullException("element");
+                throw new ArgumentNullException(nameof(element));
 
             if (attributeType == null)
-                throw new ArgumentNullException("attributeType");
+                throw new ArgumentNullException(nameof(attributeType));
 
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
                 throw new ArgumentException(Environment.GetResourceString("Argument_MustHaveAttributeBaseClass"));
@@ -754,10 +754,10 @@ namespace System {
         public static Attribute[] GetCustomAttributes(Assembly element, Type attributeType, bool inherit)
         {
             if (element == null)
-                throw new ArgumentNullException("element");
+                throw new ArgumentNullException(nameof(element));
 
             if (attributeType == null)
-                throw new ArgumentNullException("attributeType");
+                throw new ArgumentNullException(nameof(attributeType));
 
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
                 throw new ArgumentException(Environment.GetResourceString("Argument_MustHaveAttributeBaseClass"));
@@ -774,7 +774,7 @@ namespace System {
         public static Attribute[] GetCustomAttributes(Assembly element, bool inherit)
         {
             if (element == null)
-                throw new ArgumentNullException("element");
+                throw new ArgumentNullException(nameof(element));
             Contract.EndContractBlock();
 
             return (Attribute[])element.GetCustomAttributes(typeof(Attribute), inherit);
@@ -789,10 +789,10 @@ namespace System {
         {
             // Returns true is a custom attribute subclass of attributeType class/interface with no inheritance walk
             if (element == null)
-                throw new ArgumentNullException("element");
+                throw new ArgumentNullException(nameof(element));
 
             if (attributeType == null)
-                throw new ArgumentNullException("attributeType");
+                throw new ArgumentNullException(nameof(attributeType));
 
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
                 throw new ArgumentException(Environment.GetResourceString("Argument_MustHaveAttributeBaseClass"));

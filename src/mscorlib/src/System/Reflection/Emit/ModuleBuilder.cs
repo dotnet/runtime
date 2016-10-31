@@ -487,7 +487,7 @@ namespace System.Reflection.Emit
             // Helper to get constructor token. If usingRef is true, we will never use the def token
 
             if (con == null)
-                throw new ArgumentNullException("con");
+                throw new ArgumentNullException(nameof(con));
             Contract.EndContractBlock();
 
             int tr;
@@ -1271,9 +1271,9 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_BadResourceContainer"));
 
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(name));
             Contract.Ensures(Contract.Result<IResourceWriter>() != null);
             Contract.EndContractBlock();
 
@@ -1299,10 +1299,10 @@ namespace System.Reflection.Emit
         public void DefineManifestResource(String name, Stream stream, ResourceAttributes attribute)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             
             if (stream == null)
-                throw new ArgumentNullException("stream");
+                throw new ArgumentNullException(nameof(stream));
             Contract.EndContractBlock();
 
             // Define embedded managed resource to be stored in this module
@@ -1321,9 +1321,9 @@ namespace System.Reflection.Emit
            Contract.EndContractBlock();
 
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(name));
         
             if (m_assemblyBuilder.IsPersistable())
             {
@@ -1353,7 +1353,7 @@ namespace System.Reflection.Emit
         internal void DefineUnmanagedResourceInternalNoLock(Byte[] resource)
         {
             if (resource == null)
-                throw new ArgumentNullException("resource");
+                throw new ArgumentNullException(nameof(resource));
             Contract.EndContractBlock();
 
             if (m_moduleData.m_strResourceFileName != null || m_moduleData.m_resourceBytes != null)
@@ -1376,7 +1376,7 @@ namespace System.Reflection.Emit
         internal void DefineUnmanagedResourceFileInternalNoLock(String resourceFileName)
         {
             if (resourceFileName == null)
-                throw new ArgumentNullException("resourceFileName");
+                throw new ArgumentNullException(nameof(resourceFileName));
             Contract.EndContractBlock();
 
             if (m_moduleData.m_resourceBytes != null || m_moduleData.m_strResourceFileName != null)
@@ -1441,10 +1441,10 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_GlobalsHaveBeenCreated"));
         
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             if (name.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(name));
         
             if ((attributes & MethodAttributes.Static) == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_GlobalFunctionHasToBeStatic"));
@@ -1636,7 +1636,7 @@ namespace System.Reflection.Emit
         private TypeToken GetTypeTokenWorkerNoLock(Type type, bool getGenericDefinition)
         {
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             Contract.EndContractBlock();
 
             CheckContext(type);
@@ -1769,7 +1769,7 @@ namespace System.Reflection.Emit
             // Return a MemberRef token if MethodInfo is not defined in this module. Or 
             // return the MethodDef token. 
             if (method == null)
-                throw new ArgumentNullException("method");
+                throw new ArgumentNullException(nameof(method));
             Contract.EndContractBlock();
 
             int tr;
@@ -1878,7 +1878,7 @@ namespace System.Reflection.Emit
         {
             if (constructor == null)
             {
-                throw new ArgumentNullException("constructor");
+                throw new ArgumentNullException(nameof(constructor));
             }
 
             lock (SyncRoot)
@@ -1893,7 +1893,7 @@ namespace System.Reflection.Emit
         {
             if (method == null)
             {
-                throw new ArgumentNullException("method");
+                throw new ArgumentNullException(nameof(method));
             }
 
             // useMethodDef flag only affects the result if we pass in a generic method definition. 
@@ -1992,13 +1992,13 @@ namespace System.Reflection.Emit
             Type returnType, Type[] parameterTypes)
         {
             if (arrayClass == null)
-                throw new ArgumentNullException("arrayClass");
+                throw new ArgumentNullException(nameof(arrayClass));
 
             if (methodName == null)
-                throw new ArgumentNullException("methodName");
+                throw new ArgumentNullException(nameof(methodName));
 
             if (methodName.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "methodName");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(methodName));
 
             if (arrayClass.IsArray == false)
                 throw new ArgumentException(Environment.GetResourceString("Argument_HasToBeArrayClass")); 
@@ -2061,7 +2061,7 @@ namespace System.Reflection.Emit
         private FieldToken GetFieldTokenNoLock(FieldInfo field) 
         {
             if (field == null) {
-                throw new ArgumentNullException("con");
+                throw new ArgumentNullException(nameof(field));
             }
             Contract.EndContractBlock();
 
@@ -2151,7 +2151,7 @@ namespace System.Reflection.Emit
         {
             if (str == null)
             {
-                throw new ArgumentNullException("str");
+                throw new ArgumentNullException(nameof(str));
             }
             Contract.EndContractBlock();
 
@@ -2168,7 +2168,7 @@ namespace System.Reflection.Emit
 
             if (sigHelper == null)
             {
-                throw new ArgumentNullException("sigHelper");
+                throw new ArgumentNullException(nameof(sigHelper));
             }
             Contract.EndContractBlock();
 
@@ -2183,7 +2183,7 @@ namespace System.Reflection.Emit
         public SignatureToken GetSignatureToken(byte[] sigBytes, int sigLength)
         {
             if (sigBytes == null)
-                throw new ArgumentNullException("sigBytes");
+                throw new ArgumentNullException(nameof(sigBytes));
             Contract.EndContractBlock();
 
             byte[] localSigBytes = new byte[sigBytes.Length];
@@ -2205,9 +2205,9 @@ namespace System.Reflection.Emit
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             if (con == null)
-                throw new ArgumentNullException("con");
+                throw new ArgumentNullException(nameof(con));
             if (binaryAttribute == null)
-                throw new ArgumentNullException("binaryAttribute");
+                throw new ArgumentNullException(nameof(binaryAttribute));
             Contract.EndContractBlock();
             
             TypeBuilder.DefineCustomAttribute(
@@ -2223,7 +2223,7 @@ namespace System.Reflection.Emit
         {
             if (customBuilder == null)
             {
-                throw new ArgumentNullException("customBuilder");
+                throw new ArgumentNullException(nameof(customBuilder));
             }
             Contract.EndContractBlock();
 
@@ -2271,7 +2271,7 @@ namespace System.Reflection.Emit
         {
             // url cannot be null but can be an empty string 
             if (url == null)
-                throw new ArgumentNullException("url");
+                throw new ArgumentNullException(nameof(url));
             Contract.EndContractBlock();
 
             lock(SyncRoot)
@@ -2316,7 +2316,7 @@ namespace System.Reflection.Emit
 
             if (entryPoint == null)
             {
-                throw new ArgumentNullException("entryPoint");
+                throw new ArgumentNullException(nameof(entryPoint));
             }
             Contract.EndContractBlock();
         
