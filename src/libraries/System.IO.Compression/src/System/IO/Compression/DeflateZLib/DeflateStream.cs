@@ -687,14 +687,8 @@ namespace System.IO.Compression
                 return Task.FromCanceled<int>(cancellationToken);
             }
 
-            // The caller asked for a specific bufferSize, but we're going to end up potentially using two buffers:
-            // a buffer for storing the inflated output and passing along to the destination stream, and whatever
-            // buffer the source stream creates in its CopyToAsync implementation.  As such, we halve the buffer size,
-            // to split it across the two.
-            bufferSize = Math.Max(1, bufferSize / 2);
-
             // Do the copy
-            return new CopyToAsyncStream(this, destination, ArrayPool<byte>.Shared.Rent(bufferSize), cancellationToken).CopyFromSourceToDestination();
+            return new CopyToAsyncStream(this, destination, bufferSize, cancellationToken).CopyFromSourceToDestination();
         }
 
         private sealed class CopyToAsyncStream : Stream
@@ -702,19 +696,19 @@ namespace System.IO.Compression
             private readonly DeflateStream _deflateStream;
             private readonly Stream _destination;
             private readonly CancellationToken _cancellationToken;
-            private readonly byte[] _arrayPoolBuffer;
+            private byte[] _arrayPoolBuffer;
             private int _arrayPoolBufferHighWaterMark;
 
-            public CopyToAsyncStream(DeflateStream deflateStream, Stream destination, byte[] arrayPoolBuffer, CancellationToken cancellationToken)
+            public CopyToAsyncStream(DeflateStream deflateStream, Stream destination, int bufferSize, CancellationToken cancellationToken)
             {
                 Debug.Assert(deflateStream != null);
                 Debug.Assert(destination != null);
-                Debug.Assert(arrayPoolBuffer != null && arrayPoolBuffer.Length > 0);
+                Debug.Assert(bufferSize > 0);
 
                 _deflateStream = deflateStream;
                 _destination = destination;
-                _arrayPoolBuffer = arrayPoolBuffer;
                 _cancellationToken = cancellationToken;
+                _arrayPoolBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
             }
 
             public async Task CopyFromSourceToDestination()
@@ -743,6 +737,7 @@ namespace System.IO.Compression
 
                     Array.Clear(_arrayPoolBuffer, 0, _arrayPoolBufferHighWaterMark); // clear only the most we used
                     ArrayPool<byte>.Shared.Return(_arrayPoolBuffer, clearArray: false);
+                    _arrayPoolBuffer = null;
                 }
             }
 
