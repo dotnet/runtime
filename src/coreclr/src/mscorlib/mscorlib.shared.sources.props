@@ -1198,12 +1198,12 @@
 
   <ItemGroup Condition="'$(FeatureCoreFxSecureString)'=='true'" >
     <SecuritySources Include="$(CoreFxSourcesRoot)\System\Security\SecureString.cs" />
+    <SecuritySources Include="$(CoreFxSourcesRoot)\System\Security\SecureStringMarshal.CoreCLR.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(FeatureCoreFxSecureString)'=='true' and '$(FeatureCoreFxWindowsInterop)'=='true'">
     <SecuritySources Include="$(CoreFxSourcesRoot)\System\Security\SafeBSTRHandle.cs" />
     <SecuritySources Include="$(CoreFxSourcesRoot)\System\Security\SecureString.Windows.cs" />
-    <SecuritySources Include="$(CoreFxSourcesRoot)\System\Security\SecureStringMarshal.CoreCLR.cs" />
     <!-- Interop sources -->
     <SecuritySources Include="$(CoreFxSourcesRoot)\Interop\Windows\Crypt32\Interop.CryptProtectMemory.cs" />
     <SecuritySources Include="$(CoreFxSourcesRoot)\Interop\Windows\NtDll\Interop.ZeroMemory.cs" />
