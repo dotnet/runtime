@@ -634,14 +634,40 @@ namespace System.Tests
             Assert.Equal(expectedString, result.ToString("g"));
         }
 
-        [Fact]
-        public static void ParseExact_String_String_FormatProvider_DateTimeStyles_O()
+        [Theory]
+        [MemberData(nameof(Format_String_TestData_O))]
+        public static void ParseExact_String_String_FormatProvider_DateTimeStyles_O(DateTime dt, string expected)
         {
-            DateTime expected = DateTime.MaxValue;
-            string expectedString = expected.ToString("o");
+            string actual = dt.ToString("o");
+            Assert.Equal(expected, actual);
 
-            DateTime result = DateTime.ParseExact(expectedString, "o", null, DateTimeStyles.None);
-            Assert.Equal(expectedString, result.ToString("o"));
+            DateTime result = DateTime.ParseExact(actual, "o", null, DateTimeStyles.None);
+            Assert.Equal(expected, result.ToString("o"));
+        }
+
+        public static IEnumerable<object[]> Format_String_TestData_O()
+        {
+            yield return new object[] { DateTime.MaxValue, "9999-12-31T23:59:59.9999999" };
+            yield return new object[] { DateTime.MinValue, "0001-01-01T00:00:00.0000000" };
+            yield return new object[] { new DateTime(1906, 8, 15, 7, 24, 5, 300), "1906-08-15T07:24:05.3000000" };
+        }
+
+        [Theory] 
+        [MemberData(nameof(Format_String_TestData_R))]
+        public static void ParseExact_String_String_FormatProvider_DateTimeStyles_R(DateTime dt, string expected)
+        {
+            string actual = dt.ToString("r");
+            Assert.Equal(expected, actual);
+
+            DateTime result = DateTime.ParseExact(actual, "r", null, DateTimeStyles.None);
+            Assert.Equal(expected, result.ToString("r"));
+        }
+
+        public static IEnumerable<object[]> Format_String_TestData_R()
+        {
+            yield return new object[] { DateTime.MaxValue, "Fri, 31 Dec 9999 23:59:59 GMT" };
+            yield return new object[] { DateTime.MinValue, "Mon, 01 Jan 0001 00:00:00 GMT" };
+            yield return new object[] { new DateTime(1906, 8, 15, 7, 24, 5, 300), "Wed, 15 Aug 1906 07:24:05 GMT" };
         }
 
         [Fact]
