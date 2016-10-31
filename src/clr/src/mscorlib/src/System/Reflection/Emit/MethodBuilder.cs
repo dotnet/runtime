@@ -90,16 +90,16 @@ namespace System.Reflection.Emit
             ModuleBuilder mod, TypeBuilder type, bool bIsGlobalMethod)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             if (name.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(name));
 
             if (name[0] == '\0')
-                throw new ArgumentException(Environment.GetResourceString("Argument_IllegalName"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_IllegalName"), nameof(name));
 
             if (mod == null)
-                throw new ArgumentNullException("mod");
+                throw new ArgumentNullException(nameof(mod));
             Contract.EndContractBlock();
 
             if (parameterTypes != null)
@@ -107,7 +107,7 @@ namespace System.Reflection.Emit
                 foreach(Type t in parameterTypes)
                 {
                     if (t == null)
-                        throw new ArgumentNullException("parameterTypes");
+                        throw new ArgumentNullException(nameof(parameterTypes));
                 }
             }
 
@@ -203,7 +203,7 @@ namespace System.Reflection.Emit
             // queries this instance to get all of the information which it needs.
             if (il == null)
             {
-                throw new ArgumentNullException("il");
+                throw new ArgumentNullException(nameof(il));
             }
             Contract.EndContractBlock();
 
@@ -705,10 +705,10 @@ namespace System.Reflection.Emit
         public GenericTypeParameterBuilder[] DefineGenericParameters (params string[] names)
         {
             if (names == null)
-                throw new ArgumentNullException("names");
+                throw new ArgumentNullException(nameof(names));
 
             if (names.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Arg_EmptyArray"), "names");
+                throw new ArgumentException(Environment.GetResourceString("Arg_EmptyArray"), nameof(names));
             Contract.EndContractBlock();
 
             if (m_inst != null)
@@ -716,7 +716,7 @@ namespace System.Reflection.Emit
 
             for (int i = 0; i < names.Length; i ++)
                 if (names[i] == null)
-                    throw new ArgumentNullException("names");
+                    throw new ArgumentNullException(nameof(names));
 
             if (m_tkMethod.Token != 0)
                 throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_MethodBuilderBaked"));
@@ -932,7 +932,7 @@ namespace System.Reflection.Emit
         public void AddDeclarativeSecurity(SecurityAction action, PermissionSet pset)
         {
             if (pset == null)
-                throw new ArgumentNullException("pset");
+                throw new ArgumentNullException(nameof(pset));
             Contract.EndContractBlock();
 
             ThrowIfGeneric ();
@@ -943,7 +943,7 @@ namespace System.Reflection.Emit
                 action == SecurityAction.RequestOptional ||
                 action == SecurityAction.RequestRefuse)
             {
-                throw new ArgumentOutOfRangeException("action");
+                throw new ArgumentOutOfRangeException(nameof(action));
             }
 #pragma warning restore 618
 
@@ -971,11 +971,11 @@ namespace System.Reflection.Emit
         {
             if (il == null)
             {
-                throw new ArgumentNullException("il", Environment.GetResourceString("ArgumentNull_Array"));
+                throw new ArgumentNullException(nameof(il), Environment.GetResourceString("ArgumentNull_Array"));
             }
             if (maxStack < 0)
             {
-                throw new ArgumentOutOfRangeException("maxStack", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(maxStack), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
             Contract.EndContractBlock();
 
@@ -1087,7 +1087,7 @@ namespace System.Reflection.Emit
 
             if (il != null && (count < 0 || count > il.Length))
             {
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
 
             if (il == null)
@@ -1187,9 +1187,9 @@ namespace System.Reflection.Emit
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             if (con == null)
-                throw new ArgumentNullException("con");
+                throw new ArgumentNullException(nameof(con));
             if (binaryAttribute == null)
-                throw new ArgumentNullException("binaryAttribute");
+                throw new ArgumentNullException(nameof(binaryAttribute));
             Contract.EndContractBlock();
 
             ThrowIfGeneric();
@@ -1207,7 +1207,7 @@ namespace System.Reflection.Emit
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
             if (customBuilder == null)
-                throw new ArgumentNullException("customBuilder");
+                throw new ArgumentNullException(nameof(customBuilder));
             Contract.EndContractBlock();
 
             ThrowIfGeneric();
@@ -1480,51 +1480,51 @@ namespace System.Reflection.Emit
         {
             if (tryOffset < 0)
             {
-                throw new ArgumentOutOfRangeException("tryOffset", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(tryOffset), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
 
             if (tryLength < 0)
             {
-                throw new ArgumentOutOfRangeException("tryLength", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(tryLength), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
 
             if (filterOffset < 0)
             {
-                throw new ArgumentOutOfRangeException("filterOffset", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(filterOffset), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
 
             if (handlerOffset < 0)
             {
-                throw new ArgumentOutOfRangeException("handlerOffset", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(handlerOffset), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
 
             if (handlerLength < 0)
             {
-                throw new ArgumentOutOfRangeException("handlerLength", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(handlerLength), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
 
             if ((long)tryOffset + tryLength > Int32.MaxValue)
             {
-                throw new ArgumentOutOfRangeException("tryLength", Environment.GetResourceString("ArgumentOutOfRange_Range", 0, Int32.MaxValue - tryOffset));
+                throw new ArgumentOutOfRangeException(nameof(tryLength), Environment.GetResourceString("ArgumentOutOfRange_Range", 0, Int32.MaxValue - tryOffset));
             }
 
             if ((long)handlerOffset + handlerLength > Int32.MaxValue)
             {
-                throw new ArgumentOutOfRangeException("handlerLength", Environment.GetResourceString("ArgumentOutOfRange_Range", 0, Int32.MaxValue - handlerOffset));
+                throw new ArgumentOutOfRangeException(nameof(handlerLength), Environment.GetResourceString("ArgumentOutOfRange_Range", 0, Int32.MaxValue - handlerOffset));
             }
 
             // Other tokens migth also be invalid. We only check nil tokens as the implementation (SectEH_Emit in corhlpr.cpp) requires it,
             // and we can't check for valid tokens until the module is baked.
             if (kind == ExceptionHandlingClauseOptions.Clause && (exceptionTypeToken & 0x00FFFFFF) == 0)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidTypeToken", exceptionTypeToken), "exceptionTypeToken");
+                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidTypeToken", exceptionTypeToken), nameof(exceptionTypeToken));
             }
 
             Contract.EndContractBlock();
 
             if (!IsValidKind(kind))
             {
-                throw new ArgumentOutOfRangeException("kind", Environment.GetResourceString("ArgumentOutOfRange_Enum"));
+                throw new ArgumentOutOfRangeException(nameof(kind), Environment.GetResourceString("ArgumentOutOfRange_Enum"));
             }
             
             m_tryStartOffset = tryOffset;

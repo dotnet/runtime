@@ -195,7 +195,7 @@ namespace System {
       ==============================================================================*/
       public virtual int Next(int minValue, int maxValue) {
           if (minValue>maxValue) {
-              throw new ArgumentOutOfRangeException("minValue",Environment.GetResourceString("Argument_MinMaxValue", "minValue", "maxValue"));
+              throw new ArgumentOutOfRangeException(nameof(minValue),Environment.GetResourceString("Argument_MinMaxValue", "minValue", "maxValue"));
           }
           Contract.EndContractBlock();
           
@@ -216,7 +216,7 @@ namespace System {
       ==============================================================================*/
       public virtual int Next(int maxValue) {
           if (maxValue<0) {
-              throw new ArgumentOutOfRangeException("maxValue", Environment.GetResourceString("ArgumentOutOfRange_MustBePositive", "maxValue"));
+              throw new ArgumentOutOfRangeException(nameof(maxValue), Environment.GetResourceString("ArgumentOutOfRange_MustBePositive", "maxValue"));
           }
           Contract.EndContractBlock();
           return (int)(Sample()*maxValue);
@@ -240,7 +240,7 @@ namespace System {
       **Exceptions: None
       ==============================================================================*/
       public virtual void NextBytes(byte [] buffer){
-        if (buffer==null) throw new ArgumentNullException("buffer");
+        if (buffer==null) throw new ArgumentNullException(nameof(buffer));
         Contract.EndContractBlock();
         for (int i=0; i<buffer.Length; i++) {
           buffer[i]=(byte)(InternalSample()%(Byte.MaxValue+1)); 

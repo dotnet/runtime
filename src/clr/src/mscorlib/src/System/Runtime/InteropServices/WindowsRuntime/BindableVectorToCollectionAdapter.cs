@@ -67,7 +67,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal void CopyTo(Array array, int arrayIndex)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
 
             // ICollection expects the destination array to be single-dimensional.
             if (array.Rank != 1)
@@ -79,7 +79,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             int destLen = array.GetLength(0);
 
             if (arrayIndex < destLB)
-                throw new ArgumentOutOfRangeException("arrayIndex");
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex));
 
             // Does the dimension in question have sufficient space to copy the expected number of entries?
             // We perform this check before valid index check to ensure the exception message is in sync with

@@ -123,7 +123,7 @@ namespace System {
             Tuple<T1> objTuple = other as Tuple<T1>;
 
             if (objTuple == null) {
-                throw new ArgumentException(Environment.GetResourceString("ArgumentException_TupleIncorrectType", this.GetType().ToString()), "other");
+                throw new ArgumentException(Environment.GetResourceString("ArgumentException_TupleIncorrectType", this.GetType().ToString()), nameof(other));
             }
 
             return comparer.Compare(m_Item1, objTuple.m_Item1);
@@ -199,7 +199,7 @@ namespace System {
             Tuple<T1, T2> objTuple = other as Tuple<T1, T2>;
 
             if (objTuple == null) {
-                throw new ArgumentException(Environment.GetResourceString("ArgumentException_TupleIncorrectType", this.GetType().ToString()), "other");
+                throw new ArgumentException(Environment.GetResourceString("ArgumentException_TupleIncorrectType", this.GetType().ToString()), nameof(other));
             }
 
             int c = 0;
@@ -286,7 +286,7 @@ namespace System {
             Tuple<T1, T2, T3> objTuple = other as Tuple<T1, T2, T3>;
 
             if (objTuple == null) {
-                throw new ArgumentException(Environment.GetResourceString("ArgumentException_TupleIncorrectType", this.GetType().ToString()), "other");
+                throw new ArgumentException(Environment.GetResourceString("ArgumentException_TupleIncorrectType", this.GetType().ToString()), nameof(other));
             }
 
             int c = 0;
@@ -382,7 +382,7 @@ namespace System {
             Tuple<T1, T2, T3, T4> objTuple = other as Tuple<T1, T2, T3, T4>;
 
             if (objTuple == null) {
-                throw new ArgumentException(Environment.GetResourceString("ArgumentException_TupleIncorrectType", this.GetType().ToString()), "other");
+                throw new ArgumentException(Environment.GetResourceString("ArgumentException_TupleIncorrectType", this.GetType().ToString()), nameof(other));
             }
 
             int c = 0;
@@ -487,7 +487,7 @@ namespace System {
             Tuple<T1, T2, T3, T4, T5> objTuple = other as Tuple<T1, T2, T3, T4, T5>;
 
             if (objTuple == null) {
-                throw new ArgumentException(Environment.GetResourceString("ArgumentException_TupleIncorrectType", this.GetType().ToString()), "other");
+                throw new ArgumentException(Environment.GetResourceString("ArgumentException_TupleIncorrectType", this.GetType().ToString()), nameof(other));
             }
 
             int c = 0;
@@ -601,7 +601,7 @@ namespace System {
             Tuple<T1, T2, T3, T4, T5, T6> objTuple = other as Tuple<T1, T2, T3, T4, T5, T6>;
 
             if (objTuple == null) {
-                throw new ArgumentException(Environment.GetResourceString("ArgumentException_TupleIncorrectType", this.GetType().ToString()), "other");
+                throw new ArgumentException(Environment.GetResourceString("ArgumentException_TupleIncorrectType", this.GetType().ToString()), nameof(other));
             }
 
             int c = 0;
@@ -724,7 +724,7 @@ namespace System {
             Tuple<T1, T2, T3, T4, T5, T6, T7> objTuple = other as Tuple<T1, T2, T3, T4, T5, T6, T7>;
 
             if (objTuple == null) {
-                throw new ArgumentException(Environment.GetResourceString("ArgumentException_TupleIncorrectType", this.GetType().ToString()), "other");
+                throw new ArgumentException(Environment.GetResourceString("ArgumentException_TupleIncorrectType", this.GetType().ToString()), nameof(other));
             }
 
             int c = 0;
@@ -860,7 +860,7 @@ namespace System {
             Tuple<T1, T2, T3, T4, T5, T6, T7, TRest> objTuple = other as Tuple<T1, T2, T3, T4, T5, T6, T7, TRest>;
 
             if (objTuple == null) {
-                throw new ArgumentException(Environment.GetResourceString("ArgumentException_TupleIncorrectType", this.GetType().ToString()), "other");
+                throw new ArgumentException(Environment.GetResourceString("ArgumentException_TupleIncorrectType", this.GetType().ToString()), nameof(other));
             }
 
             int c = 0;

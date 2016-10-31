@@ -582,7 +582,7 @@ namespace System
         internal static RuntimeType GetTypeByNameUsingCARules(string name, RuntimeModule scope)
         {
             if (name == null || name.Length == 0)
-                throw new ArgumentException("name"); 
+                throw new ArgumentException(null, nameof(name)); 
             Contract.EndContractBlock();
 
             RuntimeType type = null;
@@ -792,7 +792,7 @@ namespace System
         private RuntimeTypeHandle(SerializationInfo info, StreamingContext context)
         {
             if(info == null) 
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
 
             RuntimeType m = (RuntimeType)info.GetValue("TypeObj", typeof(RuntimeType));
@@ -807,7 +807,7 @@ namespace System
         public void GetObjectData(SerializationInfo info, StreamingContext context) 
         {
             if(info == null) 
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
 
             if (m_type == null)
@@ -959,7 +959,7 @@ namespace System
         private RuntimeMethodHandle(SerializationInfo info, StreamingContext context)
         {
             if(info == null)
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
             
             MethodBase m =(MethodBase)info.GetValue("MethodObj", typeof(MethodBase));
@@ -974,7 +974,7 @@ namespace System
         public void GetObjectData(SerializationInfo info, StreamingContext context) 
         {
             if (info == null) 
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
 
             if (m_value == null)
@@ -1646,7 +1646,7 @@ namespace System
         private RuntimeFieldHandle(SerializationInfo info, StreamingContext context)
         {
             if(info==null)
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
             
             FieldInfo f =(RuntimeFieldInfo) info.GetValue("FieldObj", typeof(RuntimeFieldInfo));
@@ -1664,7 +1664,7 @@ namespace System
         public void GetObjectData(SerializationInfo info, StreamingContext context) 
         {
             if (info == null) 
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
 
             if (m_ptr == null)
@@ -1775,7 +1775,7 @@ namespace System
         {
             ValidateModulePointer(module);
             if (!ModuleHandle.GetMetadataImport(module).IsValidToken(typeToken))
-                throw new ArgumentOutOfRangeException("metadataToken",
+                throw new ArgumentOutOfRangeException(nameof(typeToken),
                     Environment.GetResourceString("Argument_InvalidToken", typeToken, new ModuleHandle(module)));
             
             int typeInstCount, methodInstCount;
@@ -1832,7 +1832,7 @@ namespace System
         {
             ValidateModulePointer(module);
             if (!ModuleHandle.GetMetadataImport(module.GetNativeHandle()).IsValidToken(methodToken))
-                throw new ArgumentOutOfRangeException("metadataToken",
+                throw new ArgumentOutOfRangeException(nameof(methodToken),
                     Environment.GetResourceString("Argument_InvalidToken", methodToken, new ModuleHandle(module)));
 
             fixed (IntPtr* typeInstArgs = typeInstantiationContext, methodInstArgs = methodInstantiationContext)
@@ -1862,7 +1862,7 @@ namespace System
         {
             ValidateModulePointer(module);
             if (!ModuleHandle.GetMetadataImport(module.GetNativeHandle()).IsValidToken(fieldToken))
-                throw new ArgumentOutOfRangeException("metadataToken",
+                throw new ArgumentOutOfRangeException(nameof(fieldToken),
                     Environment.GetResourceString("Argument_InvalidToken", fieldToken, new ModuleHandle(module)));
             
             // defensive copy to be sure array is not mutated from the outside during processing

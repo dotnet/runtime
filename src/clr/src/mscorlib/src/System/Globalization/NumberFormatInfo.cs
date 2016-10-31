@@ -316,7 +316,7 @@ namespace System.Globalization {
             set {
                 if (value < 0 || value > 99) {
                     throw new ArgumentOutOfRangeException(
-                                "CurrencyDecimalDigits",
+                                nameof(CurrencyDecimalDigits),
                                 String.Format(
                                     CultureInfo.CurrentCulture,
                                     Environment.GetResourceString("ArgumentOutOfRange_Range"),
@@ -376,7 +376,7 @@ namespace System.Globalization {
             }
             set {
                 if (value == null) {
-                    throw new ArgumentNullException("CurrencyGroupSizes",
+                    throw new ArgumentNullException(nameof(CurrencyGroupSizes),
                         Environment.GetResourceString("ArgumentNull_Obj"));
                 }
                 Contract.EndContractBlock();
@@ -397,7 +397,7 @@ namespace System.Globalization {
             }
             set {
                 if (value == null) {
-                    throw new ArgumentNullException("NumberGroupSizes",
+                    throw new ArgumentNullException(nameof(NumberGroupSizes),
                         Environment.GetResourceString("ArgumentNull_Obj"));
                 }
                 Contract.EndContractBlock();
@@ -416,7 +416,7 @@ namespace System.Globalization {
             }
             set {
                 if (value == null) {
-                    throw new ArgumentNullException("PercentGroupSizes",
+                    throw new ArgumentNullException(nameof(PercentGroupSizes),
                         Environment.GetResourceString("ArgumentNull_Obj"));
                 }
                 Contract.EndContractBlock();
@@ -443,7 +443,7 @@ namespace System.Globalization {
             get { return currencySymbol; }
             set {
                 if (value == null) {
-                    throw new ArgumentNullException("CurrencySymbol",
+                    throw new ArgumentNullException(nameof(CurrencySymbol),
                         Environment.GetResourceString("ArgumentNull_String"));
                 }
                 Contract.EndContractBlock();
@@ -475,7 +475,7 @@ namespace System.Globalization {
             }
             set {
                 if (value == null) {
-                    throw new ArgumentNullException("NaNSymbol",
+                    throw new ArgumentNullException(nameof(NaNSymbol),
                         Environment.GetResourceString("ArgumentNull_String"));
                 }
                 Contract.EndContractBlock();
@@ -491,7 +491,7 @@ namespace System.Globalization {
             set {
                 if (value < 0 || value > 15) {
                     throw new ArgumentOutOfRangeException(
-                                "CurrencyNegativePattern",
+                                nameof(CurrencyNegativePattern),
                                 String.Format(
                                     CultureInfo.CurrentCulture,
                                     Environment.GetResourceString("ArgumentOutOfRange_Range"),
@@ -513,7 +513,7 @@ namespace System.Globalization {
                 //
                 if (value < 0 || value > 4) {
                     throw new ArgumentOutOfRangeException(
-                                "NumberNegativePattern",
+                                nameof(NumberNegativePattern),
                                 String.Format(
                                     CultureInfo.CurrentCulture,
                                     Environment.GetResourceString("ArgumentOutOfRange_Range"),
@@ -535,7 +535,7 @@ namespace System.Globalization {
                 //
                 if (value < 0 || value > 3) {
                     throw new ArgumentOutOfRangeException(
-                                "PercentPositivePattern",
+                                nameof(PercentPositivePattern),
                                 String.Format(
                                     CultureInfo.CurrentCulture,
                                     Environment.GetResourceString("ArgumentOutOfRange_Range"),
@@ -557,7 +557,7 @@ namespace System.Globalization {
                 //
                 if (value < 0 || value > 11) {
                     throw new ArgumentOutOfRangeException(
-                                "PercentNegativePattern",
+                                nameof(PercentNegativePattern),
                                 String.Format(
                                     CultureInfo.CurrentCulture,
                                     Environment.GetResourceString("ArgumentOutOfRange_Range"),
@@ -577,7 +577,7 @@ namespace System.Globalization {
             }
             set {
                 if (value == null) {
-                    throw new ArgumentNullException("NegativeInfinitySymbol",
+                    throw new ArgumentNullException(nameof(NegativeInfinitySymbol),
                         Environment.GetResourceString("ArgumentNull_String"));
                 }
                 Contract.EndContractBlock();
@@ -591,7 +591,7 @@ namespace System.Globalization {
             get { return negativeSign; }
             set {
                 if (value == null) {
-                    throw new ArgumentNullException("NegativeSign",
+                    throw new ArgumentNullException(nameof(NegativeSign),
                         Environment.GetResourceString("ArgumentNull_String"));
                 }
                 Contract.EndContractBlock();
@@ -606,7 +606,7 @@ namespace System.Globalization {
             set {
                 if (value < 0 || value > 99) {
                     throw new ArgumentOutOfRangeException(
-                                "NumberDecimalDigits",
+                                nameof(NumberDecimalDigits),
                                 String.Format(
                                     CultureInfo.CurrentCulture,
                                     Environment.GetResourceString("ArgumentOutOfRange_Range"),
@@ -645,7 +645,7 @@ namespace System.Globalization {
             set {
                 if (value < 0 || value > 3) {
                     throw new ArgumentOutOfRangeException(
-                                "CurrencyPositivePattern",
+                                nameof(CurrencyPositivePattern),
                                 String.Format(
                                     CultureInfo.CurrentCulture,
                                     Environment.GetResourceString("ArgumentOutOfRange_Range"),
@@ -665,7 +665,7 @@ namespace System.Globalization {
             }
             set {
                 if (value == null) {
-                    throw new ArgumentNullException("PositiveInfinitySymbol",
+                    throw new ArgumentNullException(nameof(PositiveInfinitySymbol),
                         Environment.GetResourceString("ArgumentNull_String"));
                 }
                 Contract.EndContractBlock();
@@ -679,7 +679,7 @@ namespace System.Globalization {
             get { return positiveSign; }
             set {
                 if (value == null) {
-                    throw new ArgumentNullException("PositiveSign",
+                    throw new ArgumentNullException(nameof(PositiveSign),
                         Environment.GetResourceString("ArgumentNull_String"));
                 }
                 Contract.EndContractBlock();
@@ -694,7 +694,7 @@ namespace System.Globalization {
             set {
                 if (value < 0 || value > 99) {
                     throw new ArgumentOutOfRangeException(
-                                "PercentDecimalDigits",
+                                nameof(PercentDecimalDigits),
                                 String.Format(
                                     CultureInfo.CurrentCulture,
                                     Environment.GetResourceString("ArgumentOutOfRange_Range"),
@@ -734,7 +734,7 @@ namespace System.Globalization {
             }
             set {
                 if (value == null) {
-                    throw new ArgumentNullException("PercentSymbol",
+                    throw new ArgumentNullException(nameof(PercentSymbol),
                         Environment.GetResourceString("ArgumentNull_String"));
                 }
                 Contract.EndContractBlock();
@@ -748,7 +748,7 @@ namespace System.Globalization {
             get { return perMilleSymbol; }
             set {
                 if (value == null) {
-                    throw new ArgumentNullException("PerMilleSymbol",
+                    throw new ArgumentNullException(nameof(PerMilleSymbol),
                         Environment.GetResourceString("ArgumentNull_String"));
                 }
                 Contract.EndContractBlock();
@@ -788,7 +788,7 @@ namespace System.Globalization {
 
         public static NumberFormatInfo ReadOnly(NumberFormatInfo nfi) {
             if (nfi == null) {
-                throw new ArgumentNullException("nfi");
+                throw new ArgumentNullException(nameof(nfi));
             }
             Contract.EndContractBlock();
             if (nfi.IsReadOnly) {
@@ -809,7 +809,7 @@ namespace System.Globalization {
         internal static void ValidateParseStyleInteger(NumberStyles style) {
             // Check for undefined flags
             if ((style & InvalidNumberStyles) != 0) {
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidNumberStyles"), "style");
+                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidNumberStyles"), nameof(style));
             }
             Contract.EndContractBlock();
             if ((style & NumberStyles.AllowHexSpecifier) != 0) { // Check for hex number
@@ -822,7 +822,7 @@ namespace System.Globalization {
         internal static void ValidateParseStyleFloatingPoint(NumberStyles style) {
             // Check for undefined flags
             if ((style & InvalidNumberStyles) != 0) {
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidNumberStyles"), "style");
+                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidNumberStyles"), nameof(style));
             }
             Contract.EndContractBlock();
             if ((style & NumberStyles.AllowHexSpecifier) != 0) { // Check for hex number

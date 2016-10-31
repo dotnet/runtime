@@ -38,7 +38,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal T Indexer_Get<T>(int index)
         {
             if (index < 0)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
 
             IVectorView<T> _this = JitHelpers.UnsafeCast<IVectorView<T>>(this);
 
@@ -52,7 +52,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             catch (Exception ex)
             {
                 if (__HResults.E_BOUNDS == ex._HResult)
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index));
 
                 throw;
             }

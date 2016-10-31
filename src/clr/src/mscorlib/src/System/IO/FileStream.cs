@@ -516,7 +516,7 @@ namespace System.IO {
         private void Init(String path, FileMode mode, FileAccess access, int rights, bool useRights, FileShare share, int bufferSize, FileOptions options, Win32Native.SECURITY_ATTRIBUTES secAttrs, String msgPath, bool bFromProxy, bool useLongPath, bool checkHost)
         {
             if (path == null)
-                throw new ArgumentNullException("path", Environment.GetResourceString("ArgumentNull_Path"));
+                throw new ArgumentNullException(nameof(path), Environment.GetResourceString("ArgumentNull_Path"));
             if (path.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyPath"));
             Contract.EndContractBlock();
@@ -549,10 +549,10 @@ namespace System.IO {
             
             // NOTE: any change to FileOptions enum needs to be matched here in the error validation
             if (options != FileOptions.None && (options & ~(FileOptions.WriteThrough | FileOptions.Asynchronous | FileOptions.RandomAccess | FileOptions.DeleteOnClose | FileOptions.SequentialScan | FileOptions.Encrypted | (FileOptions)0x20000000 /* NoBuffering */)) != 0)
-                throw new ArgumentOutOfRangeException("options", Environment.GetResourceString("ArgumentOutOfRange_Enum"));
+                throw new ArgumentOutOfRangeException(nameof(options), Environment.GetResourceString("ArgumentOutOfRange_Enum"));
 
             if (bufferSize <= 0)
-                throw new ArgumentOutOfRangeException("bufferSize", Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
+                throw new ArgumentOutOfRangeException(nameof(bufferSize), Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
 
             // Write access validation
 #if FEATURE_MACL
@@ -889,7 +889,7 @@ namespace System.IO {
         public FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync) {
             // To ensure we don't leak a handle, put it in a SafeFileHandle first
             if (handle.IsInvalid)
-                throw new ArgumentException(Environment.GetResourceString("Arg_InvalidHandle"), "handle");
+                throw new ArgumentException(Environment.GetResourceString("Arg_InvalidHandle"), nameof(handle));
             Contract.EndContractBlock();
 
             _handle = handle;
@@ -897,9 +897,9 @@ namespace System.IO {
 
             // Now validate arguments.
             if (access < FileAccess.Read || access > FileAccess.ReadWrite)
-                throw new ArgumentOutOfRangeException("access", Environment.GetResourceString("ArgumentOutOfRange_Enum"));
+                throw new ArgumentOutOfRangeException(nameof(access), Environment.GetResourceString("ArgumentOutOfRange_Enum"));
             if (bufferSize <= 0)
-                throw new ArgumentOutOfRangeException("bufferSize", Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
+                throw new ArgumentOutOfRangeException(nameof(bufferSize), Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
 
             int handleType = Win32Native.GetFileType(_handle);
             Contract.Assert(handleType == Win32Native.FILE_TYPE_DISK || handleType == Win32Native.FILE_TYPE_PIPE || handleType == Win32Native.FILE_TYPE_CHAR, "FileStream was passed an unknown file type!");
@@ -1112,7 +1112,7 @@ namespace System.IO {
                 return _pos + (_readPos - _readLen + _writePos);
             }
             set {
-                if (value < 0) throw new ArgumentOutOfRangeException("value", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                if (value < 0) throw new ArgumentOutOfRangeException(nameof(value), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
                 Contract.EndContractBlock();
                 if (_writePos > 0) FlushWrite(false);
                 _readPos = 0;
@@ -1133,7 +1133,7 @@ namespace System.IO {
         public void SetAccessControl(FileSecurity fileSecurity)
         {
             if (fileSecurity == null)
-                throw new ArgumentNullException("fileSecurity");
+                throw new ArgumentNullException(nameof(fileSecurity));
             Contract.EndContractBlock();
 
             if (_handle.IsClosed) __Error.FileNotOpen();
@@ -1313,7 +1313,7 @@ namespace System.IO {
         public override void SetLength(long value)
         {
             if (value < 0)
-                throw new ArgumentOutOfRangeException("value", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(value), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
 
             if (_handle.IsClosed) __Error.FileNotOpen();
@@ -1351,7 +1351,7 @@ namespace System.IO {
             if (!Win32Native.SetEndOfFile(_handle)) {
                 int hr = Marshal.GetLastWin32Error();
                 if (hr==__Error.ERROR_INVALID_PARAMETER)
-                    throw new ArgumentOutOfRangeException("value", Environment.GetResourceString("ArgumentOutOfRange_FileLengthTooBig"));
+                    throw new ArgumentOutOfRangeException(nameof(value), Environment.GetResourceString("ArgumentOutOfRange_FileLengthTooBig"));
                 __Error.WinIOError(hr, String.Empty);
             }
             // Return file pointer to where it was before setting length
@@ -1366,11 +1366,11 @@ namespace System.IO {
         [System.Security.SecuritySafeCritical]  // auto-generated
         public override int Read([In, Out] byte[] array, int offset, int count) {
             if (array==null)
-                throw new ArgumentNullException("array", Environment.GetResourceString("ArgumentNull_Buffer"));
+                throw new ArgumentNullException(nameof(array), Environment.GetResourceString("ArgumentNull_Buffer"));
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(offset), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (array.Length - offset < count)
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
             Contract.EndContractBlock();
@@ -1619,11 +1619,11 @@ namespace System.IO {
         [System.Security.SecuritySafeCritical]  // auto-generated
         public override void Write(byte[] array, int offset, int count) {
             if (array==null)
-                throw new ArgumentNullException("array", Environment.GetResourceString("ArgumentNull_Buffer"));
+                throw new ArgumentNullException(nameof(array), Environment.GetResourceString("ArgumentNull_Buffer"));
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(offset), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (array.Length - offset < count)
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
             Contract.EndContractBlock();
@@ -1735,11 +1735,11 @@ namespace System.IO {
         public override IAsyncResult BeginRead(byte[] array, int offset, int numBytes, AsyncCallback userCallback, Object stateObject)
         {
             if (array==null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(offset), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (numBytes < 0)
-                throw new ArgumentOutOfRangeException("numBytes", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(numBytes), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (array.Length - offset < numBytes)
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
             Contract.EndContractBlock();
@@ -1973,7 +1973,7 @@ namespace System.IO {
             // on our FileStreamAsyncResult.  One is from BeginReadCore,
             // while the other is from the BeginRead buffering wrapper.
             if (asyncResult==null)
-                throw new ArgumentNullException("asyncResult");
+                throw new ArgumentNullException(nameof(asyncResult));
             Contract.EndContractBlock();
 
             if (!_isAsync)
@@ -2031,11 +2031,11 @@ namespace System.IO {
         public override IAsyncResult BeginWrite(byte[] array, int offset, int numBytes, AsyncCallback userCallback, Object stateObject)
         {
             if (array==null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(offset), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (numBytes < 0)
-                throw new ArgumentOutOfRangeException("numBytes", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(numBytes), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (array.Length - offset < numBytes)
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
             Contract.EndContractBlock();
@@ -2202,7 +2202,7 @@ namespace System.IO {
         public unsafe override void EndWrite(IAsyncResult asyncResult)
         {
             if (asyncResult==null)
-                throw new ArgumentNullException("asyncResult");
+                throw new ArgumentNullException(nameof(asyncResult));
             Contract.EndContractBlock();
 
             if (!_isAsync) {
@@ -2427,11 +2427,11 @@ namespace System.IO {
         public override Task<int> ReadAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (buffer == null)
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(offset), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (buffer.Length - offset < count)
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
             Contract.EndContractBlock();
@@ -2479,11 +2479,11 @@ namespace System.IO {
         public override Task WriteAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (buffer == null)
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(offset), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (buffer.Length - offset < count)
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
             Contract.EndContractBlock();

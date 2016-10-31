@@ -259,7 +259,7 @@ namespace System {
         internal static Object DefaultToType(IConvertible value, Type targetType, IFormatProvider provider) {
             Contract.Requires(value != null, "[Convert.DefaultToType]value!=null");
             if (targetType==null) {
-                throw new ArgumentNullException("targetType");
+                throw new ArgumentNullException(nameof(targetType));
             }
             Contract.EndContractBlock();
 
@@ -322,7 +322,7 @@ namespace System {
 
         public static Object ChangeType(Object value, Type conversionType, IFormatProvider provider) {
             if( conversionType == null) {
-                throw new ArgumentNullException("conversionType");
+                throw new ArgumentNullException(nameof(conversionType));
             }
             Contract.EndContractBlock();
 
@@ -575,7 +575,7 @@ namespace System {
 
         public static char ToChar(String value, IFormatProvider provider) {
             if (value == null) 
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             Contract.EndContractBlock();
          
             if (value.Length != 1) 
@@ -2155,7 +2155,7 @@ namespace System {
 
         public static String ToBase64String(byte[] inArray) {
             if (inArray==null) {
-                throw new ArgumentNullException("inArray");
+                throw new ArgumentNullException(nameof(inArray));
             }
             Contract.Ensures(Contract.Result<string>() != null);
             Contract.EndContractBlock();
@@ -2165,7 +2165,7 @@ namespace System {
         [System.Runtime.InteropServices.ComVisible(false)]
         public static String ToBase64String(byte[] inArray, Base64FormattingOptions options) {
             if (inArray==null) {
-                throw new ArgumentNullException("inArray");
+                throw new ArgumentNullException(nameof(inArray));
             }
             Contract.Ensures(Contract.Result<string>() != null);
             Contract.EndContractBlock();
@@ -2181,11 +2181,11 @@ namespace System {
         public static unsafe String ToBase64String(byte[] inArray, int offset, int length, Base64FormattingOptions options) {
             //Do data verfication
             if (inArray==null) 
-                throw new ArgumentNullException("inArray");
+                throw new ArgumentNullException(nameof(inArray));
             if (length<0)
-                throw new ArgumentOutOfRangeException("length", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(length), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             if (offset<0)
-                throw new ArgumentOutOfRangeException("offset", Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
+                throw new ArgumentOutOfRangeException(nameof(offset), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
             if (options < Base64FormattingOptions.None || options > Base64FormattingOptions.InsertLineBreaks)
                 throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)options));
             Contract.Ensures(Contract.Result<string>() != null);
@@ -2196,7 +2196,7 @@ namespace System {
 
             inArrayLength = inArray.Length;
             if (offset > (inArrayLength - length))
-                throw new ArgumentOutOfRangeException("offset", Environment.GetResourceString("ArgumentOutOfRange_OffsetLength"));
+                throw new ArgumentOutOfRangeException(nameof(offset), Environment.GetResourceString("ArgumentOutOfRange_OffsetLength"));
            
             if (inArrayLength == 0)
                 return String.Empty;
@@ -2228,15 +2228,15 @@ namespace System {
         public static unsafe int ToBase64CharArray(byte[] inArray, int offsetIn, int length, char[] outArray, int offsetOut, Base64FormattingOptions options) {
             //Do data verfication
             if (inArray==null) 
-                throw new ArgumentNullException("inArray");
+                throw new ArgumentNullException(nameof(inArray));
             if (outArray==null)
-                throw new ArgumentNullException("outArray");
+                throw new ArgumentNullException(nameof(outArray));
             if (length<0)
-                throw new ArgumentOutOfRangeException("length", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(length), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             if (offsetIn<0)
-                throw new ArgumentOutOfRangeException("offsetIn", Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
+                throw new ArgumentOutOfRangeException(nameof(offsetIn), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
             if (offsetOut<0)
-                throw new ArgumentOutOfRangeException("offsetOut", Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
+                throw new ArgumentOutOfRangeException(nameof(offsetOut), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
 
             if( options < Base64FormattingOptions.None || options > Base64FormattingOptions.InsertLineBreaks) {
                 throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)options));
@@ -2255,7 +2255,7 @@ namespace System {
             inArrayLength = inArray.Length;
 
             if (offsetIn > (int)(inArrayLength - length))
-                throw new ArgumentOutOfRangeException("offsetIn", Environment.GetResourceString("ArgumentOutOfRange_OffsetLength"));
+                throw new ArgumentOutOfRangeException(nameof(offsetIn), Environment.GetResourceString("ArgumentOutOfRange_OffsetLength"));
 
             if (inArrayLength == 0)
                 return 0;
@@ -2268,7 +2268,7 @@ namespace System {
             numElementsToCopy = ToBase64_CalculateAndValidateOutputLength(length, insertLineBreaks);
     
             if (offsetOut > (int)(outArrayLength -  numElementsToCopy))
-                throw new ArgumentOutOfRangeException("offsetOut", Environment.GetResourceString("ArgumentOutOfRange_OffsetOut"));
+                throw new ArgumentOutOfRangeException(nameof(offsetOut), Environment.GetResourceString("ArgumentOutOfRange_OffsetOut"));
 
             fixed (char* outChars = &outArray[offsetOut]) {
                 fixed (byte* inData = inArray) { 
@@ -2372,7 +2372,7 @@ namespace System {
             // "s" is an unfortunate parameter name, but we need to keep it for backward compat.
 
             if (s == null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
 
             Contract.EndContractBlock();
 
@@ -2396,16 +2396,16 @@ namespace System {
         public static Byte[] FromBase64CharArray(Char[] inArray, Int32 offset, Int32 length) {
 
             if (inArray == null)
-                throw new ArgumentNullException("inArray");
+                throw new ArgumentNullException(nameof(inArray));
 
             if (length < 0)
-                throw new ArgumentOutOfRangeException("length", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(length), Environment.GetResourceString("ArgumentOutOfRange_Index"));
 
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset", Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
+                throw new ArgumentOutOfRangeException(nameof(offset), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
 
             if (offset > inArray.Length - length)
-                throw new ArgumentOutOfRangeException("offset", Environment.GetResourceString("ArgumentOutOfRange_OffsetLength"));
+                throw new ArgumentOutOfRangeException(nameof(offset), Environment.GetResourceString("ArgumentOutOfRange_OffsetLength"));
 
             Contract.EndContractBlock();
 

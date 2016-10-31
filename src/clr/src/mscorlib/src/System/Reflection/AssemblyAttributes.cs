@@ -190,7 +190,7 @@ namespace System.Reflection {
         public AssemblyFileVersionAttribute(String version)
         {
             if (version == null)
-                throw new ArgumentNullException("version");
+                throw new ArgumentNullException(nameof(version));
             Contract.EndContractBlock();
             _version = version;
         }

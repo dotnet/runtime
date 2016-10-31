@@ -397,7 +397,7 @@ namespace System.Globalization {
             int monthsInYear = GetMonthsInYear(year, era);
             if (month < 1 || month > monthsInYear) {
                 throw new ArgumentOutOfRangeException(
-                            "month",
+                            nameof(month),
                             String.Format(
                                 CultureInfo.CurrentCulture,
                                 Environment.GetResourceString("ArgumentOutOfRange_Range"),
@@ -421,7 +421,7 @@ namespace System.Globalization {
             int daysInMonth = GetDaysInMonth(year, month, era);
             if (day < 1 || day > daysInMonth) {
                 throw new ArgumentOutOfRangeException(
-                            "day",
+                            nameof(day),
                             String.Format(
                                 CultureInfo.CurrentCulture,
                                 Environment.GetResourceString("ArgumentOutOfRange_Range"),
@@ -432,7 +432,7 @@ namespace System.Globalization {
 
         static internal void CheckEraRange(int era) {
             if (era != CurrentEra && era != HebrewEra) {
-                throw new ArgumentOutOfRangeException("era", Environment.GetResourceString("ArgumentOutOfRange_InvalidEraValue"));
+                throw new ArgumentOutOfRangeException(nameof(era), Environment.GetResourceString("ArgumentOutOfRange_InvalidEraValue"));
             }
         }
 
@@ -486,7 +486,7 @@ namespace System.Globalization {
             //
             int index = gregorianYear - FirstGregorianTableYear;
             if (index < 0 || index > TABLESIZE) {
-                throw new ArgumentOutOfRangeException("gregorianYear");
+                throw new ArgumentOutOfRangeException(nameof(gregorianYear));
             }
 
             index *= 2;
@@ -705,7 +705,7 @@ namespace System.Globalization {
             catch (ArgumentException)
             {
                 throw new ArgumentOutOfRangeException(
-                            "months",
+                            nameof(months),
                             String.Format(
                                 CultureInfo.CurrentCulture,
                                 Environment.GetResourceString("ArgumentOutOfRange_AddValue")));
@@ -815,7 +815,7 @@ namespace System.Globalization {
                 "hebrewYearType should be from  1 to 6, but now hebrewYearType = " + hebrewYearType + " for hebrew year " + year);
             int monthDays = LunarMonthLen[hebrewYearType, month];
             if (monthDays == 0) {
-                throw new ArgumentOutOfRangeException("month", Environment.GetResourceString("ArgumentOutOfRange_Month"));
+                throw new ArgumentOutOfRangeException(nameof(month), Environment.GetResourceString("ArgumentOutOfRange_Month"));
             }
             return (monthDays);
         }
@@ -1051,7 +1051,7 @@ namespace System.Globalization {
 
         public override int ToFourDigitYear(int year) {
             if (year < 0) {
-                throw new ArgumentOutOfRangeException("year",
+                throw new ArgumentOutOfRangeException(nameof(year),
                     Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
             Contract.EndContractBlock();
@@ -1062,7 +1062,7 @@ namespace System.Globalization {
 
             if (year > MaxHebrewYear || year < MinHebrewYear) {
                 throw new ArgumentOutOfRangeException(
-                            "year",
+                            nameof(year),
                             String.Format(
                                 CultureInfo.CurrentCulture,
                                 Environment.GetResourceString("ArgumentOutOfRange_Range"),

@@ -56,7 +56,7 @@ namespace System.Threading
 #else
                 if (System.IO.Path.MaxPath < name.Length)
                 {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Path.MaxPath), "name");
+                    throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Path.MaxPath), nameof(name));
                 }
 #endif
             }
@@ -105,7 +105,7 @@ namespace System.Threading
 #else
                 if (System.IO.Path.MaxPath < name.Length)
                 {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Path.MaxPath), "name");
+                    throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Path.MaxPath), nameof(name));
                 }
 #endif
             }
@@ -216,17 +216,17 @@ namespace System.Threading
 #else
             if (name == null)
             {
-                throw new ArgumentNullException("name", Environment.GetResourceString("ArgumentNull_WithParamName"));
+                throw new ArgumentNullException(nameof(name), Environment.GetResourceString("ArgumentNull_WithParamName"));
             }
 
             if(name.Length  == 0)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(name));
             }
 
             if(null != name && System.IO.Path.MaxPath < name.Length)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Path.MaxPath), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Path.MaxPath), nameof(name));
             }
             
             Contract.EndContractBlock();
@@ -286,7 +286,7 @@ namespace System.Threading
         public void SetAccessControl(EventWaitHandleSecurity eventSecurity)
         {
             if (eventSecurity == null)
-                throw new ArgumentNullException("eventSecurity");
+                throw new ArgumentNullException(nameof(eventSecurity));
             Contract.EndContractBlock();
 
             eventSecurity.Persist(safeWaitHandle);

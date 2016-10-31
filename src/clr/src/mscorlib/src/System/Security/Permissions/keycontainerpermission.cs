@@ -88,7 +88,7 @@ namespace System.Security.Permissions {
                     m_keyStore = "*";
                 } else {
                     if (value != "User" && value != "Machine" && value != "*")
-                        throw new ArgumentException(Environment.GetResourceString("Argument_InvalidKeyStore", value), "value");
+                        throw new ArgumentException(Environment.GetResourceString("Argument_InvalidKeyStore", value), nameof(value));
                     m_keyStore = value;
                 }
             }
@@ -232,7 +232,7 @@ namespace System.Security.Permissions {
                 if (index < 0)
                     throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_EnumNotStarted"));
                 if (index >= Count)
-                    throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                    throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_Index"));
                 Contract.EndContractBlock();
 
                 return (KeyContainerPermissionAccessEntry)m_list[index];
@@ -247,7 +247,7 @@ namespace System.Security.Permissions {
 
         public int Add (KeyContainerPermissionAccessEntry accessEntry) {
             if (accessEntry == null)
-                throw new ArgumentNullException("accessEntry");
+                throw new ArgumentNullException(nameof(accessEntry));
             Contract.EndContractBlock();
 
             int index = m_list.IndexOf(accessEntry);
@@ -275,7 +275,7 @@ namespace System.Security.Permissions {
 
         public void Remove (KeyContainerPermissionAccessEntry accessEntry) {
             if (accessEntry == null)
-                throw new ArgumentNullException("accessEntry");
+                throw new ArgumentNullException(nameof(accessEntry));
             Contract.EndContractBlock();
             m_list.Remove(accessEntry);
         }
@@ -292,11 +292,11 @@ namespace System.Security.Permissions {
         /// <internalonly/>
         void ICollection.CopyTo (Array array, int index) {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             if (array.Rank != 1)
                 throw new ArgumentException(Environment.GetResourceString("Arg_RankMultiDimNotSupported"));
             if (index < 0 || index >= array.Length)
-                throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             if (index + this.Count > array.Length)
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
             Contract.EndContractBlock();
@@ -385,7 +385,7 @@ namespace System.Security.Permissions {
 
         public KeyContainerPermission (KeyContainerPermissionFlags flags, KeyContainerPermissionAccessEntry[] accessList) {
             if (accessList == null) 
-                throw new ArgumentNullException("accessList");
+                throw new ArgumentNullException(nameof(accessList));
             Contract.EndContractBlock();
 
             VerifyFlags(flags);

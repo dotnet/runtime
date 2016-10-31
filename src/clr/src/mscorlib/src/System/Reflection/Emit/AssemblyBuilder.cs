@@ -246,7 +246,7 @@ namespace System.Reflection.Emit
                 if (m_manifestModuleBuilder.InternalModule == module)
                     return m_manifestModuleBuilder;
 
-                throw new ArgumentException("module");
+                throw new ArgumentException(null, nameof(module));
             }
         }
 
@@ -303,7 +303,7 @@ namespace System.Reflection.Emit
                                  SecurityContextSource securityContextSource)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             if (access != AssemblyBuilderAccess.Run
 #if !FEATURE_CORECLR
@@ -318,13 +318,13 @@ namespace System.Reflection.Emit
 #endif // FEATURE_COLLECTIBLE_TYPES
                 )
             {
-                throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)access), "access");
+                throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)access), nameof(access));
             }
 
             if (securityContextSource < SecurityContextSource.CurrentAppDomain ||
                 securityContextSource > SecurityContextSource.CurrentAssembly)
             {
-                throw new ArgumentOutOfRangeException("securityContextSource");
+                throw new ArgumentOutOfRangeException(nameof(securityContextSource));
             }
 
             // Clone the name in case the caller modifies it underneath us.
@@ -623,11 +623,11 @@ namespace System.Reflection.Emit
             ref StackCrawlMark stackMark)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(name));
             if (name[0] == '\0')
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidName"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidName"), nameof(name));
             Contract.Ensures(Contract.Result<ModuleBuilder>() != null);
             Contract.EndContractBlock();
 
@@ -832,18 +832,18 @@ namespace System.Reflection.Emit
             ref    StackCrawlMark stackMark)    // stack crawl mark used to find caller
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(name));
             if (name[0] == '\0')
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidName"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidName"), nameof(name));
 
             if (fileName == null)
-                throw new ArgumentNullException("fileName");
+                throw new ArgumentNullException(nameof(fileName));
             if (fileName.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), "fileName");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), nameof(fileName));
             if (!String.Equals(fileName, Path.GetFileName(fileName)))
-                throw new ArgumentException(Environment.GetResourceString("Argument_NotSimpleFileName"), "fileName");
+                throw new ArgumentException(Environment.GetResourceString("Argument_NotSimpleFileName"), nameof(fileName));
             Contract.Ensures(Contract.Result<ModuleBuilder>() != null);
             Contract.EndContractBlock();
 
@@ -1008,15 +1008,15 @@ namespace System.Reflection.Emit
             ResourceAttributes attribute)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), name);
             if (fileName == null)
-                throw new ArgumentNullException("fileName");
+                throw new ArgumentNullException(nameof(fileName));
             if (fileName.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), "fileName");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), nameof(fileName));
             if (!String.Equals(fileName, Path.GetFileName(fileName)))
-                throw new ArgumentException(Environment.GetResourceString("Argument_NotSimpleFileName"), "fileName");
+                throw new ArgumentException(Environment.GetResourceString("Argument_NotSimpleFileName"), nameof(fileName));
             Contract.EndContractBlock();
 
             BCLDebug.Log("DYNIL", "## DYNIL LOGGING: AssemblyBuilder.DefineResource( " + name + ", " + fileName + ")");
@@ -1084,15 +1084,15 @@ namespace System.Reflection.Emit
             ResourceAttributes attribute)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), name);
             if (fileName == null)
-                throw new ArgumentNullException("fileName");
+                throw new ArgumentNullException(nameof(fileName));
             if (fileName.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), fileName);
             if (!String.Equals(fileName, Path.GetFileName(fileName)))
-                throw new ArgumentException(Environment.GetResourceString("Argument_NotSimpleFileName"), "fileName");
+                throw new ArgumentException(Environment.GetResourceString("Argument_NotSimpleFileName"), nameof(fileName));
             Contract.EndContractBlock();
 
             BCLDebug.Log("DYNIL", "## DYNIL LOGGING: AssemblyBuilder.AddResourceFile( " + name + ", " + fileName + ")");
@@ -1437,7 +1437,7 @@ namespace System.Reflection.Emit
         public void DefineUnmanagedResource(Byte[] resource)
         {
             if (resource == null)
-                throw new ArgumentNullException("resource");
+                throw new ArgumentNullException(nameof(resource));
             Contract.EndContractBlock();
 
             lock(SyncRoot)
@@ -1461,7 +1461,7 @@ namespace System.Reflection.Emit
         public void DefineUnmanagedResource(String resourceFileName)
         {
             if (resourceFileName == null)
-                throw new ArgumentNullException("resourceFileName");
+                throw new ArgumentNullException(nameof(resourceFileName));
             Contract.EndContractBlock();
 
             lock(SyncRoot)
@@ -1520,9 +1520,9 @@ namespace System.Reflection.Emit
             String      name)                   // the name of module for the look up
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(name));
             Contract.EndContractBlock();
 
             BCLDebug.Log("DYNIL", "## DYNIL LOGGING: AssemblyBuilder.GetDynamicModule( " + name + " )");
@@ -1571,7 +1571,7 @@ namespace System.Reflection.Emit
         {
 
             if (entryMethod == null)
-                throw new ArgumentNullException("entryMethod");
+                throw new ArgumentNullException(nameof(entryMethod));
             Contract.EndContractBlock();
 
             BCLDebug.Log("DYNIL", "## DYNIL LOGGING: AssemblyBuilder.SetEntryPoint");
@@ -1609,9 +1609,9 @@ namespace System.Reflection.Emit
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             if (con == null)
-                throw new ArgumentNullException("con");
+                throw new ArgumentNullException(nameof(con));
             if (binaryAttribute == null)
-                throw new ArgumentNullException("binaryAttribute");
+                throw new ArgumentNullException(nameof(binaryAttribute));
             Contract.EndContractBlock();
     
             lock(SyncRoot)
@@ -1647,7 +1647,7 @@ namespace System.Reflection.Emit
         {
             if (customBuilder == null)
             {
-                throw new ArgumentNullException("customBuilder");
+                throw new ArgumentNullException(nameof(customBuilder));
             }
             Contract.EndContractBlock();
 
@@ -1710,11 +1710,11 @@ namespace System.Reflection.Emit
             PortableExecutableKinds portableExecutableKind, ImageFileMachine imageFileMachine)
         {
             if (assemblyFileName == null)
-                throw new ArgumentNullException("assemblyFileName");
+                throw new ArgumentNullException(nameof(assemblyFileName));
             if (assemblyFileName.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), "assemblyFileName");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyFileName"), nameof(assemblyFileName));
             if (!String.Equals(assemblyFileName, Path.GetFileName(assemblyFileName)))
-                throw new ArgumentException(Environment.GetResourceString("Argument_NotSimpleFileName"), "assemblyFileName");
+                throw new ArgumentException(Environment.GetResourceString("Argument_NotSimpleFileName"), nameof(assemblyFileName));
             Contract.EndContractBlock();
 
             int i;

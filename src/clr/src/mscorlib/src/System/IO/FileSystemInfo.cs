@@ -61,7 +61,7 @@ namespace System.IO {
         protected FileSystemInfo(SerializationInfo info, StreamingContext context)
         {
             if (info == null)
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
             
             // Must use V1 field names here, since V1 didn't implement 

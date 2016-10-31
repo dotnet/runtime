@@ -407,7 +407,7 @@ namespace System.Reflection.Emit {
         {
             // Client should not set any bits other than the visibility bits.
             if ((visibility & ~TypeAttributes.VisibilityMask) != 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_ShouldOnlySetVisibilityFlags"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_ShouldOnlySetVisibilityFlags"), nameof(name));
             m_typeBuilder = new TypeBuilder(name, visibility | TypeAttributes.Sealed, typeof(System.Enum), null, module, PackingSize.Unspecified, TypeBuilder.UnspecifiedTypeSize, null);
 
             // Define the underlying field for the enum. It will be a non-static, private field with special name bit set. 

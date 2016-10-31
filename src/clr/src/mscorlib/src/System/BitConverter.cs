@@ -358,15 +358,15 @@ namespace System {
         // Converts an array of bytes into a String.  
         public static String ToString (byte[] value, int startIndex, int length) {            
             if (value == null) {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
 
             if (startIndex < 0 || startIndex >= value.Length && startIndex > 0) {  // Don't throw for a 0 length array.
-                throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_StartIndex")); 
+                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_StartIndex")); 
             }
 
             if (length < 0) {
-                throw new ArgumentOutOfRangeException("length", Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
+                throw new ArgumentOutOfRangeException(nameof(length), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
             }
 
             if (startIndex > value.Length - length) {
@@ -380,7 +380,7 @@ namespace System {
 
             if (length > (Int32.MaxValue / 3)) {
                 // (Int32.MaxValue / 3) == 715,827,882 Bytes == 699 MB
-                throw new ArgumentOutOfRangeException("length", Environment.GetResourceString("ArgumentOutOfRange_LengthTooLarge", (Int32.MaxValue / 3)));
+                throw new ArgumentOutOfRangeException(nameof(length), Environment.GetResourceString("ArgumentOutOfRange_LengthTooLarge", (Int32.MaxValue / 3)));
             }
 
             int chArrayLength = length * 3;
@@ -402,7 +402,7 @@ namespace System {
         // Converts an array of bytes into a String.  
         public static String ToString(byte [] value) {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             Contract.Ensures(Contract.Result<String>() != null);            
             Contract.EndContractBlock();
             return ToString(value, 0, value.Length);
@@ -411,7 +411,7 @@ namespace System {
         // Converts an array of bytes into a String.  
         public static String ToString (byte [] value, int startIndex) {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             Contract.Ensures(Contract.Result<String>() != null);
             Contract.EndContractBlock();
             return ToString(value, startIndex, value.Length - startIndex);
@@ -428,11 +428,11 @@ namespace System {
         // Converts an array of bytes into a boolean.  
         public static bool ToBoolean(byte[] value, int startIndex) {
             if (value==null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             if (startIndex < 0)
-                throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (startIndex > value.Length - 1)
-                throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             Contract.EndContractBlock();
     
             return (value[startIndex]==0)?false:true;

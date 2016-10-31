@@ -62,13 +62,13 @@ namespace System.Text
         {
             if (!Char.IsHighSurrogate(charUnknownHigh))
             {
-                throw new ArgumentOutOfRangeException("charUnknownHigh",
+                throw new ArgumentOutOfRangeException(nameof(charUnknownHigh),
                     Environment.GetResourceString("ArgumentOutOfRange_Range",
                     0xD800, 0xDBFF));
             }
             if (!Char.IsLowSurrogate(charUnknownLow))
             {
-                throw new ArgumentOutOfRangeException("CharUnknownLow",
+                throw new ArgumentOutOfRangeException(nameof(charUnknownLow),
                     Environment.GetResourceString("ArgumentOutOfRange_Range",
                     0xDC00, 0xDFFF));
             }
@@ -145,13 +145,13 @@ namespace System.Text
         {
             if (!Char.IsHighSurrogate(charUnknownHigh))
             {
-                throw new ArgumentOutOfRangeException("charUnknownHigh",
+                throw new ArgumentOutOfRangeException(nameof(charUnknownHigh),
                     Environment.GetResourceString("ArgumentOutOfRange_Range",
                     0xD800, 0xDBFF));
             }
             if (!Char.IsLowSurrogate(charUnknownLow))
             {
-                throw new ArgumentOutOfRangeException("CharUnknownLow",
+                throw new ArgumentOutOfRangeException(nameof(CharUnknownLow),
                     Environment.GetResourceString("ArgumentOutOfRange_Range",
                     0xDC00, 0xDFFF));
             }

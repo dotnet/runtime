@@ -24,7 +24,7 @@ namespace System
             // Used for MulticastDelegate
 
             if (method == null) 
-                throw new ArgumentNullException("method");
+                throw new ArgumentNullException(nameof(method));
             Contract.EndContractBlock();
     
             if (!method.IsPublic || (method.DeclaringType != null && !method.DeclaringType.IsVisible))
@@ -120,7 +120,7 @@ namespace System
         private DelegateSerializationHolder(SerializationInfo info, StreamingContext context)
         {
             if (info == null)
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
     
             bool bNewWire = true;
@@ -182,7 +182,7 @@ namespace System
         private DelegateEntry OldDelegateWireFormat(SerializationInfo info, StreamingContext context)
         {
             if (info == null)
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
 
             String delegateType = info.GetString("DelegateType");

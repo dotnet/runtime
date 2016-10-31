@@ -97,11 +97,11 @@ namespace System.IO {
         public virtual int Read([In, Out] char[] buffer, int index, int count) 
         {
             if (buffer==null)
-                throw new ArgumentNullException("buffer", Environment.GetResourceString("ArgumentNull_Buffer"));
+                throw new ArgumentNullException(nameof(buffer), Environment.GetResourceString("ArgumentNull_Buffer"));
             if (index < 0)
-                throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (buffer.Length - index < count)
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
             Contract.Ensures(Contract.Result<int>() >= 0);
@@ -202,7 +202,7 @@ namespace System.IO {
         public virtual Task<int> ReadAsync(char[] buffer, int index, int count)
         {
             if (buffer==null)
-                throw new ArgumentNullException("buffer", Environment.GetResourceString("ArgumentNull_Buffer"));
+                throw new ArgumentNullException(nameof(buffer), Environment.GetResourceString("ArgumentNull_Buffer"));
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (buffer.Length - index < count)
@@ -233,7 +233,7 @@ namespace System.IO {
         public virtual Task<int> ReadBlockAsync(char[] buffer, int index, int count)
         {
             if (buffer==null)
-                throw new ArgumentNullException("buffer", Environment.GetResourceString("ArgumentNull_Buffer"));
+                throw new ArgumentNullException(nameof(buffer), Environment.GetResourceString("ArgumentNull_Buffer"));
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (buffer.Length - index < count)
@@ -267,7 +267,7 @@ namespace System.IO {
         public static TextReader Synchronized(TextReader reader) 
         {
             if (reader==null)
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             Contract.Ensures(Contract.Result<TextReader>() != null);
             Contract.EndContractBlock();
 
@@ -379,7 +379,7 @@ namespace System.IO {
             public override Task<int> ReadBlockAsync(char[] buffer, int index, int count)
             {
                 if (buffer==null)
-                    throw new ArgumentNullException("buffer", Environment.GetResourceString("ArgumentNull_Buffer"));
+                    throw new ArgumentNullException(nameof(buffer), Environment.GetResourceString("ArgumentNull_Buffer"));
                 if (index < 0 || count < 0)
                     throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
                 if (buffer.Length - index < count)
@@ -395,7 +395,7 @@ namespace System.IO {
             public override Task<int> ReadAsync(char[] buffer, int index, int count)
             {
                 if (buffer==null)
-                    throw new ArgumentNullException("buffer", Environment.GetResourceString("ArgumentNull_Buffer"));
+                    throw new ArgumentNullException(nameof(buffer), Environment.GetResourceString("ArgumentNull_Buffer"));
                 if (index < 0 || count < 0)
                     throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
                 if (buffer.Length - index < count)

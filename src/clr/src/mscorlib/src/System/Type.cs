@@ -395,11 +395,11 @@ namespace System {
         {               
            // Must provide some types (Type[0] for nothing)
             if (types == null)
-                throw new ArgumentNullException("types");
+                throw new ArgumentNullException(nameof(types));
             Contract.EndContractBlock();
             for (int i=0;i<types.Length;i++)
                 if (types[i] == null)
-                    throw new ArgumentNullException("types");
+                    throw new ArgumentNullException(nameof(types));
             return GetConstructorImpl(bindingAttr, binder, callConvention, types, modifiers);
         }
 
@@ -407,11 +407,11 @@ namespace System {
         public ConstructorInfo GetConstructor(BindingFlags bindingAttr, Binder binder, Type[] types, ParameterModifier[] modifiers)
         {
             if (types == null)
-                throw new ArgumentNullException("types");
+                throw new ArgumentNullException(nameof(types));
             Contract.EndContractBlock();
             for (int i=0;i<types.Length;i++)
                 if (types[i] == null)
-                    throw new ArgumentNullException("types");
+                    throw new ArgumentNullException(nameof(types));
             return GetConstructorImpl(bindingAttr, binder, CallingConventions.Any, types, modifiers);
         }
 
@@ -464,13 +464,13 @@ namespace System {
                                     ParameterModifier[] modifiers)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             if (types == null)
-                throw new ArgumentNullException("types");
+                throw new ArgumentNullException(nameof(types));
             Contract.EndContractBlock();
             for (int i = 0; i < types.Length; i++)
                 if (types[i] == null)
-                    throw new ArgumentNullException("types");
+                    throw new ArgumentNullException(nameof(types));
             return GetMethodImpl(name, bindingAttr, binder, callConvention, types, modifiers);
         }
 
@@ -481,46 +481,46 @@ namespace System {
                                     ParameterModifier[] modifiers)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             if (types == null)
-                throw new ArgumentNullException("types");
+                throw new ArgumentNullException(nameof(types));
             Contract.EndContractBlock();
             for (int i = 0; i < types.Length; i++)
                 if (types[i] == null)
-                    throw new ArgumentNullException("types");
+                    throw new ArgumentNullException(nameof(types));
             return GetMethodImpl(name, bindingAttr, binder, CallingConventions.Any, types, modifiers);
         }
 
         public MethodInfo GetMethod(String name, Type[] types, ParameterModifier[] modifiers)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             if (types == null)
-                throw new ArgumentNullException("types");
+                throw new ArgumentNullException(nameof(types));
             Contract.EndContractBlock();
             for (int i=0;i<types.Length;i++)
                 if (types[i] == null)
-                    throw new ArgumentNullException("types");
+                    throw new ArgumentNullException(nameof(types));
             return GetMethodImpl(name, Type.DefaultLookup, null, CallingConventions.Any, types, modifiers);
         }
 
         public MethodInfo GetMethod(String name,Type[] types)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             if (types == null)
-                throw new ArgumentNullException("types");
+                throw new ArgumentNullException(nameof(types));
             Contract.EndContractBlock();
             for (int i=0;i<types.Length;i++)
                 if (types[i] == null)
-                    throw new ArgumentNullException("types");
+                    throw new ArgumentNullException(nameof(types));
             return GetMethodImpl(name, Type.DefaultLookup, null, CallingConventions.Any, types, null);
         }
 
         public MethodInfo GetMethod(String name, BindingFlags bindingAttr)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             Contract.EndContractBlock();
             return GetMethodImpl(name, bindingAttr, null, CallingConventions.Any, null, null);
         }
@@ -528,7 +528,7 @@ namespace System {
         public MethodInfo GetMethod(String name)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             Contract.EndContractBlock();
             return GetMethodImpl(name, Type.DefaultLookup, null, CallingConventions.Any, null, null);
         }
@@ -584,7 +584,7 @@ namespace System {
         public virtual Type[] FindInterfaces(TypeFilter filter,Object filterCriteria)
         {
             if (filter == null)
-                throw new ArgumentNullException("filter");
+                throw new ArgumentNullException(nameof(filter));
             Contract.EndContractBlock();
             Type[] c = GetInterfaces();
             int cnt = 0;
@@ -631,9 +631,9 @@ namespace System {
                         Type returnType, Type[] types, ParameterModifier[] modifiers)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             if (types == null)
-                throw new ArgumentNullException("types");
+                throw new ArgumentNullException(nameof(types));
             Contract.EndContractBlock();
             return GetPropertyImpl(name,bindingAttr,binder,returnType,types,modifiers);
         }
@@ -641,9 +641,9 @@ namespace System {
         public PropertyInfo GetProperty(String name, Type returnType, Type[] types,ParameterModifier[] modifiers)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             if (types == null)
-                throw new ArgumentNullException("types");
+                throw new ArgumentNullException(nameof(types));
             Contract.EndContractBlock();
             return GetPropertyImpl(name,Type.DefaultLookup,null,returnType,types,modifiers);
         }
@@ -651,7 +651,7 @@ namespace System {
         public PropertyInfo GetProperty(String name, BindingFlags bindingAttr)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             Contract.EndContractBlock();
             return GetPropertyImpl(name,bindingAttr,null,null,null,null);
         }
@@ -659,9 +659,9 @@ namespace System {
         public PropertyInfo GetProperty(String name, Type returnType, Type[] types)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             if (types == null)
-                throw new ArgumentNullException("types");
+                throw new ArgumentNullException(nameof(types));
             Contract.EndContractBlock();
             return GetPropertyImpl(name,Type.DefaultLookup,null,returnType,types,null);
         }
@@ -669,9 +669,9 @@ namespace System {
         public PropertyInfo GetProperty(String name, Type[] types)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             if (types == null)
-                throw new ArgumentNullException("types");
+                throw new ArgumentNullException(nameof(types));
             Contract.EndContractBlock();
             return GetPropertyImpl(name,Type.DefaultLookup,null,null,types,null);
         }
@@ -679,9 +679,9 @@ namespace System {
         public PropertyInfo GetProperty(String name, Type returnType)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             if (returnType == null)
-                throw new ArgumentNullException("returnType");
+                throw new ArgumentNullException(nameof(returnType));
             Contract.EndContractBlock();
             return GetPropertyImpl(name,Type.DefaultLookup,null,returnType,null,null);
         }
@@ -689,9 +689,9 @@ namespace System {
         internal PropertyInfo GetProperty(String name, BindingFlags bindingAttr, Type returnType)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             if (returnType == null)
-                throw new ArgumentNullException("returnType");
+                throw new ArgumentNullException(nameof(returnType));
             Contract.EndContractBlock();
             return GetPropertyImpl(name, bindingAttr, null, returnType, null, null);
         }
@@ -699,7 +699,7 @@ namespace System {
         public PropertyInfo GetProperty(String name)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             Contract.EndContractBlock();
             return GetPropertyImpl(name,Type.DefaultLookup,null,null,null,null);
         }
@@ -1472,7 +1472,7 @@ namespace System {
         public virtual bool IsEnumDefined(object value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             if (!IsEnum)
                 throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnum"), "enumType");
@@ -1520,7 +1520,7 @@ namespace System {
         public virtual string GetEnumName(object value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             if (!IsEnum)
                 throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnum"), "enumType");
@@ -1529,7 +1529,7 @@ namespace System {
             Type valueType = value.GetType();
 
             if (!(valueType.IsEnum || Type.IsIntegerType(valueType)))
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnumBaseTypeOrEnum"), "value");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnumBaseTypeOrEnum"), nameof(value));
 
             Array values = GetEnumRawConstantValues();
             int index = BinarySearch(values, value);
@@ -1750,7 +1750,7 @@ namespace System {
         // types.
         public static Type[] GetTypeArray(Object[] args) {
             if (args == null)
-                throw new ArgumentNullException("args");
+                throw new ArgumentNullException(nameof(args));
             Contract.EndContractBlock();
             Type[] cls = new Type[args.Length];
             for (int i = 0;i < cls.Length;i++)

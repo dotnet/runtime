@@ -1505,7 +1505,7 @@ namespace System.Threading
             }
             else
             {
-                throw new ArgumentNullException("WaitOrTimerCallback");
+                throw new ArgumentNullException(nameof(WaitOrTimerCallback));
             }
             return registeredWaitHandle;
         }
@@ -1522,7 +1522,7 @@ namespace System.Threading
              )
         {
             if (millisecondsTimeOutInterval < -1)
-                throw new ArgumentOutOfRangeException("millisecondsTimeOutInterval", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
             Contract.EndContractBlock();
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return RegisterWaitForSingleObject(waitObject,callBack,state,(UInt32)millisecondsTimeOutInterval,executeOnlyOnce,ref stackMark,true);
@@ -1539,7 +1539,7 @@ namespace System.Threading
              )
         {
             if (millisecondsTimeOutInterval < -1)
-                throw new ArgumentOutOfRangeException("millisecondsTimeOutInterval", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
             Contract.EndContractBlock();
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return RegisterWaitForSingleObject(waitObject,callBack,state,(UInt32)millisecondsTimeOutInterval,executeOnlyOnce,ref stackMark,false);
@@ -1556,7 +1556,7 @@ namespace System.Threading
         )
         {
             if (millisecondsTimeOutInterval < -1)
-                throw new ArgumentOutOfRangeException("millisecondsTimeOutInterval", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
             Contract.EndContractBlock();
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return RegisterWaitForSingleObject(waitObject,callBack,state,(UInt32)millisecondsTimeOutInterval,executeOnlyOnce,ref stackMark,true);
@@ -1573,7 +1573,7 @@ namespace System.Threading
         )
         {
             if (millisecondsTimeOutInterval < -1)
-                throw new ArgumentOutOfRangeException("millisecondsTimeOutInterval", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
             Contract.EndContractBlock();
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return RegisterWaitForSingleObject(waitObject,callBack,state,(UInt32)millisecondsTimeOutInterval,executeOnlyOnce,ref stackMark,false);
@@ -1591,9 +1591,9 @@ namespace System.Threading
         {
             long tm = (long)timeout.TotalMilliseconds;
             if (tm < -1)
-                throw new ArgumentOutOfRangeException("timeout", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(timeout), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
             if (tm > (long) Int32.MaxValue)
-                throw new ArgumentOutOfRangeException("timeout", Environment.GetResourceString("ArgumentOutOfRange_LessEqualToIntegerMaxVal"));
+                throw new ArgumentOutOfRangeException(nameof(timeout), Environment.GetResourceString("ArgumentOutOfRange_LessEqualToIntegerMaxVal"));
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return RegisterWaitForSingleObject(waitObject,callBack,state,(UInt32)tm,executeOnlyOnce,ref stackMark,true);
         }
@@ -1610,9 +1610,9 @@ namespace System.Threading
         {
             long tm = (long)timeout.TotalMilliseconds;
             if (tm < -1)
-                throw new ArgumentOutOfRangeException("timeout", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(timeout), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
             if (tm > (long) Int32.MaxValue)
-                throw new ArgumentOutOfRangeException("timeout", Environment.GetResourceString("ArgumentOutOfRange_LessEqualToIntegerMaxVal"));
+                throw new ArgumentOutOfRangeException(nameof(timeout), Environment.GetResourceString("ArgumentOutOfRange_LessEqualToIntegerMaxVal"));
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return RegisterWaitForSingleObject(waitObject,callBack,state,(UInt32)tm,executeOnlyOnce,ref stackMark,false);
         }
@@ -1687,7 +1687,7 @@ namespace System.Threading
             }
             else
             {
-                throw new ArgumentNullException("WaitCallback");
+                throw new ArgumentNullException(nameof(WaitCallback));
             }
             return success;
         }
@@ -1928,7 +1928,7 @@ namespace System.Threading
         public static bool BindHandle(SafeHandle osHandle)
         {
             if (osHandle == null)
-                throw new ArgumentNullException("osHandle");
+                throw new ArgumentNullException(nameof(osHandle));
             
             bool ret = false;
             bool mustReleaseSafeHandle = false;

@@ -153,7 +153,7 @@ namespace System.Globalization {
 
         internal int GetGregorianYear(int year, int era) {
             if (year < 0) {
-                throw new ArgumentOutOfRangeException("year",
+                throw new ArgumentOutOfRangeException(nameof(year),
                     Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum")); 
             }            
             Contract.EndContractBlock();
@@ -166,7 +166,7 @@ namespace System.Globalization {
                 if (era == m_EraInfo[i].era) {
                     if (year < m_EraInfo[i].minEraYear || year > m_EraInfo[i].maxEraYear) {
                         throw new ArgumentOutOfRangeException(
-                                    "year", 
+                                    nameof(year), 
                                     String.Format(
                                         CultureInfo.CurrentCulture,
                                         Environment.GetResourceString("ArgumentOutOfRange_Range"), 
@@ -176,7 +176,7 @@ namespace System.Globalization {
                     return (m_EraInfo[i].yearOffset + year);
                 }
             }
-            throw new ArgumentOutOfRangeException("era", Environment.GetResourceString("ArgumentOutOfRange_InvalidEraValue"));
+            throw new ArgumentOutOfRangeException(nameof(era), Environment.GetResourceString("ArgumentOutOfRange_InvalidEraValue"));
         }
         
         internal bool IsValidYear(int year, int era) {
@@ -299,7 +299,7 @@ namespace System.Globalization {
             {
                 if (millisecond < 0 || millisecond >= MillisPerSecond) {
                     throw new ArgumentOutOfRangeException(
-                                "millisecond", 
+                                nameof(millisecond), 
                                 String.Format(
                                     CultureInfo.CurrentCulture,
                                     Environment.GetResourceString("ArgumentOutOfRange_Range"), 
@@ -346,7 +346,7 @@ namespace System.Globalization {
         {
             if (months < -120000 || months > 120000) {
                 throw new ArgumentOutOfRangeException(
-                            "months", 
+                            nameof(months), 
                             String.Format(
                                 CultureInfo.CurrentCulture,
                                 Environment.GetResourceString("ArgumentOutOfRange_Range"), 
@@ -432,7 +432,7 @@ namespace System.Globalization {
             //
             year = GetGregorianYear(year, era);
             if (month < 1 || month > 12) {
-                throw new ArgumentOutOfRangeException("month", Environment.GetResourceString("ArgumentOutOfRange_Month"));
+                throw new ArgumentOutOfRangeException(nameof(month), Environment.GetResourceString("ArgumentOutOfRange_Month"));
             }
             int[] days = ((year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? DaysToMonth366: DaysToMonth365);
             return (days[month] - days[month - 1]);        
@@ -460,7 +460,7 @@ namespace System.Globalization {
                     return (m_EraInfo[i].era);
                 }
             }
-            throw new ArgumentOutOfRangeException("time", Environment.GetResourceString("ArgumentOutOfRange_Era"));
+            throw new ArgumentOutOfRangeException(nameof(time), Environment.GetResourceString("ArgumentOutOfRange_Era"));
         }
 
 
@@ -533,7 +533,7 @@ namespace System.Globalization {
             // year/month/era checking is done in GetDaysInMonth()
             if (day < 1 || day > GetDaysInMonth(year, month, era)) {
                 throw new ArgumentOutOfRangeException(
-                            "day", 
+                            nameof(day), 
                             String.Format(
                                 CultureInfo.CurrentCulture,
                                 Environment.GetResourceString("ArgumentOutOfRange_Range"), 
@@ -570,7 +570,7 @@ namespace System.Globalization {
             year = GetGregorianYear(year, era);
             if (month < 1 || month > 12) {
                 throw new ArgumentOutOfRangeException(
-                            "month", 
+                            nameof(month), 
                             String.Format(
                                 CultureInfo.CurrentCulture,
                                 Environment.GetResourceString("ArgumentOutOfRange_Range"), 
@@ -607,7 +607,7 @@ namespace System.Globalization {
 
         public int ToFourDigitYear(int year, int twoDigitYearMax) {
             if (year < 0) {
-                throw new ArgumentOutOfRangeException("year",
+                throw new ArgumentOutOfRangeException(nameof(year),
                     Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));                
             }
             Contract.EndContractBlock();
@@ -619,7 +619,7 @@ namespace System.Globalization {
             
             if (year < m_minYear || year > m_maxYear) {
                 throw new ArgumentOutOfRangeException(
-                            "year",
+                            nameof(year),
                             String.Format(
                                 CultureInfo.CurrentCulture,
                                 Environment.GetResourceString("ArgumentOutOfRange_Range"), m_minYear, m_maxYear));

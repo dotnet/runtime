@@ -10,7 +10,7 @@ namespace System {
     // The old way to throw an exception generates quite a lot IL code and assembly code.
     // Following is an example:
     //     C# source
-    //          throw new ArgumentNullException("key", Environment.GetResourceString("ArgumentNull_Key"));
+    //          throw new ArgumentNullException(nameof(key), Environment.GetResourceString("ArgumentNull_Key"));
     //     IL code:
     //          IL_0003:  ldstr      "key"
     //          IL_0008:  ldstr      "ArgumentNull_Key"
@@ -210,11 +210,11 @@ namespace System {
         }
 
         private static ArgumentException GetWrongKeyTypeArgumentException(object key, Type targetType) {
-            return new ArgumentException(Environment.GetResourceString("Arg_WrongType", key, targetType), "key");
+            return new ArgumentException(Environment.GetResourceString("Arg_WrongType", key, targetType), nameof(key));
         }
 
         private static ArgumentException GetWrongValueTypeArgumentException(object value, Type targetType) {
-            return new ArgumentException(Environment.GetResourceString("Arg_WrongType", value, targetType), "value");
+            return new ArgumentException(Environment.GetResourceString("Arg_WrongType", value, targetType), nameof(value));
         }
 
         private static ArgumentOutOfRangeException GetArgumentOutOfRangeException(ExceptionArgument argument, ExceptionResource resource) {

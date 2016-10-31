@@ -241,14 +241,14 @@ namespace System.Globalization {
 
         public override int ToFourDigitYear(int year) {
             if (year <= 0) {
-                throw new ArgumentOutOfRangeException("year",
+                throw new ArgumentOutOfRangeException(nameof(year),
                     Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
             }
             Contract.EndContractBlock();
 
             if (year > helper.MaxYear) {
                 throw new ArgumentOutOfRangeException(
-                            "year",
+                            nameof(year),
                             String.Format(
                                 CultureInfo.CurrentCulture,
                                 Environment.GetResourceString("ArgumentOutOfRange_Range"),
