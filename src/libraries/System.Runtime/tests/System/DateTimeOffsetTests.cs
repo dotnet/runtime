@@ -871,6 +871,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void ParseExact_String_String_FormatProvider_DateTimeStyles_R()
+        {
+            DateTimeOffset expected = DateTimeOffset.MaxValue;
+            string expectedString = expected.ToString("r");
+
+            DateTimeOffset result = DateTimeOffset.ParseExact(expectedString, "r", null, DateTimeStyles.None);
+            Assert.Equal(expectedString, result.ToString("r"));
+        }
+
+        [Fact]
         public static void ParseExact_String_String_FormatProvider_DateTimeStyles_CustomFormatProvider()
         {
             var formatter = new MyFormatter();
