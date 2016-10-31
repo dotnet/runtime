@@ -13,17 +13,17 @@ namespace System.Net
     {
         public HttpListenerException() : base(Marshal.GetLastWin32Error())
         {
-            GlobalLog.Print("HttpListenerException::.ctor() " + NativeErrorCode.ToString() + ":" + Message);
+            //GlobalLog.Print("HttpListenerException::.ctor() " + NativeErrorCode.ToString() + ":" + Message);
         }
 
         public HttpListenerException(int errorCode) : base(errorCode)
         {
-            GlobalLog.Print("HttpListenerException::.ctor(int) " + NativeErrorCode.ToString() + ":" + Message);
+            //GlobalLog.Print("HttpListenerException::.ctor(int) " + NativeErrorCode.ToString() + ":" + Message);
         }
 
         public HttpListenerException(int errorCode, string message) : base(errorCode, message)
         {
-            GlobalLog.Print("HttpListenerException::.ctor(int) " + NativeErrorCode.ToString() + ":" + Message);
+            //GlobalLog.Print("HttpListenerException::.ctor(int) " + NativeErrorCode.ToString() + ":" + Message);
         }
     }
 }

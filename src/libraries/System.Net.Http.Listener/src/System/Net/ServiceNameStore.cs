@@ -57,12 +57,12 @@ namespace System.Net
                 {
                     addedAny = true;
 
-                    if (NetEventSource.Log.IsEnabled()) 
-                    {
-                        NetEventSource.PrintInfo(NetEventSource.ComponentType.HttpListener, "ServiceNameStore#" +
-                            LoggingHash.HashString(this) + "::Add() " 
-                            + SR.Format(SR.net_log_listener_spn_add, spn, uriPrefix));
-                    }
+                    //if (NetEventSource.Log.IsEnabled()) 
+                    //{
+                    //    NetEventSource.PrintInfo(NetEventSource.ComponentType.HttpListener, "ServiceNameStore#" +
+                    //        LoggingHash.HashString(this) + "::Add() " 
+                    //        + SR.Format(SR.net_log_listener_spn_add, spn, uriPrefix));
+                    //}
                 }
             }
             
@@ -72,9 +72,9 @@ namespace System.Net
             }
             else if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.PrintInfo(NetEventSource.ComponentType.HttpListener, "ServiceNameStore#" +
-                    LoggingHash.HashString(this) + "::Add() " 
-                    + SR.Format(SR.net_log_listener_spn_not_add, uriPrefix));
+                //NetEventSource.PrintInfo(NetEventSource.ComponentType.HttpListener, "ServiceNameStore#" +
+                //    LoggingHash.HashString(this) + "::Add() " 
+                //    + SR.Format(SR.net_log_listener_spn_not_add, uriPrefix));
             }
 
             return addedAny;
@@ -93,18 +93,18 @@ namespace System.Net
                 serviceNameCollection = null; //invalidate (readonly) ServiceNameCollection
             }
 
-            if (NetEventSource.Log.IsEnabled()) {
-                if (needToRemove) {
-                    NetEventSource.PrintInfo(NetEventSource.ComponentType.HttpListener, "ServiceNameStore#" +
-                        LoggingHash.HashString(this) + "::Remove() " 
-                        + SR.Format(SR.net_log_listener_spn_remove, newServiceName, uriPrefix));
-                }
-                else {
-                    NetEventSource.PrintInfo(NetEventSource.ComponentType.HttpListener, "ServiceNameStore#" +
-                        LoggingHash.HashString(this) + "::Remove() " 
-                        + SR.Format(SR.net_log_listener_spn_not_remove, uriPrefix));
-                }
-            }
+            //if (NetEventSource.Log.IsEnabled()) {
+            //    if (needToRemove) {
+            //        NetEventSource.PrintInfo(NetEventSource.ComponentType.HttpListener, "ServiceNameStore#" +
+            //            LoggingHash.HashString(this) + "::Remove() " 
+            //            + SR.Format(SR.net_log_listener_spn_remove, newServiceName, uriPrefix));
+            //    }
+            //    else {
+            //        NetEventSource.PrintInfo(NetEventSource.ComponentType.HttpListener, "ServiceNameStore#" +
+            //            LoggingHash.HashString(this) + "::Remove() " 
+            //            + SR.Format(SR.net_log_listener_spn_not_remove, uriPrefix));
+            //    }
+            //}
 
             return needToRemove;
         }

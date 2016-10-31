@@ -33,7 +33,7 @@ namespace System.Net
             object result = null;
             try
             {
-                GlobalLog.Print("ListenerAsyncResult#" + LoggingHash.HashString(asyncResult) + "::WaitCallback() errorCode:[" + errorCode.ToString() + "] numBytes:[" + numBytes.ToString() + "]");
+                //GlobalLog.Print("ListenerAsyncResult#" + LoggingHash.HashString(asyncResult) + "::WaitCallback() errorCode:[" + errorCode.ToString() + "] numBytes:[" + numBytes.ToString() + "]");
 
                 if (errorCode != Interop.HttpApi.ERROR_SUCCESS &&
                     errorCode != Interop.HttpApi.ERROR_MORE_DATA)
@@ -93,11 +93,11 @@ namespace System.Net
                 }
 
                 // complete the async IO and invoke the callback
-                GlobalLog.Print("ListenerAsyncResult#" + LoggingHash.HashString(asyncResult) + "::WaitCallback() calling Complete()");
+                //GlobalLog.Print("ListenerAsyncResult#" + LoggingHash.HashString(asyncResult) + "::WaitCallback() calling Complete()");
             }
             catch (Exception exception) when (!ExceptionCheck.IsFatal(exception))
             {
-                GlobalLog.Print("ListenerAsyncResult#" + LoggingHash.HashString(asyncResult) + "::WaitCallback() Caught exception:" + exception.ToString());
+                //GlobalLog.Print("ListenerAsyncResult#" + LoggingHash.HashString(asyncResult) + "::WaitCallback() Caught exception:" + exception.ToString());
                 result = exception;
             }
             asyncResult.InvokeCallback(result);
@@ -114,7 +114,7 @@ namespace System.Net
             uint statusCode = Interop.HttpApi.ERROR_SUCCESS;
             while (true)
             {
-                GlobalLog.Print("ListenerAsyncResult#" + LoggingHash.HashString(this) + "::QueueBeginGetContext() calling Interop.HttpApi.HttpReceiveHttpRequest RequestId:" + m_RequestContext.RequestBlob->RequestId + " Buffer:0x" + ((IntPtr)m_RequestContext.RequestBlob).ToString("x") + " Size:" + m_RequestContext.Size.ToString());
+                //GlobalLog.Print("ListenerAsyncResult#" + LoggingHash.HashString(this) + "::QueueBeginGetContext() calling Interop.HttpApi.HttpReceiveHttpRequest RequestId:" + m_RequestContext.RequestBlob->RequestId + " Buffer:0x" + ((IntPtr)m_RequestContext.RequestBlob).ToString("x") + " Size:" + m_RequestContext.Size.ToString());
                 (AsyncObject as HttpListener).EnsureBoundHandle();
                 uint bytesTransferred = 0;
                 statusCode = Interop.HttpApi.HttpReceiveHttpRequest(
@@ -126,7 +126,7 @@ namespace System.Net
                     &bytesTransferred,
                     m_RequestContext.NativeOverlapped);
 
-                GlobalLog.Print("ListenerAsyncResult#" + LoggingHash.HashString(this) + "::QueueBeginGetContext() call to Interop.HttpApi.HttpReceiveHttpRequest returned:" + statusCode);
+                //GlobalLog.Print("ListenerAsyncResult#" + LoggingHash.HashString(this) + "::QueueBeginGetContext() call to Interop.HttpApi.HttpReceiveHttpRequest returned:" + statusCode);
                 if (statusCode == Interop.HttpApi.ERROR_INVALID_PARAMETER && m_RequestContext.RequestBlob->RequestId != 0)
                 {
                     // we might get this if somebody stole our RequestId,

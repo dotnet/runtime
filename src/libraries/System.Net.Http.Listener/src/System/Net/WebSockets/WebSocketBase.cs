@@ -78,19 +78,19 @@ namespace System.Net.WebSockets
             s_LoggingEnabled = NetEventSource.Log.IsEnabled();
             string parameters = string.Empty;
 
-            if (s_LoggingEnabled)
-            {
-                parameters = string.Format(CultureInfo.InvariantCulture,
-                    "ReceiveBufferSize: {0}, SendBufferSize: {1},  Protocols: {2}, KeepAliveInterval: {3}, innerStream: {4}, internalBuffer: {5}",
-                    internalBuffer.ReceiveBufferSize,
-                    internalBuffer.SendBufferSize,
-                    subProtocol,
-                    keepAliveInterval,
-                    LoggingHash.GetObjectLogHash(innerStream),
-                    LoggingHash.GetObjectLogHash(internalBuffer));
+            //if (s_LoggingEnabled)
+            //{
+            //    parameters = string.Format(CultureInfo.InvariantCulture,
+            //        "ReceiveBufferSize: {0}, SendBufferSize: {1},  Protocols: {2}, KeepAliveInterval: {3}, innerStream: {4}, internalBuffer: {5}",
+            //        internalBuffer.ReceiveBufferSize,
+            //        internalBuffer.SendBufferSize,
+            //        subProtocol,
+            //        keepAliveInterval,
+            //        LoggingHash.GetObjectLogHash(innerStream),
+            //        LoggingHash.GetObjectLogHash(internalBuffer));
 
-                NetEventSource.Enter(NetEventSource.ComponentType.WebSocket, this, Methods.Initialize, parameters);
-            }
+            //    NetEventSource.Enter(NetEventSource.ComponentType.WebSocket, this, Methods.Initialize, parameters);
+            //}
 
             m_ThisLock = new object();
 
@@ -100,8 +100,8 @@ namespace System.Net.WebSockets
                 m_InternalBuffer = internalBuffer;
                 if (s_LoggingEnabled)
                 {
-                    NetEventSource.Associate(NetEventSource.ComponentType.WebSocket, this, m_InnerStream);
-                    NetEventSource.Associate(NetEventSource.ComponentType.WebSocket, this, m_InternalBuffer);
+                    //NetEventSource.Associate(NetEventSource.ComponentType.WebSocket, this, m_InnerStream);
+                    //NetEventSource.Associate(NetEventSource.ComponentType.WebSocket, this, m_InternalBuffer);
                 }
 
                 m_CloseOutstandingOperationHelper = new OutstandingOperationHelper();
@@ -124,7 +124,7 @@ namespace System.Net.WebSockets
             {
                 if (s_LoggingEnabled)
                 {
-                    NetEventSource.Exit(NetEventSource.ComponentType.WebSocket, this, Methods.Initialize, parameters);
+                    //NetEventSource.Exit(NetEventSource.ComponentType.WebSocket, this, Methods.Initialize, parameters);
                 }
             }
         }
@@ -206,7 +206,7 @@ namespace System.Net.WebSockets
 
             if (s_LoggingEnabled)
             {
-                NetEventSource.Enter(NetEventSource.ComponentType.WebSocket, this, Methods.ReceiveAsync, string.Empty);
+                //NetEventSource.Enter(NetEventSource.ComponentType.WebSocket, this, Methods.ReceiveAsync, string.Empty);
             }
 
             WebSocketReceiveResult receiveResult;
@@ -240,15 +240,15 @@ namespace System.Net.WebSockets
                     EnsureReceiveOperation();
                     receiveResult = await m_ReceiveOperation.Process(buffer, linkedCancellationToken).SuppressContextFlow();
 
-                    if (s_LoggingEnabled && receiveResult.Count > 0)
-                    {
-                        NetEventSource.Dump(NetEventSource.ComponentType.WebSocket,
-                            this,
-                            Methods.ReceiveAsync,
-                            buffer.Array,
-                            buffer.Offset,
-                            receiveResult.Count);
-                    }
+                    //if (s_LoggingEnabled && receiveResult.Count > 0)
+                    //{
+                    //    NetEventSource.Dump(NetEventSource.ComponentType.WebSocket,
+                    //        this,
+                    //        Methods.ReceiveAsync,
+                    //        buffer.Array,
+                    //        buffer.Offset,
+                    //        receiveResult.Count);
+                    //}
                 }
                 catch (Exception exception)
                 {
@@ -264,10 +264,10 @@ namespace System.Net.WebSockets
             }
             finally
             {
-                if (s_LoggingEnabled)
-                {
-                    NetEventSource.Exit(NetEventSource.ComponentType.WebSocket, this, Methods.ReceiveAsync, string.Empty);
-                }
+                //if (s_LoggingEnabled)
+                //{
+                //    NetEventSource.Exit(NetEventSource.ComponentType.WebSocket, this, Methods.ReceiveAsync, string.Empty);
+                //}
             }
 
             return receiveResult;
@@ -312,7 +312,7 @@ namespace System.Net.WebSockets
                     "messageType: {0}, endOfMessage: {1}",
                     messageType,
                     endOfMessage);
-                NetEventSource.Enter(NetEventSource.ComponentType.WebSocket, this, Methods.SendAsync, inputParameter);
+                //NetEventSource.Enter(NetEventSource.ComponentType.WebSocket, this, Methods.SendAsync, inputParameter);
             }
 
             try
@@ -357,15 +357,15 @@ namespace System.Net.WebSockets
                         m_SendOutstandingOperationHelper.CompleteOperation(ownsCancellationTokenSource);
                     }
 
-                    if (s_LoggingEnabled && buffer.Count > 0)
-                    {
-                        NetEventSource.Dump(NetEventSource.ComponentType.WebSocket,
-                            this,
-                            Methods.SendAsync,
-                            buffer.Array,
-                            buffer.Offset,
-                            buffer.Count);
-                    }
+                    //if (s_LoggingEnabled && buffer.Count > 0)
+                    //{
+                    //    NetEventSource.Dump(NetEventSource.ComponentType.WebSocket,
+                    //        this,
+                    //        Methods.SendAsync,
+                    //        buffer.Array,
+                    //        buffer.Offset,
+                    //        buffer.Count);
+                    //}
 
                     int position = buffer.Offset;
 
@@ -389,7 +389,7 @@ namespace System.Net.WebSockets
             {
                 if (s_LoggingEnabled)
                 {
-                    NetEventSource.Exit(NetEventSource.ComponentType.WebSocket, this, Methods.SendAsync, inputParameter);
+                    //NetEventSource.Exit(NetEventSource.ComponentType.WebSocket, this, Methods.SendAsync, inputParameter);
                 }
             }
         }
@@ -442,7 +442,7 @@ namespace System.Net.WebSockets
         {
             if (s_LoggingEnabled)
             {
-                NetEventSource.Enter(NetEventSource.ComponentType.WebSocket, this, Methods.Abort, string.Empty);
+                //NetEventSource.Enter(NetEventSource.ComponentType.WebSocket, this, Methods.Abort, string.Empty);
             }
 
             bool thisLockTaken = false;
@@ -483,7 +483,7 @@ namespace System.Net.WebSockets
                 ReleaseLocks(ref thisLockTaken, ref sessionHandleLockTaken);
                 if (s_LoggingEnabled)
                 {
-                    NetEventSource.Exit(NetEventSource.ComponentType.WebSocket, this, Methods.Abort, string.Empty);
+                    //NetEventSource.Exit(NetEventSource.ComponentType.WebSocket, this, Methods.Abort, string.Empty);
                 }
             }
         }
@@ -509,7 +509,7 @@ namespace System.Net.WebSockets
                     "closeStatus: {0}, statusDescription: {1}",
                     closeStatus,
                     statusDescription);
-                NetEventSource.Enter(NetEventSource.ComponentType.WebSocket, this, Methods.CloseOutputAsync, inputParameter);
+                //NetEventSource.Enter(NetEventSource.ComponentType.WebSocket, this, Methods.CloseOutputAsync, inputParameter);
             }
 
             try
@@ -635,7 +635,7 @@ namespace System.Net.WebSockets
             {
                 if (s_LoggingEnabled)
                 {
-                    NetEventSource.Exit(NetEventSource.ComponentType.WebSocket, this, Methods.CloseOutputAsync, inputParameter);
+                    //NetEventSource.Exit(NetEventSource.ComponentType.WebSocket, this, Methods.CloseOutputAsync, inputParameter);
                 }
             }
         }
@@ -747,7 +747,7 @@ namespace System.Net.WebSockets
                     "closeStatus: {0}, statusDescription: {1}",
                     closeStatus,
                     statusDescription);
-                NetEventSource.Enter(NetEventSource.ComponentType.WebSocket, this, Methods.CloseAsync, inputParameter);
+                //NetEventSource.Enter(NetEventSource.ComponentType.WebSocket, this, Methods.CloseAsync, inputParameter);
             }
 
             try
@@ -898,12 +898,12 @@ namespace System.Net.WebSockets
                         {
                             if (s_LoggingEnabled && receiveResult.Count > 0)
                             {
-                                NetEventSource.Dump(NetEventSource.ComponentType.WebSocket,
-                                    this,
-                                    Methods.ReceiveAsync,
-                                    closeMessageBuffer.Array,
-                                    closeMessageBuffer.Offset,
-                                    receiveResult.Count);
+                                //NetEventSource.Dump(NetEventSource.ComponentType.WebSocket,
+                                //    this,
+                                //    Methods.ReceiveAsync,
+                                //    closeMessageBuffer.Array,
+                                //    closeMessageBuffer.Offset,
+                                //    receiveResult.Count);
                             }
 
                             if (receiveResult.MessageType != WebSocketMessageType.Close)
@@ -984,10 +984,10 @@ namespace System.Net.WebSockets
             }
             finally
             {
-                if (s_LoggingEnabled)
-                {
-                    NetEventSource.Exit(NetEventSource.ComponentType.WebSocket, this, Methods.CloseAsync, inputParameter);
-                }
+                //if (s_LoggingEnabled)
+                //{
+                //    NetEventSource.Exit(NetEventSource.ComponentType.WebSocket, this, Methods.CloseAsync, inputParameter);
+                //}
             }
         }
 
@@ -1274,10 +1274,10 @@ namespace System.Net.WebSockets
         {
             Debug.Assert(exception != null, "'exception' MUST NOT be NULL.");
 
-            if (s_LoggingEnabled && !string.IsNullOrEmpty(methodName))
-            {
-                NetEventSource.Exception(NetEventSource.ComponentType.WebSocket, this, methodName, exception);
-            }
+            //if (s_LoggingEnabled && !string.IsNullOrEmpty(methodName))
+            //{
+            //    NetEventSource.Exception(NetEventSource.ComponentType.WebSocket, this, methodName, exception);
+            //}
 
             OperationCanceledException operationCanceledException = exception as OperationCanceledException;
             if (operationCanceledException != null)
@@ -1412,10 +1412,10 @@ namespace System.Net.WebSockets
         {
             if (Interlocked.CompareExchange<Exception>(ref m_PendingException, exception, null) == null)
             {
-                if (s_LoggingEnabled)
-                {
-                    NetEventSource.Exception(NetEventSource.ComponentType.WebSocket, this, Methods.Fault, exception);
-                }
+                //if (s_LoggingEnabled)
+                //{
+                //    NetEventSource.Exception(NetEventSource.ComponentType.WebSocket, this, Methods.Fault, exception);
+                //}
                 Abort();
             }
         }
@@ -1491,14 +1491,14 @@ namespace System.Net.WebSockets
             m_CloseStatus = closeStatus;
             m_CloseStatusDescription = closeStatusDescription;
 
-            if (s_LoggingEnabled)
-            {
-                string parameters = string.Format(CultureInfo.InvariantCulture,
-                    "closeStatus: {0}, closeStatusDescription: {1}, m_State: {2}",
-                    closeStatus, closeStatusDescription, m_State);
+            //if (s_LoggingEnabled)
+            //{
+            //    string parameters = string.Format(CultureInfo.InvariantCulture,
+            //        "closeStatus: {0}, closeStatusDescription: {1}, m_State: {2}",
+            //        closeStatus, closeStatusDescription, m_State);
 
-                NetEventSource.PrintInfo(NetEventSource.ComponentType.WebSocket, this, Methods.FinishOnCloseReceived, parameters);
-            }
+            //    NetEventSource.PrintInfo(NetEventSource.ComponentType.WebSocket, this, Methods.FinishOnCloseReceived, parameters);
+            //}
         }
 
         private async static void OnKeepAlive(object sender)
@@ -1509,10 +1509,10 @@ namespace System.Net.WebSockets
             WebSocketBase thisPtr = sender as WebSocketBase;
             bool lockTaken = false;
 
-            if (s_LoggingEnabled)
-            {
-                NetEventSource.Enter(NetEventSource.ComponentType.WebSocket, thisPtr, Methods.OnKeepAlive, string.Empty);
-            }
+            //if (s_LoggingEnabled)
+            //{
+            //    NetEventSource.Enter(NetEventSource.ComponentType.WebSocket, thisPtr, Methods.OnKeepAlive, string.Empty);
+            //}
 
             CancellationToken linkedCancellationToken = CancellationToken.None;
             try
@@ -1572,10 +1572,10 @@ namespace System.Net.WebSockets
             {
                 ReleaseLock(thisPtr.SessionHandle, ref lockTaken);
 
-                if (s_LoggingEnabled)
-                {
-                    NetEventSource.Exit(NetEventSource.ComponentType.WebSocket, thisPtr, Methods.OnKeepAlive, string.Empty);
-                }
+                //if (s_LoggingEnabled)
+                //{
+                //    NetEventSource.Exit(NetEventSource.ComponentType.WebSocket, thisPtr, Methods.OnKeepAlive, string.Empty);
+                //}
             }
         }
 

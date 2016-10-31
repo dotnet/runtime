@@ -69,7 +69,7 @@ namespace System.Net
 
         public HttpListener()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "HttpListener", "");
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             m_State = State.Stopped;
             m_InternalLock = new object();
@@ -81,7 +81,7 @@ namespace System.Net
             // config element
             m_ExtendedProtectionPolicy = new ExtendedProtectionPolicy(PolicyEnforcement.Never);
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.HttpListener, this, "HttpListener", "");
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         internal SafeHandle RequestQueueHandle
@@ -215,8 +215,7 @@ namespace System.Net
             if (statusCode != Interop.HttpApi.ERROR_SUCCESS)
             {
                 HttpListenerException exception = new HttpListenerException((int)statusCode);
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exception(NetEventSource.ComponentType.HttpListener, this, "HttpSetUrlGroupProperty:: Property: " +
-                    property, exception);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"HttpSetUrlGroupProperty:: Property: {property} {exception}");
                 throw exception;
             }
         }
@@ -339,7 +338,7 @@ namespace System.Net
 
         internal void AddPrefix(string uriPrefix)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "AddPrefix", "uriPrefix:" + uriPrefix);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, $"uriPrefix:{uriPrefix}");
             string registeredPrefix = null;
             try
             {
@@ -348,7 +347,7 @@ namespace System.Net
                     throw new ArgumentNullException("uriPrefix");
                 }
                 CheckDisposed();
-                GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::AddPrefix() uriPrefix:" + uriPrefix);
+                //GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::AddPrefix() uriPrefix:" + uriPrefix);
                 int i;
                 if (string.Compare(uriPrefix, 0, "http://", 0, 7, StringComparison.OrdinalIgnoreCase) == 0)
                 {
@@ -399,10 +398,10 @@ namespace System.Net
                         i++;
                     }
                 }
-                GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::AddPrefix() mapped uriPrefix:" + uriPrefix + " to registeredPrefix:" + registeredPrefix);
+                //GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::AddPrefix() mapped uriPrefix:" + uriPrefix + " to registeredPrefix:" + registeredPrefix);
                 if (m_State == State.Started)
                 {
-                    GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::AddPrefix() calling Interop.HttpApi.HttpAddUrl[ToUrlGroup]");
+                    //GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::AddPrefix() calling Interop.HttpApi.HttpAddUrl[ToUrlGroup]");
                     uint statusCode = InternalAddPrefix(registeredPrefix);
                     if (statusCode != Interop.HttpApi.ERROR_SUCCESS)
                     {
@@ -415,14 +414,14 @@ namespace System.Net
                 m_UriPrefixes[uriPrefix] = registeredPrefix;
                 m_DefaultServiceNames.Add(uriPrefix);
             }
-            catch (Exception exception)
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exception(NetEventSource.ComponentType.HttpListener, this, "AddPrefix", exception);
-                throw;
-            }
+            //catch (Exception exception)
+            //{
+            //    if (NetEventSource.IsEnabled) NetEventSource.Exception(NetEventSource.ComponentType.HttpListener, this, "AddPrefix", exception);
+            //    throw;
+            //}
             finally
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.HttpListener, this, "AddPrefix", "prefix:" + registeredPrefix);
+//                if (NetEventSource.IsEnabled) NetEventSource.Exit(NetEventSource.ComponentType.HttpListener, this, "AddPrefix", "prefix:" + registeredPrefix);
             }
         }
 
@@ -430,7 +429,7 @@ namespace System.Net
         {
             get
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "Prefixes_get", "");
+                //if (NetEventSource.IsEnabled) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "Prefixes_get", "");
                 CheckDisposed();
                 if (m_Prefixes == null)
                 {
@@ -442,11 +441,11 @@ namespace System.Net
 
         internal bool RemovePrefix(string uriPrefix)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "RemovePrefix", "uriPrefix:" + uriPrefix);
+            //if (NetEventSource.IsEnabled) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "RemovePrefix", "uriPrefix:" + uriPrefix);
             try
             {
                 CheckDisposed();
-                GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::RemovePrefix() uriPrefix:" + uriPrefix);
+                //GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::RemovePrefix() uriPrefix:" + uriPrefix);
                 if (uriPrefix == null)
                 {
                     throw new ArgumentNullException("uriPrefix");
@@ -465,21 +464,21 @@ namespace System.Net
                 m_UriPrefixes.Remove(uriPrefix);
                 m_DefaultServiceNames.Remove(uriPrefix);
             }
-            catch (Exception exception)
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exception(NetEventSource.ComponentType.HttpListener, this, "RemovePrefix", exception);
-                throw;
-            }
+            //catch (Exception exception)
+            //{
+            //    if (NetEventSource.IsEnabled) NetEventSource.Exception(NetEventSource.ComponentType.HttpListener, this, "RemovePrefix", exception);
+            //    throw;
+            //}
             finally
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.HttpListener, this, "RemovePrefix", "uriPrefix:" + uriPrefix);
+                //if (NetEventSource.IsEnabled) NetEventSource.Exit(NetEventSource.ComponentType.HttpListener, this, "RemovePrefix", "uriPrefix:" + uriPrefix);
             }
             return true;
         }
 
         internal void RemoveAll(bool clear)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "RemoveAll", "");
+            //if (NetEventSource.IsEnabled) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "RemoveAll", "");
             try
             {
                 CheckDisposed();
@@ -504,7 +503,7 @@ namespace System.Net
             }
             finally
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.HttpListener, this, "RemoveAll", "");
+                //if (NetEventSource.IsEnabled) NetEventSource.Exit(NetEventSource.ComponentType.HttpListener, this, "RemoveAll", "");
             }
         }
 
@@ -577,7 +576,7 @@ namespace System.Net
 
                 m_V2Initialized = true;
             }
-            catch (Exception exception)
+            catch (Exception /*exception*/)
             {
                 //
                 // If V2 initialization fails, we mark object as unusable.
@@ -591,14 +590,14 @@ namespace System.Net
                 {
                     m_ServerSessionHandle.Dispose();
                 }
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exception(NetEventSource.ComponentType.HttpListener, this, "SetupV2Config", exception);
+                //if (NetEventSource.IsEnabled) NetEventSource.Exception(NetEventSource.ComponentType.HttpListener, this, "SetupV2Config", exception);
                 throw;
             }
         }
 
         public void Start()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "Start", "");
+            //if (NetEventSource.IsEnabled) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "Start", "");
 
             // Make sure there are no race conditions between Start/Stop/Abort/Close/Dispose and
             // calls to SetupV2Config: Start needs to setup all resources (esp. in V2 where besides
@@ -637,18 +636,18 @@ namespace System.Net
 
                     m_State = State.Started;
                 }
-                catch (Exception exception)
+                catch (Exception /*exception*/)
                 {
                     // Make sure the HttpListener instance can't be used if Start() failed.
                     m_State = State.Closed;
                     CloseRequestQueueHandle();
                     CleanupV2Config();
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Exception(NetEventSource.ComponentType.HttpListener, this, "Start", exception);
+                    //if (NetEventSource.IsEnabled) NetEventSource.Exception(NetEventSource.ComponentType.HttpListener, this, "Start", exception);
                     throw;
                 }
                 finally
                 {
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.HttpListener, this, "Start", "");
+                    //if (NetEventSource.IsEnabled) NetEventSource.Exit(NetEventSource.ComponentType.HttpListener, this, "Start", "");
                 }
             }
         }
@@ -678,7 +677,7 @@ namespace System.Net
 
             if (statusCode != Interop.HttpApi.ERROR_SUCCESS)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.PrintError(NetEventSource.ComponentType.HttpListener, this, "CloseV2Config", SR.Format(SR.net_listener_close_urlgroup_error, statusCode));
+                //if (NetEventSource.IsEnabled) NetEventSource.PrintError(NetEventSource.ComponentType.HttpListener, this, "CloseV2Config", SR.Format(SR.net_listener_close_urlgroup_error, statusCode));
             }
             m_UrlGroupId = 0;
 
@@ -727,13 +726,13 @@ namespace System.Net
 
             if (statusCode != Interop.HttpApi.ERROR_SUCCESS)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.PrintError(NetEventSource.ComponentType.HttpListener, this, "DetachRequestQueueFromUrlGroup", SR.Format(SR.net_listener_detach_error, statusCode));
+                //if (NetEventSource.IsEnabled) NetEventSource.PrintError(NetEventSource.ComponentType.HttpListener, this, "DetachRequestQueueFromUrlGroup", SR.Format(SR.net_listener_detach_error, statusCode));
             }
         }
 
         public void Stop()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "Stop", "");
+            //if (NetEventSource.IsEnabled) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "Stop", "");
             try
             {
                 lock (m_InternalLock)
@@ -758,14 +757,14 @@ namespace System.Net
 
                 ClearDigestCache();
             }
-            catch (Exception exception)
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exception(NetEventSource.ComponentType.HttpListener, this, "Stop", exception);
-                throw;
-            }
+            //catch (Exception exception)
+            //{
+            //    if (NetEventSource.IsEnabled) NetEventSource.Exception(NetEventSource.ComponentType.HttpListener, this, "Stop", exception);
+            //    throw;
+            //}
             finally
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.HttpListener, this, "Stop", "");
+                //if (NetEventSource.IsEnabled) NetEventSource.Exit(NetEventSource.ComponentType.HttpListener, this, "Stop", "");
             }
         }
 
@@ -808,8 +807,8 @@ namespace System.Net
 
         public void Abort()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "Abort", "");
-            GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::Abort()");
+            //if (NetEventSource.IsEnabled) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "Abort", "");
+            //GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::Abort()");
 
             lock (m_InternalLock)
             {
@@ -830,35 +829,35 @@ namespace System.Net
                     CleanupV2Config();
                     ClearDigestCache();
                 }
-                catch (Exception exception)
-                {
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Exception(NetEventSource.ComponentType.HttpListener, this, "Abort", exception);
-                    throw;
-                }
+                //catch (Exception exception)
+                //{
+                //    if (NetEventSource.IsEnabled) NetEventSource.Exception(NetEventSource.ComponentType.HttpListener, this, "Abort", exception);
+                //    throw;
+                //}
                 finally
                 {
                     m_State = State.Closed;
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.HttpListener, this, "Abort", "");
+                    //if (NetEventSource.IsEnabled) NetEventSource.Exit(NetEventSource.ComponentType.HttpListener, this, "Abort", "");
                 }
             }
         }
 
         public void Close()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "Close", "");
+            //if (NetEventSource.IsEnabled) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "Close", "");
             try
             {
-                GlobalLog.Print("HttpListenerRequest::Close()");
+                //GlobalLog.Print("HttpListenerRequest::Close()");
                 ((IDisposable)this).Dispose();
             }
-            catch (Exception exception)
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exception(NetEventSource.ComponentType.HttpListener, this, "Close", exception);
-                throw;
-            }
+            //catch (Exception exception)
+            //{
+            //    if (NetEventSource.IsEnabled) NetEventSource.Exception(NetEventSource.ComponentType.HttpListener, this, "Close", exception);
+            //    throw;
+            //}
             finally
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.HttpListener, this, "Close", "");
+                //if (NetEventSource.IsEnabled) NetEventSource.Exit(NetEventSource.ComponentType.HttpListener, this, "Close", "");
             }
         }
 
@@ -872,8 +871,8 @@ namespace System.Net
                 return;
             }
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "Dispose", "");
-            GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::Dispose()");
+            //if (NetEventSource.IsEnabled) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "Dispose", "");
+            //GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::Dispose()");
 
             lock (m_InternalLock)
             {
@@ -887,15 +886,15 @@ namespace System.Net
                     Stop();
                     CleanupV2Config();
                 }
-                catch (Exception exception)
-                {
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Exception(NetEventSource.ComponentType.HttpListener, this, "Dispose", exception);
-                    throw;
-                }
+                //catch (Exception exception)
+                //{
+                //    if (NetEventSource.IsEnabled) NetEventSource.Exception(NetEventSource.ComponentType.HttpListener, this, "Dispose", exception);
+                //    throw;
+                //}
                 finally
                 {
                     m_State = State.Closed;
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.HttpListener, this, "Dispose", "");
+                    //if (NetEventSource.IsEnabled) NetEventSource.Exit(NetEventSource.ComponentType.HttpListener, this, "Dispose", "");
                 }
             }
         }
@@ -958,7 +957,7 @@ namespace System.Net
 
         public HttpListenerContext GetContext()
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "GetContext", "");
+            //if (NetEventSource.IsEnabled) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "GetContext", "");
 
             SyncRequestContext memoryBlob = null;
             HttpListenerContext httpContext = null;
@@ -983,7 +982,7 @@ namespace System.Net
                 {
                     for (;;)
                     {
-                        GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::GetContext() calling Interop.HttpApi.HttpReceiveHttpRequest RequestId:" + requestId);
+                        //GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::GetContext() calling Interop.HttpApi.HttpReceiveHttpRequest RequestId:" + requestId);
                         uint bytesTransferred = 0;
                         statusCode =
                             Interop.HttpApi.HttpReceiveHttpRequest(
@@ -995,7 +994,7 @@ namespace System.Net
                                 &bytesTransferred,
                                 null);
 
-                        GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::GetContext() call to Interop.HttpApi.HttpReceiveHttpRequest returned:" + statusCode);
+                        //GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::GetContext() call to Interop.HttpApi.HttpReceiveHttpRequest returned:" + statusCode);
 
                         if (statusCode == Interop.HttpApi.ERROR_INVALID_PARAMETER && requestId != 0)
                         {
@@ -1034,7 +1033,7 @@ namespace System.Net
                         memoryBlob = null;
                         stoleBlob = false;
                     }
-                    GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::GetContext() HandleAuthentication() returned httpContext#" + LoggingHash.HashString(httpContext));
+                    //GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::GetContext() HandleAuthentication() returned httpContext#" + LoggingHash.HashString(httpContext));
                     // if the request survived authentication, return it to the user
                     if (httpContext != null)
                     {
@@ -1050,11 +1049,11 @@ namespace System.Net
                     requestId = 0;
                 }
             }
-            catch (Exception exception)
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exception(NetEventSource.ComponentType.HttpListener, this, "GetContext", exception);
-                throw;
-            }
+            //catch (Exception exception)
+            //{
+            //    if (NetEventSource.IsEnabled) NetEventSource.Exception(NetEventSource.ComponentType.HttpListener, this, "GetContext", exception);
+            //    throw;
+            //}
             finally
             {
                 if (memoryBlob != null && !stoleBlob)
@@ -1062,7 +1061,7 @@ namespace System.Net
                     memoryBlob.ReleasePins();
                     memoryBlob.Close();
                 }
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.HttpListener, this, "GetContext", "HttpListenerContext#" + LoggingHash.HashString(httpContext) + " RequestTraceIdentifier#" + (httpContext != null ? httpContext.Request.RequestTraceIdentifier.ToString() : "<null>"));
+                //if (NetEventSource.IsEnabled) NetEventSource.Exit(NetEventSource.ComponentType.HttpListener, this, "GetContext", "HttpListenerContext#" + LoggingHash.HashString(httpContext) + " RequestTraceIdentifier#" + (httpContext != null ? httpContext.Request.RequestTraceIdentifier.ToString() : "<null>"));
             }
         }
 
@@ -1079,7 +1078,7 @@ namespace System.Net
 
         public IAsyncResult BeginGetContext(AsyncCallback callback, object state)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "BeginGetContext", "");
+            //if (NetEventSource.IsEnabled) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "BeginGetContext", "");
             ListenerAsyncResult asyncResult = null;
             try
             {
@@ -1101,14 +1100,14 @@ namespace System.Net
                     throw new HttpListenerException((int)statusCode);
                 }
             }
-            catch (Exception exception)
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exception(NetEventSource.ComponentType.HttpListener, this, "BeginGetContext", exception);
-                throw;
-            }
+            //catch (Exception exception)
+            //{
+            //    if (NetEventSource.IsEnabled) NetEventSource.Exception(NetEventSource.ComponentType.HttpListener, this, "BeginGetContext", exception);
+            //    throw;
+            //}
             finally
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "BeginGetContext", "IAsyncResult#" + LoggingHash.HashString(asyncResult));
+                //if (NetEventSource.IsEnabled) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "BeginGetContext", "IAsyncResult#" + LoggingHash.HashString(asyncResult));
             }
 
             return asyncResult;
@@ -1116,7 +1115,7 @@ namespace System.Net
 
         public HttpListenerContext EndGetContext(IAsyncResult asyncResult)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "EndGetContext", "IAsyncResult#" + LoggingHash.HashString(asyncResult));
+            //if (NetEventSource.IsEnabled) NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, this, "EndGetContext", "IAsyncResult#" + LoggingHash.HashString(asyncResult));
             HttpListenerContext httpContext = null;
             try
             {
@@ -1125,7 +1124,7 @@ namespace System.Net
                 {
                     throw new ArgumentNullException("asyncResult");
                 }
-                GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::EndGetContext() asyncResult:" + LoggingHash.ObjectToString(asyncResult));
+                //GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::EndGetContext() asyncResult:" + LoggingHash.ObjectToString(asyncResult));
                 ListenerAsyncResult castedAsyncResult = asyncResult as ListenerAsyncResult;
                 if (castedAsyncResult == null || castedAsyncResult.AsyncObject != this)
                 {
@@ -1143,15 +1142,15 @@ namespace System.Net
                     throw castedAsyncResult.Result as Exception;
                 }
             }
-            catch (Exception exception)
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exception(NetEventSource.ComponentType.HttpListener, this, "EndGetContext", exception);
-                throw;
-            }
+            //catch (Exception exception)
+            //{
+            //    if (NetEventSource.IsEnabled) NetEventSource.Exception(NetEventSource.ComponentType.HttpListener, this, "EndGetContext", exception);
+            //    throw;
+            //}
             finally
             {
-                GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::EndGetContext() returning HttpListenerContext#" + LoggingHash.ObjectToString(httpContext));
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exit(NetEventSource.ComponentType.HttpListener, this, "EndGetContext", httpContext == null ? "<no context>" : "HttpListenerContext#" + LoggingHash.HashString(httpContext) + " RequestTraceIdentifier#" + httpContext.Request.RequestTraceIdentifier);
+                //GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::EndGetContext() returning HttpListenerContext#" + LoggingHash.ObjectToString(httpContext));
+                //if (NetEventSource.IsEnabled) NetEventSource.Exit(NetEventSource.ComponentType.HttpListener, this, "EndGetContext", httpContext == null ? "<no context>" : "HttpListenerContext#" + LoggingHash.HashString(httpContext) + " RequestTraceIdentifier#" + httpContext.Request.RequestTraceIdentifier);
             }
             return httpContext;
         }
@@ -1164,7 +1163,7 @@ namespace System.Net
 
         internal HttpListenerContext HandleAuthentication(RequestContextBase memoryBlob, out bool stoleBlob)
         {
-            GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::HandleAuthentication() memoryBlob:0x" + ((IntPtr)memoryBlob.RequestBlob).ToString("x"));
+            //GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::HandleAuthentication() memoryBlob:0x" + ((IntPtr)memoryBlob.RequestBlob).ToString("x"));
 
             string challenge = null;
             stoleBlob = false;
@@ -1176,7 +1175,7 @@ namespace System.Net
             ulong requestId = memoryBlob.RequestBlob->RequestId;
             bool isSecureConnection = memoryBlob.RequestBlob->pSslInfo != null;
 
-            GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::HandleAuthentication() authorizationHeader:" + LoggingHash.ObjectToString(authorizationHeader));
+            //GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::HandleAuthentication() authorizationHeader:" + LoggingHash.ObjectToString(authorizationHeader));
 
             // if the app has turned on AuthPersistence, an anonymous request might
             // be authenticated by virtue of it coming on a connection that was
@@ -1191,7 +1190,7 @@ namespace System.Net
                     WindowsPrincipal principal = disconnectResult == null ? null : disconnectResult.AuthenticatedConnection;
                     if (principal != null)
                     {
-                        GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::HandleAuthentication() got principal:" + LoggingHash.ObjectToString(principal) + " principal.Identity.Name:" + LoggingHash.ObjectToString(principal.Identity.Name) + " creating request");
+                        //GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::HandleAuthentication() got principal:" + LoggingHash.ObjectToString(principal) + " principal.Identity.Name:" + LoggingHash.ObjectToString(principal.Identity.Name) + " creating request");
                         stoleBlob = true;
                         HttpListenerContext ntlmContext = new HttpListenerContext(this, memoryBlob);
                         ntlmContext.SetIdentity(principal, null);
@@ -1202,7 +1201,7 @@ namespace System.Net
                 else
                 {
                     // They sent an authorization - destroy their previous credentials.
-                    GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::HandleAuthentication() clearing principal cache");
+                    //GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::HandleAuthentication() clearing principal cache");
                     if (disconnectResult != null)
                     {
                         disconnectResult.AuthenticatedConnection = null;
@@ -1245,12 +1244,12 @@ namespace System.Net
                         authenticationScheme = authenticationSelector(httpContext.Request);
                         // Cache the results of authenticationSelector (if any)
                         httpContext.AuthenticationSchemes = authenticationScheme;
-                        GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::HandleAuthentication() AuthenticationSchemeSelectorDelegate() returned authenticationScheme:" + authenticationScheme);
+                        //GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::HandleAuthentication() AuthenticationSchemeSelectorDelegate() returned authenticationScheme:" + authenticationScheme);
                     }
                     catch (Exception exception) when (!ExceptionCheck.IsFatal(exception))
                     {
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.PrintError(NetEventSource.ComponentType.HttpListener, this, "HandleAuthentication", SR.Format(SR.net_log_listener_delegate_exception, exception));
-                        GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::HandleAuthentication() AuthenticationSchemeSelectorDelegate() returned authenticationScheme:" + authenticationScheme);
+                        //if (NetEventSource.IsEnabled) NetEventSource.PrintError(NetEventSource.ComponentType.HttpListener, this, "HandleAuthentication", SR.Format(SR.net_log_listener_delegate_exception, exception));
+                        //GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::HandleAuthentication() AuthenticationSchemeSelectorDelegate() returned authenticationScheme:" + authenticationScheme);
                         SendError(requestId, HttpStatusCode.InternalServerError, null);
                         httpContext.Close();
                         return null;
@@ -1315,7 +1314,7 @@ namespace System.Net
                         }
                         else
                         {
-                            if (NetEventSource.Log.IsEnabled()) NetEventSource.PrintError(NetEventSource.ComponentType.HttpListener, this, "HandleAuthentication", SR.Format(SR.net_log_listener_unsupported_authentication_scheme, authorizationHeader, authenticationScheme));
+                            //if (NetEventSource.IsEnabled) NetEventSource.PrintError(NetEventSource.ComponentType.HttpListener, this, "HandleAuthentication", SR.Format(SR.net_log_listener_unsupported_authentication_scheme, authorizationHeader, authenticationScheme));
                         }
                     }
                 }
@@ -1326,7 +1325,7 @@ namespace System.Net
                 // See if we found an acceptable auth header
                 if (headerScheme == AuthenticationSchemes.None)
                 {
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.PrintError(NetEventSource.ComponentType.HttpListener, this, "HandleAuthentication", SR.Format(SR.net_log_listener_unmatched_authentication_scheme, LoggingHash.ObjectToString(authenticationScheme), (authorizationHeader == null ? "<null>" : authorizationHeader)));
+                    //if (NetEventSource.IsEnabled) NetEventSource.PrintError(NetEventSource.ComponentType.HttpListener, this, "HandleAuthentication", SR.Format(SR.net_log_listener_unmatched_authentication_scheme, LoggingHash.ObjectToString(authenticationScheme), (authorizationHeader == null ? "<null>" : authorizationHeader)));
 
                     // If anonymous is allowed, just return the context.  Otherwise go for the 401.
                     if ((authenticationScheme & AuthenticationSchemes.Anonymous) != AuthenticationSchemes.None)
@@ -1383,7 +1382,7 @@ namespace System.Net
                         // If we're sending something besides 401, do it here.
                         if (httpError != HttpStatusCode.Unauthorized)
                         {
-                            GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::HandleAuthentication() failed context#" + LoggingHash.HashString(context) + " for connectionId:" + connectionId + " because of error:" + httpError.ToString());
+                            //GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::HandleAuthentication() failed context#" + LoggingHash.HashString(context) + " for connectionId:" + connectionId + " because of error:" + httpError.ToString());
                             SendError(requestId, httpError, null);
                             return null;
                         }
@@ -1420,7 +1419,7 @@ namespace System.Net
                             }
                         }
 
-                        GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::HandleAuthentication() failed context#" + LoggingHash.HashString(context) + " for connectionId:" + connectionId + " because of failed HttpWaitForDisconnect");
+                        //GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::HandleAuthentication() failed context#" + LoggingHash.HashString(context) + " for connectionId:" + connectionId + " because of failed HttpWaitForDisconnect");
                         SendError(requestId, HttpStatusCode.InternalServerError, null);
                         httpContext.Request.DetachBlob(memoryBlob);
                         httpContext.Close();
@@ -1460,7 +1459,7 @@ namespace System.Net
                 if (httpContext == null)
                 {
                     SendError(requestId, challenges != null && challenges.Count > 0 ? HttpStatusCode.Unauthorized : HttpStatusCode.Forbidden, challenges);
-                    GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::HandleAuthentication() SendUnauthorized(Scheme:" + authenticationScheme + ")");
+                    //GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::HandleAuthentication() SendUnauthorized(Scheme:" + authenticationScheme + ")");
                     return null;
                 }
 
@@ -1582,7 +1581,7 @@ namespace System.Net
                 challenge = challenge.Trim();
                 if (challenge.Length > 0)
                 {
-                    GlobalLog.Print("HttpListener:AddChallenge() challenge:" + challenge);
+                    //GlobalLog.Print("HttpListener:AddChallenge() challenge:" + challenge);
                     if (challenges == null)
                     {
                         challenges = new ArrayList(4);
@@ -1595,7 +1594,7 @@ namespace System.Net
         private ArrayList BuildChallenge(AuthenticationSchemes authenticationScheme, ulong connectionId,
             out NTAuthentication newContext, ExtendedProtectionPolicy policy, bool isSecureConnection)
         {
-            GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::BuildChallenge()  authenticationScheme:" + authenticationScheme.ToString());
+            //GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::BuildChallenge()  authenticationScheme:" + authenticationScheme.ToString());
             ArrayList challenges = null;
             newContext = null;
 
@@ -1611,7 +1610,7 @@ namespace System.Net
 
             if ((authenticationScheme & AuthenticationSchemes.Digest) != 0)
             {
-                GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::BuildChallenge() package:WDigest");
+                //GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::BuildChallenge() package:WDigest");
 
                 throw new NotImplementedException();
             }
@@ -1626,11 +1625,11 @@ namespace System.Net
 
         private void RegisterForDisconnectNotification(ulong connectionId, ref DisconnectAsyncResult disconnectResult)
         {
-            Debug.Assert(disconnectResult == null, "HttpListener#{0}::RegisterForDisconnectNotification()|Called with a disconnectResult.", LoggingHash.HashString(this));
+            //Debug.Assert(disconnectResult == null, "HttpListener#{0}::RegisterForDisconnectNotification()|Called with a disconnectResult.", LoggingHash.HashString(this));
 
             try
             {
-                GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::RegisterForDisconnectNotification() calling Interop.HttpApi.HttpWaitForDisconnect");
+                //GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::RegisterForDisconnectNotification() calling Interop.HttpApi.HttpWaitForDisconnect");
 
                 DisconnectAsyncResult result = new DisconnectAsyncResult(this, connectionId);
 
@@ -1640,7 +1639,7 @@ namespace System.Net
                     connectionId,
                     result.NativeOverlapped);
 
-                GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::RegisterForDisconnectNotification() call to Interop.HttpApi.HttpWaitForDisconnect returned:" + statusCode);
+                //GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::RegisterForDisconnectNotification() call to Interop.HttpApi.HttpWaitForDisconnect returned:" + statusCode);
 
                 if (statusCode == Interop.HttpApi.ERROR_SUCCESS ||
                     statusCode == Interop.HttpApi.ERROR_IO_PENDING)
@@ -1660,13 +1659,13 @@ namespace System.Net
             catch (Win32Exception exception)
             {
                 uint statusCode = (uint)exception.NativeErrorCode;
-                GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::RegisterForDisconnectNotification() call to Interop.HttpApi.HttpWaitForDisconnect threw.  statusCode:" + statusCode);
+                //GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::RegisterForDisconnectNotification() call to Interop.HttpApi.HttpWaitForDisconnect threw.  statusCode:" + statusCode);
             }
         }
 
         private void SendError(ulong requestId, HttpStatusCode httpStatusCode, ArrayList challenges)
         {
-            GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::SendInternalError() requestId:" + LoggingHash.ObjectToString(requestId));
+            //GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::SendInternalError() requestId:" + LoggingHash.ObjectToString(requestId));
             Interop.HttpApi.HTTP_RESPONSE httpResponse = new Interop.HttpApi.HTTP_RESPONSE();
             httpResponse.Version = new Interop.HttpApi.HTTP_VERSION();
             httpResponse.Version.MajorVersion = (ushort)1;
@@ -1718,7 +1717,7 @@ namespace System.Net
                             }
                         }
 
-                        GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::SendInternalError() calling Interop.HttpApi.HttpSendHtthttpResponse");
+                        //GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::SendInternalError() calling Interop.HttpApi.HttpSendHtthttpResponse");
                         statusCode =
                             Interop.HttpApi.HttpSendHttpResponse(
                                 m_RequestQueueHandle,
@@ -1755,11 +1754,11 @@ namespace System.Net
                     }
                 }
             }
-            GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::SendInternalError() call to Interop.HttpApi.HttpSendHttpResponse returned:" + statusCode);
+            //GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::SendInternalError() call to Interop.HttpApi.HttpSendHttpResponse returned:" + statusCode);
             if (statusCode != Interop.HttpApi.ERROR_SUCCESS)
             {
                 // if we fail to send a 401 something's seriously wrong, abort the request
-                GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::HandleAuthentication() SendUnauthorized() returned:" + statusCode);
+                //GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::HandleAuthentication() SendUnauthorized() returned:" + statusCode);
                 HttpListenerContext.CancelRequest(m_RequestQueueHandle, requestId);
             }
         }
@@ -1781,11 +1780,11 @@ namespace System.Net
 
         internal ChannelBinding GetChannelBindingFromTls(ulong connectionId)
         {
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, "HttpListener#" + LoggingHash.HashString(this) +
-                    "::GetChannelBindingFromTls() connectionId: " + connectionId.ToString(), nameof(GetChannelBindingFromTls), null);
-            }
+            //if (NetEventSource.IsEnabled)
+            //{
+            //    NetEventSource.Enter(NetEventSource.ComponentType.HttpListener, "HttpListener#" + LoggingHash.HashString(this) +
+            //        "::GetChannelBindingFromTls() connectionId: " + connectionId.ToString(), nameof(GetChannelBindingFromTls), null);
+            //}
 
             // +128 since a CBT is usually <128 thus we need to call HRCC just once. If the CBT
             // is >128 we will get ERROR_MORE_DATA and call again
@@ -1837,12 +1836,12 @@ namespace System.Net
                     }
                     else if (statusCode == Interop.HttpApi.ERROR_INVALID_PARAMETER)
                     {
-                        if (NetEventSource.Log.IsEnabled())
-                        {
-                            NetEventSource.PrintError(NetEventSource.ComponentType.HttpListener, "HttpListener#" +
-                                LoggingHash.HashString(this) + "::GetChannelBindingFromTls() " +
-                                SR.net_ssp_dont_support_cbt);
-                        }
+                        //if (NetEventSource.IsEnabled)
+                        //{
+                        //    NetEventSource.PrintError(NetEventSource.ComponentType.HttpListener, "HttpListener#" +
+                        //        LoggingHash.HashString(this) + "::GetChannelBindingFromTls() " +
+                        //        SR.net_ssp_dont_support_cbt);
+                        //}
                         return null; // old schannel library which doesn't support CBT
                     }
                     else
@@ -2058,7 +2057,7 @@ namespace System.Net
 
             internal unsafe DisconnectAsyncResult(HttpListener httpListener, ulong connectionId)
             {
-                GlobalLog.Print("DisconnectAsyncResult#" + LoggingHash.HashString(this) + "::.ctor() httpListener#" + LoggingHash.HashString(httpListener) + " connectionId:" + connectionId);
+                //GlobalLog.Print("DisconnectAsyncResult#" + LoggingHash.HashString(this) + "::.ctor() httpListener#" + LoggingHash.HashString(httpListener) + " connectionId:" + connectionId);
                 m_OwnershipState = 1;
                 m_HttpListener = httpListener;
                 m_ConnectionId = connectionId;
@@ -2077,7 +2076,7 @@ namespace System.Net
                     spin.SpinOnce();
                 }
 
-                Debug.Assert(oldValue != 1, "DisconnectAsyncResult#{0}::HandleDisconnect()|StartOwningDisconnectHandling() called twice.", LoggingHash.HashString(this));
+                //Debug.Assert(oldValue != 1, "DisconnectAsyncResult#{0}::HandleDisconnect()|StartOwningDisconnectHandling() called twice.", LoggingHash.HashString(this));
                 return oldValue < 2;
             }
 
@@ -2097,7 +2096,7 @@ namespace System.Net
 
             private static unsafe void IOCompleted(DisconnectAsyncResult asyncResult, uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
             {
-                GlobalLog.Print("DisconnectAsyncResult#" + LoggingHash.HashString(asyncResult) + "::WaitCallback() m_ConnectionId:" + asyncResult.m_ConnectionId);
+                //GlobalLog.Print("DisconnectAsyncResult#" + LoggingHash.HashString(asyncResult) + "::WaitCallback() m_ConnectionId:" + asyncResult.m_ConnectionId);
                 asyncResult.m_HttpListener.m_RequestQueueBoundHandle.FreeNativeOverlapped(nativeOverlapped);
                 if (Interlocked.Exchange(ref asyncResult.m_OwnershipState, 2) == 0)
                 {
@@ -2107,7 +2106,7 @@ namespace System.Net
 
             private static unsafe void WaitCallback(uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
             {
-                GlobalLog.Print("DisconnectAsyncResult::WaitCallback() errorCode:" + errorCode + " numBytes:" + numBytes + " nativeOverlapped:" + ((IntPtr)nativeOverlapped).ToString("x"));
+                //GlobalLog.Print("DisconnectAsyncResult::WaitCallback() errorCode:" + errorCode + " numBytes:" + numBytes + " nativeOverlapped:" + ((IntPtr)nativeOverlapped).ToString("x"));
                 // take the DisconnectAsyncResult object from the state
                 DisconnectAsyncResult asyncResult = (DisconnectAsyncResult)ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped);
                 IOCompleted(asyncResult, errorCode, numBytes, nativeOverlapped);
@@ -2115,7 +2114,7 @@ namespace System.Net
 
             private void HandleDisconnect()
             {
-                GlobalLog.Print("DisconnectAsyncResult#" + LoggingHash.HashString(this) + "::HandleDisconnect() DisconnectResults#" + LoggingHash.HashString(m_HttpListener.DisconnectResults) + " removing for m_ConnectionId:" + m_ConnectionId);
+                //GlobalLog.Print("DisconnectAsyncResult#" + LoggingHash.HashString(this) + "::HandleDisconnect() DisconnectResults#" + LoggingHash.HashString(m_HttpListener.DisconnectResults) + " removing for m_ConnectionId:" + m_ConnectionId);
                 m_HttpListener.DisconnectResults.Remove(m_ConnectionId);
                 if (m_Session != null)
                 {
@@ -2134,7 +2133,7 @@ namespace System.Net
                 }
 
                 int oldValue = Interlocked.Exchange(ref m_OwnershipState, 3);
-                Debug.Assert(oldValue == 2, "DisconnectAsyncResult#{0}::HandleDisconnect()|Expected OwnershipState of 2, saw {1}.", LoggingHash.HashString(this), oldValue);
+                //Debug.Assert(oldValue == 2, "DisconnectAsyncResult#{0}::HandleDisconnect()|Expected OwnershipState of 2, saw {1}.", LoggingHash.HashString(this), oldValue);
             }
 
             internal WindowsPrincipal AuthenticatedConnection
