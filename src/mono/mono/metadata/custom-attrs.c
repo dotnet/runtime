@@ -1072,7 +1072,7 @@ MonoCustomAttrInfo*
 mono_custom_attrs_from_index (MonoImage *image, guint32 idx)
 {
 	MonoError error;
-	MonoCustomAttrInfo *result = mono_custom_attrs_from_index_checked (image, idx, &error);
+	MonoCustomAttrInfo *result = mono_custom_attrs_from_index_checked (image, idx, FALSE, &error);
 	mono_error_cleanup (&error);
 	return result;
 }
@@ -1082,7 +1082,7 @@ mono_custom_attrs_from_index (MonoImage *image, guint32 idx)
  * Returns: NULL if no attributes are found.  On error returns NULL and sets @error.
  */
 MonoCustomAttrInfo*
-mono_custom_attrs_from_index_checked (MonoImage *image, guint32 idx, MonoError *error)
+mono_custom_attrs_from_index_checked (MonoImage *image, guint32 idx, gboolean ignore_missing, MonoError *error)
 {
 	guint32 mtoken, i, len;
 	guint32 cols [MONO_CUSTOM_ATTR_SIZE];
@@ -1129,10 +1129,15 @@ mono_custom_attrs_from_index_checked (MonoImage *image, guint32 idx, MonoError *
 		attr = &ainfo->attrs [i - 1];
 		attr->ctor = mono_get_method_checked (image, mtoken, NULL, NULL, error);
 		if (!attr->ctor) {
-			g_warning ("Can't find custom attr constructor image: %s mtoken: 0x%08x due to %s", image->name, mtoken, mono_error_get_message (error));
-			g_list_free (list);
-			g_free (ainfo);
-			return NULL;
+			g_warning ("Can't find custom attr constructor image: %s mtoken: 0x%08x due to: %s", image->name, mtoken, mono_error_get_message (error));
+			if (ignore_missing) {
+				mono_error_cleanup (error);
+				mono_error_init (error);
+			} else {
+				g_list_free (list);
+				g_free (ainfo);
+				return NULL;
+			}
 		}
 
 		if (!mono_verifier_verify_cattr_blob (image, cols [MONO_CUSTOM_ATTR_VALUE], NULL)) {
@@ -1186,7 +1191,7 @@ mono_custom_attrs_from_method_checked (MonoMethod *method, MonoError *error)
 	idx = mono_method_get_index (method);
 	idx <<= MONO_CUSTOM_ATTR_BITS;
 	idx |= MONO_CUSTOM_ATTR_METHODDEF;
-	return mono_custom_attrs_from_index_checked (method->klass->image, idx, error);
+	return mono_custom_attrs_from_index_checked (method->klass->image, idx, FALSE, error);
 }
 
 MonoCustomAttrInfo*
@@ -1220,20 +1225,20 @@ mono_custom_attrs_from_class_checked (MonoClass *klass, MonoError *error)
 		idx <<= MONO_CUSTOM_ATTR_BITS;
 		idx |= MONO_CUSTOM_ATTR_TYPEDEF;
 	}
-	return mono_custom_attrs_from_index_checked (klass->image, idx, error);
+	return mono_custom_attrs_from_index_checked (klass->image, idx, FALSE, error);
 }
 
 MonoCustomAttrInfo*
 mono_custom_attrs_from_assembly (MonoAssembly *assembly)
 {
 	MonoError error;
-	MonoCustomAttrInfo *result = mono_custom_attrs_from_assembly_checked (assembly, &error);
+	MonoCustomAttrInfo *result = mono_custom_attrs_from_assembly_checked (assembly, FALSE, &error);
 	mono_error_cleanup (&error);
 	return result;
 }
 
 MonoCustomAttrInfo*
-mono_custom_attrs_from_assembly_checked (MonoAssembly *assembly, MonoError *error)
+mono_custom_attrs_from_assembly_checked (MonoAssembly *assembly, gboolean ignore_missing, MonoError *error)
 {
 	guint32 idx;
 	
@@ -1244,7 +1249,7 @@ mono_custom_attrs_from_assembly_checked (MonoAssembly *assembly, MonoError *erro
 	idx = 1; /* there is only one assembly */
 	idx <<= MONO_CUSTOM_ATTR_BITS;
 	idx |= MONO_CUSTOM_ATTR_ASSEMBLY;
-	return mono_custom_attrs_from_index_checked (assembly->image, idx, error);
+	return mono_custom_attrs_from_index_checked (assembly->image, idx, ignore_missing, error);
 }
 
 static MonoCustomAttrInfo*
@@ -1257,7 +1262,7 @@ mono_custom_attrs_from_module (MonoImage *image, MonoError *error)
 	idx = 1; /* there is only one module */
 	idx <<= MONO_CUSTOM_ATTR_BITS;
 	idx |= MONO_CUSTOM_ATTR_MODULE;
-	return mono_custom_attrs_from_index_checked (image, idx, error);
+	return mono_custom_attrs_from_index_checked (image, idx, FALSE, error);
 }
 
 MonoCustomAttrInfo*
@@ -1281,7 +1286,7 @@ mono_custom_attrs_from_property_checked (MonoClass *klass, MonoProperty *propert
 	idx = find_property_index (klass, property);
 	idx <<= MONO_CUSTOM_ATTR_BITS;
 	idx |= MONO_CUSTOM_ATTR_PROPERTY;
-	return mono_custom_attrs_from_index_checked (klass->image, idx, error);
+	return mono_custom_attrs_from_index_checked (klass->image, idx, FALSE, error);
 }
 
 MonoCustomAttrInfo*
@@ -1305,7 +1310,7 @@ mono_custom_attrs_from_event_checked (MonoClass *klass, MonoEvent *event, MonoEr
 	idx = find_event_index (klass, event);
 	idx <<= MONO_CUSTOM_ATTR_BITS;
 	idx |= MONO_CUSTOM_ATTR_EVENT;
-	return mono_custom_attrs_from_index_checked (klass->image, idx, error);
+	return mono_custom_attrs_from_index_checked (klass->image, idx, FALSE, error);
 }
 
 MonoCustomAttrInfo*
@@ -1330,7 +1335,7 @@ mono_custom_attrs_from_field_checked (MonoClass *klass, MonoClassField *field, M
 	idx = find_field_index (klass, field);
 	idx <<= MONO_CUSTOM_ATTR_BITS;
 	idx |= MONO_CUSTOM_ATTR_FIELDDEF;
-	return mono_custom_attrs_from_index_checked (klass->image, idx, error);
+	return mono_custom_attrs_from_index_checked (klass->image, idx, FALSE, error);
 }
 
 /**
@@ -1426,7 +1431,7 @@ mono_custom_attrs_from_param_checked (MonoMethod *method, guint32 param, MonoErr
 	idx = i;
 	idx <<= MONO_CUSTOM_ATTR_BITS;
 	idx |= MONO_CUSTOM_ATTR_PARAMDEF;
-	return mono_custom_attrs_from_index_checked (image, idx, error);
+	return mono_custom_attrs_from_index_checked (image, idx, FALSE, error);
 }
 
 gboolean
@@ -1525,7 +1530,7 @@ mono_reflection_get_custom_attrs_info_checked (MonoObject *obj, MonoError *error
 		return_val_if_nok (error, NULL);
 	} else if (strcmp ("Assembly", klass->name) == 0 || strcmp ("MonoAssembly", klass->name) == 0) {
 		MonoReflectionAssembly *rassembly = (MonoReflectionAssembly*)obj;
-		cinfo = mono_custom_attrs_from_assembly_checked (rassembly->assembly, error);
+		cinfo = mono_custom_attrs_from_assembly_checked (rassembly->assembly, FALSE, error);
 		return_val_if_nok (error, NULL);
 	} else if (strcmp ("Module", klass->name) == 0 || strcmp ("MonoModule", klass->name) == 0) {
 		MonoReflectionModule *module = (MonoReflectionModule*)obj;

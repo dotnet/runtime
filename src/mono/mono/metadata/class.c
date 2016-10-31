@@ -10680,12 +10680,16 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 		MonoClassField *gfield = &gtd->fields [field_idx];
 		MonoType *gtype = mono_field_get_type_checked (gfield, error);
 		if (!mono_error_ok (error)) {
-			mono_class_set_type_load_failure (klass, "Could not load field %d type due to: %s", field_idx, mono_error_get_message (error));
+			char *full_name = mono_type_get_full_name (gtd);
+			mono_class_set_type_load_failure (klass, "Could not load generic type of field '%s:%s' (%d) due to: %s", full_name, gfield->name, field_idx, mono_error_get_message (error));
+			g_free (full_name);
 		}
 
 		field->type = mono_class_inflate_generic_type_no_copy (image, gtype, mono_class_get_context (klass), error);
 		if (!mono_error_ok (error)) {
-			mono_class_set_type_load_failure (klass, "Could not load field %d type due to: %s", field_idx, mono_error_get_message (error));
+			char *full_name = mono_type_get_full_name (klass);
+			mono_class_set_type_load_failure (klass, "Could not load instantiated type of field '%s:%s' (%d) due to: %s", full_name, field->name, field_idx, mono_error_get_message (error));
+			g_free (full_name);
 		}
 	} else {
 		const char *sig;
@@ -10707,8 +10711,10 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 		mono_metadata_decode_table_row (image, MONO_TABLE_FIELD, idx, cols, MONO_FIELD_SIZE);
 
 		if (!mono_verifier_verify_field_signature (image, cols [MONO_FIELD_SIGNATURE], NULL)) {
-			mono_error_set_type_load_class (error, klass, "Could not verify field %s signature", field->name);;
+			char *full_name = mono_type_get_full_name (klass);
+			mono_error_set_type_load_class (error, klass, "Could not verify field '%s:%s' signature", full_name, field->name);;
 			mono_class_set_type_load_failure (klass, "%s", mono_error_get_message (error));
+			g_free (full_name);
 			return;
 		}
 
@@ -10720,7 +10726,9 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 
 		field->type = mono_metadata_parse_type_checked (image, container, cols [MONO_FIELD_FLAGS], FALSE, sig + 1, &sig, error);
 		if (!field->type) {
-			mono_class_set_type_load_failure (klass, "Could not load field %d type due to: %s", field_idx, mono_error_get_message (error));
+			char *full_name = mono_type_get_full_name (klass);
+			mono_class_set_type_load_failure (klass, "Could not load type of field '%s:%s' (%d) due to: %s", full_name, field->name, field_idx, mono_error_get_message (error));
+			g_free (full_name);
 		}
 	}
 }

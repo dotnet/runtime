@@ -1768,7 +1768,7 @@ mono_assembly_load_friends (MonoAssembly* ass)
 	if (ass->friend_assembly_names_inited)
 		return;
 
-	attrs = mono_custom_attrs_from_assembly_checked (ass, &error);
+	attrs = mono_custom_attrs_from_assembly_checked (ass, FALSE, &error);
 	mono_error_assert_ok (&error);
 	if (!attrs) {
 		mono_assemblies_lock ();
@@ -1847,8 +1847,8 @@ mono_assembly_has_reference_assembly_attribute (MonoAssembly *assembly, MonoErro
  * corlib, however, so we need a more robust version that doesn't care
  * about missing attributes.
  */
-#if 0
-	MonoCustomAttrInfo *attrs = mono_custom_attrs_from_assembly_checked (assembly, error);
+#if 1
+	MonoCustomAttrInfo *attrs = mono_custom_attrs_from_assembly_checked (assembly, TRUE, error);
 	return_val_if_nok (error, FALSE);
 	if (!attrs)
 		return FALSE;
@@ -1999,6 +1999,8 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Prepared to set up assembly '%s' (%s)", ass->aname.name, image->name);
 
+	image->assembly = ass;
+
 	/* We need to check for ReferenceAssmeblyAttribute before we
 	 * mark the assembly as loaded and before we fire the load
 	 * hook. Otherwise mono_domain_fire_assembly_load () in
@@ -2026,8 +2028,6 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 		}
 		mono_error_cleanup (&refasm_error);
 	}
-
-	image->assembly = ass;
 
 	loaded_assemblies = g_list_prepend (loaded_assemblies, ass);
 	mono_assemblies_unlock ();

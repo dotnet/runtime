@@ -470,7 +470,8 @@ BASE_TEST_CS_SRC_UNIVERSAL=		\
 	bug-29585.cs	\
 	priority.cs	\
 	abort-cctor.cs	\
-	thread-native-exit.cs
+	thread-native-exit.cs \
+	reference-loader.cs
 
 if INSTALL_MOBILE_STATIC
 BASE_TEST_CS_SRC= \
@@ -692,7 +693,6 @@ DISABLED_TESTS=			\
 	bug-459094.exe \
 	delegate-invoke.exe \
 	bug-Xamarin-5278.exe \
-	reference-loader.cs \
 	$(PLATFORM_DISABLED_TESTS) \
 	$(EXTRA_DISABLED_TESTS) \
 	$(COOP_DISABLED_TESTS) \
@@ -881,7 +881,9 @@ bug-324535-il.dll$(PLATFORM_AOT_SUFFIX)	\
 bug-36848-a.dll$(PLATFORM_AOT_SUFFIX)	\
 bug-81691-b.dll$(PLATFORM_AOT_SUFFIX)	\
 bug-327438.2.exe$(PLATFORM_AOT_SUFFIX)	\
-bug-81466-lib.dll$(PLATFORM_AOT_SUFFIX)
+bug-81466-lib.dll$(PLATFORM_AOT_SUFFIX)	\
+TestingReferenceAssembly.dll$(PLATFORM_AOT_SUFFIX)	\
+TestingReferenceReferenceAssembly.dll$(PLATFORM_AOT_SUFFIX)
 
 if INSTALL_MOBILE_STATIC
 prereqs: $(PREREQSI_IL_AOT) $(PREREQSI_CS_AOT) $(AOT_EXTRA_LIBS)

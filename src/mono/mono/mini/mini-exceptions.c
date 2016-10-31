@@ -1229,7 +1229,7 @@ wrap_non_exception_throws (MonoMethod *m)
 
 	klass = mono_class_get_runtime_compat_attr_class ();
 
-	attrs = mono_custom_attrs_from_assembly_checked (ass, &error);
+	attrs = mono_custom_attrs_from_assembly_checked (ass, FALSE, &error);
 	mono_error_cleanup (&error); /* FIXME don't swallow the error */
 	if (attrs) {
 		for (i = 0; i < attrs->num_attrs; ++i) {

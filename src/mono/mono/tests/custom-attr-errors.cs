@@ -1,6 +1,9 @@
 using System;
 using System.Reflection;
 
+// this for test_0_missing_attr_on_assembly
+[assembly: MissingAttribute]
+
 public sealed class MyAttribute : Attribute
 {
 	public Type Type { get; set; }
@@ -44,6 +47,15 @@ public sealed class ExceptionOnCtor : Attribute
 public class Bar {}
 
 class Tests {
+
+	public static int test_0_missing_attr_on_assembly () {
+		try {
+			Assembly.GetExecutingAssembly().GetCustomAttributes (false);
+			return 1;
+		} catch (TypeLoadException exn) {
+			return 0;
+		}
+	}
 
 	[My3 (new object[] { DisappearingEnum.V0 })]
 	public static int test_0_missing_enum_arg_alt3 () {

@@ -41,13 +41,13 @@ MonoArray*
 mono_reflection_get_custom_attrs_blob_checked (MonoReflectionAssembly *assembly, MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *propValues, MonoArray *fields, MonoArray* fieldValues, MonoError *error);
 
 MonoCustomAttrInfo*
-mono_custom_attrs_from_index_checked    (MonoImage *image, uint32_t idx, MonoError *error);
+mono_custom_attrs_from_index_checked    (MonoImage *image, uint32_t idx, gboolean ignore_missing, MonoError *error);
 MonoCustomAttrInfo*
 mono_custom_attrs_from_method_checked   (MonoMethod *method, MonoError *error);
 MonoCustomAttrInfo*
 mono_custom_attrs_from_class_checked   	(MonoClass *klass, MonoError *error);
 MonoCustomAttrInfo*
-mono_custom_attrs_from_assembly_checked	(MonoAssembly *assembly, MonoError *error);
+mono_custom_attrs_from_assembly_checked	(MonoAssembly *assembly, gboolean ignore_missing, MonoError *error);
 MonoCustomAttrInfo*
 mono_custom_attrs_from_property_checked	(MonoClass *klass, MonoProperty *property, MonoError *error);
 MonoCustomAttrInfo*
