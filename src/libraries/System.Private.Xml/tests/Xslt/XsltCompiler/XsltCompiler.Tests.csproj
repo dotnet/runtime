@@ -8,7 +8,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>XsltCompiler.Tests</AssemblyName>
     <RootNamespace>System.Xml.Tests</RootNamespace>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
+    <NuGetTargetMoniker>.NETCoreApp,Version=v1.1</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
