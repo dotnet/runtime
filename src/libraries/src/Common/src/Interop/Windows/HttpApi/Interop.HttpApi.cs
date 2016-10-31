@@ -747,12 +747,21 @@ internal static partial class Interop
 
         private static string GetKnownHeader(HTTP_REQUEST* request, long fixup, int headerIndex)
         {
-            GlobalLog.Enter("HttpApi::GetKnownHeader()");
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Enter(null);
+            }
+
             string header = null;
 
             HTTP_KNOWN_HEADER* pKnownHeader = (&request->Headers.KnownHeaders) + headerIndex;
-            GlobalLog.Print("HttpApi::GetKnownHeader() pKnownHeader:0x" + ((IntPtr)pKnownHeader).ToString("x"));
-            GlobalLog.Print("HttpApi::GetKnownHeader() pRawValue:0x" + ((IntPtr)pKnownHeader->pRawValue).ToString("x") + " RawValueLength:" + pKnownHeader->RawValueLength.ToString());
+
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Info(null, $"HttpApi::GetKnownHeader() pKnownHeader:0x{(IntPtr)pKnownHeader:x}");
+                NetEventSource.Info(null, $"HttpApi::GetKnownHeader() pRawValue:0x{(IntPtr)pKnownHeader->pRawValue:x} RawValueLength:{pKnownHeader->RawValueLength}");
+            }
+
             // For known headers, when header value is empty, RawValueLength will be 0 and 
             // pRawValue will point to empty string ("\0")
             if (pKnownHeader->pRawValue != null)
@@ -760,7 +769,10 @@ internal static partial class Interop
                 header = new string(pKnownHeader->pRawValue + fixup, 0, pKnownHeader->RawValueLength);
             }
 
-            GlobalLog.Leave("HttpApi::GetKnownHeader() return:" + LoggingHash.ObjectToString(header));
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Exit(null, $"HttpApi::GetKnownHeader() return:{header}");
+            }
             return header;
         }
 
@@ -810,7 +822,7 @@ internal static partial class Interop
 
         internal static WebHeaderCollection GetHeaders(byte[] memoryBlob, IntPtr originalAddress)
         {
-            GlobalLog.Enter("HttpApi::GetHeaders()");
+            NetEventSource.Enter(null);
 
             // Return value.
             WebHeaderCollection headerCollection = new WebHeaderCollection();
@@ -861,14 +873,17 @@ internal static partial class Interop
                 }
             }
 
-            GlobalLog.Leave("HttpApi::GetHeaders()");
+            NetEventSource.Exit(null);
             return headerCollection;
         }
 
 
         internal static uint GetChunks(byte[] memoryBlob, IntPtr originalAddress, ref int dataChunkIndex, ref uint dataChunkOffset, byte[] buffer, int offset, int size)
         {
-            GlobalLog.Enter("HttpApi::GetChunks() memoryBlob:" + LoggingHash.ObjectToString(memoryBlob));
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Enter(null, $"HttpApi::GetChunks() memoryBlob:{memoryBlob}");
+            }
 
             // Return value.
             uint dataRead = 0;
@@ -919,13 +934,16 @@ internal static partial class Interop
                 }
             }
 
-            GlobalLog.Leave("HttpApi::GetChunks()");
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Exit(null);
+            }
             return dataRead;
         }
 
         internal static HTTP_VERB GetKnownVerb(byte[] memoryBlob, IntPtr originalAddress)
         {
-            GlobalLog.Enter("HttpApi::GetKnownVerb()");
+            NetEventSource.Enter(null);
 
             // Return value.
             HTTP_VERB verb = HTTP_VERB.HttpVerbUnknown;
@@ -938,13 +956,13 @@ internal static partial class Interop
                 }
             }
 
-            GlobalLog.Leave("HttpApi::GetKnownVerb()");
+            NetEventSource.Exit(null);
             return verb;
         }
 
         internal static IPEndPoint GetRemoteEndPoint(byte[] memoryBlob, IntPtr originalAddress)
         {
-            GlobalLog.Enter("HttpApi::GetRemoteEndPoint()");
+            NetEventSource.Enter(null);
 
             SocketAddress v4address = new SocketAddress(AddressFamily.InterNetwork, SocketAddress.IPv4AddressSize);
             SocketAddress v6address = new SocketAddress(AddressFamily.InterNetworkV6, SocketAddress.IPv6AddressSize);
@@ -966,13 +984,13 @@ internal static partial class Interop
                 endpoint = IPEndPoint.IPv6Any.Create(v6address) as IPEndPoint;
             }
 
-            GlobalLog.Leave("HttpApi::GetRemoteEndPoint()");
+            NetEventSource.Exit(null);
             return endpoint;
         }
 
         internal static IPEndPoint GetLocalEndPoint(byte[] memoryBlob, IntPtr originalAddress)
         {
-            GlobalLog.Enter("HttpApi::GetLocalEndPoint()");
+            NetEventSource.Enter(null);
 
             SocketAddress v4address = new SocketAddress(AddressFamily.InterNetwork, SocketAddress.IPv4AddressSize);
             SocketAddress v6address = new SocketAddress(AddressFamily.InterNetworkV6, SocketAddress.IPv6AddressSize);
@@ -994,7 +1012,7 @@ internal static partial class Interop
                 endpoint = IPEndPoint.IPv6Any.Create(v6address) as IPEndPoint;
             }
 
-            GlobalLog.Leave("HttpApi::GetLocalEndPoint()");
+            NetEventSource.Exit(null);
             return endpoint;
         }
     }

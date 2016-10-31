@@ -115,12 +115,12 @@ namespace System.Net
                     Interop.HttpApi.HTTP_SSL_CLIENT_CERT_INFO* pClientCertInfo = asyncResult.m_MemoryBlob;
                     if (pClientCertInfo != null)
                     {
-                        GlobalLog.Print("HttpListenerRequest#" + LoggingHash.HashString(httpListenerRequest) + "::ProcessClientCertificate() pClientCertInfo:" + LoggingHash.ObjectToString((IntPtr)pClientCertInfo)
-                            + " pClientCertInfo->CertFlags:" + LoggingHash.ObjectToString(pClientCertInfo->CertFlags)
-                            + " pClientCertInfo->CertEncodedSize:" + LoggingHash.ObjectToString(pClientCertInfo->CertEncodedSize)
-                            + " pClientCertInfo->pCertEncoded:" + LoggingHash.ObjectToString((IntPtr)pClientCertInfo->pCertEncoded)
-                            + " pClientCertInfo->Token:" + LoggingHash.ObjectToString((IntPtr)pClientCertInfo->Token)
-                            + " pClientCertInfo->CertDeniedByMapper:" + LoggingHash.ObjectToString(pClientCertInfo->CertDeniedByMapper));
+                        //GlobalLog.Print("HttpListenerRequest#" + LoggingHash.HashString(httpListenerRequest) + "::ProcessClientCertificate() pClientCertInfo:" + LoggingHash.ObjectToString((IntPtr)pClientCertInfo)
+                        //    + " pClientCertInfo->CertFlags:" + LoggingHash.ObjectToString(pClientCertInfo->CertFlags)
+                        //    + " pClientCertInfo->CertEncodedSize:" + LoggingHash.ObjectToString(pClientCertInfo->CertEncodedSize)
+                        //    + " pClientCertInfo->pCertEncoded:" + LoggingHash.ObjectToString((IntPtr)pClientCertInfo->pCertEncoded)
+                        //    + " pClientCertInfo->Token:" + LoggingHash.ObjectToString((IntPtr)pClientCertInfo->Token)
+                        //    + " pClientCertInfo->CertDeniedByMapper:" + LoggingHash.ObjectToString(pClientCertInfo->CertDeniedByMapper));
                         if (pClientCertInfo->pCertEncoded != null)
                         {
                             try
@@ -131,12 +131,12 @@ namespace System.Net
                             }
                             catch (CryptographicException exception)
                             {
-                                GlobalLog.Print("HttpListenerRequest#" + LoggingHash.HashString(httpListenerRequest) + "::ProcessClientCertificate() caught CryptographicException in X509Certificate2..ctor():" + LoggingHash.ObjectToString(exception));
+                                //GlobalLog.Print("HttpListenerRequest#" + LoggingHash.HashString(httpListenerRequest) + "::ProcessClientCertificate() caught CryptographicException in X509Certificate2..ctor():" + LoggingHash.ObjectToString(exception));
                                 result = exception;
                             }
                             catch (SecurityException exception)
                             {
-                                GlobalLog.Print("HttpListenerRequest#" + LoggingHash.HashString(httpListenerRequest) + "::ProcessClientCertificate() caught SecurityException in X509Certificate2..ctor():" + LoggingHash.ObjectToString(exception));
+                                //GlobalLog.Print("HttpListenerRequest#" + LoggingHash.HashString(httpListenerRequest) + "::ProcessClientCertificate() caught SecurityException in X509Certificate2..ctor():" + LoggingHash.ObjectToString(exception));
                                 result = exception;
                             }
                         }
@@ -146,7 +146,7 @@ namespace System.Net
                 }
 
                 // complete the async IO and invoke the callback
-                GlobalLog.Print("ListenerClientCertAsyncResult#" + LoggingHash.HashString(asyncResult) + "::WaitCallback() calling Complete()");
+                //GlobalLog.Print("ListenerClientCertAsyncResult#" + LoggingHash.HashString(asyncResult) + "::WaitCallback() calling Complete()");
             }
             catch (Exception exception) when (!ExceptionCheck.IsFatal(exception))
             {
@@ -167,7 +167,7 @@ namespace System.Net
         {
             ListenerClientCertAsyncResult asyncResult = (ListenerClientCertAsyncResult)ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped);
 
-            GlobalLog.Print("ListenerClientCertAsyncResult#" + LoggingHash.HashString(asyncResult) + "::WaitCallback() errorCode:[" + errorCode.ToString() + "] numBytes:[" + numBytes.ToString() + "] nativeOverlapped:[" + ((long)nativeOverlapped).ToString() + "]");
+            //GlobalLog.Print("ListenerClientCertAsyncResult#" + LoggingHash.HashString(asyncResult) + "::WaitCallback() errorCode:[" + errorCode.ToString() + "] numBytes:[" + numBytes.ToString() + "] nativeOverlapped:[" + ((long)nativeOverlapped).ToString() + "]");
 
             IOCompleted(asyncResult, errorCode, numBytes);
         }
