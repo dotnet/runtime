@@ -1382,7 +1382,7 @@ namespace System.IO
             // case our custom CopyToAsync implementation isn't necessarily correct.
             if (!_useAsyncIO || GetType() != typeof(FileStream))
             {
-                return StreamHelpers.ArrayPoolCopyToAsync(this, destination, bufferSize, cancellationToken);
+                return base.CopyToAsync(destination, bufferSize, cancellationToken);
             }
 
             StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);

@@ -9259,7 +9259,6 @@
       <Member Name="#ctor(System.String,System.IO.FileMode,System.IO.FileAccess,System.IO.FileShare,System.Int32,System.IO.FileOptions)" />
       <Member Name="BeginRead(System.Byte[],System.Int32,System.Int32,System.AsyncCallback,System.Object)" />
       <Member Name="BeginWrite(System.Byte[],System.Int32,System.Int32,System.AsyncCallback,System.Object)" />
-      <Member Name="CopyToAsync(System.IO.Stream,System.Int32,System.Threading.CancellationToken)" />
       <Member Name="Dispose(System.Boolean)" />
       <Member Name="EndRead(System.IAsyncResult)" />
       <Member Name="EndWrite(System.IAsyncResult)" />
