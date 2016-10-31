@@ -7160,7 +7160,28 @@
       <Member MemberType="Field" Name="value__" />
       <Member MemberType="Field" Name="VisibleToAllHosts" />
     </Type>
-    <Type Name="System.Security.SecurityCriticalAttribute">
+    <Type Name="System.Security.SecureString">
+      <Member Name="#ctor" />
+      <Member Name="#ctor(System.Char*,System.Int32)" />
+      <Member Name="get_Length" />
+      <Member MemberType="Property" Name="Length" />
+      <Member Name="AppendChar(System.Char)" />
+      <Member Name="Clear" />
+      <Member Name="Copy" />
+      <Member Name="Dispose" />
+      <Member Name="InsertAt(System.Int32,System.Char)" />
+      <Member Name="IsReadOnly" />
+      <Member Name="MakeReadOnly" />
+      <Member Name="RemoveAt(System.Int32)" />
+      <Member Name="SetAt(System.Int32,System.Char)" />
+    </Type>
+    <Type Name="System.Security.SecureStringMarshal">
+      <Member Name="SecureStringToCoTaskMemAnsi(System.Security.SecureString)" />
+      <Member Name="SecureStringToGlobalAllocAnsi(System.Security.SecureString)" />
+      <Member Name="SecureStringToCoTaskMemUnicode(System.Security.SecureString)" />
+      <Member Name="SecureStringToGlobalAllocUnicode(System.Security.SecureString)" />
+    </Type> 
+   <Type Name="System.Security.SecurityCriticalAttribute">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.Security.SecurityCriticalScope)" />
       <Member Name="get_Scope" />
@@ -7416,7 +7437,7 @@
       <Member Name="get_StructuralEqualityComparer" />
       <Member MemberType="Property" Name="StructuralComparer" />
       <Member MemberType="Property" Name="StructuralEqualityComparer" />
-    </Type>
+    </Type>   
     <Type Name="System.StringComparer">
       <Member Name="#ctor" />
       <Member Name="Compare(System.Object,System.Object)" />
@@ -10641,6 +10662,14 @@
       <Member Name="CheckSetDemandNoThrow(System.Security.PermissionSet)" /> <!-- EE -->
       <Member Name="Update(System.Security.PermissionSet)" /> <!-- EE -->
     </Type>
+    <Type Name="System.Security.Cryptography.CryptographicException">
+      <Member Name="#ctor"/>
+      <Member Name="#ctor(System.Int32)"/>
+      <Member Name="#ctor(System.String)"/>
+      <Member Name="#ctor(System.String,System.Exception)"/>
+      <Member Name="#ctor(System.String,System.String)"/>
+    </Type>
+ 
     <Type Status="ImplRoot" Name="System.Security.Permissions.PermissionState" />
     <Type Name="System.Security.Permissions.SecurityAction" />
     <Type Status="ImplRoot" Name="System.Security.Permissions.SecurityPermission" />
