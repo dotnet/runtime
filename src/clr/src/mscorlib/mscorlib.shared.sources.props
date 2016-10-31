@@ -763,7 +763,6 @@
     <FileStreamSources Include="$(CoreFxSourcesRoot)\System\IO\FileStream.cs" />
     <FileStreamSources Include="$(CoreFxSourcesRoot)\System\IO\FileStream.NetStandard17.cs" />
     <FileStreamSources Include="$(CoreFxSourcesRoot)\System\IO\Error.cs" />
-    <FileStreamSources Include="$(CoreFxSourcesRoot)\System\IO\StreamHelpers.ArrayPoolCopy.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCoreFxFileStream)' == 'true' and '$(TargetsUnix)' == 'true'">
     <SafehandleSources Include="$(CoreFxSourcesRoot)\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs" />
