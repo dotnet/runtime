@@ -1011,8 +1011,8 @@ namespace System {
         internal static string FastFormatRoundtrip(DateTime dateTime, TimeSpan offset)
         {
             // yyyy-MM-ddTHH:mm:ss.fffffffK
-            const int roundTrimFormatLength = 28;
-            StringBuilder result = StringBuilderCache.Acquire(roundTrimFormatLength);
+            const int roundTripFormatLength = 28;
+            StringBuilder result = StringBuilderCache.Acquire(roundTripFormatLength);
 
             AppendNumber(result, dateTime.Year, 4);
             result.Append('-');
