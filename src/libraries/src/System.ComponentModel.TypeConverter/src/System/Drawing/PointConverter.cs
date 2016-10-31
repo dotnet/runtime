@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics.CodeAnalysis;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.ComponentModel.Design.Serialization;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Reflection;
 
 namespace System.Drawing
 {
@@ -23,12 +25,10 @@ namespace System.Drawing
 
         public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
         {
-#if FEATURE_INSTANCEDESCRIPTOR
             if (destinationType == typeof(InstanceDescriptor))
             {
                 return true;
             }
-#endif
             return base.CanConvertTo(context, destinationType);
         }
 
@@ -107,7 +107,7 @@ namespace System.Drawing
 
                     return string.Join(sep, args);
                 }
-#if FEATURE_INSTANCEDESCRIPTOR
+                
                 if (destinationType == typeof(InstanceDescriptor))
                 {
                     Point pt = (Point)value;
@@ -118,7 +118,6 @@ namespace System.Drawing
                         return new InstanceDescriptor(ctor, new object[] { pt.X, pt.Y });
                     }
                 }
-#endif
             }
 
             return base.ConvertTo(context, culture, value, destinationType);

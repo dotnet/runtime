@@ -7,6 +7,7 @@ using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
+using System.ComponentModel.Design;
 
 namespace System.ComponentModel
 {
@@ -186,7 +187,6 @@ namespace System.ComponentModel
 
                             _state[s_bitDefaultValueQueried] = true;
                         }
-#if FEATURE_AMBIENTVALUE
                         else
                         {
                             AmbientValueAttribute ava = a as AmbientValueAttribute;
@@ -196,13 +196,11 @@ namespace System.ComponentModel
                                 _state[s_bitAmbientValueQueried] = true;
                             }
                         }
-#endif
                     }
                 }
             }
         }
 
-#if FEATURE_AMBIENTVALUE
         /// <summary>
         ///      Retrieves the ambient value for this property.
         /// </summary>
@@ -226,7 +224,6 @@ namespace System.ComponentModel
                 return _ambientValue;
             }
         }
-#endif
 
         /// <summary>
         ///     The EventDescriptor for the "{propertyname}Changed" event on the component, or null if there isn't one for this property.
@@ -527,7 +524,6 @@ namespace System.ComponentModel
             // Otherwise let the base class add the handler to its ValueChanged event for this component
             else
             {
-#if FEATURE_PROPERTY_CHANGED_EVENT_HANDLER
                 // Special case: If this will be the FIRST handler added for this component, and the component implements
                 // INotifyPropertyChanged, the property descriptor must START listening to the generic PropertyChanged event
                 if (GetValueChangedHandler(component) == null)
@@ -538,7 +534,6 @@ namespace System.ComponentModel
                         iPropChangedEvent.AddEventHandler(component, new PropertyChangedEventHandler(OnINotifyPropertyChanged));
                     }
                 }
-#endif
 
                 base.AddValueChanged(component, handler);
             }
@@ -592,17 +587,14 @@ namespace System.ComponentModel
 
         internal void ExtenderResetValue(IExtenderProvider provider, object component, PropertyDescriptor notifyDesc)
         {
-#if FEATURE_COMPONENT_CHANGE_SERVICE
             if (DefaultValue != s_noValue)
             {
                 ExtenderSetValue(provider, component, DefaultValue, notifyDesc);
             }
-#if FEATURE_AMBIENTVALUE
             else if (AmbientValue != s_noValue)
             {
                 ExtenderSetValue(provider, component, AmbientValue, notifyDesc);
             }
-#endif
             else if (ResetMethodValue != null)
             {
                 ISite site = GetSite(component);
@@ -651,12 +643,10 @@ namespace System.ComponentModel
                     }
                 }
             }
-#endif
         }
 
         internal void ExtenderSetValue(IExtenderProvider provider, object component, object value, PropertyDescriptor notifyDesc)
         {
-#if FEATURE_COMPONENT_CHANGE_SERVICE
             if (provider != null)
             {
                 ISite site = GetSite(component);
@@ -704,7 +694,6 @@ namespace System.ComponentModel
                     }
                 }
             }
-#endif
         }
 
         internal bool ExtenderShouldSerializeValue(IExtenderProvider provider, object component)
@@ -772,12 +761,10 @@ namespace System.ComponentModel
                 return true;
             }
 
-#if FEATURE_AMBIENTVALUE
             if (AmbientValue != s_noValue)
             {
                 return ShouldSerializeValue(component);
             }
-#endif
 
             return false;
         }
@@ -1015,7 +1002,6 @@ namespace System.ComponentModel
             return null;
         }
 
-#if FEATURE_PROPERTY_CHANGED_EVENT_HANDLER
         /// <summary>
         ///     Handles INotifyPropertyChanged.PropertyChange events from components.
         ///     If event pertains to this property, issue a ValueChanged event.
@@ -1029,7 +1015,6 @@ namespace System.ComponentModel
                 OnValueChanged(component, e);
             }
         }
-#endif
 
         /// <summary>
         ///     This should be called by your property descriptor implementation
@@ -1065,7 +1050,6 @@ namespace System.ComponentModel
             {
                 base.RemoveValueChanged(component, handler);
 
-#if FEATURE_PROPERTY_CHANGED_EVENT_HANDLER
                 // Special case: If that was the LAST handler removed for this component, and the component implements
                 // INotifyPropertyChanged, the property descriptor must STOP listening to the generic PropertyChanged event
                 if (GetValueChangedHandler(component) == null)
@@ -1076,7 +1060,6 @@ namespace System.ComponentModel
                         iPropChangedEvent.RemoveEventHandler(component, new PropertyChangedEventHandler(OnINotifyPropertyChanged));
                     }
                 }
-#endif
             }
         }
 
@@ -1096,13 +1079,10 @@ namespace System.ComponentModel
             {
                 SetValue(component, DefaultValue);
             }
-#if FEATURE_AMBIENTVALUE
             else if (AmbientValue != s_noValue)
             {
                 SetValue(component, AmbientValue);
             }
-#endif
-#if FEATURE_COMPONENT_CHANGE_SERVICE
             else if (ResetMethodValue != null)
             {
                 ISite site = GetSite(component);
@@ -1151,7 +1131,6 @@ namespace System.ComponentModel
                     }
                 }
             }
-#endif
         }
 
         /// <summary>
@@ -1175,7 +1154,6 @@ namespace System.ComponentModel
 
                 if (!IsReadOnly)
                 {
-#if FEATURE_COMPONENT_CHANGE_SERVICE
                     IComponentChangeService changeService = null;
 
                     // Announce that we are about to change this component
@@ -1208,34 +1186,32 @@ namespace System.ComponentModel
 
                     try
                     {
-#endif
-                    try
-                    {
-                        SetMethodValue.Invoke(invokee, new object[] { value });
-                        OnValueChanged(invokee, EventArgs.Empty);
-                    }
-                    catch (Exception t)
-                    {
-                        // Give ourselves a chance to unwind properly before rethrowing the exception.
-                        //
-                        value = oldValue;
-
-                        // If there was a problem setting the controls property then we get:
-                        // ArgumentException (from properties set method)
-                        // ==> Becomes inner exception of TargetInvocationException
-                        // ==> caught here
-
-                        if (t is TargetInvocationException && t.InnerException != null)
+                        try
                         {
-                            // Propagate the original exception up
-                            throw t.InnerException;
+                            SetMethodValue.Invoke(invokee, new object[] { value });
+                            OnValueChanged(invokee, EventArgs.Empty);
                         }
-                        else
+                        catch (Exception t)
                         {
-                            throw t;
+                            // Give ourselves a chance to unwind properly before rethrowing the exception.
+                            //
+                            value = oldValue;
+
+                            // If there was a problem setting the controls property then we get:
+                            // ArgumentException (from properties set method)
+                            // ==> Becomes inner exception of TargetInvocationException
+                            // ==> caught here
+
+                            if (t is TargetInvocationException && t.InnerException != null)
+                            {
+                                // Propagate the original exception up
+                                throw t.InnerException;
+                            }
+                            else
+                            {
+                                throw t;
+                            }
                         }
-                    }
-#if FEATURE_COMPONENT_CHANGE_SERVICE
                     }
                     finally
                     {
@@ -1246,7 +1222,6 @@ namespace System.ComponentModel
                             changeService.OnComponentChanged(component, this, oldValue, value);
                         }
                     }
-#endif
                 }
             }
         }

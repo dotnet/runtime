@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.ComponentModel.Design.Serialization;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
@@ -34,12 +35,10 @@ namespace System.Drawing
 
         public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
         {
-#if FEATURE_INSTANCEDESCRIPTOR
             if (destinationType == typeof(InstanceDescriptor))
             {
                 return true;
             }
-#endif
             return base.CanConvertTo(context, destinationType);
         }
 
@@ -210,7 +209,7 @@ namespace System.Drawing
                         }
                     }
                 }
-#if FEATURE_INSTANCEDESCRIPTOR
+                
                 if (destinationType == typeof(InstanceDescriptor))
                 {
                     MemberInfo member = null;
@@ -256,7 +255,6 @@ namespace System.Drawing
                         return null;
                     }
                 }
-#endif
             }
 
             return base.ConvertTo(context, culture, value, destinationType);
