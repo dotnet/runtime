@@ -12,6 +12,7 @@
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 #include <config.h>
+#include "mono/metadata/assembly.h"
 #include "mono/metadata/gc-internals.h"
 #include "mono/metadata/mono-endian.h"
 #include "mono/metadata/object-internals.h"
@@ -1709,4 +1710,79 @@ mono_reflection_get_custom_attrs_data_checked (MonoObject *obj, MonoError *error
 		result = mono_array_new_checked (mono_domain_get (), mono_defaults.customattribute_data_class, 0, error);
 
 	return result;
+}
+
+/**
+ * mono_assembly_metadata_foreach_custom_attr:
+ * @assembly: the assembly to iterate over
+ * @func: the function to call for each custom attribute
+ * @user_data: passed to @func
+ *
+ * Calls @func for each custom attribute type on the given assembly until @func returns TRUE.
+ * Everything is done using low-level metadata APIs, so it is safe to use during assembly loading.
+ *
+ */
+void
+mono_assembly_metadata_foreach_custom_attr (MonoAssembly *assembly, MonoAssemblyMetadataCustomAttrIterFunc func, gpointer user_data)
+{
+	MonoImage *image;
+	guint32 mtoken, i;
+	guint32 cols [MONO_CUSTOM_ATTR_SIZE];
+	MonoTableInfo *ca;
+	guint32 idx;
+
+	/*
+	 * This might be called during assembly loading, so do everything using the low-level
+	 * metadata APIs.
+	 */
+
+	image = assembly->image;
+	idx = 1; /* there is only one assembly */
+	idx <<= MONO_CUSTOM_ATTR_BITS;
+	idx |= MONO_CUSTOM_ATTR_ASSEMBLY;
+
+	/* Inlined from mono_custom_attrs_from_index_checked () */
+	ca = &image->tables [MONO_TABLE_CUSTOMATTRIBUTE];
+	i = mono_metadata_custom_attrs_from_index (image, idx);
+	if (!i)
+		return;
+	i --;
+	gboolean stop_iterating = FALSE;
+	while (!stop_iterating && i < ca->rows) {
+		if (mono_metadata_decode_row_col (ca, i, MONO_CUSTOM_ATTR_PARENT) != idx)
+			break;
+		mono_metadata_decode_row (ca, i, cols, MONO_CUSTOM_ATTR_SIZE);
+		i ++;
+		mtoken = cols [MONO_CUSTOM_ATTR_TYPE] >> MONO_CUSTOM_ATTR_TYPE_BITS;
+		if ((cols [MONO_CUSTOM_ATTR_TYPE] & MONO_CUSTOM_ATTR_TYPE_MASK) != MONO_CUSTOM_ATTR_TYPE_MEMBERREF)
+			continue;
+		mtoken |= MONO_TOKEN_MEMBER_REF;
+		{
+			/* method_from_memberref () */
+			guint32 cols[6];
+			guint32 nindex, class_index;
+
+			int idx = mono_metadata_token_index (mtoken);
+
+			mono_metadata_decode_row (&image->tables [MONO_TABLE_MEMBERREF], idx-1, cols, 3);
+			nindex = cols [MONO_MEMBERREF_CLASS] >> MONO_MEMBERREF_PARENT_BITS;
+			class_index = cols [MONO_MEMBERREF_CLASS] & MONO_MEMBERREF_PARENT_MASK;
+			if (class_index == MONO_MEMBERREF_PARENT_TYPEREF) {
+				guint32 type_token = MONO_TOKEN_TYPE_REF | nindex;
+				/* mono_class_from_typeref_checked () */
+				{
+					guint32 cols [MONO_TYPEREF_SIZE];
+					const char *name, *nspace;
+					MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEREF];
+
+					mono_metadata_decode_row (t, (type_token&0xffffff)-1, cols, MONO_TYPEREF_SIZE);
+
+					name = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME]);
+					nspace = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAMESPACE]);
+
+					stop_iterating = func (image, cols [MONO_TYPEREF_SCOPE], nspace, name, mtoken, user_data);
+				}
+			}
+		}
+	}
 }

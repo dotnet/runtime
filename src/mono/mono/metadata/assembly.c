@@ -22,6 +22,7 @@
 #include "object-internals.h"
 #include <mono/metadata/loader.h>
 #include <mono/metadata/tabledefs.h>
+#include <mono/metadata/custom-attrs-internals.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/class-internals.h>
@@ -39,7 +40,6 @@
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/coree.h>
 #include <mono/metadata/cil-coff.h>
-#include <mono/metadata/tokentype.h>
 #include <mono/utils/mono-io-portability.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-os-mutex.h>
@@ -206,8 +206,6 @@ static GSList *loaded_assembly_bindings = NULL;
 
 /* Class lazy loading functions */
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (internals_visible, System.Runtime.CompilerServices, InternalsVisibleToAttribute)
-static GENERATE_TRY_GET_CLASS_WITH_CACHE (reference_assembly, System.Runtime.CompilerServices, ReferenceAssemblyAttribute)
-
 static MonoAssembly*
 mono_assembly_invoke_search_hook_internal (MonoAssemblyName *aname, MonoAssembly *requesting, gboolean refonly, gboolean postload);
 static MonoAssembly*
@@ -1829,6 +1827,24 @@ mono_assembly_load_friends (MonoAssembly* ass)
 	mono_assemblies_unlock ();
 }
 
+struct HasReferenceAssemblyAttributeIterData {
+	gboolean has_attr;
+};
+
+static gboolean
+has_reference_assembly_attribute_iterator (MonoImage *image, guint32 typeref_scope_token, const char *nspace, const char *name, guint32 memberref_token, gpointer user_data)
+{
+	gboolean stop_scanning = FALSE;
+	struct HasReferenceAssemblyAttributeIterData *iter_data = (struct HasReferenceAssemblyAttributeIterData*)user_data;
+
+	if (!strcmp (name, "ReferenceAssemblyAttribute") && !strcmp (nspace, "System.Runtime.CompilerServices")) {
+		/* Note we don't check the assembly name, same as coreCLR. */
+		iter_data->has_attr = TRUE;
+		stop_scanning = TRUE;
+	}
+
+	return stop_scanning;
+}
 
 /**
  * mono_assembly_has_reference_assembly_attribute:
@@ -1841,12 +1857,6 @@ mono_assembly_load_friends (MonoAssembly* ass)
 gboolean
 mono_assembly_has_reference_assembly_attribute (MonoAssembly *assembly, MonoError *error)
 {
-	MonoImage *image;
-	guint32 mtoken, i;
-	guint32 cols [MONO_CUSTOM_ATTR_SIZE];
-	MonoTableInfo *ca;
-	guint32 idx;
-
 	mono_error_init (error);
 
 	/*
@@ -1854,64 +1864,11 @@ mono_assembly_has_reference_assembly_attribute (MonoAssembly *assembly, MonoErro
 	 * metadata APIs.
 	 */
 
-	image = assembly->image;
-	idx = 1; /* there is only one assembly */
-	idx <<= MONO_CUSTOM_ATTR_BITS;
-	idx |= MONO_CUSTOM_ATTR_ASSEMBLY;
+	struct HasReferenceAssemblyAttributeIterData iter_data = { FALSE };
 
-	/* Inlined from mono_custom_attrs_from_index_checked () */
-	ca = &image->tables [MONO_TABLE_CUSTOMATTRIBUTE];
-	i = mono_metadata_custom_attrs_from_index (image, idx);
-	if (!i)
-		return FALSE;
-	i --;
-	while (i < ca->rows) {
-		if (mono_metadata_decode_row_col (ca, i, MONO_CUSTOM_ATTR_PARENT) != idx)
-			break;
-		mono_metadata_decode_row (ca, i, cols, MONO_CUSTOM_ATTR_SIZE);
-		i ++;
-		mtoken = cols [MONO_CUSTOM_ATTR_TYPE] >> MONO_CUSTOM_ATTR_TYPE_BITS;
-		if ((cols [MONO_CUSTOM_ATTR_TYPE] & MONO_CUSTOM_ATTR_TYPE_MASK) != MONO_CUSTOM_ATTR_TYPE_MEMBERREF)
-			continue;
-		mtoken |= MONO_TOKEN_MEMBER_REF;
-		{
-			/* method_from_memberref () */
-			guint32 cols[6];
-			guint32 nindex, class_index;
+	mono_assembly_metadata_foreach_custom_attr (assembly, &has_reference_assembly_attribute_iterator, &iter_data);
 
-			int idx = mono_metadata_token_index (mtoken);
-
-			mono_metadata_decode_row (&image->tables [MONO_TABLE_MEMBERREF], idx-1, cols, 3);
-			nindex = cols [MONO_MEMBERREF_CLASS] >> MONO_MEMBERREF_PARENT_BITS;
-			class_index = cols [MONO_MEMBERREF_CLASS] & MONO_MEMBERREF_PARENT_MASK;
-			if (class_index == MONO_MEMBERREF_PARENT_TYPEREF) {
-				guint32 type_token = MONO_TOKEN_TYPE_REF | nindex;
-				/* mono_class_from_typeref_checked () */
-				{
-					guint32 cols [MONO_TYPEREF_SIZE];
-					const char *name, *nspace;
-					MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEREF];
-					guint32 idx;
-
-					mono_metadata_decode_row (t, (type_token&0xffffff)-1, cols, MONO_TYPEREF_SIZE);
-
-					name = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME]);
-					nspace = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAMESPACE]);
-					idx = cols [MONO_TYPEREF_SCOPE] >> MONO_RESOLUTION_SCOPE_BITS;
-
-					if (!strcmp (name, "ReferenceAssemblyAttribute") && !strcmp (nspace, "System.Runtime.CompilerServices")) {
-						if ((cols [MONO_TYPEREF_SCOPE] & MONO_RESOLUTION_SCOPE_MASK) == MONO_RESOLUTION_SCOPE_ASSEMBLYREF) {
-							MonoAssemblyName aname;
-							mono_assembly_get_assemblyref (image, idx - 1, &aname);
-							if (!strcmp (aname.name, "System.Runtime") || !strcmp (aname.name, "mscorlib"))
-								return TRUE;
-						}
-					}
-				}
-			}
-		}
-	}
-	return FALSE;
+	return iter_data.has_attr;
 }
 
 /**
