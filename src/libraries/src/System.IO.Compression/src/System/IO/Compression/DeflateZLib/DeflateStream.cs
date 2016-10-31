@@ -12,7 +12,7 @@ namespace System.IO.Compression
 {
     public partial class DeflateStream : Stream
     {
-        internal const int DefaultBufferSize = 8192;
+        private const int DefaultBufferSize = 8192;
 
         private Stream _stream;
         private CompressionMode _mode;
