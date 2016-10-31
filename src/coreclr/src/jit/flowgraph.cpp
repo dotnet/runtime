@@ -5748,10 +5748,19 @@ void Compiler::fgFindBasicBlocks()
 
     if (compIsForInlining())
     {
-        // If fgFindJumpTargets marked this as "no return"  there really should be no BBJ_RETURN blocks in the method
-        assert((retBlocks == 0 && ((impInlineInfo->iciCall->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) ==
-                                   GTF_CALL_M_DOES_NOT_RETURN)) ||
-               (retBlocks >= 1 && ((impInlineInfo->iciCall->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) == 0)));
+
+#ifdef DEBUG
+        // If fgFindJumpTargets marked the call as "no return" there
+        // really should be no BBJ_RETURN blocks in the method.
+        //
+        // Note LegacyPolicy does not mark calls as no return, so if
+        // it's active, skip the check.
+        if (!compInlineResult->UsesLegacyPolicy())
+        {
+            bool markedNoReturn = (impInlineInfo->iciCall->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) != 0;
+            assert((markedNoReturn && (retBlocks == 0)) || (!markedNoReturn && (retBlocks >= 1)));
+        }
+#endif // DEBUG
 
         if (compInlineResult->IsFailure())
         {
