@@ -22,6 +22,7 @@ namespace System.Net.Security.Tests
     // specified by a callback method.
     public class DummyTcpServer : IDisposable
     {
+        private readonly string _creationStack = Environment.StackTrace;
         private VerboseTestLogging _log;
         private TcpListener _listener;
         private bool _useSsl;
@@ -233,6 +234,12 @@ namespace System.Net.Security.Tests
             {
                 state.Dispose();
                 return;
+            }
+            catch (InvalidOperationException e)
+            {
+                throw new InvalidOperationException(
+                    $"Exception in {nameof(DummyTcpServer)} created with stack: {_creationStack}",
+                    e);
             }
         }
 
