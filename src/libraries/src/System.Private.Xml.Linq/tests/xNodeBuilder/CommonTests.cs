@@ -3403,7 +3403,6 @@ namespace CoreXml.Test.XLinq
 
                 //[Variation(Id = 5, Desc = "WriteCData with ]]>", Priority = 1)]
                 [Fact]
-                //[ActiveIssue(4054)]
                 public void WriteCDataWithTwoClosingBrackets_5()
                 {
                     XDocument doc = new XDocument();
@@ -3414,11 +3413,12 @@ namespace CoreXml.Test.XLinq
                         w.WriteEndElement();
                     }
 
-                    string expectedXml = "<Root><![CDATA[test ]]]]><![CDATA[> test]]></Root>";
+                    string expectedMsg = "Cannot have ']]>' inside an XML CDATA block.";
 
                     using (XmlReader reader = doc.CreateReader())
                     {
-                        Assert.Equal(expectedXml, MoveToFirstElement(reader).ReadOuterXml());
+                        Exception exception = Assert.Throws<ArgumentException>(() => MoveToFirstElement(reader).ReadOuterXml());
+                        Assert.Equal(expectedMsg, exception.Message);
                     }
                 }
 
@@ -3595,7 +3595,6 @@ namespace CoreXml.Test.XLinq
 
                 //[Variation(Id = 6, Desc = "WriteComment with -- in value", Priority = 1)]
                 [Fact]
-                //[ActiveIssue(4057)]
                 public void WriteCommentWithDoubleHyphensInValue()
                 {
                     XDocument doc = new XDocument();
@@ -3606,11 +3605,12 @@ namespace CoreXml.Test.XLinq
                         w.WriteEndElement();
                     }
 
-                    string expectedXml = "<Root><!--test - - --></Root>";
+                    string expectedMsg = "An XML comment cannot contain '--', and '-' cannot be the last character.";
 
                     using (XmlReader reader = doc.CreateReader())
                     {
-                        Assert.Equal(expectedXml, MoveToFirstElement(reader).ReadOuterXml());
+                        Exception exception = Assert.Throws<ArgumentException>(() => MoveToFirstElement(reader).ReadOuterXml());
+                        Assert.Equal(expectedMsg, exception.Message);
                     }
                 }
             }
@@ -4196,7 +4196,6 @@ namespace CoreXml.Test.XLinq
 
                 //[Variation(Id = 11, Desc = "Include PI end tag ?> as part of the text value", Priority = 1)]
                 [Fact]
-                //[ActiveIssue(4063)]
                 public void IncludePIEndTagAsPartOfTextValue()
                 {
                     XDocument doc = new XDocument();
@@ -4207,11 +4206,12 @@ namespace CoreXml.Test.XLinq
                         w.WriteEndElement();
                     }
 
-                    string expectedXml = "<Root><?badpi text ? >?></Root>";
+                    string expectedMsg = "Cannot have '?>' inside an XML processing instruction.";
 
                     using (XmlReader reader = doc.CreateReader())
                     {
-                        Assert.Equal(expectedXml, MoveToFirstElement(reader).ReadOuterXml());
+                        Exception exception = Assert.Throws<ArgumentException>(() => MoveToFirstElement(reader).ReadOuterXml());
+                        Assert.Equal(expectedMsg, exception.Message);
                     }
                 }
 
