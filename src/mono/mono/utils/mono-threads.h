@@ -29,6 +29,7 @@ typedef DWORD MonoNativeThreadId;
 typedef HANDLE MonoNativeThreadHandle; /* unused */
 
 typedef DWORD mono_native_thread_return_t;
+typedef DWORD mono_thread_start_return_t;
 
 #define MONO_NATIVE_THREAD_ID_TO_UINT(tid) (tid)
 #define MONO_UINT_TO_NATIVE_THREAD_ID(tid) ((MonoNativeThreadId)(tid))
@@ -55,6 +56,7 @@ typedef pid_t MonoNativeThreadHandle;
 typedef pthread_t MonoNativeThreadId;
 
 typedef void* mono_native_thread_return_t;
+typedef gsize mono_thread_start_return_t;
 
 #define MONO_NATIVE_THREAD_ID_TO_UINT(tid) (gsize)(tid)
 #define MONO_UINT_TO_NATIVE_THREAD_ID(tid) (MonoNativeThreadId)(gsize)(tid)
