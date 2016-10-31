@@ -631,6 +631,10 @@ Argument_UnmanagedMemAccessorWrapAround = The UnmanagedMemoryAccessor capacity a
 Argument_UnrecognizedLoaderOptimization = Unrecognized LOADER_OPTIMIZATION property value.  Supported values may include "SingleDomain", "MultiDomain", "MultiDomainHost", and "NotSpecified".
 ArgumentException_NotAllCustomSortingFuncsDefined = Implementations of all the NLS functions must be provided.
 ArgumentException_MinSortingVersion = The runtime does not support a version of "{0}" less than {1}.
+#if FEATURE_SPAN_OF_T
+Argument_InvalidTypeWithPointersNotSupported = Cannot use type '{0}'. Only value types without pointers or references are supported.
+#endif // FEATURE_SPAN_OF_T
+
 
 ;
 ; =====================================================
