@@ -3,9 +3,9 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
-    <PackageTargetFramework Condition="'$(TargetGroup)'==''">netstandard1.7;uap10.1</PackageTargetFramework>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp1.1'">$(DefineConstants);netcoreapp11</DefineConstants>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETCoreApp,Version=v1.1</NuGetTargetMoniker>
+    <PackageTargetFramework Condition="'$(TargetGroup)'=='netstandard1.7'">netstandard1.7;uap10.1</PackageTargetFramework>
+    <DefineConstants Condition="'$(TargetGroup)' == ''">$(DefineConstants);netcoreapp11</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.IO.cs" />
