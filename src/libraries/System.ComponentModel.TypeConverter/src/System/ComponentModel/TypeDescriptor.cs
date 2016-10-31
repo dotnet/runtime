@@ -3569,9 +3569,7 @@ namespace System.ComponentModel
 
                     if (rp != null)
                     {
-#if FEATURE_EDITOR
                         return rp.GetExtendedEditor(_instance, editorBaseType);
-#endif
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
@@ -3914,11 +3912,7 @@ namespace System.ComponentModel
 
                     if (rp != null)
                     {
-#if FEATURE_EDITOR
                         editor = rp.GetEditor(_objectType, _instance, editorBaseType);
-#else
-                        editor = null;
-#endif
                     }
                     else
                     {

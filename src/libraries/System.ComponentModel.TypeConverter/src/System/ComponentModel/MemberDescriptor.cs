@@ -478,11 +478,7 @@ namespace System.ComponentModel
                 // The original impementation requires the method https://msdn.microsoft.com/en-us/library/5fed8f59(v=vs.110).aspx which is not 
                 // available on .NET Core. The replacement will use the default BindingFlags, which may miss some methods that had been found
                 // on .NET Framework.
-#if FEATURE_GETMETHOD_WITHTYPES
                 result = componentClass.GetTypeInfo().GetMethod(name, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, args, null);
-#else
-                result = componentClass.GetTypeInfo().GetMethod(name, args);
-#endif
             }
             if (result != null && !result.ReturnType.GetTypeInfo().IsEquivalentTo(returnType))
             {
