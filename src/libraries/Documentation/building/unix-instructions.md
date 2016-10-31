@@ -12,6 +12,9 @@ Only use it when the parameters that you are passing to the script apply for bot
 
 For more information about the different options when building, run `build.sh -?` and look at examples in the [developer-guide](../project-docs/developer-guide.md).
 
+## Minimum Hardware Requirements
+- 2GB RAM
+
 ## Prerequisites (native build)
 
 ### Linux
