@@ -1841,7 +1841,7 @@ combinedScenarios.each { scenario ->
                                                 // thinks that %workspace% is the project base directory.
                                                 buildCommands += "powershell new-item clr -type directory -force"
                                                 buildCommands += 'powershell foreach ($x in get-childitem -force) { if (\$x.name -ne \'clr\') { move-item $x clr }}'
-                                                buildCommands += "git clone https://github.com/dotnet/corefx fx"
+                                                buildCommands += "git clone -b $branch --single-branch https://github.com/dotnet/corefx fx"
                                                 
                                                 buildCommands += getStressModeEnvSetCmd(os, scenario);
                                                 
@@ -2008,7 +2008,7 @@ combinedScenarios.each { scenario ->
                                         buildCommands += "rm -rf .clr; mkdir .clr; mv * .clr; mv .git .clr; mv .clr clr"
                                         
                                         // Get corefx
-                                        buildCommands += "git clone https://github.com/dotnet/corefx fx"
+                                        buildCommands += "git clone -b $branch --single-branch https://github.com/dotnet/corefx fx"
                                         
                                         // Set environment variable
                                         def setEnvVar = getStressModeEnvSetCmd(os, scenario)
