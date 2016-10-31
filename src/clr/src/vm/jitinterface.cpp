@@ -2303,11 +2303,22 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
 
     MethodTable* pMT = VMClsHnd.GetMethodTable();
 
-    if (pMT == g_TypedReferenceMT)
+    if (pMT == g_TypedReferenceMT) // if (pMT->IsByRefLike()) // TODO-SPAN: Proper GC reporting
     {
-        gcPtrs[0] = TYPE_GC_BYREF;
-        gcPtrs[1] = TYPE_GC_NONE;
-        result = 1;
+        if (pMT == g_TypedReferenceMT
+#ifdef FEATURE_SPAN_OF_T
+            || pMT->HasSameTypeDefAs(g_pSpanClass) || pMT->HasSameTypeDefAs(g_pReadOnlySpanClass)
+#endif
+            )
+        {
+            gcPtrs[0] = TYPE_GC_BYREF;
+            gcPtrs[1] = TYPE_GC_NONE;
+            result = 1;
+        }
+        else
+        {
+            result = 0;
+        }
     }
     else if (VMClsHnd.IsNativeValueType())
     {
@@ -6780,6 +6791,28 @@ void getMethodInfoILMethodHeaderHelper(
         (CorInfoOptions)((header->GetFlags() & CorILMethod_InitLocals) ? CORINFO_OPT_INIT_LOCALS : 0) ;
 }
 
+mdToken FindGenericMethodArgTypeSpec(IMDInternalImport* pInternalImport)
+{
+    STANDARD_VM_CONTRACT;
+
+    HENUMInternalHolder hEnumTypeSpecs(pInternalImport);
+    mdToken token;
+
+    static const BYTE signature[] = { ELEMENT_TYPE_MVAR, 0 };
+
+    hEnumTypeSpecs.EnumAllInit(mdtTypeSpec);
+    while (hEnumTypeSpecs.EnumNext(&token))
+    {
+        PCCOR_SIGNATURE pSig;
+        ULONG cbSig;
+        IfFailThrow(pInternalImport->GetTypeSpecFromToken(token, &pSig, &cbSig));
+        if (cbSig == sizeof(signature) && memcmp(pSig, signature, cbSig) == 0)
+            return token;
+    }
+
+    COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+}
+
 /*********************************************************************
 
 IL is the most efficient and portable way to implement certain low level methods 
@@ -6891,9 +6924,160 @@ bool getILIntrinsicImplementation(MethodDesc * ftn,
             return true;
         }
     }
+#ifdef FEATURE_SPAN_OF_T
+    else if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__BYREF_LESSTHAN)->GetMemberDef())
+    {
+        // Compare the two arguments
+        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_LDARG_1, CEE_PREFIX1, (BYTE)CEE_CLT, CEE_RET };
+        methInfo->ILCode = const_cast<BYTE*>(ilcode);
+        methInfo->ILCodeSize = sizeof(ilcode);
+        methInfo->maxStack = 2;
+        methInfo->EHcount = 0;
+        methInfo->options = (CorInfoOptions)0;
+        return true;
+    }
+    else if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__GET_ARRAY_DATA)->GetMemberDef())
+    {
+        mdToken tokArrayPinningHelper = MscorlibBinder::GetField(FIELD__ARRAY_PINNING_HELPER__M_ARRAY_DATA)->GetMemberDef();
+
+        static BYTE ilcode[] = { CEE_LDARG_0,
+                                 CEE_LDFLDA,0,0,0,0,
+                                 CEE_RET };
+
+        ilcode[2] = (BYTE)(tokArrayPinningHelper);
+        ilcode[3] = (BYTE)(tokArrayPinningHelper >> 8);
+        ilcode[4] = (BYTE)(tokArrayPinningHelper >> 16);
+        ilcode[5] = (BYTE)(tokArrayPinningHelper >> 24);
+
+        methInfo->ILCode = const_cast<BYTE*>(ilcode);
+        methInfo->ILCodeSize = sizeof(ilcode);
+        methInfo->maxStack = 1;
+        methInfo->EHcount = 0;
+        methInfo->options = (CorInfoOptions)0;
+        return true;
+    }
+    else if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__CONTAINSREFERENCES)->GetMemberDef())
+    {
+        _ASSERTE(ftn->HasMethodInstantiation());
+        Instantiation inst = ftn->GetMethodInstantiation();
+
+        _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
+        TypeHandle typeHandle = inst[0];
+        MethodTable * methodTable = typeHandle.GetMethodTable();
+
+        static const BYTE returnTrue[] = { CEE_LDC_I4_1, CEE_RET };
+        static const BYTE returnFalse[] = { CEE_LDC_I4_0, CEE_RET };
+
+        if (!methodTable->IsValueType() || methodTable->ContainsPointers())
+        {
+            methInfo->ILCode = const_cast<BYTE*>(returnTrue);
+        }
+        else
+        {
+            methInfo->ILCode = const_cast<BYTE*>(returnFalse);
+        }
+
+        methInfo->ILCodeSize = sizeof(returnTrue);
+        methInfo->maxStack = 1;
+        methInfo->EHcount = 0;
+        methInfo->options = (CorInfoOptions)0;
+        return true;
+    }
+#endif // FEATURE_SPAN_OF_T
 
     return false;
 }
+
+#ifdef FEATURE_SPAN_OF_T
+bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
+                                           CORINFO_METHOD_INFO * methInfo)
+{
+    STANDARD_VM_CONTRACT;
+
+    // Precondition: ftn is a method in mscorlib 
+    _ASSERTE(ftn->GetModule()->IsSystem());
+
+    mdMethodDef tk = ftn->GetMemberDef();
+
+    if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__AS_POINTER)->GetMemberDef())
+    {
+        // Return the argument that was passed in.
+        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_CONV_U, CEE_RET };
+        methInfo->ILCode = const_cast<BYTE*>(ilcode);
+        methInfo->ILCodeSize = sizeof(ilcode);
+        methInfo->maxStack = 1;
+        methInfo->EHcount = 0;
+        methInfo->options = (CorInfoOptions)0;
+        return true;
+    }
+    if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__SIZEOF)->GetMemberDef())
+    {
+        _ASSERTE(ftn->HasMethodInstantiation());
+        Instantiation inst = ftn->GetMethodInstantiation();
+
+        _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
+        mdToken tokGenericArg = FindGenericMethodArgTypeSpec(MscorlibBinder::GetModule()->GetMDImport());
+
+        static const BYTE ilcode[] = { CEE_PREFIX1, (BYTE)CEE_SIZEOF, (BYTE)(tokGenericArg), (BYTE)(tokGenericArg >> 8), (BYTE)(tokGenericArg >> 16), (BYTE)(tokGenericArg >> 24),
+            CEE_RET };
+
+        methInfo->ILCode = const_cast<BYTE*>(ilcode);
+        methInfo->ILCodeSize = sizeof(ilcode);
+        methInfo->maxStack = 1;
+        methInfo->EHcount = 0;
+        methInfo->options = (CorInfoOptions)0;
+        return true;
+    }
+    else if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__BYREF_AS)->GetMemberDef())
+    {
+        // Return the argument that was passed in.
+        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_RET };
+        methInfo->ILCode = const_cast<BYTE*>(ilcode);
+        methInfo->ILCodeSize = sizeof(ilcode);
+        methInfo->maxStack = 1;
+        methInfo->EHcount = 0;
+        methInfo->options = (CorInfoOptions)0;
+        return true;
+    }
+    else if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__BYREF_ADD)->GetMemberDef())
+    {
+        mdToken tokGenericArg = FindGenericMethodArgTypeSpec(MscorlibBinder::GetModule()->GetMDImport());
+
+        static BYTE ilcode[] = { CEE_LDARG_1,
+            CEE_PREFIX1,(BYTE)CEE_SIZEOF,0,0,0,0,
+            CEE_CONV_I,
+            CEE_MUL,
+            CEE_LDARG_0,
+            CEE_ADD,
+            CEE_RET };
+
+        ilcode[3] = (BYTE)(tokGenericArg);
+        ilcode[4] = (BYTE)(tokGenericArg >> 8);
+        ilcode[5] = (BYTE)(tokGenericArg >> 16);
+        ilcode[6] = (BYTE)(tokGenericArg >> 24);
+
+        methInfo->ILCode = const_cast<BYTE*>(ilcode);
+        methInfo->ILCodeSize = sizeof(ilcode);
+        methInfo->maxStack = 2;
+        methInfo->EHcount = 0;
+        methInfo->options = (CorInfoOptions)0;
+        return true;
+    }
+    else if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__BYREF_ARE_SAME)->GetMemberDef())
+    {
+        // Compare the two arguments
+        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_LDARG_1, CEE_PREFIX1, (BYTE)CEE_CEQ, CEE_RET };
+        methInfo->ILCode = const_cast<BYTE*>(ilcode);
+        methInfo->ILCodeSize = sizeof(ilcode);
+        methInfo->maxStack = 2;
+        methInfo->EHcount = 0;
+        methInfo->options = (CorInfoOptions)0;
+        return true;
+    }
+
+    return false;
+}
+#endif // FEATURE_SPAN_OF_T
 
 bool getILIntrinsicImplementationForVolatile(MethodDesc * ftn,
                                              CORINFO_METHOD_INFO * methInfo)
@@ -7075,6 +7259,12 @@ getMethodInfoHelper(
         {
             fILIntrinsic = getILIntrinsicImplementation(ftn, methInfo);
         }
+#ifdef FEATURE_SPAN_OF_T
+        else if (MscorlibBinder::IsClass(pMT, CLASS__UNSAFE))
+        {
+            fILIntrinsic = getILIntrinsicImplementationForUnsafe(ftn, methInfo);
+        }
+#endif
         else if (MscorlibBinder::IsClass(pMT, CLASS__INTERLOCKED))
         {
             fILIntrinsic = getILIntrinsicImplementationForInterlocked(ftn, methInfo);

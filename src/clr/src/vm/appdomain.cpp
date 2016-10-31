@@ -2870,6 +2870,12 @@ void SystemDomain::LoadBaseSystemClasses()
     // the SZArrayHelper class here.
     g_pSZArrayHelperClass = MscorlibBinder::GetClass(CLASS__SZARRAYHELPER);
 
+#ifdef FEATURE_SPAN_OF_T
+    // Load Span class
+    g_pSpanClass = MscorlibBinder::GetClass(CLASS__SPAN);
+    g_pReadOnlySpanClass = MscorlibBinder::GetClass(CLASS__READONLY_SPAN);
+#endif
+
     // Load Nullable class
     g_pNullableClass = MscorlibBinder::GetClass(CLASS__NULLABLE);
 

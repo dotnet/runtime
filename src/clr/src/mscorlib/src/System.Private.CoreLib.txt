@@ -634,6 +634,9 @@ Argument_PreAllocatedAlreadyAllocated = 'preAllocated' is already in use.
 Argument_NativeOverlappedWrongBoundHandle = 'overlapped' was not allocated by this ThreadPoolBoundHandle instance.
 Argument_NativeOverlappedAlreadyFree = 'overlapped' has already been freed.
 Argument_AlreadyBoundOrSyncHandle = 'handle' has already been bound to the thread pool, or was not opened for asynchronous I/O.
+#if FEATURE_SPAN_OF_T
+Argument_InvalidTypeWithPointersNotSupported = Cannot use type '{0}'. Only value types without pointers or references are supported.
+#endif // FEATURE_SPAN_OF_T
 
 ;
 ; =====================================================
