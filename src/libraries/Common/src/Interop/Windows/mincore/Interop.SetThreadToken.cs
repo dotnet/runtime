@@ -10,7 +10,7 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        [DllImport(Libraries.ProcessThread_L1, SetLastError = true)]
+        [DllImport(Libraries.Advapi32, SetLastError = true)]
         internal static extern bool SetThreadToken(IntPtr ThreadHandle, SafeTokenHandle hToken);
     }
 }
