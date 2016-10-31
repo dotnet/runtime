@@ -11,7 +11,6 @@ AM_CPPFLAGS = \
 libwapiincludedir = $(includedir)/mono-$(API_VER)/mono/io-layer
 
 OTHER_H = \
-	context.h	\
 	error.h		\
 	io.h		\
 	io-trace.h	\
@@ -31,8 +30,6 @@ OTHER_H = \
 	wapi-remap.h
 
 OTHER_SRC = \
-	context.c		\
-	context.h		\
 	error.c			\
 	error.h			\
 	io.c			\
