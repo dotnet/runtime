@@ -7,6 +7,14 @@
     </Project>
     <Project Include="System.IO.Compression.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
+    </Project>
+    <Project Include="System.IO.Compression.Tests.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
+      <OSGroup>Unix</OSGroup>
+    </Project>
+    <Project Include="System.IO.Compression.Tests.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
+      <OSGroup>Windows_NT</OSGroup>
       <TestTFMs>netcore50;netcoreapp1.0;net46</TestTFMs>
     </Project>
     <Project Include="Performance\System.IO.Compression.Performance.Tests.csproj" />
