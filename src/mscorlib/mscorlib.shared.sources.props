@@ -616,7 +616,7 @@
     <GlobalizationSources Condition="'$(FeatureOnlyCoreCalendars)'==''" Include="$(BclSourcesRoot)\System\Globalization\KoreanLunisolarCalendar.cs" />
     <GlobalizationSources Condition="'$(FeatureOnlyCoreCalendars)'==''" Include="$(BclSourcesRoot)\System\Globalization\TaiwanLunisolarCalendar.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureCoreFxGlobalization)' == 'true' or '$(FeatureCoreFxFileStream)' == 'true'">
+  <ItemGroup Condition="'$(FeatureCoreFxGlobalization)' == 'true' or '$(FeatureCoreFxFileStream)' == 'true' or '$(FeatureCoreFxSecureString)'=='true'">
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\SR.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCoreFxGlobalization)' == 'true'">
@@ -858,7 +858,9 @@
     <SecuritySources Include="$(BclSourcesRoot)\System\Security\SecurityZone.cs" />
     <SecuritySources Include="$(BclSourcesRoot)\System\Security\VerificationException.cs" />
     <SecuritySources Condition="'$(FeatureLegacySurface)' == 'true'" Include="$(BclSourcesRoot)\System\Security\securestring.cs" />
+    <SecuritySources Include="$(CoreFxSourcesRoot)\System\Security\CryptographicException.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <SecUtilSources Include="$(BclSourcesRoot)\System\Security\Util\Config.cs" />
     <SecUtilSources Include="$(BclSourcesRoot)\System\Security\Util\Hex.cs" />
@@ -1195,6 +1197,27 @@
     <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.WriteFile_SafeHandle_IntPtr.cs" />
     <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.WriteFile_SafeHandle_NativeOverlapped.cs" />
   </ItemGroup>
+
+  <ItemGroup Condition="'$(FeatureCoreFxSecureString)'=='true'" >
+    <SecuritySources Include="$(CoreFxSourcesRoot)\System\Security\SecureString.cs" />
+    <SecuritySources Include="$(CoreFxSourcesRoot)\System\Security\SecureStringMarshal.CoreCLR.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(FeatureCoreFxSecureString)'=='true' and '$(FeatureCoreFxWindowsInterop)'=='true'">
+    <SecuritySources Include="$(CoreFxSourcesRoot)\System\Security\SafeBSTRHandle.cs" />
+    <SecuritySources Include="$(CoreFxSourcesRoot)\System\Security\SecureString.Windows.cs" />
+    <!-- Interop sources -->
+    <SecuritySources Include="$(CoreFxSourcesRoot)\Interop\Windows\Crypt32\Interop.CryptProtectMemory.cs" />
+    <SecuritySources Include="$(CoreFxSourcesRoot)\Interop\Windows\NtDll\Interop.ZeroMemory.cs" />
+    <SecuritySources Include="$(CoreFxSourcesRoot)\Interop\Windows\mincore\Interop.WideCharToMultiByte.cs" />
+    <SecuritySources Include="$(CoreFxSourcesRoot)\Interop\Windows\oleaut32\Interop.SysAllocStringLen.cs" />
+    <SecuritySources Include="$(CoreFxSourcesRoot)\Interop\Windows\oleaut32\Interop.SysStringLen.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(FeatureCoreFxSecureString)'=='true' and '$(FeatureCoreFxUnixInterop)'=='true'">
+    <SecuritySources Include="$(CoreFxSourcesRoot)\System\Security\SecureString.Unix.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(FeatureCoreFxUnixInterop)' == 'true'">
     <WindowsInteropSources Include="$(CoreFxSourcesRoot)\System\HResults.cs" />
     <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\Interop.Errors.cs" />
