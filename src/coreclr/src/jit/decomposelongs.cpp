@@ -538,6 +538,9 @@ GenTree* DecomposeLongs::DecomposeStoreLclFld(LIR::Use& use)
     hiStore->gtOp1 = value->gtOp2;
     hiStore->gtFlags |= (GTF_VAR_DEF | GTF_VAR_USEASG);
 
+    // Bump the ref count for the destination.
+    m_compiler->lvaIncRefCnts(hiStore);
+
     Range().InsertAfter(loStore, hiStore);
 
     return hiStore->gtNext;
