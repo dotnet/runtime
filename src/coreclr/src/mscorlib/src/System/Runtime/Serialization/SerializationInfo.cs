@@ -61,12 +61,12 @@ namespace System.Runtime.Serialization
         {
             if ((object)type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
 
             if (converter == null)
             {
-                throw new ArgumentNullException("converter");
+                throw new ArgumentNullException(nameof(converter));
             }
 
             Contract.EndContractBlock();
@@ -96,7 +96,7 @@ namespace System.Runtime.Serialization
             {
                 if (null == value)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 Contract.EndContractBlock();
            
@@ -116,7 +116,7 @@ namespace System.Runtime.Serialization
             {
                 if (null == value)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 Contract.EndContractBlock();
                 if (this.requireSameTokenInPartialTrust)
@@ -133,7 +133,7 @@ namespace System.Runtime.Serialization
         {
             if ((object)type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
             Contract.EndContractBlock();
 
@@ -280,12 +280,12 @@ namespace System.Runtime.Serialization
         {
             if (null == name)
             {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
 
             if ((object)type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
             Contract.EndContractBlock();
 
@@ -447,7 +447,7 @@ namespace System.Runtime.Serialization
         {
             if (null == name)
             {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
             Contract.EndContractBlock();
             BCLDebug.Trace("SER", "[SerializationInfo.FindElement]Looking for ", name, " CurrMember is: ", m_currMember);
@@ -514,7 +514,7 @@ namespace System.Runtime.Serialization
 
             if ((object)type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
             Contract.EndContractBlock();
 

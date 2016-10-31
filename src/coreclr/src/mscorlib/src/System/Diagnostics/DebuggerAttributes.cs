@@ -142,7 +142,7 @@ namespace System.Diagnostics {
         public DebuggerBrowsableAttribute(DebuggerBrowsableState state)
         {
             if( state < DebuggerBrowsableState.Never || state > DebuggerBrowsableState.RootHidden)
-                throw new ArgumentOutOfRangeException("state");
+                throw new ArgumentOutOfRangeException(nameof(state));
             Contract.EndContractBlock();
 
             this.state = state;
@@ -166,7 +166,7 @@ namespace System.Diagnostics {
         public DebuggerTypeProxyAttribute(Type type)
         {
             if (type == null) {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
             Contract.EndContractBlock();
 
@@ -186,7 +186,7 @@ namespace System.Diagnostics {
         {
             set { 
                 if( value == null) {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 Contract.EndContractBlock();
                 
@@ -257,7 +257,7 @@ namespace System.Diagnostics {
         {
             set { 
                 if( value == null) {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 Contract.EndContractBlock();
                 
@@ -302,7 +302,7 @@ namespace System.Diagnostics {
         public DebuggerVisualizerAttribute(string visualizerTypeName, Type visualizerObjectSource)
         {
             if (visualizerObjectSource == null) {
-                throw new ArgumentNullException("visualizerObjectSource");
+                throw new ArgumentNullException(nameof(visualizerObjectSource));
             }
             Contract.EndContractBlock();
             this.visualizerName = visualizerTypeName;
@@ -311,7 +311,7 @@ namespace System.Diagnostics {
         public DebuggerVisualizerAttribute(Type visualizer)
         {    
             if (visualizer == null) {
-                throw new ArgumentNullException("visualizer");
+                throw new ArgumentNullException(nameof(visualizer));
             }
             Contract.EndContractBlock();
             this.visualizerName = visualizer.AssemblyQualifiedName;
@@ -319,10 +319,10 @@ namespace System.Diagnostics {
         public DebuggerVisualizerAttribute(Type visualizer, Type visualizerObjectSource)
         {
             if (visualizer == null) {
-                throw new ArgumentNullException("visualizer");
+                throw new ArgumentNullException(nameof(visualizer));
             }
             if (visualizerObjectSource == null) {
-                throw new ArgumentNullException("visualizerObjectSource");
+                throw new ArgumentNullException(nameof(visualizerObjectSource));
             }
             Contract.EndContractBlock();
             this.visualizerName = visualizer.AssemblyQualifiedName;
@@ -331,7 +331,7 @@ namespace System.Diagnostics {
         public DebuggerVisualizerAttribute(Type visualizer, string visualizerObjectSourceTypeName)
         {
             if (visualizer == null) {
-                throw new ArgumentNullException("visualizer");
+                throw new ArgumentNullException(nameof(visualizer));
             }
             Contract.EndContractBlock();
             this.visualizerName = visualizer.AssemblyQualifiedName;
@@ -356,7 +356,7 @@ namespace System.Diagnostics {
         {
             set {                 
                 if( value == null) {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 Contract.EndContractBlock();
                 

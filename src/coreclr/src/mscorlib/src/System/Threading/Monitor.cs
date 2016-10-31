@@ -127,7 +127,7 @@ namespace System.Threading {
         {
             long tm = (long)timeout.TotalMilliseconds;
             if (tm < -1 || tm > (long)Int32.MaxValue)
-                throw new ArgumentOutOfRangeException("timeout", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(timeout), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
             return (int)tm;
         }
 
@@ -162,7 +162,7 @@ namespace System.Threading {
         public static bool IsEntered(object obj)
         {
             if (obj == null)
-                throw new ArgumentNullException("obj");
+                throw new ArgumentNullException(nameof(obj));
 
             return IsEnteredNative(obj);
         }
@@ -190,7 +190,7 @@ namespace System.Threading {
         public static bool Wait(Object obj, int millisecondsTimeout, bool exitContext)
         {
             if (obj == null)
-                throw (new ArgumentNullException("obj"));
+                throw (new ArgumentNullException(nameof(obj)));
             return ObjWait(exitContext, millisecondsTimeout, obj);
         }
 
@@ -228,7 +228,7 @@ namespace System.Threading {
         {
             if (obj == null)
             {
-                throw new ArgumentNullException("obj");
+                throw new ArgumentNullException(nameof(obj));
             }
             Contract.EndContractBlock();
 
@@ -246,7 +246,7 @@ namespace System.Threading {
         {
             if (obj == null)
             {
-                throw new ArgumentNullException("obj");
+                throw new ArgumentNullException(nameof(obj));
             }
             Contract.EndContractBlock();
 

@@ -57,7 +57,7 @@ namespace System.IO
         public DriveInfo(String driveName) 
         {
             if (driveName == null)
-                throw new ArgumentNullException("driveName");
+                throw new ArgumentNullException(nameof(driveName));
             Contract.EndContractBlock();
             if (driveName.Length == 1)
                 _name = driveName + ":\\";

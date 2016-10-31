@@ -77,7 +77,7 @@ namespace System {
         protected Exception(SerializationInfo info, StreamingContext context) 
         {
             if (info==null)
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
     
             _className = info.GetString("ClassName");
@@ -549,7 +549,7 @@ namespace System {
         {
             if (info == null)
             {
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             }
             Contract.EndContractBlock();
 

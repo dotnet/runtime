@@ -99,7 +99,7 @@ namespace System.Security
         public static SecurityElement FromString( String xml )
         {
             if (xml == null)
-                throw new ArgumentNullException( "xml" );
+                throw new ArgumentNullException( nameof(xml) );
             Contract.EndContractBlock();
 
             return new Parser( xml ).GetTopElement();
@@ -109,7 +109,7 @@ namespace System.Security
         public SecurityElement( String tag )
         {
             if (tag == null)
-                throw new ArgumentNullException( "tag" );
+                throw new ArgumentNullException( nameof(tag) );
         
             if (!IsValidTag( tag ))
                 throw new ArgumentException( String.Format( CultureInfo.CurrentCulture, Environment.GetResourceString( "Argument_InvalidElementTag" ), tag ) );
@@ -122,7 +122,7 @@ namespace System.Security
         public SecurityElement( String tag, String text )
         {
             if (tag == null)
-                throw new ArgumentNullException( "tag" );
+                throw new ArgumentNullException( nameof(tag) );
         
             if (!IsValidTag( tag ))
                 throw new ArgumentException( String.Format( CultureInfo.CurrentCulture, Environment.GetResourceString( "Argument_InvalidElementTag" ), tag ) );
@@ -148,7 +148,7 @@ namespace System.Security
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException( "Tag" );
+                    throw new ArgumentNullException( nameof(Tag) );
         
                 if (!IsValidTag( value ))
                     throw new ArgumentException( String.Format( CultureInfo.CurrentCulture, Environment.GetResourceString( "Argument_InvalidElementTag" ), value ) );
@@ -314,10 +314,10 @@ namespace System.Security
         public void AddAttribute( String name, String value )
         {   
             if (name == null)
-                throw new ArgumentNullException( "name" );
+                throw new ArgumentNullException( nameof(name) );
                 
             if (value == null)
-                throw new ArgumentNullException( "value" );
+                throw new ArgumentNullException( nameof(value) );
         
             if (!IsValidAttributeName( name ))
                 throw new ArgumentException( String.Format( CultureInfo.CurrentCulture, Environment.GetResourceString( "Argument_InvalidElementName" ), name ) );
@@ -332,7 +332,7 @@ namespace System.Security
         public void AddChild( SecurityElement child )
         {   
             if (child == null)
-                throw new ArgumentNullException( "child" );
+                throw new ArgumentNullException( nameof(child) );
             Contract.EndContractBlock();
         
             if (m_lChildren == null)
@@ -344,7 +344,7 @@ namespace System.Security
         internal void AddChild( ISecurityElementFactory child )
         {
             if (child == null)
-                throw new ArgumentNullException( "child" );
+                throw new ArgumentNullException( nameof(child) );
             Contract.EndContractBlock();
         
             if (m_lChildren == null)
@@ -356,7 +356,7 @@ namespace System.Security
         internal void AddChildNoDuplicates( ISecurityElementFactory child )
         {   
             if (child == null)
-                throw new ArgumentNullException( "child" );
+                throw new ArgumentNullException( nameof(child) );
             Contract.EndContractBlock();
         
             if (m_lChildren == null)
@@ -772,7 +772,7 @@ namespace System.Security
         public String Attribute( String name )
         {
             if (name == null)
-                throw new ArgumentNullException( "name" );
+                throw new ArgumentNullException( nameof(name) );
             Contract.EndContractBlock();
                 
             // Note: we don't check for validity here because an
@@ -810,7 +810,7 @@ namespace System.Security
             // find the one are are asked for (matching tags)
 
             if (tag == null)
-                throw new ArgumentNullException( "tag" );
+                throw new ArgumentNullException( nameof(tag) );
             Contract.EndContractBlock();
                 
             // Note: we don't check for a valid tag here because
@@ -869,7 +869,7 @@ namespace System.Security
             // child's child, depth-first
             
             if (strLocalName == null)
-                throw new ArgumentNullException( "strLocalName" );
+                throw new ArgumentNullException( nameof(strLocalName) );
             Contract.EndContractBlock();
                 
             // Note: we don't check for a valid tag here because
@@ -901,7 +901,7 @@ namespace System.Security
             // child's child, depth-first
             
             if (tag == null)
-                throw new ArgumentNullException( "tag" );
+                throw new ArgumentNullException( nameof(tag) );
             Contract.EndContractBlock();
                 
             // Note: we don't check for a valid tag here because

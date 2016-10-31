@@ -101,13 +101,13 @@ using System.Diagnostics.Contracts;
         public void Initialize(ulong numBytes)
         {
             if (numBytes < 0)
-                throw new ArgumentOutOfRangeException("numBytes", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(numBytes), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (IntPtr.Size == 4 && numBytes > UInt32.MaxValue)
-                throw new ArgumentOutOfRangeException("numBytes", Environment.GetResourceString("ArgumentOutOfRange_AddressSpace"));
+                throw new ArgumentOutOfRangeException(nameof(numBytes), Environment.GetResourceString("ArgumentOutOfRange_AddressSpace"));
             Contract.EndContractBlock();
 
             if (numBytes >= (ulong)Uninitialized)
-                throw new ArgumentOutOfRangeException("numBytes", Environment.GetResourceString("ArgumentOutOfRange_UIntPtrMax-1"));
+                throw new ArgumentOutOfRangeException(nameof(numBytes), Environment.GetResourceString("ArgumentOutOfRange_UIntPtrMax-1"));
 
             _numBytes = (UIntPtr) numBytes;
         }
@@ -120,16 +120,16 @@ using System.Diagnostics.Contracts;
         public void Initialize(uint numElements, uint sizeOfEachElement)
         {
             if (numElements < 0)
-                throw new ArgumentOutOfRangeException("numElements", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(numElements), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (sizeOfEachElement < 0)
-                throw new ArgumentOutOfRangeException("sizeOfEachElement", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(sizeOfEachElement), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
 
             if (IntPtr.Size == 4 && numElements * sizeOfEachElement > UInt32.MaxValue)
                 throw new ArgumentOutOfRangeException("numBytes", Environment.GetResourceString("ArgumentOutOfRange_AddressSpace"));
             Contract.EndContractBlock();
 
             if (numElements * sizeOfEachElement >= (ulong)Uninitialized)
-                throw new ArgumentOutOfRangeException("numElements", Environment.GetResourceString("ArgumentOutOfRange_UIntPtrMax-1"));
+                throw new ArgumentOutOfRangeException(nameof(numElements), Environment.GetResourceString("ArgumentOutOfRange_UIntPtrMax-1"));
 
             _numBytes = checked((UIntPtr) (numElements * sizeOfEachElement));
         }
@@ -245,11 +245,11 @@ using System.Diagnostics.Contracts;
             where T : struct
         {
             if (array == null)
-                throw new ArgumentNullException("array", Environment.GetResourceString("ArgumentNull_Buffer"));
+                throw new ArgumentNullException(nameof(array), Environment.GetResourceString("ArgumentNull_Buffer"));
             if (index < 0)
-                throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (array.Length - index < count)
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
             Contract.EndContractBlock();
@@ -317,11 +317,11 @@ using System.Diagnostics.Contracts;
             where T : struct
         {
             if (array == null)
-                throw new ArgumentNullException("array", Environment.GetResourceString("ArgumentNull_Buffer"));
+                throw new ArgumentNullException(nameof(array), Environment.GetResourceString("ArgumentNull_Buffer"));
             if (index < 0)
-                throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (array.Length - index < count)
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
             Contract.EndContractBlock();

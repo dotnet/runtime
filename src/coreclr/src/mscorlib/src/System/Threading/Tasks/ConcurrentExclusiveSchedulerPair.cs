@@ -101,9 +101,9 @@ namespace System.Threading.Tasks
         public ConcurrentExclusiveSchedulerPair(TaskScheduler taskScheduler, int maxConcurrencyLevel, int maxItemsPerTask)
         {
             // Validate arguments
-            if (taskScheduler == null) throw new ArgumentNullException("taskScheduler");
-            if (maxConcurrencyLevel == 0 || maxConcurrencyLevel < -1) throw new ArgumentOutOfRangeException("maxConcurrencyLevel");
-            if (maxItemsPerTask == 0 || maxItemsPerTask < -1) throw new ArgumentOutOfRangeException("maxItemsPerTask");
+            if (taskScheduler == null) throw new ArgumentNullException(nameof(taskScheduler));
+            if (maxConcurrencyLevel == 0 || maxConcurrencyLevel < -1) throw new ArgumentOutOfRangeException(nameof(maxConcurrencyLevel));
+            if (maxItemsPerTask == 0 || maxItemsPerTask < -1) throw new ArgumentOutOfRangeException(nameof(maxItemsPerTask));
             Contract.EndContractBlock();
 
             // Store configuration

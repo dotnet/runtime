@@ -101,7 +101,7 @@ namespace System.Collections.Concurrent
         {
             if (collection == null)
             {
-                throw new ArgumentNullException("collection");
+                throw new ArgumentNullException(nameof(collection));
             }
             InitializeFromCollection(collection);
         }
@@ -293,7 +293,7 @@ namespace System.Collections.Concurrent
             // Validate arguments.
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             // We must be careful not to corrupt the array, so we will first accumulate an
@@ -327,7 +327,7 @@ namespace System.Collections.Concurrent
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             // We must be careful not to corrupt the array, so we will first accumulate an
@@ -379,7 +379,7 @@ namespace System.Collections.Concurrent
         {
             if (items == null)
             {
-                throw new ArgumentNullException("items");
+                throw new ArgumentNullException(nameof(items));
             }
             PushRange(items, 0, items.Length);
         }
@@ -471,16 +471,16 @@ namespace System.Collections.Concurrent
         {
             if (items == null)
             {
-                throw new ArgumentNullException("items");
+                throw new ArgumentNullException(nameof(items));
             }
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ConcurrentStack_PushPopRange_CountOutOfRange"));
+                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ConcurrentStack_PushPopRange_CountOutOfRange"));
             }
             int length = items.Length;
             if (startIndex >= length || startIndex < 0)
             {
-                throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ConcurrentStack_PushPopRange_StartOutOfRange"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ConcurrentStack_PushPopRange_StartOutOfRange"));
             }
             if (length - count < startIndex) //instead of (startIndex + count > items.Length) to prevent overflow
             {
@@ -584,7 +584,7 @@ namespace System.Collections.Concurrent
         {
             if (items == null)
             {
-                throw new ArgumentNullException("items");
+                throw new ArgumentNullException(nameof(items));
             }
 
             return TryPopRange(items, 0, items.Length);

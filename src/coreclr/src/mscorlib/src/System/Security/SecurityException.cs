@@ -229,7 +229,7 @@ namespace System.Security
         protected SecurityException(SerializationInfo info, StreamingContext context) : base (info, context)
         {
             if (info==null)
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
 
             try
@@ -605,7 +605,7 @@ namespace System.Security
         protected SecurityException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
             if (info == null)
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
         }
 
@@ -643,7 +643,7 @@ namespace System.Security
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info == null)
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
 
             base.GetObjectData(info, context);

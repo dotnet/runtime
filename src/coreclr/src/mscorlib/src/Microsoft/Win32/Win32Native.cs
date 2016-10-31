@@ -327,7 +327,7 @@ namespace Microsoft.Win32 {
                 // } REG_TZI_FORMAT;
                 //
                 if (bytes == null || bytes.Length != 44) {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidREG_TZI_FORMAT"), "bytes");
+                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidREG_TZI_FORMAT"), nameof(bytes));
                 }
                 Bias = BitConverter.ToInt32(bytes, 0);
                 StandardBias = BitConverter.ToInt32(bytes, 4);

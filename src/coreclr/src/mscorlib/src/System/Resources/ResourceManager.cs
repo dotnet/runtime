@@ -292,9 +292,9 @@ namespace System.Resources {
         // 
         private ResourceManager(String baseName, String resourceDir, Type usingResourceSet) {
             if (null==baseName)
-                throw new ArgumentNullException("baseName");
+                throw new ArgumentNullException(nameof(baseName));
             if (null==resourceDir)
-                throw new ArgumentNullException("resourceDir");
+                throw new ArgumentNullException(nameof(resourceDir));
             Contract.EndContractBlock();
 
 #if !FEATURE_CORECLR
@@ -337,10 +337,10 @@ namespace System.Resources {
         public ResourceManager(String baseName, Assembly assembly)
         {
             if (null==baseName)
-                throw new ArgumentNullException("baseName");
+                throw new ArgumentNullException(nameof(baseName));
 
             if (null==assembly)
-                throw new ArgumentNullException("assembly");
+                throw new ArgumentNullException(nameof(assembly));
             Contract.EndContractBlock();
 
             if (!(assembly is RuntimeAssembly))
@@ -368,9 +368,9 @@ namespace System.Resources {
         public ResourceManager(String baseName, Assembly assembly, Type usingResourceSet)
         {
             if (null==baseName)
-                throw new ArgumentNullException("baseName");
+                throw new ArgumentNullException(nameof(baseName));
             if (null==assembly)
-                throw new ArgumentNullException("assembly");
+                throw new ArgumentNullException(nameof(assembly));
             Contract.EndContractBlock();
 
 #if !FEATURE_CORECLR
@@ -387,7 +387,7 @@ namespace System.Resources {
             BaseNameField = baseName;
     
             if (usingResourceSet != null && (usingResourceSet != _minResourceSet) && !(usingResourceSet.IsSubclassOf(_minResourceSet)))
-                throw new ArgumentException(Environment.GetResourceString("Arg_ResMgrNotResSet"), "usingResourceSet");
+                throw new ArgumentException(Environment.GetResourceString("Arg_ResMgrNotResSet"), nameof(usingResourceSet));
             _userResourceSet = usingResourceSet;
 
             CommonAssemblyInit();
@@ -404,7 +404,7 @@ namespace System.Resources {
         public ResourceManager(Type resourceSource)
         {
             if (null==resourceSource)
-                throw new ArgumentNullException("resourceSource");
+                throw new ArgumentNullException(nameof(resourceSource));
             Contract.EndContractBlock();
 
             if (!(resourceSource is RuntimeType))
@@ -681,7 +681,7 @@ namespace System.Resources {
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable
         public virtual ResourceSet GetResourceSet(CultureInfo culture, bool createIfNotExists, bool tryParents) {
             if (null==culture)
-                throw new ArgumentNullException("culture");
+                throw new ArgumentNullException(nameof(culture));
             Contract.EndContractBlock();
 
             Dictionary<String,ResourceSet> localResourceSets = _resourceSets;
@@ -846,7 +846,7 @@ namespace System.Resources {
         {
             // Ensure that the assembly reference is not null
             if (a == null) {
-                throw new ArgumentNullException("a", Environment.GetResourceString("ArgumentNull_Assembly"));
+                throw new ArgumentNullException(nameof(a), Environment.GetResourceString("ArgumentNull_Assembly"));
             }
             Contract.EndContractBlock();
 
@@ -1225,7 +1225,7 @@ namespace System.Resources {
         // 
         public virtual String GetString(String name, CultureInfo culture) {
             if (null==name)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             Contract.EndContractBlock();
 
 #if FEATURE_APPX
@@ -1342,7 +1342,7 @@ namespace System.Resources {
         private Object GetObject(String name, CultureInfo culture, bool wrapUnmanagedMemStream)
         {
             if (null==name)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             Contract.EndContractBlock();
 
 #if FEATURE_APPX
@@ -1586,7 +1586,7 @@ namespace System.Resources {
             {
                 if (rm == null)
                 {
-                    throw new ArgumentNullException("rm");
+                    throw new ArgumentNullException(nameof(rm));
                 }
                 _rm = rm;
             }

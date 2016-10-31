@@ -403,7 +403,7 @@ namespace System {
         public static String ExpandEnvironmentVariables(String name)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             Contract.EndContractBlock();
 
             if (name.Length == 0) {
@@ -627,7 +627,7 @@ namespace System {
         public static String GetEnvironmentVariable(String variable)
         {
             if (variable == null)
-                throw new ArgumentNullException("variable");
+                throw new ArgumentNullException(nameof(variable));
             Contract.EndContractBlock();
 
             if (AppDomain.IsAppXModel() && !AppDomain.IsAppXDesignMode()) {
@@ -663,7 +663,7 @@ namespace System {
         {
             if (variable == null)
             {
-                throw new ArgumentNullException("variable");
+                throw new ArgumentNullException(nameof(variable));
             }
             Contract.EndContractBlock();
 
@@ -931,15 +931,15 @@ namespace System {
 
         private static void CheckEnvironmentVariableName(string variable) {
             if (variable == null) {
-                throw new ArgumentNullException("variable");
+                throw new ArgumentNullException(nameof(variable));
             }
 
             if( variable.Length == 0) {
-                throw new ArgumentException(Environment.GetResourceString("Argument_StringZeroLength"), "variable");
+                throw new ArgumentException(Environment.GetResourceString("Argument_StringZeroLength"), nameof(variable));
             }
 
             if( variable[0] == '\0') {
-                throw new ArgumentException(Environment.GetResourceString("Argument_StringFirstCharIsZero"), "variable");
+                throw new ArgumentException(Environment.GetResourceString("Argument_StringFirstCharIsZero"), nameof(variable));
             }
 
             // Make sure the environment variable name isn't longer than the 

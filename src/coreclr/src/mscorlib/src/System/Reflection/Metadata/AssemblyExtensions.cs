@@ -29,7 +29,7 @@ namespace System.Reflection.Metadata
         {
             if (assembly == null)
             {
-                throw new ArgumentNullException("assembly");
+                throw new ArgumentNullException(nameof(assembly));
             }
 
             blob = null;

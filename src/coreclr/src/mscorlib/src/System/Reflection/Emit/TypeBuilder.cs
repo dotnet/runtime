@@ -56,10 +56,10 @@ namespace System.Reflection.Emit {
             public CustAttr(ConstructorInfo con, byte[] binaryAttribute)
             {
                 if (con == null)
-                    throw new ArgumentNullException("con");
+                    throw new ArgumentNullException(nameof(con));
 
                 if (binaryAttribute == null)
-                    throw new ArgumentNullException("binaryAttribute");
+                    throw new ArgumentNullException(nameof(binaryAttribute));
                 Contract.EndContractBlock();
 
                 m_con = con;
@@ -69,7 +69,7 @@ namespace System.Reflection.Emit {
             public CustAttr(CustomAttributeBuilder customBuilder)
             {
                 if (customBuilder == null)
-                    throw new ArgumentNullException("customBuilder");
+                    throw new ArgumentNullException(nameof(customBuilder));
                 Contract.EndContractBlock();
 
                 m_customBuilder = customBuilder;
@@ -105,13 +105,13 @@ namespace System.Reflection.Emit {
             // if we wanted to but that just complicates things so these checks are designed to prevent that scenario.
             
             if (method.IsGenericMethod && !method.IsGenericMethodDefinition)
-                throw new ArgumentException(Environment.GetResourceString("Argument_NeedGenericMethodDefinition"), "method");
+                throw new ArgumentException(Environment.GetResourceString("Argument_NeedGenericMethodDefinition"), nameof(method));
         
             if (method.DeclaringType == null || !method.DeclaringType.IsGenericTypeDefinition)
-                throw new ArgumentException(Environment.GetResourceString("Argument_MethodNeedGenericDeclaringType"), "method");
+                throw new ArgumentException(Environment.GetResourceString("Argument_MethodNeedGenericDeclaringType"), nameof(method));
         
             if (type.GetGenericTypeDefinition() != method.DeclaringType)
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidMethodDeclaringType"), "type");
+                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidMethodDeclaringType"), nameof(type));
             Contract.EndContractBlock();
 
             // The following converts from Type or TypeBuilder of G<T> to TypeBuilderInstantiation G<T>. These types
@@ -121,7 +121,7 @@ namespace System.Reflection.Emit {
                 type = type.MakeGenericType(type.GetGenericArguments());
         
             if (!(type is TypeBuilderInstantiation))
-                throw new ArgumentException(Environment.GetResourceString("Argument_NeedNonGenericType"), "type");
+                throw new ArgumentException(Environment.GetResourceString("Argument_NeedNonGenericType"), nameof(type));
 
             return MethodOnTypeBuilderInstantiation.GetMethod(method, type as TypeBuilderInstantiation);
         }
@@ -131,18 +131,18 @@ namespace System.Reflection.Emit {
                 throw new ArgumentException(Environment.GetResourceString("Argument_MustBeTypeBuilder"));
 
             if (!constructor.DeclaringType.IsGenericTypeDefinition)
-                throw new ArgumentException(Environment.GetResourceString("Argument_ConstructorNeedGenericDeclaringType"), "constructor");
+                throw new ArgumentException(Environment.GetResourceString("Argument_ConstructorNeedGenericDeclaringType"), nameof(constructor));
             Contract.EndContractBlock();
         
             if (!(type is TypeBuilderInstantiation))
-                throw new ArgumentException(Environment.GetResourceString("Argument_NeedNonGenericType"), "type");
+                throw new ArgumentException(Environment.GetResourceString("Argument_NeedNonGenericType"), nameof(type));
 
             // TypeBuilder G<T> ==> TypeBuilderInstantiation G<T>
             if (type is TypeBuilder && type.IsGenericTypeDefinition)
                 type = type.MakeGenericType(type.GetGenericArguments());
 
             if (type.GetGenericTypeDefinition() != constructor.DeclaringType)
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidConstructorDeclaringType"), "type");
+                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidConstructorDeclaringType"), nameof(type));
 
             return ConstructorOnTypeBuilderInstantiation.GetConstructor(constructor, type as TypeBuilderInstantiation);
         }
@@ -152,18 +152,18 @@ namespace System.Reflection.Emit {
                 throw new ArgumentException(Environment.GetResourceString("Argument_MustBeTypeBuilder"));
 
             if (!field.DeclaringType.IsGenericTypeDefinition)
-                throw new ArgumentException(Environment.GetResourceString("Argument_FieldNeedGenericDeclaringType"), "field");
+                throw new ArgumentException(Environment.GetResourceString("Argument_FieldNeedGenericDeclaringType"), nameof(field));
             Contract.EndContractBlock();
         
             if (!(type is TypeBuilderInstantiation))
-                throw new ArgumentException(Environment.GetResourceString("Argument_NeedNonGenericType"), "type");
+                throw new ArgumentException(Environment.GetResourceString("Argument_NeedNonGenericType"), nameof(type));
 
             // TypeBuilder G<T> ==> TypeBuilderInstantiation G<T>
             if (type is TypeBuilder && type.IsGenericTypeDefinition)
                 type = type.MakeGenericType(type.GetGenericArguments());
 
             if (type.GetGenericTypeDefinition() != field.DeclaringType)
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidFieldDeclaringType"), "type");
+                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidFieldDeclaringType"), nameof(type));
 
             return FieldOnTypeBuilderInstantiation.GetField(field, type as TypeBuilderInstantiation);
         }
@@ -595,17 +595,17 @@ namespace System.Reflection.Emit {
             PackingSize iPackingSize, int iTypeSize, TypeBuilder enclosingType)
         {
             if (fullname == null)
-                throw new ArgumentNullException("fullname");
+                throw new ArgumentNullException(nameof(fullname));
 
             if (fullname.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "fullname");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(fullname));
 
             if (fullname[0] == '\0')
-                throw new ArgumentException(Environment.GetResourceString("Argument_IllegalName"), "fullname");
+                throw new ArgumentException(Environment.GetResourceString("Argument_IllegalName"), nameof(fullname));
 
 
             if (fullname.Length > 1023)
-                throw new ArgumentException(Environment.GetResourceString("Argument_TypeNameTooLong"), "fullname");
+                throw new ArgumentException(Environment.GetResourceString("Argument_TypeNameTooLong"), nameof(fullname));
             Contract.EndContractBlock();
 
             int i;
@@ -621,7 +621,7 @@ namespace System.Reflection.Emit {
                 // Nested Type should have nested attribute set.
                 // If we are renumbering TypeAttributes' bit, we need to change the logic here.
                 if (((attr & TypeAttributes.VisibilityMask) == TypeAttributes.Public) ||((attr & TypeAttributes.VisibilityMask) == TypeAttributes.NotPublic))
-                    throw new ArgumentException(Environment.GetResourceString("Argument_BadNestedTypeFlags"), "attr");
+                    throw new ArgumentException(Environment.GetResourceString("Argument_BadNestedTypeFlags"), nameof(attr));
             }
 
             int[] interfaceTokens = null;
@@ -632,7 +632,7 @@ namespace System.Reflection.Emit {
                     if (interfaces[i] == null)
                     {
                         // cannot contain null in the interface list
-                        throw new ArgumentNullException("interfaces");
+                        throw new ArgumentNullException(nameof(interfaces));
                     }
                 }
                 interfaceTokens = new int[interfaces.Length + 1];
@@ -741,22 +741,22 @@ namespace System.Reflection.Emit {
             CallingConvention nativeCallConv, CharSet nativeCharSet)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             if (name.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(name));
 
             if (dllName == null)
-                throw new ArgumentNullException("dllName");
+                throw new ArgumentNullException(nameof(dllName));
 
             if (dllName.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "dllName");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(dllName));
 
             if (importName == null)
-                throw new ArgumentNullException("importName");
+                throw new ArgumentNullException(nameof(importName));
 
             if (importName.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "importName");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(importName));
 
             if ((attributes & MethodAttributes.Abstract) != 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_BadPInvokeMethod"));
@@ -840,10 +840,10 @@ namespace System.Reflection.Emit {
             TypeAttributes typeAttributes;
 
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             if (name.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(name));
 
             if (size <= 0 || size >= 0x003f0000)
                 throw new ArgumentException(Environment.GetResourceString("Argument_BadSizeForData"));
@@ -1508,13 +1508,13 @@ namespace System.Reflection.Emit {
                 throw new NotSupportedException(Environment.GetResourceString("NotSupported_TypeNotYetCreated"));
 
             if (attributeType == null)
-                throw new ArgumentNullException("attributeType");
+                throw new ArgumentNullException(nameof(attributeType));
             Contract.EndContractBlock();
 
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
             if (attributeRuntimeType == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),"attributeType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(m_bakedRuntimeType, attributeRuntimeType, inherit);
         }
@@ -1526,13 +1526,13 @@ namespace System.Reflection.Emit {
                 throw new NotSupportedException(Environment.GetResourceString("NotSupported_TypeNotYetCreated"));
 
             if (attributeType == null)
-                throw new ArgumentNullException("attributeType");
+                throw new ArgumentNullException(nameof(attributeType));
             Contract.EndContractBlock();
 
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
             if (attributeRuntimeType == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),"caType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),nameof(attributeType));
 
             return CustomAttribute.IsDefined(m_bakedRuntimeType, attributeRuntimeType, inherit);
         }
@@ -1559,7 +1559,7 @@ namespace System.Reflection.Emit {
         public GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names)
         {
             if (names == null)
-                throw new ArgumentNullException("names");
+                throw new ArgumentNullException(nameof(names));
 
             if (names.Length == 0)
                 throw new ArgumentException();
@@ -1567,7 +1567,7 @@ namespace System.Reflection.Emit {
            
             for (int i = 0; i < names.Length; i ++)
                 if (names[i] == null)
-                    throw new ArgumentNullException("names");
+                    throw new ArgumentNullException(nameof(names));
 
             if (m_inst != null)
                 throw new InvalidOperationException();
@@ -1614,10 +1614,10 @@ namespace System.Reflection.Emit {
         private void DefineMethodOverrideNoLock(MethodInfo methodInfoBody, MethodInfo methodInfoDeclaration)
         {
             if (methodInfoBody == null)
-                throw new ArgumentNullException("methodInfoBody");
+                throw new ArgumentNullException(nameof(methodInfoBody));
 
             if (methodInfoDeclaration == null)
-                throw new ArgumentNullException("methodInfoDeclaration");
+                throw new ArgumentNullException(nameof(methodInfoDeclaration));
             Contract.EndContractBlock();
 
             ThrowIfCreated();
@@ -1683,10 +1683,10 @@ namespace System.Reflection.Emit {
             Type[] parameterTypes, Type[][] parameterTypeRequiredCustomModifiers, Type[][] parameterTypeOptionalCustomModifiers)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             if (name.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(name));
             Contract.Ensures(Contract.Result<MethodBuilder>() != null);
             Contract.EndContractBlock();
 
@@ -1698,10 +1698,10 @@ namespace System.Reflection.Emit {
             if (parameterTypes != null)
             {
                 if (parameterTypeOptionalCustomModifiers != null && parameterTypeOptionalCustomModifiers.Length != parameterTypes.Length)
-                    throw new ArgumentException(Environment.GetResourceString("Argument_MismatchedArrays", "parameterTypeOptionalCustomModifiers", "parameterTypes"));
+                    throw new ArgumentException(Environment.GetResourceString("Argument_MismatchedArrays", "parameterTypeOptionalCustomModifiers", nameof(parameterTypes)));
 
                 if (parameterTypeRequiredCustomModifiers != null && parameterTypeRequiredCustomModifiers.Length != parameterTypes.Length)
-                    throw new ArgumentException(Environment.GetResourceString("Argument_MismatchedArrays", "parameterTypeRequiredCustomModifiers", "parameterTypes"));
+                    throw new ArgumentException(Environment.GetResourceString("Argument_MismatchedArrays", "parameterTypeRequiredCustomModifiers", nameof(parameterTypes)));
             }
 
             ThrowIfCreated();
@@ -2077,7 +2077,7 @@ namespace System.Reflection.Emit {
         private FieldBuilder DefineInitializedDataNoLock(String name, byte[] data, FieldAttributes attributes)
         {
             if (data == null)
-                throw new ArgumentNullException("data");
+                throw new ArgumentNullException(nameof(data));
             Contract.EndContractBlock();
 
             // This method will define an initialized Data in .sdata.
@@ -2151,9 +2151,9 @@ namespace System.Reflection.Emit {
             Type[] parameterTypes, Type[][] parameterTypeRequiredCustomModifiers, Type[][] parameterTypeOptionalCustomModifiers)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(name));
             Contract.EndContractBlock();
 
             CheckContext(returnType);
@@ -2208,11 +2208,11 @@ namespace System.Reflection.Emit {
         private EventBuilder DefineEventNoLock(String name, EventAttributes attributes, Type eventtype)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(name));
             if (name[0] == '\0')
-                throw new ArgumentException(Environment.GetResourceString("Argument_IllegalName"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_IllegalName"), nameof(name));
             Contract.EndContractBlock();
 
             int tkType;
@@ -2504,7 +2504,7 @@ namespace System.Reflection.Emit {
         {
             if (interfaceType == null)
             {
-                throw new ArgumentNullException("interfaceType");
+                throw new ArgumentNullException(nameof(interfaceType));
             }
             Contract.EndContractBlock();
 
@@ -2532,7 +2532,7 @@ namespace System.Reflection.Emit {
         private void AddDeclarativeSecurityNoLock(SecurityAction action, PermissionSet pset)
         {
             if (pset == null)
-                throw new ArgumentNullException("pset");
+                throw new ArgumentNullException(nameof(pset));
 
 #pragma warning disable 618
             if (!Enum.IsDefined(typeof(SecurityAction), action) ||
@@ -2540,7 +2540,7 @@ namespace System.Reflection.Emit {
                 action == SecurityAction.RequestOptional ||
                 action == SecurityAction.RequestRefuse)
             {
-                throw new ArgumentOutOfRangeException("action");
+                throw new ArgumentOutOfRangeException(nameof(action));
             }
 #pragma warning restore 618
 
@@ -2583,10 +2583,10 @@ public TypeToken TypeToken
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             if (con == null)
-                throw new ArgumentNullException("con");
+                throw new ArgumentNullException(nameof(con));
 
             if (binaryAttribute == null)
-                throw new ArgumentNullException("binaryAttribute");
+                throw new ArgumentNullException(nameof(binaryAttribute));
             Contract.EndContractBlock();
 
             TypeBuilder.DefineCustomAttribute(m_module, m_tdType.Token, ((ModuleBuilder)m_module).GetConstructorToken(con).Token,
@@ -2597,7 +2597,7 @@ public TypeToken TypeToken
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
             if (customBuilder == null)
-                throw new ArgumentNullException("customBuilder");
+                throw new ArgumentNullException(nameof(customBuilder));
             Contract.EndContractBlock();
 
             customBuilder.CreateCustomAttribute((ModuleBuilder)m_module, m_tdType.Token);

@@ -182,13 +182,13 @@ namespace System.Threading
             if (initialCount < 0 || initialCount > maxCount)
             {
                 throw new ArgumentOutOfRangeException(
-                    "initialCount", initialCount, GetResourceString("SemaphoreSlim_ctor_InitialCountWrong"));
+                    nameof(initialCount), initialCount, GetResourceString("SemaphoreSlim_ctor_InitialCountWrong"));
             }
 
             //validate input
             if (maxCount <= 0)
             {
-                throw new ArgumentOutOfRangeException("maxCount", maxCount, GetResourceString("SemaphoreSlim_ctor_MaxCountWrong"));
+                throw new ArgumentOutOfRangeException(nameof(maxCount), maxCount, GetResourceString("SemaphoreSlim_ctor_MaxCountWrong"));
             }
 
             m_maxCount = maxCount;
@@ -245,7 +245,7 @@ namespace System.Threading
             if (totalMilliseconds < -1 || totalMilliseconds > Int32.MaxValue)
             {
                 throw new System.ArgumentOutOfRangeException(
-                    "timeout", timeout, GetResourceString("SemaphoreSlim_Wait_TimeoutWrong"));
+                    nameof(timeout), timeout, GetResourceString("SemaphoreSlim_Wait_TimeoutWrong"));
             }
 
             // Call wait with the timeout milliseconds
@@ -275,7 +275,7 @@ namespace System.Threading
             if (totalMilliseconds < -1 || totalMilliseconds > Int32.MaxValue)
             {
                 throw new System.ArgumentOutOfRangeException(
-                    "timeout", timeout, GetResourceString("SemaphoreSlim_Wait_TimeoutWrong"));
+                    nameof(timeout), timeout, GetResourceString("SemaphoreSlim_Wait_TimeoutWrong"));
             }
 
             // Call wait with the timeout milliseconds
@@ -318,7 +318,7 @@ namespace System.Threading
             if (millisecondsTimeout < -1)
             {
                 throw new ArgumentOutOfRangeException(
-                    "totalMilliSeconds", millisecondsTimeout, GetResourceString("SemaphoreSlim_Wait_TimeoutWrong"));
+                    nameof(millisecondsTimeout), millisecondsTimeout, GetResourceString("SemaphoreSlim_Wait_TimeoutWrong"));
             }
 
             cancellationToken.ThrowIfCancellationRequested();
@@ -579,7 +579,7 @@ namespace System.Threading
             if (totalMilliseconds < -1 || totalMilliseconds > Int32.MaxValue)
             {
                 throw new System.ArgumentOutOfRangeException(
-                    "timeout", timeout, GetResourceString("SemaphoreSlim_Wait_TimeoutWrong"));
+                    nameof(timeout), timeout, GetResourceString("SemaphoreSlim_Wait_TimeoutWrong"));
             }
 
             // Call wait with the timeout milliseconds
@@ -612,7 +612,7 @@ namespace System.Threading
             if (millisecondsTimeout < -1)
             {
                 throw new ArgumentOutOfRangeException(
-                    "totalMilliSeconds", millisecondsTimeout, GetResourceString("SemaphoreSlim_Wait_TimeoutWrong"));
+                    nameof(millisecondsTimeout), millisecondsTimeout, GetResourceString("SemaphoreSlim_Wait_TimeoutWrong"));
             }
 
             // Bail early for cancellation
@@ -776,7 +776,7 @@ namespace System.Threading
             if (releaseCount < 1)
             {
                 throw new ArgumentOutOfRangeException(
-                    "releaseCount", releaseCount, GetResourceString("SemaphoreSlim_Release_CountWrong"));
+                    nameof(releaseCount), releaseCount, GetResourceString("SemaphoreSlim_Release_CountWrong"));
             }
             int returnCount;
 

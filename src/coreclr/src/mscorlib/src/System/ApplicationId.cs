@@ -33,13 +33,13 @@ namespace System {
 
         public ApplicationId (byte[] publicKeyToken, string name, Version version, string processorArchitecture, string culture) {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyApplicationName"));
             if (version == null)
-                throw new ArgumentNullException("version");
+                throw new ArgumentNullException(nameof(version));
             if (publicKeyToken == null)
-                throw new ArgumentNullException("publicKeyToken");
+                throw new ArgumentNullException(nameof(publicKeyToken));
             Contract.EndContractBlock();
 
             m_publicKeyToken = new byte[publicKeyToken.Length];

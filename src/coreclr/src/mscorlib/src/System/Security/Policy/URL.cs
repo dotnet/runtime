@@ -25,7 +25,7 @@ namespace System.Security.Policy {
         internal Url( String name, bool parsed )
         {
             if (name == null)
-                throw new ArgumentNullException( "name" );
+                throw new ArgumentNullException( nameof(name) );
             Contract.EndContractBlock();
 
             m_url = new URLString( name, parsed );
@@ -34,7 +34,7 @@ namespace System.Security.Policy {
         public Url( String name )
         {
             if (name == null)
-                throw new ArgumentNullException( "name" );
+                throw new ArgumentNullException( nameof(name) );
             Contract.EndContractBlock();
 
             m_url = new URLString( name );

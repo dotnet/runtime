@@ -30,7 +30,7 @@ namespace System.Collections {
         public Object this[Object key] {
             get {
                 if (key == null) {
-                    throw new ArgumentNullException("key", Environment.GetResourceString("ArgumentNull_Key"));
+                    throw new ArgumentNullException(nameof(key), Environment.GetResourceString("ArgumentNull_Key"));
                 }
                 Contract.EndContractBlock();
                 DictionaryNode node = head;
@@ -45,16 +45,16 @@ namespace System.Collections {
             }
             set {
                 if (key == null) {
-                    throw new ArgumentNullException("key", Environment.GetResourceString("ArgumentNull_Key"));
+                    throw new ArgumentNullException(nameof(key), Environment.GetResourceString("ArgumentNull_Key"));
                 }
                 Contract.EndContractBlock();
 
 #if FEATURE_SERIALIZATION
                 if (!key.GetType().IsSerializable)                 
-                    throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), "key");                    
+                    throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), nameof(key));                    
 
                 if( (value != null) && (!value.GetType().IsSerializable ) )
-                    throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), "value");                    
+                    throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), nameof(value));                    
 #endif
                 
                 version++;
@@ -132,16 +132,16 @@ namespace System.Collections {
 
         public void Add(Object key, Object value) {
             if (key == null) {
-                throw new ArgumentNullException("key", Environment.GetResourceString("ArgumentNull_Key"));
+                throw new ArgumentNullException(nameof(key), Environment.GetResourceString("ArgumentNull_Key"));
             }
             Contract.EndContractBlock();
 
 #if FEATURE_SERIALIZATION
             if (!key.GetType().IsSerializable)                 
-                throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), "key" );                    
+                throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), nameof(key) );                    
 
             if( (value != null) && (!value.GetType().IsSerializable) )
-                throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), "value");                    
+                throw new ArgumentException(Environment.GetResourceString("Argument_NotSerializable"), nameof(value));                    
 #endif
             
             version++;
@@ -179,7 +179,7 @@ namespace System.Collections {
 
         public bool Contains(Object key) {
             if (key == null) {
-                throw new ArgumentNullException("key", Environment.GetResourceString("ArgumentNull_Key"));
+                throw new ArgumentNullException(nameof(key), Environment.GetResourceString("ArgumentNull_Key"));
             }
             Contract.EndContractBlock();
             for (DictionaryNode node = head; node != null; node = node.next) {
@@ -192,16 +192,16 @@ namespace System.Collections {
 
         public void CopyTo(Array array, int index)  {
             if (array==null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
                 
             if (array.Rank != 1)
                 throw new ArgumentException(Environment.GetResourceString("Arg_RankMultiDimNotSupported"));
 
             if (index < 0)
-                    throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
 
             if ( array.Length - index < this.Count ) 
-                throw new ArgumentException( Environment.GetResourceString("ArgumentOutOfRange_Index"), "index");
+                throw new ArgumentException( Environment.GetResourceString("ArgumentOutOfRange_Index"), nameof(index));
             Contract.EndContractBlock();
 
             for (DictionaryNode node = head; node != null; node = node.next) {
@@ -220,7 +220,7 @@ namespace System.Collections {
 
         public void Remove(Object key) {
             if (key == null) {
-                throw new ArgumentNullException("key", Environment.GetResourceString("ArgumentNull_Key"));
+                throw new ArgumentNullException(nameof(key), Environment.GetResourceString("ArgumentNull_Key"));
             }
             Contract.EndContractBlock();
             version++;
@@ -328,14 +328,14 @@ namespace System.Collections {
 
             void ICollection.CopyTo(Array array, int index)  {
                 if (array==null)
-                    throw new ArgumentNullException("array");
+                    throw new ArgumentNullException(nameof(array));
                 if (array.Rank != 1)
                     throw new ArgumentException(Environment.GetResourceString("Arg_RankMultiDimNotSupported"));
                 if (index < 0)
-                    throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
                 Contract.EndContractBlock();
                 if (array.Length - index < list.Count) 
-                    throw new ArgumentException(Environment.GetResourceString("ArgumentOutOfRange_Index"), "index");                
+                    throw new ArgumentException(Environment.GetResourceString("ArgumentOutOfRange_Index"), nameof(index));                
                 for (DictionaryNode node = list.head; node != null; node = node.next) {
                     array.SetValue(isKeys ? node.key : node.value, index);
                     index++;

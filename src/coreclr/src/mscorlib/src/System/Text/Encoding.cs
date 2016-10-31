@@ -189,7 +189,7 @@ namespace System.Text
             // Validate code page
             if (codePage < 0)
             {
-                throw new ArgumentOutOfRangeException("codePage");
+                throw new ArgumentOutOfRangeException(nameof(codePage));
             }
             Contract.EndContractBlock();
 
@@ -208,7 +208,7 @@ namespace System.Text
             // Validate code page
             if (codePage < 0)
             {
-                throw new ArgumentOutOfRangeException("codePage");
+                throw new ArgumentOutOfRangeException(nameof(codePage));
             }
             Contract.EndContractBlock();
 
@@ -275,7 +275,7 @@ namespace System.Text
         internal void DeserializeEncoding(SerializationInfo info, StreamingContext context)
         {
             // Any info?
-            if (info==null) throw new ArgumentNullException("info");
+            if (info==null) throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
 
             // All versions have a code page
@@ -314,7 +314,7 @@ namespace System.Text
         internal void SerializeEncoding(SerializationInfo info, StreamingContext context)
         {
             // Any Info?
-            if (info==null) throw new ArgumentNullException("info");
+            if (info==null) throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
 
             // These are new V2.0 Whidbey stuff
@@ -344,7 +344,7 @@ namespace System.Text
         public static byte[] Convert(Encoding srcEncoding, Encoding dstEncoding,
             byte[] bytes) {
             if (bytes==null)
-                throw new ArgumentNullException("bytes");
+                throw new ArgumentNullException(nameof(bytes));
             Contract.Ensures(Contract.Result<byte[]>() != null);
             
             return Convert(srcEncoding, dstEncoding, bytes, 0, bytes.Length);
@@ -359,11 +359,11 @@ namespace System.Text
         public static byte[] Convert(Encoding srcEncoding, Encoding dstEncoding,
             byte[] bytes, int index, int count) {
             if (srcEncoding == null || dstEncoding == null) {
-                throw new ArgumentNullException((srcEncoding == null ? "srcEncoding" : "dstEncoding"),
+                throw new ArgumentNullException((srcEncoding == null ? nameof(srcEncoding) : nameof(dstEncoding)),
                     Environment.GetResourceString("ArgumentNull_Array"));
             }
             if (bytes == null) {
-                throw new ArgumentNullException("bytes",
+                throw new ArgumentNullException(nameof(bytes),
                     Environment.GetResourceString("ArgumentNull_Array"));
             }
             Contract.Ensures(Contract.Result<byte[]>() != null);
@@ -416,7 +416,7 @@ namespace System.Text
             //
             if (codepage < 0 || codepage > 65535) {
                 throw new ArgumentOutOfRangeException(
-                    "codepage", Environment.GetResourceString("ArgumentOutOfRange_Range",
+                    nameof(codepage), Environment.GetResourceString("ArgumentOutOfRange_Range",
                         0, 65535));
             }
 
@@ -795,7 +795,7 @@ namespace System.Text
                     throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ReadOnly"));
 
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 Contract.EndContractBlock();
 
                 encoderFallback = value;
@@ -817,7 +817,7 @@ namespace System.Text
                     throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ReadOnly"));
 
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 Contract.EndContractBlock();
 
                 decoderFallback = value;
@@ -865,7 +865,7 @@ namespace System.Text
         {
             if (chars == null)
             {
-                throw new ArgumentNullException("chars",
+                throw new ArgumentNullException(nameof(chars),
                     Environment.GetResourceString("ArgumentNull_Array"));
             }
             Contract.EndContractBlock();
@@ -877,7 +877,7 @@ namespace System.Text
         public virtual int GetByteCount(String s)
         {
             if (s==null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             Contract.EndContractBlock();
 
             char[] chars = s.ToCharArray();
@@ -903,11 +903,11 @@ namespace System.Text
         {
             // Validate input parameters
             if (chars == null)
-                throw new ArgumentNullException("chars",
+                throw new ArgumentNullException(nameof(chars),
                       Environment.GetResourceString("ArgumentNull_Array"));
 
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count",
+                throw new ArgumentOutOfRangeException(nameof(count),
                       Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
 
@@ -939,7 +939,7 @@ namespace System.Text
         {
             if (chars == null)
             {
-                throw new ArgumentNullException("chars",
+                throw new ArgumentNullException(nameof(chars),
                     Environment.GetResourceString("ArgumentNull_Array"));
             }
             Contract.EndContractBlock();
@@ -976,7 +976,7 @@ namespace System.Text
         public virtual byte[] GetBytes(String s)
         {
             if (s == null)
-                throw new ArgumentNullException("s",
+                throw new ArgumentNullException(nameof(s),
                     Environment.GetResourceString("ArgumentNull_String"));
             Contract.EndContractBlock();
 
@@ -991,7 +991,7 @@ namespace System.Text
                                        byte[] bytes, int byteIndex)
         {
             if (s==null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             Contract.EndContractBlock();
             return GetBytes(s.ToCharArray(), charIndex, charCount, bytes, byteIndex);
         }
@@ -1030,7 +1030,7 @@ namespace System.Text
         {
             // Validate input parameters
             if (bytes == null || chars == null)
-                throw new ArgumentNullException(bytes == null ? "bytes" : "chars",
+                throw new ArgumentNullException(bytes == null ? nameof(bytes) : nameof(chars),
                     Environment.GetResourceString("ArgumentNull_Array"));
 
             if (charCount < 0 || byteCount < 0)
@@ -1076,7 +1076,7 @@ namespace System.Text
         {
             if (bytes == null)
             {
-                throw new ArgumentNullException("bytes",
+                throw new ArgumentNullException(nameof(bytes),
                     Environment.GetResourceString("ArgumentNull_Array"));
             }
             Contract.EndContractBlock();
@@ -1099,11 +1099,11 @@ namespace System.Text
         {
             // Validate input parameters
             if (bytes == null)
-                throw new ArgumentNullException("bytes",
+                throw new ArgumentNullException(nameof(bytes),
                       Environment.GetResourceString("ArgumentNull_Array"));
 
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count",
+                throw new ArgumentOutOfRangeException(nameof(count),
                       Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
 
@@ -1132,7 +1132,7 @@ namespace System.Text
         {
             if (bytes == null)
             {
-                throw new ArgumentNullException("bytes",
+                throw new ArgumentNullException(nameof(bytes),
                     Environment.GetResourceString("ArgumentNull_Array"));
             }
             Contract.EndContractBlock();
@@ -1189,7 +1189,7 @@ namespace System.Text
         {
             // Validate input parameters
             if (chars == null || bytes == null)
-                throw new ArgumentNullException(chars == null ? "chars" : "bytes",
+                throw new ArgumentNullException(chars == null ? nameof(chars) : nameof(bytes),
                     Environment.GetResourceString("ArgumentNull_Array"));
 
             if (byteCount < 0 || charCount < 0)
@@ -1244,10 +1244,10 @@ namespace System.Text
         public unsafe string GetString(byte* bytes, int byteCount)
         {
             if (bytes == null)
-                throw new ArgumentNullException("bytes", Environment.GetResourceString("ArgumentNull_Array"));
+                throw new ArgumentNullException(nameof(bytes), Environment.GetResourceString("ArgumentNull_Array"));
 
             if (byteCount < 0)
-                throw new ArgumentOutOfRangeException("byteCount", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(byteCount), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
 
             return String.CreateStringFromEncoding(bytes, byteCount, this);
@@ -1391,7 +1391,7 @@ namespace System.Text
         public virtual String GetString(byte[] bytes)
         {
             if (bytes == null)
-                throw new ArgumentNullException("bytes",
+                throw new ArgumentNullException(nameof(bytes),
                     Environment.GetResourceString("ArgumentNull_Array"));
             Contract.EndContractBlock();
 
@@ -1541,7 +1541,7 @@ namespace System.Text
             // Constructor called by serialization, have to handle deserializing from Everett
             internal DefaultEncoder(SerializationInfo info, StreamingContext context)
             {
-                if (info==null) throw new ArgumentNullException("info");
+                if (info==null) throw new ArgumentNullException(nameof(info));
                 Contract.EndContractBlock();
 
                 // All we have is our encoding
@@ -1588,7 +1588,7 @@ namespace System.Text
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
             {
                 // Any info?
-                if (info==null) throw new ArgumentNullException("info");
+                if (info==null) throw new ArgumentNullException(nameof(info));
                 Contract.EndContractBlock();
 
                 // All we have is our encoding
@@ -1667,7 +1667,7 @@ namespace System.Text
             internal DefaultDecoder(SerializationInfo info, StreamingContext context)
             {
                 // Any info?
-                if (info==null) throw new ArgumentNullException("info");
+                if (info==null) throw new ArgumentNullException(nameof(info));
                 Contract.EndContractBlock();
 
                 // All we have is our encoding
@@ -1709,7 +1709,7 @@ namespace System.Text
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
             {
                 // Any info?
-                if (info==null) throw new ArgumentNullException("info");
+                if (info==null) throw new ArgumentNullException(nameof(info));
                 Contract.EndContractBlock();
 
                 // All we have is our encoding

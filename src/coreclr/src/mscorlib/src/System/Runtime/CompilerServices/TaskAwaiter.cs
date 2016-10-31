@@ -205,7 +205,7 @@ namespace System.Runtime.CompilerServices
         [SecurityCritical]
         internal static void OnCompletedInternal(Task task, Action continuation, bool continueOnCapturedContext, bool flowExecutionContext)
         {
-            if (continuation == null) throw new ArgumentNullException("continuation");
+            if (continuation == null) throw new ArgumentNullException(nameof(continuation));
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
 
             // If TaskWait* ETW events are enabled, trace a beginning event for this await

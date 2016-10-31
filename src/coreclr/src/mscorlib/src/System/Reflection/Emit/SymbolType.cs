@@ -234,7 +234,7 @@ namespace System.Reflection.Emit
         internal void SetElementType(Type baseType)
         {
             if (baseType == null)
-                throw new ArgumentNullException("baseType");
+                throw new ArgumentNullException(nameof(baseType));
             Contract.EndContractBlock();
 
             m_baseType = baseType;

@@ -356,11 +356,11 @@ namespace System.Runtime.Versioning
         {
             if (frameworkName == null)
             {
-                throw new ArgumentNullException("frameworkName");
+                throw new ArgumentNullException(nameof(frameworkName));
             }
             if (frameworkName.Length == 0)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_StringZeroLength"), "frameworkName");
+                throw new ArgumentException(Environment.GetResourceString("Argument_StringZeroLength"), nameof(frameworkName));
             }
             Contract.EndContractBlock();
 
@@ -370,7 +370,7 @@ namespace System.Runtime.Versioning
             // Identifer and Version are required, Profile is optional.
             if (components.Length < 2 || components.Length > 3)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_FrameworkNameTooShort"), "frameworkName");
+                throw new ArgumentException(Environment.GetResourceString("Argument_FrameworkNameTooShort"), nameof(frameworkName));
             }
 
             //
@@ -380,7 +380,7 @@ namespace System.Runtime.Versioning
 
             if (identifier.Length == 0)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_FrameworkNameInvalid"), "frameworkName");
+                throw new ArgumentException(Environment.GetResourceString("Argument_FrameworkNameInvalid"), nameof(frameworkName));
             }
 
             bool versionFound = false;
@@ -396,7 +396,7 @@ namespace System.Runtime.Versioning
 
                 if (keyValuePair.Length != 2)
                 {
-                    throw new ArgumentException(Environment.GetResourceString("SR.Argument_FrameworkNameInvalid"), "frameworkName");
+                    throw new ArgumentException(Environment.GetResourceString("SR.Argument_FrameworkNameInvalid"), nameof(frameworkName));
                 }
 
                 // Get the key and value, trimming any whitespace
@@ -435,13 +435,13 @@ namespace System.Runtime.Versioning
                 }
                 else
                 {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_FrameworkNameInvalid"), "frameworkName");
+                    throw new ArgumentException(Environment.GetResourceString("Argument_FrameworkNameInvalid"), nameof(frameworkName));
                 }
             }
 
             if (!versionFound)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_FrameworkNameMissingVersion"), "frameworkName");
+                throw new ArgumentException(Environment.GetResourceString("Argument_FrameworkNameMissingVersion"), nameof(frameworkName));
             }
         }
 

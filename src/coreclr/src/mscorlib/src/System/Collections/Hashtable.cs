@@ -271,9 +271,9 @@ namespace System.Collections {
         // 
         public Hashtable(int capacity, float loadFactor) {
             if (capacity < 0)
-                throw new ArgumentOutOfRangeException("capacity", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(capacity), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (!(loadFactor >= 0.1f && loadFactor <= 1.0f))
-                throw new ArgumentOutOfRangeException("loadFactor", Environment.GetResourceString("ArgumentOutOfRange_HashtableLoadFactor", .1, 1.0));
+                throw new ArgumentOutOfRangeException(nameof(loadFactor), Environment.GetResourceString("ArgumentOutOfRange_HashtableLoadFactor", .1, 1.0));
             Contract.EndContractBlock();
     
             // Based on perf work, .72 is the optimal load factor for this table.  
@@ -375,7 +375,7 @@ namespace System.Collections {
         public Hashtable(IDictionary d, float loadFactor, IHashCodeProvider hcp, IComparer comparer) 
             : this((d != null ? d.Count : 0), loadFactor, hcp, comparer) {
             if (d==null)
-                throw new ArgumentNullException("d", Environment.GetResourceString("ArgumentNull_Dictionary"));
+                throw new ArgumentNullException(nameof(d), Environment.GetResourceString("ArgumentNull_Dictionary"));
             Contract.EndContractBlock();
  
             IDictionaryEnumerator e = d.GetEnumerator();
@@ -385,7 +385,7 @@ namespace System.Collections {
         public Hashtable(IDictionary d, float loadFactor, IEqualityComparer equalityComparer) 
             : this((d != null ? d.Count : 0), loadFactor, equalityComparer) {
             if (d==null)
-                throw new ArgumentNullException("d", Environment.GetResourceString("ArgumentNull_Dictionary"));
+                throw new ArgumentNullException(nameof(d), Environment.GetResourceString("ArgumentNull_Dictionary"));
             Contract.EndContractBlock();
             
             IDictionaryEnumerator e = d.GetEnumerator();
@@ -501,7 +501,7 @@ namespace System.Collections {
         // 
         public virtual bool ContainsKey(Object key) {
             if (key == null) {
-                throw new ArgumentNullException("key", Environment.GetResourceString("ArgumentNull_Key"));
+                throw new ArgumentNullException(nameof(key), Environment.GetResourceString("ArgumentNull_Key"));
             }
             Contract.EndContractBlock();
 
@@ -590,11 +590,11 @@ namespace System.Collections {
         public virtual void CopyTo(Array array, int arrayIndex)
         {
             if (array == null)
-                throw new ArgumentNullException("array", Environment.GetResourceString("ArgumentNull_Array"));
+                throw new ArgumentNullException(nameof(array), Environment.GetResourceString("ArgumentNull_Array"));
             if (array.Rank != 1)
                 throw new ArgumentException(Environment.GetResourceString("Arg_RankMultiDimNotSupported"));
             if (arrayIndex < 0) 
-                throw new ArgumentOutOfRangeException("arrayIndex", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (array.Length - arrayIndex < Count)
                 throw new ArgumentException(Environment.GetResourceString("Arg_ArrayPlusOffTooSmall"));
             Contract.EndContractBlock();
@@ -643,7 +643,7 @@ namespace System.Collections {
         public virtual Object this[Object key] {
             get {
                 if (key == null) {
-                    throw new ArgumentNullException("key", Environment.GetResourceString("ArgumentNull_Key"));
+                    throw new ArgumentNullException(nameof(key), Environment.GetResourceString("ArgumentNull_Key"));
                 }
                 Contract.EndContractBlock();
 
@@ -872,7 +872,7 @@ namespace System.Collections {
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         private void Insert (Object key, Object nvalue, bool add) {
             if (key == null) {
-                throw new ArgumentNullException("key", Environment.GetResourceString("ArgumentNull_Key"));
+                throw new ArgumentNullException(nameof(key), Environment.GetResourceString("ArgumentNull_Key"));
             }
             Contract.EndContractBlock();
             if (count >= loadsize) {
@@ -1069,7 +1069,7 @@ namespace System.Collections {
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public virtual void Remove(Object key) {
             if (key == null) {
-                throw new ArgumentNullException("key", Environment.GetResourceString("ArgumentNull_Key"));
+                throw new ArgumentNullException(nameof(key), Environment.GetResourceString("ArgumentNull_Key"));
             }
             Contract.EndContractBlock();
             Contract.Assert(!isWriterInProgress, "Race condition detected in usages of Hashtable - multiple threads appear to be writing to a Hashtable instance simultaneously!  Don't do that - use Hashtable.Synchronized.");
@@ -1134,7 +1134,7 @@ namespace System.Collections {
         [HostProtection(Synchronization=true)]
         public static Hashtable Synchronized(Hashtable table) {
             if (table==null)
-                throw new ArgumentNullException("table");
+                throw new ArgumentNullException(nameof(table));
             Contract.EndContractBlock();
             return new SyncHashtable(table);
         }
@@ -1146,7 +1146,7 @@ namespace System.Collections {
         [System.Security.SecurityCritical]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context) {
             if (info==null) {
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             }
             Contract.EndContractBlock();
             // This is imperfect - it only works well if all other writes are
@@ -1302,11 +1302,11 @@ namespace System.Collections {
             
             public virtual void CopyTo(Array array, int arrayIndex) {
                 if (array==null)
-                    throw new ArgumentNullException("array");
+                    throw new ArgumentNullException(nameof(array));
                 if (array.Rank != 1)
                     throw new ArgumentException(Environment.GetResourceString("Arg_RankMultiDimNotSupported"));
                 if (arrayIndex < 0) 
-                    throw new ArgumentOutOfRangeException("arrayIndex", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    throw new ArgumentOutOfRangeException(nameof(arrayIndex), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
                 Contract.EndContractBlock();
                 if (array.Length - arrayIndex < _hashtable.count)
                     throw new ArgumentException(Environment.GetResourceString("Arg_ArrayPlusOffTooSmall"));
@@ -1343,11 +1343,11 @@ namespace System.Collections {
             
             public virtual void CopyTo(Array array, int arrayIndex) {
                 if (array==null)
-                    throw new ArgumentNullException("array");
+                    throw new ArgumentNullException(nameof(array));
                 if (array.Rank != 1)
                     throw new ArgumentException(Environment.GetResourceString("Arg_RankMultiDimNotSupported"));
                 if (arrayIndex < 0) 
-                    throw new ArgumentOutOfRangeException("arrayIndex", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    throw new ArgumentOutOfRangeException(nameof(arrayIndex), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
                 Contract.EndContractBlock();
                 if (array.Length - arrayIndex < _hashtable.count)
                     throw new ArgumentException(Environment.GetResourceString("Arg_ArrayPlusOffTooSmall"));
@@ -1402,7 +1402,7 @@ namespace System.Collections {
             [System.Security.SecurityCritical]  // auto-generated
             public override void GetObjectData(SerializationInfo info, StreamingContext context) {
                 if (info==null) {
-                    throw new ArgumentNullException("info");
+                    throw new ArgumentNullException(nameof(info));
                 }
                 Contract.EndContractBlock();
                 // Our serialization code hasn't been fully tweaked to be safe 
@@ -1461,7 +1461,7 @@ namespace System.Collections {
     
             public override bool ContainsKey(Object key) {
                 if (key == null) {
-                    throw new ArgumentNullException("key", Environment.GetResourceString("ArgumentNull_Key"));
+                    throw new ArgumentNullException(nameof(key), Environment.GetResourceString("ArgumentNull_Key"));
                 }
                 Contract.EndContractBlock();
                 return _table.ContainsKey(key);
@@ -1630,7 +1630,7 @@ namespace System.Collections {
         
             public HashtableDebugView( Hashtable hashtable) {
                 if( hashtable == null) {
-                    throw new ArgumentNullException( "hashtable");
+                    throw new ArgumentNullException(nameof(hashtable));
                 }
                 Contract.EndContractBlock();
 

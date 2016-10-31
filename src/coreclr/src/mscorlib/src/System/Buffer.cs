@@ -141,15 +141,15 @@ namespace System {
         {
             // Is the array present?
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
 
             // Is it of primitive types?
             if (!IsPrimitiveTypeArray(array))
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBePrimArray"), "array");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBePrimArray"), nameof(array));
 
             // Is the index in valid range of the array?
             if (index < 0 || index >= _ByteLength(array))
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
 
             return _GetByte(array, index);
         }
@@ -169,15 +169,15 @@ namespace System {
         {
             // Is the array present?
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
 
             // Is it of primitive types?
             if (!IsPrimitiveTypeArray(array))
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBePrimArray"), "array");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBePrimArray"), nameof(array));
 
             // Is the index in valid range of the array?
             if (index < 0 || index >= _ByteLength(array))
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
 
             // Make the FCall to do the work
             _SetByte(array, index, value);
@@ -199,11 +199,11 @@ namespace System {
         {
             // Is the array present?
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
 
             // Is it of primitive types?
             if (!IsPrimitiveTypeArray(array))
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBePrimArray"), "array");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBePrimArray"), nameof(array));
 
             return _ByteLength(array);
         }

@@ -419,7 +419,7 @@ namespace System.Reflection.Emit
             m_methodHandle = null;
 
             if (name == null) 
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
 #if FEATURE_APPX
             if (AppDomain.ProfileAPICheck)
@@ -439,7 +439,7 @@ namespace System.Reflection.Emit
         private void PerformSecurityCheck(Module m, ref StackCrawlMark stackMark, bool skipVisibility)
         {
             if (m == null) 
-                throw new ArgumentNullException("m");
+                throw new ArgumentNullException(nameof(m));
             Contract.EndContractBlock();
 #if !FEATURE_CORECLR
 
@@ -452,12 +452,12 @@ namespace System.Reflection.Emit
 
             if (rtModule == null)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeModule"), "m");
+                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeModule"), nameof(m));
             }
 
             // The user cannot explicitly use this assembly
             if (rtModule == s_anonymouslyHostedDynamicMethodsModule)
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidValue"), "m");
+                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidValue"), nameof(m));
 
             // ask for member access if skip visibility
             if (skipVisibility) 
@@ -485,7 +485,7 @@ namespace System.Reflection.Emit
         private void PerformSecurityCheck(Type owner, ref StackCrawlMark stackMark, bool skipVisibility)
         {
             if (owner == null)
-                throw new ArgumentNullException("owner");
+                throw new ArgumentNullException(nameof(owner));
 #if !FEATURE_CORECLR
 
             RuntimeType rtOwner = owner as RuntimeType;
@@ -493,7 +493,7 @@ namespace System.Reflection.Emit
                 rtOwner = owner.UnderlyingSystemType as RuntimeType;
 
             if (rtOwner == null)
-                throw new ArgumentNullException("owner", Environment.GetResourceString("Argument_MustBeRuntimeType"));
+                throw new ArgumentNullException(nameof(owner), Environment.GetResourceString("Argument_MustBeRuntimeType"));
 
             // get the type the call is coming from
             RuntimeType callingType = RuntimeMethodHandle.GetCallerType(ref stackMark);
@@ -947,7 +947,7 @@ namespace System.Reflection.Emit
 
             public override Object[] GetCustomAttributes(Type attributeType, bool inherit) {
                 if (attributeType == null)
-                    throw new ArgumentNullException("attributeType");
+                    throw new ArgumentNullException(nameof(attributeType));
                 Contract.EndContractBlock();
 
                 if (attributeType.IsAssignableFrom(typeof(MethodImplAttribute))) 
@@ -963,7 +963,7 @@ namespace System.Reflection.Emit
             
             public override bool IsDefined(Type attributeType, bool inherit) {
                 if (attributeType == null)
-                    throw new ArgumentNullException("attributeType");
+                    throw new ArgumentNullException(nameof(attributeType));
                 Contract.EndContractBlock();
 
                 if (attributeType.IsAssignableFrom(typeof(MethodImplAttribute))) 

@@ -166,7 +166,7 @@ namespace System {
         internal UnitySerializationHolder(SerializationInfo info, StreamingContext context) 
         {
             if (info == null)
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
             
             m_unityType = info.GetInt32("UnityType");

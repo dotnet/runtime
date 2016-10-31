@@ -1516,7 +1516,7 @@ namespace System {
                 throw new NullReferenceException();
 
             if (assemblyName == null)
-                throw new ArgumentNullException("assemblyName");
+                throw new ArgumentNullException(nameof(assemblyName));
             Contract.EndContractBlock();
 
             return Activator.CreateInstance(assemblyName,
@@ -1591,7 +1591,7 @@ namespace System {
                 throw new NullReferenceException();
 
             if (assemblyName == null)
-                throw new ArgumentNullException("assemblyName");
+                throw new ArgumentNullException(nameof(assemblyName));
             Contract.EndContractBlock();
 
             return Activator.CreateInstance(assemblyName,
@@ -1630,7 +1630,7 @@ namespace System {
                 throw new NullReferenceException();
             
             if (assemblyName == null)
-                throw new ArgumentNullException("assemblyName");
+                throw new ArgumentNullException(nameof(assemblyName));
             Contract.EndContractBlock();
 
 #if FEATURE_CAS_POLICY
@@ -1667,7 +1667,7 @@ namespace System {
                 throw new NullReferenceException();
 
             if (assemblyName == null)
-                throw new ArgumentNullException("assemblyName");
+                throw new ArgumentNullException(nameof(assemblyName));
             Contract.EndContractBlock();
 
             return Activator.CreateInstance(assemblyName,
@@ -2258,7 +2258,7 @@ namespace System {
         [System.Security.SecurityCritical]  // auto-generated
         private void SetDataHelper (string name, object data, IPermission permission) {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             Contract.EndContractBlock();
 
             //
@@ -2372,7 +2372,7 @@ namespace System {
         public Object GetData(string name)
         {
             if(name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             Contract.EndContractBlock();
 
             int key = AppDomainSetup.Locate(name);
@@ -2477,7 +2477,7 @@ namespace System {
         public static void Unload(AppDomain domain)
         {
             if (domain == null)
-                throw new ArgumentNullException("domain");
+                throw new ArgumentNullException(nameof(domain));
             Contract.EndContractBlock();
 
             try {
@@ -2502,7 +2502,7 @@ namespace System {
         public void SetAppDomainPolicy(PolicyLevel domainPolicy)
         {
             if (domainPolicy == null)
-                throw new ArgumentNullException("domainPolicy");
+                throw new ArgumentNullException(nameof(domainPolicy));
             Contract.EndContractBlock();
 
             if (!IsLegacyCasPolicyEnabled)
@@ -2566,7 +2566,7 @@ namespace System {
         public void SetThreadPrincipal(IPrincipal principal)
         {
             if (principal == null)
-                throw new ArgumentNullException("principal");
+                throw new ArgumentNullException(nameof(principal));
             Contract.EndContractBlock();
 
             lock (this) {
@@ -2606,7 +2606,7 @@ namespace System {
         public void DoCallBack(CrossAppDomainDelegate callBackDelegate)
         {
             if (callBackDelegate == null)
-                throw new ArgumentNullException("callBackDelegate");
+                throw new ArgumentNullException(nameof(callBackDelegate));
             Contract.EndContractBlock();
 
             callBackDelegate();        
@@ -3282,7 +3282,7 @@ namespace System {
                                       AppDomainSetup info)
         {
             if (friendlyName == null)
-                throw new ArgumentNullException("friendlyName", Environment.GetResourceString("ArgumentNull_String"));
+                throw new ArgumentNullException(nameof(friendlyName), Environment.GetResourceString("ArgumentNull_String"));
 
             Contract.EndContractBlock();
 
@@ -3326,7 +3326,7 @@ namespace System {
                                               params StrongName[] fullTrustAssemblies)
         {
             if (info == null)
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             if (info.ApplicationBase == null)
                 throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_AppDomainSandboxAPINeedsExplicitAppBase"));
             Contract.EndContractBlock();

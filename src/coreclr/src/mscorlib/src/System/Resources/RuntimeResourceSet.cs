@@ -285,7 +285,7 @@ namespace System.Resources {
         private Object GetObject(String key, bool ignoreCase, bool isString)
         {
             if (key==null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             if (Reader == null || _resCache == null)
                 throw new ObjectDisposedException(null, Environment.GetResourceString("ObjectDisposed_ResourceSet"));
             Contract.EndContractBlock();

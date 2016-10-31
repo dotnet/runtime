@@ -253,7 +253,7 @@ namespace System.Security {
         public virtual void CopyTo(Array array, int index)
         {
             if (array == null)
-                throw new ArgumentNullException( "array" );
+                throw new ArgumentNullException( nameof(array) );
             Contract.EndContractBlock();
         
             PermissionSetEnumeratorInternal enumerator = new PermissionSetEnumeratorInternal(this);
@@ -1751,10 +1751,10 @@ namespace System.Security {
         internal virtual void FromXml( SecurityElement et, bool allowInternalOnly, bool ignoreTypeLoadFailures )
         {
             if (et == null)
-                throw new ArgumentNullException("et");
+                throw new ArgumentNullException(nameof(et));
 
             if (!et.Tag.Equals(s_str_PermissionSet))
-                throw new ArgumentException(String.Format( null, Environment.GetResourceString( "Argument_InvalidXMLElement" ), "PermissionSet", this.GetType().FullName) );
+                throw new ArgumentException(String.Format( null, Environment.GetResourceString( "Argument_InvalidXMLElement" ), nameof(PermissionSet), this.GetType().FullName) );
             Contract.EndContractBlock();
 
             Reset();
@@ -1852,11 +1852,11 @@ namespace System.Security {
         internal virtual void FromXml( SecurityDocument doc, int position, bool allowInternalOnly )
         {
             if (doc == null)
-                throw new ArgumentNullException("doc");
+                throw new ArgumentNullException(nameof(doc));
             Contract.EndContractBlock();
             
             if (!doc.GetTagForElement( position ).Equals(s_str_PermissionSet))
-                throw new ArgumentException(String.Format( null, Environment.GetResourceString( "Argument_InvalidXMLElement" ), "PermissionSet", this.GetType().FullName) );
+                throw new ArgumentException(String.Format( null, Environment.GetResourceString( "Argument_InvalidXMLElement" ), nameof(PermissionSet), this.GetType().FullName) );
             
             Reset();
             m_allPermissionsDecoded = false;

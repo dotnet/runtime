@@ -127,12 +127,12 @@ namespace System {
         [System.Security.SecurityCritical]  // auto-generated_required
         public static void AddMemoryPressure (long bytesAllocated) {
             if( bytesAllocated <= 0) {
-                throw new ArgumentOutOfRangeException("bytesAllocated", 
+                throw new ArgumentOutOfRangeException(nameof(bytesAllocated), 
                         Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
             }
 
             if( (4 == IntPtr.Size) && (bytesAllocated > Int32.MaxValue) ) {
-                throw new ArgumentOutOfRangeException("pressure", 
+                throw new ArgumentOutOfRangeException(nameof(bytesAllocated), 
                         Environment.GetResourceString("ArgumentOutOfRange_MustBeNonNegInt32"));
             }
             Contract.EndContractBlock();
@@ -143,12 +143,12 @@ namespace System {
         [System.Security.SecurityCritical]  // auto-generated_required
         public static void RemoveMemoryPressure (long bytesAllocated) {
             if( bytesAllocated <= 0) {
-                throw new ArgumentOutOfRangeException("bytesAllocated", 
+                throw new ArgumentOutOfRangeException(nameof(bytesAllocated), 
                         Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
             }
 
             if( (4 == IntPtr.Size)  && (bytesAllocated > Int32.MaxValue) ) {
-                throw new ArgumentOutOfRangeException("bytesAllocated", 
+                throw new ArgumentOutOfRangeException(nameof(bytesAllocated), 
                         Environment.GetResourceString("ArgumentOutOfRange_MustBeNonNegInt32"));
             }
             Contract.EndContractBlock();
@@ -195,12 +195,12 @@ namespace System {
         {
             if (generation<0) 
             {
-                throw new ArgumentOutOfRangeException("generation", Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
+                throw new ArgumentOutOfRangeException(nameof(generation), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
             }
 
             if ((mode < GCCollectionMode.Default) || (mode > GCCollectionMode.Optimized))
             {
-                throw new ArgumentOutOfRangeException("mode", Environment.GetResourceString("ArgumentOutOfRange_Enum"));
+                throw new ArgumentOutOfRangeException(nameof(mode), Environment.GetResourceString("ArgumentOutOfRange_Enum"));
             }
 
             Contract.EndContractBlock();
@@ -233,7 +233,7 @@ namespace System {
         {
             if (generation<0) 
             {
-                throw new ArgumentOutOfRangeException("generation", Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
+                throw new ArgumentOutOfRangeException(nameof(generation), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
             }
             Contract.EndContractBlock();
             return _CollectionCount(generation, 0);
@@ -246,7 +246,7 @@ namespace System {
         {
             if (generation<0) 
             {
-                throw new ArgumentOutOfRangeException("generation", Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
+                throw new ArgumentOutOfRangeException(nameof(generation), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
             }
             Contract.EndContractBlock();
             return _CollectionCount(generation, (getSpecialGCCount ? 1 : 0));
@@ -331,7 +331,7 @@ namespace System {
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static void SuppressFinalize(Object obj) {
             if (obj == null)
-                throw new ArgumentNullException("obj");
+                throw new ArgumentNullException(nameof(obj));
             Contract.EndContractBlock();
             _SuppressFinalize(obj);
         }
@@ -347,7 +347,7 @@ namespace System {
         [System.Security.SecuritySafeCritical]  // auto-generated
         public static void ReRegisterForFinalize(Object obj) {
             if (obj == null)
-                throw new ArgumentNullException("obj");
+                throw new ArgumentNullException(nameof(obj));
             Contract.EndContractBlock();
             _ReRegisterForFinalize(obj);
         }
@@ -406,7 +406,7 @@ namespace System {
         {
             if ((maxGenerationThreshold <= 0) || (maxGenerationThreshold >= 100))
             {
-                throw new ArgumentOutOfRangeException("maxGenerationThreshold", 
+                throw new ArgumentOutOfRangeException(nameof(maxGenerationThreshold), 
                                                       String.Format(
                                                           CultureInfo.CurrentCulture,
                                                           Environment.GetResourceString("ArgumentOutOfRange_Bounds_Lower_Upper"), 
@@ -416,7 +416,7 @@ namespace System {
             
             if ((largeObjectHeapThreshold <= 0) || (largeObjectHeapThreshold >= 100))
             {
-                throw new ArgumentOutOfRangeException("largeObjectHeapThreshold", 
+                throw new ArgumentOutOfRangeException(nameof(largeObjectHeapThreshold), 
                                                       String.Format(
                                                           CultureInfo.CurrentCulture,
                                                           Environment.GetResourceString("ArgumentOutOfRange_Bounds_Lower_Upper"), 
@@ -449,7 +449,7 @@ namespace System {
         public static GCNotificationStatus WaitForFullGCApproach(int millisecondsTimeout)
         {
             if (millisecondsTimeout < -1)
-                throw new ArgumentOutOfRangeException("millisecondsTimeout", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
 
             return (GCNotificationStatus)_WaitForFullGCApproach(millisecondsTimeout);
         }
@@ -464,7 +464,7 @@ namespace System {
         public static GCNotificationStatus WaitForFullGCComplete(int millisecondsTimeout)
         {
             if (millisecondsTimeout < -1)
-                throw new ArgumentOutOfRangeException("millisecondsTimeout", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
             return (GCNotificationStatus)_WaitForFullGCComplete(millisecondsTimeout);
         }
 
@@ -489,7 +489,7 @@ namespace System {
         {
             StartNoGCRegionStatus status = (StartNoGCRegionStatus)_StartNoGCRegion(totalSize, hasLohSize, lohSize, disallowFullBlockingGC);
             if (status == StartNoGCRegionStatus.AmountTooLarge)
-                throw new ArgumentOutOfRangeException("totalSize", 
+                throw new ArgumentOutOfRangeException(nameof(totalSize), 
                     "totalSize is too large. For more information about setting the maximum size, see \"Latency Modes\" in http://go.microsoft.com/fwlink/?LinkId=522706");
             else if (status == StartNoGCRegionStatus.AlreadyInProgress)
                 throw new InvalidOperationException("The NoGCRegion mode was already in progress");

@@ -156,7 +156,7 @@ namespace System.Security {
         internal override void FromXml( SecurityElement et, bool allowInternalOnly, bool ignoreTypeLoadFailures )
         {
             if (et == null)
-                throw new ArgumentNullException( "et" );
+                throw new ArgumentNullException( nameof(et) );
             Contract.EndContractBlock();
 
             String elem;

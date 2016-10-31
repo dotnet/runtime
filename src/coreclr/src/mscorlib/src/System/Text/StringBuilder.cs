@@ -120,15 +120,15 @@ namespace System.Text {
         [System.Security.SecuritySafeCritical]  // auto-generated
         public StringBuilder(String value, int startIndex, int length, int capacity) {
             if (capacity<0) {
-                throw new ArgumentOutOfRangeException("capacity",
+                throw new ArgumentOutOfRangeException(nameof(capacity),
                                                       Environment.GetResourceString("ArgumentOutOfRange_MustBePositive", "capacity"));
             }
             if (length<0) {
-                throw new ArgumentOutOfRangeException("length",
+                throw new ArgumentOutOfRangeException(nameof(length),
                                                       Environment.GetResourceString("ArgumentOutOfRange_MustBeNonNegNum", "length"));
             }
             if (startIndex<0) {
-                throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_StartIndex"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_StartIndex"));
             }
             Contract.EndContractBlock();
 
@@ -136,7 +136,7 @@ namespace System.Text {
                 value = String.Empty;
             }
             if (startIndex > value.Length - length) {
-                throw new ArgumentOutOfRangeException("length", Environment.GetResourceString("ArgumentOutOfRange_IndexLength"));
+                throw new ArgumentOutOfRangeException(nameof(length), Environment.GetResourceString("ArgumentOutOfRange_IndexLength"));
             }
             m_MaxCapacity = Int32.MaxValue;
             if (capacity == 0) {
@@ -158,13 +158,13 @@ namespace System.Text {
         // and a maximum capacity of maxCapacity.
         public StringBuilder(int capacity, int maxCapacity) {
             if (capacity>maxCapacity) {
-                throw new ArgumentOutOfRangeException("capacity", Environment.GetResourceString("ArgumentOutOfRange_Capacity"));
+                throw new ArgumentOutOfRangeException(nameof(capacity), Environment.GetResourceString("ArgumentOutOfRange_Capacity"));
             }
             if (maxCapacity<1) {
-                throw new ArgumentOutOfRangeException("maxCapacity", Environment.GetResourceString("ArgumentOutOfRange_SmallMaxCapacity"));
+                throw new ArgumentOutOfRangeException(nameof(maxCapacity), Environment.GetResourceString("ArgumentOutOfRange_SmallMaxCapacity"));
             }
             if (capacity<0) {
-                throw new ArgumentOutOfRangeException("capacity",
+                throw new ArgumentOutOfRangeException(nameof(capacity),
                                                       Environment.GetResourceString("ArgumentOutOfRange_MustBePositive", "capacity"));
             }
             Contract.EndContractBlock();
@@ -180,7 +180,7 @@ namespace System.Text {
         [System.Security.SecurityCritical]  // auto-generated
         private StringBuilder(SerializationInfo info, StreamingContext context) {
             if (info == null)
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
 
             int persistedCapacity = 0;
@@ -244,7 +244,7 @@ namespace System.Text {
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info==null) {
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             }
             Contract.EndContractBlock();
 
@@ -287,13 +287,13 @@ namespace System.Text {
             get { return m_ChunkChars.Length + m_ChunkOffset; }
             set {
                 if (value < 0) {
-                    throw new ArgumentOutOfRangeException("value", Environment.GetResourceString("ArgumentOutOfRange_NegativeCapacity"));
+                    throw new ArgumentOutOfRangeException(nameof(value), Environment.GetResourceString("ArgumentOutOfRange_NegativeCapacity"));
                 }
                 if (value > MaxCapacity) {
-                    throw new ArgumentOutOfRangeException("value", Environment.GetResourceString("ArgumentOutOfRange_Capacity"));
+                    throw new ArgumentOutOfRangeException(nameof(value), Environment.GetResourceString("ArgumentOutOfRange_Capacity"));
                 }
                 if (value < Length) {
-                    throw new ArgumentOutOfRangeException("value", Environment.GetResourceString("ArgumentOutOfRange_SmallCapacity"));
+                    throw new ArgumentOutOfRangeException(nameof(value), Environment.GetResourceString("ArgumentOutOfRange_SmallCapacity"));
                 }
                 Contract.EndContractBlock();
 
@@ -317,7 +317,7 @@ namespace System.Text {
         // 
         public int EnsureCapacity(int capacity) {
             if (capacity < 0) {
-                throw new ArgumentOutOfRangeException("capacity", Environment.GetResourceString("ArgumentOutOfRange_NegativeCapacity"));
+                throw new ArgumentOutOfRangeException(nameof(capacity), Environment.GetResourceString("ArgumentOutOfRange_NegativeCapacity"));
             }
             Contract.EndContractBlock();
 
@@ -357,7 +357,7 @@ namespace System.Text {
                             }
                             else
                             {
-                                throw new ArgumentOutOfRangeException("chunkLength", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                                throw new ArgumentOutOfRangeException(nameof(chunkLength), Environment.GetResourceString("ArgumentOutOfRange_Index"));
                             }
                         }
                         chunk = chunk.m_ChunkPrevious;
@@ -377,19 +377,19 @@ namespace System.Text {
             int currentLength = this.Length;
             if (startIndex < 0)
             {
-                throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_StartIndex"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_StartIndex"));
             }
             if (startIndex > currentLength)
             {
-                throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_StartIndexLargerThanLength"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_StartIndexLargerThanLength"));
             }
             if (length < 0)
             {
-                throw new ArgumentOutOfRangeException("length", Environment.GetResourceString("ArgumentOutOfRange_NegativeLength"));
+                throw new ArgumentOutOfRangeException(nameof(length), Environment.GetResourceString("ArgumentOutOfRange_NegativeLength"));
             }
             if (startIndex > (currentLength - length))
             {
-                throw new ArgumentOutOfRangeException("length", Environment.GetResourceString("ArgumentOutOfRange_IndexLength"));
+                throw new ArgumentOutOfRangeException(nameof(length), Environment.GetResourceString("ArgumentOutOfRange_IndexLength"));
             }
 
             VerifyClassInvariant();
@@ -433,7 +433,7 @@ namespace System.Text {
                                 }
                                 else
                                 {
-                                    throw new ArgumentOutOfRangeException("chunkCount", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                                    throw new ArgumentOutOfRangeException(nameof(chunkCount), Environment.GetResourceString("ArgumentOutOfRange_Index"));
                                 }
                             }
                         }
@@ -463,11 +463,11 @@ namespace System.Text {
             set {
                 //If the new length is less than 0 or greater than our Maximum capacity, bail.
                 if (value<0) {
-                    throw new ArgumentOutOfRangeException("value", Environment.GetResourceString("ArgumentOutOfRange_NegativeLength"));
+                    throw new ArgumentOutOfRangeException(nameof(value), Environment.GetResourceString("ArgumentOutOfRange_NegativeLength"));
                 }
 
                 if (value>MaxCapacity) {
-                    throw new ArgumentOutOfRangeException("value", Environment.GetResourceString("ArgumentOutOfRange_SmallCapacity"));
+                    throw new ArgumentOutOfRangeException(nameof(value), Environment.GetResourceString("ArgumentOutOfRange_SmallCapacity"));
                 }
                 Contract.EndContractBlock();
 
@@ -539,13 +539,13 @@ namespace System.Text {
                     if (indexInBlock >= 0)
                     {
                         if (indexInBlock >= chunk.m_ChunkLength)
-                            throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                            throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_Index"));
                         chunk.m_ChunkChars[indexInBlock] = value;
                         return;
                     }
                     chunk = chunk.m_ChunkPrevious;
                     if (chunk == null)
-                        throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                        throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_Index"));
                 }
             }
         }
@@ -553,7 +553,7 @@ namespace System.Text {
         // Appends a character at the end of this string builder. The capacity is adjusted as needed.
         public StringBuilder Append(char value, int repeatCount) {
             if (repeatCount<0) {
-                throw new ArgumentOutOfRangeException("repeatCount", Environment.GetResourceString("ArgumentOutOfRange_NegativeCount"));
+                throw new ArgumentOutOfRangeException(nameof(repeatCount), Environment.GetResourceString("ArgumentOutOfRange_NegativeCount"));
             }
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             Contract.EndContractBlock();
@@ -594,10 +594,10 @@ namespace System.Text {
         [System.Security.SecuritySafeCritical]  // auto-generated
         public StringBuilder Append(char[] value, int startIndex, int charCount) {
             if (startIndex < 0) {
-                throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
             }
             if (charCount<0) {
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
+                throw new ArgumentOutOfRangeException(nameof(charCount), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
             }
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             Contract.EndContractBlock();
@@ -606,10 +606,10 @@ namespace System.Text {
                 if (startIndex == 0 && charCount == 0) {
                     return this;
                 }
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
             if (charCount > value.Length - startIndex) {
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(charCount), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
 
             if (charCount==0) {
@@ -688,11 +688,11 @@ namespace System.Text {
         [System.Security.SecuritySafeCritical]  // auto-generated
         public StringBuilder Append(String value, int startIndex, int count) {
             if (startIndex < 0) {
-                throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
 
             if (count < 0) {
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
+                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
             }
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
 
@@ -702,7 +702,7 @@ namespace System.Text {
                 if (startIndex == 0 && count == 0) {
                     return this;
                 }
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
 
             if (count == 0) {
@@ -710,7 +710,7 @@ namespace System.Text {
             }
 
             if (startIndex > value.Length - count) {
-                throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
 
             unsafe
@@ -741,15 +741,15 @@ namespace System.Text {
         [SecuritySafeCritical]
         public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count) {
             if (destination == null) {
-                throw new ArgumentNullException("destination");
+                throw new ArgumentNullException(nameof(destination));
             }
 
             if (count < 0) {
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("Arg_NegativeArgCount"));
+                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("Arg_NegativeArgCount"));
             }
 
             if (destinationIndex < 0) {
-                throw new ArgumentOutOfRangeException("destinationIndex",
+                throw new ArgumentOutOfRangeException(nameof(destinationIndex),
                     Environment.GetResourceString("ArgumentOutOfRange_MustBeNonNegNum", "destinationIndex"));
             }
 
@@ -758,7 +758,7 @@ namespace System.Text {
             }
 
             if ((uint)sourceIndex > (uint)Length) {
-                throw new ArgumentOutOfRangeException("sourceIndex", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(sourceIndex), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
 
             if (sourceIndex > Length - count) {
@@ -805,7 +805,7 @@ namespace System.Text {
         [System.Security.SecuritySafeCritical]  // auto-generated
         public StringBuilder Insert(int index, String value, int count) {
             if (count < 0) {
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             Contract.EndContractBlock();
@@ -813,7 +813,7 @@ namespace System.Text {
             //Range check the index.
             int currentLength = Length;
             if ((uint)index > (uint)currentLength) {
-                throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
 
             //If value is null, empty or count is 0, do nothing. This is ECMA standard.
@@ -851,15 +851,15 @@ namespace System.Text {
         // 
         public StringBuilder Remove(int startIndex, int length) {
             if (length<0) {
-                throw new ArgumentOutOfRangeException("length", Environment.GetResourceString("ArgumentOutOfRange_NegativeLength"));
+                throw new ArgumentOutOfRangeException(nameof(length), Environment.GetResourceString("ArgumentOutOfRange_NegativeLength"));
             }
 
             if (startIndex<0) {
-                throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_StartIndex"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_StartIndex"));
             }
 
             if (length > Length - startIndex) {
-                throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(length), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             Contract.EndContractBlock();
@@ -1023,7 +1023,7 @@ namespace System.Text {
         [System.Security.SecuritySafeCritical]  // auto-generated
         public StringBuilder Insert(int index, String value) {
             if ((uint)index > (uint)Length) {
-                throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             Contract.EndContractBlock();
@@ -1100,7 +1100,7 @@ namespace System.Text {
         // 
         public StringBuilder Insert(int index, char[] value) {
             if ((uint)index > (uint)Length) {
-                throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             Contract.EndContractBlock();
@@ -1120,7 +1120,7 @@ namespace System.Text {
 
             int currentLength = Length;
             if ((uint)index > (uint)currentLength) {
-                throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
 
             //If they passed in a null char array, just jump out quickly.
@@ -1129,20 +1129,20 @@ namespace System.Text {
                 {
                     return this;
                 }
-                throw new ArgumentNullException("value", Environment.GetResourceString("ArgumentNull_String"));
+                throw new ArgumentNullException(nameof(value), Environment.GetResourceString("ArgumentNull_String"));
             }
 
             //Range check the array.
             if (startIndex < 0) {
-                throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_StartIndex"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_StartIndex"));
             }
 
             if (charCount < 0) {
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
+                throw new ArgumentOutOfRangeException(nameof(charCount), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
             }
 
             if (startIndex > value.Length - charCount) {
-                throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
 
             if (charCount > 0)
@@ -1263,7 +1263,7 @@ namespace System.Text {
             {
                 // To preserve the original exception behavior, throw an exception about format if both
                 // args and format are null. The actual null check for format is in AppendFormatHelper.
-                throw new ArgumentNullException((format == null) ? "format" : "args");
+                throw new ArgumentNullException((format == null) ? nameof(format) : nameof(args));
             }
             Contract.Ensures(Contract.Result<String>() != null);
             Contract.EndContractBlock();
@@ -1291,7 +1291,7 @@ namespace System.Text {
             {
                 // To preserve the original exception behavior, throw an exception about format if both
                 // args and format are null. The actual null check for format is in AppendFormatHelper.
-                throw new ArgumentNullException((format == null) ? "format" : "args");
+                throw new ArgumentNullException((format == null) ? nameof(format) : nameof(args));
             }
             Contract.Ensures(Contract.Result<String>() != null);
             Contract.EndContractBlock();
@@ -1309,7 +1309,7 @@ namespace System.Text {
 
         internal StringBuilder AppendFormatHelper(IFormatProvider provider, String format, ParamsArray args) {
             if (format == null) {
-                throw new ArgumentNullException("format");
+                throw new ArgumentNullException(nameof(format));
             }
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             Contract.EndContractBlock();
@@ -1590,19 +1590,19 @@ namespace System.Text {
             int currentLength = Length;
             if ((uint)startIndex > (uint)currentLength)
             {
-                throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
             if (count < 0 || startIndex > currentLength - count)
             {
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
             if (oldValue == null)
             {
-                throw new ArgumentNullException("oldValue");
+                throw new ArgumentNullException(nameof(oldValue));
             }
             if (oldValue.Length == 0)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "oldValue");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(oldValue));
             }
 
             if (newValue == null)
@@ -1676,11 +1676,11 @@ namespace System.Text {
 
             int currentLength = Length;
             if ((uint)startIndex > (uint)currentLength) {
-                throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
 
             if (count < 0 || startIndex > currentLength - count) {
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
 
             int endIndex = startIndex + count;
@@ -1717,7 +1717,7 @@ namespace System.Text {
             // We don't check null value as this case will throw null reference exception anyway
             if (valueCount < 0)
             {
-                throw new ArgumentOutOfRangeException("valueCount", Environment.GetResourceString("ArgumentOutOfRange_NegativeCount"));
+                throw new ArgumentOutOfRangeException(nameof(valueCount), Environment.GetResourceString("ArgumentOutOfRange_NegativeCount"));
             }
 
             // this is where we can check if the valueCount will put us over m_MaxCapacity
@@ -1765,7 +1765,7 @@ namespace System.Text {
         {
             if ((uint)index > (uint)Length)
             {
-                throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
 
             if (valueCount > 0)
@@ -1915,7 +1915,7 @@ namespace System.Text {
                 }
                 else
                 {
-                    throw new ArgumentOutOfRangeException("destinationIndex", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                    throw new ArgumentOutOfRangeException(nameof(destinationIndex), Environment.GetResourceString("ArgumentOutOfRange_Index"));
                 }
             }
         }
@@ -1933,7 +1933,7 @@ namespace System.Text {
                 }
                 else
                 {
-                    throw new ArgumentOutOfRangeException("sourceIndex", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                    throw new ArgumentOutOfRangeException(nameof(sourceIndex), Environment.GetResourceString("ArgumentOutOfRange_Index"));
                 }
             }
         }

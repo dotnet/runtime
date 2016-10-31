@@ -37,16 +37,16 @@ namespace System {
     
         public Version(int major, int minor, int build, int revision) {
             if (major < 0) 
-              throw new ArgumentOutOfRangeException("major",Environment.GetResourceString("ArgumentOutOfRange_Version"));
+              throw new ArgumentOutOfRangeException(nameof(major),Environment.GetResourceString("ArgumentOutOfRange_Version"));
 
             if (minor < 0) 
-              throw new ArgumentOutOfRangeException("minor",Environment.GetResourceString("ArgumentOutOfRange_Version"));
+              throw new ArgumentOutOfRangeException(nameof(minor),Environment.GetResourceString("ArgumentOutOfRange_Version"));
 
             if (build < 0)
-              throw new ArgumentOutOfRangeException("build",Environment.GetResourceString("ArgumentOutOfRange_Version"));
+              throw new ArgumentOutOfRangeException(nameof(build),Environment.GetResourceString("ArgumentOutOfRange_Version"));
             
             if (revision < 0) 
-              throw new ArgumentOutOfRangeException("revision",Environment.GetResourceString("ArgumentOutOfRange_Version"));
+              throw new ArgumentOutOfRangeException(nameof(revision),Environment.GetResourceString("ArgumentOutOfRange_Version"));
             Contract.EndContractBlock();
             
             _Major = major;
@@ -57,13 +57,13 @@ namespace System {
 
         public Version(int major, int minor, int build) {
             if (major < 0) 
-                throw new ArgumentOutOfRangeException("major",Environment.GetResourceString("ArgumentOutOfRange_Version"));
+                throw new ArgumentOutOfRangeException(nameof(major),Environment.GetResourceString("ArgumentOutOfRange_Version"));
 
             if (minor < 0) 
-              throw new ArgumentOutOfRangeException("minor",Environment.GetResourceString("ArgumentOutOfRange_Version"));
+              throw new ArgumentOutOfRangeException(nameof(minor),Environment.GetResourceString("ArgumentOutOfRange_Version"));
 
             if (build < 0) 
-              throw new ArgumentOutOfRangeException("build",Environment.GetResourceString("ArgumentOutOfRange_Version"));
+              throw new ArgumentOutOfRangeException(nameof(build),Environment.GetResourceString("ArgumentOutOfRange_Version"));
 
             Contract.EndContractBlock();
             
@@ -74,10 +74,10 @@ namespace System {
     
         public Version(int major, int minor) {
             if (major < 0) 
-                throw new ArgumentOutOfRangeException("major",Environment.GetResourceString("ArgumentOutOfRange_Version"));
+                throw new ArgumentOutOfRangeException(nameof(major),Environment.GetResourceString("ArgumentOutOfRange_Version"));
 
             if (minor < 0) 
-                throw new ArgumentOutOfRangeException("minor",Environment.GetResourceString("ArgumentOutOfRange_Version"));
+                throw new ArgumentOutOfRangeException(nameof(minor),Environment.GetResourceString("ArgumentOutOfRange_Version"));
             Contract.EndContractBlock();
             
             _Major = major;
@@ -215,7 +215,7 @@ namespace System {
                 return StringBuilderCache.GetStringAndRelease(sb);
             default:
                 if (_Build == -1)
-                    throw new ArgumentException(Environment.GetResourceString("ArgumentOutOfRange_Bounds_Lower_Upper", "0", "2"), "fieldCount");
+                    throw new ArgumentException(Environment.GetResourceString("ArgumentOutOfRange_Bounds_Lower_Upper", "0", "2"), nameof(fieldCount));
 
                 if (fieldCount == 3)
                 {
@@ -229,7 +229,7 @@ namespace System {
                 }
 
                 if (_Revision == -1)
-                    throw new ArgumentException(Environment.GetResourceString("ArgumentOutOfRange_Bounds_Lower_Upper", "0", "3"), "fieldCount");
+                    throw new ArgumentException(Environment.GetResourceString("ArgumentOutOfRange_Bounds_Lower_Upper", "0", "3"), nameof(fieldCount));
 
                 if (fieldCount == 4)
                 {
@@ -244,7 +244,7 @@ namespace System {
                     return StringBuilderCache.GetStringAndRelease(sb);
                 }
 
-                throw new ArgumentException(Environment.GetResourceString("ArgumentOutOfRange_Bounds_Lower_Upper", "0", "4"), "fieldCount");
+                throw new ArgumentException(Environment.GetResourceString("ArgumentOutOfRange_Bounds_Lower_Upper", "0", "4"), nameof(fieldCount));
             }
         }
 
@@ -272,7 +272,7 @@ namespace System {
 
         public static Version Parse(string input) {
             if (input == null) {
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
             }
             Contract.EndContractBlock();
 
@@ -368,14 +368,14 @@ namespace System {
 
         public static bool operator <(Version v1, Version v2) {
             if ((Object) v1 == null)
-                throw new ArgumentNullException("v1");
+                throw new ArgumentNullException(nameof(v1));
             Contract.EndContractBlock();
             return (v1.CompareTo(v2) < 0);
         }
         
         public static bool operator <=(Version v1, Version v2) {
             if ((Object) v1 == null)
-                throw new ArgumentNullException("v1");
+                throw new ArgumentNullException(nameof(v1));
             Contract.EndContractBlock();
             return (v1.CompareTo(v2) <= 0);
         }

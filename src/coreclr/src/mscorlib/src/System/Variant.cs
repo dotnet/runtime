@@ -345,9 +345,9 @@ namespace System {
         [System.Security.SecurityCritical]  // auto-generated
         unsafe public Variant(void* voidPointer,Type pointerType) {
             if (pointerType == null)
-                throw new ArgumentNullException("pointerType");
+                throw new ArgumentNullException(nameof(pointerType));
             if (!pointerType.IsPointer)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBePointer"),"pointerType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBePointer"),nameof(pointerType));
             Contract.EndContractBlock();
 
             m_objref = pointerType;

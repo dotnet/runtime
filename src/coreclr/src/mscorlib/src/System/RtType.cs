@@ -1869,7 +1869,7 @@ namespace System
             ref StackCrawlMark stackMark)
         {
             if (typeName == null)
-                throw new ArgumentNullException("typeName");
+                throw new ArgumentNullException(nameof(typeName));
             Contract.EndContractBlock();
 
             return RuntimeTypeHandle.GetTypeByName(
@@ -2921,13 +2921,13 @@ namespace System
                 throw new InvalidOperationException(Environment.GetResourceString("Arg_GenericParameter"));
         
             if ((object)ifaceType == null)
-                throw new ArgumentNullException("ifaceType");
+                throw new ArgumentNullException(nameof(ifaceType));
             Contract.EndContractBlock();
 
             RuntimeType ifaceRtType = ifaceType as RuntimeType;
 
             if (ifaceRtType == null)
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeType"), "ifaceType");
+                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeType"), nameof(ifaceType));
 
             RuntimeTypeHandle ifaceRtTypeHandle = ifaceRtType.GetTypeHandleInternal();
 
@@ -3446,7 +3446,7 @@ namespace System
         public override bool IsSubclassOf(Type type) 
         {
             if ((object)type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             Contract.EndContractBlock();
             RuntimeType rtType = type as RuntimeType;
             if (rtType == null)
@@ -3862,7 +3862,7 @@ namespace System
         public override bool IsEnumDefined(object value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             Contract.EndContractBlock();
 
             // Check if both of them are of the same type
@@ -3909,13 +3909,13 @@ namespace System
         public override string GetEnumName(object value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             Contract.EndContractBlock();
 
             Type valueType = value.GetType();
 
             if (!(valueType.IsEnum || IsIntegerType(valueType)))
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnumBaseTypeOrEnum"), "value");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnumBaseTypeOrEnum"), nameof(value));
 
             ulong ulValue = Enum.ToUInt64(value);
 
@@ -3943,7 +3943,7 @@ namespace System
         public override Type MakeGenericType(Type[] instantiation)
         {
             if (instantiation == null)
-                throw new ArgumentNullException("instantiation");
+                throw new ArgumentNullException(nameof(instantiation));
             Contract.EndContractBlock();
 
             RuntimeType[] instantiationRuntimeType = new RuntimeType[instantiation.Length];
@@ -3953,7 +3953,7 @@ namespace System
                     Environment.GetResourceString("Arg_NotGenericTypeDefinition", this));
 
             if (GetGenericArguments().Length != instantiation.Length)
-                throw new ArgumentException(Environment.GetResourceString("Argument_GenericArgsCount"), "instantiation");
+                throw new ArgumentException(Environment.GetResourceString("Argument_GenericArgsCount"), nameof(instantiation));
 
             for (int i = 0; i < instantiation.Length; i ++)
             {
@@ -4260,7 +4260,7 @@ namespace System
             #region Preconditions
             if ((bindingFlags & InvocationMask) == 0)
                 // "Must specify binding flags describing the invoke operation required."
-                throw new ArgumentException(Environment.GetResourceString("Arg_NoAccessSpec"),"bindingFlags");
+                throw new ArgumentException(Environment.GetResourceString("Arg_NoAccessSpec"),nameof(bindingFlags));
 
             // Provide a default binding mask if none is provided 
             if ((bindingFlags & MemberBindingMask) == 0) 
@@ -4278,13 +4278,13 @@ namespace System
                 {
                     if (namedParams.Length > providedArgs.Length)
                         // "Named parameter array can not be bigger than argument array."
-                        throw new ArgumentException(Environment.GetResourceString("Arg_NamedParamTooBig"), "namedParams");
+                        throw new ArgumentException(Environment.GetResourceString("Arg_NamedParamTooBig"), nameof(namedParams));
                 }
                 else
                 {
                     if (namedParams.Length != 0)
                         // "Named parameter array can not be bigger than argument array."
-                        throw new ArgumentException(Environment.GetResourceString("Arg_NamedParamTooBig"), "namedParams");
+                        throw new ArgumentException(Environment.GetResourceString("Arg_NamedParamTooBig"), nameof(namedParams));
                 }
             }
             #endregion
@@ -4295,22 +4295,22 @@ namespace System
             {
                 #region Preconditions
                 if ((bindingFlags & ClassicBindingMask) == 0)
-                    throw new ArgumentException(Environment.GetResourceString("Arg_COMAccess"), "bindingFlags");
+                    throw new ArgumentException(Environment.GetResourceString("Arg_COMAccess"), nameof(bindingFlags));
 
                 if ((bindingFlags & BindingFlags.GetProperty) != 0 && (bindingFlags & ClassicBindingMask & ~(BindingFlags.GetProperty | BindingFlags.InvokeMethod)) != 0)
-                    throw new ArgumentException(Environment.GetResourceString("Arg_PropSetGet"), "bindingFlags");
+                    throw new ArgumentException(Environment.GetResourceString("Arg_PropSetGet"), nameof(bindingFlags));
 
                 if ((bindingFlags & BindingFlags.InvokeMethod) != 0 && (bindingFlags & ClassicBindingMask & ~(BindingFlags.GetProperty | BindingFlags.InvokeMethod)) != 0)
-                    throw new ArgumentException(Environment.GetResourceString("Arg_PropSetInvoke"), "bindingFlags");
+                    throw new ArgumentException(Environment.GetResourceString("Arg_PropSetInvoke"), nameof(bindingFlags));
 
                 if ((bindingFlags & BindingFlags.SetProperty) != 0 && (bindingFlags & ClassicBindingMask & ~BindingFlags.SetProperty) != 0)
-                    throw new ArgumentException(Environment.GetResourceString("Arg_COMPropSetPut"), "bindingFlags");
+                    throw new ArgumentException(Environment.GetResourceString("Arg_COMPropSetPut"), nameof(bindingFlags));
 
                 if ((bindingFlags & BindingFlags.PutDispProperty) != 0 && (bindingFlags & ClassicBindingMask & ~BindingFlags.PutDispProperty) != 0)
-                    throw new ArgumentException(Environment.GetResourceString("Arg_COMPropSetPut"), "bindingFlags");
+                    throw new ArgumentException(Environment.GetResourceString("Arg_COMPropSetPut"), nameof(bindingFlags));
 
                 if ((bindingFlags & BindingFlags.PutRefDispProperty) != 0 && (bindingFlags & ClassicBindingMask & ~BindingFlags.PutRefDispProperty) != 0)
-                    throw new ArgumentException(Environment.GetResourceString("Arg_COMPropSetPut"), "bindingFlags");
+                    throw new ArgumentException(Environment.GetResourceString("Arg_COMPropSetPut"), nameof(bindingFlags));
                 #endregion
 
 #if FEATURE_REMOTING
@@ -4319,7 +4319,7 @@ namespace System
                 {
                     #region Non-TransparentProxy case
                     if (name == null)
-                        throw new ArgumentNullException("name");
+                        throw new ArgumentNullException(nameof(name));
 
                     bool[] isByRef = modifiers == null ? null : modifiers[0].IsByRefArray;
                     
@@ -4344,7 +4344,7 @@ namespace System
             #region Check that any named paramters are not null
             if (namedParams != null && Array.IndexOf(namedParams, null) != -1)
                 // "Named parameter value must not be null."
-                throw new ArgumentException(Environment.GetResourceString("Arg_NamedParamNull"),"namedParams");
+                throw new ArgumentException(Environment.GetResourceString("Arg_NamedParamNull"),nameof(namedParams));
             #endregion
 
             int argCnt = (providedArgs != null) ? providedArgs.Length : 0;
@@ -4361,7 +4361,7 @@ namespace System
             {
                 if ((bindingFlags & BindingFlags.CreateInstance) != 0 && (bindingFlags & BinderNonCreateInstance) != 0)
                     // "Can not specify both CreateInstance and another access type."
-                    throw new ArgumentException(Environment.GetResourceString("Arg_CreatInstAccess"),"bindingFlags");
+                    throw new ArgumentException(Environment.GetResourceString("Arg_CreatInstAccess"),nameof(bindingFlags));
 
                 return Activator.CreateInstance(this, bindingFlags, binder, providedArgs, culture);
             }
@@ -4373,7 +4373,7 @@ namespace System
 
             #region Name
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
                 
             if (name.Length == 0 || name.Equals(@"[DISPID=0]")) 
             {
@@ -4398,26 +4398,26 @@ namespace System
                 {
                     if (IsSetField)
                         // "Can not specify both Get and Set on a field."
-                        throw new ArgumentException(Environment.GetResourceString("Arg_FldSetGet"),"bindingFlags");
+                        throw new ArgumentException(Environment.GetResourceString("Arg_FldSetGet"),nameof(bindingFlags));
 
                     if ((bindingFlags & BindingFlags.SetProperty) != 0)
                         // "Can not specify both GetField and SetProperty."
-                        throw new ArgumentException(Environment.GetResourceString("Arg_FldGetPropSet"),"bindingFlags");
+                        throw new ArgumentException(Environment.GetResourceString("Arg_FldGetPropSet"),nameof(bindingFlags));
                 }
                 else
                 {
                     Contract.Assert(IsSetField);
 
                     if (providedArgs == null) 
-                        throw new ArgumentNullException("providedArgs");
+                        throw new ArgumentNullException(nameof(providedArgs));
 
                     if ((bindingFlags & BindingFlags.GetProperty) != 0)
                         // "Can not specify both SetField and GetProperty."
-                        throw new ArgumentException(Environment.GetResourceString("Arg_FldSetPropGet"),"bindingFlags");
+                        throw new ArgumentException(Environment.GetResourceString("Arg_FldSetPropGet"),nameof(bindingFlags));
 
                     if ((bindingFlags & BindingFlags.InvokeMethod) != 0)
                         // "Can not specify Set on a Field and Invoke on a method."
-                        throw new ArgumentException(Environment.GetResourceString("Arg_FldSetInvoke"),"bindingFlags");
+                        throw new ArgumentException(Environment.GetResourceString("Arg_FldSetInvoke"),nameof(bindingFlags));
                 }
                 #endregion
                         
@@ -4491,7 +4491,7 @@ namespace System
                     {
                         #region Get the field value
                         if (argCnt != 0)
-                            throw new ArgumentException(Environment.GetResourceString("Arg_FldGetArgErr"),"bindingFlags");
+                            throw new ArgumentException(Environment.GetResourceString("Arg_FldGetArgErr"),nameof(bindingFlags));
 
                         return selFld.GetValue(target);
                         #endregion
@@ -4500,7 +4500,7 @@ namespace System
                     {
                         #region Set the field Value
                         if (argCnt != 1)
-                            throw new ArgumentException(Environment.GetResourceString("Arg_FldSetArgErr"),"bindingFlags");
+                            throw new ArgumentException(Environment.GetResourceString("Arg_FldSetArgErr"),nameof(bindingFlags));
 
                         selFld.SetValue(target,providedArgs[0],bindingFlags,binder,culture);
 
@@ -4551,7 +4551,7 @@ namespace System
                     Contract.Assert(!IsSetField);
 
                     if (isSetProperty)
-                        throw new ArgumentException(Environment.GetResourceString("Arg_PropSetGet"), "bindingFlags");
+                        throw new ArgumentException(Environment.GetResourceString("Arg_PropSetGet"), nameof(bindingFlags));
                 }
                 else
                 {
@@ -4560,7 +4560,7 @@ namespace System
                     Contract.Assert(!IsGetField);
                     
                     if ((bindingFlags & BindingFlags.InvokeMethod) != 0)
-                        throw new ArgumentException(Environment.GetResourceString("Arg_PropSetInvoke"), "bindingFlags");
+                        throw new ArgumentException(Environment.GetResourceString("Arg_PropSetInvoke"), nameof(bindingFlags));
                 }
                 #endregion
             }
@@ -4756,7 +4756,7 @@ namespace System
         public void GetObjectData(SerializationInfo info, StreamingContext context) 
         {
             if (info==null) 
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
 
             UnitySerializationHolder.GetUnitySerializationInfo(info, this);
@@ -4774,13 +4774,13 @@ namespace System
         public override Object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
             if ((object)attributeType == null)
-                throw new ArgumentNullException("attributeType");
+                throw new ArgumentNullException(nameof(attributeType));
             Contract.EndContractBlock();
 
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
             if (attributeRuntimeType == null) 
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),"attributeType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType, inherit);
         }
@@ -4789,13 +4789,13 @@ namespace System
         public override bool IsDefined(Type attributeType, bool inherit)
         {
             if ((object)attributeType == null)
-                throw new ArgumentNullException("attributeType");
+                throw new ArgumentNullException(nameof(attributeType));
             Contract.EndContractBlock();
 
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
             if (attributeRuntimeType == null) 
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),"attributeType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),nameof(attributeType));
 
             return CustomAttribute.IsDefined(this, attributeRuntimeType, inherit);
         }

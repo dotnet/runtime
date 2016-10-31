@@ -86,7 +86,7 @@ namespace System.Security {
         public virtual ApplicationTrust DetermineApplicationTrust(Evidence applicationEvidence, Evidence activatorEvidence, TrustManagerContext context)
         {
             if (applicationEvidence == null)
-                throw new ArgumentNullException("applicationEvidence");
+                throw new ArgumentNullException(nameof(applicationEvidence));
             Contract.EndContractBlock();
 
             // This method looks for a trust decision for the ActivationContext in three locations, in order
@@ -154,7 +154,7 @@ namespace System.Security {
         public virtual PermissionSet ResolvePolicy(Evidence evidence)
         {
             if (evidence == null)
-                throw new ArgumentNullException("evidence");
+                throw new ArgumentNullException(nameof(evidence));
             Contract.EndContractBlock();
 
             //

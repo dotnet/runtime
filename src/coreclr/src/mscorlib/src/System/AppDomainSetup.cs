@@ -233,7 +233,7 @@ namespace System {
         [System.Security.SecuritySafeCritical]  // auto-generated
         public AppDomainSetup (ActivationArguments activationArguments) {
             if (activationArguments == null)
-                throw new ArgumentNullException("activationArguments");
+                throw new ArgumentNullException(nameof(activationArguments));
             Contract.EndContractBlock();
 
             _LoaderOptimization = LoaderOptimization.NotSpecified;
@@ -677,17 +677,17 @@ namespace System {
         {
             if(functionName == null) 
             {
-                throw new ArgumentNullException("functionName");
+                throw new ArgumentNullException(nameof(functionName));
             }
 
             if(functionPointer == IntPtr.Zero)
             {
-                throw new ArgumentNullException("functionPointer");
+                throw new ArgumentNullException(nameof(functionPointer));
             }
 
             if(String.IsNullOrWhiteSpace(functionName))
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_NPMSInvalidName"), "functionName");
+                throw new ArgumentException(Environment.GetResourceString("Argument_NPMSInvalidName"), nameof(functionName));
             }
 
             Contract.EndContractBlock();

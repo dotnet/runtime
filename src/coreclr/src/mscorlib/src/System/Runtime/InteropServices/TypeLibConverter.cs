@@ -88,13 +88,13 @@ namespace System.Runtime.InteropServices {
         {
             // Validate the arguments.
             if (typeLib == null)
-                throw new ArgumentNullException("typeLib");
+                throw new ArgumentNullException(nameof(typeLib));
             if (asmFileName == null)
-                throw new ArgumentNullException("asmFileName");         
+                throw new ArgumentNullException(nameof(asmFileName));         
             if (notifySink == null)
-                throw new ArgumentNullException("notifySink");
+                throw new ArgumentNullException(nameof(notifySink));
             if (String.Empty.Equals(asmFileName))
-                throw new ArgumentException(Environment.GetResourceString("Arg_InvalidFileName"), "asmFileName");
+                throw new ArgumentException(Environment.GetResourceString("Arg_InvalidFileName"), nameof(asmFileName));
             if (asmFileName.Length > Path.MaxPath)
                 throw new ArgumentException(Environment.GetResourceString("IO.PathTooLong"), asmFileName);
             if ((flags & TypeLibImporterFlags.PrimaryInteropAssembly) != 0 && publicKey == null && keyPair == null)

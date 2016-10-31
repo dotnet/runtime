@@ -62,11 +62,11 @@ namespace System.Globalization {
         [System.Security.SecuritySafeCritical]  // auto-generated
         public RegionInfo(String name) {
             if (name==null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             if (name.Length == 0) //The InvariantCulture has no matching region
             { 
-                throw new ArgumentException(Environment.GetResourceString("Argument_NoRegionInvariantCulture"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_NoRegionInvariantCulture"), nameof(name));
             }
             
             Contract.EndContractBlock();
@@ -83,12 +83,12 @@ namespace System.Globalization {
                 throw new ArgumentException(
                     String.Format(
                         CultureInfo.CurrentCulture,
-                        Environment.GetResourceString("Argument_InvalidCultureName"), name), "name");
+                        Environment.GetResourceString("Argument_InvalidCultureName"), name), nameof(name));
 
 
             // Not supposed to be neutral
             if (this.m_cultureData.IsNeutralCulture)
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidNeutralRegionName", name), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidNeutralRegionName", name), nameof(name));
 
             SetName(name);
         }
@@ -106,13 +106,13 @@ namespace System.Globalization {
             if (culture == CultureInfo.LOCALE_NEUTRAL)
             {
                 // Not supposed to be neutral
-                throw new ArgumentException(Environment.GetResourceString("Argument_CultureIsNeutral", culture), "culture");
+                throw new ArgumentException(Environment.GetResourceString("Argument_CultureIsNeutral", culture), nameof(culture));
             }
 
             if (culture == CultureInfo.LOCALE_CUSTOM_DEFAULT)
             {
                 // Not supposed to be neutral
-                throw new ArgumentException(Environment.GetResourceString("Argument_CustomCultureCannotBePassedByNumber", culture), "culture");
+                throw new ArgumentException(Environment.GetResourceString("Argument_CustomCultureCannotBePassedByNumber", culture), nameof(culture));
             }
             
             this.m_cultureData = CultureData.GetCultureData(culture,true);
@@ -121,7 +121,7 @@ namespace System.Globalization {
             if (this.m_cultureData.IsNeutralCulture)
             {
                 // Not supposed to be neutral
-                throw new ArgumentException(Environment.GetResourceString("Argument_CultureIsNeutral", culture), "culture");
+                throw new ArgumentException(Environment.GetResourceString("Argument_CultureIsNeutral", culture), nameof(culture));
             }
             m_cultureId = culture;
         }
@@ -330,7 +330,7 @@ namespace System.Globalization {
                 throw new ArgumentException(
                     String.Format(
                         CultureInfo.CurrentCulture,
-                        Environment.GetResourceString("Argument_InvalidCultureName"), m_name), "m_name");
+                        Environment.GetResourceString("Argument_InvalidCultureName"), m_name), nameof(m_name));
 
             if (m_cultureId == 0)
             {

@@ -3239,7 +3239,7 @@ namespace System.Diagnostics.Tracing
 
             return null;
 #else // ES_BUILD_PCL && PROJECTN
-            throw new ArgumentException(Resources.GetResourceString("EventSource", "EventSource_PCLPlatformNotSupportedReflection"));
+            throw new ArgumentException(Resources.GetResourceString("EventSource", nameof(EventSource_PCLPlatformNotSupportedReflection)));
 #endif
         }
 

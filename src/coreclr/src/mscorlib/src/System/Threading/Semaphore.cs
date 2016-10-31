@@ -21,12 +21,12 @@ namespace System.Threading
         {
             if (initialCount < 0)
             {
-                throw new ArgumentOutOfRangeException("initialCount", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(initialCount), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
 
             if (maximumCount < 1)
             {
-                throw new ArgumentOutOfRangeException("maximumCount", Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
+                throw new ArgumentOutOfRangeException(nameof(maximumCount), Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
             }
 
             if (initialCount > maximumCount)
@@ -54,12 +54,12 @@ namespace System.Threading
         {
             if (initialCount < 0)
             {
-                throw new ArgumentOutOfRangeException("initialCount", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(initialCount), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
 
             if (maximumCount < 1)
             {
-                throw new ArgumentOutOfRangeException("maximumCount", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(maximumCount), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
 
             if (initialCount > maximumCount)
@@ -96,7 +96,7 @@ namespace System.Threading
                 throw new PlatformNotSupportedException(Environment.GetResourceString("PlatformNotSupported_NamedSynchronizationPrimitives"));
 #else
                 if (name.Length > Path.MaxPath)
-                    throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Path.MaxPath), "name");
+                    throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Path.MaxPath), nameof(name));
 #endif
             }
 
@@ -138,11 +138,11 @@ namespace System.Threading
             throw new PlatformNotSupportedException(Environment.GetResourceString("PlatformNotSupported_NamedSynchronizationPrimitives"));
 #else
             if (name == null)
-                throw new ArgumentNullException("name", Environment.GetResourceString("ArgumentNull_WithParamName"));
+                throw new ArgumentNullException(nameof(name), Environment.GetResourceString("ArgumentNull_WithParamName"));
             if (name.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(name));
             if (name.Length > Path.MaxPath)
-                throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Path.MaxPath), "name");
+                throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Path.MaxPath), nameof(name));
 
             const int SYNCHRONIZE = 0x00100000;
             const int SEMAPHORE_MODIFY_STATE = 0x00000002;
@@ -182,7 +182,7 @@ namespace System.Threading
         {
             if (releaseCount < 1)
             {
-                throw new ArgumentOutOfRangeException("releaseCount", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(releaseCount), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
 
             //If ReleaseSempahore returns false when the specified value would cause

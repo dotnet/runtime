@@ -432,16 +432,16 @@ namespace System.Reflection
             String name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             if (types == null)
-                throw new ArgumentNullException("types");
+                throw new ArgumentNullException(nameof(types));
             Contract.EndContractBlock();
 
             for (int i = 0; i < types.Length; i++)
             {
                 if (types[i] == null)
-                    throw new ArgumentNullException("types");
+                    throw new ArgumentNullException(nameof(types));
             }
 
             return GetMethodImpl(name, bindingAttr, binder, callConvention, types, modifiers);
@@ -450,16 +450,16 @@ namespace System.Reflection
         public MethodInfo GetMethod(String name, Type[] types)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             if (types == null)
-                throw new ArgumentNullException("types");
+                throw new ArgumentNullException(nameof(types));
             Contract.EndContractBlock();
 
             for (int i = 0; i < types.Length; i++)
             {
                 if (types[i] == null)
-                    throw new ArgumentNullException("types");
+                    throw new ArgumentNullException(nameof(types));
             }
 
             return GetMethodImpl(name, Module.DefaultLookup, null, CallingConventions.Any, types, null);
@@ -468,7 +468,7 @@ namespace System.Reflection
         public MethodInfo GetMethod(String name)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             Contract.EndContractBlock();
 
             return GetMethodImpl(name, Module.DefaultLookup, null, CallingConventions.Any,
@@ -652,12 +652,12 @@ namespace System.Reflection
             MetadataToken tk = new MetadataToken(metadataToken);
 
             if (!MetadataImport.IsValidToken(tk))
-                throw new ArgumentOutOfRangeException("metadataToken",
+                throw new ArgumentOutOfRangeException(nameof(metadataToken),
                     Environment.GetResourceString("Argument_InvalidToken", tk, this));
 
             if (!tk.IsMemberRef && !tk.IsMethodDef && !tk.IsTypeSpec && !tk.IsSignature && !tk.IsFieldDef)
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidToken", tk, this),
-                                            "metadataToken");
+                                            nameof(metadataToken));
 
             ConstArray signature;
             if (tk.IsMemberRef)
@@ -679,7 +679,7 @@ namespace System.Reflection
             MetadataToken tk = new MetadataToken(metadataToken);
 
             if (!MetadataImport.IsValidToken(tk))
-                throw new ArgumentOutOfRangeException("metadataToken",
+                throw new ArgumentOutOfRangeException(nameof(metadataToken),
                     Environment.GetResourceString("Argument_InvalidToken", tk, this));
 
             RuntimeTypeHandle[] typeArgs = ConvertToTypeHandleArray(genericTypeArguments);
@@ -690,16 +690,16 @@ namespace System.Reflection
                 if (!tk.IsMethodDef && !tk.IsMethodSpec)
                 {
                     if (!tk.IsMemberRef)
-                        throw new ArgumentException("metadataToken",
-                            Environment.GetResourceString("Argument_ResolveMethod", tk, this));
+                        throw new ArgumentException(Environment.GetResourceString("Argument_ResolveMethod", tk, this),
+                            nameof(metadataToken));
 
                     unsafe
                     {
                         ConstArray sig = MetadataImport.GetMemberRefProps(tk);
                         
                         if (*(MdSigCallingConvention*)sig.Signature.ToPointer() == MdSigCallingConvention.Field)
-                            throw new ArgumentException("metadataToken", 
-                                Environment.GetResourceString("Argument_ResolveMethod", tk, this));
+                            throw new ArgumentException(Environment.GetResourceString("Argument_ResolveMethod", tk, this),
+                                nameof(metadataToken));
                     }
                 }
 
@@ -730,7 +730,7 @@ namespace System.Reflection
             MetadataToken tk = new MetadataToken(metadataToken);
 
             if (!MetadataImport.IsValidToken(tk) || !tk.IsFieldDef)
-                throw new ArgumentOutOfRangeException("metadataToken",
+                throw new ArgumentOutOfRangeException(nameof(metadataToken),
                     String.Format(CultureInfo.CurrentUICulture, Environment.GetResourceString("Argument_InvalidToken", tk, this)));
 
             int tkDeclaringType;
@@ -752,7 +752,7 @@ namespace System.Reflection
             }
             catch
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_ResolveField", tk, this), "metadataToken");
+                throw new ArgumentException(Environment.GetResourceString("Argument_ResolveField", tk, this), nameof(metadataToken));
             }
         }
 
@@ -762,7 +762,7 @@ namespace System.Reflection
             MetadataToken tk = new MetadataToken(metadataToken);
 
             if (!MetadataImport.IsValidToken(tk))
-                throw new ArgumentOutOfRangeException("metadataToken",
+                throw new ArgumentOutOfRangeException(nameof(metadataToken),
                     Environment.GetResourceString("Argument_InvalidToken", tk, this));
 
             RuntimeTypeHandle[] typeArgs = ConvertToTypeHandleArray(genericTypeArguments);
@@ -775,16 +775,16 @@ namespace System.Reflection
                 if (!tk.IsFieldDef)
                 {
                     if (!tk.IsMemberRef)
-                        throw new ArgumentException("metadataToken",
-                            Environment.GetResourceString("Argument_ResolveField", tk, this));
+                        throw new ArgumentException(Environment.GetResourceString("Argument_ResolveField", tk, this),
+                            nameof(metadataToken));
 
                     unsafe 
                     {
                         ConstArray sig = MetadataImport.GetMemberRefProps(tk);
                         
                         if (*(MdSigCallingConvention*)sig.Signature.ToPointer() != MdSigCallingConvention.Field)
-                            throw new ArgumentException("metadataToken",
-                                Environment.GetResourceString("Argument_ResolveField", tk, this));                            
+                            throw new ArgumentException(Environment.GetResourceString("Argument_ResolveField", tk, this),
+                                nameof(metadataToken));                            
                     }
 
                     fieldHandle = ModuleHandle.ResolveFieldHandleInternal(GetNativeHandle(), tk, typeArgs, methodArgs);
@@ -817,14 +817,14 @@ namespace System.Reflection
             MetadataToken tk = new MetadataToken(metadataToken);
 
             if (tk.IsGlobalTypeDefToken)
-                throw new ArgumentException(Environment.GetResourceString("Argument_ResolveModuleType", tk), "metadataToken");
+                throw new ArgumentException(Environment.GetResourceString("Argument_ResolveModuleType", tk), nameof(metadataToken));
             
             if (!MetadataImport.IsValidToken(tk))
-                throw new ArgumentOutOfRangeException("metadataToken",
+                throw new ArgumentOutOfRangeException(nameof(metadataToken),
                     Environment.GetResourceString("Argument_InvalidToken", tk, this));
 
             if (!tk.IsTypeDef && !tk.IsTypeSpec && !tk.IsTypeRef)
-                throw new ArgumentException(Environment.GetResourceString("Argument_ResolveType", tk, this), "metadataToken");
+                throw new ArgumentException(Environment.GetResourceString("Argument_ResolveType", tk, this), nameof(metadataToken));
 
             RuntimeTypeHandle[] typeArgs = ConvertToTypeHandleArray(genericTypeArguments);
             RuntimeTypeHandle[] methodArgs = ConvertToTypeHandleArray(genericMethodArguments);
@@ -834,7 +834,7 @@ namespace System.Reflection
                 Type t = GetModuleHandle().ResolveTypeHandle(metadataToken, typeArgs, methodArgs).GetRuntimeType();
                     
                 if (t == null)
-                    throw new ArgumentException(Environment.GetResourceString("Argument_ResolveType", tk, this), "metadataToken");
+                    throw new ArgumentException(Environment.GetResourceString("Argument_ResolveType", tk, this), nameof(metadataToken));
 
                 return t;
             } 
@@ -867,7 +867,7 @@ namespace System.Reflection
             if (tk.IsMemberRef)
             {
                 if (!MetadataImport.IsValidToken(tk))
-                    throw new ArgumentOutOfRangeException("metadataToken",
+                    throw new ArgumentOutOfRangeException(nameof(metadataToken),
                         Environment.GetResourceString("Argument_InvalidToken", tk, this));
 
                 ConstArray sig = MetadataImport.GetMemberRefProps(tk);
@@ -885,8 +885,8 @@ namespace System.Reflection
                 }                
             }
 
-            throw new ArgumentException("metadataToken",
-                Environment.GetResourceString("Argument_ResolveMember", tk, this));
+            throw new ArgumentException(Environment.GetResourceString("Argument_ResolveMember", tk, this),
+                nameof(metadataToken));
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
@@ -898,7 +898,7 @@ namespace System.Reflection
                     String.Format(CultureInfo.CurrentUICulture, Environment.GetResourceString("Argument_ResolveString"), metadataToken, ToString()));
 
             if (!MetadataImport.IsValidToken(tk))
-                throw new ArgumentOutOfRangeException("metadataToken",
+                throw new ArgumentOutOfRangeException(nameof(metadataToken),
                     String.Format(CultureInfo.CurrentUICulture, Environment.GetResourceString("Argument_InvalidToken", tk, this)));
 
             string str = MetadataImport.GetUserString(metadataToken);
@@ -1001,13 +1001,13 @@ namespace System.Reflection
         public override Object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
             if (attributeType == null)
-                throw new ArgumentNullException("attributeType");
+                throw new ArgumentNullException(nameof(attributeType));
             Contract.EndContractBlock();
 
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
             if (attributeRuntimeType == null) 
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),"attributeType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
         }
@@ -1016,13 +1016,13 @@ namespace System.Reflection
         public override bool IsDefined(Type attributeType, bool inherit)
         {
             if (attributeType == null)
-                throw new ArgumentNullException("attributeType");
+                throw new ArgumentNullException(nameof(attributeType));
             Contract.EndContractBlock();
 
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
             if (attributeRuntimeType == null) 
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),"attributeType");
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),nameof(attributeType));
 
             return CustomAttribute.IsDefined(this, attributeRuntimeType);
         }
@@ -1039,7 +1039,7 @@ namespace System.Reflection
         {
             if (info == null)
             {
-                throw new ArgumentNullException("info");
+                throw new ArgumentNullException(nameof(info));
             }
             Contract.EndContractBlock();
             UnitySerializationHolder.GetUnitySerializationInfo(info, UnitySerializationHolder.ModuleUnity, this.ScopeName, this.GetRuntimeAssembly());
@@ -1051,7 +1051,7 @@ namespace System.Reflection
         {
             // throw on null strings regardless of the value of "throwOnError"
             if (className == null)
-                throw new ArgumentNullException("className");
+                throw new ArgumentNullException(nameof(className));
 
             RuntimeType retType = null;
             Object keepAlive = null;
@@ -1145,7 +1145,7 @@ namespace System.Reflection
         public override FieldInfo GetField(String name, BindingFlags bindingAttr)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             if (RuntimeType == null)
                 return null;
