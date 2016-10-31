@@ -170,10 +170,6 @@
         "System.IO.FileSystem.AccessControl": "4.4.0-beta-24629-01",
         "System.IO.FileSystem.DriveInfo": "4.4.0-beta-24629-01",
         "System.IO.FileSystem.Watcher": "4.4.0-beta-24629-01",
-        "System.IO.IsolatedStorage": {
-          "version": "4.4.0-beta-24629-01",
-          "include": "compile"
-        },
         "System.IO.Pipes": "4.4.0-beta-24629-01",
         "System.IO.Pipes.AccessControl": "4.4.0-beta-24629-01",
         "System.Net.Http.WinHttpHandler": "4.4.0-beta-24629-01",
@@ -199,10 +195,6 @@
         "System.IO.FileSystem.AccessControl": "4.4.0-beta-24629-01",
         "System.IO.FileSystem.DriveInfo": "4.4.0-beta-24629-01",
         "System.IO.FileSystem.Watcher": "4.4.0-beta-24629-01",
-        "System.IO.IsolatedStorage": {
-          "version": "4.4.0-beta-24629-01",
-          "include": "compile"
-        },
         "System.IO.Pipes": "4.4.0-beta-24629-01",
         "System.IO.Pipes.AccessControl": "4.4.0-beta-24629-01",
         "System.Net.Http.WinHttpHandler": "4.4.0-beta-24629-01",
@@ -217,11 +209,7 @@
         "System.ServiceProcess.ServiceController": "4.4.0-beta-24629-01",
         "System.Reflection.Emit": "4.4.0-beta-24629-01",
         "System.Reflection.Emit.ILGeneration": "4.4.0-beta-24629-01",
-        "System.Reflection.Emit.Lightweight": "4.4.0-beta-24629-01",
-        "System.Runtime.Loader": {
-          "version": "4.4.0-beta-24629-01",
-          "include": "compile"
-        }
+        "System.Reflection.Emit.Lightweight": "4.4.0-beta-24629-01"
       }
     },
     "netstandard1.6": {
@@ -232,10 +220,6 @@
         "System.IO.FileSystem.AccessControl": "4.4.0-beta-24629-01",
         "System.IO.FileSystem.DriveInfo": "4.4.0-beta-24629-01",
         "System.IO.FileSystem.Watcher": "4.4.0-beta-24629-01",
-        "System.IO.IsolatedStorage": {
-          "version": "4.4.0-beta-24629-01",
-          "include": "compile"
-        },
         "System.IO.Pipes": "4.4.0-beta-24629-01",
         "System.IO.Pipes.AccessControl": "4.4.0-beta-24629-01",
         "System.Net.Http.WinHttpHandler": "4.4.0-beta-24629-01",
@@ -251,8 +235,7 @@
         "System.Security.Cryptography.OpenSsl": "4.4.0-beta-24629-01",
         "System.Reflection.Emit": "4.4.0-beta-24629-01",
         "System.Reflection.Emit.ILGeneration": "4.4.0-beta-24629-01",
-        "System.Reflection.Emit.Lightweight": "4.4.0-beta-24629-01",
-        "System.Runtime.Loader": "4.4.0-beta-24629-01"
+        "System.Reflection.Emit.Lightweight": "4.4.0-beta-24629-01"
       }
     },
     "netstandard1.7": {
@@ -263,10 +246,7 @@
         "System.IO.FileSystem.AccessControl": "4.4.0-beta-24629-01",
         "System.IO.FileSystem.DriveInfo": "4.4.0-beta-24629-01",
         "System.IO.FileSystem.Watcher": "4.4.0-beta-24629-01",
-        "System.IO.IsolatedStorage": {
-          "version": "4.4.0-beta-24629-01",
-          "include": "compile"
-        },
+        "System.IO.IsolatedStorage": "4.4.0-beta-24629-01",
         "System.IO.Pipes": "4.4.0-beta-24629-01",
         "System.IO.Pipes.AccessControl": "4.4.0-beta-24629-01",
         "System.Net.Http.WinHttpHandler": "4.4.0-beta-24629-01",
@@ -287,13 +267,36 @@
         "System.Runtime.Serialization.Formatters": "4.4.0-beta-24629-01",
         "System.Security.Permissions": "4.4.0-beta-24629-01",
         "System.Transactions": "4.4.0-beta-24629-01",
-        "System.Runtime.Loader": {
-          "version": "4.4.0-beta-24629-01",
-          "include": "compile"
-        },
         "System.Reflection.Emit": "4.4.0-beta-24629-01",
         "System.Reflection.Emit.ILGeneration": "4.4.0-beta-24629-01",
         "System.Reflection.Emit.Lightweight": "4.4.0-beta-24629-01"
+      }
+    },
+    "netcoreapp1.0": {
+      "dependencies": {
+        "Microsoft.Win32.Registry": "4.4.0-beta-24629-01",
+        "Microsoft.Win32.Registry.AccessControl": "4.4.0-beta-24629-01",
+        "System.Diagnostics.Process": "4.4.0-beta-24629-01",
+        "System.IO.FileSystem.AccessControl": "4.4.0-beta-24629-01",
+        "System.IO.FileSystem.DriveInfo": "4.4.0-beta-24629-01",
+        "System.IO.FileSystem.Watcher": "4.4.0-beta-24629-01",
+        "System.IO.Pipes": "4.4.0-beta-24629-01",
+        "System.IO.Pipes.AccessControl": "4.4.0-beta-24629-01",
+        "System.Net.Http.WinHttpHandler": "4.4.0-beta-24629-01",
+        "System.Net.Ping": "4.4.0-beta-24629-01",
+        "System.Net.Security": "4.4.0-beta-24629-01",
+        "System.Runtime.CompilerServices.VisualC": "4.4.0-beta-24629-01",
+        "System.Security.AccessControl": "4.4.0-beta-24629-01",
+        "System.Security.Cryptography.Csp": "4.4.0-beta-24629-01",
+        "System.Threading.AccessControl": "4.4.0-beta-24629-01",
+        "System.Threading.Thread": "4.4.0-beta-24629-01",
+        "System.Threading.ThreadPool": "4.4.0-beta-24629-01",
+        "System.ServiceProcess.ServiceController": "4.4.0-beta-24629-01",
+        "System.Security.Cryptography.OpenSsl": "4.4.0-beta-24629-01",
+        "System.Reflection.Emit": "4.4.0-beta-24629-01",
+        "System.Reflection.Emit.ILGeneration": "4.4.0-beta-24629-01",
+        "System.Reflection.Emit.Lightweight": "4.4.0-beta-24629-01",
+        "System.Runtime.Loader": "4.4.0-beta-24629-01"
       }
     },
     "netcoreapp1.1": {
@@ -304,10 +307,7 @@
         "System.IO.FileSystem.AccessControl": "4.4.0-beta-24629-01",
         "System.IO.FileSystem.DriveInfo": "4.4.0-beta-24629-01",
         "System.IO.FileSystem.Watcher": "4.4.0-beta-24629-01",
-        "System.IO.IsolatedStorage": {
-          "version": "4.4.0-beta-24629-01",
-          "include": "compile"
-        },
+        "System.IO.IsolatedStorage": "4.4.0-beta-24629-01",
         "System.IO.Pipes": "4.4.0-beta-24629-01",
         "System.IO.Pipes.AccessControl": "4.4.0-beta-24629-01",
         "System.Net.Http.WinHttpHandler": "4.4.0-beta-24629-01",
