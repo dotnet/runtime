@@ -25,6 +25,7 @@ MONO_COMMANDS_FILE=/etc/paths.d/mono-commands
 FW_WHITELISTED_COMMANDS=${FW_CURRENT}/Commands
 
 mkdir ${FW_WHITELISTED_COMMANDS}
+mkdir /etc/paths.d
 
 if test -e ${MONO_COMMANDS_FILE}; then
     rm "${MONO_COMMANDS_FILE}"
