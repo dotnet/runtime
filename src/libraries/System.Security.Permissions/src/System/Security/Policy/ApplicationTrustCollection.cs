@@ -19,11 +19,11 @@ namespace System.Security.Policy
         public void AddRange(ApplicationTrustCollection trusts) { }
         public void Clear() { }
         public void CopyTo(ApplicationTrust[] array, int index) { }
-        public ApplicationTrustEnumerator GetEnumerator() { return default(ApplicationTrustEnumerator); }
+        public ApplicationTrustEnumerator GetEnumerator() { return new ApplicationTrustEnumerator(); }
         public void Remove(ApplicationTrust trust) { }
         public void RemoveRange(ApplicationTrust[] trusts) { }
         public void RemoveRange(ApplicationTrustCollection trusts) { }
         void ICollection.CopyTo(Array array, int index) { }
-        IEnumerator IEnumerable.GetEnumerator() { return default(IEnumerator); }
+        IEnumerator IEnumerable.GetEnumerator() { return GetEnumerator(); }
     }
 }

@@ -7,13 +7,13 @@ using System.Runtime.Serialization;
 namespace System.Security
 {
     [Serializable]
-    public sealed partial class XmlSyntaxException : System.SystemException
+    public sealed partial class XmlSyntaxException : SystemException
     {
         public XmlSyntaxException() { }
         public XmlSyntaxException(int lineNumber) { }
         public XmlSyntaxException(int lineNumber, string message) { }
         public XmlSyntaxException(string message) { }
         public XmlSyntaxException(string message, Exception inner) { }
-        internal XmlSyntaxException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        private XmlSyntaxException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }
