@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Transactions.Diagnostics;
-
 namespace System.Transactions
 {
     public class SinglePhaseEnlistment : Enlistment
@@ -14,15 +12,11 @@ namespace System.Transactions
 
         public void Aborted()
         {
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "SinglePhaseEnlistment.Aborted");
-            }
-
-            if (DiagnosticTrace.Warning)
-            {
-                EnlistmentCallbackNegativeTraceRecord.Trace(SR.TraceSourceLtm,
-                    _internalEnlistment.EnlistmentTraceId, EnlistmentCallback.Aborted);
+                etwLog.EnlistmentStatus(_internalEnlistment, "SinglePhaseEnlistment.Aborted, Method Enter");
+                etwLog.EnlistmentAborted(_internalEnlistment);
             }
 
             lock (_internalEnlistment.SyncRoot)
@@ -30,23 +24,19 @@ namespace System.Transactions
                 _internalEnlistment.State.Aborted(_internalEnlistment, null);
             }
 
-            if (DiagnosticTrace.Verbose)
+            if (etwLog.IsEnabled())
             {
-                MethodExitedTraceRecord.Trace(SR.TraceSourceLtm, "SinglePhaseEnlistment.Aborted");
+                etwLog.EnlistmentStatus(_internalEnlistment, "SinglePhaseEnlistment.Aborted, Method Exit");
             }
         }
 
         public void Aborted(Exception e)
         {
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "SinglePhaseEnlistment.Aborted");
-            }
-
-            if (DiagnosticTrace.Warning)
-            {
-                EnlistmentCallbackNegativeTraceRecord.Trace(SR.TraceSourceLtm,
-                    _internalEnlistment.EnlistmentTraceId, EnlistmentCallback.Aborted);
+                etwLog.EnlistmentStatus(_internalEnlistment, "SinglePhaseEnlistment.Aborted, Method Enter");
+                etwLog.EnlistmentAborted(_internalEnlistment);
             }
 
             lock (_internalEnlistment.SyncRoot)
@@ -54,20 +44,20 @@ namespace System.Transactions
                 _internalEnlistment.State.Aborted(_internalEnlistment, e);
             }
 
-            if (DiagnosticTrace.Verbose)
+            if (etwLog.IsEnabled())
             {
-                MethodExitedTraceRecord.Trace(SR.TraceSourceLtm, "SinglePhaseEnlistment.Aborted");
+                etwLog.MethodExit("PreparingEnlistment.SinglePhaseEnlistment.Aborted");
             }
         }
 
 
         public void Committed()
         {
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "SinglePhaseEnlistment.Committed");
-                EnlistmentCallbackPositiveTraceRecord.Trace(SR.TraceSourceLtm,
-                    _internalEnlistment.EnlistmentTraceId, EnlistmentCallback.Committed);
+                etwLog.MethodEnter("SinglePhaseEnlistment.Commited");
+                etwLog.EnlistmentCommited(_internalEnlistment);
             }
 
             lock (_internalEnlistment.SyncRoot)
@@ -75,60 +65,59 @@ namespace System.Transactions
                 _internalEnlistment.State.Committed(_internalEnlistment);
             }
 
-            if (DiagnosticTrace.Verbose)
+            if (etwLog.IsEnabled())
             {
-                MethodExitedTraceRecord.Trace(SR.TraceSourceLtm, "SinglePhaseEnlistment.Committed");
+                etwLog.MethodExit("SinglePhaseEnlistment.Commited");
             }
         }
 
 
         public void InDoubt()
         {
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "SinglePhaseEnlistment.InDoubt");
+                etwLog.MethodEnter("SinglePhaseEnlistment.InDoubt");
             }
-
 
             lock (_internalEnlistment.SyncRoot)
             {
-                if (DiagnosticTrace.Warning)
+                if (etwLog.IsEnabled())
                 {
-                    EnlistmentCallbackNegativeTraceRecord.Trace(SR.TraceSourceLtm,
-                        _internalEnlistment.EnlistmentTraceId, EnlistmentCallback.InDoubt);
+                    etwLog.EnlistmentInDoubt(_internalEnlistment);
                 }
 
                 _internalEnlistment.State.InDoubt(_internalEnlistment, null);
             }
 
-            if (DiagnosticTrace.Verbose)
+            if (etwLog.IsEnabled())
             {
-                MethodExitedTraceRecord.Trace(SR.TraceSourceLtm, "SinglePhaseEnlistment.InDoubt");
+                etwLog.MethodExit("SinglePhaseEnlistment.InDoubt");
             }
         }
 
 
         public void InDoubt(Exception e)
         {
-            if (DiagnosticTrace.Verbose)
+            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            if (etwLog.IsEnabled())
             {
-                MethodEnteredTraceRecord.Trace(SR.TraceSourceLtm, "SinglePhaseEnlistment.InDoubt");
+                etwLog.MethodEnter("SinglePhaseEnlistment.InDoubt");
             }
 
             lock (_internalEnlistment.SyncRoot)
             {
-                if (DiagnosticTrace.Warning)
+                if (etwLog.IsEnabled())
                 {
-                    EnlistmentCallbackNegativeTraceRecord.Trace(SR.TraceSourceLtm,
-                        _internalEnlistment.EnlistmentTraceId, EnlistmentCallback.InDoubt);
+                    etwLog.EnlistmentInDoubt(_internalEnlistment);
                 }
 
                 _internalEnlistment.State.InDoubt(_internalEnlistment, e);
             }
 
-            if (DiagnosticTrace.Verbose)
+            if (etwLog.IsEnabled())
             {
-                MethodExitedTraceRecord.Trace(SR.TraceSourceLtm, "SinglePhaseEnlistment.InDoubt");
+                etwLog.MethodExit("SinglePhaseEnlistment.InDoubt");
             }
         }
     }

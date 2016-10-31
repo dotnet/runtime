@@ -6,6 +6,7 @@ using System.Xml;
 
 namespace System.Transactions.Diagnostics
 {
+    /*
     /// <summary>
     /// Base class for the team-specific traces that contain structured data.
     /// </summary>
@@ -28,4 +29,5 @@ namespace System.Transactions.Diagnostics
 
         internal abstract void WriteTo(XmlWriter xml);
     }
+    */
 }

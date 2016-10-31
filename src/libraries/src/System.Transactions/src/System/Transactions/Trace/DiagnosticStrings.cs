@@ -4,6 +4,7 @@
 
 namespace System.Transactions.Diagnostics
 {
+    /*
     internal static class DiagnosticStrings
     {
         internal const string DiagnosticsNamespace = "http://schemas.microsoft.com/2004/09/ServiceModel/Diagnostics";
@@ -37,4 +38,5 @@ namespace System.Transactions.Diagnostics
         internal const string TraceRecordTag = "TraceRecord";
         internal const string ValueTag = "Value";
     }
+    */
 }

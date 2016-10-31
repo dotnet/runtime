@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 namespace System.Transactions.Diagnostics
-{
+{/*
     internal static class TransactionsTraceCode
     {
         private const string Prefix = "http://msdn.microsoft.com/2004/06/System/";
@@ -53,4 +53,5 @@ namespace System.Transactions.Diagnostics
         public const string NewActivityIdIssued = Prefix + TransactionsFeature + "NewActivityIdIssued";
         //more to come
     }
+    */
 }
