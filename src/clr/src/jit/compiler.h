@@ -4938,6 +4938,7 @@ public:
 #define LPFLG_VAR_LIMIT 0x0100    // iterator is compared with a local var (var # found in lpVarLimit)
 #define LPFLG_CONST_LIMIT 0x0200  // iterator is compared with a constant (found in lpConstLimit)
 #define LPFLG_ARRLEN_LIMIT 0x0400 // iterator is compared with a.len or a[i].len (found in lpArrLenLimit)
+#define LPFLG_SIMD_LIMIT 0x0080   // iterator is compared with Vector<T>.Count (found in lpConstLimit)
 
 #define LPFLG_HAS_PREHEAD 0x0800 // lpHead is known to be a preHead for this loop
 #define LPFLG_REMOVED 0x1000     // has been removed from the loop table (unrolled or optimized away)
