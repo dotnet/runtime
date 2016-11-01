@@ -31,6 +31,14 @@ namespace System.Diagnostics
         {
         }
 
+        public DelimitedListTraceListener(string fileName) : base(fileName)
+        {
+        }
+
+        public DelimitedListTraceListener(string fileName, string name) : base(fileName, name)
+        {
+        }
+
         public string Delimiter
         {
             get
