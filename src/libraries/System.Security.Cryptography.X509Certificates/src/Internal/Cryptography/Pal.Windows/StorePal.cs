@@ -2,17 +2,32 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Internal.Cryptography.Pal.Native;
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
-
-using Internal.Cryptography.Pal.Native;
+using System.Security.Cryptography;
 
 namespace Internal.Cryptography.Pal
 {
     internal sealed partial class StorePal : IDisposable, IStorePal, IExportPal, ILoaderPal
     {
+        private SafeCertStoreHandle _certStore;
+
+        public static IStorePal FromHandle(IntPtr storeHandle)
+        {
+            if (storeHandle == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(storeHandle));
+
+            SafeCertStoreHandle certStoreHandle = Interop.crypt32.CertDuplicateStore(storeHandle);
+            if (certStoreHandle == null || certStoreHandle.IsInvalid)
+                throw new CryptographicException(SR.Cryptography_InvalidStoreHandle, nameof(storeHandle));
+
+            var pal = new StorePal(certStoreHandle);
+            return pal;
+        }
+
         public void CloneTo(X509Certificate2Collection collection)
         {
             CopyTo(collection);
@@ -64,14 +79,22 @@ namespace Internal.Cryptography.Pal
 
         internal SafeCertStoreHandle SafeCertStoreHandle
         {
-            get { return _certStore; }
+            get {return _certStore; }
+        }
+
+        SafeHandle IStorePal.SafeHandle
+        {
+            get
+            {
+                if (_certStore == null || _certStore.IsInvalid || _certStore.IsClosed)
+                    throw new CryptographicException(SR.Cryptography_X509_StoreNotOpen);
+                return _certStore;
+            }
         }
 
         internal StorePal(SafeCertStoreHandle certStore)
         {
             _certStore = certStore;
         }
-
-        private SafeCertStoreHandle _certStore;
     }
 }

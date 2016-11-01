@@ -63,7 +63,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Equal("1.2.840.10040.4.1", pk.Oid.Value);
         }
 
-#if netcoreapp11
+#if netstandard17
         [Fact]
         public static void TestPublicKey_Key_RSA()
         {
@@ -279,7 +279,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-#if netcoreapp11
+#if netstandard17
         [Fact]
         public static void TestPublicKey_Key_ECDsa()
         {

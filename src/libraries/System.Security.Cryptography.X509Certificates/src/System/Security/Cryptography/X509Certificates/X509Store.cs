@@ -2,22 +2,33 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.IO;
-using System.Text;
+using Internal.Cryptography.Pal;
 using System.Diagnostics;
 using System.Globalization;
-using System.Runtime.InteropServices;
-
-using Internal.Cryptography;
-using Internal.Cryptography.Pal;
 
 namespace System.Security.Cryptography.X509Certificates
 {
     public sealed class X509Store : IDisposable
     {
+        private IStorePal _storePal;
+
         public X509Store()
             : this(StoreName.My, StoreLocation.CurrentUser)
+        {
+        }
+
+        public X509Store(string storeName)
+            : this(storeName, StoreLocation.CurrentUser)
+        {
+        }
+
+        public X509Store(StoreName storeName)
+            : this(storeName, StoreLocation.CurrentUser)
+        {
+        }
+
+        public X509Store(StoreLocation storeLocation)
+            : this(StoreName.My, storeLocation)
         {
         }
 
@@ -68,6 +79,27 @@ namespace System.Security.Cryptography.X509Certificates
             Name = storeName;
         }
 
+        public X509Store(IntPtr storeHandle)
+        {
+            _storePal = StorePal.FromHandle(storeHandle);
+            Debug.Assert(_storePal != null);
+        }
+
+        public IntPtr StoreHandle
+        {
+            get
+            {
+                if (_storePal == null)
+                    throw new CryptographicException(SR.Cryptography_X509_StoreNotOpen);
+
+                // The Pal layer may return null (Unix) or throw exception (Windows)
+                if (_storePal.SafeHandle == null)
+                    return IntPtr.Zero;
+
+                return _storePal.SafeHandle.DangerousGetHandle();
+            }
+        }
+
         public StoreLocation Location { get; private set; }
 
         public string Name { get; private set; }
@@ -103,6 +135,32 @@ namespace System.Security.Cryptography.X509Certificates
             _storePal.Add(certificate.Pal);
         }
 
+        public void AddRange(X509Certificate2Collection certificates)
+        {
+            if (certificates == null)
+                throw new ArgumentNullException(nameof(certificates));
+
+            int i = 0;
+            try
+            {
+                foreach (X509Certificate2 certificate in certificates)
+                {
+                    Add(certificate);
+                    i++;
+                }
+            }
+            catch
+            {
+                // For desktop compat, we keep the exception semantics even though they are not ideal
+                // because an exception may cause certs to be removed even if they weren't there before.
+                for (int j = 0; j < i; j++)
+                {
+                    Remove(certificates[j]);
+                }
+                throw;
+            }
+        }
+
         public void Remove(X509Certificate2 certificate)
         {
             if (certificate == null)
@@ -114,12 +172,39 @@ namespace System.Security.Cryptography.X509Certificates
             _storePal.Remove(certificate.Pal);
         }
 
+        public void RemoveRange(X509Certificate2Collection certificates)
+        {
+            if (certificates == null)
+                throw new ArgumentNullException(nameof(certificates));
+
+            int i = 0;
+            try
+            {
+                foreach (X509Certificate2 certificate in certificates)
+                {
+                    Remove(certificate);
+                    i++;
+                }
+            }
+            catch
+            {
+                // For desktop compat, we keep the exception semantics even though they are not ideal
+                // because an exception above may cause certs to be added even if they weren't there before
+                // and an exception here may cause certs not to be re-added.
+                for (int j = 0; j < i; j++)
+                {
+                    Add(certificates[j]);
+                }
+                throw;
+            }
+        }
+
         public void Dispose()
         {
             Close();
         }
 
-        private void Close()
+        public void Close()
         {
             IStorePal storePal = _storePal;
             _storePal = null;
@@ -128,8 +213,6 @@ namespace System.Security.Cryptography.X509Certificates
                 storePal.Dispose();
             }
         }
-
-        private IStorePal _storePal;
     }
 }
 

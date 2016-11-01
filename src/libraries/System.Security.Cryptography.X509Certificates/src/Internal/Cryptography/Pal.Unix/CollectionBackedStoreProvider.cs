@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 
 namespace Internal.Cryptography.Pal
@@ -46,6 +47,11 @@ namespace Internal.Cryptography.Pal
         public void Remove(ICertificatePal cert)
         {
             throw new InvalidOperationException();
+        }
+
+        SafeHandle IStorePal.SafeHandle
+        {
+            get { return null; }
         }
     }
 }

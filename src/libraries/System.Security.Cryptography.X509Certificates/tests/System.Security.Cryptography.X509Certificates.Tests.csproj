@@ -54,7 +54,10 @@
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>CommonTest\System\PlatformDetection.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs" Condition="'$(TargetGroup)'=='' OR '$(TargetGroup)'=='netcoreapp1.1'">
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='' OR '$(TargetGroup)'=='netcoreapp1.1'">
+    <Compile Include="ImportTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
       <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
   </ItemGroup>
