@@ -14,19 +14,19 @@ namespace System.Globalization.Tests
     {
         public static IEnumerable<object[]> CultureInfo_TestData()
         {
-            yield return new object[] { "en"    , 0x0009, "en-US", "eng", "ENU", "en"         };
-            yield return new object[] { "ar"    , 0x0001, "ar-SA", "ara", "ARA", "ar"         };
-            yield return new object[] { "en-US" , 0x0409, "en-US", "eng", "ENU", "en-US"      };
-            yield return new object[] { "ar-SA" , 0x0401, "ar-SA", "ara", "ARA", "ar-SA"      };
-            yield return new object[] { "ja-JP" , 0x0411, "ja-JP", "jpn", "JPN", "ja-JP"      };
-            yield return new object[] { "zh-CN" , 0x0804, "zh-CN", "zho", "CHS", "zh-Hans-CN" };
-            yield return new object[] { "en-GB" , 0x0809, "en-GB", "eng", "ENG", "en-GB"      };
-            yield return new object[] { "tr-TR" , 0x041f, "tr-TR", "tur", "TRK", "tr-TR"      };
+            yield return new object[] { "en"    , 0x0009, "en-US", "eng", "ENU", "en"         , "en-US" };
+            yield return new object[] { "ar"    , 0x0001, "ar-SA", "ara", "ARA", "ar"         , "en-US" };
+            yield return new object[] { "en-US" , 0x0409, "en-US", "eng", "ENU", "en-US"      , "en-US" };
+            yield return new object[] { "ar-SA" , 0x0401, "ar-SA", "ara", "ARA", "ar-SA"      , "en-US" };
+            yield return new object[] { "ja-JP" , 0x0411, "ja-JP", "jpn", "JPN", "ja-JP"      , "ja-JP" };
+            yield return new object[] { "zh-CN" , 0x0804, "zh-CN", "zho", "CHS", "zh-Hans-CN" , "zh-CN" };
+            yield return new object[] { "en-GB" , 0x0809, "en-GB", "eng", "ENG", "en-GB"      , "en-GB" };
+            yield return new object[] { "tr-TR" , 0x041f, "tr-TR", "tur", "TRK", "tr-TR"      , "tr-TR" };
         }
         
         [Theory]
         [MemberData(nameof(CultureInfo_TestData))]
-        public void LcidTest(string cultureName, int lcid, string specificCultureName, string threeLetterISOLanguageName, string threeLetterWindowsLanguageName, string alternativeCultureName)
+        public void LcidTest(string cultureName, int lcid, string specificCultureName, string threeLetterISOLanguageName, string threeLetterWindowsLanguageName, string alternativeCultureName, string consoleUICultureName)
         {
             CultureInfo ci = new CultureInfo(lcid);
             Assert.Equal(cultureName, ci.Name);
@@ -73,6 +73,10 @@ namespace System.Globalization.Tests
 
             ci = CultureInfo.GetCultureInfoByIetfLanguageTag(cultureName);            
             Assert.Equal(cultureName, ci.Name);
+            Assert.Equal(ci.Name, ci.IetfLanguageTag);
+            Assert.Equal(lcid, ci.KeyboardLayoutId);
+            
+            Assert.Equal(consoleUICultureName, ci.GetConsoleFallbackUICulture().Name);
         }
 
         [Fact]
@@ -84,14 +88,14 @@ namespace System.Globalization.Tests
         
         [Theory]
         [MemberData(nameof(CultureInfo_TestData))]
-        public void GetCulturesTest(string cultureName, int lcid, string specificCultureName, string threeLetterISOLanguageName, string threeLetterWindowsLanguageName, string alternativeCultureName)
+        public void GetCulturesTest(string cultureName, int lcid, string specificCultureName, string threeLetterISOLanguageName, string threeLetterWindowsLanguageName, string alternativeCultureName, string consoleUICultureName)
         {
             bool found = false;
-            Assert.All(CultureInfo.GetCultures(CultureTypes.NeutralCultures), c => Assert.True(c.IsNeutralCulture || c.Equals(CultureInfo.InvariantCulture)));
+            Assert.All(CultureInfo.GetCultures(CultureTypes.NeutralCultures), 
+                       c => Assert.True( (c.IsNeutralCulture && ((c.CultureTypes & CultureTypes.NeutralCultures) != 0)) || c.Equals(CultureInfo.InvariantCulture)));
             found = CultureInfo.GetCultures(CultureTypes.NeutralCultures).Any(c => c.Name.Equals(cultureName, StringComparison.OrdinalIgnoreCase) || 
                                                                                    c.Name.Equals(alternativeCultureName, StringComparison.OrdinalIgnoreCase));
-
-            Assert.All(CultureInfo.GetCultures(CultureTypes.SpecificCultures), c => Assert.False(c.IsNeutralCulture));
+            Assert.All(CultureInfo.GetCultures(CultureTypes.SpecificCultures), c => Assert.True(!c.IsNeutralCulture && ((c.CultureTypes & CultureTypes.SpecificCultures) != 0)));
             if (!found)
             {
                 found = CultureInfo.GetCultures(CultureTypes.SpecificCultures).Any(c => c.Name.Equals(cultureName, StringComparison.OrdinalIgnoreCase) || 
