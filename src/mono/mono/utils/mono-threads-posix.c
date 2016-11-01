@@ -286,8 +286,13 @@ This begins async resume. This function must do the following:
 gboolean
 mono_threads_suspend_begin_async_resume (MonoThreadInfo *info)
 {
-	mono_threads_add_to_pending_operation_set (info);
-	return mono_threads_pthread_kill (info, mono_threads_suspend_get_restart_signal ()) == 0;
+	int sig = mono_threads_suspend_get_restart_signal ();
+
+	if (!mono_threads_pthread_kill (info, sig)) {
+		mono_threads_add_to_pending_operation_set (info);
+		return TRUE;
+	}
+	return FALSE;
 }
 
 void
