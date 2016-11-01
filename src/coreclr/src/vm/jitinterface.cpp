@@ -7018,8 +7018,12 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
         _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
         mdToken tokGenericArg = FindGenericMethodArgTypeSpec(MscorlibBinder::GetModule()->GetMDImport());
 
-        static const BYTE ilcode[] = { CEE_PREFIX1, (BYTE)CEE_SIZEOF, (BYTE)(tokGenericArg), (BYTE)(tokGenericArg >> 8), (BYTE)(tokGenericArg >> 16), (BYTE)(tokGenericArg >> 24),
-            CEE_RET };
+        static BYTE ilcode[] = { CEE_PREFIX1, (BYTE)CEE_SIZEOF,0,0,0,0, CEE_RET };
+
+        ilcode[2] = (BYTE)(tokGenericArg);
+        ilcode[3] = (BYTE)(tokGenericArg >> 8);
+        ilcode[4] = (BYTE)(tokGenericArg >> 16);
+        ilcode[5] = (BYTE)(tokGenericArg >> 24);
 
         methInfo->ILCode = const_cast<BYTE*>(ilcode);
         methInfo->ILCodeSize = sizeof(ilcode);
