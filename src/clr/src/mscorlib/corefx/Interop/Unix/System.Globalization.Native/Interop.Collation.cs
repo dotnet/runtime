@@ -53,6 +53,9 @@ internal static partial class Interop
         [DllImport(Libraries.GlobalizationInterop, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_CompareStringOrdinalIgnoreCase")]
         internal unsafe static extern int CompareStringOrdinalIgnoreCase(char* lpStr1, int cwStr1Len, char* lpStr2, int cwStr2Len);
 
+        [DllImport(Libraries.GlobalizationInterop, EntryPoint = "GlobalizationNative_GetSortVersion")]
+        internal static extern int GetSortVersion();
+
         [SecurityCritical]
         internal class SafeSortHandle : SafeHandle
         {

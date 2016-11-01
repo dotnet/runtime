@@ -79,6 +79,8 @@ namespace System.Globalization
         private String _sEnglishLanguage; // English name for this language
         private String _sNativeLanguage; // Native name of this language
         private String _sAbbrevLang; // abbreviated language name (Windows Language Name) ex: ENU
+        private string _sConsoleFallbackName; // The culture name for the console fallback UI culture
+        private int    _iInputLanguageHandle=undef;// input language handle
 
         // Region
         private String _sRegionName; // (RegionInfo)
@@ -473,6 +475,8 @@ namespace System.Globalization
                     invariant._sEnglishLanguage = "Invariant Language";   // English name for this language
                     invariant._sNativeLanguage = "Invariant Language";   // Native name of this language
 		            invariant._sAbbrevLang = "IVL";                  // abbreviated language name (Windows Language Name)
+		            invariant._sConsoleFallbackName = "";            // The culture name for the console fallback UI culture
+		            invariant._iInputLanguageHandle = 0x07F;         // input language handle
 
                     // Region
                     invariant._sRegionName = "IV";                    // (RegionInfo)
@@ -1128,6 +1132,39 @@ namespace System.Globalization
                     _sISO3166CountryName2 = GetLocaleInfo(LocaleStringData.Iso3166CountryName2);
                 }
                 return _sISO3166CountryName2;
+            }
+        }
+
+        internal int IINPUTLANGUAGEHANDLE
+        {
+            get
+            {
+                if (_iInputLanguageHandle == undef)
+                {
+                    if (IsSupplementalCustomCulture)
+                    {
+                        _iInputLanguageHandle = 0x0409;
+                    }
+                    else
+                    {
+                        // Input Language is same as LCID for built-in cultures
+                        _iInputLanguageHandle = this.ILANGUAGE;
+                    }
+                }
+                return _iInputLanguageHandle;
+            }
+        }
+
+        // Console fallback name (ie: locale to use for console apps for unicode-only locales)
+        internal string SCONSOLEFALLBACKNAME
+        {
+            get
+            {
+                if (_sConsoleFallbackName == null)
+                {
+                    _sConsoleFallbackName = GetConsoleFallbackName(_sRealName);
+                }
+                return _sConsoleFallbackName;
             }
         }
 

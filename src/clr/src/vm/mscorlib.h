@@ -593,9 +593,7 @@ DEFINE_FIELD_U(textInfo,           CultureInfoBaseObject,  textInfo)
 DEFINE_FIELD_U(numInfo,            CultureInfoBaseObject,  numInfo)
 DEFINE_FIELD_U(dateTimeInfo,       CultureInfoBaseObject,  dateTimeInfo)
 DEFINE_FIELD_U(calendar,           CultureInfoBaseObject,  calendar)
-#ifndef FEATURE_CORECLR
 DEFINE_FIELD_U(m_consoleFallbackCulture, CultureInfoBaseObject, m_consoleFallbackCulture)
-#endif // FEATURE_CORECLR
 DEFINE_FIELD_U(m_name,             CultureInfoBaseObject,  m_name)
 DEFINE_FIELD_U(m_nonSortName,      CultureInfoBaseObject,  m_nonSortName)
 DEFINE_FIELD_U(m_sortName,         CultureInfoBaseObject,  m_sortName)
