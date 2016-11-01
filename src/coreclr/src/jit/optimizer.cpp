@@ -1217,10 +1217,14 @@ void Compiler::optRecordLoop(BasicBlock*   head,
         }
 
         // Make sure the "iterVar" initialization is never skipped,
-        // i.e. HEAD dominates the ENTRY.
-        if (!fgDominate(head, entry))
+        // i.e. every pred of ENTRY other than HEAD is in the loop.
+        for (flowList* predEdge = entry->bbPreds; predEdge; predEdge = predEdge->flNext)
         {
-            goto DONE_LOOP;
+            BasicBlock* predBlock = predEdge->flBlock;
+            if ((predBlock != head) && !optLoopTable[loopInd].lpContains(predBlock))
+            {
+                goto DONE_LOOP;
+            }
         }
 
         if (!optPopulateInitInfo(loopInd, init, iterVar))
