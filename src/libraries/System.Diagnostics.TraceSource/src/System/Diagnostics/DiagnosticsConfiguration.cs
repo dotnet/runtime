@@ -35,6 +35,21 @@ namespace System.Diagnostics
                 return 4; // the default
             }
         }
+
+        internal static bool AssertUIEnabled 
+        {
+            get 
+            { 
+                return true; // the default
+            }
+        }
+
+        internal static string LogFileName {
+            get
+            {
+                return string.Empty; // the default
+            }
+        }
     }
 }
 
