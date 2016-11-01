@@ -424,26 +424,30 @@ PCODE MethodDesc::MakeJitWorker(COR_ILMETHOD_DECODER* ILHeader, CORJIT_FLAGS fla
             {
                 BEGIN_PIN_PROFILER(CORProfilerTrackJITInfo());
 
+#ifdef FEATURE_MULTICOREJIT
                 // Multicore JIT should be disabled when CORProfilerTrackJITInfo is on
                 // But there could be corner case in which profiler is attached when multicore background thread is calling MakeJitWorker
                 // Disable this block when calling from multicore JIT background thread
-                if (!IsNoMetadata()
-#ifdef FEATURE_MULTICOREJIT
-
-                    && (! fBackgroundThread)
+                if (!fBackgroundThread)
 #endif
-                    )
                 {
-                    g_profControlBlock.pProfInterface->JITCompilationStarted((FunctionID) this, TRUE);
-                    // The profiler may have changed the code on the callback.  Need to
-                    // pick up the new code.  Note that you have to be fully trusted in
-                    // this mode and the code will not be verified.
-                    COR_ILMETHOD *pilHeader = GetILHeader(TRUE);
-                    new (ILHeader) COR_ILMETHOD_DECODER(pilHeader, GetMDImport(), NULL);
-                }
-                else
-                {
-                    g_profControlBlock.pProfInterface->DynamicMethodJITCompilationStarted((FunctionID) this, TRUE, (LPCBYTE)ILHeader, ILHeader->GetSize());
+                    if (!IsNoMetadata())
+                    {
+                        g_profControlBlock.pProfInterface->JITCompilationStarted((FunctionID) this, TRUE);
+                        // The profiler may have changed the code on the callback.  Need to
+                        // pick up the new code.  Note that you have to be fully trusted in
+                        // this mode and the code will not be verified.
+                        COR_ILMETHOD *pilHeader = GetILHeader(TRUE);
+                        new (ILHeader) COR_ILMETHOD_DECODER(pilHeader, GetMDImport(), NULL);
+                    }
+                    else
+                    {
+                        unsigned int ilSize, unused;
+                        CorInfoOptions corOptions;
+                        LPCBYTE ilHeaderPointer = this->AsDynamicMethodDesc()->GetResolver()->GetCodeInfo(&ilSize, &unused, &corOptions, &unused);
+
+                        g_profControlBlock.pProfInterface->DynamicMethodJITCompilationStarted((FunctionID) this, TRUE, ilHeaderPointer, ilSize);
+                    }
                 }
                 END_PIN_PROFILER();
             }
