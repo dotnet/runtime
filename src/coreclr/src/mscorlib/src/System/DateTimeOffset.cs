@@ -563,7 +563,7 @@ namespace System {
         }
         
         public static DateTimeOffset Parse(String input, IFormatProvider formatProvider, DateTimeStyles styles) {
-            styles = ValidateStyles(styles, "styles");
+            styles = ValidateStyles(styles, nameof(styles));
             TimeSpan offset;
             DateTime dateResult = DateTimeParse.Parse(input, 
                                                       DateTimeFormatInfo.GetInstance(formatProvider), 
@@ -585,7 +585,7 @@ namespace System {
         // Leading and trailing whitespace characters are allowed.
         // 
         public static DateTimeOffset ParseExact(String input, String format, IFormatProvider formatProvider, DateTimeStyles styles) {
-            styles = ValidateStyles(styles, "styles");
+            styles = ValidateStyles(styles, nameof(styles));
             TimeSpan offset;
             DateTime dateResult = DateTimeParse.ParseExact(input, 
                                                            format, 
@@ -596,7 +596,7 @@ namespace System {
         }    
 
         public static DateTimeOffset ParseExact(String input, String[] formats, IFormatProvider formatProvider, DateTimeStyles styles) {
-            styles = ValidateStyles(styles, "styles");
+            styles = ValidateStyles(styles, nameof(styles));
             TimeSpan offset;
             DateTime dateResult = DateTimeParse.ParseExactMultiple(input, 
                                                                    formats, 
@@ -693,7 +693,7 @@ namespace System {
         }
         
         public static Boolean TryParse(String input, IFormatProvider formatProvider, DateTimeStyles styles, out DateTimeOffset result) {
-            styles = ValidateStyles(styles, "styles");
+            styles = ValidateStyles(styles, nameof(styles));
             TimeSpan offset;
             DateTime dateResult;
             Boolean parsed = DateTimeParse.TryParse(input, 
@@ -707,7 +707,7 @@ namespace System {
             
         public static Boolean TryParseExact(String input, String format, IFormatProvider formatProvider, DateTimeStyles styles,
                                             out DateTimeOffset result) {
-            styles = ValidateStyles(styles, "styles");
+            styles = ValidateStyles(styles, nameof(styles));
             TimeSpan offset;
             DateTime dateResult;
             Boolean parsed = DateTimeParse.TryParseExact(input, 
@@ -722,7 +722,7 @@ namespace System {
 
         public static Boolean TryParseExact(String input, String[] formats, IFormatProvider formatProvider, DateTimeStyles styles,
                                             out DateTimeOffset result) {
-            styles = ValidateStyles(styles, "styles");
+            styles = ValidateStyles(styles, nameof(styles));
             TimeSpan offset;
             DateTime dateResult;
             Boolean parsed = DateTimeParse.TryParseExactMultiple(input, 

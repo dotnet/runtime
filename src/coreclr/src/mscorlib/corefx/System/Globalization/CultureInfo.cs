@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -206,7 +206,7 @@ namespace System.Globalization
         {
             if (name == null)
             {
-                throw new ArgumentNullException("name",
+                throw new ArgumentNullException(nameof(name),
                     SR.ArgumentNull_String);
             }
 
@@ -222,7 +222,7 @@ namespace System.Globalization
             // We don't check for other invalid LCIDS here...
             if (culture < 0)
             {
-                throw new ArgumentOutOfRangeException("culture", SR.ArgumentOutOfRange_NeedPosNum);
+                throw new ArgumentOutOfRangeException(nameof(culture), SR.ArgumentOutOfRange_NeedPosNum);
             }
             Contract.EndContractBlock();
 
@@ -240,7 +240,7 @@ namespace System.Globalization
                 case LOCALE_CUSTOM_UNSPECIFIED:
                     // Can't support unknown custom cultures and we do not support neutral or
                     // non-custom user locales.
-                    throw new CultureNotFoundException("culture", culture, SR.Argument_CultureNotSupported);
+                    throw new CultureNotFoundException(nameof(culture), culture, SR.Argument_CultureNotSupported);
 
                 default:
                     // Now see if this LCID is supported in the system default CultureData table.
@@ -258,7 +258,7 @@ namespace System.Globalization
 
             if (this.m_cultureData == null)
             {
-                throw new CultureNotFoundException("name", name, SR.Argument_CultureNotSupported);
+                throw new CultureNotFoundException(nameof(name), name, SR.Argument_CultureNotSupported);
             }
 
             this.m_name = this.m_cultureData.CultureName;
@@ -275,13 +275,13 @@ namespace System.Globalization
         {
             if (cultureName == null)
             {
-                throw new ArgumentNullException("cultureName",SR.ArgumentNull_String);
+                throw new ArgumentNullException(nameof(cultureName),SR.ArgumentNull_String);
             }
             Contract.EndContractBlock();
 
             m_cultureData = CultureData.GetCultureData(cultureName, false);
             if (m_cultureData == null)
-                throw new CultureNotFoundException("cultureName", cultureName, SR.Argument_CultureNotSupported);
+                throw new CultureNotFoundException(nameof(cultureName), cultureName, SR.Argument_CultureNotSupported);
             
             m_name = m_cultureData.CultureName;
 
@@ -492,7 +492,7 @@ namespace System.Globalization
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 
                 if (s_asyncLocalCurrentCulture == null)
@@ -540,7 +540,7 @@ namespace System.Globalization
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
 
                 CultureInfo.VerifyCultureName(value, true);
@@ -979,7 +979,7 @@ namespace System.Globalization
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value", SR.ArgumentNull_Obj);
+                    throw new ArgumentNullException(nameof(value), SR.ArgumentNull_Obj);
                 }
                 VerifyWritable();
                 numInfo = value;
@@ -1013,7 +1013,7 @@ namespace System.Globalization
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value", SR.ArgumentNull_Obj);
+                    throw new ArgumentNullException(nameof(value), SR.ArgumentNull_Obj);
                 }
                 VerifyWritable();
                 dateTimeInfo = value;
@@ -1189,7 +1189,7 @@ namespace System.Globalization
         {
             if (ci == null)
             {
-                throw new ArgumentNullException("ci");
+                throw new ArgumentNullException(nameof(ci));
             }
             Contract.Ensures(Contract.Result<CultureInfo>() != null);
             Contract.EndContractBlock();
@@ -1413,14 +1413,14 @@ namespace System.Globalization
             // Also check for zero as this would fail trying to add as a key to the hash.
             if (culture <= 0) 
             {
-                throw new ArgumentOutOfRangeException("culture", SR.ArgumentOutOfRange_NeedPosNum);
+                throw new ArgumentOutOfRangeException(nameof(culture), SR.ArgumentOutOfRange_NeedPosNum);
             }
             Contract.Ensures(Contract.Result<CultureInfo>() != null);
             Contract.EndContractBlock();
             CultureInfo retval = GetCultureInfoHelper(culture, null, null);
             if (null == retval)
             {
-                throw new CultureNotFoundException("culture", culture, SR.Argument_CultureNotSupported);
+                throw new CultureNotFoundException(nameof(culture), culture, SR.Argument_CultureNotSupported);
             }
             return retval;
         }
@@ -1432,14 +1432,14 @@ namespace System.Globalization
             // Make sure we have a valid, non-zero length string as name
             if (name == null)
             {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
 
             CultureInfo retval = GetCultureInfoHelper(0, name, null);
             if (retval == null)
             {
                 throw new CultureNotFoundException(
-                    "name", name, SR.Argument_CultureNotSupported);
+                    nameof(name), name, SR.Argument_CultureNotSupported);
             }
             return retval;
         }
@@ -1451,12 +1451,12 @@ namespace System.Globalization
             // Make sure we have a valid, non-zero length string as name
             if (name == null)
             {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
 
             if (altName == null)
             {
-                throw new ArgumentNullException("altName");
+                throw new ArgumentNullException(nameof(altName));
             }
             
             Contract.Ensures(Contract.Result<CultureInfo>() != null);
@@ -1479,7 +1479,7 @@ namespace System.Globalization
             // Disallow old zh-CHT/zh-CHS names
             if (name == "zh-CHT" || name == "zh-CHS")
             {
-                throw new CultureNotFoundException("name", SR.Format(SR.Argument_CultureIetfNotSupported, name));
+                throw new CultureNotFoundException(nameof(name), SR.Format(SR.Argument_CultureIetfNotSupported, name));
             }
             
             CultureInfo ci = GetCultureInfo(name);
@@ -1487,7 +1487,7 @@ namespace System.Globalization
             // Disallow alt sorts and es-es_TS
             if (ci.LCID > 0xffff || ci.LCID == 0x040a)
             {
-                throw new CultureNotFoundException("name", SR.Format(SR.Argument_CultureIetfNotSupported, name));
+                throw new CultureNotFoundException(nameof(name), SR.Format(SR.Argument_CultureIetfNotSupported, name));
             }
             
             return ci;

@@ -78,7 +78,7 @@ namespace System.Text
             // This shouldn't really be possible
             if (defaultCodePage < CodeDevanagari || defaultCodePage > CodePunjabi)
                 throw new ArgumentException(Environment.GetResourceString(
-                       "Argument_CodepageNotSupported", codePage), "codePage");
+                       "Argument_CodepageNotSupported", codePage), nameof(codePage));
         }
 
         // Constructor called by serialization.

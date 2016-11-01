@@ -534,15 +534,15 @@ namespace System.IO {
             String badArg = null;
 
             if (mode < FileMode.CreateNew || mode > FileMode.Append)
-                badArg = "mode";
+                badArg = nameof(mode);
             else if (!useRights && (access < FileAccess.Read || access > FileAccess.ReadWrite))
-                badArg = "access";
+                badArg = nameof(access);
 #if FEATURE_MACL
             else if (useRights && (fileSystemRights < FileSystemRights.ReadData || fileSystemRights > FileSystemRights.FullControl))
                 badArg = "rights";
 #endif            
             else if (tempshare < FileShare.None || tempshare > (FileShare.ReadWrite | FileShare.Delete))
-                badArg = "share";
+                badArg = nameof(share);
             
             if (badArg != null)
                 throw new ArgumentOutOfRangeException(badArg, Environment.GetResourceString("ArgumentOutOfRange_Enum"));
@@ -2257,7 +2257,7 @@ namespace System.IO {
         [System.Security.SecuritySafeCritical]  // auto-generated
         public virtual void Lock(long position, long length) {
             if (position < 0 || length < 0)
-                throw new ArgumentOutOfRangeException((position < 0 ? "position" : "length"), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException((position < 0 ? nameof(position) : nameof(length)), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
             if (_handle.IsClosed) __Error.FileNotOpen();
 
@@ -2273,7 +2273,7 @@ namespace System.IO {
         [System.Security.SecuritySafeCritical]  // auto-generated
         public virtual void Unlock(long position, long length) {
             if (position < 0 || length < 0)
-                throw new ArgumentOutOfRangeException((position < 0 ? "position" : "length"), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException((position < 0 ? nameof(position) : nameof(length)), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
             if (_handle.IsClosed) __Error.FileNotOpen();
 

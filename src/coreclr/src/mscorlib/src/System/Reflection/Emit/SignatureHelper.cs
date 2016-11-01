@@ -835,10 +835,10 @@ namespace System.Reflection.Emit
         public void AddArguments(Type[] arguments, Type[][] requiredCustomModifiers, Type[][] optionalCustomModifiers)
         {
             if (requiredCustomModifiers != null && (arguments == null || requiredCustomModifiers.Length != arguments.Length))
-                throw new ArgumentException(Environment.GetResourceString("Argument_MismatchedArrays", "requiredCustomModifiers", nameof(arguments)));
+                throw new ArgumentException(Environment.GetResourceString("Argument_MismatchedArrays", nameof(requiredCustomModifiers), nameof(arguments)));
 
             if (optionalCustomModifiers != null && (arguments == null || optionalCustomModifiers.Length != arguments.Length))
-                throw new ArgumentException(Environment.GetResourceString("Argument_MismatchedArrays", "optionalCustomModifiers", nameof(arguments)));
+                throw new ArgumentException(Environment.GetResourceString("Argument_MismatchedArrays", nameof(optionalCustomModifiers), nameof(arguments)));
 
             if (arguments != null)
             {

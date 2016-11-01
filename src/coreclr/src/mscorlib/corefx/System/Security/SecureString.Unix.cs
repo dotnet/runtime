@@ -201,7 +201,7 @@ namespace System.Security
             // Make sure the requested capacity doesn't exceed SecureString's defined limit
             if (capacity > MaxLength)
             {
-                throw new ArgumentOutOfRangeException("capacity", SR.ArgumentOutOfRange_Capacity);
+                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_Capacity);
             }
 
             // If we already have enough space allocated, we're done

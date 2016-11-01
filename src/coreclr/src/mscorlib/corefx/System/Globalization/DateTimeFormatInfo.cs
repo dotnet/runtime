@@ -536,7 +536,7 @@ namespace System.Globalization
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         SR.ArgumentNull_String);
                 }
                 Contract.EndContractBlock();
@@ -562,7 +562,7 @@ namespace System.Globalization
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value", SR.ArgumentNull_Obj);
+                    throw new ArgumentNullException(nameof(value), SR.ArgumentNull_Obj);
                 }
                 Contract.EndContractBlock();
                 if (value == calendar)
@@ -640,7 +640,7 @@ namespace System.Globalization
                 }
 
                 // The assigned calendar is not a valid calendar for this culture, throw
-                throw new ArgumentOutOfRangeException("value", SR.Argument_InvalidCalendar);
+                throw new ArgumentOutOfRangeException(nameof(value), SR.Argument_InvalidCalendar);
             }
         }
 
@@ -669,7 +669,7 @@ namespace System.Globalization
         {
             if (eraName == null)
             {
-                throw new ArgumentNullException("eraName",
+                throw new ArgumentNullException(nameof(eraName),
                     SR.ArgumentNull_String);
             }
             Contract.EndContractBlock();
@@ -758,7 +758,7 @@ namespace System.Globalization
             {
                 return (m_eraNames[era]);
             }
-            throw new ArgumentOutOfRangeException("era", SR.ArgumentOutOfRange_InvalidEraValue);
+            throw new ArgumentOutOfRangeException(nameof(era), SR.ArgumentOutOfRange_InvalidEraValue);
         }
 
         internal String[] AbbreviatedEraNames
@@ -790,7 +790,7 @@ namespace System.Globalization
             {
                 return (m_abbrevEraNames[era]);
             }
-            throw new ArgumentOutOfRangeException("era", SR.ArgumentOutOfRange_InvalidEraValue);
+            throw new ArgumentOutOfRangeException(nameof(era), SR.ArgumentOutOfRange_InvalidEraValue);
         }
 
         internal String[] AbbreviatedEnglishEraNames
@@ -827,7 +827,7 @@ namespace System.Globalization
 
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value", SR.ArgumentNull_String);
+                    throw new ArgumentNullException(nameof(value), SR.ArgumentNull_String);
                 }
                 Contract.EndContractBlock();
                 ClearTokenHashTable();
@@ -859,7 +859,7 @@ namespace System.Globalization
                 else
                 {
                     throw new ArgumentOutOfRangeException(
-                        "value", SR.Format(SR.ArgumentOutOfRange_Range,
+                        nameof(value), SR.Format(SR.ArgumentOutOfRange_Range,
                         DayOfWeek.Sunday, DayOfWeek.Saturday));
                 }
             }
@@ -888,7 +888,7 @@ namespace System.Globalization
                 else
                 {
                     throw new ArgumentOutOfRangeException(
-                        "value", SR.Format(SR.ArgumentOutOfRange_Range,
+                        nameof(value), SR.Format(SR.ArgumentOutOfRange_Range,
                         CalendarWeekRule.FirstDay, CalendarWeekRule.FirstFourDayWeek));
                 }
             }
@@ -911,7 +911,7 @@ namespace System.Globalization
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         SR.ArgumentNull_String);
                 }
                 Contract.EndContractBlock();
@@ -945,7 +945,7 @@ namespace System.Globalization
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         SR.ArgumentNull_String);
                 }
                 Contract.EndContractBlock();
@@ -986,7 +986,7 @@ namespace System.Globalization
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         SR.ArgumentNull_String);
                 }
                 Contract.EndContractBlock();
@@ -1025,7 +1025,7 @@ namespace System.Globalization
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         SR.ArgumentNull_String);
                 }
                 Contract.EndContractBlock();
@@ -1054,7 +1054,7 @@ namespace System.Globalization
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         SR.ArgumentNull_String);
                 }
                 Contract.EndContractBlock();
@@ -1097,7 +1097,7 @@ namespace System.Globalization
                 if (IsReadOnly)
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 if (value == null)
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         SR.ArgumentNull_String);
                 Contract.EndContractBlock();
 
@@ -1139,7 +1139,7 @@ namespace System.Globalization
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         SR.ArgumentNull_String);
                 }
                 Contract.EndContractBlock();
@@ -1296,7 +1296,7 @@ namespace System.Globalization
 
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value", SR.ArgumentNull_String);
+                    throw new ArgumentNullException(nameof(value), SR.ArgumentNull_String);
                 }
 
                 Contract.EndContractBlock();
@@ -1338,7 +1338,7 @@ namespace System.Globalization
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         SR.ArgumentNull_String);
                 }
                 Contract.EndContractBlock();
@@ -1382,12 +1382,12 @@ namespace System.Globalization
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         SR.ArgumentNull_Array);
                 }
                 if (value.Length != 7)
                 {
-                    throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 7), "value");
+                    throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 7), nameof(value));
                 }
                 Contract.EndContractBlock();
                 CheckNullValue(value, value.Length);
@@ -1411,12 +1411,12 @@ namespace System.Globalization
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         SR.ArgumentNull_Array);
                 }
                 if (value.Length != 7)
                 {
-                    throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 7), "value");
+                    throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 7), nameof(value));
                 }
                 Contract.EndContractBlock();
                 CheckNullValue(value, value.Length);
@@ -1438,12 +1438,12 @@ namespace System.Globalization
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         SR.ArgumentNull_Array);
                 }
                 if (value.Length != 7)
                 {
-                    throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 7), "value");
+                    throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 7), nameof(value));
                 }
                 Contract.EndContractBlock();
                 CheckNullValue(value, value.Length);
@@ -1467,12 +1467,12 @@ namespace System.Globalization
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         SR.ArgumentNull_Array);
                 }
                 if (value.Length != 13)
                 {
-                    throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 13), "value");
+                    throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 13), nameof(value));
                 }
                 Contract.EndContractBlock();
                 CheckNullValue(value, value.Length - 1);
@@ -1495,12 +1495,12 @@ namespace System.Globalization
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         SR.ArgumentNull_Array);
                 }
                 if (value.Length != 13)
                 {
-                    throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 13), "value");
+                    throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 13), nameof(value));
                 }
                 Contract.EndContractBlock();
                 CheckNullValue(value, value.Length - 1);
@@ -1566,7 +1566,7 @@ namespace System.Globalization
             if ((month < 1) || (month > monthNamesArray.Length))
             {
                 throw new ArgumentOutOfRangeException(
-                    "month", SR.Format(SR.ArgumentOutOfRange_Range,
+                    nameof(month), SR.Format(SR.ArgumentOutOfRange_Range,
                     1, monthNamesArray.Length));
             }
             return (monthNamesArray[month - 1]);
@@ -1627,7 +1627,7 @@ namespace System.Globalization
             if ((int)dayofweek < 0 || (int)dayofweek > 6)
             {
                 throw new ArgumentOutOfRangeException(
-                    "dayofweek", SR.Format(SR.ArgumentOutOfRange_Range,
+                    nameof(dayofweek), SR.Format(SR.ArgumentOutOfRange_Range,
                     DayOfWeek.Sunday, DayOfWeek.Saturday));
             }
             Contract.EndContractBlock();
@@ -1644,7 +1644,7 @@ namespace System.Globalization
             if ((int)dayOfWeek < 0 || (int)dayOfWeek > 6)
             {
                 throw new ArgumentOutOfRangeException(
-                    "dayOfWeek", SR.Format(SR.ArgumentOutOfRange_Range,
+                    nameof(dayOfWeek), SR.Format(SR.ArgumentOutOfRange_Range,
                     DayOfWeek.Sunday, DayOfWeek.Saturday));
             }
             Contract.EndContractBlock();
@@ -1749,7 +1749,7 @@ namespace System.Globalization
                     result = this.AllYearMonthPatterns;
                     break;
                 default:
-                    throw new ArgumentException(SR.Format_BadFormatSpecifier, "format");
+                    throw new ArgumentException(SR.Format_BadFormatSpecifier, nameof(format));
             }
             return (result);
         }
@@ -1760,7 +1760,7 @@ namespace System.Globalization
             if ((int)dayofweek < 0 || (int)dayofweek > 6)
             {
                 throw new ArgumentOutOfRangeException(
-                    "dayofweek", SR.Format(SR.ArgumentOutOfRange_Range,
+                    nameof(dayofweek), SR.Format(SR.ArgumentOutOfRange_Range,
                     DayOfWeek.Sunday, DayOfWeek.Saturday));
             }
             Contract.EndContractBlock();
@@ -1776,7 +1776,7 @@ namespace System.Globalization
             if (month < 1 || month > 13)
             {
                 throw new ArgumentOutOfRangeException(
-                    "month", SR.Format(SR.ArgumentOutOfRange_Range,
+                    nameof(month), SR.Format(SR.ArgumentOutOfRange_Range,
                     1, 13));
             }
             Contract.EndContractBlock();
@@ -1790,7 +1790,7 @@ namespace System.Globalization
             if (month < 1 || month > 13)
             {
                 throw new ArgumentOutOfRangeException(
-                    "month", SR.Format(SR.ArgumentOutOfRange_Range,
+                    nameof(month), SR.Format(SR.ArgumentOutOfRange_Range,
                     1, 13));
             }
             Contract.EndContractBlock();
@@ -1995,7 +1995,7 @@ namespace System.Globalization
         {
             if (dtfi == null)
             {
-                throw new ArgumentNullException("dtfi",
+                throw new ArgumentNullException(nameof(dtfi),
                     SR.ArgumentNull_Obj);
             }
             Contract.EndContractBlock();
@@ -2057,12 +2057,12 @@ namespace System.Globalization
 
             if (patterns == null)
             {
-                throw new ArgumentNullException("patterns", SR.ArgumentNull_Array);
+                throw new ArgumentNullException(nameof(patterns), SR.ArgumentNull_Array);
             }
 
             if (patterns.Length == 0)
             {
-                throw new ArgumentException(SR.Arg_ArrayZeroError, "patterns");
+                throw new ArgumentException(SR.Arg_ArrayZeroError, nameof(patterns));
             }
 
             Contract.EndContractBlock();
@@ -2105,7 +2105,7 @@ namespace System.Globalization
                     break;
 
                 default:
-                    throw new ArgumentException(SR.Format_BadFormatSpecifier, "format");
+                    throw new ArgumentException(SR.Format_BadFormatSpecifier, nameof(format));
             }
 
             // Clear the token hash table, note that even short dates could require this
@@ -2125,12 +2125,12 @@ namespace System.Globalization
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         SR.ArgumentNull_Array);
                 }
                 if (value.Length != 13)
                 {
-                    throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 13), "value");
+                    throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 13), nameof(value));
                 }
                 Contract.EndContractBlock();
                 CheckNullValue(value, value.Length - 1);
@@ -2152,12 +2152,12 @@ namespace System.Globalization
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value",
+                    throw new ArgumentNullException(nameof(value),
                         SR.ArgumentNull_Array);
                 }
                 if (value.Length != 13)
                 {
-                    throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 13), "value");
+                    throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 13), nameof(value));
                 }
                 Contract.EndContractBlock();
                 CheckNullValue(value, value.Length - 1);

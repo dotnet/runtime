@@ -519,7 +519,7 @@ namespace System {
             else if (count == 0)
                 return String.Empty;
             else
-                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_MustBeNonNegNum", "count"));
+                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_MustBeNonNegNum", nameof(count)));
         }
 
         [System.Security.SecurityCritical]  // auto-generated

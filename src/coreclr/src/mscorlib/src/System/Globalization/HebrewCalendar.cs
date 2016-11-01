@@ -727,7 +727,7 @@ namespace System.Globalization {
             int d = GetDatePart(time.Ticks, DatePartDay);
 
             y += years;
-            CheckHebrewYearValue(y, Calendar.CurrentEra, "years");
+            CheckHebrewYearValue(y, Calendar.CurrentEra, nameof(years));
 
             int months = GetMonthsInYear(y, CurrentEra);
             if (m > months) {
@@ -765,7 +765,7 @@ namespace System.Globalization {
         }
 
         static internal int GetHebrewYearType(int year, int era) {
-            CheckHebrewYearValue(year, era, "year");
+            CheckHebrewYearValue(year, era, nameof(year));
             // The HebrewTable is indexed by Gregorian year and starts from FirstGregorianYear.
             // So we need to convert year (Hebrew year value) to Gregorian Year below.
             return (HebrewTable[(year - HebrewYearOf1AD - FirstGregorianTableYear) * 2 + 1]);
@@ -931,7 +931,7 @@ namespace System.Globalization {
         //
 
         public override bool IsLeapYear(int year, int era) {
-           CheckHebrewYearValue(year, era, "year");
+           CheckHebrewYearValue(year, era, nameof(year));
            return (((7 * (long)year + 1) % 19) < 7);
         }
 
@@ -1015,7 +1015,7 @@ namespace System.Globalization {
         //
 
         public override DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era) {
-            CheckHebrewYearValue(year, era, "year");
+            CheckHebrewYearValue(year, era, nameof(year));
             CheckHebrewMonthValue(year, month, era);
             CheckHebrewDayValue(year, month, day, era);
             DateTime dt = HebrewToGregorian(year, month, day, hour, minute, second, millisecond);
@@ -1042,7 +1042,7 @@ namespace System.Globalization {
                 }
                 else
                 {
-                    CheckHebrewYearValue(value, HebrewEra, "value");
+                    CheckHebrewYearValue(value, HebrewEra, nameof(value));
                 }
                 twoDigitYearMax = value;
             }
