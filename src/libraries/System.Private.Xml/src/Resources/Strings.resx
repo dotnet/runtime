@@ -3156,15 +3156,6 @@
   <data name="Xml_SystemPathResolverCannotOpenUri" xml:space="preserve">
     <value />
   </data>
-  <data name="Xml_UserException" xml:space="preserve">
-    <value>{0}</value>
-  </data>
-  <data name="Xml_ErrorFilePosition" xml:space="preserve">
-    <value>An error occurred at {0}({1},{2}).</value>
-  </data>
-  <data name="Xml_InvalidOperation" xml:space="preserve">
-    <value>Operation is not valid due to the current state of the object.</value>
-  </data>
   <data name="Xml_EndOfInnerExceptionStack" xml:space="preserve">
     <value>--- End of inner exception stack trace ---</value>
   </data>
@@ -3596,9 +3587,6 @@
   </data>
   <data name="Xslt_InvalidQName" xml:space="preserve">
     <value>'{0}' is an invalid QName.</value>
-  </data>
-  <data name="Xslt_NoStylesheetLoaded" xml:space="preserve">
-    <value>No stylesheet was loaded.</value>
   </data>
   <data name="Xslt_TemplateNoAttrib" xml:space="preserve">
     <value>The 'xsl:template' instruction must have the 'match' and/or 'name' attribute present.</value>
