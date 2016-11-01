@@ -31,6 +31,8 @@ namespace System.Diagnostics
         public override void Fail(string message, string detailMessage) { }
         public override void Write(string message) { }
         public override void WriteLine(string message) { }
+        public bool AssertUiEnabled { get { throw null; } set { } }
+        public string LogFileName { get { throw null; } set { } }
     }
     public partial class EventTypeFilter : System.Diagnostics.TraceFilter
     {
