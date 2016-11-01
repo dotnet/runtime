@@ -7,6 +7,7 @@
         "System.Collections": "4.4.0-beta-24629-01",
         "System.Diagnostics.Contracts": "4.4.0-beta-24629-01",
         "System.Diagnostics.Debug": "4.4.0-beta-24629-01",
+        "System.Diagnostics.Tools": "4.4.0-beta-24629-01",
         "System.Globalization": "4.4.0-beta-24629-01",
         "System.Reflection": "4.4.0-beta-24629-01",
         "System.Resources.ResourceManager": "4.4.0-beta-24629-01",

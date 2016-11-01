@@ -81,6 +81,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2229", Justification = "Public API has already shipped.")]
         public X509Certificate(SerializationInfo info, StreamingContext context) : this()
         {
             byte[] rawData = (byte[])info.GetValue("RawData", typeof(byte[]));
