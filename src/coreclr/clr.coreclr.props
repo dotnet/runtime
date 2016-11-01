@@ -34,12 +34,6 @@
     <FeatureMergeJitAndEngine>true</FeatureMergeJitAndEngine>
     <FeatureMulticoreJIT>true</FeatureMulticoreJIT>
     <FeaturePrejit>true</FeaturePrejit>
-
-    <!-- Work around problems with loading System.Private.CoreLib.dll, -->
-    <!-- caused by inconsistent setting of UseLegacyCompiler and FeatureSpanOfT -->
-    <!-- between System.Private.CoreLib.dll and the runtime. -->
-    <UseLegacyCompiler>true</UseLegacyCompiler>
-
     <FeatureSpanOfT Condition="'$(UseLegacyCompiler)'!='true'">true</FeatureSpanOfT>
     <FeatureStandaloneSn>true</FeatureStandaloneSn>
     <FeatureStrongnameDelaySigningAllowed>true</FeatureStrongnameDelaySigningAllowed>
