@@ -699,6 +699,53 @@ namespace System.IO.Compression.Tests
                 Assert.Equal(0, await ds.ReadAsync(new byte[1024], 0, 1024));
         }
 
+        public static IEnumerable<object[]> CopyToAsync_Roundtrip_OutputMatchesInput_MemberData()
+        {
+            var rand = new Random();
+            foreach (int dataSize in new[] { 1, 1024, 4095, 1024 * 1024 })
+            {
+                var data = new byte[dataSize];
+                rand.NextBytes(data);
+
+                var compressed = new MemoryStream();
+                using (var ds = new DeflateStream(compressed, CompressionMode.Compress, leaveOpen: true))
+                {
+                    ds.Write(data, 0, data.Length);
+                }
+                byte[] compressedData = compressed.ToArray();
+
+                foreach (int copyBufferSize in new[] { 1, 4096, 80 * 1024 })
+                {
+                    // Memory source
+                    var m = new MemoryStream(compressedData, writable: false);
+                    yield return new object[] { data, copyBufferSize, m };
+
+                    // File sources, sync and async
+                    foreach (bool useAsync in new[] { true, false })
+                    {
+                        string path = Path.GetTempFileName();
+                        File.WriteAllBytes(path, compressedData);
+
+                        FileOptions options = FileOptions.DeleteOnClose;
+                        if (useAsync) options |= FileOptions.Asynchronous;
+                        yield return new object[] { data, copyBufferSize, new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 0x1000, options) };
+                    }
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CopyToAsync_Roundtrip_OutputMatchesInput_MemberData))]
+        public async Task CopyToAsync_Roundtrip_OutputMatchesInput(byte[] expectedDecrypted, int copyBufferSize, Stream source)
+        {
+            var m = new MemoryStream();
+            using (DeflateStream ds = new DeflateStream(source, CompressionMode.Decompress))
+            {
+                await ds.CopyToAsync(m);
+            }
+            Assert.Equal(expectedDecrypted, m.ToArray());
+        }
+
         private sealed class BadWrappedStream : Stream
         {
             public enum Mode
