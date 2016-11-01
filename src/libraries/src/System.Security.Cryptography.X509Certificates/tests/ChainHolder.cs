@@ -10,7 +10,21 @@ namespace System.Security.Cryptography.X509Certificates.Tests
     /// </summary>
     internal sealed class ChainHolder : IDisposable
     {
-        public X509Chain Chain { get; } = new X509Chain();
+        private X509Chain _chain;
+
+        public ChainHolder()
+        {
+            _chain = new X509Chain();
+        }
+
+#if netstandard17
+        public ChainHolder(IntPtr chainContext)
+        {
+            _chain = new X509Chain(chainContext);
+        }
+#endif
+
+        public X509Chain Chain => _chain;
 
         public void Dispose()
         {

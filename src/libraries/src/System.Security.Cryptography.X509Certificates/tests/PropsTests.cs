@@ -241,7 +241,7 @@ Wry5FNNo
             }
         }
 
-#if netcoreapp11
+#if netstandard17
         [Fact]
         public static void TestPrivateKey()
         {

@@ -13,6 +13,11 @@ namespace Internal.Cryptography.Pal
 {
     internal sealed partial class ChainPal
     {
+        public static IChainPal FromHandle(IntPtr chainContext)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         public static bool ReleaseSafeX509ChainHandle(IntPtr handle)
         {
             return true;

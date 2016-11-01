@@ -9,6 +9,7 @@ using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
+using System.Runtime.InteropServices;
 
 namespace Internal.Cryptography.Pal
 {
@@ -17,6 +18,11 @@ namespace Internal.Cryptography.Pal
         private static CollectionBackedStoreProvider s_machineRootStore;
         private static CollectionBackedStoreProvider s_machineIntermediateStore;
         private static readonly object s_machineLoadLock = new object();
+
+        public static IStorePal FromHandle(IntPtr storeHandle)
+        {
+            throw new PlatformNotSupportedException();
+        }
 
         public static ILoaderPal FromBlob(byte[] rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
