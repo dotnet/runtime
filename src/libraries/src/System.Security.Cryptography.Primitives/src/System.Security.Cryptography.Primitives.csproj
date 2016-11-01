@@ -12,6 +12,11 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
+    <ContractProject Include="..\ref\System.Security.Cryptography.Primitives.csproj">
+      <TargetGroup>netstandard1.7</TargetGroup>
+    </ContractProject>
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
     <Compile Include="System\Security\Cryptography\AsymmetricAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\CipherMode.cs" />

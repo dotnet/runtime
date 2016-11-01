@@ -22,6 +22,11 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net462_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'net463' OR '$(TargetGroup)' == 'uap101aot'">
+    <ContractProject Include="..\ref\System.Runtime.csproj">
+      <TargetGroup>netstandard1.7</TargetGroup>
+    </ContractProject>
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.Forwards.cs" />
   </ItemGroup>
