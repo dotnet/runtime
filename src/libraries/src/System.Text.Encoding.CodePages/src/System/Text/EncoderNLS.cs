@@ -147,7 +147,7 @@ namespace System.Text
                 throw new ArgumentNullException(nameof(chars), SR.ArgumentNull_Array);
 
             if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((index < 0 ? nameof(index): nameof(count)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (chars.Length - index < count)
                 throw new ArgumentOutOfRangeException(nameof(chars), SR.ArgumentOutOfRange_IndexCountBuffer);
@@ -188,10 +188,10 @@ namespace System.Text
         {
             // Validate parameters
             if (chars == null || bytes == null)
-                throw new ArgumentNullException((chars == null ? "chars" : "bytes"), SR.ArgumentNull_Array);
+                throw new ArgumentNullException((chars == null ? nameof(chars): nameof(bytes)), SR.ArgumentNull_Array);
 
             if (charIndex < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException((charIndex < 0 ? "charIndex" : "charCount"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((charIndex < 0 ? nameof(charIndex): nameof(charCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (chars.Length - charIndex < charCount)
                 throw new ArgumentOutOfRangeException(nameof(chars), SR.ArgumentOutOfRange_IndexCountBuffer);
@@ -221,10 +221,10 @@ namespace System.Text
         {
             // Validate parameters
             if (chars == null || bytes == null)
-                throw new ArgumentNullException((chars == null ? "chars" : "bytes"), SR.ArgumentNull_Array);
+                throw new ArgumentNullException((chars == null ? nameof(chars): nameof(bytes)), SR.ArgumentNull_Array);
 
             if (byteCount < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException((byteCount < 0 ? "byteCount" : "charCount"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((byteCount < 0 ? nameof(byteCount): nameof(charCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
 
             m_mustFlush = flush;
@@ -241,13 +241,13 @@ namespace System.Text
         {
             // Validate parameters
             if (chars == null || bytes == null)
-                throw new ArgumentNullException((chars == null ? "chars" : "bytes"), SR.ArgumentNull_Array);
+                throw new ArgumentNullException((chars == null ? nameof(chars): nameof(bytes)), SR.ArgumentNull_Array);
 
             if (charIndex < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException((charIndex < 0 ? "charIndex" : "charCount"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((charIndex < 0 ? nameof(charIndex): nameof(charCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (byteIndex < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException((byteIndex < 0 ? "byteIndex" : "byteCount"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((byteIndex < 0 ? nameof(byteIndex): nameof(byteCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (chars.Length - charIndex < charCount)
                 throw new ArgumentOutOfRangeException(nameof(chars), SR.ArgumentOutOfRange_IndexCountBuffer);
@@ -283,10 +283,10 @@ namespace System.Text
         {
             // Validate input parameters
             if (bytes == null || chars == null)
-                throw new ArgumentNullException(bytes == null ? "bytes" : "chars", SR.ArgumentNull_Array);
+                throw new ArgumentNullException(bytes == null ? nameof(bytes): nameof(chars), SR.ArgumentNull_Array);
 
             if (charCount < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException((charCount < 0 ? "charCount" : "byteCount"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((charCount < 0 ? nameof(charCount): nameof(byteCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
 
             // We don't want to throw

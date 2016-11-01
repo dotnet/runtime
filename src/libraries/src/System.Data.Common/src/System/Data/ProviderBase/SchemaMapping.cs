@@ -60,8 +60,8 @@ namespace System.Data.ProviderBase
                                     SchemaType schemaType, string sourceTableName, bool gettingData,
                                     DataColumn parentChapterColumn, object parentChapterValue)
         {
-            Debug.Assert(null != adapter, "adapter");
-            Debug.Assert(null != dataReader, "dataReader");
+            Debug.Assert(null != adapter, nameof(adapter));
+            Debug.Assert(null != dataReader, nameof(dataReader));
             Debug.Assert(0 < dataReader.FieldCount, "FieldCount");
             Debug.Assert(null != dataset || null != datatable, "SchemaMapping - null dataSet");
             Debug.Assert(SchemaType.Mapped == schemaType || SchemaType.Source == schemaType, "SetupSchema - invalid schemaType");

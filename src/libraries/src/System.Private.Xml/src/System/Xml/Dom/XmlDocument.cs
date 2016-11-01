@@ -1430,7 +1430,7 @@ namespace System.Xml
             XmlDocument parentDocument = nodeToValidate.Document;
             if (parentDocument != this)
             {
-                throw new ArgumentException(SR.Format(SR.XmlDocument_NodeNotFromDocument, "nodeToValidate"));
+                throw new ArgumentException(SR.Format(SR.XmlDocument_NodeNotFromDocument, nameof(nodeToValidate)));
             }
             if (nodeToValidate == this)
             {

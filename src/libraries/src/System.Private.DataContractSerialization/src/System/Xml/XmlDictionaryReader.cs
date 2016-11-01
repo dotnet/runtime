@@ -23,7 +23,7 @@ namespace System.Xml
         public static XmlDictionaryReader CreateDictionaryReader(XmlReader reader)
         {
             if (reader == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("reader");
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(reader));
 
             XmlDictionaryReader dictionaryReader = reader as XmlDictionaryReader;
 
@@ -38,7 +38,7 @@ namespace System.Xml
         public static XmlDictionaryReader CreateBinaryReader(byte[] buffer, XmlDictionaryReaderQuotas quotas)
         {
             if (buffer == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("buffer");
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(buffer));
             return CreateBinaryReader(buffer, 0, buffer.Length, quotas);
         }
 
@@ -97,7 +97,7 @@ namespace System.Xml
         public static XmlDictionaryReader CreateTextReader(byte[] buffer, XmlDictionaryReaderQuotas quotas)
         {
             if (buffer == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("buffer");
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(buffer));
             return CreateTextReader(buffer, 0, buffer.Length, quotas);
         }
 
@@ -133,7 +133,7 @@ namespace System.Xml
         public static XmlDictionaryReader CreateMtomReader(Stream stream, Encoding encoding, XmlDictionaryReaderQuotas quotas)
         {
             if (encoding == null)
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("encoding");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(encoding));
 
             return CreateMtomReader(stream, new Encoding[1] { encoding }, quotas);
         }
@@ -157,7 +157,7 @@ namespace System.Xml
         public static XmlDictionaryReader CreateMtomReader(byte[] buffer, int offset, int count, Encoding encoding, XmlDictionaryReaderQuotas quotas)
         {
             if (encoding == null)
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("encoding");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(encoding));
 
             return CreateMtomReader(buffer, offset, count, new Encoding[1] { encoding }, quotas);
         }
@@ -236,7 +236,7 @@ namespace System.Xml
         public virtual bool IsLocalName(XmlDictionaryString localName)
         {
             if (localName == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("localName");
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(localName));
 
             return IsLocalName(localName.Value);
         }
@@ -244,14 +244,14 @@ namespace System.Xml
         public virtual bool IsNamespaceUri(string namespaceUri)
         {
             if (namespaceUri == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("namespaceUri");
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(namespaceUri));
             return this.NamespaceURI == namespaceUri;
         }
 
         public virtual bool IsNamespaceUri(XmlDictionaryString namespaceUri)
         {
             if (namespaceUri == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("namespaceUri");
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(namespaceUri));
             return IsNamespaceUri(namespaceUri.Value);
         }
 
@@ -301,10 +301,10 @@ namespace System.Xml
         public virtual int IndexOfLocalName(string[] localNames, string namespaceUri)
         {
             if (localNames == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("localNames");
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(localNames));
 
             if (namespaceUri == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("namespaceUri");
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(namespaceUri));
 
             if (this.NamespaceURI == namespaceUri)
             {
@@ -327,10 +327,10 @@ namespace System.Xml
         public virtual int IndexOfLocalName(XmlDictionaryString[] localNames, XmlDictionaryString namespaceUri)
         {
             if (localNames == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("localNames");
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(localNames));
 
             if (namespaceUri == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("namespaceUri");
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(namespaceUri));
 
             if (this.NamespaceURI == namespaceUri.Value)
             {
@@ -620,7 +620,7 @@ namespace System.Xml
         public virtual string ReadContentAsString(string[] strings, out int index)
         {
             if (strings == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("strings");
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(strings));
             string s = ReadContentAsString();
             index = -1;
             for (int i = 0; i < strings.Length; i++)
@@ -640,7 +640,7 @@ namespace System.Xml
         public virtual string ReadContentAsString(XmlDictionaryString[] strings, out int index)
         {
             if (strings == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("strings");
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(strings));
             string s = ReadContentAsString();
             index = -1;
             for (int i = 0; i < strings.Length; i++)

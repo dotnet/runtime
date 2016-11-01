@@ -287,7 +287,7 @@ namespace Internal.Cryptography.Pal
 
                 if (!StringComparer.Ordinal.Equals(storeName, fileName))
                 {
-                    throw new CryptographicException(SR.Format(SR.Security_InvalidValue, "storeName"));
+                    throw new CryptographicException(SR.Format(SR.Security_InvalidValue, nameof(storeName)));
                 }
             }
             catch (IOException e)

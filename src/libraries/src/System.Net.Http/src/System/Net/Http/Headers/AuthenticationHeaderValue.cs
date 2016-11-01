@@ -37,7 +37,7 @@ namespace System.Net.Http.Headers
 
         public AuthenticationHeaderValue(string scheme, string parameter)
         {
-            HeaderUtilities.CheckValidToken(scheme, "scheme");
+            HeaderUtilities.CheckValidToken(scheme, nameof(scheme));
             _scheme = scheme;
             _parameter = parameter;
         }

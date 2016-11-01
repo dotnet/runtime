@@ -68,7 +68,7 @@ namespace System.ComponentModel.Design
         {
             if (keyword == null)
             {
-                throw new ArgumentNullException("keyword");
+                throw new ArgumentNullException(nameof(keyword));
             }
             _contextKeyword = keyword;
         }
@@ -80,7 +80,7 @@ namespace System.ComponentModel.Design
         {
             if (t == null)
             {
-                throw new ArgumentNullException("t");
+                throw new ArgumentNullException(nameof(t));
             }
             _contextKeyword = t.FullName;
         }

@@ -2178,8 +2178,8 @@ namespace System.Linq.Expressions.Interpreter
 
         private ByRefUpdater CompileArrayIndexAddress(Expression array, Expression index, int argumentIndex)
         {
-            LocalDefinition left = _locals.DefineLocal(Expression.Parameter(array.Type, "array"), _instructions.Count);
-            LocalDefinition right = _locals.DefineLocal(Expression.Parameter(index.Type, "index"), _instructions.Count);
+            LocalDefinition left = _locals.DefineLocal(Expression.Parameter(array.Type, nameof(array)), _instructions.Count);
+            LocalDefinition right = _locals.DefineLocal(Expression.Parameter(index.Type, nameof(index)), _instructions.Count);
             Compile(array);
             _instructions.EmitStoreLocal(left.Index);
             Compile(index);

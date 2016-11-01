@@ -508,7 +508,7 @@ namespace System.Data
                 }
                 catch (Exception e) when (ADP.IsCatchableExceptionType(e))
                 {
-                    throw ExceptionBuilder.AttributeValues("minOccurs", "0", "1");
+                    throw ExceptionBuilder.AttributeValues(nameof(minOccurs), "0", "1");
                 }
             }
             occurs = elNode.GetAttribute(Keywords.MAXOCCURS);
@@ -528,11 +528,11 @@ namespace System.Data
                     }
                     catch (Exception e) when (ADP.IsCatchableExceptionType(e))
                     {
-                        throw ExceptionBuilder.AttributeValues("maxOccurs", "1", Keywords.STAR);
+                        throw ExceptionBuilder.AttributeValues(nameof(maxOccurs), "1", Keywords.STAR);
                     }
                     if (maxOccurs != 1)
                     {
-                        throw ExceptionBuilder.AttributeValues("maxOccurs", "1", Keywords.STAR);
+                        throw ExceptionBuilder.AttributeValues(nameof(maxOccurs), "1", Keywords.STAR);
                     }
                 }
             }

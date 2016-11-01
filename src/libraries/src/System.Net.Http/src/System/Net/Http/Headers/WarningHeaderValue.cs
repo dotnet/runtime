@@ -39,7 +39,7 @@ namespace System.Net.Http.Headers
         {
             CheckCode(code);
             CheckAgent(agent);
-            HeaderUtilities.CheckValidQuotedString(text, "text");
+            HeaderUtilities.CheckValidQuotedString(text, nameof(text));
 
             _code = code;
             _agent = agent;
@@ -50,7 +50,7 @@ namespace System.Net.Http.Headers
         {
             CheckCode(code);
             CheckAgent(agent);
-            HeaderUtilities.CheckValidQuotedString(text, "text");
+            HeaderUtilities.CheckValidQuotedString(text, nameof(text));
 
             _code = code;
             _agent = agent;

@@ -572,7 +572,7 @@ namespace System.ComponentModel
         {
             if (instance == null)
             {
-                throw new ArgumentNullException("instance");
+                throw new ArgumentNullException(nameof(instance));
             }
 
             IComponent component = instance as IComponent;
