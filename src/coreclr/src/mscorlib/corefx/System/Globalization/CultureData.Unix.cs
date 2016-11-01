@@ -401,5 +401,25 @@ namespace System.Globalization
             
             return list.ToArray();
         }
+        
+        private static string GetConsoleFallbackName(string cultureName)
+        {
+            return LocaleData.GetConsoleUICulture(cultureName);
+        }
+        
+        internal bool IsFramework // not applicable on Linux based systems 
+        {
+            get { return false; }
+        }
+        
+        internal bool IsWin32Installed // not applicable on Linux based systems
+        {
+            get { return false; }
+        }
+        
+        internal bool IsReplacementCulture // not applicable on Linux based systems
+        {
+            get { return false; }
+        }
     }
 }

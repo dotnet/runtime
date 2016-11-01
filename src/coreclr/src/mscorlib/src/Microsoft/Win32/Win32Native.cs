@@ -1072,7 +1072,6 @@ namespace Microsoft.Win32 {
         internal const int FIND_FROMSTART   = 0x00400000; // look for value in source, starting at the beginning
         internal const int FIND_FROMEND     = 0x00800000; // look for value in source, starting at the end
 
-#if !FEATURE_CORECLR
         [StructLayout(LayoutKind.Sequential)]
         internal struct NlsVersionInfoEx 
         {
@@ -1082,7 +1081,6 @@ namespace Microsoft.Win32 {
             internal int dwEffectiveId;
             internal Guid guidCustomVersion;
         }
-#endif
 
         [DllImport(KERNEL32, CharSet=CharSet.Auto, SetLastError=true, BestFitMapping=false)]
         internal static extern int GetWindowsDirectory([Out]StringBuilder sb, int length);
