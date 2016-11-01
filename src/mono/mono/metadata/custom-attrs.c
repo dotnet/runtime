@@ -1712,6 +1712,111 @@ mono_reflection_get_custom_attrs_data_checked (MonoObject *obj, MonoError *error
 	return result;
 }
 
+static gboolean
+custom_attr_class_name_from_methoddef (MonoImage *image, guint32 method_token, const gchar **nspace, const gchar **class_name)
+{
+	/* mono_get_method_from_token () */
+	g_assert (mono_metadata_token_table (method_token) == MONO_TABLE_METHOD);
+	guint32 type_token = mono_metadata_typedef_from_method (image, method_token);
+	if (!type_token) {
+		/* Bad method token (could not find corresponding typedef) */
+		return FALSE;
+	}
+	type_token |= MONO_TOKEN_TYPE_DEF;
+	{
+		/* mono_class_create_from_typedef () */
+		MonoTableInfo *tt = &image->tables [MONO_TABLE_TYPEDEF];
+		guint32 cols [MONO_TYPEDEF_SIZE];
+		guint tidx = mono_metadata_token_index (type_token);
+
+		if (mono_metadata_token_table (type_token) != MONO_TABLE_TYPEDEF || tidx > tt->rows) {
+			/* "Invalid typedef token %x", type_token */
+			return FALSE;
+		}
+
+		mono_metadata_decode_row (tt, tidx - 1, cols, MONO_TYPEDEF_SIZE);
+
+		if (class_name)
+			*class_name = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAME]);
+		if (nspace)
+			*nspace = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE]);
+		return TRUE;
+	}
+}
+
+
+/**
+ * custom_attr_class_name_from_method_token:
+ * @image: The MonoImage
+ * @method_token: a token for a custom attr constructor in @image
+ * @assembly_token: out argment set to the assembly ref token of the custom attr
+ * @nspace: out argument set to namespace (a string in the string heap of @image) of the custom attr
+ * @class_name: out argument set to the class name of the custom attr.
+ *
+ * Given an @image and a @method_token (which is assumed to be a
+ * constructor), fills in the out arguments with the assembly ref (if
+ * a methodref) and the namespace and class name of the custom
+ * attribute.
+ *
+ * Returns: TRUE on success, FALSE otherwise.
+ *
+ * LOCKING: does not take locks
+ */
+static gboolean
+custom_attr_class_name_from_method_token (MonoImage *image, guint32 method_token, guint32 *assembly_token, const gchar **nspace, const gchar **class_name)
+{
+	/* This only works with method tokens constructed from a
+	 * custom attr token, which can only be methoddef or
+	 * memberref */
+	g_assert (mono_metadata_token_table (method_token) == MONO_TABLE_METHOD
+		  || mono_metadata_token_table  (method_token) == MONO_TABLE_MEMBERREF);
+
+	if (mono_metadata_token_table (method_token) == MONO_TABLE_MEMBERREF) {
+		/* method_from_memberref () */
+		guint32 cols[6];
+		guint32 nindex, class_index;
+
+		int idx = mono_metadata_token_index (method_token);
+
+		mono_metadata_decode_row (&image->tables [MONO_TABLE_MEMBERREF], idx-1, cols, 3);
+		nindex = cols [MONO_MEMBERREF_CLASS] >> MONO_MEMBERREF_PARENT_BITS;
+		class_index = cols [MONO_MEMBERREF_CLASS] & MONO_MEMBERREF_PARENT_MASK;
+		if (class_index == MONO_MEMBERREF_PARENT_TYPEREF) {
+			guint32 type_token = MONO_TOKEN_TYPE_REF | nindex;
+			/* mono_class_from_typeref_checked () */
+			{
+				guint32 cols [MONO_TYPEREF_SIZE];
+				MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEREF];
+
+				mono_metadata_decode_row (t, (type_token&0xffffff)-1, cols, MONO_TYPEREF_SIZE);
+
+				if (class_name)
+					*class_name = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME]);
+				if (nspace)
+					*nspace = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAMESPACE]);
+				if (assembly_token)
+					*assembly_token = cols [MONO_TYPEREF_SCOPE];
+				return TRUE;
+			}
+		} else if (class_index == MONO_MEMBERREF_PARENT_METHODDEF) {
+			guint32 methoddef_token = MONO_TOKEN_METHOD_DEF | nindex;
+			if (assembly_token)
+				*assembly_token = 0;
+			return custom_attr_class_name_from_methoddef (image, methoddef_token, nspace, class_name);
+		} else {
+			/* Attributes can't be generic, so it won't be
+			 * a typespec, and they're always
+			 * constructors, so it won't be a moduleref */
+			g_assert_not_reached ();
+		}
+	} else {
+		/* must be MONO_TABLE_METHOD */
+		if (assembly_token)
+			*assembly_token = 0;
+		return custom_attr_class_name_from_methoddef (image, method_token, nspace, class_name);
+	}
+}
+
 /**
  * mono_assembly_metadata_foreach_custom_attr:
  * @assembly: the assembly to iterate over
@@ -1737,6 +1842,7 @@ mono_assembly_metadata_foreach_custom_attr (MonoAssembly *assembly, MonoAssembly
 	 */
 
 	image = assembly->image;
+	g_assert (!image_is_dynamic (image));
 	idx = 1; /* there is only one assembly */
 	idx <<= MONO_CUSTOM_ATTR_BITS;
 	idx |= MONO_CUSTOM_ATTR_ASSEMBLY;
@@ -1754,35 +1860,25 @@ mono_assembly_metadata_foreach_custom_attr (MonoAssembly *assembly, MonoAssembly
 		mono_metadata_decode_row (ca, i, cols, MONO_CUSTOM_ATTR_SIZE);
 		i ++;
 		mtoken = cols [MONO_CUSTOM_ATTR_TYPE] >> MONO_CUSTOM_ATTR_TYPE_BITS;
-		if ((cols [MONO_CUSTOM_ATTR_TYPE] & MONO_CUSTOM_ATTR_TYPE_MASK) != MONO_CUSTOM_ATTR_TYPE_MEMBERREF)
+		switch (cols [MONO_CUSTOM_ATTR_TYPE] & MONO_CUSTOM_ATTR_TYPE_MASK) {
+		case MONO_CUSTOM_ATTR_TYPE_METHODDEF:
+			mtoken |= MONO_TOKEN_METHOD_DEF;
+			break;
+		case MONO_CUSTOM_ATTR_TYPE_MEMBERREF:
+			mtoken |= MONO_TOKEN_MEMBER_REF;
+			break;
+		default:
+			g_warning ("Unknown table for custom attr type %08x", cols [MONO_CUSTOM_ATTR_TYPE]);
 			continue;
-		mtoken |= MONO_TOKEN_MEMBER_REF;
-		{
-			/* method_from_memberref () */
-			guint32 cols[6];
-			guint32 nindex, class_index;
-
-			int idx = mono_metadata_token_index (mtoken);
-
-			mono_metadata_decode_row (&image->tables [MONO_TABLE_MEMBERREF], idx-1, cols, 3);
-			nindex = cols [MONO_MEMBERREF_CLASS] >> MONO_MEMBERREF_PARENT_BITS;
-			class_index = cols [MONO_MEMBERREF_CLASS] & MONO_MEMBERREF_PARENT_MASK;
-			if (class_index == MONO_MEMBERREF_PARENT_TYPEREF) {
-				guint32 type_token = MONO_TOKEN_TYPE_REF | nindex;
-				/* mono_class_from_typeref_checked () */
-				{
-					guint32 cols [MONO_TYPEREF_SIZE];
-					const char *name, *nspace;
-					MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEREF];
-
-					mono_metadata_decode_row (t, (type_token&0xffffff)-1, cols, MONO_TYPEREF_SIZE);
-
-					name = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME]);
-					nspace = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAMESPACE]);
-
-					stop_iterating = func (image, cols [MONO_TYPEREF_SCOPE], nspace, name, mtoken, user_data);
-				}
-			}
 		}
+
+		const char *nspace = NULL;
+		const char *name = NULL;
+		guint32 assembly_token = 0;
+
+		if (!custom_attr_class_name_from_method_token (image, mtoken, &assembly_token, &nspace, &name))
+			continue;
+
+		stop_iterating = func (image, assembly_token, nspace, name, mtoken, user_data);
 	}
 }
