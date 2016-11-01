@@ -78,6 +78,7 @@ INLINE_OBSERVATION(BELOW_ALWAYS_INLINE_SIZE,  bool,   "below ALWAYS_INLINE size"
 INLINE_OBSERVATION(CLASS_PROMOTABLE,          bool,   "promotable value class",        INFORMATION, CALLEE)
 INLINE_OBSERVATION(DOES_NOT_RETURN,           bool,   "does not return",               INFORMATION, CALLEE)
 INLINE_OBSERVATION(END_OPCODE_SCAN,           bool,   "done looking at opcodes",       INFORMATION, CALLEE)
+INLINE_OBSERVATION(HAS_GC_STRUCT,             bool,   "has gc field in struct local",  INFORMATION, CALLEE)
 INLINE_OBSERVATION(HAS_SIMD,                  bool,   "has SIMD arg, local, or ret",   INFORMATION, CALLEE)
 INLINE_OBSERVATION(HAS_SWITCH,                bool,   "has switch",                    INFORMATION, CALLEE)
 INLINE_OBSERVATION(IL_CODE_SIZE,              int,    "number of bytes of IL",         INFORMATION, CALLEE)
