@@ -4458,6 +4458,13 @@ regMaskTP Compiler::rpPredictTreeRegUse(GenTreePtr   tree,
             case GT_ARR_LENGTH:
                 goto GENERIC_UNARY;
 
+            case GT_INIT_VAL:
+                // This unary operator simply passes through the value from its child (much like GT_NOP)
+                // and thus won't need a scratch register.
+                regMask          = rpPredictTreeRegUse(op1, predictReg, lockedRegs, rsvdRegs);
+                tree->gtUsedRegs = op1->gtUsedRegs;
+                goto RETURN_CHECK;
+
             default:
 #ifdef DEBUG
                 gtDispTree(tree);

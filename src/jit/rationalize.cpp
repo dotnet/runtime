@@ -441,33 +441,77 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
 
     genTreeOps locationOp = location->OperGet();
 
-#ifdef FEATURE_SIMD
-    if (varTypeIsSIMD(location) && assignment->OperIsInitBlkOp())
+    if (assignment->OperIsBlkOp())
     {
-        if (location->OperGet() == GT_LCL_VAR)
+#ifdef FEATURE_SIMD
+        if (varTypeIsSIMD(location) && assignment->OperIsInitBlkOp())
         {
-            var_types simdType = location->TypeGet();
-            GenTree*  initVal  = assignment->gtOp.gtOp2;
-            var_types baseType = comp->getBaseTypeOfSIMDLocal(location);
-            if (baseType != TYP_UNKNOWN)
+            if (location->OperGet() == GT_LCL_VAR)
             {
-                GenTreeSIMD* simdTree = new (comp, GT_SIMD)
-                    GenTreeSIMD(simdType, initVal, SIMDIntrinsicInit, baseType, genTypeSize(simdType));
-                assignment->gtOp.gtOp2 = simdTree;
-                value                  = simdTree;
-                initVal->gtNext        = simdTree;
-                simdTree->gtPrev       = initVal;
+                var_types simdType = location->TypeGet();
+                GenTree*  initVal  = assignment->gtOp.gtOp2;
+                var_types baseType = comp->getBaseTypeOfSIMDLocal(location);
+                if (baseType != TYP_UNKNOWN)
+                {
+                    GenTreeSIMD* simdTree = new (comp, GT_SIMD)
+                        GenTreeSIMD(simdType, initVal, SIMDIntrinsicInit, baseType, genTypeSize(simdType));
+                    assignment->gtOp.gtOp2 = simdTree;
+                    value                  = simdTree;
+                    initVal->gtNext        = simdTree;
+                    simdTree->gtPrev       = initVal;
 
-                simdTree->gtNext = location;
-                location->gtPrev = simdTree;
+                    simdTree->gtNext = location;
+                    location->gtPrev = simdTree;
+                }
             }
         }
-        else
+#endif // FEATURE_SIMD
+        if ((location->TypeGet() == TYP_STRUCT) && !assignment->IsPhiDefn() && !value->IsMultiRegCall())
         {
-            assert(location->OperIsBlk());
+            if ((location->OperGet() == GT_LCL_VAR))
+            {
+                // We need to construct a block node for the location.
+                // Modify lcl to be the address form.
+                location->SetOper(addrForm(locationOp));
+                LclVarDsc* varDsc     = &(comp->lvaTable[location->AsLclVarCommon()->gtLclNum]);
+                location->gtType      = TYP_BYREF;
+                GenTreeBlk*  storeBlk = nullptr;
+                unsigned int size     = varDsc->lvExactSize;
+
+                if (varDsc->lvStructGcCount != 0)
+                {
+                    CORINFO_CLASS_HANDLE structHnd = varDsc->lvVerTypeInfo.GetClassHandle();
+                    GenTreeObj*          objNode   = comp->gtNewObjNode(structHnd, location)->AsObj();
+                    unsigned int         slots = (unsigned)(roundUp(size, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE);
+
+                    objNode->SetGCInfo(varDsc->lvGcLayout, varDsc->lvStructGcCount, slots);
+                    objNode->ChangeOper(GT_STORE_OBJ);
+                    objNode->SetData(value);
+                    comp->fgMorphUnsafeBlk(objNode);
+                    storeBlk = objNode;
+                }
+                else
+                {
+                    storeBlk = new (comp, GT_STORE_BLK) GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, location, value, size);
+                }
+                storeBlk->gtFlags |= (GTF_REVERSE_OPS | GTF_ASG);
+                storeBlk->gtFlags |= ((location->gtFlags | value->gtFlags) & GTF_ALL_EFFECT);
+
+                GenTree* insertionPoint = location->gtNext;
+                BlockRange().InsertBefore(insertionPoint, storeBlk);
+                use.ReplaceWith(comp, storeBlk);
+                BlockRange().Remove(assignment);
+                JITDUMP("After transforming local struct assignment into a block op:\n");
+                DISPTREERANGE(BlockRange(), use.Def());
+                JITDUMP("\n");
+                return;
+            }
+            else
+            {
+                assert(location->OperIsBlk());
+            }
         }
     }
-#endif // FEATURE_SIMD
 
     switch (locationOp)
     {
@@ -539,7 +583,7 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
             storeBlk->SetOperRaw(storeOper);
             storeBlk->gtFlags &= ~GTF_DONT_CSE;
             storeBlk->gtFlags |= (assignment->gtFlags & (GTF_ALL_EFFECT | GTF_REVERSE_OPS | GTF_BLK_VOLATILE |
-                                                         GTF_BLK_UNALIGNED | GTF_BLK_INIT | GTF_DONT_CSE));
+                                                         GTF_BLK_UNALIGNED | GTF_DONT_CSE));
             storeBlk->gtBlk.Data() = value;
 
             // Replace the assignment node with the store
