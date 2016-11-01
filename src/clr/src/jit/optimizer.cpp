@@ -6765,15 +6765,17 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
 
 bool Compiler::optBlockIsLoopEntry(BasicBlock* blk, unsigned* pLnum)
 {
-    unsigned lnum = blk->bbNatLoopNum;
-    while (lnum != BasicBlock::NOT_IN_LOOP)
+    for (unsigned lnum = blk->bbNatLoopNum; lnum != BasicBlock::NOT_IN_LOOP; lnum = optLoopTable[lnum].lpParent)
     {
+        if (optLoopTable[lnum].lpFlags & LPFLG_REMOVED)
+        {
+            continue;
+        }
         if (optLoopTable[lnum].lpEntry == blk)
         {
             *pLnum = lnum;
             return true;
         }
-        lnum = optLoopTable[lnum].lpParent;
     }
     return false;
 }
