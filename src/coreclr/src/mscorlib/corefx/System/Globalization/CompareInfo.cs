@@ -26,7 +26,6 @@ namespace System.Globalization
 {
     [Flags]
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum CompareOptions
     {
         None = 0x00000000,
@@ -41,7 +40,6 @@ namespace System.Globalization
     }
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public partial class CompareInfo : IDeserializationCallback
     {
         // Mask used to check if IndexOf()/LastIndexOf()/IsPrefix()/IsPostfix() has the right flags.
@@ -74,6 +72,9 @@ namespace System.Globalization
         private String _name;  // The name used to construct this CompareInfo
         [NonSerialized] 
         private String _sortName; // The name that defines our behavior
+
+        [OptionalField(VersionAdded = 3)]
+        private SortVersion _sortVersion;
 
         /*=================================GetCompareInfo==========================
         **Action: Get the CompareInfo constructed from the data table in the specified assembly for the specified culture.
@@ -172,14 +173,12 @@ namespace System.Globalization
             return CultureInfo.GetCultureInfo(name).CompareInfo;
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public unsafe static bool IsSortable(char ch)
         {
             char *pChar = &ch;
             return IsSortable(pChar, 1);
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public unsafe static bool IsSortable(string text)
         {
             if (text == null) 
@@ -242,7 +241,6 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public virtual String Name
         {
             get
@@ -1075,6 +1073,19 @@ namespace System.Globalization
         public override String ToString()
         {
             return ("CompareInfo - " + this.Name);
+        }
+
+        public SortVersion Version
+        {
+            get
+            {
+                if (_sortVersion == null)
+                {
+                    _sortVersion = GetSortVersion();
+                }
+
+                return _sortVersion;
+            }
         }
 
         public int LCID

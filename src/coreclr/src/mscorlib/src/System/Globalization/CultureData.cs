@@ -451,8 +451,8 @@ namespace System.Globalization
 		    invariant.iDefaultOemCodePage = 437;                    // default oem code page ID (OCP or OEM)
 		    invariant.iDefaultMacCodePage = 10000;                  // default macintosh code page
 		    invariant.iDefaultEbcdicCodePage = 037;                    // default EBCDIC code page
-		    invariant.sAbbrevLang = "IVL";                  // abbreviated language name (Windows Language Name)
-		    invariant.sAbbrevCountry = "IVC";                  // abbreviated country name (RegionInfo) (Windows Region Name)
+            invariant.sAbbrevLang = "IVL";                     // abbreviated language name (Windows Language Name)
+            invariant.sAbbrevCountry = "IVC";                  // abbreviated country name (RegionInfo) (Windows Region Name)
 		    invariant.sISO639Language2 = "ivl";                  // 3 char ISO 639 lang name 2
 		    invariant.sISO3166CountryName2 = "ivc";                  // 3 char ISO 3166 country name 2 2(RegionInfo)
 		    invariant.iInputLanguageHandle = 0x007f;                 // input language handle

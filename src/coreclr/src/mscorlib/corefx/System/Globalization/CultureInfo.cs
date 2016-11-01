@@ -82,6 +82,9 @@ namespace System.Globalization
         [NonSerialized]
         internal bool m_isInherited;
 
+        [NonSerialized]
+        private CultureInfo m_consoleFallbackCulture;
+
         // Names are confusing.  Here are 3 names we have:
         //
         //  new CultureInfo()   m_name        m_nonSortName   m_sortName
@@ -108,7 +111,6 @@ namespace System.Globalization
         // Otherwise its the sort name, ie: de-DE or de-DE_phoneb
         [NonSerialized]
         private string m_sortName;
-
 
         //--------------------------------------------------------------------//
         //
@@ -671,6 +673,14 @@ namespace System.Globalization
             }
         }
 
+        public virtual int KeyboardLayoutId
+        {
+            get
+            {
+                return m_cultureData.IINPUTLANGUAGEHANDLE;
+            }
+        }
+
         public static CultureInfo[] GetCultures(CultureTypes types)
         {
             Contract.Ensures(Contract.Result<CultureInfo[]>() != null);
@@ -722,6 +732,24 @@ namespace System.Globalization
             }
         }
 
+        public string IetfLanguageTag
+        {
+            get
+            {
+                Contract.Ensures(Contract.Result<string>() != null);
+
+                // special case the compatibility cultures
+                switch (this.Name)
+                {
+                    case "zh-CHT":
+                        return "zh-Hant";
+                    case "zh-CHS":
+                        return "zh-Hans";
+                    default:
+                        return this.Name;
+                }
+            }
+        }
 
         ////////////////////////////////////////////////////////////////////////
         //
@@ -963,6 +991,31 @@ namespace System.Globalization
             }
         }
 
+        public CultureTypes CultureTypes
+        {
+            get
+            {
+                CultureTypes types = 0;
+
+                if (m_cultureData.IsNeutralCulture)
+                    types |= CultureTypes.NeutralCultures;
+                else
+                    types |= CultureTypes.SpecificCultures;
+
+                types |= m_cultureData.IsWin32Installed ? CultureTypes.InstalledWin32Cultures : 0;
+
+// Disable  warning 618: System.Globalization.CultureTypes.FrameworkCultures' is obsolete
+#pragma warning disable 618
+                types |= m_cultureData.IsFramework ? CultureTypes.FrameworkCultures : 0;
+
+#pragma warning restore 618
+                types |= m_cultureData.IsSupplementalCustomCulture ? CultureTypes.UserCustomCulture : 0;
+                types |= m_cultureData.IsReplacementCulture ? CultureTypes.ReplacementCultures | CultureTypes.UserCustomCulture : 0;
+
+                return types;
+            }
+        }
+
         public virtual NumberFormatInfo NumberFormat
         {
             get
@@ -1146,6 +1199,20 @@ namespace System.Globalization
             {
                 return m_cultureData.UseUserOverride;
             }
+        }
+
+        public CultureInfo GetConsoleFallbackUICulture()
+        {
+            Contract.Ensures(Contract.Result<CultureInfo>() != null);
+
+            CultureInfo temp = m_consoleFallbackCulture;
+            if (temp == null)
+            {
+                temp = CreateSpecificCulture(m_cultureData.SCONSOLEFALLBACKNAME);
+                temp.m_isReadOnly = true;
+                m_consoleFallbackCulture = temp;
+            }
+            return (temp);
         }
 
         public virtual Object Clone()
