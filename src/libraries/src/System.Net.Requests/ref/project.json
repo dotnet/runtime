@@ -1,15 +1,15 @@
 {
   "dependencies": {
-    "System.Collections.Specialized": "4.4.0-beta-24629-01",
-    "System.IO": "4.4.0-beta-24629-01",
-    "System.Net.Primitives": "4.4.0-beta-24629-01",
-    "System.Net.Security": "4.4.0-beta-24629-01",
-    "System.Net.ServicePoint": "4.4.0-beta-24629-01",
-    "System.Net.WebHeaderCollection": "4.4.0-beta-24629-01",
-    "System.Runtime": "4.4.0-beta-24629-01",
-    "System.Security.Cryptography.X509Certificates": "4.4.0-beta-24629-01",
-    "System.Security.Principal": "4.4.0-beta-24629-01",
-    "System.Threading.Tasks": "4.4.0-beta-24629-01"
+    "System.Collections.Specialized": "4.4.0-beta-24701-01",
+    "System.IO": "4.4.0-beta-24701-01",
+    "System.Net.Primitives": "4.4.0-beta-24701-01",
+    "System.Net.Security": "4.4.0-beta-24701-01",
+    "System.Net.ServicePoint": "4.4.0-beta-24701-01",
+    "System.Net.WebHeaderCollection": "4.4.0-beta-24701-01",
+    "System.Runtime": "4.4.0-beta-24701-01",
+    "System.Security.Cryptography.X509Certificates": "4.4.0-beta-24701-01",
+    "System.Security.Principal": "4.4.0-beta-24701-01",
+    "System.Threading.Tasks": "4.4.0-beta-24701-01"
   },
   "frameworks": {
     "netstandard1.7": {}

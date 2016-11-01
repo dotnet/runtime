@@ -1,16 +1,16 @@
 {
   "dependencies": {
-    "System.Collections.Specialized": "4.4.0-beta-24629-01",
-    "System.ComponentModel": "4.4.0-beta-24629-01",
-    "System.ComponentModel.Primitives": "4.4.0-beta-24629-01",
-    "System.ComponentModel.EventBasedAsync": "4.4.0-beta-24629-01",
-    "System.IO": "4.4.0-beta-24629-01",
-    "System.Net.Primitives": "4.4.0-beta-24629-01",
-    "System.Net.Requests": "4.4.0-beta-24629-01",
-    "System.Net.WebHeaderCollection": "4.4.0-beta-24629-01",
-    "System.Runtime": "4.4.0-beta-24629-01",
-    "System.Text.Encoding": "4.4.0-beta-24629-01",
-    "System.Threading.Tasks": "4.4.0-beta-24629-01"
+    "System.Collections.Specialized": "4.4.0-beta-24701-01",
+    "System.ComponentModel": "4.4.0-beta-24701-01",
+    "System.ComponentModel.Primitives": "4.4.0-beta-24701-01",
+    "System.ComponentModel.EventBasedAsync": "4.4.0-beta-24701-01",
+    "System.IO": "4.4.0-beta-24701-01",
+    "System.Net.Primitives": "4.4.0-beta-24701-01",
+    "System.Net.Requests": "4.4.0-beta-24701-01",
+    "System.Net.WebHeaderCollection": "4.4.0-beta-24701-01",
+    "System.Runtime": "4.4.0-beta-24701-01",
+    "System.Text.Encoding": "4.4.0-beta-24701-01",
+    "System.Threading.Tasks": "4.4.0-beta-24701-01"
   },
   "frameworks": {
     "netstandard1.7": {}
