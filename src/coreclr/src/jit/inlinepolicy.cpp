@@ -1210,7 +1210,7 @@ void RandomPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 
 // clang-format off
 DiscretionaryPolicy::DiscretionaryPolicy(Compiler* compiler, bool isPrejitRoot)
-    : LegacyPolicy(compiler, isPrejitRoot)
+    : EnhancedLegacyPolicy(compiler, isPrejitRoot)
     , m_Depth(0)
     , m_BlockCount(0)
     , m_Maxstack(0)
@@ -1256,6 +1256,7 @@ DiscretionaryPolicy::DiscretionaryPolicy(Compiler* compiler, bool isPrejitRoot)
     , m_IsSameThis(false)
     , m_CallerHasNewArray(false)
     , m_CallerHasNewObj(false)
+    , m_CalleeHasGCStruct(false)
 {
     // Empty
 }
@@ -1307,8 +1308,17 @@ void DiscretionaryPolicy::NoteBool(InlineObservation obs, bool value)
             m_CallerHasNewObj = value;
             break;
 
+        case InlineObservation::CALLEE_HAS_GC_STRUCT:
+            m_CalleeHasGCStruct = value;
+            break;
+
+        case InlineObservation::CALLSITE_RARE_GC_STRUCT:
+            // This is redundant since this policy tracks call site
+            // hotness for all candidates. So ignore.
+            break;
+
         default:
-            LegacyPolicy::NoteBool(obs, value);
+            EnhancedLegacyPolicy::NoteBool(obs, value);
             break;
     }
 }
@@ -1352,7 +1362,7 @@ void DiscretionaryPolicy::NoteInt(InlineObservation obs, int value)
             // on similarity of impact on codegen.
             OPCODE opcode = static_cast<OPCODE>(value);
             ComputeOpcodeBin(opcode);
-            LegacyPolicy::NoteInt(obs, value);
+            EnhancedLegacyPolicy::NoteInt(obs, value);
             break;
         }
 
@@ -1373,8 +1383,8 @@ void DiscretionaryPolicy::NoteInt(InlineObservation obs, int value)
             break;
 
         default:
-            // Delegate remainder to the LegacyPolicy.
-            LegacyPolicy::NoteInt(obs, value);
+            // Delegate remainder to the super class.
+            EnhancedLegacyPolicy::NoteInt(obs, value);
             break;
     }
 }
@@ -1689,8 +1699,8 @@ void DiscretionaryPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo
     // model for actual inlining.
     EstimatePerformanceImpact();
 
-    // Delegate to LegacyPolicy for the rest
-    LegacyPolicy::DetermineProfitability(methodInfo);
+    // Delegate to super class for the rest
+    EnhancedLegacyPolicy::DetermineProfitability(methodInfo);
 }
 
 //------------------------------------------------------------------------
@@ -1967,6 +1977,8 @@ void DiscretionaryPolicy::DumpSchema(FILE* file) const
     fprintf(file, ",IsSameThis");
     fprintf(file, ",CallerHasNewArray");
     fprintf(file, ",CallerHasNewObj");
+    fprintf(file, ",CalleeDoesNotReturn");
+    fprintf(file, ",CalleeHasGCStruct");
 }
 
 //------------------------------------------------------------------------
@@ -2047,6 +2059,8 @@ void DiscretionaryPolicy::DumpData(FILE* file) const
     fprintf(file, ",%u", m_IsSameThis ? 1 : 0);
     fprintf(file, ",%u", m_CallerHasNewArray ? 1 : 0);
     fprintf(file, ",%u", m_CallerHasNewObj ? 1 : 0);
+    fprintf(file, ",%u", m_IsNoReturn ? 1 : 0);
+    fprintf(file, ",%u", m_CalleeHasGCStruct ? 1 : 0);
 }
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)

@@ -247,14 +247,15 @@ private:
 
 #endif // DEBUG
 
-// DiscretionaryPolicy is a variant of the legacy policy.  It differs
-// in that there is no ALWAYS_INLINE class, there is no IL size limit,
-// it does not try and maintain legacy compatabilty, and in prejit mode,
-// discretionary failures do not set the "NEVER" inline bit.
+// DiscretionaryPolicy is a variant of the enhanced legacy policy.  It
+// differs in that there is no ALWAYS_INLINE class, there is no IL
+// size limit, it does not try and maintain legacy compatabilty, and
+// in prejit mode, discretionary failures do not set the "NEVER"
+// inline bit.
 //
 // It is useful for gathering data about inline costs.
 
-class DiscretionaryPolicy : public LegacyPolicy
+class DiscretionaryPolicy : public EnhancedLegacyPolicy
 {
 public:
     // Construct a DiscretionaryPolicy
@@ -346,6 +347,7 @@ protected:
     bool        m_IsSameThis;
     bool        m_CallerHasNewArray;
     bool        m_CallerHasNewObj;
+    bool        m_CalleeHasGCStruct;
 };
 
 // ModelPolicy is an experimental policy that uses the results
