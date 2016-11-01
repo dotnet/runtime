@@ -47,8 +47,10 @@ g_print (const gchar *format, ...)
 	va_list args;
 
 	va_start (args, format);
-	if (g_vasprintf (&msg, format, args) < 0)
+	if (g_vasprintf (&msg, format, args) < 0) {
+		va_end (args);
 		return;
+	}
 	va_end (args);
 
 	if (!stdout_handler)
@@ -65,8 +67,10 @@ g_printerr (const gchar *format, ...)
 	va_list args;
 
 	va_start (args, format);
-	if (g_vasprintf (&msg, format, args) < 0)
+	if (g_vasprintf (&msg, format, args) < 0) {
+		va_end (args);
 		return;
+	}
 	va_end (args);
 
 	if (!stderr_handler)
