@@ -916,6 +916,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
+        [ActiveIssue(13213)]
         [Fact]
         public void AcceptAsyncV6BoundToAnyV4_CantConnect()
         {
