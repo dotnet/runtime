@@ -48,7 +48,7 @@ namespace System.Diagnostics
         public StackTrace(int skipFrames) { }
         public StackTrace(int skipFrames, bool fNeedFileInfo) { }
         public virtual int FrameCount { get { throw null; } }
-        public virtual System.Diagnostics.StackFrame[] GetFrames() { return default(System.Diagnostics.StackFrame[]); }
+        public virtual System.Diagnostics.StackFrame[] GetFrames() { throw null; }
     }
 }
 
@@ -174,7 +174,7 @@ namespace System.Diagnostics.SymbolStore
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct SymbolToken
     {
-        public SymbolToken(int val) { throw null;}
+        public SymbolToken(int val) { throw null; }
         public bool Equals(System.Diagnostics.SymbolStore.SymbolToken obj) { throw null; }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }

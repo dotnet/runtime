@@ -3567,9 +3567,9 @@ namespace System.Diagnostics
     {
         public DebuggableAttribute(bool isJITTrackingEnabled, bool isJITOptimizerDisabled) { }
         public DebuggableAttribute(System.Diagnostics.DebuggableAttribute.DebuggingModes modes) { }
-        public System.Diagnostics.DebuggableAttribute.DebuggingModes DebuggingFlags { get { return default(System.Diagnostics.DebuggableAttribute.DebuggingModes); } }
-        public bool IsJITOptimizerDisabled { get { return default(bool); } }
-        public bool IsJITTrackingEnabled { get { return default(bool); } }
+        public System.Diagnostics.DebuggableAttribute.DebuggingModes DebuggingFlags { get { throw null; } }
+        public bool IsJITOptimizerDisabled { get { throw null; } }
+        public bool IsJITTrackingEnabled { get { throw null; } }
         [System.FlagsAttribute]
         public enum DebuggingModes
         {
@@ -5639,7 +5639,7 @@ namespace System.Reflection
         public StrongNameKeyPair(byte[] keyPairArray) { }
         protected StrongNameKeyPair(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public StrongNameKeyPair(string keyPairContainer) { }
-        public byte[] PublicKey { [System.Security.SecuritySafeCriticalAttribute]get { return default(byte[]); } }
+        public byte[] PublicKey { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
         void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
