@@ -10716,6 +10716,13 @@ void Compiler::gtDispConst(GenTree* tree)
                     printf(" field offset");
                 }
 
+#ifdef FEATURE_SIMD
+                if ((tree->gtFlags & GTF_ICON_SIMD_COUNT) != 0)
+                {
+                    printf(" Vector<T>.Count");
+                }
+#endif
+
                 if ((tree->IsReuseRegVal()) != 0)
                 {
                     printf(" reuse reg val");
