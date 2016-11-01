@@ -173,6 +173,23 @@ typedef struct ucontext {
 	#define UCONTEXT_REG_R13(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__r13)
 	#define UCONTEXT_REG_R14(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__r14)
 	#define UCONTEXT_REG_R15(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__r15)
+	#define UCONTEXT_REG_XMM
+	#define UCONTEXT_REG_XMM0(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__fs.__fpu_xmm0)
+	#define UCONTEXT_REG_XMM1(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__fs.__fpu_xmm1)
+	#define UCONTEXT_REG_XMM2(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__fs.__fpu_xmm2)
+	#define UCONTEXT_REG_XMM3(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__fs.__fpu_xmm3)
+	#define UCONTEXT_REG_XMM4(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__fs.__fpu_xmm4)
+	#define UCONTEXT_REG_XMM5(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__fs.__fpu_xmm5)
+	#define UCONTEXT_REG_XMM6(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__fs.__fpu_xmm6)
+	#define UCONTEXT_REG_XMM7(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__fs.__fpu_xmm7)
+	#define UCONTEXT_REG_XMM8(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__fs.__fpu_xmm8)
+	#define UCONTEXT_REG_XMM9(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__fs.__fpu_xmm9)
+	#define UCONTEXT_REG_XMM10(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__fs.__fpu_xmm10)
+	#define UCONTEXT_REG_XMM11(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__fs.__fpu_xmm11)
+	#define UCONTEXT_REG_XMM12(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__fs.__fpu_xmm12)
+	#define UCONTEXT_REG_XMM13(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__fs.__fpu_xmm13)
+	#define UCONTEXT_REG_XMM14(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__fs.__fpu_xmm14)
+	#define UCONTEXT_REG_XMM15(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__fs.__fpu_xmm15)
 #elif defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
 	#define UCONTEXT_REG_RAX(ctx) (((ucontext_t*)(ctx))->uc_mcontext.mc_rax)
 	#define UCONTEXT_REG_RBX(ctx) (((ucontext_t*)(ctx))->uc_mcontext.mc_rbx)
@@ -229,7 +246,7 @@ typedef struct ucontext {
 	#define UCONTEXT_REG_R14(ctx) (((ucontext_t*)(ctx))->sc_r14)
 	#define UCONTEXT_REG_R15(ctx) (((ucontext_t*)(ctx))->sc_r15)
 #elif !defined(HOST_WIN32)
-#define UCONTEXT_GREGS(ctx)	((guint64*)&(((ucontext_t*)(ctx))->uc_mcontext.gregs))
+	#define UCONTEXT_GREGS(ctx)	((guint64*)&(((ucontext_t*)(ctx))->uc_mcontext.gregs))
 #endif
 
 #ifdef UCONTEXT_GREGS

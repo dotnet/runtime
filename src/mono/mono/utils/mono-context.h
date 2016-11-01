@@ -18,6 +18,13 @@
 #include <signal.h>
 #endif
 
+#define MONO_CONTEXT_OFFSET(field, index, field_type) \
+    "i" (offsetof (MonoContext, field) + (index) * sizeof (field_type))
+
+#if defined(__APPLE__)
+typedef struct __darwin_xmm_reg MonoContextSimdReg;
+#endif
+
 /*
  * General notes about mono-context.
  * Each arch defines a MonoContext struct with all GPR regs + IP/PC.
@@ -87,6 +94,8 @@ struct sigcontext {
 # define SC_ESI esi
 #endif
 
+#include <mono/arch/x86/x86-codegen.h>
+
 typedef struct {
 	mgreg_t eax;
 	mgreg_t ebx;
@@ -97,6 +106,9 @@ typedef struct {
 	mgreg_t esi;
 	mgreg_t edi;
 	mgreg_t eip;
+#ifdef __APPLE__
+    MonoContextSimdReg fregs [X86_XMM_NREG];
+#endif
 } MonoContext;
 
 #define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->eip = (mgreg_t)(ip); } while (0); 
@@ -129,18 +141,26 @@ typedef struct {
 #else
 #define MONO_CONTEXT_GET_CURRENT(ctx) \
 	__asm__ __volatile__(   \
-	"movl $0x0, 0x00(%0)\n" \
-	"mov %%ebx, 0x04(%0)\n" \
-	"mov %%ecx, 0x08(%0)\n" \
-	"mov %%edx, 0x0c(%0)\n" \
-	"mov %%ebp, 0x10(%0)\n" \
-	"mov %%esp, 0x14(%0)\n" \
-	"mov %%esi, 0x18(%0)\n" \
-	"mov %%edi, 0x1c(%0)\n" \
+	"movl $0x0, %c[eax](%0)\n" \
+	"mov %%ebx, %c[ebx](%0)\n" \
+	"mov %%ecx, %c[ecx](%0)\n" \
+	"mov %%edx, %c[edx](%0)\n" \
+	"mov %%ebp, %c[ebp](%0)\n" \
+	"mov %%esp, %c[esp](%0)\n" \
+	"mov %%esi, %c[esi](%0)\n" \
+	"mov %%edi, %c[edi](%0)\n" \
 	"call 1f\n"     \
 	"1: pop 0x20(%0)\n"     \
 	:	\
-	: "a" (&(ctx))  \
+	: "a" (&(ctx)),	\
+		[eax] MONO_CONTEXT_OFFSET (eax, 0, mgreg_t), \
+		[ebx] MONO_CONTEXT_OFFSET (ebx, 0, mgreg_t), \
+		[ecx] MONO_CONTEXT_OFFSET (ecx, 0, mgreg_t), \
+		[edx] MONO_CONTEXT_OFFSET (edx, 0, mgreg_t), \
+		[ebp] MONO_CONTEXT_OFFSET (ebp, 0, mgreg_t), \
+		[esp] MONO_CONTEXT_OFFSET (esp, 0, mgreg_t), \
+		[esi] MONO_CONTEXT_OFFSET (esi, 0, mgreg_t), \
+		[edi] MONO_CONTEXT_OFFSET (edi, 0, mgreg_t) \
 	: "memory")
 #endif
 
@@ -160,7 +180,11 @@ typedef struct {
 
 typedef struct {
 	mgreg_t gregs [AMD64_NREG];
+#ifdef __APPLE__
+	MonoContextSimdReg fregs [AMD64_XMM_NREG];
+#else
 	double fregs [AMD64_XMM_NREG];
+#endif
 } MonoContext;
 
 #define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->gregs [AMD64_RIP] = (mgreg_t)(ip); } while (0);
@@ -202,30 +226,98 @@ extern void mono_context_get_current (void *);
 		: "rdx", "memory")
 #else
 
-#define MONO_CONTEXT_GET_CURRENT(ctx)	\
-	__asm__ __volatile__(	\
-		"movq $0x0,  0x00(%0)\n"	\
-		"movq %%rcx, 0x08(%0)\n"	\
-		"movq %%rdx, 0x10(%0)\n"	\
-		"movq %%rbx, 0x18(%0)\n"	\
-		"movq %%rsp, 0x20(%0)\n"	\
-		"movq %%rbp, 0x28(%0)\n"	\
-		"movq %%rsi, 0x30(%0)\n"	\
-		"movq %%rdi, 0x38(%0)\n"	\
-		"movq %%r8,  0x40(%0)\n"	\
-		"movq %%r9,  0x48(%0)\n"	\
-		"movq %%r10, 0x50(%0)\n"	\
-		"movq %%r11, 0x58(%0)\n"	\
-		"movq %%r12, 0x60(%0)\n"	\
-		"movq %%r13, 0x68(%0)\n"	\
-		"movq %%r14, 0x70(%0)\n"	\
-		"movq %%r15, 0x78(%0)\n"	\
-		/* "leaq (%%rip), %%rdx\n" is not understood by icc */	\
-		".byte 0x48, 0x8d, 0x15, 0x00, 0x00, 0x00, 0x00\n" \
-		"movq %%rdx, 0x80(%0)\n"	\
-		: 	\
-		: "a" (&(ctx))	\
-		: "rdx", "memory")
+#define MONO_CONTEXT_GET_CURRENT_GREGS(ctx) \
+	do { \
+		__asm__ __volatile__(	\
+			"movq $0x0,  %c[rax](%0)\n"	\
+			"movq %%rcx, %c[rcx](%0)\n"	\
+			"movq %%rdx, %c[rdx](%0)\n"	\
+			"movq %%rbx, %c[rbx](%0)\n"	\
+			"movq %%rsp, %c[rsp](%0)\n"	\
+			"movq %%rbp, %c[rbp](%0)\n"	\
+			"movq %%rsi, %c[rsi](%0)\n"	\
+			"movq %%rdi, %c[rdi](%0)\n"	\
+			"movq %%r8,  %c[r8](%0)\n"	\
+			"movq %%r9,  %c[r9](%0)\n"	\
+			"movq %%r10, %c[r10](%0)\n"	\
+			"movq %%r11, %c[r11](%0)\n"	\
+			"movq %%r12, %c[r12](%0)\n"	\
+			"movq %%r13, %c[r13](%0)\n"	\
+			"movq %%r14, %c[r14](%0)\n"	\
+			"movq %%r15, %c[r15](%0)\n"	\
+			/* "leaq (%%rip), %%rdx\n" is not understood by icc */	\
+			".byte 0x48, 0x8d, 0x15, 0x00, 0x00, 0x00, 0x00\n" \
+			"movq %%rdx, %c[rip](%0)\n"	\
+			: 	\
+			: "a" (&(ctx)),	\
+				[rax] MONO_CONTEXT_OFFSET (gregs, AMD64_RAX, mgreg_t),	\
+				[rcx] MONO_CONTEXT_OFFSET (gregs, AMD64_RCX, mgreg_t),	\
+				[rdx] MONO_CONTEXT_OFFSET (gregs, AMD64_RDX, mgreg_t),	\
+				[rbx] MONO_CONTEXT_OFFSET (gregs, AMD64_RBX, mgreg_t),	\
+				[rsp] MONO_CONTEXT_OFFSET (gregs, AMD64_RSP, mgreg_t),	\
+				[rbp] MONO_CONTEXT_OFFSET (gregs, AMD64_RBP, mgreg_t),	\
+				[rsi] MONO_CONTEXT_OFFSET (gregs, AMD64_RSI, mgreg_t),	\
+				[rdi] MONO_CONTEXT_OFFSET (gregs, AMD64_RDI, mgreg_t),	\
+				[r8] MONO_CONTEXT_OFFSET (gregs, AMD64_R8, mgreg_t), \
+				[r9] MONO_CONTEXT_OFFSET (gregs, AMD64_R9, mgreg_t), \
+				[r10] MONO_CONTEXT_OFFSET (gregs, AMD64_R10, mgreg_t),	\
+				[r11] MONO_CONTEXT_OFFSET (gregs, AMD64_R11, mgreg_t),	\
+				[r12] MONO_CONTEXT_OFFSET (gregs, AMD64_R12, mgreg_t),	\
+				[r13] MONO_CONTEXT_OFFSET (gregs, AMD64_R13, mgreg_t),	\
+				[r14] MONO_CONTEXT_OFFSET (gregs, AMD64_R14, mgreg_t),	\
+				[r15] MONO_CONTEXT_OFFSET (gregs, AMD64_R15, mgreg_t),	\
+				[rip] MONO_CONTEXT_OFFSET (gregs, AMD64_RIP, mgreg_t)	\
+			: "rdx", "memory");	\
+	} while (0)
+
+#ifdef UCONTEXT_REG_XMM
+#define MONO_CONTEXT_GET_CURRENT_FREGS(ctx) \
+	do { \
+		__asm__ __volatile__ ( \
+			"movups %%xmm0, %c[xmm0](%0)\n"	\
+			"movups %%xmm1, %c[xmm1](%0)\n"	\
+			"movups %%xmm2, %c[xmm2](%0)\n"	\
+			"movups %%xmm3, %c[xmm3](%0)\n"	\
+			"movups %%xmm4, %c[xmm4](%0)\n"	\
+			"movups %%xmm5, %c[xmm5](%0)\n"	\
+			"movups %%xmm6, %c[xmm6](%0)\n"	\
+			"movups %%xmm7, %c[xmm7](%0)\n"	\
+			"movups %%xmm8, %c[xmm8](%0)\n"	\
+			"movups %%xmm9, %c[xmm9](%0)\n"	\
+			"movups %%xmm10, %c[xmm10](%0)\n"	\
+			"movups %%xmm11, %c[xmm11](%0)\n"	\
+			"movups %%xmm12, %c[xmm12](%0)\n"	\
+			"movups %%xmm12, %c[xmm12](%0)\n"	\
+			"movups %%xmm14, %c[xmm14](%0)\n"	\
+			"movups %%xmm15, %c[xmm15](%0)\n"	\
+			: \
+			: "a" (&(ctx)),	\
+				[xmm0] MONO_CONTEXT_OFFSET (fregs, AMD64_XMM0, MonoContextSimdReg), \
+				[xmm1] MONO_CONTEXT_OFFSET (fregs, AMD64_XMM1, MonoContextSimdReg), \
+				[xmm2] MONO_CONTEXT_OFFSET (fregs, AMD64_XMM2, MonoContextSimdReg), \
+				[xmm3] MONO_CONTEXT_OFFSET (fregs, AMD64_XMM3, MonoContextSimdReg), \
+				[xmm4] MONO_CONTEXT_OFFSET (fregs, AMD64_XMM4, MonoContextSimdReg), \
+				[xmm5] MONO_CONTEXT_OFFSET (fregs, AMD64_XMM5, MonoContextSimdReg), \
+				[xmm6] MONO_CONTEXT_OFFSET (fregs, AMD64_XMM6, MonoContextSimdReg), \
+				[xmm7] MONO_CONTEXT_OFFSET (fregs, AMD64_XMM7, MonoContextSimdReg), \
+				[xmm8] MONO_CONTEXT_OFFSET (fregs, AMD64_XMM8, MonoContextSimdReg), \
+				[xmm9] MONO_CONTEXT_OFFSET (fregs, AMD64_XMM9, MonoContextSimdReg), \
+				[xmm10] MONO_CONTEXT_OFFSET (fregs, AMD64_XMM10, MonoContextSimdReg), \
+				[xmm11] MONO_CONTEXT_OFFSET (fregs, AMD64_XMM11, MonoContextSimdReg), \
+				[xmm12] MONO_CONTEXT_OFFSET (fregs, AMD64_XMM12, MonoContextSimdReg), \
+				[xmm13] MONO_CONTEXT_OFFSET (fregs, AMD64_XMM13, MonoContextSimdReg), \
+				[xmm14] MONO_CONTEXT_OFFSET (fregs, AMD64_XMM14, MonoContextSimdReg), \
+				[xmm15] MONO_CONTEXT_OFFSET (fregs, AMD64_XMM15, MonoContextSimdReg));	\
+	} while (0)
+#else
+#define MONO_CONTEXT_GET_CURRENT_FREGS(ctx)
+#endif
+
+#define MONO_CONTEXT_GET_CURRENT(ctx) \
+    do {	\
+		MONO_CONTEXT_GET_CURRENT_GREGS(ctx);	\
+		MONO_CONTEXT_GET_CURRENT_FREGS(ctx);	\
+	} while (0)
 #endif
 
 #define MONO_ARCH_HAS_MONO_CONTEXT 1
