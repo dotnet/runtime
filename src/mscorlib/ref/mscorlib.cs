@@ -5765,6 +5765,7 @@ namespace System.Globalization
         public virtual int LastIndexOf(string source, string value, int startIndex, int count, System.Globalization.CompareOptions options) { throw null; }
         void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
         public override string ToString() { throw null; }
+        public SortVersion Version { get { throw null; } }
     }
     [System.FlagsAttribute]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
@@ -5789,6 +5790,7 @@ namespace System.Globalization
         public CultureInfo(string name, bool useUserOverride) { throw null; }
         public virtual System.Globalization.Calendar Calendar { get { throw null; } }
         public virtual System.Globalization.CompareInfo CompareInfo { get { throw null; } }
+        public System.Globalization.CultureTypes CultureTypes { get { throw null; } }
         public static System.Globalization.CultureInfo CurrentCulture { get { throw null; } set { } }
         public static System.Globalization.CultureInfo CurrentUICulture { get { throw null; } set { } }
         public virtual System.Globalization.DateTimeFormatInfo DateTimeFormat { get { throw null; } set { } }
@@ -5796,10 +5798,12 @@ namespace System.Globalization
         public static System.Globalization.CultureInfo DefaultThreadCurrentUICulture { get { throw null; } [System.Security.SecuritySafeCriticalAttribute]set { } }
         public virtual string DisplayName { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
         public virtual string EnglishName { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
+        public string IetfLanguageTag { get { throw null; } }
         public static System.Globalization.CultureInfo InstalledUICulture { get { throw null; } }
         public static System.Globalization.CultureInfo InvariantCulture { get { throw null; } }
         public virtual bool IsNeutralCulture { get { throw null; } }
         public bool IsReadOnly { get { throw null; } }
+        public virtual int KeyboardLanguageId { get { throw null; } }
         public virtual int LCID { get { throw null; } }
         public virtual string Name { get { throw null; } }
         public virtual string NativeName { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
@@ -5815,6 +5819,7 @@ namespace System.Globalization
         public virtual object Clone() { throw null; }
         public static System.Globalization.CultureInfo CreateSpecificCulture(string name) { throw null; }
         public override bool Equals(object value) { throw null; }
+        public System.Globalization.CultureInfo GetConsoleFallbackUICulture() { throw null; }
         public static System.Globalization.CultureInfo GetCultureInfo(int culture) { throw null; }
         public static System.Globalization.CultureInfo GetCultureInfo(string name) { throw null; }
         public static System.Globalization.CultureInfo GetCultureInfo(string name, string altName) { throw null; }

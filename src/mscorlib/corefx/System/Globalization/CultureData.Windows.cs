@@ -607,5 +607,26 @@ namespace System.Globalization
         {
             throw new NotImplementedException();
         }
+
+        private static string GetConsoleFallbackName(string cultureName)
+        {
+            throw new NotImplementedException();
+        }
+
+        private bool IsSupplementalCustomCulture
+        {
+            get { throw new NotImplementedException(); }
+        }
+        
+        private bool IsWin32Installed
+        {
+            get { throw new NotImplementedException(); }
+        }
+        
+        private bool IsReplacementCulture
+        {
+            get { throw new NotImplementedException(); }
+        }
+        
     }
 }

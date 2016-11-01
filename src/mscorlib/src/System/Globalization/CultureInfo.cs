@@ -89,9 +89,7 @@ namespace System.Globalization {
         [NonSerialized]private bool m_isSafeCrossDomain;
         [NonSerialized]private int m_createdDomainID;
 #endif // !FEATURE_CORECLR
-#if !FEATURE_CORECLR
         [NonSerialized]private CultureInfo m_consoleFallbackCulture;
-#endif // !FEATURE_CORECLR
 
         // Names are confusing.  Here are 3 names we have:
         //
@@ -1034,7 +1032,6 @@ namespace System.Globalization {
             }
         }
 
-#if !FEATURE_CORECLR
         [System.Runtime.InteropServices.ComVisible(false)]
         public String IetfLanguageTag
         {
@@ -1054,7 +1051,6 @@ namespace System.Globalization {
                 }
             }
         }
-#endif
 
         ////////////////////////////////////////////////////////////////////////
         //
@@ -1315,7 +1311,6 @@ namespace System.Globalization {
             }
         }
 
-#if !FEATURE_CORECLR
         [System.Runtime.InteropServices.ComVisible(false)]
         public CultureTypes CultureTypes
         {
@@ -1333,15 +1328,14 @@ namespace System.Globalization {
 // Disable  warning 618: System.Globalization.CultureTypes.FrameworkCultures' is obsolete
 #pragma warning disable 618
                 types |= m_cultureData.IsFramework ? CultureTypes.FrameworkCultures : 0;
-
 #pragma warning restore 618
+
                 types |= m_cultureData.IsSupplementalCustomCulture ? CultureTypes.UserCustomCulture : 0;
                 types |= m_cultureData.IsReplacementCulture ? CultureTypes.ReplacementCultures | CultureTypes.UserCustomCulture : 0;
 
                 return types;
             }
         }
-#endif
 
         public virtual NumberFormatInfo NumberFormat {
             get 
@@ -1534,7 +1528,6 @@ namespace System.Globalization {
             }
         }
 
-#if !FEATURE_CORECLR
         [System.Security.SecuritySafeCritical]  // auto-generated
         [System.Runtime.InteropServices.ComVisible(false)]
         public CultureInfo GetConsoleFallbackUICulture()
@@ -1550,7 +1543,6 @@ namespace System.Globalization {
             }
             return (temp);
         }
-#endif
 
         public virtual Object Clone()
         {

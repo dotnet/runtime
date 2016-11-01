@@ -411,5 +411,10 @@ namespace System.Globalization
 
             return nativeCompareFlags;
         }
+        
+        private SortVersion GetSortVersion()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

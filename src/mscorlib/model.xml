@@ -2298,6 +2298,7 @@
       <Member Name="Equals(System.Object)" />
       <Member Name="get_LCID" />
       <Member Name="get_Name" />
+      <Member Name="get_Version" />
       <Member Name="GetCompareInfo(System.Int32)" />
       <Member Name="GetCompareInfo(System.Int32,System.Reflection.Assembly)" />
       <Member Name="GetCompareInfo(System.String)" />
@@ -2343,6 +2344,7 @@
       <Member Name="ToString" />
       <Member MemberType="Property" Name="LCID" />
       <Member MemberType="Property" Name="Name" />
+      <Member MemberType="Property" Name="Version" />
     </Type>
     <Type Name="System.Globalization.CompareOptions">
       <Member MemberType="Field" Name="IgnoreCase" />
@@ -2369,15 +2371,18 @@
       <Member Name="get_CompareInfo" />
       <Member Name="get_CurrentCulture" />
       <Member Name="get_CurrentUICulture" />
+      <Member Name="get_CultureTypes" />
       <Member Name="get_DefaultThreadCurrentCulture" />
       <Member Name="get_DefaultThreadCurrentUICulture" />
       <Member Name="get_DateTimeFormat" />
       <Member Name="get_DisplayName" />
       <Member Name="get_EnglishName" />
+      <Member Name="get_IetfLanguageTag" />
       <Member Name="get_InstalledUICulture" />
       <Member Name="get_InvariantCulture" />
       <Member Name="get_IsNeutralCulture" />
       <Member Name="get_IsReadOnly" />
+      <Member Name="get_KeyboardLayoutId" />
       <Member Name="get_LCID" />
       <Member Name="get_Name" />
       <Member Name="get_NativeName" />
@@ -2389,6 +2394,7 @@
       <Member Name="get_ThreeLetterWindowsLanguageName" />
       <Member Name="get_TwoLetterISOLanguageName" />
       <Member Name="get_UseUserOverride" />
+      <Member Name="GetConsoleFallbackUICulture" />
       <Member Name="GetCultureInfo(System.Int32)" />
       <Member Name="GetCultureInfo(System.String)" />
       <Member Name="GetCultureInfo(System.String,System.String)" />
@@ -2411,15 +2417,18 @@
       <Member MemberType="Property" Name="CompareInfo" />
       <Member MemberType="Property" Name="CurrentCulture" />
       <Member MemberType="Property" Name="CurrentUICulture" />
+      <Member MemberType="Property" Name="CultureTypes" />
       <Member MemberType="Property" Name="DateTimeFormat" />
       <Member MemberType="Property" Name="DefaultThreadCurrentCulture" />
       <Member MemberType="Property" Name="DefaultThreadCurrentUICulture"/>
       <Member MemberType="Property" Name="DisplayName" />
       <Member MemberType="Property" Name="EnglishName" />
+      <Member MemberType="Property" Name="IetfLanguageTag" />
       <Member MemberType="Property" Name="InstalledUICulture" />
       <Member MemberType="Property" Name="InvariantCulture" />
       <Member MemberType="Property" Name="IsNeutralCulture" />
       <Member MemberType="Property" Name="IsReadOnly" />
+      <Member MemberType="Property" Name="KeyboardLayoutId" />
       <Member MemberType="Property" Name="LCID" />
       <Member MemberType="Property" Name="Name" />
       <Member MemberType="Property" Name="NativeName" />

@@ -115,8 +115,8 @@ public:
     static INT_PTR InternalInitVersionedSortHandle(LPCWSTR localeName, INT_PTR* handleOrigin);
     static INT_PTR InternalInitVersionedSortHandle(LPCWSTR localeName, INT_PTR* handleOrigin, DWORD sortVersion);
     static DWORD QCALLTYPE InternalGetSortVersion();
-    static BOOL QCALLTYPE InternalGetNlsVersionEx(INT_PTR handle, INT_PTR handleOrigin, LPCWSTR lpLocaleName, NLSVERSIONINFOEX * lpVersionInformation);
 #endif
+    static BOOL QCALLTYPE InternalGetNlsVersionEx(INT_PTR handle, INT_PTR handleOrigin, LPCWSTR lpLocaleName, NLSVERSIONINFOEX * lpVersionInformation);
 
 
 #ifndef FEATURE_CORECLR

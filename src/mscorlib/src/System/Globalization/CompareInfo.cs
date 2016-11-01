@@ -1287,6 +1287,7 @@ namespace System.Globalization {
                 return InternalGetSortVersion();
             }
         }
+#endif
 
         [OptionalField(VersionAdded = 3)]
         private SortVersion m_SortVersion;
@@ -1314,6 +1315,7 @@ namespace System.Globalization {
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool InternalGetNlsVersionEx(IntPtr handle, IntPtr handleOrigin, String localeName, ref Win32Native.NlsVersionInfoEx lpNlsVersionInformation);
 
+#if !FEATURE_CORECLR
         [System.Security.SecurityCritical]
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]

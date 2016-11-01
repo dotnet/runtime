@@ -1856,9 +1856,7 @@ private:
     OBJECTREF dateTimeInfo;
     OBJECTREF calendar;
     OBJECTREF m_cultureData;
-#ifndef FEATURE_CORECLR
     OBJECTREF m_consoleFallbackCulture;
-#endif // !FEATURE_CORECLR
     STRINGREF m_name;                       // "real" name - en-US, de-DE_phoneb or fj-FJ
     STRINGREF m_nonSortName;                // name w/o sort info (de-DE for de-DE_phoneb)
     STRINGREF m_sortName;                   // Sort only name (de-DE_phoneb, en-us for fj-fj (w/us sort)

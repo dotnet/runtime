@@ -1470,8 +1470,8 @@ FCFuncStart(gCompareInfoFuncs)
     QCFuncElement("InternalGetSortKey", COMNlsInfo::InternalGetSortKey)
 #ifndef FEATURE_CORECLR
     QCFuncElement("InternalGetSortVersion", COMNlsInfo::InternalGetSortVersion)
-    QCFuncElement("InternalGetNlsVersionEx", COMNlsInfo::InternalGetNlsVersionEx)
 #endif
+    QCFuncElement("InternalGetNlsVersionEx", COMNlsInfo::InternalGetNlsVersionEx)
 FCFuncEnd()
 
 FCFuncStart(gEncodingTableFuncs)
