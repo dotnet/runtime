@@ -126,6 +126,10 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
     TreeNodeInfo* info         = &(tree->gtLsraInfo);
     RegisterType  registerType = TypeGet(tree);
 
+    JITDUMP("TreeNodeInfoInit for: ");
+    DISPNODE(tree);
+    JITDUMP("\n");
+
     switch (tree->OperGet())
     {
         GenTree* op1;
@@ -536,6 +540,12 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         case GT_STORE_OBJ:
         case GT_STORE_DYN_BLK:
             TreeNodeInfoInitBlockStore(tree->AsBlk());
+            break;
+
+        case GT_INIT_VAL:
+            // Always a passthrough of its child's value.
+            info->srcCount = 0;
+            info->dstCount = 0;
             break;
 
         case GT_LCLHEAP:
@@ -1220,8 +1230,9 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode, fgArgTabEntr
 
 void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
 {
-    GenTree*    dstAddr = blkNode->Addr();
-    unsigned    size;
+    GenTree*    dstAddr  = blkNode->Addr();
+    unsigned    size     = blkNode->gtBlkSize;
+    GenTree*    source   = blkNode->Data();
     LinearScan* l        = m_lsra;
     Compiler*   compiler = comp;
 
@@ -1229,16 +1240,44 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
     // We may require an additional source or temp register for the size.
     blkNode->gtLsraInfo.srcCount = 2;
     blkNode->gtLsraInfo.dstCount = 0;
+    GenTreePtr srcAddrOrFill     = nullptr;
+    bool       isInitBlk         = blkNode->OperIsInitBlkOp();
 
-    if ((blkNode->OperGet() == GT_STORE_OBJ) && (blkNode->AsObj()->gtGcPtrCount == 0))
+    if (!isInitBlk)
     {
-        blkNode->SetOper(GT_STORE_BLK);
+        // CopyObj or CopyBlk
+        if ((blkNode->OperGet() == GT_STORE_OBJ) && ((blkNode->AsObj()->gtGcPtrCount == 0) || blkNode->gtBlkOpGcUnsafe))
+        {
+            blkNode->SetOper(GT_STORE_BLK);
+        }
+        if (source->gtOper == GT_IND)
+        {
+            srcAddrOrFill = blkNode->Data()->gtGetOp1();
+            // We're effectively setting source as contained, but can't call MakeSrcContained, because the
+            // "inheritance" of the srcCount is to a child not a parent - it would "just work" but could be misleading.
+            // If srcAddr is already non-contained, we don't need to change it.
+            if (srcAddrOrFill->gtLsraInfo.getDstCount() == 0)
+            {
+                srcAddrOrFill->gtLsraInfo.setDstCount(1);
+                srcAddrOrFill->gtLsraInfo.setSrcCount(source->gtLsraInfo.srcCount);
+            }
+            m_lsra->clearOperandCounts(source);
+        }
+        else if (!source->IsMultiRegCall() && !source->OperIsSIMD())
+        {
+            assert(source->IsLocal());
+            MakeSrcContained(blkNode, source);
+        }
     }
 
-    if (blkNode->OperIsInitBlkOp())
+    if (isInitBlk)
     {
-        unsigned   size    = blkNode->gtBlkSize;
-        GenTreePtr initVal = blkNode->Data();
+        GenTreePtr initVal = source;
+        if (initVal->OperIsInitVal())
+        {
+            initVal = initVal->gtGetOp1();
+        }
+        srcAddrOrFill = initVal;
 
 #if 0
         // TODO-ARM64-CQ: Currently we generate a helper call for every
@@ -1264,8 +1303,6 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
                 initVal->gtIntCon.gtIconVal = 0x0101010101010101LL * fill;
                 initVal->gtType = TYP_LONG;
             }
-
-            MakeSrcContained(tree, blockSize);
 
             // In case we have a buffer >= 16 bytes
             // we can use SSE2 to do a 128-bit store in a single
@@ -1307,34 +1344,12 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
     {
         // CopyObj or CopyBlk
         // Sources are src and dest and size if not constant.
-        unsigned   size    = blkNode->gtBlkSize;
-        GenTreePtr source  = blkNode->Data();
-        GenTree*   srcAddr = nullptr;
 
-        if (source->gtOper == GT_IND)
-        {
-            srcAddr = blkNode->Data()->gtGetOp1();
-            // We're effectively setting source as contained, but can't call MakeSrcContained, because the
-            // "inheritance" of the srcCount is to a child not a parent - it would "just work" but could be misleading.
-            // If srcAddr is already non-contained, we don't need to change it.
-            if (srcAddr->gtLsraInfo.getDstCount() == 0)
-            {
-                srcAddr->gtLsraInfo.setDstCount(1);
-                srcAddr->gtLsraInfo.setSrcCount(source->gtLsraInfo.srcCount);
-            }
-            m_lsra->clearOperandCounts(source);
-        }
-        else
-        {
-            assert(source->IsLocal());
-            MakeSrcContained(blkNode, source);
-        }
         if (blkNode->OperGet() == GT_STORE_OBJ)
         {
             // CopyObj
 
             GenTreeObj* objNode = blkNode->AsObj();
-            GenTreePtr  source  = objNode->Data();
 
             unsigned slots = objNode->gtSlots;
 
@@ -1363,15 +1378,19 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
             blkNode->gtLsraInfo.internalIntCount = 1;
 
             dstAddr->gtLsraInfo.setSrcCandidates(l, RBM_WRITE_BARRIER_DST_BYREF);
-            srcAddr->gtLsraInfo.setSrcCandidates(l, RBM_WRITE_BARRIER_SRC_BYREF);
+            // If we have a source address we want it in REG_WRITE_BARRIER_SRC_BYREF.
+            // Otherwise, if it is a local, codegen will put its address in REG_WRITE_BARRIER_SRC_BYREF,
+            // which is killed by a StoreObj (and thus needn't be reserved).
+            if (srcAddrOrFill != nullptr)
+            {
+                srcAddrOrFill->gtLsraInfo.setSrcCandidates(l, RBM_WRITE_BARRIER_SRC_BYREF);
+            }
         }
         else
         {
             // CopyBlk
-            unsigned   size                  = blkNode->gtBlkSize;
-            GenTreePtr dstAddr               = blkNode->Addr();
-            short      internalIntCount      = 0;
-            regMaskTP  internalIntCandidates = RBM_NONE;
+            short     internalIntCount      = 0;
+            regMaskTP internalIntCandidates = RBM_NONE;
 
 #if 0
             // In case of a CpBlk with a constant size and less than CPBLK_UNROLL_LIMIT size
@@ -1379,11 +1398,8 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
 
             // TODO-ARM64-CQ: cpblk loop unrolling is currently not implemented.
 
-            if (blockSize->IsCnsIntOrI() && blockSize->gtIntCon.gtIconVal <= CPBLK_UNROLL_LIMIT)
+            if ((size != 0) && (size <= INITBLK_UNROLL_LIMIT))
             {
-                assert(!blockSize->IsIconHandle());
-                ssize_t size = blockSize->gtIntCon.gtIconVal;
-
                 // If we have a buffer between XMM_REGSIZE_BYTES and CPBLK_UNROLL_LIMIT bytes, we'll use SSE2. 
                 // Structs and buffer with sizes <= CPBLK_UNROLL_LIMIT bytes are occurring in more than 95% of
                 // our framework assemblies, so this is the main code generation scheme we'll use.
@@ -1404,9 +1420,9 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
 
                 // If src or dst are on stack, we don't have to generate the address into a register
                 // because it's just some constant+SP
-                if (srcAddr->OperIsLocalAddr())
+                if (srcAddr != nullptr && srcAddrOrFill->OperIsLocalAddr())
                 {
-                    MakeSrcContained(blkNode, srcAddr);
+                    MakeSrcContained(blkNode, srcAddrOrFill);
                 }
 
                 if (dstAddr->OperIsLocalAddr())
@@ -1425,15 +1441,9 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
 
                 dstAddr->gtLsraInfo.setSrcCandidates(l, RBM_ARG_0);
                 // The srcAddr goes in arg1.
-                if (srcAddr != nullptr)
+                if (srcAddrOrFill != nullptr)
                 {
-                    srcAddr->gtLsraInfo.setSrcCandidates(l, RBM_ARG_1);
-                }
-                else
-                {
-                    // This is a local; we'll use a temp register for its address.
-                    internalIntCandidates |= RBM_ARG_1;
-                    internalIntCount++;
+                    srcAddrOrFill->gtLsraInfo.setSrcCandidates(l, RBM_ARG_1);
                 }
                 if (size != 0)
                 {

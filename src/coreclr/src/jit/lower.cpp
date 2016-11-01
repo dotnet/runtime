@@ -3782,8 +3782,6 @@ void Lowering::LowerStoreInd(GenTree* node)
 void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 {
     GenTree* src = blkNode->Data();
-    // TODO-1stClassStructs: Don't require this.
-    assert(blkNode->OperIsInitBlkOp() || !src->OperIsLocal());
     TryCreateAddrMode(LIR::Use(BlockRange(), &blkNode->Addr(), blkNode), false);
 }
 
