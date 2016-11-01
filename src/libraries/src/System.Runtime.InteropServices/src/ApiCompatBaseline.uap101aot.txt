@@ -2,83 +2,13 @@ Compat issues with assembly System.Runtime.InteropServices:
 CannotRemoveBaseTypeOrInterface : Type 'System.DataMisalignedException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.DllNotFoundException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.DllNotFoundException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.IO.UnmanagedMemoryAccessor' does not implement interface 'System.IDisposable' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor..ctor(System.Runtime.InteropServices.SafeBuffer, System.Int64, System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor..ctor(System.Runtime.InteropServices.SafeBuffer, System.Int64, System.Int64, System.IO.FileAccess)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.CanRead.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.CanWrite.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.Capacity.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.Dispose()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.Dispose(System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.Initialize(System.Runtime.InteropServices.SafeBuffer, System.Int64, System.Int64, System.IO.FileAccess)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.IsOpen.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.Read<T>(System.Int64, T)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.ReadArray<T>(System.Int64, T[], System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.ReadBoolean(System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.ReadByte(System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.ReadChar(System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.ReadDecimal(System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.ReadDouble(System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.ReadInt16(System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.ReadInt32(System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.ReadInt64(System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.ReadSByte(System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.ReadSingle(System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.ReadUInt16(System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.ReadUInt32(System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.ReadUInt64(System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.Write(System.Int64, System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.Write(System.Int64, System.Byte)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.Write(System.Int64, System.Char)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.Write(System.Int64, System.Decimal)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.Write(System.Int64, System.Double)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.Write(System.Int64, System.Int16)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.Write(System.Int64, System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.Write(System.Int64, System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.Write(System.Int64, System.SByte)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.Write(System.Int64, System.Single)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.Write(System.Int64, System.UInt16)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.Write(System.Int64, System.UInt32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.Write(System.Int64, System.UInt64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.Write<T>(System.Int64, T)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryAccessor.WriteArray<T>(System.Int64, T[], System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.IO.UnmanagedMemoryStream' does not inherit from base type 'System.IO.Stream' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryStream..ctor(System.Byte*, System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryStream..ctor(System.Byte*, System.Int64, System.Int64, System.IO.FileAccess)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryStream..ctor(System.Runtime.InteropServices.SafeBuffer, System.Int64, System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryStream..ctor(System.Runtime.InteropServices.SafeBuffer, System.Int64, System.Int64, System.IO.FileAccess)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryStream.CanRead.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryStream.CanSeek.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryStream.CanWrite.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryStream.Capacity.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryStream.Dispose(System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryStream.Flush()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryStream.FlushAsync(System.Threading.CancellationToken)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryStream.Initialize(System.Byte*, System.Int64, System.Int64, System.IO.FileAccess)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryStream.Initialize(System.Runtime.InteropServices.SafeBuffer, System.Int64, System.Int64, System.IO.FileAccess)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryStream.Length.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryStream.Position.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryStream.Position.set(System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryStream.PositionPointer.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryStream.PositionPointer.set(System.Byte*)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryStream.Read(System.Byte[], System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryStream.ReadAsync(System.Byte[], System.Int32, System.Int32, System.Threading.CancellationToken)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryStream.ReadByte()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryStream.Seek(System.Int64, System.IO.SeekOrigin)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryStream.SetLength(System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryStream.Write(System.Byte[], System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryStream.WriteAsync(System.Byte[], System.Int32, System.Int32, System.Threading.CancellationToken)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.UnmanagedMemoryStream.WriteByte(System.Byte)' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.AllowReversePInvokeCallsAttribute' does not inherit from base type 'System.Attribute' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Runtime.InteropServices.CallingConvention System.Runtime.InteropServices.CallingConvention.FastCall' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.IO.UnmanagedMemoryAccessor' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.IO.UnmanagedMemoryStream' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.InteropServices.AllowReversePInvokeCallsAttribute' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.COMException' does not inherit from base type 'System.Runtime.InteropServices.ExternalException' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.COMException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.CriticalHandle' does not inherit from base type 'System.Runtime.ConstrainedExecution.CriticalFinalizerObject' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Runtime.InteropServices.HandleRef..ctor(System.Object, System.IntPtr)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.InteropServices.HandleRef.Handle.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.InteropServices.HandleRef.op_Explicit(System.Runtime.InteropServices.HandleRef)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.InteropServices.HandleRef.ToIntPtr(System.Runtime.InteropServices.HandleRef)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.InteropServices.HandleRef.Wrapper.get()' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.InteropServices.HandleRef' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.InvalidComObjectException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.InvalidComObjectException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.InvalidOleVariantTypeException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
@@ -93,12 +23,7 @@ MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.StringToHGloba
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.ZeroFreeCoTaskMemUTF8(System.IntPtr)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.MarshalDirectiveException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.MarshalDirectiveException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.InteropServices.RuntimeEnvironment.FromGlobalAccessCache(System.Reflection.Assembly)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeInterfaceAsIntPtr(System.Guid, System.Guid)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeInterfaceAsObject(System.Guid, System.Guid)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.InteropServices.RuntimeEnvironment.GetSystemVersion()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.InteropServices.RuntimeEnvironment.SystemConfigurationFile.get()' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.InteropServices.RuntimeEnvironment' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.SafeArrayRankMismatchException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.SafeArrayRankMismatchException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.SafeArrayTypeMismatchException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
@@ -109,4 +34,4 @@ MembersMustExist : Member 'System.Runtime.InteropServices.SafeHandle.Close()' do
 CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.SEHException' does not inherit from base type 'System.Runtime.InteropServices.ExternalException' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.SEHException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.UnmanagedType System.Runtime.InteropServices.UnmanagedType.LPUTF8Str' does not exist in the implementation but it does exist in the contract.
-Total Issues: 110
+Total Issues: 35
