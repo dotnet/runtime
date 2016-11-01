@@ -6928,7 +6928,7 @@ bool getILIntrinsicImplementation(MethodDesc * ftn,
     else if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__BYREF_LESSTHAN)->GetMemberDef())
     {
         // Compare the two arguments
-        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_LDARG_1, CEE_PREFIX1, (BYTE)CEE_CLT, CEE_RET };
+        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_LDARG_1, CEE_PREFIX1, (CEE_CLT & 0xFF), CEE_RET };
         methInfo->ILCode = const_cast<BYTE*>(ilcode);
         methInfo->ILCodeSize = sizeof(ilcode);
         methInfo->maxStack = 2;
@@ -7018,7 +7018,7 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
         _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
         mdToken tokGenericArg = FindGenericMethodArgTypeSpec(MscorlibBinder::GetModule()->GetMDImport());
 
-        static BYTE ilcode[] = { CEE_PREFIX1, (BYTE)CEE_SIZEOF,0,0,0,0, CEE_RET };
+        static BYTE ilcode[] = { CEE_PREFIX1, (CEE_SIZEOF & 0xFF), 0,0,0,0, CEE_RET };
 
         ilcode[2] = (BYTE)(tokGenericArg);
         ilcode[3] = (BYTE)(tokGenericArg >> 8);
@@ -7048,7 +7048,7 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
         mdToken tokGenericArg = FindGenericMethodArgTypeSpec(MscorlibBinder::GetModule()->GetMDImport());
 
         static BYTE ilcode[] = { CEE_LDARG_1,
-            CEE_PREFIX1,(BYTE)CEE_SIZEOF,0,0,0,0,
+            CEE_PREFIX1, (CEE_SIZEOF & 0xFF), 0,0,0,0,
             CEE_CONV_I,
             CEE_MUL,
             CEE_LDARG_0,
@@ -7070,7 +7070,7 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
     else if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__BYREF_ARE_SAME)->GetMemberDef())
     {
         // Compare the two arguments
-        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_LDARG_1, CEE_PREFIX1, (BYTE)CEE_CEQ, CEE_RET };
+        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_LDARG_1, CEE_PREFIX1, (CEE_CEQ & 0xFF), CEE_RET };
         methInfo->ILCode = const_cast<BYTE*>(ilcode);
         methInfo->ILCodeSize = sizeof(ilcode);
         methInfo->maxStack = 2;
