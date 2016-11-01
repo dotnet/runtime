@@ -234,23 +234,22 @@ public:
 class ZapDebugDirectory : public ZapNode
 {
     ZapNode * m_pNGenPdbDebugData;
-    IMAGE_DEBUG_DIRECTORY m_debugDirectory;
-    ZapNode * m_pDebugData;
+    DWORD m_nDebugDirectory;
+    IMAGE_DEBUG_DIRECTORY * m_pDebugDirectory;
+    ZapNode ** m_ppDebugData;
 
 public:
-    ZapDebugDirectory(ZapNode *pNGenPdbDebugData, PIMAGE_DEBUG_DIRECTORY pDebugDirectory, ZapNode * pDebugData)
+    ZapDebugDirectory(ZapNode *pNGenPdbDebugData, DWORD nDebugDirectory, PIMAGE_DEBUG_DIRECTORY pDebugDirectory, ZapNode ** ppDebugData)
         : m_pNGenPdbDebugData(pNGenPdbDebugData),
-          m_pDebugData(pDebugData)
+          m_nDebugDirectory(nDebugDirectory),
+          m_pDebugDirectory(pDebugDirectory),
+          m_ppDebugData(ppDebugData)
     {
-        if (pDebugDirectory == NULL)
-            memset(&m_debugDirectory, 0, sizeof(IMAGE_DEBUG_DIRECTORY));
-        else
-            memcpy(&m_debugDirectory, pDebugDirectory, sizeof(IMAGE_DEBUG_DIRECTORY));
     }
 
     virtual DWORD GetSize()
     {
-        return m_pDebugData ? sizeof(IMAGE_DEBUG_DIRECTORY) * 2 : sizeof(IMAGE_DEBUG_DIRECTORY);
+        return sizeof(IMAGE_DEBUG_DIRECTORY) * (m_nDebugDirectory + 1);
     }
 
     virtual UINT GetAlignment()
