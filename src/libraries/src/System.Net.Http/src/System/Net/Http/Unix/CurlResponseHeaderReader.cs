@@ -51,10 +51,10 @@ namespace System.Net.Http
 
             // Set the response HttpVersion.
             response.Version =
-                (majorVersion == 1 && minorVersion == 1) ? HttpVersion.Version11 :
-                (majorVersion == 1 && minorVersion == 0) ? HttpVersion.Version10 :
-                (majorVersion == 2 && minorVersion == 0) ? HttpVersion.Version20 :
-                HttpVersion.Unknown;
+                (majorVersion == 1 && minorVersion == 1) ? HttpVersionInternal.Version11 :
+                (majorVersion == 1 && minorVersion == 0) ? HttpVersionInternal.Version10 :
+                (majorVersion == 2 && minorVersion == 0) ? HttpVersionInternal.Version20 :
+                HttpVersionInternal.Unknown;
 
             response.StatusCode = (HttpStatusCode)statusCode;
 
