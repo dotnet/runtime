@@ -53,7 +53,7 @@ namespace System.ServiceProcess
                 throw new ArgumentException(SR.Format(SR.BadMachineName, machineName));
 
             if (string.IsNullOrEmpty(name))
-                throw new ArgumentException(SR.Format(SR.InvalidParameter, "name", name));
+                throw new ArgumentException(SR.Format(SR.InvalidParameter, nameof(name), name));
 
             _machineName = machineName;
             _eitherName = name;
@@ -839,7 +839,7 @@ namespace System.ServiceProcess
         public void WaitForStatus(ServiceControllerStatus desiredStatus, TimeSpan timeout)
         {
             if (!Enum.IsDefined(typeof(ServiceControllerStatus), desiredStatus))
-                throw new ArgumentException(SR.Format(SR.InvalidEnumArgument, "desiredStatus", (int)desiredStatus, typeof(ServiceControllerStatus)));
+                throw new ArgumentException(SR.Format(SR.InvalidEnumArgument, nameof(desiredStatus), (int)desiredStatus, typeof(ServiceControllerStatus)));
 
             DateTime start = DateTime.UtcNow;
             Refresh();

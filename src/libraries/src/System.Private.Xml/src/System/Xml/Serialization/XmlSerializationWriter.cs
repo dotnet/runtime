@@ -506,7 +506,7 @@ namespace System.Xml.Serialization
                     {
                         if (alias.Length > 0)
                             throw new InvalidOperationException(SR.Format(SR.XmlInvalidXmlns, alias));
-                        WriteAttribute("xmlns", alias, null, aliasNs);
+                        WriteAttribute(nameof(xmlns), alias, null, aliasNs);
                     }
                     else
                     {
@@ -515,7 +515,7 @@ namespace System.Xml.Serialization
                             // write the default namespace declaration only if we have not written it already, over wise we just ignore one provided by the user
                             if (prefix == null && alias.Length == 0)
                                 break;
-                            WriteAttribute("xmlns", alias, null, aliasNs);
+                            WriteAttribute(nameof(xmlns), alias, null, aliasNs);
                         }
                     }
                 }
@@ -1405,7 +1405,7 @@ namespace System.Xml.Serialization
 
                     if (oldPrefix == null || oldPrefix != prefix)
                     {
-                        WriteAttribute("xmlns", prefix, null, ns);
+                        WriteAttribute(nameof(xmlns), prefix, null, ns);
                     }
                 }
             }
@@ -1507,13 +1507,13 @@ namespace System.Xml.Serialization
             if (!xmlMapping.IsWriteable)
                 return null;
             if (!xmlMapping.GenerateSerializer)
-                throw new ArgumentException(SR.XmlInternalError, "xmlMapping");
+                throw new ArgumentException(SR.XmlInternalError, nameof(xmlMapping));
             if (xmlMapping is XmlTypeMapping)
                 return GenerateTypeElement((XmlTypeMapping)xmlMapping);
             else if (xmlMapping is XmlMembersMapping)
                 return GenerateMembersElement((XmlMembersMapping)xmlMapping);
             else
-                throw new ArgumentException(SR.XmlInternalError, "xmlMapping");
+                throw new ArgumentException(SR.XmlInternalError, nameof(xmlMapping));
         }
 
         private void GenerateInitCallbacksMethod()
@@ -3774,7 +3774,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                typeVariable = GenerateVariableName("type", typeDesc.CSharpName);
+                typeVariable = GenerateVariableName(nameof(type), typeDesc.CSharpName);
 
                 Type parameterType = Nullable.GetUnderlyingType(type);
                 if (parameterType != null)

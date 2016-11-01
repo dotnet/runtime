@@ -106,7 +106,7 @@ namespace System.Xml
             public bool TryLookup(string value, out XmlDictionaryString result)
             {
                 if (value == null)
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("value");
+                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(value));
                 if (value.Length == 0)
                 {
                     result = _empty;

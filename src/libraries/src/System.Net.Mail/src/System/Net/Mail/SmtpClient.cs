@@ -222,7 +222,7 @@ namespace System.Net.Mail
 
                 if (value <= 0)
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
 
                 if (value != DefaultPort)
@@ -287,7 +287,7 @@ namespace System.Net.Mail
 
                 if (value < 0)
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
 
                 _transport.Timeout = value;

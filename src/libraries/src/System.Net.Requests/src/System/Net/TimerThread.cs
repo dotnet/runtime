@@ -186,7 +186,7 @@ namespace System.Net
 
             if (durationMilliseconds < 0)
             {
-                throw new ArgumentOutOfRangeException("durationMilliseconds");
+                throw new ArgumentOutOfRangeException(nameof(durationMilliseconds));
             }
 
             TimerQueue queue;

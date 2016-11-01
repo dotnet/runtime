@@ -358,7 +358,7 @@ namespace System.Data
         internal string HasConflictingDefinition(SimpleType otherSimpleType)
         {
             if (otherSimpleType == null)
-                return "otherSimpleType";
+                return nameof(otherSimpleType);
             if (MaxLength != otherSimpleType.MaxLength)
                 return ("MaxLength");
 

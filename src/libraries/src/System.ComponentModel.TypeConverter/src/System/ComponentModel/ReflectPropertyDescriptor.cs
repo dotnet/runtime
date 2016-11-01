@@ -145,7 +145,7 @@ namespace System.ComponentModel
 
             if (componentClass == null)
             {
-                throw new ArgumentException(string.Format(SR.InvalidNullArgument, "componentClass"));
+                throw new ArgumentException(string.Format(SR.InvalidNullArgument, nameof(componentClass)));
             }
 
             // If the classes are the same, we can potentially optimize the method fetch because

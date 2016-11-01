@@ -48,12 +48,12 @@ namespace System.ComponentModel.Design
         {
             if (parent == null)
             {
-                throw new ArgumentNullException("parent");
+                throw new ArgumentNullException(nameof(parent));
             }
 
             if (name == null)
             {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
 
             if (name.Length == 0)
@@ -72,12 +72,12 @@ namespace System.ComponentModel.Design
         {
             if (pageName == null)
             {
-                throw new ArgumentNullException("pageName");
+                throw new ArgumentNullException(nameof(pageName));
             }
 
             if (valueName == null)
             {
-                throw new ArgumentNullException("valueName");
+                throw new ArgumentNullException(nameof(valueName));
             }
 
             string[] optionNames = pageName.Split(new char[] { '\\' });
@@ -267,7 +267,7 @@ namespace System.ComponentModel.Design
                     EnsurePopulated();
                     if (index < 0 || index >= _children.Count)
                     {
-                        throw new IndexOutOfRangeException("index");
+                        throw new IndexOutOfRangeException(nameof(index));
                     }
                     return (DesignerOptionCollection)_children[index];
                 }

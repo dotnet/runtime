@@ -444,16 +444,16 @@ namespace System.Drawing
 
         public static Color FromArgb(int alpha, int red, int green, int blue)
         {
-            CheckByte(alpha, "alpha");
-            CheckByte(red, "red");
-            CheckByte(green, "green");
-            CheckByte(blue, "blue");
+            CheckByte(alpha, nameof(alpha));
+            CheckByte(red, nameof(red));
+            CheckByte(green, nameof(green));
+            CheckByte(blue, nameof(blue));
             return new Color(MakeArgb((byte)alpha, (byte)red, (byte)green, (byte)blue), s_stateARGBValueValid, null, (KnownColor)0);
         }
 
         public static Color FromArgb(int alpha, Color baseColor)
         {
-            CheckByte(alpha, "alpha");
+            CheckByte(alpha, nameof(alpha));
             // unchecked - because we already checked that alpha is a byte in CheckByte above
             return new Color(MakeArgb(unchecked((byte)alpha), baseColor.R, baseColor.G, baseColor.B), s_stateARGBValueValid, null, (KnownColor)0);
         }

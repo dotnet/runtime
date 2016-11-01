@@ -54,7 +54,7 @@ namespace System.ComponentModel.Design.Serialization
             {
                 if (level < 0)
                 {
-                    throw new ArgumentOutOfRangeException("level");
+                    throw new ArgumentOutOfRangeException(nameof(level));
                 }
                 if (_contextStack != null && level < _contextStack.Count)
                 {
@@ -75,7 +75,7 @@ namespace System.ComponentModel.Design.Serialization
             {
                 if (type == null)
                 {
-                    throw new ArgumentNullException("type");
+                    throw new ArgumentNullException(nameof(type));
                 }
 
                 if (_contextStack != null)
@@ -106,7 +106,7 @@ namespace System.ComponentModel.Design.Serialization
         {
             if (context == null)
             {
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
             }
 
             if (_contextStack == null)
@@ -141,7 +141,7 @@ namespace System.ComponentModel.Design.Serialization
         {
             if (context == null)
             {
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
             }
 
             if (_contextStack == null)

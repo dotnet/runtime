@@ -613,7 +613,7 @@ namespace System.Runtime.Serialization.Json
 
         public override object ReadObject(Stream stream)
         {
-            CheckNull(stream, "stream");
+            CheckNull(stream, nameof(stream));
             return ReadObject(JsonReaderWriterFactory.CreateJsonReader(stream, XmlDictionaryReaderQuotas.Max));
         }
 
@@ -652,7 +652,7 @@ namespace System.Runtime.Serialization.Json
 
         public override void WriteObject(Stream stream, object graph)
         {
-            CheckNull(stream, "stream");
+            CheckNull(stream, nameof(stream));
             XmlDictionaryWriter jsonWriter = JsonReaderWriterFactory.CreateJsonWriter(stream, Encoding.UTF8, false); //  ownsStream 
             WriteObject(jsonWriter, graph);
             jsonWriter.Flush();
@@ -910,7 +910,7 @@ namespace System.Runtime.Serialization.Json
             DateTimeFormat dateTimeFormat,
             bool useSimpleDictionaryFormat)
         {
-            CheckNull(type, "type");
+            CheckNull(type, nameof(type));
             _rootType = type;
 
             if (knownTypes != null)

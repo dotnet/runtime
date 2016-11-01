@@ -69,7 +69,7 @@ namespace System.Net.Http.Headers
             get { return _mediaType; }
             set
             {
-                CheckMediaTypeFormat(value, "value");
+                CheckMediaTypeFormat(value, nameof(value));
                 _mediaType = value;
             }
         }
@@ -96,7 +96,7 @@ namespace System.Net.Http.Headers
 
         public MediaTypeHeaderValue(string mediaType)
         {
-            CheckMediaTypeFormat(mediaType, "mediaType");
+            CheckMediaTypeFormat(mediaType, nameof(mediaType));
             _mediaType = mediaType;
         }
 

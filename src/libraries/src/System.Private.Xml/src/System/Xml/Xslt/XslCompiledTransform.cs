@@ -272,7 +272,7 @@ namespace System.Xml.Xsl
             {
                 if (new Version(Version).CompareTo(new Version(generatedCodeAttr.Version)) < 0)
                 {
-                    throw new ArgumentException(SR.Format(SR.Xslt_IncompatibleCompiledStylesheetVersion, generatedCodeAttr.Version, Version), "compiledStylesheet");
+                    throw new ArgumentException(SR.Format(SR.Xslt_IncompatibleCompiledStylesheetVersion, generatedCodeAttr.Version, Version), nameof(compiledStylesheet));
                 }
 
                 FieldInfo fldData = compiledStylesheet.GetField(XmlQueryStaticData.DataFieldName, BindingFlags.Static | BindingFlags.NonPublic);
@@ -298,7 +298,7 @@ namespace System.Xml.Xsl
 
             // Throw an exception if the command was not loaded
             if (_command == null)
-                throw new ArgumentException(SR.Format(SR.Xslt_NotCompiledStylesheet, compiledStylesheet.FullName), "compiledStylesheet");
+                throw new ArgumentException(SR.Format(SR.Xslt_NotCompiledStylesheet, compiledStylesheet.FullName), nameof(compiledStylesheet));
         }
 
         public void Load(MethodInfo executeMethod, byte[] queryData, Type[] earlyBoundTypes)
