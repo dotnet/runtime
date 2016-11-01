@@ -65,26 +65,26 @@ Areas are tracked by labels area-* (e.g. area-System.Collections), or Infrastruc
 | [System.Globalization](https://github.com/dotnet/corefx/labels/area-System.Globalization)     |  |  |  |
 | [System.IO](https://github.com/dotnet/corefx/labels/area-System.IO)                           | @JeremyKhune, @ianhays |  | Triaged |
 | [System.IO.Compression](https://github.com/dotnet/corefx/labels/area-System.IO.Compression)   | @ianhays |  | Triaged |
-| [System.Linq](https://github.com/dotnet/corefx/labels/area-System.Linq)                       |  |  |  |
+| [System.Linq](https://github.com/dotnet/corefx/labels/area-System.Linq)                       | @VSadov, @OmarTawfik |  |  |
 | [System.Linq.Expressions](https://github.com/dotnet/corefx/labels/area-System.Linq.Expressions)   |  |  |  |
 | [System.Linq.Parallel](https://github.com/dotnet/corefx/labels/area-System.Linq.Parallel)     |  |  |  |
 | [System.Net](https://github.com/dotnet/corefx/labels/area-System.Net)                         |  |  |  |
 | [System.Numerics](https://github.com/dotnet/corefx/labels/area-System.Numerics)               | @mellinoe |  | Triaged |
 | [System.Reflection](https://github.com/dotnet/corefx/labels/area-System.Reflection)           |  |  |  |
 | [System.Reflection.Emit](https://github.com/dotnet/corefx/labels/area-System.Reflection.Emit) |  |  |  |
-| [System.Reflection.Metadata](https://github.com/dotnet/corefx/labels/area-System.Reflection.Metadata) |  |  |  |
+| [System.Reflection.Metadata](https://github.com/dotnet/corefx/labels/area-System.Reflection.Metadata) | @tmat, @nguerrera |  |  |
 | [System.Resources](https://github.com/dotnet/corefx/labels/area-System.Resources)             |  |  |  |
 | [System.Runtime](https://github.com/dotnet/corefx/labels/area-System.Runtime)                 |  |  |  |
 | [System.Runtime.CompilerServices](https://github.com/dotnet/corefx/labels/area-System.Runtime.CompilerServices)   |  |  |  |
 | [System.Runtime.Extensions](https://github.com/dotnet/corefx/labels/area-System.Runtime.Extensions)   |  |  |  |
-| [System.Runtime.InteropServices](https://github.com/dotnet/corefx/labels/area-System.Runtime.InteropServices) |  |  |  |
+| [System.Runtime.InteropServices](https://github.com/dotnet/corefx/labels/area-System.Runtime.InteropServices) | @tijoytom, @yizhang82 |  |  |
 | [System.Security](https://github.com/dotnet/corefx/labels/area-System.Security)               |  |  |  |
 | [System.ServiceModel](https://github.com/dotnet/corefx/labels/area-System.ServiceModel)       |  |  |  |
 | [System.ServiceProcess](https://github.com/dotnet/corefx/labels/area-System.ServiceProcess)   | @Priya91 |  |  |
 | [System.Text.Encoding](https://github.com/dotnet/corefx/labels/area-System.Text.Encoding)     |  |  |  |
 | [System.Text.RegularExpressions](https://github.com/dotnet/corefx/labels/area-System.Text.RegularExpressions) | @Priya91 |  |  |
 | [System.Threading](https://github.com/dotnet/corefx/labels/area-System.Threading)             | @kouvel, @alexperovich |  | Triaged |
-| [System.Transactions](https://github.com/dotnet/corefx/labels/area-System.Transactions)       |  |  |  |
+| [System.Transactions](https://github.com/dotnet/corefx/labels/area-System.Transactions)       | @jimcarley, @qizhanMS, @dmetzgar |  |  |
 | [System.Xml](https://github.com/dotnet/corefx/labels/area-System.Xml)                         | @sepidehMS, @krwq  | | Triaged |
 | [System](https://github.com/dotnet/corefx/labels/area-System)                                 |  | Issues without clear contract association (cross-contract, or potentially new contracts) |  |
 | **Microsoft contract assemblies** | | |  |
