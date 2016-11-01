@@ -249,19 +249,32 @@ void ZapImage::CopyWin32VersionResource()
 
 void ZapDebugDirectory::SaveOriginalDebugDirectoryEntry(ZapWriter *pZapWriter)
 {
-    if (m_pDebugData != NULL)
+    if (m_ppDebugData != nullptr)
     {
-        m_debugDirectory.SizeOfData = m_pDebugData->GetSize();
-        m_debugDirectory.AddressOfRawData = m_pDebugData->GetRVA();
+        for (DWORD i = 0; i < m_nDebugDirectory; i++)
+        {
+            if (m_ppDebugData[i] != nullptr)
+            {
+                m_pDebugDirectory[i].SizeOfData = m_ppDebugData[i]->GetSize();
+                m_pDebugDirectory[i].AddressOfRawData = m_ppDebugData[i]->GetRVA();
 
-        // Compute the absolute file (seek) pointer. We need to reach to the matching physical section to do that.
-        ZapPhysicalSection * pPhysicalSection = ZapImage::GetImage(pZapWriter)->m_pTextSection;
+                // Compute the absolute file (seek) pointer. We need to reach to the matching physical section to do that.
+                ZapPhysicalSection * pPhysicalSection = ZapImage::GetImage(pZapWriter)->m_pTextSection;
 
-        DWORD dwOffset = m_pDebugData->GetRVA() - pPhysicalSection->GetRVA();
-        _ASSERTE(dwOffset < pPhysicalSection->GetSize());
-        
-        m_debugDirectory.PointerToRawData = pPhysicalSection->GetFilePos() + dwOffset;
-        pZapWriter->Write(&m_debugDirectory, sizeof(m_debugDirectory));
+                DWORD dwOffset = m_ppDebugData[i]->GetRVA() - pPhysicalSection->GetRVA();
+                _ASSERTE(dwOffset < pPhysicalSection->GetSize());
+
+                m_pDebugDirectory[i].PointerToRawData = pPhysicalSection->GetFilePos() + dwOffset;
+            }
+            else
+            {
+                m_pDebugDirectory[i].SizeOfData = 0;
+                m_pDebugDirectory[i].AddressOfRawData = 0;
+                m_pDebugDirectory[i].PointerToRawData = 0;
+            }
+        }
+
+        pZapWriter->Write(m_pDebugDirectory, sizeof(IMAGE_DEBUG_DIRECTORY) * m_nDebugDirectory);
     }
 }
 
@@ -270,7 +283,10 @@ void ZapDebugDirectory::SaveNGenDebugDirectoryEntry(ZapWriter *pZapWriter)
     _ASSERTE(pZapWriter);
 
     IMAGE_DEBUG_DIRECTORY debugDirectory = {0};
-    memcpy(&debugDirectory, &m_debugDirectory, sizeof(IMAGE_DEBUG_DIRECTORY));
+    if (m_nDebugDirectory > 0)
+    {
+        memcpy(&debugDirectory, m_pDebugDirectory, sizeof(IMAGE_DEBUG_DIRECTORY));
+    }
     debugDirectory.Type = IMAGE_DEBUG_TYPE_CODEVIEW;
     debugDirectory.SizeOfData = m_pNGenPdbDebugData->GetSize();
     debugDirectory.AddressOfRawData = m_pNGenPdbDebugData->GetRVA();
@@ -352,8 +368,9 @@ void ZapImage::CopyDebugDirEntry()
 
     // IL PDB entry: copy of the (first of possibly many) IMAGE_DEBUG_DIRECTORY entry 
     // in the IL image
+    DWORD nDebugEntry = 0;
     PIMAGE_DEBUG_DIRECTORY pDebugDir = NULL;
-    ZapBlob *pDebugData = NULL;
+    ZapNode **ppDebugData = NULL;
 
     if (m_ModuleDecoder.HasDirectoryEntry(IMAGE_DIRECTORY_ENTRY_DEBUG)) {
         COUNT_T debugEntrySize;
@@ -370,40 +387,48 @@ void ZapImage::CopyDebugDirEntry()
                 // should be a multiple of sizeof(IMAGE_DEBUG_DIRECTORY).
                 _ASSERTE(0 == (debugEntrySize % sizeof(IMAGE_DEBUG_DIRECTORY)));
                 
-                // @TODO: pDebugEntry is an array of IMAGE_DEBUG_DIRECTORYs. Some tools
-                // (like ibcmerge) add an extra dummy IMAGE_DEBUG_DIRECTORY to indicate
-                // that the image was modified post-link.
-                // We need to copy all the IMAGE_DEBUG_DIRECTORYs. For now, we only copy
-                // the first one as it holds the relevant debug information.
+                nDebugEntry = DWORD(debugEntrySize / sizeof(IMAGE_DEBUG_DIRECTORY));
+                pDebugDir = new (GetHeap()) IMAGE_DEBUG_DIRECTORY[nDebugEntry];
+                memcpy(pDebugDir, (const void *)pDebugEntry, sizeof(IMAGE_DEBUG_DIRECTORY) * nDebugEntry);
+                ppDebugData = new (GetHeap()) ZapNode*[nDebugEntry];
+                memset(ppDebugData, 0, nDebugEntry * sizeof(ZapNode*));
                 
-                pDebugDir = PIMAGE_DEBUG_DIRECTORY(pDebugEntry);
-                
-                // Some compilers set PointerToRawData but not AddressOfRawData as they put the
-                // data at the end of the file in an unmapped part of the file
-                
-                RVA rvaOfRawData = (pDebugDir->AddressOfRawData != NULL)
-                    ? pDebugDir->AddressOfRawData : m_ModuleDecoder.OffsetToRva(pDebugDir->PointerToRawData);
-                
-                ULONG cbDebugData = pDebugDir->SizeOfData;
-                
-                if (cbDebugData != 0) {
-                    if (!m_ModuleDecoder.CheckRva(rvaOfRawData, cbDebugData))
-                        m_zapper->Warning(W("IMAGE_DIRECTORY_ENTRY_DEBUG points to bad data\n"));
-                    else
-                        pDebugData = new (GetHeap()) ZapBlobPtr((PVOID)m_ModuleDecoder.GetRvaData(rvaOfRawData), cbDebugData);
+                for (DWORD i = 0; i < nDebugEntry; i++)
+                {
+                    // Some compilers set PointerToRawData but not AddressOfRawData as they put the
+                    // data at the end of the file in an unmapped part of the file
+
+                    RVA rvaOfRawData = (pDebugDir[i].AddressOfRawData != NULL)
+                        ? pDebugDir[i].AddressOfRawData : m_ModuleDecoder.OffsetToRva(pDebugDir[i].PointerToRawData);
+
+                    ULONG cbDebugData = pDebugDir[i].SizeOfData;
+
+                    if (cbDebugData != 0) {
+                        if (!m_ModuleDecoder.CheckRva(rvaOfRawData, cbDebugData))
+                            m_zapper->Warning(W("IMAGE_DIRECTORY_ENTRY_DEBUG points to bad data\n"));
+                        else
+                            ppDebugData[i] = new (GetHeap()) ZapBlobPtr((PVOID)m_ModuleDecoder.GetRvaData(rvaOfRawData), cbDebugData);
+                    }
                 }
             }
         }
     }
 
     ZapDebugDirectory * pDebugDirectory = new (GetHeap()) ZapDebugDirectory(m_pNGenPdbDebugData, 
-                                                                            pDebugData ? pDebugDir : NULL, 
-                                                                            pDebugData);
+                                                                            nDebugEntry,
+                                                                            pDebugDir,
+                                                                            ppDebugData);
 
     m_pDebugSection->Place(pDebugDirectory);
     m_pDebugSection->Place(m_pNGenPdbDebugData);
-    if (pDebugData)
-        m_pDebugSection->Place(pDebugData);
+    if (ppDebugData)
+    {
+        for (DWORD i = 0; i < nDebugEntry; i++)
+        {
+            if (ppDebugData[i] != nullptr)
+                m_pDebugSection->Place(ppDebugData[i]);
+        }
+    }
 
     SetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_DEBUG, pDebugDirectory);
 }
