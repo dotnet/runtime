@@ -7530,6 +7530,13 @@ DONE_CALL:
                 // TODO: Still using the widened type.
                 call = gtNewInlineCandidateReturnExpr(call, genActualType(callRetTyp));
             }
+            else
+            {
+                // For non-candidates we must also spill, since we
+                // might have locals live on the eval stack that this
+                // call can modify.
+                impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("non-inline candidate call"));
+            }
         }
 
         if (!bIntrinsicImported)
