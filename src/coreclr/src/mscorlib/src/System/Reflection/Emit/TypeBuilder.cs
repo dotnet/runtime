@@ -1698,10 +1698,10 @@ namespace System.Reflection.Emit {
             if (parameterTypes != null)
             {
                 if (parameterTypeOptionalCustomModifiers != null && parameterTypeOptionalCustomModifiers.Length != parameterTypes.Length)
-                    throw new ArgumentException(Environment.GetResourceString("Argument_MismatchedArrays", "parameterTypeOptionalCustomModifiers", nameof(parameterTypes)));
+                    throw new ArgumentException(Environment.GetResourceString("Argument_MismatchedArrays", nameof(parameterTypeOptionalCustomModifiers), nameof(parameterTypes)));
 
                 if (parameterTypeRequiredCustomModifiers != null && parameterTypeRequiredCustomModifiers.Length != parameterTypes.Length)
-                    throw new ArgumentException(Environment.GetResourceString("Argument_MismatchedArrays", "parameterTypeRequiredCustomModifiers", nameof(parameterTypes)));
+                    throw new ArgumentException(Environment.GetResourceString("Argument_MismatchedArrays", nameof(parameterTypeRequiredCustomModifiers), nameof(parameterTypes)));
             }
 
             ThrowIfCreated();

@@ -410,7 +410,7 @@ namespace System
                 throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnum"), nameof(enumType));
 
             if (value == null) {
-                parseResult.SetFailure(ParseFailureKind.ArgumentNull, "value");
+                parseResult.SetFailure(ParseFailureKind.ArgumentNull, nameof(value));
                 return false;
             }
 

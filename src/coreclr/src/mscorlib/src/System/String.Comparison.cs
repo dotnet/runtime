@@ -557,13 +557,13 @@ namespace System
 
             if (indexA < 0 || indexB < 0)
             {
-                string paramName = indexA < 0 ? "indexA" : "indexB";
+                string paramName = indexA < 0 ? nameof(indexA) : nameof(indexB);
                 throw new ArgumentOutOfRangeException(paramName, Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
 
             if (strA.Length - indexA < 0 || strB.Length - indexB < 0)
             {
-                string paramName = strA.Length - indexA < 0 ? "indexA" : "indexB";
+                string paramName = strA.Length - indexA < 0 ? nameof(indexA) : nameof(indexB);
                 throw new ArgumentOutOfRangeException(paramName, Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
 
@@ -662,7 +662,7 @@ namespace System
 
             if (indexA < 0 || indexB < 0)
             {
-                string paramName = indexA < 0 ? "indexA" : "indexB";
+                string paramName = indexA < 0 ? nameof(indexA) : nameof(indexB);
                 throw new ArgumentOutOfRangeException(paramName, Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
             
@@ -671,7 +671,7 @@ namespace System
 
             if (lengthA < 0 || lengthB < 0)
             {
-                string paramName = lengthA < 0 ? "indexA" : "indexB";
+                string paramName = lengthA < 0 ? nameof(indexA) : nameof(indexB);
                 throw new ArgumentOutOfRangeException(paramName, Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
 

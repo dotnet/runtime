@@ -121,11 +121,11 @@ namespace System.Text {
         public StringBuilder(String value, int startIndex, int length, int capacity) {
             if (capacity<0) {
                 throw new ArgumentOutOfRangeException(nameof(capacity),
-                                                      Environment.GetResourceString("ArgumentOutOfRange_MustBePositive", "capacity"));
+                                                      Environment.GetResourceString("ArgumentOutOfRange_MustBePositive", nameof(capacity)));
             }
             if (length<0) {
                 throw new ArgumentOutOfRangeException(nameof(length),
-                                                      Environment.GetResourceString("ArgumentOutOfRange_MustBeNonNegNum", "length"));
+                                                      Environment.GetResourceString("ArgumentOutOfRange_MustBeNonNegNum", nameof(length)));
             }
             if (startIndex<0) {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_StartIndex"));
@@ -165,7 +165,7 @@ namespace System.Text {
             }
             if (capacity<0) {
                 throw new ArgumentOutOfRangeException(nameof(capacity),
-                                                      Environment.GetResourceString("ArgumentOutOfRange_MustBePositive", "capacity"));
+                                                      Environment.GetResourceString("ArgumentOutOfRange_MustBePositive", nameof(capacity)));
             }
             Contract.EndContractBlock();
 
@@ -566,7 +566,7 @@ namespace System.Text {
             // We are doing the check here to prevent the corruption of the StringBuilder.
             int newLength = Length + repeatCount;
             if (newLength > m_MaxCapacity || newLength < repeatCount) {
-                throw new ArgumentOutOfRangeException("repeatCount", Environment.GetResourceString("ArgumentOutOfRange_LengthGreaterThanCapacity"));
+                throw new ArgumentOutOfRangeException(nameof(repeatCount), Environment.GetResourceString("ArgumentOutOfRange_LengthGreaterThanCapacity"));
             }
 
             int idx = m_ChunkLength;
@@ -750,7 +750,7 @@ namespace System.Text {
 
             if (destinationIndex < 0) {
                 throw new ArgumentOutOfRangeException(nameof(destinationIndex),
-                    Environment.GetResourceString("ArgumentOutOfRange_MustBeNonNegNum", "destinationIndex"));
+                    Environment.GetResourceString("ArgumentOutOfRange_MustBeNonNegNum", nameof(destinationIndex)));
             }
 
             if (destinationIndex > destination.Length - count) {
@@ -1724,7 +1724,7 @@ namespace System.Text {
             // We are doing the check here to prevent the corruption of the StringBuilder.
             int newLength = Length + valueCount;
             if (newLength > m_MaxCapacity || newLength < valueCount) {
-                throw new ArgumentOutOfRangeException("valueCount", Environment.GetResourceString("ArgumentOutOfRange_LengthGreaterThanCapacity"));
+                throw new ArgumentOutOfRangeException(nameof(valueCount), Environment.GetResourceString("ArgumentOutOfRange_LengthGreaterThanCapacity"));
             }
 
             // This case is so common we want to optimize for it heavily. 

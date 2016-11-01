@@ -443,7 +443,7 @@ namespace System.Text
                 case CodePageNoThread:                           // 3 CP_THREAD_ACP
                 case CodePageNoSymbol:                           // 42 CP_SYMBOL
                     throw new ArgumentException(Environment.GetResourceString(
-                        "Argument_CodepageNotSupported", codepage), "codepage");
+                        "Argument_CodepageNotSupported", codepage), nameof(codepage));
             }
 
 #if FEATURE_CODEPAGES_FILE
@@ -1034,7 +1034,7 @@ namespace System.Text
                     Environment.GetResourceString("ArgumentNull_Array"));
 
             if (charCount < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException((charCount<0 ? "charCount" : "byteCount"),
+                throw new ArgumentOutOfRangeException((charCount<0 ? nameof(charCount) : nameof(byteCount)),
                     Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
 
@@ -1193,7 +1193,7 @@ namespace System.Text
                     Environment.GetResourceString("ArgumentNull_Array"));
 
             if (byteCount < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException((byteCount<0 ? "byteCount" : "charCount"),
+                throw new ArgumentOutOfRangeException((byteCount<0 ? nameof(byteCount) : nameof(charCount)),
                     Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
 

@@ -289,11 +289,11 @@ namespace System {
             return TimeSpanParse.ParseExactMultiple(input, formats, formatProvider, TimeSpanStyles.None);
         }
         public static TimeSpan ParseExact(String input, String format, IFormatProvider formatProvider, TimeSpanStyles styles) {
-            TimeSpanParse.ValidateStyles(styles, "styles");
+            TimeSpanParse.ValidateStyles(styles, nameof(styles));
             return TimeSpanParse.ParseExact(input, format, formatProvider, styles);
         }
         public static TimeSpan ParseExact(String input, String[] formats, IFormatProvider formatProvider, TimeSpanStyles styles) {
-            TimeSpanParse.ValidateStyles(styles, "styles");
+            TimeSpanParse.ValidateStyles(styles, nameof(styles));
             return TimeSpanParse.ParseExactMultiple(input, formats, formatProvider, styles);
         }
         public static Boolean TryParse(String s, out TimeSpan result) {
@@ -309,11 +309,11 @@ namespace System {
             return TimeSpanParse.TryParseExactMultiple(input, formats, formatProvider, TimeSpanStyles.None, out result);
         }
         public static Boolean TryParseExact(String input, String format, IFormatProvider formatProvider, TimeSpanStyles styles, out TimeSpan result) {
-            TimeSpanParse.ValidateStyles(styles, "styles");
+            TimeSpanParse.ValidateStyles(styles, nameof(styles));
             return TimeSpanParse.TryParseExact(input, format, formatProvider, styles, out result);
         }
         public static Boolean TryParseExact(String input, String[] formats, IFormatProvider formatProvider, TimeSpanStyles styles, out TimeSpan result) {
-            TimeSpanParse.ValidateStyles(styles, "styles");
+            TimeSpanParse.ValidateStyles(styles, nameof(styles));
             return TimeSpanParse.TryParseExactMultiple(input, formats, formatProvider, styles, out result);
         }
         public override String ToString() {

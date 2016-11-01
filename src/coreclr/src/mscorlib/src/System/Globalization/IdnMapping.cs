@@ -202,7 +202,7 @@ namespace System.Globalization
         {
             if (ascii==null) throw new ArgumentNullException(nameof(ascii));
             if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException((index < 0) ? "index" : "count",
+                throw new ArgumentOutOfRangeException((index < 0) ? nameof(index) : nameof(count),
                       Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (index > ascii.Length)
                 throw new ArgumentOutOfRangeException(nameof(index),
@@ -791,7 +791,7 @@ namespace System.Globalization
             if (ascii.Length > M_defaultNameLimit - (IsDot(ascii[ascii.Length-1]) ? 0 : 1))
                 throw new ArgumentException(Environment.GetResourceString(
                     "Argument_IdnBadNameSize",
-                    M_defaultNameLimit - (IsDot(ascii[ascii.Length-1]) ? 0 : 1)), "ascii");
+                    M_defaultNameLimit - (IsDot(ascii[ascii.Length-1]) ? 0 : 1)), nameof(ascii));
 
             // output stringbuilder
             StringBuilder output = new StringBuilder(ascii.Length);
@@ -1056,7 +1056,7 @@ namespace System.Globalization
             if (output.Length > M_defaultNameLimit - (IsDot(output[output.Length-1]) ? 0 : 1))
                 throw new ArgumentException(Environment.GetResourceString(
                     "Argument_IdnBadNameSize",
-                    M_defaultNameLimit -(IsDot(output[output.Length-1]) ? 0 : 1)), "ascii");
+                    M_defaultNameLimit -(IsDot(output[output.Length-1]) ? 0 : 1)), nameof(ascii));
 
             // Return our output string
             return output.ToString();

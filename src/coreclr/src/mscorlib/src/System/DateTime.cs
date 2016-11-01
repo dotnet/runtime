@@ -1008,7 +1008,7 @@ namespace System {
         }
 
         public static DateTime Parse(String s, IFormatProvider provider, DateTimeStyles styles) {
-            DateTimeFormatInfo.ValidateStyles(styles, "styles");
+            DateTimeFormatInfo.ValidateStyles(styles, nameof(styles));
             return (DateTimeParse.Parse(s, DateTimeFormatInfo.GetInstance(provider), styles));
         }
         
@@ -1025,12 +1025,12 @@ namespace System {
         // Leading and trailing whitespace characters are allowed.
         // 
         public static DateTime ParseExact(String s, String format, IFormatProvider provider, DateTimeStyles style) {
-            DateTimeFormatInfo.ValidateStyles(style, "style");
+            DateTimeFormatInfo.ValidateStyles(style, nameof(style));
             return (DateTimeParse.ParseExact(s, format, DateTimeFormatInfo.GetInstance(provider), style));
         }    
 
         public static DateTime ParseExact(String s, String[] formats, IFormatProvider provider, DateTimeStyles style) {
-            DateTimeFormatInfo.ValidateStyles(style, "style");
+            DateTimeFormatInfo.ValidateStyles(style, nameof(style));
             return DateTimeParse.ParseExactMultiple(s, formats, DateTimeFormatInfo.GetInstance(provider), style);
         }
 
@@ -1166,17 +1166,17 @@ namespace System {
         }
         
         public static Boolean TryParse(String s, IFormatProvider provider, DateTimeStyles styles, out DateTime result) {
-            DateTimeFormatInfo.ValidateStyles(styles, "styles");
+            DateTimeFormatInfo.ValidateStyles(styles, nameof(styles));
             return DateTimeParse.TryParse(s, DateTimeFormatInfo.GetInstance(provider), styles, out result);
         }    
             
         public static Boolean TryParseExact(String s, String format, IFormatProvider provider, DateTimeStyles style, out DateTime result) {
-            DateTimeFormatInfo.ValidateStyles(style, "style");
+            DateTimeFormatInfo.ValidateStyles(style, nameof(style));
             return DateTimeParse.TryParseExact(s, format, DateTimeFormatInfo.GetInstance(provider), style, out result);
         }    
 
         public static Boolean TryParseExact(String s, String[] formats, IFormatProvider provider, DateTimeStyles style, out DateTime result) {
-            DateTimeFormatInfo.ValidateStyles(style, "style");
+            DateTimeFormatInfo.ValidateStyles(style, nameof(style));
             return DateTimeParse.TryParseExactMultiple(s, formats, DateTimeFormatInfo.GetInstance(provider), style, out result);
         }
             

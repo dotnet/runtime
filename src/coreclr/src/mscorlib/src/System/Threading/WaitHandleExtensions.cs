@@ -21,7 +21,7 @@ namespace System.Threading
         {
             if (waitHandle == null)
             {
-                throw new ArgumentNullException("waitHandle");
+                throw new ArgumentNullException(nameof(waitHandle));
             }
 
             return waitHandle.SafeWaitHandle;
@@ -37,7 +37,7 @@ namespace System.Threading
         {
             if (waitHandle == null)
             {
-                throw new ArgumentNullException("waitHandle");
+                throw new ArgumentNullException(nameof(waitHandle));
             }
 
             waitHandle.SafeWaitHandle = value;

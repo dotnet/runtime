@@ -60,11 +60,11 @@ namespace System.Globalization
         public RegionInfo(String name)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             if (name.Length == 0) //The InvariantCulture has no matching region
             {
-                throw new ArgumentException(SR.Argument_NoRegionInvariantCulture, "name");
+                throw new ArgumentException(SR.Argument_NoRegionInvariantCulture, nameof(name));
             }
 
             Contract.EndContractBlock();
@@ -77,12 +77,12 @@ namespace System.Globalization
                 throw new ArgumentException(
                     String.Format(
                         CultureInfo.CurrentCulture,
-                        SR.Argument_InvalidCultureName, name), "name");
+                        SR.Argument_InvalidCultureName, name), nameof(name));
 
 
             // Not supposed to be neutral
             if (_cultureData.IsNeutralCulture)
-                throw new ArgumentException(SR.Format(SR.Argument_InvalidNeutralRegionName, name), "name");
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidNeutralRegionName, name), nameof(name));
 
             SetName(name);
         }
@@ -98,13 +98,13 @@ namespace System.Globalization
             if (culture == CultureInfo.LOCALE_NEUTRAL)
             {
                 // Not supposed to be neutral
-                throw new ArgumentException(SR.Format(SR.Argument_CultureIsNeutral, culture), "culture");
+                throw new ArgumentException(SR.Format(SR.Argument_CultureIsNeutral, culture), nameof(culture));
             }
 
             if (culture == CultureInfo.LOCALE_CUSTOM_DEFAULT)
             {
                 // Not supposed to be neutral
-                throw new ArgumentException(SR.Format(SR.Argument_CustomCultureCannotBePassedByNumber, culture), "culture");
+                throw new ArgumentException(SR.Format(SR.Argument_CustomCultureCannotBePassedByNumber, culture), nameof(culture));
             }
             
             _cultureData = CultureData.GetCultureData(culture, true);
@@ -113,7 +113,7 @@ namespace System.Globalization
             if (_cultureData.IsNeutralCulture)
             {
                 // Not supposed to be neutral
-                throw new ArgumentException(SR.Format(SR.Argument_CultureIsNeutral, culture), "culture");
+                throw new ArgumentException(SR.Format(SR.Argument_CultureIsNeutral, culture), nameof(culture));
             }
         }
 
