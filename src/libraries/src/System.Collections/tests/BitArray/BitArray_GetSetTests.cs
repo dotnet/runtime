@@ -245,6 +245,29 @@ namespace System.Collections.Tests
                     }
                 }
             }
+
+            foreach (int bitArraySize in new[] { BitsPerInt32 - 1, BitsPerInt32 * 2 - 1 })
+            {
+                BitArray allTrue = new BitArray(Enumerable.Repeat(true, bitArraySize).ToArray());
+                BitArray allFalse = new BitArray(Enumerable.Repeat(false, bitArraySize).ToArray());
+                BitArray alternating = new BitArray(Enumerable.Range(0, bitArraySize).Select(i => i % 2 == 1).ToArray());
+
+                foreach (var d in new[] { Tuple.Create(bitArraySize, 0),
+                    Tuple.Create(bitArraySize * 2 + 1, 0),
+                    Tuple.Create(bitArraySize * 2 + 1, bitArraySize + 1),
+                    Tuple.Create(bitArraySize * 2 + 1, bitArraySize / 2 + 1)})
+                {
+                    int arraySize = d.Item1;
+                    int index = d.Item2;
+
+                    if (bitArraySize >= BitsPerInt32)
+                    {
+                        yield return new object[] { allTrue, (arraySize - 1) / BitsPerInt32 + 1, index / BitsPerInt32, Enumerable.Repeat(unchecked((int)0xffffffff), bitArraySize / BitsPerInt32).Concat(new[] { unchecked((int)(0xffffffffu >> 1)) }).ToArray(), default(int) };
+                        yield return new object[] { allFalse, (arraySize - 1) / BitsPerInt32 + 1, index / BitsPerInt32, Enumerable.Repeat(0x00000000, bitArraySize / BitsPerInt32 + 1).ToArray(), default(int) };
+                        yield return new object[] { alternating, (arraySize - 1) / BitsPerInt32 + 1, index / BitsPerInt32, Enumerable.Repeat(unchecked((int)0xaaaaaaaa), bitArraySize / BitsPerInt32).Concat(new[] { unchecked((int)(0xaaaaaaaau >> 2)) }).ToArray(), default(int) };
+                    }
+                }
+            }
         }
 
         [Theory]
