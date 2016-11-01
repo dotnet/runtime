@@ -42,6 +42,5 @@
   <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
     <CompileItem Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs" />
     <CompileItem Include="$(CommonPath)\System\Net\HttpStatusDescription.cs" />
-    <CompileItem Include="$(CommonPath)\System\Net\HttpVersion.cs" />
   </ItemGroup>
 </Project>

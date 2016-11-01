@@ -2,15 +2,15 @@
   "frameworks": {
     "netstandard1.7": {
       "dependencies": {
-        "System.Diagnostics.Contracts": "4.4.0-beta-24629-01",
-        "System.Diagnostics.Debug": "4.4.0-beta-24629-01",
-        "System.Diagnostics.Tools": "4.4.0-beta-24629-01",
-        "System.Globalization": "4.4.0-beta-24629-01",
-        "System.Resources.ResourceManager": "4.4.0-beta-24629-01",
-        "System.Runtime": "4.4.0-beta-24629-01",
-        "System.Runtime.Extensions": "4.4.0-beta-24629-01",
-        "System.Runtime.InteropServices": "4.4.0-beta-24629-01",
-        "System.Threading.Tasks": "4.4.0-beta-24629-01"
+        "System.Diagnostics.Contracts": "4.4.0-beta-24701-01",
+        "System.Diagnostics.Debug": "4.4.0-beta-24701-01",
+        "System.Diagnostics.Tools": "4.4.0-beta-24701-01",
+        "System.Globalization": "4.4.0-beta-24701-01",
+        "System.Resources.ResourceManager": "4.4.0-beta-24701-01",
+        "System.Runtime": "4.4.0-beta-24701-01",
+        "System.Runtime.Extensions": "4.4.0-beta-24701-01",
+        "System.Runtime.InteropServices": "4.4.0-beta-24701-01",
+        "System.Threading.Tasks": "4.4.0-beta-24701-01"
       }
     },
     "net463": {
