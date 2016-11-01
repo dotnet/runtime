@@ -822,6 +822,10 @@ bool Compiler::optCheckIterInLoopTest(
     if (limitOp->gtOper == GT_CNS_INT)
     {
         optLoopTable[loopInd].lpFlags |= LPFLG_CONST_LIMIT;
+        if ((limitOp->gtFlags & GTF_ICON_SIMD_COUNT) != 0)
+        {
+            optLoopTable[loopInd].lpFlags |= LPFLG_SIMD_LIMIT;
+        }
     }
     else if (limitOp->gtOper == GT_LCL_VAR && !optIsVarAssigned(from, to, nullptr, limitOp->gtLclVarCommon.gtLclNum))
     {
