@@ -196,7 +196,7 @@ namespace System.Xml.Serialization
             else if (mapping is MembersMapping)
                 return ExportMembersMapping((MembersMapping)mapping, ns);
             else
-                throw new ArgumentException(SR.XmlInternalError, "mapping");
+                throw new ArgumentException(SR.XmlInternalError, nameof(mapping));
         }
 
         private XmlQualifiedName ExportNonXsdPrimitiveMapping(PrimitiveMapping mapping, string ns)

@@ -25,7 +25,7 @@ namespace System.ComponentModel.Design.Serialization
         {
             if (providerType == null)
             {
-                throw new ArgumentNullException("providerType");
+                throw new ArgumentNullException(nameof(providerType));
             }
 
             _providerTypeName = providerType.AssemblyQualifiedName;
@@ -38,7 +38,7 @@ namespace System.ComponentModel.Design.Serialization
         {
             if (providerTypeName == null)
             {
-                throw new ArgumentNullException("providerTypeName");
+                throw new ArgumentNullException(nameof(providerTypeName));
             }
 
             _providerTypeName = providerTypeName;

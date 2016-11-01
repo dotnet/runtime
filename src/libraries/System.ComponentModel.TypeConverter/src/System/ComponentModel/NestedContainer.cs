@@ -28,7 +28,7 @@ namespace System.ComponentModel
         {
             if (owner == null)
             {
-                throw new ArgumentNullException("owner");
+                throw new ArgumentNullException(nameof(owner));
             }
             _owner = owner;
             _owner.Disposed += new EventHandler(OnOwnerDisposed);
@@ -80,7 +80,7 @@ namespace System.ComponentModel
         {
             if (component == null)
             {
-                throw new ArgumentNullException("component");
+                throw new ArgumentNullException(nameof(component));
             }
             return new Site(component, this, name);
         }

@@ -578,7 +578,7 @@ namespace System.Xml.Serialization
             else if (desiredMappingType == typeof(MembersMapping))
                 return ImportMembersType(type, typeNs, identifier);
             else
-                throw new ArgumentException(SR.XmlInternalError, "desiredMappingType");
+                throw new ArgumentException(SR.XmlInternalError, nameof(desiredMappingType));
         }
 
         private MembersMapping ImportMembersType(XmlSchemaType type, string typeNs, string identifier)

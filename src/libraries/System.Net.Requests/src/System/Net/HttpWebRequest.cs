@@ -1318,7 +1318,7 @@ namespace System.Net
 
             if (rangeSpecifier == null)
             {
-                throw new ArgumentNullException("rangeSpecifier");
+                throw new ArgumentNullException(nameof(rangeSpecifier));
             }
             if ((from < 0) || (to < 0))
             {
@@ -1326,11 +1326,11 @@ namespace System.Net
             }
             if (from > to)
             {
-                throw new ArgumentOutOfRangeException("from", SR.net_fromto);
+                throw new ArgumentOutOfRangeException(nameof(from), SR.net_fromto);
             }
             if (!HttpValidationHelpers.IsValidToken(rangeSpecifier))
             {
-                throw new ArgumentException(SR.net_nottoken, "rangeSpecifier");
+                throw new ArgumentException(SR.net_nottoken, nameof(rangeSpecifier));
             }
             if (!AddRange(rangeSpecifier, from.ToString(NumberFormatInfo.InvariantInfo), to.ToString(NumberFormatInfo.InvariantInfo)))
             {
@@ -1347,11 +1347,11 @@ namespace System.Net
         {
             if (rangeSpecifier == null)
             {
-                throw new ArgumentNullException("rangeSpecifier");
+                throw new ArgumentNullException(nameof(rangeSpecifier));
             }
             if (!HttpValidationHelpers.IsValidToken(rangeSpecifier))
             {
-                throw new ArgumentException(SR.net_nottoken, "rangeSpecifier");
+                throw new ArgumentException(SR.net_nottoken, nameof(rangeSpecifier));
             }
             if (!AddRange(rangeSpecifier, range.ToString(NumberFormatInfo.InvariantInfo), (range >= 0) ? "" : null))
             {

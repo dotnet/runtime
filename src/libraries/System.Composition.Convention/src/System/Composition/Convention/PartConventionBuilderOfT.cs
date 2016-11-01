@@ -48,7 +48,7 @@ namespace System.Composition.Convention
                 }
 
                 // An error occurred the expression must be a void Method() Member Expression
-                throw ExceptionBuilder.Argument_ExpressionMustBeVoidMethodWithNoArguments("methodSelector");
+                throw ExceptionBuilder.Argument_ExpressionMustBeVoidMethodWithNoArguments(nameof(methodSelector));
             }
 
             protected static Expression<Func<T, object>> Reduce(Expression<Func<T, object>> expr)
@@ -122,7 +122,7 @@ namespace System.Composition.Convention
                 }
 
                 // An error occurred the expression must be a Property Member Expression
-                throw ExceptionBuilder.Argument_ExpressionMustBePropertyMember("propertySelector");
+                throw ExceptionBuilder.Argument_ExpressionMustBePropertyMember(nameof(propertySelector));
             }
 
             protected static Expression<Func<T, object>> Reduce(Expression<Func<T, object>> expr)
@@ -171,7 +171,7 @@ namespace System.Composition.Convention
                 var expr = Reduce(constructorSelector).Body;
                 if (expr.NodeType != ExpressionType.New)
                 {
-                    throw ExceptionBuilder.Argument_ExpressionMustBeNew("constructorSelector");
+                    throw ExceptionBuilder.Argument_ExpressionMustBeNew(nameof(constructorSelector));
                 }
                 var newExpression = (NewExpression)expr;
                 _constructorInfo = newExpression.Constructor;

@@ -190,7 +190,7 @@ namespace System.Xml.Linq
         /// <param name="info">The <see cref="SerializationInfo"/> to populate with data</param>
         /// <param name="context">The destination for this serialization</param>
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context) {
-            if (info == null) throw new ArgumentNullException("info");
+            if (info == null) throw new ArgumentNullException(nameof(info));
             info.AddValue("name", ToString());
             info.SetType(typeof(NameSerializer));
         }
@@ -202,7 +202,7 @@ namespace System.Xml.Linq
         string _expandedName;
 
         private NameSerializer(SerializationInfo info, StreamingContext context) {
-            if (info == null) throw new ArgumentNullException("info");
+            if (info == null) throw new ArgumentNullException(nameof(info));
             _expandedName = info.GetString("name");
         }
 

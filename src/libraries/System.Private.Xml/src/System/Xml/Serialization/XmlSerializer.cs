@@ -871,7 +871,7 @@ namespace System.Xml.Serialization
                     assembly = type.GetTypeInfo().Assembly;
                 else if (type.GetTypeInfo().Assembly != assembly)
                 {
-                    throw new ArgumentException(SR.Format(SR.XmlPregenOrphanType, type.FullName/*, assembly.Location*/), "types");
+                    throw new ArgumentException(SR.Format(SR.XmlPregenOrphanType, type.FullName/*, assembly.Location*/), nameof(types));
                 }
             }
             return TempAssembly.GenerateAssembly(mappings, types, null, null, XmlSerializerCompilerParameters.Create(parameters, /* needTempDirAccess = */ true), assembly, new Hashtable());
