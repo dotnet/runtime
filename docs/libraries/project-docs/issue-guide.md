@@ -61,12 +61,12 @@ Areas are tracked by labels area-* (e.g. area-System.Collections), or Infrastruc
 | [System.Diagnostics.Tracing](https://github.com/dotnet/corefx/labels/area-System.Diagnostics.Tracing) |  |  |  |
 | [System.DirectoryServices](https://github.com/dotnet/corefx/labels/area-System.DirectoryServices) |  |  |  |
 | [System.Drawing](https://github.com/dotnet/corefx/labels/area-System.Drawing)                 |  |  |  |
-| [System.Dynamic.Runtime](https://github.com/dotnet/corefx/labels/area-System.Dynamic.Runtime) |  |  |  |
+| [System.Dynamic.Runtime](https://github.com/dotnet/corefx/labels/area-System.Dynamic.Runtime) | @VSadov, @OmarTawfik |  |  |
 | [System.Globalization](https://github.com/dotnet/corefx/labels/area-System.Globalization)     |  |  |  |
 | [System.IO](https://github.com/dotnet/corefx/labels/area-System.IO)                           | @JeremyKhune, @ianhays |  | Triaged |
 | [System.IO.Compression](https://github.com/dotnet/corefx/labels/area-System.IO.Compression)   | @ianhays |  | Triaged |
 | [System.Linq](https://github.com/dotnet/corefx/labels/area-System.Linq)                       | @VSadov, @OmarTawfik |  |  |
-| [System.Linq.Expressions](https://github.com/dotnet/corefx/labels/area-System.Linq.Expressions)   |  |  |  |
+| [System.Linq.Expressions](https://github.com/dotnet/corefx/labels/area-System.Linq.Expressions)   | @VSadov, @OmarTawfik |  |  |
 | [System.Linq.Parallel](https://github.com/dotnet/corefx/labels/area-System.Linq.Parallel)     |  |  |  |
 | [System.Net](https://github.com/dotnet/corefx/labels/area-System.Net)                         |  |  |  |
 | [System.Numerics](https://github.com/dotnet/corefx/labels/area-System.Numerics)               | @mellinoe |  | Triaged |
