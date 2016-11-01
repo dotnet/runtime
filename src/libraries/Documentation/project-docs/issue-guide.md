@@ -67,7 +67,7 @@ Areas are tracked by labels area-* (e.g. area-System.Collections), or Infrastruc
 | [System.IO.Compression](https://github.com/dotnet/corefx/labels/area-System.IO.Compression)   | [@ianhays](https://github.com/ianhays) |  | Triaged |
 | [System.Linq](https://github.com/dotnet/corefx/labels/area-System.Linq)                       | [@VSadov](https://github.com/VSadov), [@OmarTawfik](https://github.com/OmarTawfik) |  |  |
 | [System.Linq.Expressions](https://github.com/dotnet/corefx/labels/area-System.Linq.Expressions)   | [@VSadov](https://github.com/VSadov), [@OmarTawfik](https://github.com/OmarTawfik) |  |  |
-| [System.Linq.Parallel](https://github.com/dotnet/corefx/labels/area-System.Linq.Parallel)     |  |  |  |
+| [System.Linq.Parallel](https://github.com/dotnet/corefx/labels/area-System.Linq.Parallel)     | [@kouvel](https://github.com/kouvel), [@alexperovich](https://github.com/alexperovich) |  |  |
 | [System.Net](https://github.com/dotnet/corefx/labels/area-System.Net)                         |  |  |  |
 | [System.Numerics](https://github.com/dotnet/corefx/labels/area-System.Numerics)               | [@mellinoe](https://github.com/mellinoe) |  | Triaged |
 | [System.Reflection](https://github.com/dotnet/corefx/labels/area-System.Reflection)           |  |  |  |
