@@ -13,12 +13,12 @@
         "System.Data.Common": "4.1.0",
         "System.Console": "4.0.0",
         "System.ComponentModel.TypeConverter": "4.1.0",
-        "Microsoft.Win32.Registry": "4.4.0-beta-24629-01",
+        "Microsoft.Win32.Registry": "4.4.0-beta-24701-01",
         "System.Reflection": "4.1.0",
         "System.Reflection.TypeExtensions": "4.1.0",
-        "System.Xml.ReaderWriter": "4.4.0-beta-24629-01",
-        "System.Xml.XmlDocument": "4.4.0-beta-24629-01",
-        "System.Threading.Tasks.Extensions": "4.4.0-beta-24629-01"
+        "System.Xml.ReaderWriter": "4.4.0-beta-24701-01",
+        "System.Xml.XmlDocument": "4.4.0-beta-24701-01",
+        "System.Threading.Tasks.Extensions": "4.4.0-beta-24701-01"
       }
     },
     "net463": {

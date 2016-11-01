@@ -8,14 +8,14 @@
     "uap10.1": {
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.1",
-        "Microsoft.TargetingPack.Private.NETNative": "1.1.0-beta-24628-01",
+        "Microsoft.TargetingPack.Private.NETNative": "1.1.0-beta-24701-00",
         "Microsoft.TargetingPack.Private.WinRT": "1.0.2",
-        "System.Diagnostics.Debug": "4.4.0-beta-24629-01",
-        "System.Diagnostics.Tools": "4.4.0-beta-24629-01",
-        "System.Diagnostics.Tracing": "4.4.0-beta-24629-01",
-        "System.Reflection": "4.4.0-beta-24629-01",
-        "System.Runtime": "4.4.0-beta-24629-01",
-        "System.Threading": "4.4.0-beta-24629-01"
+        "System.Diagnostics.Debug": "4.4.0-beta-24701-01",
+        "System.Diagnostics.Tools": "4.4.0-beta-24701-01",
+        "System.Diagnostics.Tracing": "4.4.0-beta-24701-01",
+        "System.Reflection": "4.4.0-beta-24701-01",
+        "System.Runtime": "4.4.0-beta-24701-01",
+        "System.Threading": "4.4.0-beta-24701-01"
       }
     },
     "net463": {

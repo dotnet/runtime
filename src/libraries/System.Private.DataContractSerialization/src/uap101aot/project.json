@@ -3,7 +3,7 @@
     "netcore50": {
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.1",
-        "Microsoft.TargetingPack.Private.NETNative": "1.1.0-beta-24628-01",
+        "Microsoft.TargetingPack.Private.NETNative": "1.1.0-beta-24701-00",
         "System.Collections": "4.0.11",
         "System.Collections.Concurrent": "4.0.12",
         "System.Diagnostics.Debug": "4.0.11",

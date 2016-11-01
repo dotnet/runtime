@@ -4,7 +4,7 @@
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.1",
         "Microsoft.TargetingPack.Private.CoreCLR": "1.2.0-beta-24628-03",
-        "System.Diagnostics.Tools": "4.4.0-beta-24629-01"
+        "System.Diagnostics.Tools": "4.4.0-beta-24701-01"
       }
     },
     "net463": {
