@@ -241,12 +241,12 @@ namespace System.Globalization
         
         private unsafe SortKey CreateSortKey(String source, CompareOptions options)
         {
-            if (source==null) { throw new ArgumentNullException("source"); }
+            if (source==null) { throw new ArgumentNullException(nameof(source)); }
             Contract.EndContractBlock();
 
             if ((options & ValidSortkeyCtorMaskOffFlags) != 0)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidFlag"), "options");
+                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidFlag"), nameof(options));
             }
             
             byte [] keyData;

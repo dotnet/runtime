@@ -30,7 +30,7 @@ namespace System.Globalization
         {
             if (name == null)
             {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
             Contract.EndContractBlock();
 
@@ -44,7 +44,7 @@ namespace System.Globalization
             throw new ArgumentException(
                 string.Format(
                     CultureInfo.CurrentCulture,
-                    Environment.GetResourceString("Argument_EncodingNotSupported"), name), "name");
+                    Environment.GetResourceString("Argument_EncodingNotSupported"), name), nameof(name));
         }
 
         internal static CodePageDataItem GetCodePageDataItem(int codepage)

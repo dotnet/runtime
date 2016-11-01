@@ -68,7 +68,7 @@ namespace System.Collections {
         // before any reallocations are required.
         // 
          public ArrayList(int capacity) {
-             if (capacity < 0) throw new ArgumentOutOfRangeException(nameof(capacity), Environment.GetResourceString("ArgumentOutOfRange_MustBeNonNegNum", "capacity"));
+             if (capacity < 0) throw new ArgumentOutOfRangeException(nameof(capacity), Environment.GetResourceString("ArgumentOutOfRange_MustBeNonNegNum", nameof(capacity)));
              Contract.EndContractBlock();
 
              if (capacity == 0)
@@ -539,7 +539,7 @@ namespace System.Collections {
         // 
         public virtual int LastIndexOf(Object value, int startIndex, int count) {
             if (Count != 0 && (startIndex < 0 || count < 0))
-                throw new ArgumentOutOfRangeException((startIndex<0 ? "startIndex" : "count"), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException((startIndex<0 ? nameof(startIndex) : nameof(count)), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.Ensures(Contract.Result<int>() < Count);
             Contract.EndContractBlock();
 
@@ -547,7 +547,7 @@ namespace System.Collections {
                 return -1;
 
             if (startIndex >= _size || count > startIndex + 1) 
-                throw new ArgumentOutOfRangeException((startIndex>=_size ? "startIndex" : "count"), Environment.GetResourceString("ArgumentOutOfRange_BiggerThanCollection"));
+                throw new ArgumentOutOfRangeException((startIndex>=_size ? nameof(startIndex) : nameof(count)), Environment.GetResourceString("ArgumentOutOfRange_BiggerThanCollection"));
 
             return Array.LastIndexOf((Array)_items, value, startIndex, count);
         }
@@ -684,7 +684,7 @@ namespace System.Collections {
     
         public virtual ArrayList GetRange(int index, int count) {
             if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException((index<0 ? "index" : "count"), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException((index<0 ? nameof(index) : nameof(count)), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (_size - index < count)
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
             Contract.Ensures(Contract.Result<ArrayList>() != null);
@@ -854,7 +854,7 @@ namespace System.Collections {
             public override int BinarySearch(int index, int count, Object value, IComparer comparer) 
             {
                 if (index < 0 || count < 0)
-                    throw new ArgumentOutOfRangeException((index<0 ? "index" : "count"), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    throw new ArgumentOutOfRangeException((index<0 ? nameof(index) : nameof(count)), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
                 if (this.Count - index < count)
                     throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
                 Contract.EndContractBlock();
@@ -908,7 +908,7 @@ namespace System.Collections {
                 if (array==null)
                     throw new ArgumentNullException(nameof(array));
                 if (index < 0 || arrayIndex < 0)
-                    throw new ArgumentOutOfRangeException((index < 0) ? "index" : "arrayIndex", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    throw new ArgumentOutOfRangeException((index < 0) ? nameof(index) : nameof(arrayIndex), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
                 if( count < 0)
                     throw new ArgumentOutOfRangeException( nameof(count) , Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));                 
                 if (array.Length - arrayIndex < count)
@@ -930,7 +930,7 @@ namespace System.Collections {
     
             public override IEnumerator GetEnumerator(int index, int count) {
                 if (index < 0 || count < 0)
-                    throw new ArgumentOutOfRangeException((index<0 ? "index" : "count"), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    throw new ArgumentOutOfRangeException((index<0 ? nameof(index) : nameof(count)), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
                 Contract.EndContractBlock();
                 if (_list.Count - index < count)
                     throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
@@ -1039,7 +1039,7 @@ namespace System.Collections {
     
             public override void RemoveRange(int index, int count) {
                 if (index < 0 || count < 0)
-                    throw new ArgumentOutOfRangeException((index<0 ? "index" : "count"), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    throw new ArgumentOutOfRangeException((index<0 ? nameof(index) : nameof(count)), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
                 Contract.EndContractBlock();
                 if (_list.Count - index < count)
                     throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
@@ -1055,7 +1055,7 @@ namespace System.Collections {
     
             public override void Reverse(int index, int count) {
                 if (index < 0 || count < 0)
-                    throw new ArgumentOutOfRangeException((index<0 ? "index" : "count"), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    throw new ArgumentOutOfRangeException((index<0 ? nameof(index) : nameof(count)), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
                 Contract.EndContractBlock();
                 if (_list.Count - index < count)
                     throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
@@ -1092,7 +1092,7 @@ namespace System.Collections {
     
             public override ArrayList GetRange(int index, int count) {
                 if (index < 0 || count < 0)
-                    throw new ArgumentOutOfRangeException((index<0 ? "index" : "count"), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    throw new ArgumentOutOfRangeException((index<0 ? nameof(index) : nameof(count)), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
                 Contract.EndContractBlock();
                 if (_list.Count - index < count)
                     throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
@@ -1101,7 +1101,7 @@ namespace System.Collections {
 
             public override void Sort(int index, int count, IComparer comparer) {
                 if (index < 0 || count < 0)
-                    throw new ArgumentOutOfRangeException((index<0 ? "index" : "count"), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    throw new ArgumentOutOfRangeException((index<0 ? nameof(index) : nameof(count)), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
                 Contract.EndContractBlock();
                 if (_list.Count - index < count)
                     throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
@@ -1806,7 +1806,7 @@ namespace System.Collections {
 
             public override ArrayList GetRange(int index, int count) {
                 if (index < 0 || count < 0)
-                    throw new ArgumentOutOfRangeException((index<0 ? "index" : "count"), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    throw new ArgumentOutOfRangeException((index<0 ? nameof(index) : nameof(count)), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
                 if (Count - index < count)
                     throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
                 Contract.EndContractBlock();
@@ -2062,7 +2062,7 @@ namespace System.Collections {
     
             public override ArrayList GetRange(int index, int count) {
                 if (index < 0 || count < 0)
-                    throw new ArgumentOutOfRangeException((index<0 ? "index" : "count"), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    throw new ArgumentOutOfRangeException((index<0 ? nameof(index) : nameof(count)), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
                 if (Count - index < count)
                     throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
                 Contract.EndContractBlock();
@@ -2207,7 +2207,7 @@ namespace System.Collections {
             // Other overloads with automatically work 
             public override int BinarySearch(int index, int count, Object value, IComparer comparer) {
                 if (index < 0 || count < 0)
-                    throw new ArgumentOutOfRangeException((index<0 ? "index" : "count"), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    throw new ArgumentOutOfRangeException((index<0 ? nameof(index) : nameof(count)), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
                 if (_baseSize - index < count)
                     throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
                 Contract.EndContractBlock();
@@ -2284,7 +2284,7 @@ namespace System.Collections {
                 if (array.Rank != 1)
                     throw new ArgumentException(Environment.GetResourceString("Arg_RankMultiDimNotSupported"));
                 if (index < 0 || count < 0)
-                    throw new ArgumentOutOfRangeException((index<0 ? "index" : "count"), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    throw new ArgumentOutOfRangeException((index<0 ? nameof(index) : nameof(count)), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
                 if (array.Length - arrayIndex < count)
                     throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
                 if (_baseSize - index < count)
@@ -2320,7 +2320,7 @@ namespace System.Collections {
 
             public override IEnumerator GetEnumerator(int index, int count) {
                 if (index < 0 || count < 0)
-                    throw new ArgumentOutOfRangeException((index<0 ? "index" : "count"), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    throw new ArgumentOutOfRangeException((index<0 ? nameof(index) : nameof(count)), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
                 if (_baseSize - index < count)
                     throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
                 Contract.EndContractBlock();
@@ -2331,7 +2331,7 @@ namespace System.Collections {
 
             public override ArrayList GetRange(int index, int count) {
                 if (index < 0 || count < 0)
-                    throw new ArgumentOutOfRangeException((index<0 ? "index" : "count"), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    throw new ArgumentOutOfRangeException((index<0 ? nameof(index) : nameof(count)), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
                 if (_baseSize - index < count)
                     throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
                 Contract.EndContractBlock();
@@ -2449,7 +2449,7 @@ namespace System.Collections {
 
             public override void RemoveRange(int index, int count) {            
                 if (index < 0 || count < 0)
-                    throw new ArgumentOutOfRangeException((index<0 ? "index" : "count"), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    throw new ArgumentOutOfRangeException((index<0 ? nameof(index) : nameof(count)), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
                 if (_baseSize - index < count)
                     throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
                 Contract.EndContractBlock();
@@ -2466,7 +2466,7 @@ namespace System.Collections {
 
             public override void Reverse(int index, int count) {
                 if (index < 0 || count < 0)
-                    throw new ArgumentOutOfRangeException((index<0 ? "index" : "count"), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    throw new ArgumentOutOfRangeException((index<0 ? nameof(index) : nameof(count)), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
                 if (_baseSize - index < count)
                     throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
                 Contract.EndContractBlock();
@@ -2488,7 +2488,7 @@ namespace System.Collections {
 
             public override void Sort(int index, int count, IComparer comparer) {
                 if (index < 0 || count < 0)
-                    throw new ArgumentOutOfRangeException((index<0 ? "index" : "count"), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    throw new ArgumentOutOfRangeException((index<0 ? nameof(index) : nameof(count)), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
                 if (_baseSize - index < count)
                     throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
                 Contract.EndContractBlock();

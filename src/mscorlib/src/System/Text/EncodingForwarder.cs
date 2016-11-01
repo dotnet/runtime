@@ -43,7 +43,7 @@ namespace System.Text
             }
             if (index < 0 || count < 0)
             {
-                throw new ArgumentOutOfRangeException(index < 0 ? "index" : "count", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
             if (chars.Length - index < count)
             {
@@ -66,7 +66,7 @@ namespace System.Text
             Contract.Assert(encoding != null);
             if (s == null)
             {
-                string paramName = encoding is ASCIIEncoding ? "chars" : "s"; // ASCIIEncoding calls the string chars
+                string paramName = encoding is ASCIIEncoding ? "chars" : nameof(s); // ASCIIEncoding calls the string chars
                 // UTF8Encoding does this as well, but it originally threw an ArgumentNull for "s" so don't check for that
                 throw new ArgumentNullException(paramName);
             }
@@ -207,7 +207,7 @@ namespace System.Text
             }
             if (index < 0 || count < 0)
             {
-                throw new ArgumentOutOfRangeException(index < 0 ? "index" : "count", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
             if (bytes.Length - index < count)
             {

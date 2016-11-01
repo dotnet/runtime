@@ -256,7 +256,7 @@ namespace System.Globalization
         [System.Runtime.InteropServices.ComVisible(false)]
         public static TextInfo ReadOnly(TextInfo textInfo)
         {
-            if (textInfo == null) { throw new ArgumentNullException("textInfo"); }
+            if (textInfo == null) { throw new ArgumentNullException(nameof(textInfo)); }
             Contract.EndContractBlock();
             if (textInfo.IsReadOnly) { return (textInfo); }
 
@@ -302,7 +302,7 @@ namespace System.Globalization
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value", SR.ArgumentNull_String);
+                    throw new ArgumentNullException(nameof(value), SR.ArgumentNull_String);
                 }
                 VerifyWritable();
                 _listSeparator = value;
@@ -328,7 +328,7 @@ namespace System.Globalization
 
         public unsafe virtual String ToLower(String str)
         {
-            if (str == null) { throw new ArgumentNullException("str"); }
+            if (str == null) { throw new ArgumentNullException(nameof(str)); }
 
             return ChangeCase(str, toUpper: false);
         }
@@ -361,7 +361,7 @@ namespace System.Globalization
 
         public unsafe virtual String ToUpper(String str)
         {
-            if (str == null) { throw new ArgumentNullException("str"); }
+            if (str == null) { throw new ArgumentNullException(nameof(str)); }
 
             return ChangeCase(str, toUpper: true);
         }
@@ -471,7 +471,7 @@ namespace System.Globalization
         {
             if (str == null)  
             {
-                throw new ArgumentNullException("str");
+                throw new ArgumentNullException(nameof(str));
             }
             Contract.EndContractBlock();
             if (str.Length == 0) 
@@ -700,7 +700,7 @@ namespace System.Globalization
             // Validate inputs
             if (str == null)
             {
-                throw new ArgumentNullException("str");
+                throw new ArgumentNullException(nameof(str));
             }
 
             // This code assumes that ASCII casing is safe for whatever context is passed in.

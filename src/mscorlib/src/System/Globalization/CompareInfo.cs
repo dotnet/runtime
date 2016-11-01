@@ -485,11 +485,11 @@ namespace System.Globalization {
             // Verify inputs
             if (length1 < 0 || length2 < 0)
             {
-                throw new ArgumentOutOfRangeException((length1 < 0) ? "length1" : "length2", Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
+                throw new ArgumentOutOfRangeException((length1 < 0) ? nameof(length1) : nameof(length2), Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
             }
             if (offset1 < 0 || offset2 < 0)
             {
-                throw new ArgumentOutOfRangeException((offset1 < 0) ? "offset1" : "offset2", Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
+                throw new ArgumentOutOfRangeException((offset1 < 0) ? nameof(offset1) : nameof(offset2), Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
             }
             if (offset1 > (string1 == null ? 0 : string1.Length) - length1)
             {

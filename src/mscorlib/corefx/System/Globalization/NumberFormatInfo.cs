@@ -838,7 +838,7 @@ namespace System.Globalization
         {
             if (nfi == null)
             {
-                throw new ArgumentNullException("nfi");
+                throw new ArgumentNullException(nameof(nfi));
             }
             Contract.EndContractBlock();
             if (nfi.IsReadOnly)
@@ -862,7 +862,7 @@ namespace System.Globalization
             // Check for undefined flags
             if ((style & InvalidNumberStyles) != 0)
             {
-                throw new ArgumentException(SR.Argument_InvalidNumberStyles, "style");
+                throw new ArgumentException(SR.Argument_InvalidNumberStyles, nameof(style));
             }
             Contract.EndContractBlock();
             if ((style & NumberStyles.AllowHexSpecifier) != 0)
@@ -879,7 +879,7 @@ namespace System.Globalization
             // Check for undefined flags
             if ((style & InvalidNumberStyles) != 0)
             {
-                throw new ArgumentException(SR.Argument_InvalidNumberStyles, "style");
+                throw new ArgumentException(SR.Argument_InvalidNumberStyles, nameof(style));
             }
             Contract.EndContractBlock();
             if ((style & NumberStyles.AllowHexSpecifier) != 0)

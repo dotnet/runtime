@@ -418,7 +418,7 @@ namespace System.Globalization
                                                         CultureTypes.ReplacementCultures | CultureTypes.WindowsOnlyCultures |
                                                         CultureTypes.FrameworkCultures)) != 0)
             {
-                throw new ArgumentOutOfRangeException("types", 
+                throw new ArgumentOutOfRangeException(nameof(types), 
                               SR.Format(SR.ArgumentOutOfRange_Range, CultureTypes.NeutralCultures, CultureTypes.FrameworkCultures));
             }
 
@@ -681,7 +681,7 @@ namespace System.Globalization
 
             // If not successful, throw
             if (retVal == null)
-                throw new CultureNotFoundException("culture", culture, SR.Argument_CultureNotSupported);
+                throw new CultureNotFoundException(nameof(culture), culture, SR.Argument_CultureNotSupported);
 
             // Return the one we found
             return retVal;

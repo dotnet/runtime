@@ -342,13 +342,13 @@ namespace System.Globalization
         {
             if (era != CurrentEra && era != ChineseEra)
             {
-                throw new ArgumentOutOfRangeException("era", SR.ArgumentOutOfRange_InvalidEraValue);
+                throw new ArgumentOutOfRangeException(nameof(era), SR.ArgumentOutOfRange_InvalidEraValue);
             }
 
             if (year < MIN_LUNISOLAR_YEAR || year > MAX_LUNISOLAR_YEAR)
             {
                 throw new ArgumentOutOfRangeException(
-                            "year",
+                            nameof(year),
                             String.Format(
                                 CultureInfo.CurrentCulture,
                                 SR.ArgumentOutOfRange_Range, MIN_LUNISOLAR_YEAR, MAX_LUNISOLAR_YEAR));

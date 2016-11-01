@@ -160,7 +160,7 @@ namespace System.IO {
                 throw new ObjectDisposedException(null, Environment.GetResourceString("ObjectDisposed_StreamClosed"));
 
             if (!destination.CanRead && !destination.CanWrite)
-                throw new ObjectDisposedException("destination", Environment.GetResourceString("ObjectDisposed_StreamClosed"));
+                throw new ObjectDisposedException(nameof(destination), Environment.GetResourceString("ObjectDisposed_StreamClosed"));
 
             if (!CanRead)
                 throw new NotSupportedException(Environment.GetResourceString("NotSupported_UnreadableStream"));
