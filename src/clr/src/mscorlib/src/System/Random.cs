@@ -195,7 +195,7 @@ namespace System {
       ==============================================================================*/
       public virtual int Next(int minValue, int maxValue) {
           if (minValue>maxValue) {
-              throw new ArgumentOutOfRangeException(nameof(minValue),Environment.GetResourceString("Argument_MinMaxValue", "minValue", "maxValue"));
+              throw new ArgumentOutOfRangeException(nameof(minValue),Environment.GetResourceString("Argument_MinMaxValue", nameof(minValue), nameof(maxValue)));
           }
           Contract.EndContractBlock();
           
@@ -216,7 +216,7 @@ namespace System {
       ==============================================================================*/
       public virtual int Next(int maxValue) {
           if (maxValue<0) {
-              throw new ArgumentOutOfRangeException(nameof(maxValue), Environment.GetResourceString("ArgumentOutOfRange_MustBePositive", "maxValue"));
+              throw new ArgumentOutOfRangeException(nameof(maxValue), Environment.GetResourceString("ArgumentOutOfRange_MustBePositive", nameof(maxValue)));
           }
           Contract.EndContractBlock();
           return (int)(Sample()*maxValue);

@@ -221,7 +221,7 @@ namespace System.IO {
             if (pointer == null)
                 throw new ArgumentNullException(nameof(pointer));
             if (length < 0 || capacity < 0)
-                throw new ArgumentOutOfRangeException((length < 0) ? "length" : "capacity", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException((length < 0) ? nameof(length) : nameof(capacity), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (length > capacity)
                 throw new ArgumentOutOfRangeException(nameof(length), Environment.GetResourceString("ArgumentOutOfRange_LengthGreaterThanCapacity"));
             Contract.EndContractBlock();

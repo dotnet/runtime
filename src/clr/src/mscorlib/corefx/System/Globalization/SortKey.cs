@@ -118,7 +118,7 @@ namespace System.Globalization {
         {
             if (sortkey1==null || sortkey2==null)
             {
-                throw new ArgumentNullException((sortkey1 == null ? "sortkey1" : "sortkey2"));
+                throw new ArgumentNullException((sortkey1 == null ? nameof(sortkey1) : nameof(sortkey2)));
             }
             Contract.EndContractBlock();
     

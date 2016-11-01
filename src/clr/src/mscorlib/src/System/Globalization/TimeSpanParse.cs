@@ -627,7 +627,7 @@ namespace System.Globalization {
         // 
         private static Boolean TryParseTimeSpan(String input, TimeSpanStandardStyles style, IFormatProvider formatProvider, ref TimeSpanResult result) {
             if (input == null) {
-                result.SetFailure(ParseFailureKind.ArgumentNull, "ArgumentNull_String", null, "input");
+                result.SetFailure(ParseFailureKind.ArgumentNull, "ArgumentNull_String", null, nameof(input));
                 return false;
             }
 
@@ -1117,11 +1117,11 @@ namespace System.Globalization {
         // 
         private static Boolean TryParseExactTimeSpan(String input, String format, IFormatProvider formatProvider, TimeSpanStyles styles, ref TimeSpanResult result) {
             if (input == null) {
-                result.SetFailure(ParseFailureKind.ArgumentNull, "ArgumentNull_String", null, "input");
+                result.SetFailure(ParseFailureKind.ArgumentNull, "ArgumentNull_String", null, nameof(input));
                 return false;
             }
             if (format == null) {
-                result.SetFailure(ParseFailureKind.ArgumentNull, "ArgumentNull_String", null, "format");
+                result.SetFailure(ParseFailureKind.ArgumentNull, "ArgumentNull_String", null, nameof(format));
                 return false;
             }
             if (format.Length == 0) {
@@ -1376,7 +1376,7 @@ namespace System.Globalization {
                 result.parsedTimeSpan._ticks = 0;
 
                 if (input == null) {
-                    result.SetFailure(ParseFailureKind.ArgumentNull, "ArgumentNull_String", null, "input");
+                    result.SetFailure(ParseFailureKind.ArgumentNull, "ArgumentNull_String", null, nameof(input));
                     return false;
                 }
                 str = input;
@@ -1511,11 +1511,11 @@ namespace System.Globalization {
         // 
         private static Boolean TryParseExactMultipleTimeSpan(String input, String[] formats, IFormatProvider formatProvider, TimeSpanStyles styles, ref TimeSpanResult result) {
             if (input == null) {
-                result.SetFailure(ParseFailureKind.ArgumentNull, "ArgumentNull_String", null, "input");
+                result.SetFailure(ParseFailureKind.ArgumentNull, "ArgumentNull_String", null, nameof(input));
                 return false;
             }
             if (formats == null) {
-                result.SetFailure(ParseFailureKind.ArgumentNull, "ArgumentNull_String", null, "formats");
+                result.SetFailure(ParseFailureKind.ArgumentNull, "ArgumentNull_String", null, nameof(formats));
                 return false;
             }
 

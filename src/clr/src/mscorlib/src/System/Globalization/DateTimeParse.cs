@@ -97,11 +97,11 @@ namespace System {
 
         internal static bool TryParseExact(String s, String format, DateTimeFormatInfo dtfi, DateTimeStyles style, ref DateTimeResult result) {
             if (s == null) {
-                result.SetFailure(ParseFailureKind.ArgumentNull, "ArgumentNull_String", null, "s");
+                result.SetFailure(ParseFailureKind.ArgumentNull, "ArgumentNull_String", null, nameof(s));
                 return false;
             }
             if (format == null) {
-                result.SetFailure(ParseFailureKind.ArgumentNull, "ArgumentNull_String", null, "format");
+                result.SetFailure(ParseFailureKind.ArgumentNull, "ArgumentNull_String", null, nameof(format));
                 return false;
             }
             if (s.Length == 0) {
@@ -178,11 +178,11 @@ namespace System {
         internal static bool TryParseExactMultiple(String s, String[] formats,
                                                 DateTimeFormatInfo dtfi, DateTimeStyles style, ref DateTimeResult result) {
             if (s == null) {
-                result.SetFailure(ParseFailureKind.ArgumentNull, "ArgumentNull_String", null, "s");
+                result.SetFailure(ParseFailureKind.ArgumentNull, "ArgumentNull_String", null, nameof(s));
                 return false;
             }
             if (formats == null) {
-                result.SetFailure(ParseFailureKind.ArgumentNull, "ArgumentNull_String", null, "formats");
+                result.SetFailure(ParseFailureKind.ArgumentNull, "ArgumentNull_String", null, nameof(formats));
                 return false;
             }
 
@@ -2319,7 +2319,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         [System.Security.SecuritySafeCritical]  // auto-generated
         internal static bool TryParse(String s, DateTimeFormatInfo dtfi, DateTimeStyles styles, ref DateTimeResult result) {
             if (s == null) {
-                result.SetFailure(ParseFailureKind.ArgumentNull, "ArgumentNull_String", null, "s");
+                result.SetFailure(ParseFailureKind.ArgumentNull, "ArgumentNull_String", null, nameof(s));
                 return false;
             }
             if (s.Length == 0) {

@@ -252,7 +252,7 @@ namespace System {
         // AppendPositiveNumber is an optimization to append a number to a StringBuilder object without
         // doing any boxing and not even creating intermediate string.
         // Note: as we always have positive numbers then it is safe to convert the number to string 
-        // regardless of the current culture as we’ll not have any punctuation marks in the number
+        // regardless of the current culture as we'll not have any punctuation marks in the number
         //
         private const int ZERO_CHAR_VALUE = (int) '0';
         private static void AppendPositiveNumber(int num, StringBuilder sb)
@@ -277,7 +277,7 @@ namespace System {
             Contract.EndContractBlock();
 
             VersionResult r = new VersionResult();
-            r.Init("input", true);
+            r.Init(nameof(input), true);
             if (!TryParseVersion(input, ref r)) {
                 throw r.GetVersionParseException();
             }
@@ -286,7 +286,7 @@ namespace System {
 
         public static bool TryParse(string input, out Version result) {
             VersionResult r = new VersionResult();
-            r.Init("input", false);
+            r.Init(nameof(input), false);
             bool b = TryParseVersion(input, ref r);
             result = r.m_parsedVersion;
             return b;
@@ -307,11 +307,11 @@ namespace System {
                 return false;
             }
 
-            if (!TryParseComponent(parsedComponents[0], "version", ref result, out major)) {
+            if (!TryParseComponent(parsedComponents[0], nameof(version), ref result, out major)) {
                 return false;
             }
 
-            if (!TryParseComponent(parsedComponents[1], "version", ref result, out minor)) {
+            if (!TryParseComponent(parsedComponents[1], nameof(version), ref result, out minor)) {
                 return false;
             }
 

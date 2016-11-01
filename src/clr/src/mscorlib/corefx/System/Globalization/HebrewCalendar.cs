@@ -379,7 +379,7 @@ namespace System.Globalization
             if (month < 1 || month > monthsInYear)
             {
                 throw new ArgumentOutOfRangeException(
-                            "month",
+                            nameof(month),
                             String.Format(
                                 CultureInfo.CurrentCulture,
                                 SR.ArgumentOutOfRange_Range,
@@ -405,7 +405,7 @@ namespace System.Globalization
             if (day < 1 || day > daysInMonth)
             {
                 throw new ArgumentOutOfRangeException(
-                            "day",
+                            nameof(day),
                             String.Format(
                                 CultureInfo.CurrentCulture,
                                 SR.ArgumentOutOfRange_Range,
@@ -418,7 +418,7 @@ namespace System.Globalization
         {
             if (era != CurrentEra && era != HebrewEra)
             {
-                throw new ArgumentOutOfRangeException("era", SR.ArgumentOutOfRange_InvalidEraValue);
+                throw new ArgumentOutOfRangeException(nameof(era), SR.ArgumentOutOfRange_InvalidEraValue);
             }
         }
 
@@ -478,7 +478,7 @@ namespace System.Globalization
             int index = gregorianYear - FirstGregorianTableYear;
             if (index < 0 || index > TABLESIZE)
             {
-                throw new ArgumentOutOfRangeException("gregorianYear");
+                throw new ArgumentOutOfRangeException(nameof(gregorianYear));
             }
 
             index *= 2;
@@ -713,7 +713,7 @@ namespace System.Globalization
             catch (ArgumentException)
             {
                 throw new ArgumentOutOfRangeException(
-                            "months",
+                            nameof(months),
                             String.Format(
                                 CultureInfo.CurrentCulture,
                                 SR.ArgumentOutOfRange_AddValue));
@@ -736,7 +736,7 @@ namespace System.Globalization
             int d = GetDatePart(time.Ticks, DatePartDay);
 
             y += years;
-            CheckHebrewYearValue(y, Calendar.CurrentEra, "years");
+            CheckHebrewYearValue(y, Calendar.CurrentEra, nameof(years));
 
             int months = GetMonthsInYear(y, CurrentEra);
             if (m > months)
@@ -779,7 +779,7 @@ namespace System.Globalization
 
         internal static int GetHebrewYearType(int year, int era)
         {
-            CheckHebrewYearValue(year, era, "year");
+            CheckHebrewYearValue(year, era, nameof(year));
             // The HebrewTable is indexed by Gregorian year and starts from FirstGregorianYear.
             // So we need to convert year (Hebrew year value) to Gregorian Year below.
             return (s_hebrewTable[(year - HebrewYearOf1AD - FirstGregorianTableYear) * 2 + 1]);
@@ -832,7 +832,7 @@ namespace System.Globalization
             int monthDays = s_lunarMonthLen[hebrewYearType * MaxMonthPlusOne + month];
             if (monthDays == 0)
             {
-                throw new ArgumentOutOfRangeException("month", SR.ArgumentOutOfRange_Month);
+                throw new ArgumentOutOfRangeException(nameof(month), SR.ArgumentOutOfRange_Month);
             }
             return (monthDays);
         }
@@ -964,7 +964,7 @@ namespace System.Globalization
 
         public override bool IsLeapYear(int year, int era)
         {
-            CheckHebrewYearValue(year, era, "year");
+            CheckHebrewYearValue(year, era, nameof(year));
             return (((7 * (long)year + 1) % 19) < 7);
         }
 
@@ -1055,7 +1055,7 @@ namespace System.Globalization
 
         public override DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era)
         {
-            CheckHebrewYearValue(year, era, "year");
+            CheckHebrewYearValue(year, era, nameof(year));
             CheckHebrewMonthValue(year, month, era);
             CheckHebrewDayValue(year, month, day, era);
             DateTime dt = HebrewToGregorian(year, month, day, hour, minute, second, millisecond);
@@ -1086,7 +1086,7 @@ namespace System.Globalization
                 }
                 else
                 {
-                    CheckHebrewYearValue(value, HebrewEra, "value");
+                    CheckHebrewYearValue(value, HebrewEra, nameof(value));
                 }
                 twoDigitYearMax = value;
             }
@@ -1097,7 +1097,7 @@ namespace System.Globalization
         {
             if (year < 0)
             {
-                throw new ArgumentOutOfRangeException("year",
+                throw new ArgumentOutOfRangeException(nameof(year),
                     SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             Contract.EndContractBlock();
@@ -1110,7 +1110,7 @@ namespace System.Globalization
             if (year > MaxHebrewYear || year < MinHebrewYear)
             {
                 throw new ArgumentOutOfRangeException(
-                            "year",
+                            nameof(year),
                             String.Format(
                                 CultureInfo.CurrentCulture,
                                 SR.ArgumentOutOfRange_Range,

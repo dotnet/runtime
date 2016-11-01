@@ -52,7 +52,7 @@ namespace System.IO {
 
         public StringWriter(StringBuilder sb, IFormatProvider formatProvider) : base(formatProvider) {
             if (sb==null)
-                throw new ArgumentNullException("sb", Environment.GetResourceString("ArgumentNull_Buffer"));
+                throw new ArgumentNullException(nameof(sb), Environment.GetResourceString("ArgumentNull_Buffer"));
             Contract.EndContractBlock();
             _sb = sb;
             _isOpen = true;
@@ -104,11 +104,11 @@ namespace System.IO {
         //
         public override void Write(char[] buffer, int index, int count) {
             if (buffer==null)
-                throw new ArgumentNullException("buffer", Environment.GetResourceString("ArgumentNull_Buffer"));
+                throw new ArgumentNullException(nameof(buffer), Environment.GetResourceString("ArgumentNull_Buffer"));
             if (index < 0)
-                throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (buffer.Length - index < count)
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
             Contract.EndContractBlock();

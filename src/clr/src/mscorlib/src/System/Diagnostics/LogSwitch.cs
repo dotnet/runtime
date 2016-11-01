@@ -55,7 +55,7 @@ namespace System.Diagnostics {
                 Log.AddLogSwitch (this);
             }
             else
-                throw new ArgumentNullException ((name==null ? "name" : "parent"));
+                throw new ArgumentNullException ((name==null ? nameof(name) : nameof(parent)));
         }
     
         [System.Security.SecuritySafeCritical]  // auto-generated

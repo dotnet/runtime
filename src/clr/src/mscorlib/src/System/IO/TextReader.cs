@@ -204,7 +204,7 @@ namespace System.IO {
             if (buffer==null)
                 throw new ArgumentNullException(nameof(buffer), Environment.GetResourceString("ArgumentNull_Buffer"));
             if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (buffer.Length - index < count)
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
             Contract.EndContractBlock();
@@ -235,7 +235,7 @@ namespace System.IO {
             if (buffer==null)
                 throw new ArgumentNullException(nameof(buffer), Environment.GetResourceString("ArgumentNull_Buffer"));
             if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (buffer.Length - index < count)
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
 
@@ -381,7 +381,7 @@ namespace System.IO {
                 if (buffer==null)
                     throw new ArgumentNullException(nameof(buffer), Environment.GetResourceString("ArgumentNull_Buffer"));
                 if (index < 0 || count < 0)
-                    throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
                 if (buffer.Length - index < count)
                     throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
 
@@ -397,7 +397,7 @@ namespace System.IO {
                 if (buffer==null)
                     throw new ArgumentNullException(nameof(buffer), Environment.GetResourceString("ArgumentNull_Buffer"));
                 if (index < 0 || count < 0)
-                    throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
                 if (buffer.Length - index < count)
                     throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
                 Contract.EndContractBlock();

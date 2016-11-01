@@ -105,15 +105,15 @@ namespace System.Security {
         [CLSCompliant(false)]
         public unsafe SecureString(char* value, int length) {
             if( value == null) {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
 
             if( length < 0) {
-                throw new ArgumentOutOfRangeException("length", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(length), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
 
             if( length > MaxLength) {
-                throw new ArgumentOutOfRangeException("length", Environment.GetResourceString("ArgumentOutOfRange_Length"));
+                throw new ArgumentOutOfRangeException(nameof(length), Environment.GetResourceString("ArgumentOutOfRange_Length"));
             }
             Contract.EndContractBlock();
 
@@ -192,7 +192,7 @@ namespace System.Security {
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
         public void InsertAt( int index, char c ) {
             if( index < 0 || index > m_length) {
-                throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_IndexString"));
+                throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_IndexString"));
             }
             Contract.EndContractBlock();
 
@@ -251,7 +251,7 @@ namespace System.Security {
             EnsureNotReadOnly();
 
             if( index < 0 || index >= m_length) {
-                throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_IndexString"));
+                throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_IndexString"));
             }
 
             unsafe
@@ -290,7 +290,7 @@ namespace System.Security {
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
         public void SetAt( int index, char c ) {
             if( index < 0 || index >= m_length) {
-                throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_IndexString"));
+                throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_IndexString"));
             }
             Contract.EndContractBlock();
             Contract.Assert(index <= Int32.MaxValue / sizeof(char));
@@ -341,7 +341,7 @@ namespace System.Security {
         [System.Security.SecurityCritical]  // auto-generated
         private void EnsureCapacity(int capacity) {            
             if( capacity > MaxLength) {
-                throw new ArgumentOutOfRangeException("capacity", Environment.GetResourceString("ArgumentOutOfRange_Capacity"));
+                throw new ArgumentOutOfRangeException(nameof(capacity), Environment.GetResourceString("ArgumentOutOfRange_Capacity"));
             }
             Contract.EndContractBlock();
 
