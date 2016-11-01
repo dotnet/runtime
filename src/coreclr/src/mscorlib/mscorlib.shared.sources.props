@@ -858,7 +858,6 @@
     <SecuritySources Include="$(BclSourcesRoot)\System\Security\SecurityZone.cs" />
     <SecuritySources Include="$(BclSourcesRoot)\System\Security\VerificationException.cs" />
     <SecuritySources Condition="'$(FeatureLegacySurface)' == 'true'" Include="$(BclSourcesRoot)\System\Security\securestring.cs" />
-    <SecuritySources Include="$(CoreFxSourcesRoot)\System\Security\CryptographicException.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -1168,6 +1167,7 @@
     <BuffersSources Include="$(CoreFxSourcesRoot)\System\Buffers\DefaultArrayPool.cs" />
     <BuffersSources Include="$(CoreFxSourcesRoot)\System\Buffers\DefaultArrayPoolBucket.cs" />
     <BuffersSources Include="$(CoreFxSourcesRoot)\System\Buffers\Utilities.cs" />
+    <SecuritySources Include="$(CoreFxSourcesRoot)\System\Security\CryptographicException.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCoreFxWindowsInterop)' == 'true'">
     <WindowsInteropSources Include="$(CoreFxSourcesRoot)\System\HResults.cs" />
