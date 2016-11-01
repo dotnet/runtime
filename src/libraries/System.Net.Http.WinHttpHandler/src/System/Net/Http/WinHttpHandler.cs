@@ -51,8 +51,8 @@ namespace System.Net.Http
         internal static readonly Version HttpVersion20 = new Version(2, 0);
         internal static readonly Version HttpVersionUnknown = new Version(0, 0);
 #else
-        internal static Version HttpVersion20 => HttpVersion.Version20;
-        internal static Version HttpVersionUnknown => HttpVersion.Unknown;
+        internal static Version HttpVersion20 => HttpVersionInternal.Version20;
+        internal static Version HttpVersionUnknown => HttpVersionInternal.Unknown;
 #endif
         private static readonly TimeSpan s_maxTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
 
@@ -792,11 +792,11 @@ namespace System.Net.Http
                 // Try to use the requested version if a known/supported version was explicitly requested.
                 // Otherwise, we simply use winhttp's default.
                 string httpVersion = null;
-                if (state.RequestMessage.Version == HttpVersion.Version10)
+                if (state.RequestMessage.Version == HttpVersionInternal.Version10)
                 {
                     httpVersion = "HTTP/1.0";
                 }
-                else if (state.RequestMessage.Version == HttpVersion.Version11)
+                else if (state.RequestMessage.Version == HttpVersionInternal.Version11)
                 {
                     httpVersion = "HTTP/1.1";
                 }

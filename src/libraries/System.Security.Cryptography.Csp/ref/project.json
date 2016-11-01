@@ -1,9 +1,9 @@
 {
   "dependencies": {
-    "System.IO": "4.4.0-beta-24629-01",
-    "System.Runtime": "4.4.0-beta-24629-01",
-    "System.Security.Cryptography.Algorithms": "4.4.0-beta-24629-01",
-    "System.Security.Cryptography.Primitives": "4.4.0-beta-24629-01"
+    "System.IO": "4.4.0-beta-24701-01",
+    "System.Runtime": "4.4.0-beta-24701-01",
+    "System.Security.Cryptography.Algorithms": "4.4.0-beta-24701-01",
+    "System.Security.Cryptography.Primitives": "4.4.0-beta-24701-01"
   },
   "frameworks": {
     "netstandard1.7": {}

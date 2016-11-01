@@ -2,18 +2,18 @@
   "frameworks": {
     "netstandard1.7": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.2.0-beta-24629-01",
-        "System.Collections": "4.4.0-beta-24629-01",
-        "System.Collections.Concurrent": "4.4.0-beta-24629-01",
-        "System.Diagnostics.Contracts": "4.4.0-beta-24629-01",
-        "System.Diagnostics.Debug": "4.4.0-beta-24629-01",
-        "System.Linq": "4.4.0-beta-24629-01",
-        "System.Resources.ResourceManager": "4.4.0-beta-24629-01",
-        "System.Runtime": "4.4.0-beta-24629-01",
-        "System.Runtime.Extensions": "4.4.0-beta-24629-01",
-        "System.Runtime.InteropServices": "4.4.0-beta-24629-01",
-        "System.Text.Encoding": "4.4.0-beta-24629-01",
-        "System.Security.Cryptography.Primitives": "4.4.0-beta-24629-01"
+        "Microsoft.NETCore.Platforms": "1.2.0-beta-24701-01",
+        "System.Collections": "4.4.0-beta-24701-01",
+        "System.Collections.Concurrent": "4.4.0-beta-24701-01",
+        "System.Diagnostics.Contracts": "4.4.0-beta-24701-01",
+        "System.Diagnostics.Debug": "4.4.0-beta-24701-01",
+        "System.Linq": "4.4.0-beta-24701-01",
+        "System.Resources.ResourceManager": "4.4.0-beta-24701-01",
+        "System.Runtime": "4.4.0-beta-24701-01",
+        "System.Runtime.Extensions": "4.4.0-beta-24701-01",
+        "System.Runtime.InteropServices": "4.4.0-beta-24701-01",
+        "System.Text.Encoding": "4.4.0-beta-24701-01",
+        "System.Security.Cryptography.Primitives": "4.4.0-beta-24701-01"
       }
     },
     "net463": {

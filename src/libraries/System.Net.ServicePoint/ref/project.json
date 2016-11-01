@@ -1,9 +1,9 @@
 {
   "dependencies": {
-    "System.Net.Primitives": "4.4.0-beta-24629-01",
-    "System.Net.Security": "4.4.0-beta-24629-01",
-    "System.Runtime": "4.4.0-beta-24629-01",
-    "System.Security.Cryptography.X509Certificates": "4.4.0-beta-24629-01"
+    "System.Net.Primitives": "4.4.0-beta-24701-01",
+    "System.Net.Security": "4.4.0-beta-24701-01",
+    "System.Runtime": "4.4.0-beta-24701-01",
+    "System.Security.Cryptography.X509Certificates": "4.4.0-beta-24701-01"
   },
   "frameworks": {
     "netstandard1.7": {}

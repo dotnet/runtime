@@ -44,6 +44,7 @@
     <Compile Include="System\Net\DnsEndPoint.cs" />
     <Compile Include="System\Net\EndPoint.cs" />
     <Compile Include="System\Net\HttpStatusCode.cs" />
+    <Compile Include="System\Net\HttpVersion.cs" />
     <Compile Include="System\Net\ICredentials.cs" />
     <Compile Include="System\Net\ICredentialsByHost.cs" />
     <Compile Include="System\Net\IPAddress.cs" />
@@ -67,9 +68,6 @@
     <Compile Include="System\Security\Authentication\ExtendedProtection\ChannelBindingKind.cs" />
     <Compile Include="$(CommonPath)\System\StringExtensions.cs">
       <Link>Common\System\StringExtensions.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\HttpVersion.cs">
-      <Link>\System\Net\HttpVersion.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\ByteOrder.cs">
       <Link>Common\System\Net\ByteOrder.cs</Link>

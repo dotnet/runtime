@@ -3,15 +3,15 @@
     "netstandard1.7": {
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.1",
-        "System.Collections.NonGeneric": "4.4.0-beta-24629-01",
-        "System.Reflection": "4.4.0-beta-24629-01",
-        "System.Runtime.Extensions": "4.4.0-beta-24629-01",
-        "System.Runtime": "4.4.0-beta-24629-01",
-        "System.Security.AccessControl": "4.4.0-beta-24629-01",
-        "System.Security.Cryptography.Primitives": "4.4.0-beta-24629-01",
-        "System.Security.Cryptography.X509Certificates": "4.4.0-beta-24629-01",
-        "System.Security.Principal": "4.4.0-beta-24629-01",
-        "System.Threading": "4.4.0-beta-24629-01"
+        "System.Collections.NonGeneric": "4.4.0-beta-24701-01",
+        "System.Reflection": "4.4.0-beta-24701-01",
+        "System.Runtime.Extensions": "4.4.0-beta-24701-01",
+        "System.Runtime": "4.4.0-beta-24701-01",
+        "System.Security.AccessControl": "4.4.0-beta-24701-01",
+        "System.Security.Cryptography.Primitives": "4.4.0-beta-24701-01",
+        "System.Security.Cryptography.X509Certificates": "4.4.0-beta-24701-01",
+        "System.Security.Principal": "4.4.0-beta-24701-01",
+        "System.Threading": "4.4.0-beta-24701-01"
       }
     },
     "net463": {
