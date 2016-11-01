@@ -9,16 +9,11 @@ namespace System.Runtime
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
     public sealed class AssemblyTargetedPatchBandAttribute : Attribute
     {
-        private String m_targetedPatchBand;
+        public string TargetedPatchBand { get; }
 
-        public AssemblyTargetedPatchBandAttribute(String targetedPatchBand)
+        public AssemblyTargetedPatchBandAttribute(string targetedPatchBand)
         {
-            m_targetedPatchBand = targetedPatchBand;
-        }
-
-        public String TargetedPatchBand
-        {
-            get { return m_targetedPatchBand; }
+            TargetedPatchBand = targetedPatchBand;
         }
     }
 
@@ -31,16 +26,11 @@ namespace System.Runtime
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor, AllowMultiple = false, Inherited = false)]
     public sealed class TargetedPatchingOptOutAttribute : Attribute
     {
-        private String m_reason;
+        public string Reason { get; }
 
-        public TargetedPatchingOptOutAttribute(String reason)
+        public TargetedPatchingOptOutAttribute(string reason)
         {
-            m_reason = reason;
-        }
-
-        public String Reason
-        {
-            get { return m_reason; }
+            Reason = reason;
         }
 
         private TargetedPatchingOptOutAttribute() { }
