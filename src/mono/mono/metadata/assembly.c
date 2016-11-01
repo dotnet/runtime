@@ -1997,14 +1997,7 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 	 * this image and we won't be able to look for a different
 	 * candidate. */
 
-	if (!refonly && strcmp (ass->aname.name, "mscorlib") != 0) {
-		/* Don't check for reference assmebly attribute for
-		 * corlib here because if corlib isn't loaded yet,
-		 * it's too early to set up the
-		 * ReferenceAssemblyAttribute class.  We check that
-		 * we're not running with a reference corlib in
-		 * mono_init_internal().
-		 */
+	if (!refonly) {
 		MonoError refasm_error;
 		if (mono_assembly_has_reference_assembly_attribute (ass, &refasm_error)) {
 			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Image for assembly '%s' (%s) has ReferenceAssemblyAttribute, skipping", ass->aname.name, image->name);
