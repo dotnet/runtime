@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -48,7 +48,7 @@ namespace System.IO.Pipes
         internal static int AccessMaskFromRights(PipeAccessRights rights, AccessControlType controlType)
         {
             if (rights < (PipeAccessRights)0 || rights > (PipeAccessRights.FullControl | PipeAccessRights.AccessSystemSecurity))
-                throw new ArgumentOutOfRangeException("rights", SR.ArgumentOutOfRange_NeedValidPipeAccessRights);
+                throw new ArgumentOutOfRangeException(nameof(rights), SR.ArgumentOutOfRange_NeedValidPipeAccessRights);
 
             if (controlType == AccessControlType.Allow)
             {

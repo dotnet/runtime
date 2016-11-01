@@ -78,7 +78,7 @@ namespace System
         {
             if (type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
 
             return Activator.CreateInstance(type, args);

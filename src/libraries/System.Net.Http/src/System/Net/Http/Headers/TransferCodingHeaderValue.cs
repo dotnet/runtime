@@ -51,7 +51,7 @@ namespace System.Net.Http.Headers
 
         public TransferCodingHeaderValue(string value)
         {
-            HeaderUtilities.CheckValidToken(value, "value");
+            HeaderUtilities.CheckValidToken(value, nameof(value));
             _value = value;
         }
 

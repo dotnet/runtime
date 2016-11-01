@@ -52,7 +52,7 @@ namespace System.Net.Http
             get { return _baseAddress; }
             set
             {
-                CheckBaseAddress(value, "value");
+                CheckBaseAddress(value, nameof(value));
                 CheckDisposedOrStarted();
 
                 if (NetEventSource.IsEnabled) NetEventSource.UriBaseAddress(this, value);

@@ -197,7 +197,7 @@ namespace Internal.NativeCrypto
             string containerName = null;
             if (null == cspParameters)
             {
-                throw new ArgumentException(SR.Format(SR.CspParameter_invalid, "cspParameters"));
+                throw new ArgumentException(SR.Format(SR.CspParameter_invalid, nameof(cspParameters)));
             }
 
             //look for provider type in the cspParameters

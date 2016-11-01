@@ -3061,7 +3061,7 @@ namespace System.Xml.Xsl.Xslt
                     case "html": method = XmlOutputMethod.Html; break;
                     case "text": method = XmlOutputMethod.Text; break;
                     default:
-                        ReportError(/*[XT1570]*/SR.Xslt_InvalidAttrValue, "method", attValue);
+                        ReportError(/*[XT1570]*/SR.Xslt_InvalidAttrValue, nameof(method), attValue);
                         return null;
                 }
             }

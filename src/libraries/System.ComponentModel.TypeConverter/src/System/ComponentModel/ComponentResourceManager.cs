@@ -70,11 +70,11 @@ namespace System.ComponentModel
         {
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
             if (objectName == null)
             {
-                throw new ArgumentNullException("objectName");
+                throw new ArgumentNullException(nameof(objectName));
             }
             if (culture == null)
             {

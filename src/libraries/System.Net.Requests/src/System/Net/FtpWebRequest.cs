@@ -106,7 +106,7 @@ namespace System.Net
                 if (method == methodInfo.Method)
                     return methodInfo;
             // We don't support generic methods
-            throw new ArgumentException(SR.net_ftp_unsupported_method, "method");
+            throw new ArgumentException(SR.net_ftp_unsupported_method, nameof(method));
         }
 
         private static readonly FtpMethodInfo[] s_knownMethodInfo =
@@ -276,7 +276,7 @@ namespace System.Net
             {
                 if (String.IsNullOrEmpty(value))
                 {
-                    throw new ArgumentException(SR.net_ftp_invalid_method_name, "value");
+                    throw new ArgumentException(SR.net_ftp_invalid_method_name, nameof(value));
                 }
                 if (InUse)
                 {
@@ -288,7 +288,7 @@ namespace System.Net
                 }
                 catch (ArgumentException)
                 {
-                    throw new ArgumentException(SR.net_ftp_unsupported_method, "value");
+                    throw new ArgumentException(SR.net_ftp_unsupported_method, nameof(value));
                 }
             }
         }
@@ -314,7 +314,7 @@ namespace System.Net
 
                 if (String.IsNullOrEmpty(value))
                 {
-                    throw new ArgumentException(SR.net_ftp_invalid_renameto, "value");
+                    throw new ArgumentException(SR.net_ftp_invalid_renameto, nameof(value));
                 }
 
                 _renameTo = value;
@@ -338,11 +338,11 @@ namespace System.Net
                 }
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 if (value == CredentialCache.DefaultNetworkCredentials)
                 {
-                    throw new ArgumentException(SR.net_ftp_no_defaultcreds, "value");
+                    throw new ArgumentException(SR.net_ftp_no_defaultcreds, nameof(value));
                 }
                 _authInfo = value;
             }
@@ -376,7 +376,7 @@ namespace System.Net
                 }
                 if (value < 0 && value != System.Threading.Timeout.Infinite)
                 {
-                    throw new ArgumentOutOfRangeException("value", SR.net_io_timeout_use_ge_zero);
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.net_io_timeout_use_ge_zero);
                 }
                 if (_timeout != value)
                 {
@@ -414,7 +414,7 @@ namespace System.Net
                 }
                 if (value <= 0 && value != System.Threading.Timeout.Infinite)
                 {
-                    throw new ArgumentOutOfRangeException("value", SR.net_io_timeout_use_gt_zero);
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.net_io_timeout_use_gt_zero);
                 }
                 _readWriteTimeout = value;
             }
@@ -437,7 +437,7 @@ namespace System.Net
                 }
                 if (value < 0)
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
                 _contentOffset = value;
             }
@@ -516,7 +516,7 @@ namespace System.Net
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, uri);
 
             if ((object)uri.Scheme != (object)Uri.UriSchemeFtp)
-                throw new ArgumentOutOfRangeException("uri");
+                throw new ArgumentOutOfRangeException(nameof(uri));
 
             _timerCallback = new TimerThread.Callback(TimerCallback);
             _syncObject = new object();
@@ -731,12 +731,12 @@ namespace System.Net
                 // parameter validation
                 if (asyncResult == null)
                 {
-                    throw new ArgumentNullException("asyncResult");
+                    throw new ArgumentNullException(nameof(asyncResult));
                 }
                 LazyAsyncResult castedAsyncResult = asyncResult as LazyAsyncResult;
                 if (castedAsyncResult == null)
                 {
-                    throw new ArgumentException(SR.net_io_invalidasyncresult, "asyncResult");
+                    throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
                 }
                 if (castedAsyncResult.EndCalled)
                 {
@@ -876,14 +876,14 @@ namespace System.Net
             {
                 if (asyncResult == null)
                 {
-                    throw new ArgumentNullException("asyncResult");
+                    throw new ArgumentNullException(nameof(asyncResult));
                 }
 
                 LazyAsyncResult castedAsyncResult = asyncResult as LazyAsyncResult;
 
                 if (castedAsyncResult == null)
                 {
-                    throw new ArgumentException(SR.net_io_invalidasyncresult, "asyncResult");
+                    throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
                 }
 
                 if (castedAsyncResult.EndCalled)
@@ -1659,7 +1659,7 @@ namespace System.Net
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 _clientCertificates = value;
             }

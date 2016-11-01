@@ -267,7 +267,7 @@ namespace System.ComponentModel
         {
             if (component == null)
             {
-                throw new ArgumentNullException("component");
+                throw new ArgumentNullException(nameof(component));
             }
 
             if (name != null)

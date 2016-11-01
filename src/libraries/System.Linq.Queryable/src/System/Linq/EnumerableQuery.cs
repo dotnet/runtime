@@ -76,20 +76,20 @@ namespace System.Linq
         IQueryable IQueryProvider.CreateQuery(Expression expression)
         {
             if (expression == null)
-                throw Error.ArgumentNull("expression");
+                throw Error.ArgumentNull(nameof(expression));
             Type iqType = TypeHelper.FindGenericType(typeof(IQueryable<>), expression.Type);
             if (iqType == null)
-                throw Error.ArgumentNotValid("expression");
+                throw Error.ArgumentNotValid(nameof(expression));
             return EnumerableQuery.Create(iqType.GetGenericArguments()[0], expression);
         }
 
         IQueryable<S> IQueryProvider.CreateQuery<S>(Expression expression)
         {
             if (expression == null)
-                throw Error.ArgumentNull("expression");
+                throw Error.ArgumentNull(nameof(expression));
             if (!typeof(IQueryable<S>).IsAssignableFrom(expression.Type))
             {
-                throw Error.ArgumentNotValid("expression");
+                throw Error.ArgumentNotValid(nameof(expression));
             }
             return new EnumerableQuery<S>(expression);
         }
@@ -104,7 +104,7 @@ namespace System.Linq
         object IQueryProvider.Execute(Expression expression)
         {
             if (expression == null)
-                throw Error.ArgumentNull("expression");
+                throw Error.ArgumentNull(nameof(expression));
             Type execType = typeof(EnumerableExecutor<>).MakeGenericType(expression.Type);
             return EnumerableExecutor.Create(expression).ExecuteBoxed();
         }
@@ -113,9 +113,9 @@ namespace System.Linq
         S IQueryProvider.Execute<S>(Expression expression)
         {
             if (expression == null)
-                throw Error.ArgumentNull("expression");
+                throw Error.ArgumentNull(nameof(expression));
             if (!typeof(S).IsAssignableFrom(expression.Type))
-                throw Error.ArgumentNotValid("expression");
+                throw Error.ArgumentNotValid(nameof(expression));
             return new EnumerableExecutor<S>(expression).Execute();
         }
 

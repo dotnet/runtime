@@ -168,7 +168,7 @@ namespace System.Net.Mail
             {
                 if (7 < (uint)value && value != DeliveryNotificationOptions.Never)
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
                 _deliveryStatusNotification = value;
             }
