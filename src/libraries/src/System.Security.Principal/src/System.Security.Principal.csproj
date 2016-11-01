@@ -17,6 +17,7 @@
   <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
     <Compile Include="System\Security\Principal\IIdentity.cs" />
     <Compile Include="System\Security\Principal\IPrincipal.cs" />
+    <Compile Include="System\Security\Principal\PrincipalPolicy.cs" />
     <Compile Include="System\Security\Principal\TokenImpersonationLevel.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net463'">

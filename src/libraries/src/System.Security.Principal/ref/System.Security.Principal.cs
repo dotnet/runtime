@@ -27,4 +27,10 @@ namespace System.Security.Principal
         Impersonation = 3,
         None = 0,
     }
+    public enum PrincipalPolicy 
+    {
+        NoPrincipal = 1,
+        UnauthenticatedPrincipal = 0,
+        WindowsPrincipal = 2,
+    }
 }
