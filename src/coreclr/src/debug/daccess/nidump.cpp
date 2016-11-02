@@ -1187,12 +1187,12 @@ NativeImageDumper::DumpNativeImage()
             mscorlib->fIsMscorlib = TRUE;
             _ASSERTE(mscorlib->fIsHardbound);
         }
+
+        _ASSERTE(mscorlib != NULL);
         if( mscorlib->fIsHardbound )
         {
             m_isMscorlibHardBound = true;
         }
-
-        _ASSERTE(mscorlib != NULL);
         if( m_isMscorlibHardBound )
         {
             //go through the module to the binder.
