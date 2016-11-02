@@ -337,7 +337,7 @@ namespace System.Dynamic
                     idoMetaObject.Value == null ||
                     (object)idoMetaObject.Expression != (object)expression)
                 {
-                    throw Error.InvalidMetaObjectCreated(ido.GetType());
+                    throw System.Linq.Expressions.Error.InvalidMetaObjectCreated(ido.GetType());
                 }
 
                 return idoMetaObject;

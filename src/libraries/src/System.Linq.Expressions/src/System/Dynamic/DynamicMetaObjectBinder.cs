@@ -57,11 +57,11 @@ namespace System.Dynamic
             ContractUtils.RequiresNotNull(returnLabel, nameof(returnLabel));
             if (args.Length == 0)
             {
-                throw Error.OutOfRange("args.Length", 1);
+                throw System.Linq.Expressions.Error.OutOfRange("args.Length", 1);
             }
             if (parameters.Count == 0)
             {
-                throw Error.OutOfRange("parameters.Count", 1);
+                throw System.Linq.Expressions.Error.OutOfRange("parameters.Count", 1);
             }
             if (args.Length != parameters.Count)
             {
@@ -79,7 +79,7 @@ namespace System.Dynamic
                 if (returnLabel.Type != typeof(void) &&
                     !TypeUtils.AreReferenceAssignable(returnLabel.Type, expectedResult))
                 {
-                    throw Error.BinderNotCompatibleWithCallSite(expectedResult, this, returnLabel.Type);
+                    throw System.Linq.Expressions.Error.BinderNotCompatibleWithCallSite(expectedResult, this, returnLabel.Type);
                 }
             }
             else
@@ -96,7 +96,7 @@ namespace System.Dynamic
 
             if (binding == null)
             {
-                throw Error.BindingCannotBeNull();
+                throw System.Linq.Expressions.Error.BindingCannotBeNull();
             }
 
             Expression body = binding.Expression;
@@ -112,11 +112,11 @@ namespace System.Dynamic
                 //
                 if (target.Value is IDynamicMetaObjectProvider)
                 {
-                    throw Error.DynamicObjectResultNotAssignable(body.Type, target.Value.GetType(), this, expectedResult);
+                    throw System.Linq.Expressions.Error.DynamicObjectResultNotAssignable(body.Type, target.Value.GetType(), this, expectedResult);
                 }
                 else
                 {
-                    throw Error.DynamicBinderResultNotAssignable(body.Type, this, expectedResult);
+                    throw System.Linq.Expressions.Error.DynamicBinderResultNotAssignable(body.Type, this, expectedResult);
                 }
             }
 
@@ -127,7 +127,7 @@ namespace System.Dynamic
             {
                 if (restrictions == BindingRestrictions.Empty)
                 {
-                    throw Error.DynamicBindingNeedsRestrictions(target.Value.GetType(), this);
+                    throw System.Linq.Expressions.Error.DynamicBindingNeedsRestrictions(target.Value.GetType(), this);
                 }
             }
 

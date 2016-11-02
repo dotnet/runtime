@@ -66,14 +66,14 @@ namespace System.Runtime.CompilerServices
                 Type target = typeof(T);
                 if (!target.IsSubclassOf(typeof(MulticastDelegate)))
                 {
-                    throw Error.TypeParameterIsNotDelegate(target);
+                    throw System.Linq.Expressions.Error.TypeParameterIsNotDelegate(target);
                 }
 
                 MethodInfo invoke = target.GetMethod("Invoke");
                 ParameterInfo[] pis = invoke.GetParametersCached();
                 if (pis[0].ParameterType != typeof(CallSite))
                 {
-                    throw Error.FirstArgumentMustBeCallSite();
+                    throw System.Linq.Expressions.Error.FirstArgumentMustBeCallSite();
                 }
 
                 var @params = new ParameterExpression[pis.Length - 1];
@@ -137,7 +137,7 @@ namespace System.Runtime.CompilerServices
             //
             if (binding == null)
             {
-                throw Error.NoOrInvalidRuleProduced();
+                throw System.Linq.Expressions.Error.NoOrInvalidRuleProduced();
             }
 
             //

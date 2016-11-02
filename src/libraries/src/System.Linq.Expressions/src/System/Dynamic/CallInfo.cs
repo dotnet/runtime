@@ -53,7 +53,7 @@ namespace System.Dynamic
 
             var argNameCol = argNames.ToReadOnly();
 
-            if (argCount < argNameCol.Count) throw Error.ArgCntMustBeGreaterThanNameCnt();
+            if (argCount < argNameCol.Count) throw System.Linq.Expressions.Error.ArgCntMustBeGreaterThanNameCnt();
             ContractUtils.RequiresNotNullItems(argNameCol, nameof(argNames));
 
             _argCount = argCount;

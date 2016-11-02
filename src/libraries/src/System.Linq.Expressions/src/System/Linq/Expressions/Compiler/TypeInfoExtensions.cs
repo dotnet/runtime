@@ -2,17 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.Dynamic;
-using System.Dynamic.Utils;
 using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions.Compiler
 {
-
     internal static class TypeInfoExtensions
     {
         public static Type MakeDelegateType(this DelegateHelpers.TypeInfo info, Type retType, params Expression[] args)

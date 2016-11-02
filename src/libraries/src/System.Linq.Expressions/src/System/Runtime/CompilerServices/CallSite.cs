@@ -83,7 +83,7 @@ namespace System.Runtime.CompilerServices
         {
             ContractUtils.RequiresNotNull(delegateType, nameof(delegateType));
             ContractUtils.RequiresNotNull(binder, nameof(binder));
-            if (!delegateType.IsSubclassOf(typeof(MulticastDelegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
+            if (!delegateType.IsSubclassOf(typeof(MulticastDelegate))) throw System.Linq.Expressions.Error.TypeMustBeDerivedFromSystemDelegate();
 
             var ctors = s_siteCtors;
             if (ctors == null) {
@@ -188,7 +188,7 @@ namespace System.Runtime.CompilerServices
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")]
         public static CallSite<T> Create(CallSiteBinder binder)
         {
-            if (!typeof(T).IsSubclassOf(typeof(MulticastDelegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
+            if (!typeof(T).IsSubclassOf(typeof(MulticastDelegate))) throw System.Linq.Expressions.Error.TypeMustBeDerivedFromSystemDelegate();
             return new CallSite<T>(binder);
         }
 
@@ -290,7 +290,7 @@ namespace System.Runtime.CompilerServices
 
                 if (invoke.ReturnType == typeof(void))
                 {
-                    if (target == DelegateHelpers.GetActionType(args.AddFirst(typeof(CallSite))))
+                    if (target == System.Linq.Expressions.Compiler.DelegateHelpers.GetActionType(args.AddFirst(typeof(CallSite))))
                     {
                         method = typeof(UpdateDelegates).GetMethod("UpdateAndExecuteVoid" + args.Length, BindingFlags.NonPublic | BindingFlags.Static);
                         noMatchMethod = typeof(UpdateDelegates).GetMethod("NoMatchVoid" + args.Length, BindingFlags.NonPublic | BindingFlags.Static);
@@ -298,7 +298,7 @@ namespace System.Runtime.CompilerServices
                 }
                 else
                 {
-                    if (target == DelegateHelpers.GetFuncType(args.AddFirst(typeof(CallSite))))
+                    if (target == System.Linq.Expressions.Compiler.DelegateHelpers.GetFuncType(args.AddFirst(typeof(CallSite))))
                     {
                         method = typeof(UpdateDelegates).GetMethod("UpdateAndExecute" + (args.Length - 1), BindingFlags.NonPublic | BindingFlags.Static);
                         noMatchMethod = typeof(UpdateDelegates).GetMethod("NoMatch" + (args.Length - 1), BindingFlags.NonPublic | BindingFlags.Static);

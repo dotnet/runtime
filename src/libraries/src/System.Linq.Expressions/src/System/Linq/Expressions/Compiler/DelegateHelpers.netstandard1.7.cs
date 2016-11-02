@@ -2,13 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.Dynamic;
-using System.Dynamic.Utils;
 using System.Runtime.CompilerServices;
+using System.Dynamic;
 
 namespace System.Linq.Expressions.Compiler
 {
@@ -59,10 +55,10 @@ namespace System.Linq.Expressions.Compiler
             lock (_DelegateCache)
             {
                 TypeInfo curTypeInfo = _DelegateCache;
-
+ 
                 // CallSite
                 curTypeInfo = NextTypeInfo(typeof(CallSite), curTypeInfo);
-
+ 
                 // arguments
                 for (int i = 0; i < args.Length; i++)
                 {
@@ -74,10 +70,10 @@ namespace System.Linq.Expressions.Compiler
                     }
                     curTypeInfo = NextTypeInfo(paramType, curTypeInfo);
                 }
-
+ 
                 // return type
                 curTypeInfo = NextTypeInfo(returnType, curTypeInfo);
-
+ 
                 // see if we have the delegate already
                 if (curTypeInfo.DelegateType == null)
                 {
@@ -96,10 +92,10 @@ namespace System.Linq.Expressions.Compiler
                         }
                         paramTypes[i + 1] = paramType;
                     }
-
+ 
                     curTypeInfo.DelegateType = MakeNewDelegate(paramTypes);
                 }
-
+ 
                 return curTypeInfo.DelegateType;
             }
         }
@@ -108,22 +104,6 @@ namespace System.Linq.Expressions.Compiler
         {
             ParameterExpression pe = mo.Expression as ParameterExpression;
             return pe != null && pe.IsByRef;
-        }
-
-        internal static TypeInfo NextTypeInfo(Type initialArg)
-        {
-            lock (_DelegateCache)
-            {
-                return NextTypeInfo(initialArg, _DelegateCache);
-            }
-        }
-
-        internal static TypeInfo GetNextTypeInfo(Type initialArg, TypeInfo curTypeInfo)
-        {
-            lock (_DelegateCache)
-            {
-                return NextTypeInfo(initialArg, curTypeInfo);
-            }
         }
     }
 }
