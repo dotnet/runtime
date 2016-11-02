@@ -169,9 +169,6 @@
   <data name="InvalidLanguageIdentifier" xml:space="preserve">
     <value>The identifier:"{0}" on the property:"{1}" of type:"{2}" is not a valid language-independent identifier name. Check to see if CodeGenerator.IsValidLanguageIndependentIdentifier allows the identifier name.</value>
   </data>
-  <data name="CodeDomProvider_NotDefined" xml:space="preserve">
-    <value>There is no CodeDom provider defined for the language.</value>
-  </data>
   <data name="toStringUnknown" xml:space="preserve">
     <value>{unknown}</value>
   </data>

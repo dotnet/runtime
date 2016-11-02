@@ -240,9 +240,6 @@
   <data name="net_PropertyNotSupportedException" xml:space="preserve">
     <value>This property is not supported by this class.</value>
   </data>
-  <data name="net_securityprotocolnotsupported" xml:space="preserve">
-    <value>This operation cannot be performed on a completed asynchronous result object.</value>
-  </data>
   <data name="net_InvalidStatusCode" xml:space="preserve">
     <value>The server returned a status code outside the valid range of 100-599.</value>
   </data>
