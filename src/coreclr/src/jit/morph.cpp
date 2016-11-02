@@ -3221,7 +3221,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
         }
 
 #elif defined(_TARGET_AMD64_)
-#if defined(UNIX_AMD64_ABI)
         if (reMorphing)
         {
             passUsingFloatRegs = isValidFloatArgReg(argEntry->regNum);
@@ -3230,9 +3229,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
         {
             passUsingFloatRegs = varTypeIsFloating(argx);
         }
-#else  // WINDOWS_AMD64_ABI
-        passUsingFloatRegs = varTypeIsFloating(argx);
-#endif // !UNIX_AMD64_ABI
 #elif defined(_TARGET_X86_)
 
         passUsingFloatRegs = false;
@@ -3867,7 +3863,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                     }
                 }
 #else  // !defined(UNIX_AMD64_ABI)
-                isRegArg   = (intArgRegNum + (size - 1)) < maxRegArgs;
+                isRegArg = (intArgRegNum + (size - 1)) < maxRegArgs;
 #endif // !defined(UNIX_AMD64_ABI)
 #endif // _TARGET_ARM_
             }
