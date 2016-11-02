@@ -1176,8 +1176,12 @@ void Lowering::TreeNodeInfoInitShiftRotate(GenTree* tree)
         MakeSrcContained(tree, shiftBy);
     }
 
-    // Codegen of this tree node sets ZF and SF flags.
-    tree->gtFlags |= GTF_ZSF_SET;
+    // Codegen of shift oper sets ZF and SF flags.
+    // Note that Rotate Left/Right instructions don't set ZF and SF flags.
+    if (tree->OperIsShift())
+    {
+        tree->gtFlags |= GTF_ZSF_SET;
+    }
 }
 
 //------------------------------------------------------------------------
