@@ -405,7 +405,7 @@ typedef struct {
 	thread_port_t self = mach_thread_self ();	\
 	kern_return_t ret = thread_get_state (self, state_flavor, (thread_state_t) &thread_state, &state_count);	\
 	g_assert (ret == 0);	\
-	mono_mach_arch_thread_state_to_mono_context ((thread_state_t)&thread_state, &ctx); \
+	mono_mach_arch_thread_states_to_mono_context ((thread_state_t)&thread_state, (thread_state_t)NULL, &ctx); \
 	mach_port_deallocate (current_task (), self);	\
 } while (0);
 

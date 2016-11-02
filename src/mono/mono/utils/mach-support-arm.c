@@ -84,7 +84,7 @@ mono_mach_arch_mcontext_to_thread_state (void *context, thread_state_t state)
 }
 
 void
-mono_mach_arch_thread_state_to_mono_context (thread_state_t state, MonoContext *context)
+mono_mach_arch_thread_states_to_mono_context (thread_state_t state, thread_state_t fpstate, MonoContext *context)
 {
 	int i;
 	arm_thread_state_t *arch_state = (arm_thread_state_t *) state;
@@ -101,6 +101,12 @@ int
 mono_mach_arch_get_thread_state_size ()
 {
 	return sizeof (arm_thread_state_t);
+}
+
+int
+mono_mach_arch_get_thread_fpstate_size ()
+{
+	g_assert_not_reached ();
 }
 
 kern_return_t
