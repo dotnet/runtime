@@ -73,6 +73,9 @@
     <Compile Include="System\Net\Mail\SmtpStatusCode.cs" />
     <Compile Include="System\Net\Mail\SmtpTransport.cs" />
     <Compile Include="System\Net\Mail\SmtpLoginAuthenticationModule.cs" />
+    <Compile Include="System\Net\Mail\NTAuthenticationStub.cs" />
+    <Compile Include="System\Net\Mail\SmtpNegotiateAuthenticationModule.cs" />
+    <Compile Include="System\Net\Mail\SmtpNtlmAuthenticationModule.cs" />
     <Compile Include="System\Net\DelegatedStream.cs" />
     <Compile Include="$(CommonPath)\System\Net\TlsStream.cs">
       <Link>Common\System\Net\TlsStream.cs</Link>

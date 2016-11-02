@@ -12,6 +12,8 @@ namespace System.Net.Mail
 
         static SmtpAuthenticationManager()
         {
+            Register(new SmtpNegotiateAuthenticationModule());
+            Register(new SmtpNtlmAuthenticationModule());
             Register(new SmtpLoginAuthenticationModule());
         }
 
