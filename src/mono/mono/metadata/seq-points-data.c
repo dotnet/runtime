@@ -450,6 +450,7 @@ mono_seq_point_data_write (SeqPointData *data, char *path)
 
 	fwrite (buffer_orig, 1, buffer - buffer_orig, f);
 	g_free (buffer_orig);
+	fclose (f);
 
 	return TRUE;
 }

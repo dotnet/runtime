@@ -1432,7 +1432,6 @@ arch_emit_got_access (MonoAotCompile *acfg, const char *got_symbol, guint8 *code
 #elif defined(TARGET_POWERPC)
 	{
 		guint8 buf [32];
-		guint8 *code;
 
 		emit_bytes (acfg, code, mono_arch_get_patch_offset (code));
 		code = buf;
@@ -8193,7 +8192,7 @@ mono_aot_patch_info_dup (MonoJumpInfo* ji)
 static int
 execute_system (const char * command)
 {
-	int status;
+	int status = 0;
 
 #if _WIN32
 	// We need an extra set of quotes around the whole command to properly handle commands 

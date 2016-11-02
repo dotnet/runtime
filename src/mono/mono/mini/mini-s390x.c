@@ -1292,6 +1292,7 @@ handle_enum:
 
 	ip = ((gint64) __builtin_extract_return_addr (__builtin_return_address (0)));
 	printf (" ip: %p\n", (gpointer) ip);
+	va_end (ap);
 }
 
 /*========================= End of Function ========================*/

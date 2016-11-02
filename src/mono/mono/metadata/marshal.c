@@ -3264,7 +3264,7 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	MonoMethod *res;
 	GHashTable *cache;
 	gpointer cache_key = NULL;
-	SignaturePointerPair key;
+	SignaturePointerPair key = { NULL, NULL };
 	SignaturePointerPair *new_key;
 	int local_i, local_len, local_delegates, local_d, local_target, local_res;
 	int pos0, pos1, pos2;

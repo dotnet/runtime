@@ -511,7 +511,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	static MonoDomain *domain = NULL;
 	MonoAssembly *ass = NULL;
 	MonoImageOpenStatus status = MONO_IMAGE_OK;
-	const MonoRuntimeInfo* runtimes [G_N_ELEMENTS (supported_runtimes) + 1];
+	const MonoRuntimeInfo* runtimes [G_N_ELEMENTS (supported_runtimes) + 1] = { NULL };
 	int n, dummy;
 
 #ifdef DEBUG_DOMAIN_UNLOAD
