@@ -66,7 +66,7 @@ mono_mach_arch_get_mcontext_size ()
 }
 
 void
-mono_mach_arch_thread_state_to_mcontext (thread_state_t state, void *context)
+mono_mach_arch_thread_states_to_mcontext (thread_state_t state, thread_state_t fpstate, void *context)
 {
 	arm_unified_thread_state_t *arch_state = (arm_unified_thread_state_t *) state;
 	struct __darwin_mcontext64 *ctx = (struct __darwin_mcontext64 *) context;
@@ -75,7 +75,7 @@ mono_mach_arch_thread_state_to_mcontext (thread_state_t state, void *context)
 }
 
 void
-mono_mach_arch_mcontext_to_thread_state (void *context, thread_state_t state)
+mono_mach_arch_mcontext_to_thread_states (void *context, thread_state_t state, thread_state_t fpstate)
 {
 	arm_unified_thread_state_t *arch_state = (arm_unified_thread_state_t *) state;
 	struct __darwin_mcontext64 *ctx = (struct __darwin_mcontext64 *) context;
@@ -84,7 +84,7 @@ mono_mach_arch_mcontext_to_thread_state (void *context, thread_state_t state)
 }
 
 void
-mono_mach_arch_thread_state_to_mono_context (thread_state_t state, MonoContext *context)
+mono_mach_arch_thread_states_to_mono_context (thread_state_t state, thread_state_t fpstate, MonoContext *context)
 {
 	int i;
 	arm_unified_thread_state_t *arch_state = (arm_unified_thread_state_t *) state;
@@ -103,8 +103,14 @@ mono_mach_arch_get_thread_state_size ()
 	return sizeof (arm_unified_thread_state_t);
 }
 
+int
+mono_mach_arch_get_thread_fpstate_size ()
+{
+	g_assert_not_reached ();
+}
+
 kern_return_t
-mono_mach_arch_get_thread_state (thread_port_t thread, thread_state_t state, mach_msg_type_number_t *count)
+mono_mach_arch_get_thread_states (thread_port_t thread, thread_state_t state, mach_msg_type_number_t *count, thread_state_t fpstate, mach_msg_type_number_t *fpcount)
 {
 	arm_unified_thread_state_t *arch_state = (arm_unified_thread_state_t *) state;
 	kern_return_t ret;
@@ -116,7 +122,7 @@ mono_mach_arch_get_thread_state (thread_port_t thread, thread_state_t state, mac
 }
 
 kern_return_t
-mono_mach_arch_set_thread_state (thread_port_t thread, thread_state_t state, mach_msg_type_number_t count)
+mono_mach_arch_set_thread_states (thread_port_t thread, thread_state_t state, mach_msg_type_number_t count, thread_state_t fpstate, mach_msg_type_number_t fpcount)
 {
 	return thread_set_state (thread, ARM_UNIFIED_THREAD_STATE, state, count);
 }
