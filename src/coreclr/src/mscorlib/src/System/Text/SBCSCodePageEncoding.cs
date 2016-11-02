@@ -54,7 +54,7 @@ namespace System.Text
         {
             // Actually this can't ever get called, CodePageEncoding is our proxy
             Contract.Assert(false, "Didn't expect to make it to SBCSCodePageEncoding serialization constructor");
-            throw new ArgumentNullException(nameof(this));
+            throw new ArgumentNullException("this");
         }
 
         // We have a managed code page entry, so load our tables
