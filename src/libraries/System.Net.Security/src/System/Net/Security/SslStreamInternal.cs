@@ -27,6 +27,8 @@ namespace System.Net.Security
         private SslState _sslState;
         private int _nestedWrite;
         private int _nestedRead;
+        private AsyncProtocolRequest _readProtocolRequest; // cached, reusable AsyncProtocolRequest used for read operations
+        private AsyncProtocolRequest _writeProtocolRequest; // cached, reusable AsyncProtocolRequest used for write operations
 
         // Never updated directly, special properties are used.  This is the read buffer.
         private byte[] _internalBuffer;
@@ -131,9 +133,8 @@ namespace System.Net.Security
 
         internal IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState)
         {
-            BufferAsyncResult bufferResult = new BufferAsyncResult(this, buffer, offset, count, asyncState, asyncCallback);
-            AsyncProtocolRequest asyncRequest = new AsyncProtocolRequest(bufferResult);
-            ProcessRead(buffer, offset, count, asyncRequest);
+            var bufferResult = new BufferAsyncResult(this, buffer, offset, count, asyncState, asyncCallback);
+            ProcessRead(buffer, offset, count, bufferResult);
             return bufferResult;
         }
 
@@ -173,9 +174,8 @@ namespace System.Net.Security
 
         internal IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState)
         {
-            LazyAsyncResult lazyResult = new LazyAsyncResult(this, asyncState, asyncCallback);
-            AsyncProtocolRequest asyncRequest = new AsyncProtocolRequest(lazyResult);
-            ProcessWrite(buffer, offset, count, asyncRequest);
+            var lazyResult = new LazyAsyncResult(this, asyncState, asyncCallback);
+            ProcessWrite(buffer, offset, count, lazyResult);
             return lazyResult;
         }
 
@@ -319,10 +319,31 @@ namespace System.Net.Security
             }
         }
 
+        private AsyncProtocolRequest GetOrCreateProtocolRequest(ref AsyncProtocolRequest aprField, LazyAsyncResult asyncResult)
+        {
+            AsyncProtocolRequest request = null;
+            if (asyncResult != null)
+            {
+                // SslStreamInternal supports only a single read and a single write operation at a time.
+                // As such, we can cache and reuse the AsyncProtocolRequest object that's used throughout
+                // the implementation.
+                request = aprField;
+                if (request != null)
+                {
+                    request.Reset(asyncResult);
+                }
+                else
+                {
+                    aprField = request = new AsyncProtocolRequest(asyncResult);
+                }
+            }
+            return request;
+        }
+
         //
         // Sync write method.
         //
-        private void ProcessWrite(byte[] buffer, int offset, int count, AsyncProtocolRequest asyncRequest)
+        private void ProcessWrite(byte[] buffer, int offset, int count, LazyAsyncResult asyncResult)
         {
             _sslState.CheckThrow(authSuccessCheck:true, shutdownCheck:true);
             ValidateParameters(buffer, offset, count);
@@ -331,6 +352,10 @@ namespace System.Net.Security
             {
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "Write", "write"));
             }
+
+            // If this is an async operation, get the AsyncProtocolRequest to use.
+            // We do this only after we verify we're the sole write operation in flight.
+            AsyncProtocolRequest asyncRequest = GetOrCreateProtocolRequest(ref _writeProtocolRequest, asyncResult);
 
             bool failed = false;
 
@@ -470,14 +495,18 @@ namespace System.Net.Security
         //
         // Combined sync/async read method. For sync request asyncRequest==null.
         //
-        private int ProcessRead(byte[] buffer, int offset, int count, AsyncProtocolRequest asyncRequest)
+        private int ProcessRead(byte[] buffer, int offset, int count, LazyAsyncResult asyncResult)
         {
             ValidateParameters(buffer, offset, count);
 
             if (Interlocked.Exchange(ref _nestedRead, 1) == 1)
             {
-                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, (asyncRequest!=null? "BeginRead":"Read"), "read"));
+                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, (asyncResult!=null? "BeginRead":"Read"), "read"));
             }
+
+            // If this is an async operation, get the AsyncProtocolRequest to use.
+            // We do this only after we verify we're the sole write operation in flight.
+            AsyncProtocolRequest asyncRequest = GetOrCreateProtocolRequest(ref _readProtocolRequest, asyncResult);
 
             bool failed = false;
 
