@@ -160,6 +160,8 @@ namespace System.Diagnostics
         public int ProcessId { get { throw null; } }
         public string ThreadId { get { throw null; } }
         public long Timestamp { get { throw null; } }
+        public string Callstack { get { throw null; } }
+        public System.Collections.Stack LogicalOperationStack { get { throw null; } }
     }
     public enum TraceEventType
     {

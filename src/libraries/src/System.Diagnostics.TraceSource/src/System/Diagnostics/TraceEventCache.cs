@@ -7,6 +7,7 @@ using System.Threading;
 using System.Text;
 using System.Collections;
 using System.Globalization;
+using System.Security.Permissions;
 
 namespace System.Diagnostics
 {
@@ -14,6 +15,7 @@ namespace System.Diagnostics
     {
         private long _timeStamp = -1;
         private DateTime _dateTime = DateTime.MinValue;
+        private string _stackTrace = null;
 
         public DateTime DateTime
         {
@@ -48,6 +50,29 @@ namespace System.Diagnostics
                 if (_timeStamp == -1)
                     _timeStamp = Stopwatch.GetTimestamp();
                 return _timeStamp;
+            }
+        }
+
+        public string Callstack 
+        {
+            get 
+            {
+                if (_stackTrace == null)
+                {
+                    _stackTrace = Environment.StackTrace;
+                }
+                else
+                {
+                    new EnvironmentPermission(PermissionState.Unrestricted).Demand();
+                }
+
+                return _stackTrace;
+            }
+        }
+
+        public Stack LogicalOperationStack {
+            get {
+                return Trace.CorrelationManager.LogicalOperationStack;
             }
         }
 
