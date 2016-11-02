@@ -21,6 +21,7 @@ namespace System.Diagnostics
         public override void TraceData(System.Diagnostics.TraceEventCache eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, params object[] data) { }
         public override void TraceEvent(System.Diagnostics.TraceEventCache eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, string message) { }
         public override void TraceEvent(System.Diagnostics.TraceEventCache eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, string format, params object[] args) { }
+        protected override string[] GetSupportedAttributes() { throw null; }
     }
     public partial class TextWriterTraceListener : System.Diagnostics.TraceListener
     {

@@ -74,7 +74,8 @@ namespace System.Diagnostics
         ///    <para>Initializes a new instance of the <see cref='System.Diagnostics.TextWriterTraceListener'/> class with the 
         ///    specified file name.</para>
         /// </devdoc>
-        public TextWriterTraceListener(string fileName) {
+        public TextWriterTraceListener(string fileName)
+        {
             this.fileName = fileName;
         }
 
@@ -82,7 +83,9 @@ namespace System.Diagnostics
         ///    <para>Initializes a new instance of the <see cref='System.Diagnostics.TextWriterTraceListener'/> class with the 
         ///    specified name and the specified file name.</para>
         /// </devdoc>
-        public TextWriterTraceListener(string fileName, string name) : base(name) {
+        public TextWriterTraceListener(string fileName, string name)
+            : base(name)
+        {
             this.fileName = fileName;
         }
 
