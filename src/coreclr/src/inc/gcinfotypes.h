@@ -6,7 +6,10 @@
 #ifndef __GCINFOTYPES_H__
 #define __GCINFOTYPES_H__
 
+#ifndef FEATURE_REDHAWK
 #include "gcinfo.h"
+#endif
+
 
 #define PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
 
