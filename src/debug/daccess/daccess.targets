@@ -4,6 +4,12 @@
   <!--from the original SOURCES/DIRS file by the KBC tool.-->
   <!--*****************************************************-->
   <!--Import the settings-->
+  <PropertyGroup>
+    <!-- Work around problems with loading System.Private.CoreLib.dll, -->
+    <!-- caused by inconsistent setting of UseLegacyCompiler and FeatureSpanOfT -->
+    <!-- between System.Private.CoreLib.dll and the runtime. -->
+    <UseLegacyCompiler>true</UseLegacyCompiler>
+  </PropertyGroup>
   <Import Project="$(_NTDRIVE)$(_NTROOT)\ndp\clr\clr.props" />
   <Import Project="$(_NTDRIVE)$(_NTROOT)\ndp\clr\dac.props" />
   <Import Project="..\SetDebugTargetLocal.props" />
