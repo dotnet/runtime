@@ -1,10 +1,10 @@
 {
   "dependencies": {
-    "NETStandard.Library": "1.6.2-beta-24629-01",
-    "System.Runtime.Serialization.Formatters": "4.4.0-beta-24629-01",
-    "System.Runtime.Serialization.Json": "4.4.0-beta-24629-01",
-    "System.Runtime.Serialization.Primitives": "4.4.0-beta-24629-01",
-    "System.Runtime.Serialization.Xml": "4.4.0-beta-24629-01"
+    "NETStandard.Library": "1.6.2-beta-24701-01",
+    "System.Runtime.Serialization.Formatters": "4.4.0-beta-24701-01",
+    "System.Runtime.Serialization.Json": "4.4.0-beta-24701-01",
+    "System.Runtime.Serialization.Primitives": "4.4.0-beta-24701-01",
+    "System.Runtime.Serialization.Xml": "4.4.0-beta-24701-01"
   },
   "frameworks": {
     "netstandard1.7": {}

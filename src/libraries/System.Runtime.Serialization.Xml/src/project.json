@@ -2,29 +2,29 @@
   "frameworks": {
     "netstandard1.7": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.2.0-beta-24629-01",
-        "System.Runtime": "4.4.0-beta-24629-01",
-        "System.Runtime.Serialization.Primitives": "4.4.0-beta-24629-01",
-        "System.Collections.NonGeneric": "4.4.0-beta-24629-01",
-        "System.Collections.Specialized": "4.4.0-beta-24629-01",
-        "System.Diagnostics.TraceSource": "4.4.0-beta-24629-01",
-        "System.IO.FileSystem": "4.4.0-beta-24629-01",
-        "System.IO.FileSystem.Primitives": "4.4.0-beta-24629-01",
-        "System.Data.Common": "4.4.0-beta-24629-01",
-        "System.Console": "4.4.0-beta-24629-01",
-        "System.ComponentModel.TypeConverter": "4.4.0-beta-24629-01",
-        "Microsoft.Win32.Registry": "4.4.0-beta-24629-01",
-        "System.Reflection": "4.4.0-beta-24629-01",
-        "System.Reflection.TypeExtensions": "4.4.0-beta-24629-01",
-        "System.Xml.ReaderWriter": "4.4.0-beta-24629-01",
-        "System.Xml.XmlDocument": "4.4.0-beta-24629-01",
-        "System.Threading.Tasks.Extensions": "4.4.0-beta-24629-01"
+        "Microsoft.NETCore.Platforms": "1.2.0-beta-24701-01",
+        "System.Runtime": "4.4.0-beta-24701-01",
+        "System.Runtime.Serialization.Primitives": "4.4.0-beta-24701-01",
+        "System.Collections.NonGeneric": "4.4.0-beta-24701-01",
+        "System.Collections.Specialized": "4.4.0-beta-24701-01",
+        "System.Diagnostics.TraceSource": "4.4.0-beta-24701-01",
+        "System.IO.FileSystem": "4.4.0-beta-24701-01",
+        "System.IO.FileSystem.Primitives": "4.4.0-beta-24701-01",
+        "System.Data.Common": "4.4.0-beta-24701-01",
+        "System.Console": "4.4.0-beta-24701-01",
+        "System.ComponentModel.TypeConverter": "4.4.0-beta-24701-01",
+        "Microsoft.Win32.Registry": "4.4.0-beta-24701-01",
+        "System.Reflection": "4.4.0-beta-24701-01",
+        "System.Reflection.TypeExtensions": "4.4.0-beta-24701-01",
+        "System.Xml.ReaderWriter": "4.4.0-beta-24701-01",
+        "System.Xml.XmlDocument": "4.4.0-beta-24701-01",
+        "System.Threading.Tasks.Extensions": "4.4.0-beta-24701-01"
       }
     },
     "net463": {
       "dependencies": {
         "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1",
-        "System.Runtime.Serialization.Primitives": "4.4.0-beta-24629-01"
+        "System.Runtime.Serialization.Primitives": "4.4.0-beta-24701-01"
       }
     }
   }

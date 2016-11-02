@@ -32,7 +32,7 @@ namespace System.Security.Principal
             _unmappedIdentities = unmappedIdentities;
         }
 
-        internal IdentityNotMappedException(SerializationInfo info, StreamingContext context) : base(info, context)
+        private IdentityNotMappedException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
 

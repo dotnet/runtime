@@ -1,18 +1,18 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.2.0-beta-24629-01",
-    "System.Diagnostics.Process": "4.4.0-beta-24629-01",
-    "System.IO": "4.4.0-beta-24629-01",
-    "System.Runtime": "4.4.0-beta-24629-01",
-    "System.Runtime.Extensions": "4.4.0-beta-24629-01",
-    "System.Text.Encoding": "4.4.0-beta-24629-01",
-    "System.Threading.Tasks": "4.4.0-beta-24629-01",
+    "Microsoft.NETCore.Platforms": "1.2.0-beta-24701-01",
+    "System.Diagnostics.Process": "4.4.0-beta-24701-01",
+    "System.IO": "4.4.0-beta-24701-01",
+    "System.Runtime": "4.4.0-beta-24701-01",
+    "System.Runtime.Extensions": "4.4.0-beta-24701-01",
+    "System.Text.Encoding": "4.4.0-beta-24701-01",
+    "System.Threading.Tasks": "4.4.0-beta-24701-01",
     "test-runtime": {
       "target": "project",
       "exclude": "compile"
     },
-    "Microsoft.xunit.netcore.extensions": "1.0.0-prerelease-00925-01",
-    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00925-01",
+    "Microsoft.xunit.netcore.extensions": "1.0.1-prerelease-01001-04",
+    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.1-prerelease-01001-04",
     "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0040"
   },
   "frameworks": {

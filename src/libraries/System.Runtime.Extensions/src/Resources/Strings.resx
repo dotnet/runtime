@@ -294,9 +294,6 @@
   <data name="Arg_DllInitFailure" xml:space="preserve">
     <value>One machine may not have remote administration enabled, or both machines may not be running the remote registry service.</value>
   </data>
-  <data name="Arg_EnumIllegalVal" xml:space="preserve">
-    <value>Illegal enum value: {0}.</value>
-  </data>
   <data name="Arg_RegSubKeyValueAbsent" xml:space="preserve">
     <value>No value exists with that name.</value>
   </data>
@@ -323,9 +320,6 @@
   </data>
   <data name="UnauthorizedAccess_RegistryNoWrite" xml:space="preserve">
     <value>Cannot write to the registry key.</value>
-  </data>
-  <data name="UnknownError_Num" xml:space="preserve">
-    <value>Unknown error '{0}'.</value>
   </data>
   <data name="PersistedFiles_NoHomeDirectory" xml:space="preserve">
     <value>The home directory of the current user could not be determined.</value>
@@ -371,5 +365,8 @@
   </data>
   <data name="Arg_ContextMarshalException" xml:space="preserve">
     <value>Attempted to marshal an object across a context boundary.</value>
+  </data>
+  <data name="AppDomain_Policy_PrincipalTwice" xml:space="preserve">
+    <value>Default principal object cannot be set twice.</value>
   </data>
 </root>

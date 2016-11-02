@@ -1,12 +1,12 @@
 {
   "dependencies": {
-    "System.Runtime": "4.4.0-beta-24629-01",
-    "System.IO": "4.4.0-beta-24629-01",
-    "System.Collections.NonGeneric": "4.4.0-beta-24629-01",
-    "System.Collections.Specialized": "4.4.0-beta-24629-01",
-    "System.Runtime.Serialization.Primitives": "4.4.0-beta-24629-01",
-    "System.Xml.ReaderWriter": "4.4.0-beta-24629-01",
-    "System.Text.Encoding": "4.4.0-beta-24629-01"
+    "System.Runtime": "4.4.0-beta-24701-01",
+    "System.IO": "4.4.0-beta-24701-01",
+    "System.Collections.NonGeneric": "4.4.0-beta-24701-01",
+    "System.Collections.Specialized": "4.4.0-beta-24701-01",
+    "System.Runtime.Serialization.Primitives": "4.4.0-beta-24701-01",
+    "System.Xml.ReaderWriter": "4.4.0-beta-24701-01",
+    "System.Text.Encoding": "4.4.0-beta-24701-01"
   },
   "frameworks": {
     "netstandard1.7": {}

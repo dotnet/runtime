@@ -29,7 +29,17 @@ namespace System.Security.Cryptography.X509Certificates
         {
         }
 
+        public X509Certificate2(byte[] rawData, SecureString password)
+            : base(rawData, password)
+        {
+        }
+
         public X509Certificate2(byte[] rawData, string password, X509KeyStorageFlags keyStorageFlags)
+            : base(rawData, password, keyStorageFlags)
+        {
+        }
+
+        public X509Certificate2(byte[] rawData, SecureString password, X509KeyStorageFlags keyStorageFlags)
             : base(rawData, password, keyStorageFlags)
         {
         }
@@ -54,7 +64,18 @@ namespace System.Security.Cryptography.X509Certificates
         {
         }
 
+        public X509Certificate2(string fileName, SecureString password)
+            : base(fileName, password)
+        {
+        }
+
+
         public X509Certificate2(string fileName, string password, X509KeyStorageFlags keyStorageFlags)
+            : base(fileName, password, keyStorageFlags)
+        {
+        }
+
+        public X509Certificate2(string fileName, SecureString password, X509KeyStorageFlags keyStorageFlags)
             : base(fileName, password, keyStorageFlags)
         {
         }

@@ -428,7 +428,9 @@ namespace System
         public BadImageFormatException(string message, string fileName, System.Exception inner) { }
         protected BadImageFormatException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
         public string FileName { get { throw null; } }
+        public string FusionLog { get { throw null; } }
         public override string Message { get { throw null; } }
+        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -1063,6 +1065,14 @@ namespace System
         public static bool TryParse(string s, out double result) { throw null; }
         public static bool TryParse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out double result) { throw null; }
     }
+    public partial class DuplicateWaitObjectException : System.ArgumentException, System.Runtime.Serialization.ISerializable
+    {
+        public DuplicateWaitObjectException() { }
+        public DuplicateWaitObjectException(string parameterName) { }
+        public DuplicateWaitObjectException(string parameterName, string message) { }
+        public DuplicateWaitObjectException(string message, System.Exception inner) { }
+        protected DuplicateWaitObjectException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+    }
     public abstract partial class Enum : System.ValueType, System.IComparable, System.IConvertible, System.IFormattable
     {
         protected Enum() { }
@@ -1603,14 +1613,19 @@ namespace System
     {
         public MissingFieldException() { }
         public MissingFieldException(string message) { }
+        public MissingFieldException(string className, string fieldName) { }
         public MissingFieldException(string message, System.Exception inner) { }
         protected MissingFieldException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
         public override string Message { get { throw null; } }
     }
     public partial class MissingMemberException : System.MemberAccessException, System.Runtime.Serialization.ISerializable
     {
+        protected string ClassName;
+        protected string MemberName;
+        protected byte[] Signature;
         public MissingMemberException() { }
         public MissingMemberException(string message) { }
+        public MissingMemberException(string className, string memberName) { }
         public MissingMemberException(string message, System.Exception inner) { }
         protected MissingMemberException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
         public override string Message { get { throw null; } }
@@ -1620,6 +1635,7 @@ namespace System
     {
         public MissingMethodException() { }
         public MissingMethodException(string message) { }
+        public MissingMethodException(string className, string methodName) { }
         public MissingMethodException(string message, System.Exception inner) { }
         protected MissingMethodException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
         public override string Message { get { throw null; } }
@@ -2633,6 +2649,13 @@ namespace System
         public override string Message { get { throw null; } }
         public string TypeName { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+    }
+    public partial class TypeUnloadedException : System.SystemException, System.Runtime.Serialization.ISerializable
+    {
+        public TypeUnloadedException() { }
+        public TypeUnloadedException(string message) { }
+        public TypeUnloadedException(string message, System.Exception inner) { }
+        protected TypeUnloadedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.CLSCompliantAttribute(false)]
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -5651,6 +5674,12 @@ namespace System.Reflection
 }
 namespace System.Runtime
 {
+    [System.AttributeUsageAttribute((System.AttributeTargets)(1), Inherited = false)]
+    public sealed partial class AssemblyTargetedPatchBandAttribute : System.Attribute
+    {
+        public AssemblyTargetedPatchBandAttribute(string targetedPatchBand) { }
+        public string TargetedPatchBand { get { throw null; } }
+    }
     public enum GCLargeObjectHeapCompactionMode
     {
         CompactOnce = 2,
@@ -5676,7 +5705,12 @@ namespace System.Runtime
         public void Dispose() { }
         ~MemoryFailPoint() { }
     }
-
+    [System.AttributeUsageAttribute((System.AttributeTargets)(64), AllowMultiple = false, Inherited = false)]
+    public sealed partial class TargetedPatchingOptOutAttribute : System.Attribute
+    {
+        public TargetedPatchingOptOutAttribute(string reason) { }
+        public string Reason { get { throw null; } }
+    }
 }
 namespace System.Runtime.CompilerServices
 {

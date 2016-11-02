@@ -23,7 +23,8 @@ namespace System.Net.Http.Functional.Tests
         {
             _output = output;
         }
-        
+
+        [ActiveIssue(11623)]
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]

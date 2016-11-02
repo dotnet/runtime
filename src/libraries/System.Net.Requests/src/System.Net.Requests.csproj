@@ -58,7 +58,6 @@
     <Compile Include="System\Net\Cache\HttpRequestCacheLevel.cs" />
     <Compile Include="System\Net\Cache\HttpRequestCachePolicy.cs" />
     <Compile Include="System\Net\HttpDateParse.cs" />
-    <Compile Include="System\Net\HttpVersion.cs" />
     <Compile Include="System\Net\NetEventSource.Requests.cs" />
     <Compile Include="$(CommonPath)\System\Net\Http\HttpHandlerDefaults.cs">
       <Link>Common\System\Net\Http\HttpHandlerDefaults.cs</Link>

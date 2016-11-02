@@ -1,8 +1,8 @@
 {
   "dependencies": {
-    "Microsoft.Win32.Primitives": "4.4.0-beta-24629-01",
-    "System.Runtime": "4.4.0-beta-24629-01",
-    "System.Runtime.Handles": "4.4.0-beta-24629-01"
+    "Microsoft.Win32.Primitives": "4.4.0-beta-24701-01",
+    "System.Runtime": "4.4.0-beta-24701-01",
+    "System.Runtime.Handles": "4.4.0-beta-24701-01"
   },
   "frameworks": {
     "netstandard1.7": {}
