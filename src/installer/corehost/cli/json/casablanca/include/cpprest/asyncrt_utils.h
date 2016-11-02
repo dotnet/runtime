@@ -39,10 +39,9 @@
 #endif
 
 #ifndef _WIN32
-//#include <boost/algorithm/string.hpp>
+#include <sys/time.h>
 #ifdef __GLIBC__
 #include <xlocale.h>
-#include <sys/time.h>
 #endif
 #endif
 
