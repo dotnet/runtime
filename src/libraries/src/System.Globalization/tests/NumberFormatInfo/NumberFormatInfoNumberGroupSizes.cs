@@ -15,7 +15,8 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("en-US").NumberFormat, new int[] { 3 } };
 
             // TODO: when dotnet/corefx#2103 is addressed, we should also check fr-FR
-            if (!PlatformDetection.IsUbuntu1510 && !PlatformDetection.IsUbuntu1604 && !PlatformDetection.IsUbuntu1610 && !PlatformDetection.IsWindows7)
+            if (!PlatformDetection.IsUbuntu1510 && !PlatformDetection.IsUbuntu1604
+                && !PlatformDetection.IsUbuntu1610 && !PlatformDetection.IsWindows7 && !PlatformDetection.IsFedora24)
             {
                 yield return new object[] { new CultureInfo("ur-IN").NumberFormat, NumberFormatInfoData.UrINNumberGroupSizes() };
             }
