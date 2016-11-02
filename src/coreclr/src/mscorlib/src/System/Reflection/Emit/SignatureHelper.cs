@@ -193,15 +193,15 @@ namespace System.Reflection.Emit
         }
         
         [System.Security.SecurityCritical]  // auto-generated
-        internal static SignatureHelper GetTypeSigToken(Module module, Type type)
+        internal static SignatureHelper GetTypeSigToken(Module mod, Type type)
         {
-            if (module == null)
-                throw new ArgumentNullException(nameof(module));
+            if (mod == null)
+                throw new ArgumentNullException("module");
 
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
 
-            return new SignatureHelper(module, type);
+            return new SignatureHelper(mod, type);
         }
         #endregion
 
