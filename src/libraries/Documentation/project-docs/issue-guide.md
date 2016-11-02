@@ -44,7 +44,7 @@ Areas are tracked by labels area-* (e.g. area-System.Collections), or Infrastruc
 |-----------------------------------------------------------------------------------------------|------------------|-------------|--------------------|
 | [area-Meta](https://github.com/dotnet/corefx/labels/area-Meta)                                |  | Issues without clear association to any specific API/contract (e.g. packaging, project-wide docs) |  |
 | [Infrastructure](https://github.com/dotnet/corefx/labels/Infrastructure)                      |  |  |  |
-| [area-Serialization](https://github.com/dotnet/corefx/labels/area-Serialization)                   |  |  |  |
+| [area-Serialization](https://github.com/dotnet/corefx/labels/area-Serialization)              | [@shmao](https://github.com/shmao), [@zhenlan](https://github.com/zhenlan) | System.Runtime.Serialization.Xml, System.Runtime.Serialization.Json, System.Private.DataContractSerialization, System.Xml.XmlSerialization |  |
 | **System contract assemblies** | | | |
 | [System.AppContext](https://github.com/dotnet/corefx/labels/area-System.AppContext)           |  |  |  |
 | [System.Buffers](https://github.com/dotnet/corefx/labels/area-System.Buffers)                 |  |  |  |
