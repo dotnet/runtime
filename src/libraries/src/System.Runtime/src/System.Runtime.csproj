@@ -41,6 +41,7 @@
     <Compile Include="System\Runtime\CompilerServices\Attributes.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == '' OR '$(TargetGroup)' == 'netstandard1.7' OR '$(TargetGroup)' == 'uap101aot'">
+    <Compile Include="System\Runtime\NgenServicingAttributes.cs" />
     <Compile Include="System\IO\HandleInheritability.cs" />
     <Compile Include="System\Runtime\ConstrainedExecution\PrePrepareMethodAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\SpecialNameAttribute.cs" />
