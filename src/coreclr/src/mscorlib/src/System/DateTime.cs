@@ -460,10 +460,10 @@ namespace System {
         // DateTime becomes 2/28. Otherwise, the month, day, and time-of-day
         // parts of the result are the same as those of this DateTime.
         //
-        public DateTime AddYears(int years) {
-            if (years < -10000 || years > 10000) throw new ArgumentOutOfRangeException(nameof(years), Environment.GetResourceString("ArgumentOutOfRange_DateTimeBadYears"));
+        public DateTime AddYears(int value) {
+            if (value < -10000 || value > 10000) throw new ArgumentOutOfRangeException("years", Environment.GetResourceString("ArgumentOutOfRange_DateTimeBadYears"));
             Contract.EndContractBlock();
-            return AddMonths(years * 12);
+            return AddMonths(value * 12);
         }
         
         // Compares two DateTime values, returning an integer that indicates
