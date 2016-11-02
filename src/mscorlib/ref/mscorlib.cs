@@ -10658,6 +10658,7 @@ namespace System.Runtime.InteropServices
         public ExternalException(string message, System.Exception inner) { }
         public ExternalException(string message, int errorCode) { }
         public virtual int ErrorCode { get { throw null; } }
+        public override string ToString() { throw null; }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(256), Inherited=false)]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
@@ -10706,6 +10707,16 @@ namespace System.Runtime.InteropServices
         public GuidAttribute(string guid) { }
         public string Value { get { throw null; } }
     }
+    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
+    public partial struct HandleRef
+    {
+        public HandleRef(object wrapper, System.IntPtr handle) { throw null;}
+        public System.IntPtr Handle { get { throw null; } }
+        public object Wrapper { get { throw null; } }
+        public static explicit operator System.IntPtr (System.Runtime.InteropServices.HandleRef value) { throw null; }
+        public static System.IntPtr ToIntPtr(System.Runtime.InteropServices.HandleRef value) { throw null; }
+    }    
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial interface ICustomAdapter
     {
@@ -10797,6 +10808,10 @@ namespace System.Runtime.InteropServices
         public static System.IntPtr AllocHGlobal(System.IntPtr cb) { throw null; }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecurityCriticalAttribute]
         public static bool AreComObjectsAvailableForCleanup() { throw null; }
+        [System.Security.SecurityCriticalAttribute]
+        public static object BindToMoniker(string monikerName) { throw null; }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecurityCritical]
+        public static void ChangeWrapperHandleStrength(object otp, bool fIsWeak) { throw null; }        
         [System.Security.SecurityCriticalAttribute]
         public static void Copy(byte[] source, int startIndex, System.IntPtr destination, int length) { }
         [System.Security.SecurityCriticalAttribute]
@@ -10922,8 +10937,10 @@ namespace System.Runtime.InteropServices
         public static string PtrToStringAnsi(System.IntPtr ptr) { throw null; }
         [System.Security.SecurityCriticalAttribute]
         public static string PtrToStringAnsi(System.IntPtr ptr, int len) { throw null; }
-        [System.Security.SecurityCritical]
+        [System.Security.SecurityCriticalAttribute]
         public static string PtrToStringAuto(System.IntPtr ptr) { throw null; }
+        [System.Security.SecurityCriticalAttribute]
+        public static string PtrToStringAuto(System.IntPtr ptr, int len) { throw null; }        
         [System.Security.SecurityCriticalAttribute]
         public static string PtrToStringBSTR(System.IntPtr ptr) { throw null; }
         [System.Security.SecurityCriticalAttribute]
