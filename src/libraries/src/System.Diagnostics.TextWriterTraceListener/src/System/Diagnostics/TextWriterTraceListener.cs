@@ -17,6 +17,7 @@ namespace System.Diagnostics
     public class TextWriterTraceListener : TraceListener
     {
         internal TextWriter writer;
+        private string fileName;
 
         /// <devdoc>
         /// <para>Initializes a new instance of the <see cref='System.Diagnostics.TextWriterTraceListener'/> class with
@@ -67,6 +68,22 @@ namespace System.Diagnostics
         {
             if (writer == null) throw new ArgumentNullException(nameof(writer));
             this.writer = writer;
+        }
+
+        /// <devdoc>
+        ///    <para>Initializes a new instance of the <see cref='System.Diagnostics.TextWriterTraceListener'/> class with the 
+        ///    specified file name.</para>
+        /// </devdoc>
+        public TextWriterTraceListener(string fileName) {
+            this.fileName = fileName;
+        }
+
+        /// <devdoc>
+        ///    <para>Initializes a new instance of the <see cref='System.Diagnostics.TextWriterTraceListener'/> class with the 
+        ///    specified name and the specified file name.</para>
+        /// </devdoc>
+        public TextWriterTraceListener(string fileName, string name) : base(name) {
+            this.fileName = fileName;
         }
 
         /// <devdoc>
