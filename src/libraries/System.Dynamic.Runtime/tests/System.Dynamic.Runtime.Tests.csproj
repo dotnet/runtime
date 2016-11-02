@@ -170,6 +170,8 @@
       <Project>{C4E89B8C-07DB-40CA-8C99-82A23E8F5F39}</Project>
       <Name>System.Dynamic.Runtime</Name>
     </ProjectReference>
+    <!-- Do not remove this P2P reference. System.Dynamic.Runtime is now a facade that type-forwards to System.Linq.Expressions. -->
+    <ProjectReference Include="..\..\System.Linq.Expressions\pkg\System.Linq.Expressions.pkgproj" Condition="'$(TargetGroup)'==''" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

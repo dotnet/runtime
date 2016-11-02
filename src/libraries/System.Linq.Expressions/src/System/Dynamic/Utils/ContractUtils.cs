@@ -13,7 +13,7 @@ namespace System.Dynamic.Utils
         {
             if (!precondition)
             {
-                throw new ArgumentException(Strings.MethodPreconditionViolated);
+                throw new ArgumentException(System.Linq.Expressions.Strings.MethodPreconditionViolated);
             }
         }
     }

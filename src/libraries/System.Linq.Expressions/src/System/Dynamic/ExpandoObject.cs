@@ -65,7 +65,7 @@ namespace System.Dynamic
                 index = data.Class.GetValueIndex(name, ignoreCase, this);
                 if (index == ExpandoObject.AmbiguousMatchFound)
                 {
-                    throw Error.AmbiguousMatchInExpandoObject(name);
+                    throw System.Linq.Expressions.Error.AmbiguousMatchInExpandoObject(name);
                 }
             }
 
@@ -113,7 +113,7 @@ namespace System.Dynamic
                     index = data.Class.GetValueIndex(name, ignoreCase, this);
                     if (index == ExpandoObject.AmbiguousMatchFound)
                     {
-                        throw Error.AmbiguousMatchInExpandoObject(name);
+                        throw System.Linq.Expressions.Error.AmbiguousMatchInExpandoObject(name);
                     }
                     if (index == ExpandoObject.NoMatch)
                     {
@@ -148,7 +148,7 @@ namespace System.Dynamic
                 }
                 else if (add)
                 {
-                    throw Error.SameKeyExistsInExpando(name);
+                    throw System.Linq.Expressions.Error.SameKeyExistsInExpando(name);
                 }
 
                 data[index] = value;
@@ -180,7 +180,7 @@ namespace System.Dynamic
                     index = data.Class.GetValueIndex(name, ignoreCase, this);
                     if (index == ExpandoObject.AmbiguousMatchFound)
                     {
-                        throw Error.AmbiguousMatchInExpandoObject(name);
+                        throw System.Linq.Expressions.Error.AmbiguousMatchInExpandoObject(name);
                     }
                 }
                 if (index == ExpandoObject.NoMatch)
@@ -357,7 +357,7 @@ namespace System.Dynamic
                 if (_expando._data.Version != _expandoVersion || _expandoData != _expando._data)
                 {
                     //the underlying expando object has changed
-                    throw Error.CollectionModifiedWhileEnumerating();
+                    throw System.Linq.Expressions.Error.CollectionModifiedWhileEnumerating();
                 }
             }
 
@@ -365,12 +365,12 @@ namespace System.Dynamic
 
             public void Add(string item)
             {
-                throw Error.CollectionReadOnly();
+                throw System.Linq.Expressions.Error.CollectionReadOnly();
             }
 
             public void Clear()
             {
-                throw Error.CollectionReadOnly();
+                throw System.Linq.Expressions.Error.CollectionReadOnly();
             }
 
             public bool Contains(string item)
@@ -416,7 +416,7 @@ namespace System.Dynamic
 
             public bool Remove(string item)
             {
-                throw Error.CollectionReadOnly();
+                throw System.Linq.Expressions.Error.CollectionReadOnly();
             }
 
             #endregion
@@ -497,7 +497,7 @@ namespace System.Dynamic
                 if (_expando._data.Version != _expandoVersion || _expandoData != _expando._data)
                 {
                     //the underlying expando object has changed
-                    throw Error.CollectionModifiedWhileEnumerating();
+                    throw System.Linq.Expressions.Error.CollectionModifiedWhileEnumerating();
                 }
             }
 
@@ -505,12 +505,12 @@ namespace System.Dynamic
 
             public void Add(object item)
             {
-                throw Error.CollectionReadOnly();
+                throw System.Linq.Expressions.Error.CollectionReadOnly();
             }
 
             public void Clear()
             {
-                throw Error.CollectionReadOnly();
+                throw System.Linq.Expressions.Error.CollectionReadOnly();
             }
 
             public bool Contains(object item)
@@ -567,7 +567,7 @@ namespace System.Dynamic
 
             public bool Remove(object item)
             {
-                throw Error.CollectionReadOnly();
+                throw System.Linq.Expressions.Error.CollectionReadOnly();
             }
 
             #endregion
@@ -627,7 +627,7 @@ namespace System.Dynamic
                 object value;
                 if (!TryGetValueForKey(key, out value))
                 {
-                    throw Error.KeyDoesNotExistInExpando(key);
+                    throw System.Linq.Expressions.Error.KeyDoesNotExistInExpando(key);
                 }
                 return value;
             }
@@ -768,7 +768,7 @@ namespace System.Dynamic
                     // The underlying expando object has changed:
                     // 1) the version of the expando data changed
                     // 2) the data object is changed 
-                    throw Error.CollectionModifiedWhileEnumerating();
+                    throw System.Linq.Expressions.Error.CollectionModifiedWhileEnumerating();
                 }
                 // Capture the value into a temp so we don't inadvertently
                 // return Uninitialized.

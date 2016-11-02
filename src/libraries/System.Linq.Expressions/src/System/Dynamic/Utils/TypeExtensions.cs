@@ -60,6 +60,11 @@ namespace System.Dynamic.Utils
             return true;
         }
 
+        public static Type GetReturnType(this MethodBase mi)
+        {
+            return (mi.IsConstructor) ? mi.DeclaringType : ((MethodInfo)mi).ReturnType;
+        }
+
         public static TypeCode GetTypeCode(this Type type)
         {
             if (type == null)

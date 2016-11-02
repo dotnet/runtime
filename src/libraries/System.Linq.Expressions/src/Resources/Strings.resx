@@ -603,4 +603,55 @@
   <data name="NonAbstractConstructorRequired" xml:space="preserve">
     <value>Can't compile a NewExpression with a constructor declared on an abstract class</value>
   </data>
+  <data name="FirstArgumentMustBeCallSite" xml:space="preserve">
+    <value>First argument of delegate must be CallSite</value>
+  </data>
+  <data name="NoOrInvalidRuleProduced" xml:space="preserve">
+    <value>No or Invalid rule produced</value>
+  </data>
+  <data name="TypeMustBeDerivedFromSystemDelegate" xml:space="preserve">
+    <value>Type must be derived from System.Delegate</value>
+  </data>
+  <data name="TypeParameterIsNotDelegate" xml:space="preserve">
+    <value>Type parameter is {0}. Expected a delegate.</value>
+  </data>
+  <data name="ArgumentTypeCannotBeVoid" xml:space="preserve">
+    <value>Argument type cannot be void</value>
+  </data>
+  <data name="ArgCntMustBeGreaterThanNameCnt" xml:space="preserve">
+    <value>Argument count must be greater than number of named arguments.</value>
+  </data>
+  <data name="BinderNotCompatibleWithCallSite" xml:space="preserve">
+    <value>The result type '{0}' of the binder '{1}' is not compatible with the result type '{2}' expected by the call site.</value>
+  </data>
+  <data name="BindingCannotBeNull" xml:space="preserve">
+    <value>Bind cannot return null.</value>
+  </data>
+  <data name="DynamicBinderResultNotAssignable" xml:space="preserve">
+    <value>The result type '{0}' of the dynamic binding produced by binder '{1}' is not compatible with the result type '{2}' expected by the call site.</value>
+  </data>
+  <data name="DynamicBindingNeedsRestrictions" xml:space="preserve">
+    <value>The result of the dynamic binding produced by the object with type '{0}' for the binder '{1}' needs at least one restriction.</value>
+  </data>
+  <data name="DynamicObjectResultNotAssignable" xml:space="preserve">
+    <value>The result type '{0}' of the dynamic binding produced by the object with type '{1}' for the binder '{2}' is not compatible with the result type '{3}' expected by the call site.</value>
+  </data>
+  <data name="InvalidMetaObjectCreated" xml:space="preserve">
+    <value>An IDynamicMetaObjectProvider {0} created an invalid DynamicMetaObject instance.</value>
+  </data>
+  <data name="MethodPreconditionViolated" xml:space="preserve">
+    <value>Method precondition violated</value>
+  </data>
+  <data name="AmbiguousMatchInExpandoObject" xml:space="preserve">
+    <value>More than one key matching '{0}' was found in the ExpandoObject.</value>
+  </data>
+  <data name="CollectionReadOnly" xml:space="preserve">
+    <value>Collection is read-only.</value>
+  </data>
+  <data name="KeyDoesNotExistInExpando" xml:space="preserve">
+    <value>The specified key '{0}' does not exist in the ExpandoObject.</value>
+  </data>
+  <data name="SameKeyExistsInExpando" xml:space="preserve">
+    <value>An element with the same key '{0}' already exists in the ExpandoObject.</value>
+  </data>
 </root>
