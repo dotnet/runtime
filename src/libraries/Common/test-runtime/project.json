@@ -5,9 +5,9 @@
     "ReportGenerator": "2.4.3",
     "Microsoft.NETCore.TestHost": "1.2.0-beta-24628-03",
     "Microsoft.NETCore.Runtime.CoreCLR": "1.2.0-beta-24628-03",
-    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00925-01",
+    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.1-prerelease-01001-04",
     "xunit.console.netcore": "1.0.3-prerelease-00921-01",
-    "Microsoft.xunit.netcore.extensions": "1.0.0-prerelease-00925-01",
+    "Microsoft.xunit.netcore.extensions": "1.0.1-prerelease-01001-04",
     "perf": {
       "target": "project",
       "include": "compile,runtime"
@@ -416,6 +416,7 @@
         "ubuntu.16.04-x64",
         "ubuntu.16.10-x64",
         "fedora.23-x64",
+        "fedora.24-x64",
         "linux-x64",
         "opensuse.13.2-x64",
         "opensuse.42.1-x64"
