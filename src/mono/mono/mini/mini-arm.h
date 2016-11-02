@@ -350,6 +350,7 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_HAVE_SDB_TRAMPOLINES 1
 #define MONO_ARCH_HAVE_PATCH_CODE_NEW 1
 #define MONO_ARCH_HAVE_OP_GENERIC_CLASS_INIT 1
+#define MONO_ARCH_HAVE_GET_TLS_TRAMP 1
 
 #define MONO_ARCH_HAVE_TLS_GET (mono_arm_have_tls_get ())
 #define MONO_ARCH_HAVE_TLS_GET_REG 1

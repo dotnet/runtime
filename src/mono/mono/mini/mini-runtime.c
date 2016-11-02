@@ -1222,6 +1222,7 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_GOT_OFFSET:
 	case MONO_PATCH_INFO_GC_SAFE_POINT_FLAG:
 	case MONO_PATCH_INFO_AOT_MODULE:
+	case MONO_PATCH_INFO_GET_TLS_TRAMP:
 		return (ji->type << 8);
 	case MONO_PATCH_INFO_CASTCLASS_CACHE:
 		return (ji->type << 8) | (ji->data.index);
@@ -1660,6 +1661,13 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 	}
 	case MONO_PATCH_INFO_GSHAREDVT_IN_WRAPPER:
 		target = mini_get_gsharedvt_wrapper (TRUE, NULL, patch_info->data.sig, NULL, -1, FALSE);
+		break;
+	case MONO_PATCH_INFO_GET_TLS_TRAMP:
+#ifdef MONO_ARCH_HAVE_GET_TLS_TRAMP
+		target = mono_arch_get_get_tls_tramp ();
+#else
+		g_assert_not_reached ();
+#endif
 		break;
 	default:
 		g_assert_not_reached ();
