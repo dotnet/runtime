@@ -101,17 +101,21 @@ mono_trace_eval (MonoMethod *method)
 		
 		switch (op->op){
 		case MONO_TRACEOP_ALL:
-			inc = 1; break;
+			inc = 1;
+			break;
 		case MONO_TRACEOP_PROGRAM:
 			if (trace_spec.assembly && (method->klass->image == mono_assembly_get_image (trace_spec.assembly)))
-				inc = 1; break;
+				inc = 1;
+			break;
 		case MONO_TRACEOP_WRAPPER:
 			if ((method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) ||
 				(method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE))
-				inc = 1; break;
+				inc = 1;
+			break;
 		case MONO_TRACEOP_METHOD:
 			if (mono_method_desc_full_match ((MonoMethodDesc *) op->data, method))
-				inc = 1; break;
+				inc = 1;
+			break;
 		case MONO_TRACEOP_CLASS:
 			if (strcmp (method->klass->name_space, op->data) == 0)
 				if (strcmp (method->klass->name, op->data2) == 0)
@@ -119,10 +123,12 @@ mono_trace_eval (MonoMethod *method)
 			break;
 		case MONO_TRACEOP_ASSEMBLY:
 			if (strcmp (mono_image_get_name (method->klass->image), op->data) == 0)
-				inc = 1; break;
+				inc = 1;
+			break;
 		case MONO_TRACEOP_NAMESPACE:
 			if (strcmp (method->klass->name_space, op->data) == 0)
 				inc = 1;
+			break;
 		case MONO_TRACEOP_EXCEPTION:
 			break;
 		}
