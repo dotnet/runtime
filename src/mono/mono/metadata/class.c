@@ -1532,7 +1532,6 @@ mono_class_setup_fields (MonoClass *klass)
 	int instance_size;
 	gboolean explicit_size;
 	MonoClassField *field;
-	MonoGenericContainer *container = NULL;
 	MonoGenericClass *gklass = mono_class_try_get_generic_class (klass);
 	MonoClass *gtd = gklass ? mono_class_get_generic_type_definition (klass) : NULL;
 
@@ -1552,7 +1551,6 @@ mono_class_setup_fields (MonoClass *klass)
 	mono_class_setup_basic_field_info (klass);
 	top = klass->field.count;
 
-	gtd = klass->generic_class ? mono_class_get_generic_type_definition (klass) : NULL;
 	if (gtd) {
 		mono_class_setup_fields (gtd);
 		if (mono_class_set_type_load_failure_causedby_class (klass, gtd, "Generic type definition failed"))
@@ -1620,7 +1618,7 @@ mono_class_setup_fields (MonoClass *klass)
 				mono_class_set_type_load_failure (klass, "Field '%s' has a negative offset %d", field->name, offset);
 				break;
 			}
-			if (klass->generic_container) {
+			if (mono_class_is_gtd (klass)) {
 				mono_class_set_type_load_failure (klass, "Generic class cannot have explicit layout.");
 				break;
 			}
@@ -5271,8 +5269,8 @@ mono_class_init (MonoClass *klass)
 
 	mono_stats.initialized_class_count++;
 
-	if (klass->generic_class && !klass->generic_class->is_dynamic) {
-		MonoClass *gklass = klass->generic_class->container_class;
+	if (mono_class_is_ginst (klass) && !mono_class_get_generic_class (klass)->is_dynamic) {
+		MonoClass *gklass = mono_class_get_generic_class (klass)->container_class;
 
 		mono_stats.generic_class_count++;
 
@@ -5280,7 +5278,7 @@ mono_class_init (MonoClass *klass)
 		klass->field = gklass->field;
 	}
 
-	if (klass->generic_class || image_is_dynamic (klass->image) || !klass->type_token || (has_cached_info && !cached_info.has_nested_classes))
+	if (mono_class_is_ginst (klass) || image_is_dynamic (klass->image) || !klass->type_token || (has_cached_info && !cached_info.has_nested_classes))
 		klass->nested_classes_inited = TRUE;
 	klass->ghcimpl = ghcimpl;
 	klass->has_cctor = has_cctor;
