@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 extern alias System_Security_Principal;
-extern alias System_Security_Permissions;
 
 using System;
 using System.Reflection;
@@ -14,7 +13,6 @@ namespace System
 {
     using PrincipalPolicy = System_Security_Principal::System.Security.Principal.PrincipalPolicy;
     using IPrincipal = System_Security_Principal::System.Security.Principal.IPrincipal;
-    using PolicyException = System_Security_Permissions::System.Security.Policy.PolicyException;
 
     public partial class AppDomain : MarshalByRefObject
     {
@@ -97,7 +95,7 @@ namespace System
         }
 
         public int ExecuteAssembly(string assemblyFile) => ExecuteAssembly(assemblyFile, null);
-        public int ExecuteAssembly(string assemblyFile, string[] args) 
+        public int ExecuteAssembly(string assemblyFile, string[] args)
         {
             if (assemblyFile == null)
                 throw new ArgumentNullException(nameof(assemblyFile));
@@ -207,20 +205,20 @@ namespace System
         public void SetShadowCopyFiles() { }
         public void SetShadowCopyPath(string path) { }
         public Assembly[] GetAssemblies() => AssemblyLoadContext.GetLoadedAssemblies();
-        public event AssemblyLoadEventHandler AssemblyLoad 
-        { 
-            add { AssemblyLoadContext.AssemblyLoad += value; } 
-            remove { AssemblyLoadContext.AssemblyLoad -= value; } 
+        public event AssemblyLoadEventHandler AssemblyLoad
+        {
+            add { AssemblyLoadContext.AssemblyLoad += value; }
+            remove { AssemblyLoadContext.AssemblyLoad -= value; }
         }
         public event ResolveEventHandler TypeResolve
-        { 
-            add { AssemblyLoadContext.TypeResolve += value; } 
-            remove { AssemblyLoadContext.TypeResolve -= value; } 
+        {
+            add { AssemblyLoadContext.TypeResolve += value; }
+            remove { AssemblyLoadContext.TypeResolve -= value; }
         }
         public event ResolveEventHandler ResourceResolve
-        { 
-            add { AssemblyLoadContext.ResourceResolve += value; } 
-            remove { AssemblyLoadContext.ResourceResolve -= value; } 
+        {
+            add { AssemblyLoadContext.ResourceResolve += value; }
+            remove { AssemblyLoadContext.ResourceResolve -= value; }
         }
         public void SetPrincipalPolicy(PrincipalPolicy policy) { }
         public void SetThreadPrincipal(IPrincipal principal)
@@ -229,7 +227,7 @@ namespace System
             lock (_forLock) {
                 // Check that principal has not been set previously.
                 if (_defaultPrincipal != null)
-                    throw new PolicyException(SR.AppDomain_Policy_PrincipalTwice);
+                    throw new SystemException(SR.AppDomain_Policy_PrincipalTwice);
 
                 _defaultPrincipal = principal;
             }

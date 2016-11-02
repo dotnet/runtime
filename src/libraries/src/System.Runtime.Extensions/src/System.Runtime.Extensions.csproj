@@ -391,9 +391,6 @@
     <ProjectReference Include="..\..\System.Security.Principal\src\System.Security.Principal.csproj">
       <Aliases>System_Security_Principal</Aliases>
     </ProjectReference>
-    <ProjectReference Include="..\..\System.Security.Permissions\src\System.Security.Permissions.csproj">
-      <Aliases>System_Security_Permissions</Aliases>
-    </ProjectReference>
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj">
     </ProjectReference>
   </ItemGroup>
