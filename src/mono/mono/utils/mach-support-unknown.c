@@ -35,7 +35,7 @@ mono_mach_arch_get_mcontext_size ()
 }
 
 void
-mono_mach_arch_thread_states_to_mcontext (thread_state_t state, void *context)
+mono_mach_arch_thread_states_to_mcontext (thread_state_t state, thread_state_t fpstate, void *context)
 {
 	g_assert_not_reached ();
 }
