@@ -1157,10 +1157,10 @@ error:
             pRetVal = NULL;
             goto done;
         }
-        pInformation = NULL;
-        pRetVal = NULL;
     }
 
+    pInformation = NULL;
+    pRetVal = NULL;
 done:
 
     LogVaOperation(
