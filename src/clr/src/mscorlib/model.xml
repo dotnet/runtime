@@ -485,6 +485,7 @@
       <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member Name="get_FileName" />
       <Member Name="get_FusionLog" />
+      <Member Name="GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
       <Member MemberType="Property" Name="FileName" />
       <Member MemberType="Property" Name="FusionLog" />
     </Type>
@@ -6485,6 +6486,7 @@
       <Member MemberType="Field" Name="Batch" />
       <Member MemberType="Field" Name="Interactive" />
       <Member MemberType="Field" Name="LowLatency" />
+      <Member MemberType="Field" Name="NoGCRegion" />
       <Member MemberType="Field" Name="SustainedLowLatency" />
     </Type>
     <Type Name="System.Runtime.GCSettings">
