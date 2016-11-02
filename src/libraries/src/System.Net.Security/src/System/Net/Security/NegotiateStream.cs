@@ -625,7 +625,7 @@ namespace System.Net.Security
                     throw new IOException(SR.net_io_read, (Exception)bufferResult.Result);
                 }
 
-                return (int)bufferResult.Result;
+                return bufferResult.Int32Result;
 #if DEBUG
             }
 #endif

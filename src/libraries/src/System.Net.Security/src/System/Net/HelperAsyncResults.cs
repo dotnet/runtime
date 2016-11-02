@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Threading;
 
 namespace System.Net
@@ -88,13 +89,7 @@ namespace System.Net
             _callback = callback;
         }
 
-        internal object AsyncObject
-        {
-            get
-            {
-                return UserAsyncResult.AsyncObject;
-            }
-        }
+        internal object AsyncObject => UserAsyncResult.AsyncObject;
 
         //
         // Notify protocol so a next stage could be started.
@@ -137,24 +132,18 @@ namespace System.Net
         //
         // Important: This will abandon _Callback and directly notify UserAsyncResult.
         //
-        internal void CompleteWithError(Exception e)
+        internal void CompleteUserWithError(Exception e) => UserAsyncResult.InvokeCallback(e);
+
+        internal void CompleteUser() => UserAsyncResult.InvokeCallback();
+
+        internal void CompleteUser(int userResult)
         {
-            UserAsyncResult.InvokeCallback(e);
+            Debug.Assert(UserAsyncResult is BufferAsyncResult, "CompleteUser(int) may only be used with a BufferAsyncResult");
+            var bar = (BufferAsyncResult)UserAsyncResult;
+            bar.Int32Result = userResult;
+            bar.InvokeCallback(BufferAsyncResult.ResultSentinal);
         }
 
-        internal void CompleteUser()
-        {
-            UserAsyncResult.InvokeCallback();
-        }
-
-        internal void CompleteUser(object userResult)
-        {
-            UserAsyncResult.InvokeCallback(userResult);
-        }
-
-        internal bool IsUserCompleted
-        {
-            get { return UserAsyncResult.InternalPeekCompleted; }
-        }
+        internal bool IsUserCompleted => UserAsyncResult.InternalPeekCompleted;
     }
 }
