@@ -4,6 +4,7 @@
 
 #ifdef USE_OSX_BACKEND
 
+#include <errno.h>
 #include <sys/time.h>
 #include <sys/proc.h>
 #include <sys/sysctl.h>
