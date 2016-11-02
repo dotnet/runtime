@@ -85,5 +85,8 @@
   <PropertyGroup>
     <ProjectJson>$(SourceDir)Common\test_dependencies\project.json</ProjectJson>
     <ProjectLockJson>$(SourceDir)Common\test_dependencies\project.lock.json</ProjectLockJson>
+
+    <!-- Specify the target framework of the common test dependency project.json. -->
+    <NuGetTargetMoniker>.NETCoreApp,Version=v1.1</NuGetTargetMoniker>
   </PropertyGroup>
 </Project>

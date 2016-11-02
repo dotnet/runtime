@@ -2,7 +2,7 @@
   "dependencies": {
   },
   "frameworks": {
-    "netcoreapp1.0": {}
+    "netcoreapp1.1": {}
   },
   "runtimes": {
     "win7-x86": {},
