@@ -83,9 +83,6 @@ class MonoReleaseProfile(DarwinProfile):
         self.BUILD_NUMBER = "0"
         self.MDK_GUID = "964ebddd-1ffe-47e7-8128-5ce17ffffb05"
 
-        self.self_dir = os.path.realpath(os.path.dirname(sys.argv[0]))
-        self.packaging_dir = os.path.join(self.self_dir, "packaging")
-
         system_mono_dir = '/Library/Frameworks/Mono.framework/Versions/Current'
         self.env.set('system_mono', os.path.join(
             system_mono_dir, 'bin', 'mono'))
@@ -204,11 +201,12 @@ class MonoReleaseProfile(DarwinProfile):
         print "Setting up temporary package directory:", tmpdir
 
         # setup metadata
+        self.packaging_dir = os.path.join(self.resource_path, "packaging")
         run_shell('rsync -aPq %s/* %s' % (self.packaging_dir, tmpdir), False)
 
         packages_list = string.join(
             [pkg.desc for pkg in self.release_packages.values()], "\\\n")
-        deps_list = 'bockbuild (rev. %s)\\\n' % self.bockbuild_rev + string.join(
+        deps_list = 'bockbuild (rev. %s)\\\n' % bockbuild.bockbuild_rev + string.join(
             [pkg.desc for pkg in self.toolchain_packages.values()], "\\\n")
 
         parameter_map = {
@@ -229,7 +227,7 @@ class MonoReleaseProfile(DarwinProfile):
 
         # copy to package root
         run_shell('rsync -aPq "%s"/* "%s/%s"' %
-                  (self.package_root, versions, self.RELEASE_VERSION), False)
+                  (bockbuild.package_root, versions, self.RELEASE_VERSION), False)
 
         return tmpdir
 
@@ -242,7 +240,7 @@ class MonoReleaseProfile(DarwinProfile):
     def run_pkgbuild(self, working_dir, package_type):
         print 'Running pkgbuild & productbuild...',
         info = self.package_info(package_type)
-        output = os.path.join(self.self_dir, info["filename"])
+        output = os.path.join(self.resource_path, info["filename"])
         identifier = "com.xamarin.mono-" + info["type"] + ".pkg"
         resources_dir = os.path.join(working_dir, "resources")
         distribution_xml = os.path.join(resources_dir, "distribution.xml")
@@ -340,8 +338,8 @@ class MonoReleaseProfile(DarwinProfile):
             'gtk-sharp',
             'pango-sharp'
         ]
-        gac = os.path.join(self.package_root, "lib", "mono", "gac")
-        confs = [glob(os.path.join(gac, x, "*", "*.dll.config")) for x in libs]
+        gac = os.path.join(bockbuild.package_root, "lib", "mono", "gac")
+        confs = [glob.glob(os.path.join(gac, x, "*", "*.dll.config")) for x in libs]
         for c in itertools.chain(*confs):
             count = count + 1
             self.fix_dllmap(c, lambda line: "dllmap" in line)
@@ -360,7 +358,7 @@ class MonoReleaseProfile(DarwinProfile):
             raise Exception("%s references Mono %s\n%s" % (f, token, text))
 
     def verify_binaries(self):
-        bindir = os.path.join(self.package_root, "bin")
+        bindir = os.path.join(bockbuild.package_root, "bin")
         for path, dirs, files in os.walk(bindir):
             for name in files:
                 f = os.path.join(path, name)
