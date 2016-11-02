@@ -11,16 +11,47 @@
 #ifndef _GC_INFO_DECODER_
 #define _GC_INFO_DECODER_
 
-#include "gcinfotypes.h"
-
 #define _max(a, b) (((a) > (b)) ? (a) : (b)) 
 #define _min(a, b) (((a) < (b)) ? (a) : (b))
 
-#ifndef GCINFODECODER_NO_EE
+#if !defined(_TARGET_X86_)
+#define USE_GC_INFO_DECODER
+#endif
+
+#if !defined(GCINFODECODER_NO_EE)
 
 #include "eetwain.h"
 
-#else // GCINFODECODER_NO_EE
+#else
+
+#ifdef FEATURE_REDHAWK
+
+typedef ArrayDPTR(const uint8_t) PTR_CBYTE;
+
+#define LIMITED_METHOD_CONTRACT
+#define SUPPORTS_DAC
+
+#define LOG(x)
+#define LOG_PIPTR(pObjRef, gcFlags, hCallBack)
+#define DAC_ARG(x)
+
+#define VALIDATE_ROOT(isInterior, hCallBack, pObjRef)
+
+#define _ASSERTE(x) assert(x)
+
+#define UINT32 UInt32
+#define INT32 Int32
+#define UINT16 UInt16
+#define UINT UInt32
+#define SIZE_T UIntNative
+#define SSIZE_T IntNative
+#define LPVOID void*
+
+typedef void * OBJECTREF;
+
+#define GET_CALLER_SP(pREGDISPLAY) ((TADDR)0)
+
+#else // FEATURE_REDHAWK
 
 // Stuff from cgencpu.h:
 
@@ -117,6 +148,12 @@ typedef void (*GCEnumCallback)(
     uint32_t        flags           // is this a pinned and/or interior pointer
 );
 
+#endif // !_EETWAIN_H
+
+#include "regdisp.h"
+
+#endif // FEATURE_REDHAWK
+
 #ifndef _strike_h
 
 enum ICodeManagerFlags
@@ -135,15 +172,8 @@ enum ICodeManagerFlags
 
 #endif // !_strike_h
 
-#if !defined(_TARGET_X86_)
-#define USE_GC_INFO_DECODER
-#endif
-
-#include "regdisp.h"
-
-#endif // !_EETWAIN_H
-
 #endif // GCINFODECODER_NO_EE
+
 
 #include "gcinfotypes.h"
 
@@ -425,7 +455,7 @@ class GcInfoDecoder
 {
 public:
 
-    // If you are not insterested in interruptibility or gc lifetime information, pass 0 as instructionOffset
+    // If you are not interested in interruptibility or gc lifetime information, pass 0 as instructionOffset
     GcInfoDecoder(
             GCInfoToken gcInfoToken,
             GcInfoDecoderFlags flags = DECODE_EVERYTHING,
@@ -484,7 +514,7 @@ public:
     UINT32  GetPrologSize();
     INT32   GetPSPSymStackSlot();
     INT32   GetGenericsInstContextStackSlot();
-    INT32   GetReversePInvokeStackSlot();
+    INT32   GetReversePInvokeFrameStackSlot();
     bool    HasMethodDescGenericsInstContext();
     bool    HasMethodTableGenericsInstContext();
     bool    GetIsVarArg();
@@ -512,7 +542,7 @@ private:
     bool    m_WantsReportOnlyLeaf;
     INT32   m_SecurityObjectStackSlot;
     INT32   m_GSCookieStackSlot;
-    INT32   m_ReversePInvokeStackSlot;
+    INT32   m_ReversePInvokeFrameStackSlot;
     UINT32  m_ValidRangeStart;
     UINT32  m_ValidRangeEnd;
     INT32   m_PSPSymStackSlot;
@@ -520,7 +550,6 @@ private:
     UINT32  m_CodeLength;
     UINT32  m_StackBaseRegister;
     UINT32  m_SizeOfEditAndContinuePreservedArea;
-    INT32  m_ReversePInvokeFrameSlot;
     ReturnKind m_ReturnKind;
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
     UINT32  m_NumSafePoints;
