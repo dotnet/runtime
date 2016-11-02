@@ -175,7 +175,7 @@ namespace System.Text
         internal BaseCodePageEncoding(SerializationInfo info, StreamingContext context) : base(0)
         {
             // We cannot ever call this, we've proxied ourselved to CodePageEncoding
-            throw new ArgumentNullException(nameof(this));
+            throw new ArgumentNullException("this");
         }
 
         // ISerializable implementation
