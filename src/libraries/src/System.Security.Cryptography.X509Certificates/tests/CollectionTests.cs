@@ -640,6 +640,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             TestExportSingleCert(X509ContentType.Cert);
         }
 
+#if netcoreapp11
+        [Fact]
+        public static void ExportCert_SecureString()
+        {
+            TestExportSingleCert_SecureStringPassword(X509ContentType.Cert);
+        }
+#endif
+
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
         public static void ExportSerializedCert_Windows()
@@ -764,7 +772,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             var collection = new X509Certificate2Collection();
             try
             {
-                collection.Import(Path.Combine("TestData", "DummyTcpServer.pfx"), null, Cert.EphemeralIfPossible);
+                collection.Import(Path.Combine("TestData", "DummyTcpServer.pfx"), (string)null, Cert.EphemeralIfPossible);
                 collection.Import(TestData.PfxData, TestData.PfxDataPassword, Cert.EphemeralIfPossible);
                 Assert.Equal(3, collection.Count);
             }
@@ -785,7 +793,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             try
             {
-                collection.Import(Path.Combine("TestData", "DummyTcpServer.pfx"), null, X509KeyStorageFlags.Exportable | Cert.EphemeralIfPossible);
+                collection.Import(Path.Combine("TestData", "DummyTcpServer.pfx"), (string)null, X509KeyStorageFlags.Exportable | Cert.EphemeralIfPossible);
                 collection.Import(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.Exportable | Cert.EphemeralIfPossible);
 
                 // Pre-condition, we have multiple private keys
@@ -1379,10 +1387,27 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+#if netcoreapp11
+        private static void TestExportSingleCert_SecureStringPassword(X509ContentType ct)
+        {
+            using (var pfxCer = new X509Certificate2(TestData.PfxData, TestData.CreatePfxDataPasswordSecureString(), Cert.EphemeralIfPossible))
+            {
+                TestExportSingleCert(ct, pfxCer);
+            }
+        }
+#endif
+
         private static void TestExportSingleCert(X509ContentType ct)
         {
-            using (var msCer = new X509Certificate2(TestData.MsCertificate))
             using (var pfxCer = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, Cert.EphemeralIfPossible))
+            {
+                TestExportSingleCert(ct, pfxCer);
+            }
+        }
+
+        private static void TestExportSingleCert(X509ContentType ct, X509Certificate2 pfxCer)
+        {
+            using (var msCer = new X509Certificate2(TestData.MsCertificate))
             {
                 X509Certificate2Collection cc = new X509Certificate2Collection(new X509Certificate2[] { msCer, pfxCer });
 

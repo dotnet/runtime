@@ -53,8 +53,8 @@ namespace System
         public System.Reflection.Assembly Load(string assemblyString) { throw null; }
         public System.Reflection.Assembly[] ReflectionOnlyGetAssemblies() { throw null; }
         public void SetData(string name, object data) { }
-        //public void SetPrincipalPolicy(System.Security.Principal.PrincipalPolicy policy) { }
-        //public void SetThreadPrincipal(System.Security.Principal.IPrincipal principal) { }
+        public void SetPrincipalPolicy(System.Security.Principal.PrincipalPolicy policy) { }
+        public void SetThreadPrincipal(System.Security.Principal.IPrincipal principal) { }
         public override string ToString() { throw null; }
         public static void Unload(System.AppDomain domain) { }
         public bool ShadowCopyFiles { get { throw null; } }

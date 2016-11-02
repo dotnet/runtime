@@ -2,6 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.ObjectModel;
+using System.Runtime.CompilerServices;
+using System.Dynamic;
+
 namespace System.Linq.Expressions.Compiler
 {
     internal static partial class DelegateHelpers
@@ -31,6 +35,22 @@ namespace System.Linq.Expressions.Compiler
                 }
 
                 return curTypeInfo.DelegateType;
+            }
+        }
+
+        internal static TypeInfo NextTypeInfo(Type initialArg)
+        {
+            lock (_DelegateCache)
+            {
+                return NextTypeInfo(initialArg, _DelegateCache);
+            }
+        }
+
+        internal static TypeInfo GetNextTypeInfo(Type initialArg, TypeInfo curTypeInfo)
+        {
+            lock (_DelegateCache)
+            {
+                return NextTypeInfo(initialArg, curTypeInfo);
             }
         }
     }

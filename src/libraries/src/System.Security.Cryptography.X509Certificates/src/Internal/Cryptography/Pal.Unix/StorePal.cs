@@ -18,8 +18,10 @@ namespace Internal.Cryptography.Pal
         private static CollectionBackedStoreProvider s_machineIntermediateStore;
         private static readonly object s_machineLoadLock = new object();
 
-        public static ILoaderPal FromBlob(byte[] rawData, string password, X509KeyStorageFlags keyStorageFlags)
+        public static ILoaderPal FromBlob(byte[] rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
+            Debug.Assert(password != null);
+
             ICertificatePal singleCert;
 
             if (CertificatePal.TryReadX509Der(rawData, out singleCert) ||
@@ -46,7 +48,7 @@ namespace Internal.Cryptography.Pal
             throw Interop.Crypto.CreateOpenSslCryptographicException();
         }
 
-        public static ILoaderPal FromFile(string fileName, string password, X509KeyStorageFlags keyStorageFlags)
+        public static ILoaderPal FromFile(string fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
             using (SafeBioHandle bio = Interop.Crypto.BioNewFile(fileName, "rb"))
             {
@@ -56,7 +58,7 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        private static ILoaderPal FromBio(SafeBioHandle bio, string password)
+        private static ILoaderPal FromBio(SafeBioHandle bio, SafePasswordHandle password)
         {
             int bioPosition = Interop.Crypto.BioTell(bio);
             Debug.Assert(bioPosition >= 0);

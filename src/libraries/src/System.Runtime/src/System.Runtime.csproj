@@ -22,6 +22,11 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net462_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'net463' OR '$(TargetGroup)' == 'uap101aot'">
+    <ContractProject Include="..\ref\System.Runtime.csproj">
+      <TargetGroup>netstandard1.7</TargetGroup>
+    </ContractProject>
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.Forwards.cs" />
   </ItemGroup>
@@ -36,6 +41,7 @@
     <Compile Include="System\Runtime\CompilerServices\Attributes.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == '' OR '$(TargetGroup)' == 'netstandard1.7' OR '$(TargetGroup)' == 'uap101aot'">
+    <Compile Include="System\Runtime\NgenServicingAttributes.cs" />
     <Compile Include="System\IO\HandleInheritability.cs" />
     <Compile Include="System\Runtime\ConstrainedExecution\PrePrepareMethodAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\SpecialNameAttribute.cs" />

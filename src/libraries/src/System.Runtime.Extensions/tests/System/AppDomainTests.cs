@@ -4,7 +4,9 @@
 
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Reflection;
+using System.Resources;
 using System.Runtime.ExceptionServices;
 using Xunit;
 using Xunit.NetCore.Extensions;
@@ -13,7 +15,6 @@ namespace System.Tests
 {
     public class AppDomainTests : RemoteExecutorTestBase
     {
-        static bool flag = false;
         [Fact]
         public void CurrentDomain_Not_Null()
         {
@@ -135,7 +136,7 @@ namespace System.Tests
         [Fact]
         public void FirstChanceException_Called()
         {
-            bool _flag = flag;
+            bool flag = false;
             EventHandler<FirstChanceExceptionEventArgs> handler = (sender, e) =>
             {
                 Exception ex = (Exception) e.Exception;
@@ -152,8 +153,7 @@ namespace System.Tests
             {
             }
             AppDomain.CurrentDomain.FirstChanceException -= handler;
-            if(_flag == flag)
-                Assert.True(false, "FirstChanceHandler not called");
+            Assert.True(flag, "FirstChanceHandler not called");
         }
 
         class FirstChanceTestException : Exception
@@ -213,9 +213,22 @@ namespace System.Tests
             Assert.Equal(5,  AppDomain.CurrentDomain.ExecuteAssemblyByName(assembly.FullName));
             Assert.Equal(10, AppDomain.CurrentDomain.ExecuteAssemblyByName(assembly.FullName, new string[2] {"2", "3"}));
             Assert.Throws<FormatException>(() => AppDomain.CurrentDomain.ExecuteAssemblyByName(assembly.FullName, new string[1] {"a"}));
-            // TODO Enable when Assembly.Load(AssemblyName assemblyRef) is supported
-            //Assert.Equal(105, AppDomain.CurrentDomain.ExecuteAssemblyByName(assembly.GetName(), new string[3] {"50", "25", "25"}));
+            AssemblyName assemblyName = assembly.GetName();
+            assemblyName.CodeBase = null;
+            Assert.Equal(105, AppDomain.CurrentDomain.ExecuteAssemblyByName(assemblyName, new string[3] {"50", "25", "25"}));
         }
+
+        [Fact]
+        public void ExecuteAssembly()
+        {
+            string name = "TestApp.exe";
+            Assert.Throws<ArgumentNullException>("assemblyFile", () => AppDomain.CurrentDomain.ExecuteAssembly(null));
+            Assert.Throws<FileNotFoundException>(() => AppDomain.CurrentDomain.ExecuteAssembly("NonExistentFile.exe"));
+            Assert.Throws<PlatformNotSupportedException>(() => AppDomain.CurrentDomain.ExecuteAssembly(name, new string[2] {"2", "3"}, null, Configuration.Assemblies.AssemblyHashAlgorithm.SHA1));
+            // TODO: Currently below tests fail as LoadFrom does not work for assemblies in TPA
+            // Assert.Equal(5, AppDomain.CurrentDomain.ExecuteAssembly(name));
+            // Assert.Equal(10, AppDomain.CurrentDomain.ExecuteAssemblyByName(name, new string[2] { "2", "3" }));
+        }        
 
         [Fact]
         public void GetData_SetData()
@@ -265,7 +278,14 @@ namespace System.Tests
         [Fact]
         public void Load()
         {
-            // TODO
+            AssemblyName assemblyName = typeof(AppDomainTests).Assembly.GetName();
+            assemblyName.CodeBase = null;
+            Assert.NotNull(AppDomain.CurrentDomain.Load(assemblyName));
+            Assert.NotNull(AppDomain.CurrentDomain.Load(typeof(AppDomainTests).Assembly.FullName));
+
+            Assembly assembly = typeof(AppDomainTests).Assembly;
+            byte[] aBytes = System.IO.File.ReadAllBytes(assembly.Location);
+            Assert.NotNull(AppDomain.CurrentDomain.Load(aBytes));
         }
 
         [Fact]
@@ -359,13 +379,52 @@ namespace System.Tests
         [Fact]
         public void GetAssemblies()
         {
-            // TODO
+            Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            Assert.NotNull(assemblies);
+            Assert.True(assemblies.Length > 0, "There must be assemblies already loaded in the process");
+            AppDomain.CurrentDomain.Load(assemblies[0].GetName().FullName);
+            Assembly[] assemblies1 = AppDomain.CurrentDomain.GetAssemblies();
+            Assert.True(assemblies1.Length >= assemblies.Length, "Assembly.Load of an already loaded assembly should not cause another load");
+            Assembly.LoadFile(typeof(AppDomain).Assembly.Location);
+            Assembly[] assemblies2 = AppDomain.CurrentDomain.GetAssemblies();
+            Assert.True(assemblies2.Length > assemblies.Length, "Assembly.LoadFile should cause an increase in GetAssemblies list");
+            int ctr = 0;
+            foreach (var a in assemblies2)
+            {
+                if (a.Location == typeof(AppDomain).Assembly.Location)
+                    ctr++;
+            }
+            foreach (var a in assemblies)
+            {
+                if (a.Location == typeof(AppDomain).Assembly.Location)
+                    ctr--;
+            }
+            Assert.True(ctr > 0, "Assembly.loadFile should cause file to loaded again");
         }
 
         [Fact]
         public void AssemblyLoad()
         {
-            // TODO
+            bool AssemblyLoadFlag = false;
+            AssemblyLoadEventHandler handler = (sender, args) =>
+            {
+                if (args.LoadedAssembly.FullName.Equals(typeof(AppDomainTests).Assembly.FullName))
+                {
+                    AssemblyLoadFlag = !AssemblyLoadFlag;
+                }
+            };
+
+            AppDomain.CurrentDomain.AssemblyLoad += handler;
+
+            try
+            {
+                Assembly.LoadFile(typeof(AppDomainTests).Assembly.Location);
+            }
+            finally
+            {
+                AppDomain.CurrentDomain.AssemblyLoad -= handler;
+            }
+            Assert.True(AssemblyLoadFlag);
         }
 
         [Fact]
@@ -377,24 +436,64 @@ namespace System.Tests
         [Fact]
         public void TypeResolve()
         {
-            // TODO
+            Assert.Throws<TypeLoadException>(() => Type.GetType("Program", true));
+
+            ResolveEventHandler handler = (sender, args) =>
+            {
+                return Assembly.Load("TestApp");
+            };
+
+            AppDomain.CurrentDomain.TypeResolve += handler;
+
+            Type t;
+            try
+            {
+                t = Type.GetType("Program", true);
+            }
+            finally
+            {
+                AppDomain.CurrentDomain.TypeResolve -= handler;
+            }
+            Assert.NotNull(t);
         }
 
         [Fact]
-        public void ResourceResolve ()
+        public void ResourceResolve()
         {
-            // TODO
+            ResourceManager res = new ResourceManager(typeof(FxResources.TestApp.SR));
+            Assert.Throws<MissingManifestResourceException>(() => res.GetString("Message"));
+
+            ResolveEventHandler handler = (sender, args) =>
+            {
+                return Assembly.Load("TestApp");
+            };
+
+            AppDomain.CurrentDomain.ResourceResolve += handler;
+
+            String s;
+            try
+            {
+                s = res.GetString("Message");
+            }
+            finally
+            {
+                AppDomain.CurrentDomain.ResourceResolve -= handler;
+            }
+            Assert.Equal(s, "Happy Halloween");
         }
-       
-        /*
-        [Fact]
+
+        [Fact]       
         public void SetThreadPrincipal()
         {
             Assert.Throws<ArgumentNullException>(() => {AppDomain.CurrentDomain.SetThreadPrincipal(null);});
             var identity = new System.Security.Principal.GenericIdentity("NewUser");
             var principal = new System.Security.Principal.GenericPrincipal(identity, null);
-            Assert.Throws<PlatformNotSupportedException>(() => {AppDomain.CurrentDomain.SetThreadPrincipal(principle);});
-        }*/
-
+            AppDomain.CurrentDomain.SetThreadPrincipal(principal);
+        }
     }
+}
+
+namespace FxResources.TestApp
+{
+    class SR { }
 }

@@ -1,12 +1,12 @@
 {
   "dependencies": {
-    "System.Collections.NonGeneric": "4.4.0-beta-24629-01",
-    "System.ComponentModel": "4.4.0-beta-24629-01",
-    "System.Drawing.Primitives": "4.4.0-beta-24629-01",
-    "System.ComponentModel.Primitives": "4.4.0-beta-24629-01",
-    "System.Resources.ResourceManager": "4.4.0-beta-24629-01",
-    "System.Resources.Writer": "4.4.0-beta-24629-01",
-    "System.Runtime": "4.4.0-beta-24629-01"
+    "System.Collections.NonGeneric": "4.4.0-beta-24701-01",
+    "System.ComponentModel": "4.4.0-beta-24701-01",
+    "System.Drawing.Primitives": "4.4.0-beta-24701-01",
+    "System.ComponentModel.Primitives": "4.4.0-beta-24701-01",
+    "System.Resources.ResourceManager": "4.4.0-beta-24701-01",
+    "System.Resources.Writer": "4.4.0-beta-24701-01",
+    "System.Runtime": "4.4.0-beta-24701-01"
   },
   "frameworks": {
     "netstandard1.7": {}

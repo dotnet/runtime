@@ -46,7 +46,7 @@
     <Compile Include="$(CommonPath)\System\Collections\Generic\EnumerableHelpers.cs">
       <Link>Common\System\Collections\Generic\EnumerableHelpers.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs">
+    <Compile Include="$(CommonPath)\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs" Condition="'$(TargetGroup)'!=''">
       <Link>Common\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Dynamic\Utils\CacheDict.cs">
@@ -154,6 +154,43 @@
     <Compile Include="System\Runtime\CompilerServices\RuntimeOps.MergedRuntimeVariables.cs" />
     <Compile Include="System\Runtime\CompilerServices\ReadOnlyCollectionBuilder.cs" />
     <None Include="project.json" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'==''">
+    <Compile Include="System\Linq\Expressions\DynamicExpressionVisitor.cs" />
+    <Compile Include="System\Linq\Expressions\DynamicExpression.cs" />
+    <Compile Include="System\Linq\Expressions\Expression.netstandard1.7.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\TypeInfoExtensions.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\DelegateHelpers.netstandard1.7.cs" />
+    <Compile Include="System\Runtime\CompilerServices\RuleCache.cs" />
+    <Compile Include="System\Runtime\CompilerServices\CallSite.cs" />
+    <Compile Include="System\Runtime\CompilerServices\CallSiteBinder.cs" />
+    <Compile Include="System\Runtime\CompilerServices\CallSiteOps.cs" />
+    <Compile Include="System\Runtime\CompilerServices\CallSiteHelpers.cs" />
+    <Compile Include="System\Runtime\CompilerServices\DynamicAttribute.cs" />
+    <Compile Include="System\Dynamic\Utils\CollectionExtensions.cs" />
+    <Compile Include="System\Dynamic\Utils\ContractUtils.cs" />
+    <Compile Include="System\Dynamic\UpdateDelegates.Generated.cs" />
+    <Compile Include="System\Dynamic\DynamicMetaObjectBinder.cs" />
+    <Compile Include="System\Dynamic\DynamicMetaObject.cs" />
+    <Compile Include="System\Dynamic\IDynamicMetaObjectProvider.cs" />
+    <Compile Include="System\Dynamic\BindingRestrictions.cs" />
+    <Compile Include="System\Dynamic\BinaryOperationBinder.cs" />
+    <Compile Include="System\Dynamic\CallInfo.cs" />
+    <Compile Include="System\Dynamic\ExpandoObject.cs" />
+    <Compile Include="System\Dynamic\ExpandoClass.cs" />
+    <Compile Include="System\Dynamic\ConvertBinder.cs" />
+    <Compile Include="System\Dynamic\CreateInstanceBinder.cs" />
+    <Compile Include="System\Dynamic\DeleteIndexBinder.cs" />
+    <Compile Include="System\Dynamic\DeleteMemberBinder.cs" />
+    <Compile Include="System\Dynamic\DynamicObject.cs" />
+    <Compile Include="System\Dynamic\GetIndexBinder.cs" />
+    <Compile Include="System\Dynamic\GetMemberBinder.cs" />
+    <Compile Include="System\Dynamic\InvokeBinder.cs" />
+    <Compile Include="System\Dynamic\InvokeMemberBinder.cs" />
+    <Compile Include="System\Dynamic\SetIndexBinder.cs" />
+    <Compile Include="System\Dynamic\SetMemberBinder.cs" />
+    <Compile Include="System\Dynamic\UnaryOperationBinder.cs" />
+    <Compile Include="System\Dynamic\IInvokeOnGetBinder.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(IsInterpreting)' != 'true' And '$(TargetGroup)' != 'net463'">
     <Compile Include="$(CommonPath)\System\Collections\Generic\ReferenceEqualityComparer.cs">

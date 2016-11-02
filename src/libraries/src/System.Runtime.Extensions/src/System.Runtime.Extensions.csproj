@@ -34,6 +34,11 @@
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
     <ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
   </PropertyGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
+    <ContractProject Include="..\ref\System.Runtime.Extensions.csproj">
+      <TargetGroup>netstandard1.7</TargetGroup>
+    </ContractProject>
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net462' And '$(TargetGroup)' != 'net463'">
     <Compile Include="System\AppDomain.cs" />
     <Compile Include="System\Context.cs" />
@@ -46,7 +51,6 @@
     <Compile Include="System\Environment.SpecialFolder.cs" />
     <Compile Include="System\Environment.SpecialFolderOption.cs" />
     <Compile Include="System\EnvironmentVariableTarget.cs" />
-    <Compile Include="System\MathF.cs" /> <!-- https://github.com/dotnet/buildtools/issues/1041 -->
     <Compile Include="System\OperatingSystem.cs" />
     <Compile Include="System\PlatformID.cs" />
     <Compile Include="System\IO\Path.cs" />
@@ -383,6 +387,11 @@
     </ProjectReference>
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj">
       <UndefineProperties>%(ProjectReference.UndefineProperties);TargetGroup</UndefineProperties>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Security.Principal\src\System.Security.Principal.csproj">
+      <Aliases>System_Security_Principal</Aliases>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj">
     </ProjectReference>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net462' Or '$(TargetGroup)' == 'net463'">

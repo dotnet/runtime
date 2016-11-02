@@ -1,12 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+
+extern alias System_Security_Principal;
+
 using System;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
+using System.Runtime.Loader;
 
 namespace System
 {
+    using PrincipalPolicy = System_Security_Principal::System.Security.Principal.PrincipalPolicy;
+    using IPrincipal = System_Security_Principal::System.Security.Principal.IPrincipal;
+
     public partial class AppDomain : MarshalByRefObject
     {
         private static readonly AppDomain s_domain = new AppDomain();
@@ -87,17 +94,18 @@ namespace System
             throw new PlatformNotSupportedException();
         }
 
-        public int ExecuteAssembly(string assemblyFile) => ExecuteAssembly(assemblyFile, null, null, Configuration.Assemblies.AssemblyHashAlgorithm.None);
-        public int ExecuteAssembly(string assemblyFile, string[] args) => ExecuteAssembly(assemblyFile, args, null, Configuration.Assemblies.AssemblyHashAlgorithm.None);
-        public int ExecuteAssembly(string assemblyFile, string[] args, byte[] hashValue, Configuration.Assemblies.AssemblyHashAlgorithm hashAlgorithm)
+        public int ExecuteAssembly(string assemblyFile) => ExecuteAssembly(assemblyFile, null);
+        public int ExecuteAssembly(string assemblyFile, string[] args)
         {
             if (assemblyFile == null)
                 throw new ArgumentNullException(nameof(assemblyFile));
-            /* TODO Assembly.LoadFrom is not implemented yet
-            Assembly assembly = Assembly.LoadFrom(path, hashValue, hashAlgorithm);
+            Assembly assembly = Assembly.LoadFrom(assemblyFile);
             return ExecuteAssembly(assembly, args);
-            */
-            return 0;
+        }
+        public int ExecuteAssembly(string assemblyFile, string[] args, byte[] hashValue, Configuration.Assemblies.AssemblyHashAlgorithm hashAlgorithm)
+        {
+            // This api is only meaningful for very specific partial trust/CAS hence not supporting
+            throw new PlatformNotSupportedException();
         }
         private int ExecuteAssembly(Assembly assembly, string[] args)
         {
@@ -196,18 +204,38 @@ namespace System
         public void SetCachePath(string path) { }
         public void SetShadowCopyFiles() { }
         public void SetShadowCopyPath(string path) { }
-        // TODO
-        public Assembly[] GetAssemblies() { throw null; }
-        public event AssemblyLoadEventHandler AssemblyLoad { add { } remove { } }
-        public event ResolveEventHandler AssemblyResolve { add { } remove { } }
-        public event ResolveEventHandler TypeResolve { add { } remove { } }
-        public event ResolveEventHandler ResourceResolve { add { } remove { } }
-        //public void SetPrincipalPolicy(System.Security.Principal.PrincipalPolicy policy) { }
-        /*
-        public void SetThreadPrincipal(System.Security.Principal.IPrincipal principal)
+        public Assembly[] GetAssemblies() => AssemblyLoadContext.GetLoadedAssemblies();
+        public event AssemblyLoadEventHandler AssemblyLoad
+        {
+            add { AssemblyLoadContext.AssemblyLoad += value; }
+            remove { AssemblyLoadContext.AssemblyLoad -= value; }
+        }
+        public event ResolveEventHandler TypeResolve
+        {
+            add { AssemblyLoadContext.TypeResolve += value; }
+            remove { AssemblyLoadContext.TypeResolve -= value; }
+        }
+        public event ResolveEventHandler ResourceResolve
+        {
+            add { AssemblyLoadContext.ResourceResolve += value; }
+            remove { AssemblyLoadContext.ResourceResolve -= value; }
+        }
+        public void SetPrincipalPolicy(PrincipalPolicy policy) { }
+        public void SetThreadPrincipal(IPrincipal principal)
         {
             if (principal == null) throw new ArgumentNullException("principal");
-            throw new PlatformNotSupportedException();
-        }*/
+            lock (_forLock) {
+                // Check that principal has not been set previously.
+                if (_defaultPrincipal != null)
+                    throw new SystemException(SR.AppDomain_Policy_PrincipalTwice);
+
+                _defaultPrincipal = principal;
+            }
+        }
+        // TODO
+        public event ResolveEventHandler AssemblyResolve { add { } remove { } }
+
+        private IPrincipal _defaultPrincipal;
+        private readonly object _forLock = new Object();
     }
 }
