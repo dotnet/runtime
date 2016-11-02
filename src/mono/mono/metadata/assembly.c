@@ -22,6 +22,7 @@
 #include "object-internals.h"
 #include <mono/metadata/loader.h>
 #include <mono/metadata/tabledefs.h>
+#include <mono/metadata/custom-attrs-internals.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/class-internals.h>
@@ -205,8 +206,6 @@ static GSList *loaded_assembly_bindings = NULL;
 
 /* Class lazy loading functions */
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (internals_visible, System.Runtime.CompilerServices, InternalsVisibleToAttribute)
-static GENERATE_TRY_GET_CLASS_WITH_CACHE (reference_assembly, System.Runtime.CompilerServices, ReferenceAssemblyAttribute)
-
 static MonoAssembly*
 mono_assembly_invoke_search_hook_internal (MonoAssemblyName *aname, MonoAssembly *requesting, gboolean refonly, gboolean postload);
 static MonoAssembly*
@@ -1828,6 +1827,24 @@ mono_assembly_load_friends (MonoAssembly* ass)
 	mono_assemblies_unlock ();
 }
 
+struct HasReferenceAssemblyAttributeIterData {
+	gboolean has_attr;
+};
+
+static gboolean
+has_reference_assembly_attribute_iterator (MonoImage *image, guint32 typeref_scope_token, const char *nspace, const char *name, guint32 method_token, gpointer user_data)
+{
+	gboolean stop_scanning = FALSE;
+	struct HasReferenceAssemblyAttributeIterData *iter_data = (struct HasReferenceAssemblyAttributeIterData*)user_data;
+
+	if (!strcmp (name, "ReferenceAssemblyAttribute") && !strcmp (nspace, "System.Runtime.CompilerServices")) {
+		/* Note we don't check the assembly name, same as coreCLR. */
+		iter_data->has_attr = TRUE;
+		stop_scanning = TRUE;
+	}
+
+	return stop_scanning;
+}
 
 /**
  * mono_assembly_has_reference_assembly_attribute:
@@ -1842,24 +1859,16 @@ mono_assembly_has_reference_assembly_attribute (MonoAssembly *assembly, MonoErro
 {
 	mono_error_init (error);
 
-/* TODO: mono_custom_attrs_from_assembly_checked returns NULL if a
- * single assembly is missing.  The custom attr we want is from
- * corlib, however, so we need a more robust version that doesn't care
- * about missing attributes.
- */
-#if 1
-	MonoCustomAttrInfo *attrs = mono_custom_attrs_from_assembly_checked (assembly, TRUE, error);
-	return_val_if_nok (error, FALSE);
-	if (!attrs)
-		return FALSE;
-	MonoClass *ref_asm_class = mono_class_try_get_reference_assembly_class ();
-	g_assert (ref_asm_class != NULL && ref_asm_class != mono_defaults.object_class && !strcmp(ref_asm_class->name, "ReferenceAssemblyAttribute") );
-	gboolean result = mono_custom_attrs_has_attr (attrs, ref_asm_class);
-	mono_custom_attrs_free (attrs);
-	return result;
-#else
-	return FALSE;
-#endif
+	/*
+	 * This might be called during assembly loading, so do everything using the low-level
+	 * metadata APIs.
+	 */
+
+	struct HasReferenceAssemblyAttributeIterData iter_data = { FALSE };
+
+	mono_assembly_metadata_foreach_custom_attr (assembly, &has_reference_assembly_attribute_iterator, &iter_data);
+
+	return iter_data.has_attr;
 }
 
 /**
@@ -1981,10 +1990,30 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 		}
 	}
 
+	/* We need to check for ReferenceAssmeblyAttribute before we
+	 * mark the assembly as loaded and before we fire the load
+	 * hook. Otherwise mono_domain_fire_assembly_load () in
+	 * appdomain.c will cache a mapping from the assembly name to
+	 * this image and we won't be able to look for a different
+	 * candidate. */
+
+	if (!refonly) {
+		MonoError refasm_error;
+		if (mono_assembly_has_reference_assembly_attribute (ass, &refasm_error)) {
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Image for assembly '%s' (%s) has ReferenceAssemblyAttribute, skipping", ass->aname.name, image->name);
+			g_free (ass);
+			g_free (base_dir);
+			mono_image_close (image);
+			*status = MONO_IMAGE_IMAGE_INVALID;
+			return NULL;
+		}
+		mono_error_cleanup (&refasm_error);
+	}
+
 	mono_assemblies_lock ();
 
 	if (image->assembly) {
-		/* 
+		/*
 		 * This means another thread has already loaded the assembly, but not yet
 		 * called the load hooks so the search hook can't find the assembly.
 		 */
@@ -2000,34 +2029,6 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Prepared to set up assembly '%s' (%s)", ass->aname.name, image->name);
 
 	image->assembly = ass;
-
-	/* We need to check for ReferenceAssmeblyAttribute before we
-	 * mark the assembly as loaded and before we fire the load
-	 * hook. Otherwise mono_domain_fire_assembly_load () in
-	 * appdomain.c will cache a mapping from the assembly name to
-	 * this image and we won't be able to look for a different
-	 * candidate. */
-
-	if (!refonly && strcmp (ass->aname.name, "mscorlib") != 0) {
-		/* Don't check for reference assmebly attribute for
-		 * corlib here because if corlib isn't loaded yet,
-		 * it's too early to set up the
-		 * ReferenceAssemblyAttribute class.  We check that
-		 * we're not running with a reference corlib in
-		 * mono_init_internal().
-		 */
-		MonoError refasm_error;
-		if (mono_assembly_has_reference_assembly_attribute (ass, &refasm_error)) {
-			mono_assemblies_unlock ();
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Image for assembly '%s' (%s) has ReferenceAssemblyAttribute, skipping", ass->aname.name, image->name);
-			g_free (ass);
-			g_free (base_dir);
-			mono_image_close (image);
-			*status = MONO_IMAGE_IMAGE_INVALID;
-			return NULL;
-		}
-		mono_error_cleanup (&refasm_error);
-	}
 
 	loaded_assemblies = g_list_prepend (loaded_assemblies, ass);
 	mono_assemblies_unlock ();

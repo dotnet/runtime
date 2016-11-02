@@ -814,16 +814,6 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 
 	mono_profiler_appdomain_name (domain, domain->friendly_name);
 
-	/* Have to do this quite late so that we at least have System.Object */
-	MonoError custom_attr_error;
-	if (mono_assembly_has_reference_assembly_attribute (ass, &custom_attr_error)) {
-		char *corlib_file = g_build_filename (mono_assembly_getrootdir (), "mono", current_runtime->framework_version, "mscorlib.dll", NULL);
-		g_print ("Could not load file or assembly %s. Reference assemblies should not be loaded for execution.  They can only be loaded in the Reflection-only loader context.", corlib_file);
-		g_free (corlib_file);
-		exit (1);
-	}
-	mono_error_assert_ok (&custom_attr_error);
-
 	return domain;
 }
 
