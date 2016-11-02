@@ -1666,7 +1666,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 #ifdef MONO_ARCH_HAVE_GET_TLS_TRAMP
 		target = mono_arch_get_get_tls_tramp ();
 #else
-		g_assert_not_reached ();
+		target = NULL;
 #endif
 		break;
 	default:
