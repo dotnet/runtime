@@ -2061,7 +2061,7 @@ namespace System.Reflection.Emit
         private FieldToken GetFieldTokenNoLock(FieldInfo field) 
         {
             if (field == null) {
-                throw new ArgumentNullException(nameof(field));
+                throw new ArgumentNullException("con");
             }
             Contract.EndContractBlock();
 
