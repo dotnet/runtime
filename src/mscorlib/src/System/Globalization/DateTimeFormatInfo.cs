@@ -1370,7 +1370,7 @@ namespace System.Globalization {
             Contract.Requires(values.Length >= length);
             for (int i = 0; i < length; i++) {
                 if (values[i] == null) {
-                    throw new ArgumentNullException("values[" + i + "]",
+                    throw new ArgumentNullException("value",
                         Environment.GetResourceString("ArgumentNull_ArrayValue"));
                 }
             }
