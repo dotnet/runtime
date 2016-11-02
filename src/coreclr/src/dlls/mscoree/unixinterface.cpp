@@ -247,22 +247,23 @@ int coreclr_initialize(
         host.SuppressRelease();
         *hostHandle = host;
 #ifdef FEATURE_GDBJIT
+        HRESULT createDelegateResult;
+        createDelegateResult = coreclr_create_delegate(*hostHandle,
+                                                       *domainId,
+                                                       "SOS.NETCore",
+                                                       "SOS.SymbolReader",
+                                                       "GetInfoForMethod",
+                                                       (void**)&getInfoForMethodDelegate);
 
-        hr = coreclr_create_delegate(*hostHandle,
-                                     *domainId,
-                                     "SOS.NETCore",
-                                     "SOS.SymbolReader",
-                                     "GetInfoForMethod",
-                                     (void**)&getInfoForMethodDelegate);
-
-        if (!SUCCEEDED(hr))
+#if defined(_DEBUG)
+        if (!SUCCEEDED(createDelegateResult))
         {
             fprintf(stderr,
                     "Can't create delegate for 'SOS.SymbolReader.GetInfoForMethod' "
-                    "method - status: 0x%08x\n", hr);
+                    "method - status: 0x%08x\n", createDelegateResult);
         }
+#endif // _DEBUG
 
-        hr = S_OK; // We don't need to fail if we can't create delegate
 #endif
     }
     return hr;
