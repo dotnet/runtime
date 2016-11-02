@@ -7,49 +7,47 @@ using Xunit;
 
 namespace System.Tests
 {
-    public static class MissingFieldExceptionTests
+    public static class MissingMemberExceptionTests
     {
-        private const int COR_E_MISSINGFIELD = unchecked((int)0x80131511);
+        private const int COR_E_MISSINGMEMBER = unchecked((int)0x80131512);
 
         [Fact]
         public static void Ctor_Empty()
         {
-            var exception = new MissingFieldException();
+            var exception = new MissingMemberException();
             Assert.NotEmpty(exception.Message);
-            Assert.Equal(COR_E_MISSINGFIELD, exception.HResult);
+            Assert.Equal(COR_E_MISSINGMEMBER, exception.HResult);
         }
 
         [Fact]
         public static void Ctor_String()
         {
-            string message = "Created MissingFieldException";
-            var exception = new MissingFieldException(message);
+            string message = "Created MissingMemberException";
+            var exception = new MissingMemberException(message);
             Assert.Equal(message, exception.Message);
-            Assert.Equal(COR_E_MISSINGFIELD, exception.HResult);
+            Assert.Equal(COR_E_MISSINGMEMBER, exception.HResult);
         }
 
         [Fact]
         public static void Ctor_String_Exception()
         {
-            string message = "Created MissingFieldException";
+            string message = "Created MissingMemberException";
             var innerException = new Exception("Created inner exception");
-            var exception = new MissingFieldException(message, innerException);
+            var exception = new MissingMemberException(message, innerException);
             Assert.Equal(message, exception.Message);
-            Assert.Equal(COR_E_MISSINGFIELD, exception.HResult);
+            Assert.Equal(COR_E_MISSINGMEMBER, exception.HResult);
             Assert.Same(innerException, exception.InnerException);
             Assert.Equal(innerException.HResult, exception.InnerException.HResult);
         }
 
-#if netstandard17
         [Fact]
         public static void Ctor_String_String()
         {
             string className = "class";
             string memberName = "member";
-            var exception = new MissingFieldException(className, memberName);
+            var exception = new MissingMemberException(className, memberName);
             Assert.True(exception.Message.Contains(className));
             Assert.True(exception.Message.Contains(memberName));
         }
-#endif
     }
 }
