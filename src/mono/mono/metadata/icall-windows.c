@@ -213,9 +213,4 @@ mono_icall_write_windows_debug_string (MonoString *message)
 	OutputDebugString (mono_string_chars (message));
 }
 
-MonoBoolean
-mono_icall_close_process (gpointer handle)
-{
-	return (MonoBoolean)(CloseHandle (handle));
-}
 #endif /* HOST_WIN32 */

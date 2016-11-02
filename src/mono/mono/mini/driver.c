@@ -49,6 +49,7 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/coree.h>
 #include <mono/metadata/attach.h>
+#include <mono/metadata/w32process.h>
 #include "mono/utils/mono-counters.h"
 #include "mono/utils/mono-hwcap.h"
 #include "mono/utils/mono-logger-internals.h"
@@ -1956,9 +1957,9 @@ mono_main (int argc, char* argv[])
 	{
 		char *runtime_path;
 
-		runtime_path = wapi_process_get_path (getpid ());
+		runtime_path = mono_w32process_get_path (getpid ());
 		if (runtime_path) {
-			wapi_process_set_cli_launcher (runtime_path);
+			mono_w32process_set_cli_launcher (runtime_path);
 			g_free (runtime_path);
 		}
 	}

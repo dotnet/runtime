@@ -226,10 +226,10 @@
     <ClCompile Include="..\mono\metadata\metadata.c" />
     <ClCompile Include="..\mono\metadata\monitor.c" />
     <ClCompile Include="..\mono\metadata\mono-config.c" />
-    <ClCompile Include="..\mono\metadata\process-windows.c" />
     <ClCompile Include="..\mono\utils\mono-dl.c" />
     <ClCompile Include="..\mono\metadata\object.c" />
-    <ClCompile Include="..\mono\metadata\process.c" />
+    <ClCompile Include="..\mono\metadata\w32process.c" />
+    <ClCompile Include="..\mono\metadata\w32process-win32.c" />
     <ClCompile Include="..\mono\metadata\profiler.c" />
     <ClCompile Include="..\mono\metadata\rand.c" />
     <ClCompile Include="..\mono\metadata\reflection.c" />

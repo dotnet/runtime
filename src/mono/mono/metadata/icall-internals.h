@@ -49,9 +49,6 @@ mono_icall_broadcast_setting_change (void);
 void
 mono_icall_write_windows_debug_string (MonoString *message);
 
-MonoBoolean
-mono_icall_close_process (gpointer handle);
-
 gint32
 mono_icall_wait_for_input_idle (gpointer handle, gint32 milliseconds);
 #endif  /* HOST_WIN32 */
@@ -65,18 +62,6 @@ mono_icall_get_logical_drives (void);
 
 guint32
 mono_icall_drive_info_get_drive_type (MonoString *root_path_name);
-
-MonoBoolean
-mono_icall_get_process_working_set_size (gpointer handle, gsize *min, gsize *max);
-
-MonoBoolean
-mono_icall_set_process_working_set_size (gpointer handle, gsize min, gsize max);
-
-gint32
-mono_icall_get_priority_class (gpointer handle);
-
-MonoBoolean
-mono_icall_set_priority_class (gpointer handle, gint32 priorityClass);
 #endif  /* !G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
 
 #endif /* __MONO_METADATA_ICALL_INTERNALS_H__ */

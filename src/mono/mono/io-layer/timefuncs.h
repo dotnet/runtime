@@ -12,6 +12,8 @@
 
 #include <glib.h>
 
+#include <sys/time.h>
+
 #include "mono/io-layer/wapi.h"
 
 G_BEGIN_DECLS
@@ -29,6 +31,8 @@ typedef struct
 	guint32 dwHighDateTime;
 #endif
 } WapiFileTime;
+
+extern void _wapi_time_t_to_filetime (time_t timeval, WapiFileTime *filetime);
 
 G_END_DECLS
 #endif /* _WAPI_TIME_H_ */

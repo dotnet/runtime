@@ -14,7 +14,7 @@
 #include <stdio.h>
 
 #include <mono/io-layer/wapi.h>
-#include <mono/io-layer/timefuncs-private.h>
+#include <mono/io-layer/timefuncs.h>
 #include "mono/utils/mono-time.h"
 
 #undef DEBUG
@@ -24,12 +24,6 @@ void _wapi_time_t_to_filetime (time_t timeval, WapiFileTime *filetime)
 	guint64 ticks;
 	
 	ticks = ((guint64)timeval * 10000000) + 116444736000000000ULL;
-	filetime->dwLowDateTime = ticks & 0xFFFFFFFF;
-	filetime->dwHighDateTime = ticks >> 32;
-}
-
-void _wapi_guint64_to_filetime (guint64 ticks, WapiFileTime *filetime)
-{
 	filetime->dwLowDateTime = ticks & 0xFFFFFFFF;
 	filetime->dwHighDateTime = ticks >> 32;
 }

@@ -9,7 +9,7 @@
 
 #if G_HAVE_API_SUPPORT(HAVE_UWP_WINAPI_SUPPORT)
 #include <Windows.h>
-#include "mono/metadata/process-windows-internals.h"
+#include "mono/metadata/w32process-win32-internals.h"
 
 gboolean
 mono_process_win_enum_processes (DWORD *pids, DWORD count, DWORD *needed)
@@ -37,7 +37,7 @@ ves_icall_System_Diagnostics_Process_GetProcess_internal (guint32 pid)
 }
 
 void
-process_get_fileversion (MonoObject *filever, gunichar2 *filename, MonoError *error)
+mono_w32process_get_fileversion (MonoObject *filever, gunichar2 *filename, MonoError *error)
 {
 	g_unsupported_api ("GetFileVersionInfoSize, GetFileVersionInfo, VerQueryValue, VerLanguageName");
 
@@ -141,6 +141,70 @@ mono_process_create_process (MonoProcInfo *mono_process_info, gunichar2 *shell_p
 
 	mono_error_init (&mono_error);
 	mono_error_set_not_supported (&mono_error, G_UNSUPPORTED_API, api_name);
+	mono_error_set_pending_exception (&mono_error);
+
+	SetLastError (ERROR_NOT_SUPPORTED);
+
+	return FALSE;
+}
+
+MonoBoolean
+mono_icall_get_process_working_set_size (gpointer handle, gsize *min, gsize *max)
+{
+	MonoError mono_error;
+	mono_error_init (&mono_error);
+
+	g_unsupported_api ("GetProcessWorkingSetSize");
+
+	mono_error_set_not_supported(&mono_error, G_UNSUPPORTED_API, "GetProcessWorkingSetSize");
+	mono_error_set_pending_exception (&mono_error);
+
+	SetLastError (ERROR_NOT_SUPPORTED);
+
+	return FALSE;
+}
+
+MonoBoolean
+mono_icall_set_process_working_set_size (gpointer handle, gsize min, gsize max)
+{
+	MonoError mono_error;
+	mono_error_init (&mono_error);
+
+	g_unsupported_api ("SetProcessWorkingSetSize");
+
+	mono_error_set_not_supported (&mono_error, G_UNSUPPORTED_API, "SetProcessWorkingSetSize");
+	mono_error_set_pending_exception (&mono_error);
+
+	SetLastError (ERROR_NOT_SUPPORTED);
+
+	return FALSE;
+}
+
+gint32
+mono_icall_get_priority_class (gpointer handle)
+{
+	MonoError mono_error;
+	mono_error_init (&mono_error);
+
+	g_unsupported_api ("GetPriorityClass");
+
+	mono_error_set_not_supported (&mono_error, G_UNSUPPORTED_API, "GetPriorityClass");
+	mono_error_set_pending_exception (&mono_error);
+
+	SetLastError (ERROR_NOT_SUPPORTED);
+
+	return FALSE;
+}
+
+MonoBoolean
+mono_icall_set_priority_class (gpointer handle, gint32 priorityClass)
+{
+	MonoError mono_error;
+	mono_error_init (&mono_error);
+
+	g_unsupported_api ("SetPriorityClass");
+
+	mono_error_set_not_supported(&mono_error, G_UNSUPPORTED_API, "SetPriorityClass");
 	mono_error_set_pending_exception (&mono_error);
 
 	SetLastError (ERROR_NOT_SUPPORTED);
