@@ -182,7 +182,7 @@ sgen_aligned_addr_hash (gconstpointer ptr)
 	return GPOINTER_TO_UINT (ptr) >> 3;
 }
 
-#define SGEN_PTR_IN_NURSERY(p,bits,start,end)	(((mword)(p) & ~((1 << (bits)) - 1)) == (mword)(start))
+#define SGEN_PTR_IN_NURSERY(p,bits,start,end)	(((mword)(p) & ~(((mword)1 << (bits)) - 1)) == (mword)(start))
 
 #ifdef USER_CONFIG
 
