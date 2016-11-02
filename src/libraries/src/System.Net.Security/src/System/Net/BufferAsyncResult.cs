@@ -13,20 +13,13 @@ namespace System.Net
         public byte[] Buffer;
         public int Offset;
         public int Count;
-        public bool IsWrite;
 
         public BufferAsyncResult(object asyncObject, byte[] buffer, int offset, int count, object asyncState, AsyncCallback asyncCallback)
-            : this(asyncObject, buffer, offset, count, false, asyncState, asyncCallback)
-        {
-        }
-
-        public BufferAsyncResult(object asyncObject, byte[] buffer, int offset, int count, bool isWrite, object asyncState, AsyncCallback asyncCallback)
             : base(asyncObject, asyncState, asyncCallback)
         {
             Buffer = buffer;
             Offset = offset;
             Count = count;
-            IsWrite = isWrite;
         }
     }
 }
