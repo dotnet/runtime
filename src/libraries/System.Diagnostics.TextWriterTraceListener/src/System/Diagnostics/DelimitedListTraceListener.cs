@@ -65,6 +65,9 @@ namespace System.Diagnostics
             }
         }
 
+        // base class method is protected internal but since its base class is in another assembly can't override it as protected internal because a CS0507
+        // warning would be hitted.
+        protected override string[] GetSupportedAttributes() => new string[] { "delimiter" };
 
         public override void TraceEvent(TraceEventCache eventCache, String source, TraceEventType eventType, int id, string format, params object[] args)
         {
