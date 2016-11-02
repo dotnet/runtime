@@ -540,7 +540,7 @@ namespace System.IO {
         [System.Security.SecuritySafeCritical]  // auto-generated
         public override void SetLength(long value) {
             if (value < 0)
-                throw new ArgumentOutOfRangeException(nameof(value), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException("length", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
             if (_buffer != null)
                 throw new NotSupportedException(Environment.GetResourceString("NotSupported_UmsSafeBuffer"));

@@ -132,7 +132,7 @@ namespace System {
             }
 
             if( (4 == IntPtr.Size) && (bytesAllocated > Int32.MaxValue) ) {
-                throw new ArgumentOutOfRangeException(nameof(bytesAllocated), 
+                throw new ArgumentOutOfRangeException("pressure", 
                         Environment.GetResourceString("ArgumentOutOfRange_MustBeNonNegInt32"));
             }
             Contract.EndContractBlock();
