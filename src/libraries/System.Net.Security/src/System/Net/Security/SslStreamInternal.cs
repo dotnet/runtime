@@ -169,7 +169,7 @@ namespace System.Net.Security
                 throw new IOException(SR.net_io_read, (Exception)bufferResult.Result);
             }
 
-            return (int)bufferResult.Result;
+            return bufferResult.Int32Result;
         }
 
         internal IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState)
@@ -495,7 +495,7 @@ namespace System.Net.Security
         //
         // Combined sync/async read method. For sync request asyncRequest==null.
         //
-        private int ProcessRead(byte[] buffer, int offset, int count, LazyAsyncResult asyncResult)
+        private int ProcessRead(byte[] buffer, int offset, int count, BufferAsyncResult asyncResult)
         {
             ValidateParameters(buffer, offset, count);
 
@@ -522,9 +522,7 @@ namespace System.Net.Security
                         SkipBytes(copyBytes);
                     }
                     
-                    if (asyncRequest != null) {
-                        asyncRequest.CompleteUser((object) copyBytes);
-                    }
+                    asyncRequest?.CompleteUser(copyBytes);
                     
                     return copyBytes;
                 }
@@ -580,10 +578,7 @@ namespace System.Net.Security
 
                 if (copyBytes != -1)
                 {
-                    if (asyncRequest != null)
-                    {
-                        asyncRequest.CompleteUser((object)copyBytes);
-                    }
+                    asyncRequest?.CompleteUser(copyBytes);
 
                     return copyBytes;
                 }
@@ -633,10 +628,7 @@ namespace System.Net.Security
             {
                 //EOF : Reset the buffer as we did not read anything into it.
                 SkipBytes(InternalBufferCount);
-                if (asyncRequest != null)
-                {
-                    asyncRequest.CompleteUser((object)0);
-                }
+                asyncRequest?.CompleteUser(0);
                 
                 return 0;
             }
@@ -728,10 +720,7 @@ namespace System.Net.Security
             SkipBytes(readBytes);
 
             _sslState.FinishRead(null);
-            if (asyncRequest != null)
-            {
-                asyncRequest.CompleteUser((object)readBytes);
-            }
+            asyncRequest?.CompleteUser(readBytes);
 
             return readBytes;
         }
@@ -752,10 +741,7 @@ namespace System.Net.Security
             if (message.CloseConnection)
             {
                 _sslState.FinishRead(null);
-                if (asyncRequest != null)
-                {
-                    asyncRequest.CompleteUser((object)0);
-                }
+                asyncRequest?.CompleteUser(0);
 
                 return 0;
             }
@@ -801,7 +787,7 @@ namespace System.Net.Security
                 }
 
                 sslStream._sslState.FinishWrite();
-                asyncRequest.CompleteWithError(e);
+                asyncRequest.CompleteUserWithError(e);
             }
         }
 
@@ -823,7 +809,7 @@ namespace System.Net.Security
                 }
 
                 ((SslStreamInternal)request.AsyncObject)._sslState.FinishRead(null);
-                request.CompleteWithError(e);
+                request.CompleteUserWithError(e);
             }
         }
 
@@ -845,7 +831,7 @@ namespace System.Net.Security
                 }
 
                 ((SslStreamInternal)asyncRequest.AsyncObject)._sslState.FinishWrite();
-                asyncRequest.CompleteWithError(e);
+                asyncRequest.CompleteUserWithError(e);
             }
         }
 
@@ -869,7 +855,7 @@ namespace System.Net.Security
                     throw;
                 }
 
-                asyncRequest.CompleteWithError(e);
+                asyncRequest.CompleteUserWithError(e);
             }
         }
 
@@ -893,7 +879,7 @@ namespace System.Net.Security
                     throw;
                 }
 
-                asyncRequest.CompleteWithError(e);
+                asyncRequest.CompleteUserWithError(e);
             }
         }
     }

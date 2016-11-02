@@ -1441,7 +1441,7 @@ namespace System.Net.Security
                 {
                     if (e != null)
                     {
-                        asyncRequest.CompleteWithError(e);
+                        asyncRequest.CompleteUserWithError(e);
                     }
                     else
                     {
@@ -1725,7 +1725,7 @@ namespace System.Net.Security
             }
             catch (Exception e)
             {
-                request.CompleteWithError(e);
+                request.CompleteUserWithError(e);
             }
         }
 
