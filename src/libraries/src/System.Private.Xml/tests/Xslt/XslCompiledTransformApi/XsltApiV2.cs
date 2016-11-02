@@ -359,10 +359,6 @@ namespace System.Xml.Tests
                                 _output.WriteLine("Loading style sheet as XmlTextReader " + _strXslFile);
                                 xslt.Load(trTemp, XsltSettings.TrustedXslt, xr);
                             }
-                            catch (Exception ex)
-                            {
-                                throw (ex);
-                            }
                             finally
                             {
                                 if (trTemp != null)
@@ -378,10 +374,6 @@ namespace System.Xml.Tests
                             {
                                 _output.WriteLine("Loading style sheet as XmlNodeReader " + _strXslFile);
                                 xslt.Load(nrTemp);
-                            }
-                            catch (Exception ex)
-                            {
-                                throw (ex);
                             }
                             finally
                             {
@@ -402,10 +394,6 @@ namespace System.Xml.Tests
                             {
                                 _output.WriteLine("Loading style sheet as XmlValidatingReader " + _strXslFile);
                                 xslt.Load(xvr, XsltSettings.TrustedXslt, xr);
-                            }
-                            catch (Exception ex)
-                            {
-                                throw (ex);
                             }
                             finally
                             {
@@ -458,10 +446,6 @@ namespace System.Xml.Tests
                                 _output.WriteLine("Loading style sheet as XmlTextReader " + _strXslFile);
                                 xslt.Load(trTemp, XsltSettings.TrustedXslt, xr);
                             }
-                            catch (Exception ex)
-                            {
-                                throw (ex);
-                            }
                             finally
                             {
                                 if (trTemp != null)
@@ -477,10 +461,6 @@ namespace System.Xml.Tests
                             {
                                 _output.WriteLine("Loading style sheet as XmlNodeReader " + _strXslFile);
                                 xslt.Load(nrTemp, XsltSettings.TrustedXslt, xr);
-                            }
-                            catch (Exception ex)
-                            {
-                                throw (ex);
                             }
                             finally
                             {
@@ -500,10 +480,6 @@ namespace System.Xml.Tests
                             {
                                 _output.WriteLine("Loading style sheet as XmlValidatingReader " + _strXslFile);
                                 xslt.Load(vrTemp, XsltSettings.TrustedXslt, xr);
-                            }
-                            catch (Exception ex)
-                            {
-                                throw (ex);
                             }
                             finally
                             {
@@ -741,10 +717,6 @@ namespace System.Xml.Tests
                         strmTemp = new FileStream(_strOutFile, FileMode.Create, FileAccess.ReadWrite);
                         xslt.Transform(xd, null, strmTemp);
                     }
-                    catch (Exception ex)
-                    {
-                        throw (ex);
-                    }
                     finally
                     {
                         if (strmTemp != null)
@@ -762,10 +734,6 @@ namespace System.Xml.Tests
                         xw.WriteStartDocument();
                         xslt.Transform(xd, null, xw);
                     }
-                    catch (Exception ex)
-                    {
-                        throw (ex);
-                    }
                     finally
                     {
                         if (xw != null)
@@ -779,10 +747,6 @@ namespace System.Xml.Tests
                     {
                         tw = new StreamWriter(new FileStream(_strOutFile, FileMode.Create, FileAccess.Write), Encoding.UTF8);
                         xslt.Transform(xd, null, tw);
-                    }
-                    catch (Exception ex)
-                    {
-                        throw (ex);
                     }
                     finally
                     {
@@ -822,10 +786,6 @@ namespace System.Xml.Tests
                         strmTemp = new FileStream(_strOutFile, FileMode.Create, FileAccess.ReadWrite);
                         xslt.Transform(xd, m_xsltArg, strmTemp);
                     }
-                    catch (Exception ex)
-                    {
-                        throw (ex);
-                    }
                     finally
                     {
                         if (strmTemp != null)
@@ -841,10 +801,6 @@ namespace System.Xml.Tests
                         xw.WriteStartDocument();
                         xslt.Transform(xd, m_xsltArg, xw);
                     }
-                    catch (Exception ex)
-                    {
-                        throw (ex);
-                    }
                     finally
                     {
                         if (xw != null)
@@ -858,10 +814,6 @@ namespace System.Xml.Tests
                     {
                         tw = new StreamWriter(new FileStream(_strOutFile, FileMode.Create, FileAccess.Write), Encoding.UTF8);
                         xslt.Transform(xd, m_xsltArg, tw);
-                    }
-                    catch (Exception ex)
-                    {
-                        throw (ex);
                     }
                     finally
                     {
@@ -904,10 +856,6 @@ namespace System.Xml.Tests
                         strmTemp = new FileStream(_strOutFile, FileMode.Create, FileAccess.ReadWrite);
                         xslt.Transform(xd, null, strmTemp);
                     }
-                    catch (Exception ex)
-                    {
-                        throw (ex);
-                    }
                     finally
                     {
                         if (strmTemp != null)
@@ -923,10 +871,6 @@ namespace System.Xml.Tests
                         xw.WriteStartDocument();
                         xslt.Transform(xd, null, xw);
                     }
-                    catch (Exception ex)
-                    {
-                        throw (ex);
-                    }
                     finally
                     {
                         if (xw != null)
@@ -940,10 +884,6 @@ namespace System.Xml.Tests
                     {
                         tw = new StreamWriter(new FileStream(_strOutFile, FileMode.Create, FileAccess.Write), Encoding.UTF8);
                         xslt.Transform(xd, null, tw);
-                    }
-                    catch (Exception ex)
-                    {
-                        throw (ex);
                     }
                     finally
                     {
