@@ -29,6 +29,8 @@ namespace System.Diagnostics
         public TextWriterTraceListener(System.IO.Stream stream, string name) { }
         public TextWriterTraceListener(System.IO.TextWriter writer) { }
         public TextWriterTraceListener(System.IO.TextWriter writer, string name) { }
+        public TextWriterTraceListener(string fileName) { }
+        public TextWriterTraceListener(string fileName, string name) { }
         public System.IO.TextWriter Writer { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
         public override void Flush() { }
