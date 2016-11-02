@@ -132,11 +132,12 @@ mono_trace_eval (MonoMethod *method)
 		case MONO_TRACEOP_EXCEPTION:
 			break;
 		}
-		if (op->exclude){
+		if (op->exclude) {
 			if (inc)
 				include = 0;
-		} else if (inc)
+		} else if (inc) {
 			include = 1;
+		}
 	}
 	return include;
 }

@@ -1183,7 +1183,7 @@ mini_get_gsharedvt_in_sig_wrapper (MonoMethodSignature *sig)
 	MonoMethod *res, *cached;
 	WrapperInfo *info;
 	MonoMethodSignature *csig, *gsharedvt_sig;
-	int i, pindex, retval_var;
+	int i, pindex, retval_var = 0;
 	static GHashTable *cache;
 
 	// FIXME: Memory management

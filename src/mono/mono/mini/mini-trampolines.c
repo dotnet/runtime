@@ -850,7 +850,7 @@ mono_vcall_trampoline (mgreg_t *regs, guint8 *code, int slot, guint8 *tramp)
 	gpointer *vtable_slot;
 	MonoMethod *m;
 	MonoError error;
-	gpointer addr, res;
+	gpointer addr, res = NULL;
 
 	trampoline_calls ++;
 
