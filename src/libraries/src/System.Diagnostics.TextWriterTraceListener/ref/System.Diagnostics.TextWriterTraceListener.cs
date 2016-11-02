@@ -33,6 +33,7 @@ namespace System.Diagnostics
         public TextWriterTraceListener(string fileName) { }
         public TextWriterTraceListener(string fileName, string name) { }
         public System.IO.TextWriter Writer { get { throw null; } set { } }
+        public override void Close() { }
         protected override void Dispose(bool disposing) { }
         public override void Flush() { }
         public override void Write(string message) { }

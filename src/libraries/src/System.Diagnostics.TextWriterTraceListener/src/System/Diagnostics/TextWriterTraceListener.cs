@@ -106,6 +106,24 @@ namespace System.Diagnostics
             }
         }
 
+        /// <devdoc>
+        /// <para>Closes the <see cref='System.Diagnostics.TextWriterTraceListener.Writer'/> so that it no longer
+        ///    receives tracing or debugging output.</para>
+        /// </devdoc>
+        public override void Close()
+        {
+            if (writer != null)
+            {
+                try 
+                {
+                    writer.Close();
+                }
+                catch (ObjectDisposedException) { }
+            }
+
+            writer = null;
+        }
+
         /// <internalonly/>
         /// <devdoc>        
         /// </devdoc>
