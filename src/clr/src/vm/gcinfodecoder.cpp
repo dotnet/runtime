@@ -4,6 +4,7 @@
 
 
 #include "common.h"
+
 #include "gcinfodecoder.h"
 
 #ifdef USE_GC_INFO_DECODER
@@ -282,11 +283,11 @@ GcInfoDecoder::GcInfoDecoder(
 
     if (hasReversePInvokeFrame)
     {
-        m_ReversePInvokeFrameSlot = (INT32)m_Reader.DecodeVarLengthSigned(REVERSE_PINVOKE_FRAME_ENCBASE);
+        m_ReversePInvokeFrameStackSlot = (INT32)m_Reader.DecodeVarLengthSigned(REVERSE_PINVOKE_FRAME_ENCBASE);
     }
     else
     {
-        m_ReversePInvokeFrameSlot = NO_REVERSE_PINVOKE_FRAME;
+        m_ReversePInvokeFrameStackSlot = NO_REVERSE_PINVOKE_FRAME;
     }
 
 
@@ -488,10 +489,10 @@ INT32 GcInfoDecoder::GetGSCookieStackSlot()
     return m_GSCookieStackSlot;
 }
 
-INT32 GcInfoDecoder::GetReversePInvokeStackSlot()
+INT32 GcInfoDecoder::GetReversePInvokeFrameStackSlot()
 {
     _ASSERTE(m_Flags & DECODE_REVERSE_PINVOKE_VAR);
-    return m_ReversePInvokeStackSlot;
+    return m_ReversePInvokeFrameStackSlot;
 }
 
 UINT32 GcInfoDecoder::GetGSCookieValidRangeStart()
@@ -614,24 +615,6 @@ bool GcInfoDecoder::EnumerateLiveSlots(
     GcSlotDecoder slotDecoder;
 
     UINT32 normBreakOffset = NORMALIZE_CODE_OFFSET(m_InstructionOffset);
-
-#if 0
-    // This is currently disabled because sometimes on IA64 we need
-    //  to make call sites non-interruptible
-    // TODO: review this
-#ifdef _DEBUG
-    if(!executionAborted)
-    {
-        GcInfoDecoder _decoder2(
-                m_GcInfoAddress,
-                DECODE_INTERRUPTIBILITY,
-                m_InstructionOffset
-                );
-
-        _ASSERTE(_decoder2.IsInterruptible());
-    }
-#endif
-#endif
 
     // Normalized break offset
     // Relative to interruptible ranges #if PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
@@ -1358,11 +1341,15 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
     _ASSERTE(regNum >= 0 && regNum <= 16);
     _ASSERTE(regNum != 4);  // rsp
 
+#ifdef FEATURE_REDHAWK
+    PTR_UIntNative* ppRax = &pRD->pRax;
+    if (regNum > 4) regNum--; // rsp is skipped in Redhawk RegDisplay
+#else
     // The fields of KNONVOLATILE_CONTEXT_POINTERS are in the same order as
     // the processor encoding numbers.
 
-    ULONGLONG **ppRax;
-    ppRax = &pRD->pCurrentContextPointers->Rax;
+    ULONGLONG **ppRax = &pRD->pCurrentContextPointers->Rax;
+#endif
 
     return (OBJECTREF*)*(ppRax + regNum);
 }
@@ -1379,8 +1366,7 @@ OBJECTREF* GcInfoDecoder::GetCapturedRegister(
     // The fields of CONTEXT are in the same order as
     // the processor encoding numbers.
 
-    ULONGLONG *pRax;
-    pRax = &pRD->pCurrentContext->Rax;
+    ULONGLONG *pRax = &pRD->pCurrentContext->Rax;
 
     return (OBJECTREF*)(pRax + regNum);
 }
@@ -1412,7 +1398,7 @@ bool GcInfoDecoder::IsScratchStackSlot(INT32 spOffset, GcStackSlotBase spBase, P
 #ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
     _ASSERTE( m_Flags & DECODE_GC_LIFETIMES );
 
-    ULONGLONG pSlot = (ULONGLONG) GetStackSlot(spOffset, spBase, pRD);
+    TADDR pSlot = (TADDR) GetStackSlot(spOffset, spBase, pRD);
     _ASSERTE(pSlot >= pRD->SP);
 
     return (pSlot < pRD->SP + m_SizeOfStackOutgoingAndScratchArea);
@@ -1524,8 +1510,7 @@ OBJECTREF* GcInfoDecoder::GetCapturedRegister(
     // The fields of CONTEXT are in the same order as
     // the processor encoding numbers.
 
-    ULONG *pR0;
-    pR0 = &pRD->pCurrentContext->R0;
+    ULONG *pR0 = &pRD->pCurrentContext->R0;
 
     return (OBJECTREF*)(pR0 + regNum);
 }
@@ -1546,7 +1531,7 @@ bool GcInfoDecoder::IsScratchStackSlot(INT32 spOffset, GcStackSlotBase spBase, P
 #ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
     _ASSERTE( m_Flags & DECODE_GC_LIFETIMES );
 
-    DWORD pSlot = (DWORD) GetStackSlot(spOffset, spBase, pRD);
+    TADDR pSlot = (TADDR) GetStackSlot(spOffset, spBase, pRD);
     _ASSERTE(pSlot >= pRD->SP);
 
     return (pSlot < pRD->SP + m_SizeOfStackOutgoingAndScratchArea);
@@ -1637,7 +1622,7 @@ bool GcInfoDecoder::IsScratchStackSlot(INT32 spOffset, GcStackSlotBase spBase, P
 #ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
     _ASSERTE( m_Flags & DECODE_GC_LIFETIMES );
 
-    ULONGLONG pSlot = (ULONGLONG) GetStackSlot(spOffset, spBase, pRD);
+    TADDR pSlot = (TADDR) GetStackSlot(spOffset, spBase, pRD);
     _ASSERTE(pSlot >= pRD->SP);
 
     return (pSlot < pRD->SP + m_SizeOfStackOutgoingAndScratchArea);
@@ -1695,8 +1680,7 @@ OBJECTREF* GcInfoDecoder::GetCapturedRegister(
     // The fields of CONTEXT are in the same order as
     // the processor encoding numbers.
 
-    DWORD64 *pX0;
-    pX0 = &pRD->pCurrentContext->X0;
+    DWORD64 *pX0 = &pRD->pCurrentContext->X0;
 
     return (OBJECTREF*)(pX0 + regNum);
 }
@@ -1753,7 +1737,7 @@ OBJECTREF* GcInfoDecoder::GetStackSlot(
 
     if( GC_SP_REL == spBase )
     {
-        pObjRef = (OBJECTREF*) ((SIZE_T)GetRegdisplaySP(pRD) + spOffset);
+        pObjRef = (OBJECTREF*) ((SIZE_T)pRD->SP + spOffset);
     }
     else if( GC_CALLER_SP_REL == spBase )
     {
