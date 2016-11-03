@@ -939,6 +939,7 @@ public:
                                      // -- is a volatile block operation
 #define GTF_BLK_UNALIGNED 0x02000000 // GT_ASG, GT_STORE_BLK, GT_STORE_OBJ, GT_STORE_DYNBLK
                                      // -- is an unaligned block operation
+#define GTF_BLK_INIT 0x01000000 // GT_ASG, GT_STORE_BLK, GT_STORE_OBJ, GT_STORE_DYNBLK -- is an init block operation
 
 #define GTF_OVERFLOW 0x10000000 // GT_ADD, GT_SUB, GT_MUL, - Need overflow check
                                 // GT_ASG_ADD, GT_ASG_SUB,
@@ -1137,21 +1138,6 @@ public:
     static bool OperIsAddrMode(genTreeOps gtOper)
     {
         return (gtOper == GT_LEA);
-    }
-
-    static bool OperIsInitVal(genTreeOps gtOper)
-    {
-        return (gtOper == GT_INIT_VAL);
-    }
-
-    bool OperIsInitVal() const
-    {
-        return OperIsInitVal(OperGet());
-    }
-
-    bool IsConstInitVal()
-    {
-        return (gtOper == GT_CNS_INT) || (OperIsInitVal() && (gtGetOp1()->gtOper == GT_CNS_INT));
     }
 
     bool OperIsBlkOp();
@@ -4180,19 +4166,6 @@ struct GenTreeObj : public GenTreeBlk
             // Let's assert it just to be safe.
             noway_assert(roundUp(gtBlkSize, REGSIZE_BYTES) == gtBlkSize);
         }
-        else
-        {
-            genTreeOps newOper = GT_BLK;
-            if (gtOper == GT_STORE_OBJ)
-            {
-                newOper = GT_STORE_BLK;
-            }
-            else
-            {
-                assert(gtOper == GT_OBJ);
-            }
-            SetOper(newOper);
-        }
     }
 
     void CopyGCInfo(GenTreeObj* srcObj)
@@ -4855,31 +4828,34 @@ inline bool GenTree::OperIsDynBlkOp()
     return false;
 }
 
-inline bool GenTree::OperIsInitBlkOp()
-{
-    if (!OperIsBlkOp())
-    {
-        return false;
-    }
-#ifndef LEGACY_BACKEND
-    GenTree* src;
-    if (gtOper == GT_ASG)
-    {
-        src = gtGetOp2();
-    }
-    else
-    {
-        src = AsBlk()->Data()->gtSkipReloadOrCopy();
-    }
-#else  // LEGACY_BACKEND
-    GenTree* src = gtGetOp2();
-#endif // LEGACY_BACKEND
-    return src->OperIsInitVal() || src->OperIsConst();
-}
-
 inline bool GenTree::OperIsCopyBlkOp()
 {
-    return OperIsBlkOp() && !OperIsInitBlkOp();
+    if (gtOper == GT_ASG)
+    {
+        return (varTypeIsStruct(gtGetOp1()) && ((gtFlags & GTF_BLK_INIT) == 0));
+    }
+#ifndef LEGACY_BACKEND
+    else if (OperIsStoreBlk())
+    {
+        return ((gtFlags & GTF_BLK_INIT) == 0);
+    }
+#endif
+    return false;
+}
+
+inline bool GenTree::OperIsInitBlkOp()
+{
+    if (gtOper == GT_ASG)
+    {
+        return (varTypeIsStruct(gtGetOp1()) && ((gtFlags & GTF_BLK_INIT) != 0));
+    }
+#ifndef LEGACY_BACKEND
+    else if (OperIsStoreBlk())
+    {
+        return ((gtFlags & GTF_BLK_INIT) != 0);
+    }
+#endif
+    return false;
 }
 
 //------------------------------------------------------------------------

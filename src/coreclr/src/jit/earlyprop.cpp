@@ -237,8 +237,12 @@ bool Compiler::optEarlyPropRewriteTree(GenTreePtr tree)
         objectRefPtr = tree->gtOp.gtOp1;
         propKind     = optPropKind::OPK_ARRAYLEN;
     }
-    else if (tree->OperIsIndir())
+    else if ((tree->OperGet() == GT_IND) && !varTypeIsStruct(tree))
     {
+        // TODO-1stClassStructs: The above condition should apply equally to all indirections,
+        // but previously the implicit indirections due to a struct assignment were not
+        // considered, so we are currently limiting it to non-structs to preserve existing
+        // behavior.
         // optFoldNullCheck takes care of updating statement info if a null check is removed.
         optFoldNullCheck(tree);
 
@@ -254,7 +258,7 @@ bool Compiler::optEarlyPropRewriteTree(GenTreePtr tree)
                 return false;
             }
 
-            objectRefPtr = tree->AsIndir()->Addr();
+            objectRefPtr = tree->gtOp.gtOp1;
             propKind     = optPropKind::OPK_OBJ_GETTYPE;
         }
         else
@@ -511,8 +515,8 @@ void Compiler::optFoldNullCheck(GenTreePtr tree)
         return;
     }
 
-    assert(tree->OperIsIndir());
-    if (tree->AsIndir()->Addr()->OperGet() == GT_LCL_VAR)
+    assert(tree->OperGet() == GT_IND);
+    if (tree->gtGetOp1()->OperGet() == GT_LCL_VAR)
     {
         // Check if we have the pattern above and find the nullcheck node if we do.
 
