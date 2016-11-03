@@ -58,14 +58,15 @@ namespace System.Net.Http.Functional.Tests
             var transport = new MockTransportHandler();
             handler.InnerHandler = transport;
 
-            HttpResponseMessage response = await handler.TestSendAsync(new HttpRequestMessage(), CancellationToken.None);
+            using (HttpResponseMessage response = await handler.TestSendAsync(new HttpRequestMessage(), CancellationToken.None))
+            {
+                Assert.NotNull(response);
+                Assert.Equal(1, handler.SendAsyncCount);
+                Assert.Equal(1, transport.SendAsyncCount);
 
-            Assert.NotNull(response);
-            Assert.Equal(1, handler.SendAsyncCount);
-            Assert.Equal(1, transport.SendAsyncCount);
-
-            Assert.Throws<InvalidOperationException>(() => handler.InnerHandler = transport);
-            Assert.Equal(transport, handler.InnerHandler);
+                Assert.Throws<InvalidOperationException>(() => handler.InnerHandler = transport);
+                Assert.Equal(transport, handler.InnerHandler);
+            }
         }
 
         [Fact]
@@ -77,12 +78,13 @@ namespace System.Net.Http.Functional.Tests
             handler.InnerHandler = transport1;
             handler.InnerHandler = transport2;
 
-            HttpResponseMessage response = await handler.TestSendAsync(new HttpRequestMessage(), CancellationToken.None);
-
-            Assert.NotNull(response);
-            Assert.Equal(1, handler.SendAsyncCount);
-            Assert.Equal(0, transport1.SendAsyncCount);
-            Assert.Equal(1, transport2.SendAsyncCount);
+            using (HttpResponseMessage response = await handler.TestSendAsync(new HttpRequestMessage(), CancellationToken.None))
+            {
+                Assert.NotNull(response);
+                Assert.Equal(1, handler.SendAsyncCount);
+                Assert.Equal(0, transport1.SendAsyncCount);
+                Assert.Equal(1, transport2.SendAsyncCount);
+            }
         }
 
         [Fact]
