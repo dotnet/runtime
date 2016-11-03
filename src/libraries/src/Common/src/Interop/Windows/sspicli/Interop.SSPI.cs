@@ -228,7 +228,7 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe class SecBufferDesc
+        internal unsafe struct SecBufferDesc
         {
             public readonly int ulVersion;
             public readonly int cBuffers;
@@ -258,14 +258,14 @@ internal static partial class Interop
         internal static extern int EncryptMessage(
               ref CredHandle contextHandle,
               [In] uint qualityOfProtection,
-              [In, Out] SecBufferDesc inputOutput,
+              [In, Out] ref SecBufferDesc inputOutput,
               [In] uint sequenceNumber
               );
 
         [DllImport(Interop.Libraries.Sspi, ExactSpelling = true, SetLastError = true)]
         internal static unsafe extern int DecryptMessage(
               [In] ref CredHandle contextHandle,
-              [In, Out] SecBufferDesc inputOutput,
+              [In, Out] ref SecBufferDesc inputOutput,
               [In] uint sequenceNumber,
                    uint* qualityOfProtection
               );
@@ -293,11 +293,11 @@ internal static partial class Interop
         internal unsafe static extern int AcceptSecurityContext(
                   ref CredHandle credentialHandle,
                   [In] void* inContextPtr,
-                  [In] SecBufferDesc inputBuffer,
+                  [In] SecBufferDesc* inputBuffer,
                   [In] ContextFlags inFlags,
                   [In] Endianness endianness,
                   ref CredHandle outContextPtr,
-                  [In, Out] SecBufferDesc outputBuffer,
+                  [In, Out] ref SecBufferDesc outputBuffer,
                   [In, Out] ref ContextFlags attributes,
                   out long timeStamp
                   );
@@ -380,10 +380,10 @@ internal static partial class Interop
                   [In] ContextFlags inFlags,
                   [In] int reservedI,
                   [In] Endianness endianness,
-                  [In] SecBufferDesc inputBuffer,
+                  [In] SecBufferDesc* inputBuffer,
                   [In] int reservedII,
                   ref CredHandle outContextPtr,
-                  [In, Out] SecBufferDesc outputBuffer,
+                  [In, Out] ref SecBufferDesc outputBuffer,
                   [In, Out] ref ContextFlags attributes,
                   out long timeStamp
                   );
@@ -391,13 +391,13 @@ internal static partial class Interop
         [DllImport(Interop.Libraries.Sspi, ExactSpelling = true, SetLastError = true)]
         internal unsafe static extern int CompleteAuthToken(
                   [In] void* inContextPtr,
-                  [In, Out] SecBufferDesc inputBuffers
+                  [In, Out] ref SecBufferDesc inputBuffers
                   );
 
         [DllImport(Interop.Libraries.Sspi, ExactSpelling = true, SetLastError = true)]
         internal unsafe static extern int ApplyControlToken(
           [In] void* inContextPtr,
-          [In, Out] SecBufferDesc inputBuffers
+          [In, Out] ref SecBufferDesc inputBuffers
           );
 
         [DllImport(Interop.Libraries.Sspi, ExactSpelling = true, SetLastError = true)]

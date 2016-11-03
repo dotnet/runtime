@@ -300,19 +300,19 @@ namespace System.Net
                     switch (op)
                     {
                         case OP.Encrypt:
-                            errorCode = secModule.EncryptMessage(context, sdcInOut, sequenceNumber);
+                            errorCode = secModule.EncryptMessage(context, ref sdcInOut, sequenceNumber);
                             break;
 
                         case OP.Decrypt:
-                            errorCode = secModule.DecryptMessage(context, sdcInOut, sequenceNumber);
+                            errorCode = secModule.DecryptMessage(context, ref sdcInOut, sequenceNumber);
                             break;
 
                         case OP.MakeSignature:
-                            errorCode = secModule.MakeSignature(context, sdcInOut, sequenceNumber);
+                            errorCode = secModule.MakeSignature(context, ref sdcInOut, sequenceNumber);
                             break;
 
                         case OP.VerifySignature:
-                            errorCode = secModule.VerifySignature(context, sdcInOut, sequenceNumber);
+                            errorCode = secModule.VerifySignature(context, ref sdcInOut, sequenceNumber);
                             break;
 
                         default:

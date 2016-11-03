@@ -70,13 +70,13 @@ namespace System.Net
             return SafeDeleteContext.InitializeSecurityContext(ref credential, ref context, targetName, inFlags, endianness, null, inputBuffers, outputBuffer, ref outFlags);
         }
 
-        public int EncryptMessage(SafeDeleteContext context, Interop.SspiCli.SecBufferDesc inputOutput, uint sequenceNumber)
+        public int EncryptMessage(SafeDeleteContext context, ref Interop.SspiCli.SecBufferDesc inputOutput, uint sequenceNumber)
         {
             try
             {
                 bool ignore = false;
                 context.DangerousAddRef(ref ignore);
-                return Interop.SspiCli.EncryptMessage(ref context._handle, 0, inputOutput, sequenceNumber);
+                return Interop.SspiCli.EncryptMessage(ref context._handle, 0, ref inputOutput, sequenceNumber);
             }
             finally
             {
@@ -84,14 +84,14 @@ namespace System.Net
             }
         }
 
-        public unsafe int DecryptMessage(SafeDeleteContext context, Interop.SspiCli.SecBufferDesc inputOutput,
+        public unsafe int DecryptMessage(SafeDeleteContext context, ref Interop.SspiCli.SecBufferDesc inputOutput,
             uint sequenceNumber)
         {
             try
             {
                 bool ignore = false;
                 context.DangerousAddRef(ref ignore);
-                return Interop.SspiCli.DecryptMessage(ref context._handle, inputOutput, sequenceNumber, null);
+                return Interop.SspiCli.DecryptMessage(ref context._handle, ref inputOutput, sequenceNumber, null);
             }
             finally
             {
@@ -99,12 +99,12 @@ namespace System.Net
             }
         }
 
-        public int MakeSignature(SafeDeleteContext context, Interop.SspiCli.SecBufferDesc inputOutput, uint sequenceNumber)
+        public int MakeSignature(SafeDeleteContext context, ref Interop.SspiCli.SecBufferDesc inputOutput, uint sequenceNumber)
         {
             throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
         }
 
-        public int VerifySignature(SafeDeleteContext context, Interop.SspiCli.SecBufferDesc inputOutput, uint sequenceNumber)
+        public int VerifySignature(SafeDeleteContext context, ref Interop.SspiCli.SecBufferDesc inputOutput, uint sequenceNumber)
         {
             throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
         }
