@@ -20,8 +20,7 @@
     <CommonPathXPath>$(CommonPath)\System\Xml\XPath</CommonPathXPath>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\System.Xml.XPath.XmlDocument\pkg\System.Xml.XPath.XmlDocument.pkgproj" />
-    <ProjectReference Include="..\..\..\..\System.Xml.XPath\pkg\System.Xml.XPath.pkgproj" />
+    <ProjectReference Include="..\..\..\..\System.Private.Xml\pkg\System.Private.Xml.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <!-- XPath.XmlDocument navigator -->

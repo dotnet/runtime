@@ -124,7 +124,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\System.Xml.ReaderWriter\pkg\System.Xml.ReaderWriter.pkgproj" />
     <ProjectReference Include="..\..\..\System.Xml.XmlDocument\pkg\System.Xml.XmlDocument.pkgproj" />
-    <ProjectReference Include="..\..\..\System.Xml.XPath.XmlDocument\pkg\System.Xml.XPath.XmlDocument.pkgproj" />
+    <ProjectReference Include="..\..\..\System.Private.Xml\pkg\System.Private.Xml.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
