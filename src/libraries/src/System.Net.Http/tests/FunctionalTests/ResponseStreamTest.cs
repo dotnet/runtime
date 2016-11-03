@@ -30,19 +30,21 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetStreamAsync_ReadToEnd_Success()
         {
             var customHeaderValue = Guid.NewGuid().ToString("N");
-            var client = new HttpClient();
-            client.DefaultRequestHeaders.Add("X-ResponseStreamTest", customHeaderValue);
-
-            Stream stream = await client.GetStreamAsync(Configuration.Http.RemoteEchoServer);
-            using (var reader = new StreamReader(stream))
+            using (var client = new HttpClient())
             {
-                string responseBody = reader.ReadToEnd();
-                _output.WriteLine(responseBody);
+                client.DefaultRequestHeaders.Add("X-ResponseStreamTest", customHeaderValue);
 
-                // Calling GetStreamAsync() means we don't have access to the HttpResponseMessage.
-                // So, we can't use the MD5 hash validation to verify receipt of the response body.
-                // For this test, we can use a simpler verification of a custom header echo'ing back.
-                Assert.True(responseBody.Contains(customHeaderValue));
+                Stream stream = await client.GetStreamAsync(Configuration.Http.RemoteEchoServer);
+                using (var reader = new StreamReader(stream))
+                {
+                    string responseBody = reader.ReadToEnd();
+                    _output.WriteLine(responseBody);
+
+                    // Calling GetStreamAsync() means we don't have access to the HttpResponseMessage.
+                    // So, we can't use the MD5 hash validation to verify receipt of the response body.
+                    // For this test, we can use a simpler verification of a custom header echo'ing back.
+                    Assert.True(responseBody.Contains(customHeaderValue));
+                }
             }
         }
 
@@ -50,43 +52,42 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsync_UseResponseHeadersReadAndCallLoadIntoBuffer_Success()
         {
-            var client = new HttpClient();
-
-            HttpResponseMessage response =
-                await client.GetAsync(Configuration.Http.RemoteEchoServer, HttpCompletionOption.ResponseHeadersRead);
-            await response.Content.LoadIntoBufferAsync();
-
-            string responseBody = await response.Content.ReadAsStringAsync();
-            _output.WriteLine(responseBody);
-            TestHelper.VerifyResponseBody(
-                responseBody,
-                response.Content.Headers.ContentMD5,
-                false,
-                null);
-        }
-
-        [OuterLoop] // TODO: Issue #11345
-        [Fact]
-        public async Task GetAsync_UseResponseHeadersReadAndCopyToMemoryStream_Success()
-        {
-            var client = new HttpClient();
-
-            HttpResponseMessage response =
-                await client.GetAsync(Configuration.Http.RemoteEchoServer, HttpCompletionOption.ResponseHeadersRead);
-
-            var memoryStream = new MemoryStream();
-            await response.Content.CopyToAsync(memoryStream);
-            memoryStream.Position = 0;
-
-            using (var reader = new StreamReader(memoryStream))
+            using (var client = new HttpClient())
+            using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer, HttpCompletionOption.ResponseHeadersRead))
             {
-                string responseBody = reader.ReadToEnd();
+                await response.Content.LoadIntoBufferAsync();
+
+                string responseBody = await response.Content.ReadAsStringAsync();
                 _output.WriteLine(responseBody);
                 TestHelper.VerifyResponseBody(
                     responseBody,
                     response.Content.Headers.ContentMD5,
                     false,
                     null);
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Fact]
+        public async Task GetAsync_UseResponseHeadersReadAndCopyToMemoryStream_Success()
+        {
+            using (var client = new HttpClient())
+            using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer, HttpCompletionOption.ResponseHeadersRead))
+            {
+                var memoryStream = new MemoryStream();
+                await response.Content.CopyToAsync(memoryStream);
+                memoryStream.Position = 0;
+
+                using (var reader = new StreamReader(memoryStream))
+                {
+                    string responseBody = reader.ReadToEnd();
+                    _output.WriteLine(responseBody);
+                    TestHelper.VerifyResponseBody(
+                        responseBody,
+                        response.Content.Headers.ContentMD5,
+                        false,
+                        null);
+                }
             }
         }
 

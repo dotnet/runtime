@@ -34,8 +34,8 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
         {
             var handler = new WinHttpHandler();
             using (var client = new HttpClient(handler))
+            using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.SecureRemoteEchoServer))
             {
-                HttpResponseMessage response = await client.GetAsync(Configuration.Http.SecureRemoteEchoServer);
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 Assert.False(_validationCallbackHistory.WasCalled);
             }
@@ -48,8 +48,8 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             var handler = new WinHttpHandler();
             handler.ServerCertificateValidationCallback = CustomServerCertificateValidationCallback;
             using (var client = new HttpClient(handler))
+            using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer))
             {
-                HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer);
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 Assert.False(_validationCallbackHistory.WasCalled);
             }
@@ -62,8 +62,8 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             var handler = new WinHttpHandler();
             handler.ServerCertificateValidationCallback = CustomServerCertificateValidationCallback;
             using (var client = new HttpClient(handler))
+            using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.SecureRemoteEchoServer))
             {
-                HttpResponseMessage response = await client.GetAsync(Configuration.Http.SecureRemoteEchoServer);
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 Assert.True(_validationCallbackHistory.WasCalled);
                 
@@ -80,8 +80,8 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             var handler = new WinHttpHandler();
             handler.ServerCertificateValidationCallback = CustomServerCertificateValidationCallback;
             using (var client = new HttpClient(handler))
+            using (HttpResponseMessage response = await client.GetAsync(uri))
             {
-                HttpResponseMessage response = await client.GetAsync(uri);
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 Assert.True(_validationCallbackHistory.WasCalled);
                 

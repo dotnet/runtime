@@ -58,8 +58,10 @@ namespace System.Net.Http.Functional.Tests
                     Configuration.Http.SecureRemoteEchoServer,
                     new StringContent("This is a test"));
                 Task.WaitAll(proxyTask, responseTask);
-
-                Assert.Equal(HttpStatusCode.ProxyAuthenticationRequired, responseTask.Result.StatusCode);
+                using (responseTask.Result)
+                {
+                    Assert.Equal(HttpStatusCode.ProxyAuthenticationRequired, responseTask.Result.StatusCode);
+                }
             }
         }
 

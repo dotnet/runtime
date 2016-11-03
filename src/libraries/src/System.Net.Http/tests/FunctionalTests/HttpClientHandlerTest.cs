@@ -158,24 +158,28 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void Properties_Get_CountIsZero()
         {
-            var handler = new HttpClientHandler();
-            IDictionary<String, object> dict = handler.Properties;
-            Assert.Same(dict, handler.Properties);
-            Assert.Equal(0, dict.Count);
+            using (var handler = new HttpClientHandler())
+            {
+                IDictionary<String, object> dict = handler.Properties;
+                Assert.Same(dict, handler.Properties);
+                Assert.Equal(0, dict.Count);
+            }
         }
 
         [Fact]
         public void Properties_AddItemToDictionary_ItemPresent()
         {
-            var handler = new HttpClientHandler();
-            IDictionary<String, object> dict = handler.Properties;
+            using (var handler = new HttpClientHandler())
+            {
+                IDictionary<String, object> dict = handler.Properties;
 
-            var item = new Object();
-            dict.Add("item", item);
+                var item = new Object();
+                dict.Add("item", item);
 
-            object value;
-            Assert.True(dict.TryGetValue("item", out value));
-            Assert.Equal(item, value);
+                object value;
+                Assert.True(dict.TryGetValue("item", out value));
+                Assert.Equal(item, value);
+            }
         }
 
         [OuterLoop] // TODO: Issue #11345
@@ -183,17 +187,15 @@ namespace System.Net.Http.Functional.Tests
         public async Task SendAsync_SimpleGet_Success(Uri remoteServer)
         {
             using (var client = new HttpClient())
+            using (HttpResponseMessage response = await client.GetAsync(remoteServer))
             {
-                using (HttpResponseMessage response = await client.GetAsync(remoteServer))
-                {
-                    string responseContent = await response.Content.ReadAsStringAsync();
-                    _output.WriteLine(responseContent);                    
-                    TestHelper.VerifyResponseBody(
-                        responseContent,
-                        response.Content.Headers.ContentMD5,
-                        false,
-                        null);                    
-                }
+                string responseContent = await response.Content.ReadAsStringAsync();
+                _output.WriteLine(responseContent);
+                TestHelper.VerifyResponseBody(
+                    responseContent,
+                    response.Content.Headers.ContentMD5,
+                    false,
+                    null);
             }
         }
 
@@ -231,34 +233,29 @@ namespace System.Net.Http.Functional.Tests
         {
             using (var client = new HttpClient())
             {
-                HttpResponseMessage response;
                 for (int i = 0; i < 3; i++)
                 {
-                    response = await client.GetAsync(Configuration.Http.RemoteEchoServer);
-                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                    response.Dispose();
+                    using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer))
+                    {
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    }
                 }
             }
         }
-        
+
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task GetAsync_ResponseContentAfterClientAndHandlerDispose_Success()
         {
-            HttpResponseMessage response = null;
-            using (var handler = new HttpClientHandler())
-            using (var client = new HttpClient(handler))
+            using (var client = new HttpClient())
+            using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.SecureRemoteEchoServer))
             {
-                response = await client.GetAsync(Configuration.Http.SecureRemoteEchoServer);
+                client.Dispose();
+                Assert.NotNull(response);
+                string responseContent = await response.Content.ReadAsStringAsync();
+                _output.WriteLine(responseContent);
+                TestHelper.VerifyResponseBody(responseContent, response.Content.Headers.ContentMD5, false, null);
             }
-            Assert.NotNull(response);
-            string responseContent = await response.Content.ReadAsStringAsync();
-            _output.WriteLine(responseContent);                    
-            TestHelper.VerifyResponseBody(
-                responseContent,
-                response.Content.Headers.ContentMD5,
-                false,
-                null);                    
         }
 
         [OuterLoop] // TODO: Issue #11345
@@ -1775,15 +1772,18 @@ namespace System.Net.Http.Functional.Tests
                 Task<string> responseStringTask = responseTask.ContinueWith(t => t.Result.Content.ReadAsStringAsync(), TaskScheduler.Default).Unwrap();
                 Task.WaitAll(proxyTask, responseTask, responseStringTask);
 
-                TestHelper.VerifyResponseBody(responseStringTask.Result, responseTask.Result.Content.Headers.ContentMD5, false, null);
-                Assert.Equal(Encoding.ASCII.GetString(proxyTask.Result.ResponseContent), responseStringTask.Result);
+                using (responseTask.Result)
+                {
+                    TestHelper.VerifyResponseBody(responseStringTask.Result, responseTask.Result.Content.Headers.ContentMD5, false, null);
+                    Assert.Equal(Encoding.ASCII.GetString(proxyTask.Result.ResponseContent), responseStringTask.Result);
 
-                NetworkCredential nc = creds?.GetCredential(proxyUrl, BasicAuth);
-                string expectedAuth =
-                    nc == null || nc == CredentialCache.DefaultCredentials ? null :
-                    string.IsNullOrEmpty(nc.Domain) ? $"{nc.UserName}:{nc.Password}" :
-                    $"{nc.Domain}\\{nc.UserName}:{nc.Password}";
-                Assert.Equal(expectedAuth, proxyTask.Result.AuthenticationHeaderValue);
+                    NetworkCredential nc = creds?.GetCredential(proxyUrl, BasicAuth);
+                    string expectedAuth =
+                        nc == null || nc == CredentialCache.DefaultCredentials ? null :
+                        string.IsNullOrEmpty(nc.Domain) ? $"{nc.UserName}:{nc.Password}" :
+                        $"{nc.Domain}\\{nc.UserName}:{nc.Password}";
+                    Assert.Equal(expectedAuth, proxyTask.Result.AuthenticationHeaderValue);
+                }
             }
         }
 
@@ -1819,8 +1819,10 @@ namespace System.Net.Http.Functional.Tests
             {
                 Task<HttpResponseMessage> responseTask = client.GetAsync(Configuration.Http.RemoteEchoServer);
                 Task.WaitAll(proxyTask, responseTask);
-
-                Assert.Equal(HttpStatusCode.ProxyAuthenticationRequired, responseTask.Result.StatusCode);
+                using (responseTask.Result)
+                {
+                    Assert.Equal(HttpStatusCode.ProxyAuthenticationRequired, responseTask.Result.StatusCode);
+                }
             }
         }        
 
