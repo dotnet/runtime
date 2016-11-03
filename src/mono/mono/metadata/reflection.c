@@ -2162,6 +2162,14 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc
 		return NULL;
 	}
 
+	guint gtd_type_argc = mono_class_get_generic_container (klass)->type_argc;
+	if (gtd_type_argc != type_argc) {
+		mono_loader_unlock ();
+		mono_error_set_argument (error, "types", "The generic type definition needs %d type arguments, but was instantiated with %d ", gtd_type_argc, type_argc);
+		return NULL;
+	}
+
+
 	if (klass->wastypebuilder)
 		is_dynamic = TRUE;
 
