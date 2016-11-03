@@ -850,7 +850,7 @@
     ]
   },
   {
-    "Name": "System.Net.Http.Listener",
+    "Name": "System.Net.HttpListener",
     "Description": "Provides a simple, programmatically controlled HTTP protocol listener.",
     "CommonTypes": [
       "System.Net.HttpListener"

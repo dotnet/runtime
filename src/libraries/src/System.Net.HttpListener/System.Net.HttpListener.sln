@@ -3,17 +3,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Http.Listener", "src\System.Net.Http.Listener.csproj", "{53D09AF4-0C13-4197-B8AD-9746F0374E88}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.HttpListener", "src\System.Net.HttpListener.csproj", "{53D09AF4-0C13-4197-B8AD-9746F0374E88}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{1024FD17-C9E5-43BE-BF47-B8EA54DAF800}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{1849F514-5EED-403D-848E-74AFE684C402}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Http.Listener", "ref\System.Net.Http.Listener.csproj", "{C6A5999E-11CD-4213-AA4D-D3BA984F9CEA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.HttpListener", "ref\System.Net.HttpListener.csproj", "{C6A5999E-11CD-4213-AA4D-D3BA984F9CEA}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{43A392F6-22A0-4139-A4CD-B5CB6BFE7590}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Http.Listener.Tests", "tests\System.Net.Http.Listener.Tests.csproj", "{851A40FE-7F07-415D-8592-5FE2096E84D3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.HttpListener.Tests", "tests\System.Net.HttpListener.Tests.csproj", "{851A40FE-7F07-415D-8592-5FE2096E84D3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

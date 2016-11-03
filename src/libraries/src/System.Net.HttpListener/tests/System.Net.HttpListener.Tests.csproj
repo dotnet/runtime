@@ -16,8 +16,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <ItemGroup>
-    <ProjectReference Include="..\pkg\System.Net.Http.Listener.pkgproj">
-      <Name>System.Net.Http.Listener</Name>
+    <ProjectReference Include="..\pkg\System.Net.HttpListener.pkgproj">
+      <Name>System.Net.HttpListener</Name>
       <Project>{53D09AF4-0C13-4197-B8AD-9746F0374E88}</Project>
     </ProjectReference>
   </ItemGroup>

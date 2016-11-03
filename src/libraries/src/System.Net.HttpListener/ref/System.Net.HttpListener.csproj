@@ -8,7 +8,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.7_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.7_Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="System.Net.Http.Listener.cs" />
+    <Compile Include="System.Net.HttpListener.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
