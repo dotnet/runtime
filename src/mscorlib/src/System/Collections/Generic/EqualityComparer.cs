@@ -301,7 +301,7 @@ namespace System.Collections.Generic
     // We use NonRandomizedStringEqualityComparer as default comparer as it doesnt use the randomized string hashing which 
     // keep the perofrmance not affected till we hit collision threshold and then we switch to the comparer which is using 
     // randomized string hashing GenericEqualityComparer<string>
-
+    [Serializable]
     internal class NonRandomizedStringEqualityComparer : GenericEqualityComparer<string> {
         static IEqualityComparer<string> s_nonRandomizedComparer;
         
