@@ -2323,8 +2323,7 @@ public:
         DNER_VMNeedsStackAddr,
         DNER_LiveInOutOfHandler,
         DNER_LiveAcrossUnmanagedCall,
-        DNER_BlockOp,     // Is read or written via a block operation that explicitly takes the address.
-        DNER_IsStructArg, // Is a struct passed as an argument in a way that requires a stack location.
+        DNER_BlockOp, // Is read or written via a block operation that explicitly takes the address.
 #ifdef JIT32_GCENCODER
         DNER_PinningRef,
 #endif
@@ -4562,7 +4561,6 @@ private:
     GenTreePtr fgMorphGetStructAddr(GenTreePtr* pTree, CORINFO_CLASS_HANDLE clsHnd, bool isRValue = false);
     GenTreePtr fgMorphBlkNode(GenTreePtr tree, bool isDest);
     GenTreePtr fgMorphBlockOperand(GenTreePtr tree, var_types asgType, unsigned blockWidth, bool isDest);
-    void fgMorphUnsafeBlk(GenTreeObj* obj);
     GenTreePtr fgMorphCopyBlock(GenTreePtr tree);
     GenTreePtr fgMorphForRegisterFP(GenTreePtr tree);
     GenTreePtr fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac = nullptr);
