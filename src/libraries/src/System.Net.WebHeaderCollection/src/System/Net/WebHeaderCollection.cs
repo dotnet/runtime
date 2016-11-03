@@ -471,6 +471,14 @@ namespace System.Net
             }
         }
 
+        public override KeysCollection Keys
+        {
+            get
+            {
+                return InnerCollection.Keys;
+            }
+        }
+
         public override string[] AllKeys
         {
             get
