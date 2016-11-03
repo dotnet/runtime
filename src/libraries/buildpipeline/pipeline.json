@@ -230,7 +230,8 @@
           },
           "ReportingParameters": {
             "TargetQueue": null,
-            "Type": "build/tests/"
+            "Type": "build/tests/",
+            "TargetTestCategory": null
           }
         },
         {
@@ -241,7 +242,8 @@
           },
           "ReportingParameters": {
             "TargetQueue": null,
-            "Type": "build/tests/"
+            "Type": "build/tests/",
+            "TargetTestCategory": null
           }
         },
         {
@@ -257,7 +259,8 @@
           },
           "ReportingParameters": {
             "TargetQueue": null,
-            "Type": "build/tests/"
+            "Type": "build/tests/",
+            "TargetTestCategory": null
           }
         },
         {
@@ -272,7 +275,8 @@
           },
           "ReportingParameters": {
             "TargetQueue": null,
-            "Type": "build/tests/"
+            "Type": "build/tests/",
+            "TargetTestCategory": null
           }
         },
         {
@@ -287,7 +291,8 @@
           },
           "ReportingParameters": {
             "TargetQueue": null,
-            "Type": "build/tests/"
+            "Type": "build/tests/",
+            "TargetTestCategory": null
           }
         },
         {
@@ -298,7 +303,8 @@
           },
           "ReportingParameters": {
             "TargetQueue": null,
-            "Type": "build/tests/"
+            "Type": "build/tests/",
+            "TargetTestCategory": null
           }
         },
         {
@@ -309,7 +315,8 @@
           },
           "ReportingParameters": {
             "TargetQueue": null,
-            "Type": "build/tests/"
+            "Type": "build/tests/",
+            "TargetTestCategory": null
           }
         }
       ],
