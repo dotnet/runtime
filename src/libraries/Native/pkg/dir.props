@@ -20,16 +20,4 @@
     <Alpine343NativePath Condition="'$(Alpine343NativePath)' == ''">$(LinuxNativePath)</Alpine343NativePath>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
   </PropertyGroup>
-
-  <!-- Add path globs specific to native binaries to exclude unnecessary files from packages. -->
-  <ItemGroup>
-    <SymbolFileExtensions Include=".dbg" />
-    <SymbolFileExtensions Include=".dwarf" />
-    <AdditionalLibPackageExcludes Include="@(SymbolFileExtensions->'%2A%2A\%2A%(Identity)')" />
-
-    <LibFileExtensions Include=".a" />
-    <LibFileExtensions Include=".so" />
-    <LibFileExtensions Include=".dylib" />
-    <AdditionalSymbolPackageExcludes Include="@(LibFileExtensions->'%2A%2A\%2A%(Identity)')" />
-  </ItemGroup>
 </Project>
