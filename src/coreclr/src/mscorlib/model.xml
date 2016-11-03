@@ -7189,12 +7189,6 @@
       <Member Name="RemoveAt(System.Int32)" />
       <Member Name="SetAt(System.Int32,System.Char)" />
     </Type>
-    <Type Name="System.Security.SecureStringMarshal">
-      <Member Name="SecureStringToCoTaskMemAnsi(System.Security.SecureString)" />
-      <Member Name="SecureStringToGlobalAllocAnsi(System.Security.SecureString)" />
-      <Member Name="SecureStringToCoTaskMemUnicode(System.Security.SecureString)" />
-      <Member Name="SecureStringToGlobalAllocUnicode(System.Security.SecureString)" />
-    </Type> 
    <Type Name="System.Security.SecurityCriticalAttribute">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.Security.SecurityCriticalScope)" />
