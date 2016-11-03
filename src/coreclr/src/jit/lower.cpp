@@ -1764,7 +1764,6 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
     // GC safe point, as the entry block trivially dominates every reachable block.
     assert((comp->compCurBB->bbFlags & BBF_GC_SAFE_POINT) || (comp->fgFirstBB->bbFlags & BBF_GC_SAFE_POINT));
 
-
     // If PInvokes are in-lined, we have to remember to execute PInvoke method epilog anywhere that
     // a method returns.  This is a case of caller method has both PInvokes and tail calls.
     if (comp->info.compCallUnmanaged)
