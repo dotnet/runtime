@@ -4,24 +4,20 @@
 
 using System.Collections.Generic;
 using System.Security.Authentication.ExtendedProtection;
-using System.Security.Permissions;
 
 namespace System.Net.Mail
 {
-    internal class SmtpNtlmAuthenticationModule : ISmtpAuthenticationModule
+    internal sealed class SmtpNtlmAuthenticationModule : ISmtpAuthenticationModule
     {
-        private Dictionary<object, NTAuthentication> _sessions = new Dictionary<object, NTAuthentication>();
+        private readonly Dictionary<object, NTAuthentication> _sessions = new Dictionary<object, NTAuthentication>();
 
         internal SmtpNtlmAuthenticationModule()
         {
         }
 
-        // Security this method will access NetworkCredential properties that demand UnmanagedCode and Environment Permission
-        [EnvironmentPermission(SecurityAction.Assert, Unrestricted = true)]
-        [SecurityPermission(SecurityAction.Assert, Flags = SecurityPermissionFlag.UnmanagedCode)]
         public Authorization Authenticate(string challenge, NetworkCredential credential, object sessionCookie, string spn, ChannelBinding channelBindingToken)
         {
-            NetEventSource.Enter(this, "Authenticate");
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, "Authenticate");
             try
             {
                 lock (_sessions)
@@ -55,7 +51,7 @@ namespace System.Net.Mail
             }
             finally
             {
-                NetEventSource.Exit(this, "Authenticate");
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this, "Authenticate");
             }
         }
 
