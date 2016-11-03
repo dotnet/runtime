@@ -6329,6 +6329,19 @@ namespace System.Runtime.Versioning
         public string FrameworkName { get { throw null; } }
     }
 }
+namespace System.Security.Cryptography
+{
+    public partial class CryptographicException : System.SystemException
+    {
+        public CryptographicException() { }
+        public CryptographicException(int hr) { }
+        protected CryptographicException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public CryptographicException(string message) { }
+        public CryptographicException(string message, System.Exception inner) { }
+        public CryptographicException(string format, string insert) { }
+    }
+}
+
 namespace System.Security
 {
     [System.AttributeUsageAttribute((System.AttributeTargets)(1), AllowMultiple=false, Inherited=false)]
