@@ -178,7 +178,7 @@ namespace System.Net.Security
                 emptySecBuffer->cbBuffer = 0;
                 emptySecBuffer->pvBuffer = IntPtr.Zero;
 
-                int errorCode = GlobalSSPI.SSPISecureChannel.EncryptMessage(securityContext, sdcInOut, 0);
+                int errorCode = GlobalSSPI.SSPISecureChannel.EncryptMessage(securityContext, ref sdcInOut, 0);
 
                 if (errorCode != 0)
                 {
@@ -216,7 +216,7 @@ namespace System.Net.Security
                     emptyBuffer->cbBuffer = 0;
                 }
 
-                Interop.SECURITY_STATUS errorCode = (Interop.SECURITY_STATUS)GlobalSSPI.SSPISecureChannel.DecryptMessage(securityContext, sdcInOut, 0);
+                Interop.SECURITY_STATUS errorCode = (Interop.SECURITY_STATUS)GlobalSSPI.SSPISecureChannel.DecryptMessage(securityContext, ref sdcInOut, 0);
 
                 // Decrypt may repopulate the sec buffers, likely with header + data + trailer + empty.
                 // We need to find the data.
