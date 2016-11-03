@@ -32,7 +32,7 @@
           }
         },
         {
-          "Name": "CoreFx-Linux-Product-Native-Trusted",
+          "Name": "DotNet-CoreFx-Trusted-Linux-Native",
           "Parameters": {
             "DockerTag": "fedora24_prereqs_v4"
           },
@@ -107,7 +107,7 @@
           }
         },
         {
-          "Name": "CoreFx-Linux-Product-Native-Trusted",
+          "Name": "DotNet-CoreFx-Trusted-Linux-Native",
           "Parameters": {
             "DockerTag": "alpine_prereqs"
           },
