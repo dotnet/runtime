@@ -288,6 +288,9 @@ namespace System.Diagnostics
         public void TraceInformation(string message) { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
         public void TraceInformation(string format, params object[] args) { }
+        public System.Collections.Specialized.StringDictionary Attributes { get { throw null ;} }
+        protected internal virtual string[] GetSupportedAttributes() { throw null; }
+        public void TraceTransfer(int id, string message, System.Guid relatedActivityId) { }
     }
     public partial class TraceSwitch : System.Diagnostics.Switch
     {
