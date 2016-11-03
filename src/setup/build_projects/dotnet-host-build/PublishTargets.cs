@@ -208,31 +208,34 @@ namespace Microsoft.DotNet.Host.Build
             foreach (string file in blobs)
             {
                 string name = Path.GetFileName(file);
-                string key = string.Empty;
 
-                foreach (string img in badges.Keys)
+                if (!name.EndsWith(".svg"))
                 {
-                    if ((name.StartsWith($"{img}")) && (name.EndsWith(".svg")))
-                    {
-                        bool fFound = true;
-
-                        if (name.StartsWith("sharedfx_Windows_arm64") && (!img.StartsWith("sharedfx_Windows_arm64")))
-                        {
-                            fFound = false;
-                        }
-
-                        if (fFound)
-                        {
-                            key = img;
-                            break;
-                        }
-                    }
+                    continue;
                 }
 
-                if (string.IsNullOrEmpty(key) == false)
+                // Include _ delimiter when matching to prevent finding both arm and arm64 badges
+                // when checking the arm badge file.
+                string[] matchingBadgeKeys = badges.Keys
+                    .Where(badgeName => name.StartsWith($"{badgeName}_"))
+                    .ToArray();
+
+                if (matchingBadgeKeys.Length == 1)
                 {
-                    badges[key] = true;
+                    badges[matchingBadgeKeys[0]] = true;
                 }
+                else if (matchingBadgeKeys.Length > 1)
+                {
+                    throw new BuildFailureException(
+                        $"Expected 0 or 1 badges matching file '{name}', " +
+                        $"found {matchingBadgeKeys.Length}: " +
+                        string.Join(", ", matchingBadgeKeys));
+                }
+            }
+
+            foreach (string unfinishedBadge in badges.Where(pair => !pair.Value).Select(pair => pair.Key))
+            {
+                Console.WriteLine($"Not all builds complete, badge not found: {unfinishedBadge}");
             }
 
             return badges.Keys.All(key => badges[key]);
