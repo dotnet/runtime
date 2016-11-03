@@ -814,18 +814,6 @@ namespace System.IO
             throw new PlatformNotSupportedException();
         }
 
-        /// <summary>
-        /// Asynchronously reads the bytes from the current stream and writes them to another
-        /// stream, using a specified buffer size.
-        /// </summary>
-        /// <param name="destination">The stream to which the contents of the current stream will be copied.</param>
-        /// <param name="bufferSize">The size, in bytes, of the buffer.</param>
-        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
-        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
-        {
-            return StreamHelpers.ArrayPoolCopyToAsync(this, destination, bufferSize, cancellationToken);
-        }
-
         /// <summary>Sets the current position of this stream to the given value.</summary>
         /// <param name="offset">The point relative to origin from which to begin seeking. </param>
         /// <param name="origin">
