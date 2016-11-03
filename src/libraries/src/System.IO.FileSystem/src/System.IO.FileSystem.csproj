@@ -70,9 +70,6 @@
     <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
       <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\IO\StreamHelpers.ArrayPoolCopy.cs">
-      <Link>Common\System\IO\StreamHelpers.ArrayPoolCopy.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\IO\StreamHelpers.CopyValidation.cs">
       <Link>Common\System\IO\StreamHelpers.CopyValidation.cs</Link>
     </Compile>
