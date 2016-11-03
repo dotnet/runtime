@@ -2918,6 +2918,11 @@ ValueNum Compiler::fgValueNumberArrIndexVal(GenTreePtr           tree,
 
 var_types ValueNumStore::TypeOfVN(ValueNum vn)
 {
+    if (vn == NoVN)
+    {
+        return TYP_UNDEF;
+    }
+
     Chunk* c = m_chunks.GetNoExpand(GetChunkNum(vn));
     return c->m_typ;
 }
@@ -2937,6 +2942,11 @@ var_types ValueNumStore::TypeOfVN(ValueNum vn)
 
 BasicBlock::loopNumber ValueNumStore::LoopOfVN(ValueNum vn)
 {
+    if (vn == NoVN)
+    {
+        return MAX_LOOP_NUM;
+    }
+
     Chunk* c = m_chunks.GetNoExpand(GetChunkNum(vn));
     return c->m_loopNum;
 }
@@ -3402,6 +3412,11 @@ bool ValueNumStore::IsVNFunc(ValueNum vn)
 
 bool ValueNumStore::GetVNFunc(ValueNum vn, VNFuncApp* funcApp)
 {
+    if (vn == NoVN)
+    {
+        return false;
+    }
+
     Chunk*   c      = m_chunks.GetNoExpand(GetChunkNum(vn));
     unsigned offset = ChunkOffset(vn);
     assert(offset < c->m_numUsed);
