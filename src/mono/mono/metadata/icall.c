@@ -1302,7 +1302,7 @@ get_caller_no_system_or_reflection (MonoMethod *m, gint32 no, gint32 ilo, gboole
 }
 
 static MonoReflectionType *
-type_from_parsed_name (MonoTypeNameParse *info, MonoBoolean ignoreCase, MonoError *error)
+type_from_parsed_name (MonoTypeNameParse *info, MonoBoolean ignoreCase, MonoAssembly **caller_assembly, MonoError *error)
 {
 	MonoMethod *m, *dest;
 
@@ -1353,6 +1353,7 @@ type_from_parsed_name (MonoTypeNameParse *info, MonoBoolean ignoreCase, MonoErro
 	} else {
 		g_warning (G_STRLOC);
 	}
+	*caller_assembly = assembly;
 
 	if (info->assembly.name)
 		assembly = mono_assembly_load (&info->assembly, assembly ? assembly->basedir : NULL, NULL);
@@ -1397,6 +1398,7 @@ ves_icall_System_Type_internal_from_name (MonoString *name,
 	MonoTypeNameParse info;
 	MonoReflectionType *type = NULL;
 	gboolean parsedOk;
+	MonoAssembly *caller_assembly;
 
 	char *str = mono_string_to_utf8_checked (name, &error);
 	if (!is_ok (&error))
@@ -1412,18 +1414,27 @@ ves_icall_System_Type_internal_from_name (MonoString *name,
 		goto leave;
 	}
 
-	type = type_from_parsed_name (&info, ignoreCase, &error);
+	type = type_from_parsed_name (&info, ignoreCase, &caller_assembly, &error);
 
-	mono_reflection_free_type_info (&info);
-
-	if (!is_ok (&error))
+	if (!is_ok (&error)) {
+		mono_reflection_free_type_info (&info);
 		goto leave;
+	}
 
-	if (type == NULL){
+	if (type == NULL) {
 		if (throwOnError) {
-			mono_error_set_type_load_name (&error, g_strdup (str), g_strdup (""), "");
-			goto leave;
+			char *tname = info.name_space ? g_strdup_printf ("%s.%s", info.name_space, info.name) : g_strdup (info.name);
+			char *aname;
+			if (info.assembly.name)
+				aname = mono_stringify_assembly_name (&info.assembly);
+			else if (caller_assembly)
+				aname = mono_stringify_assembly_name (mono_assembly_get_name (caller_assembly));
+			else
+				aname = g_strdup ("");
+			mono_error_set_type_load_name (&error, tname, aname, "");
 		}
+		mono_reflection_free_type_info (&info);
+		goto leave;
 	}
 	
 leave:
