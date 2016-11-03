@@ -1494,6 +1494,12 @@ mono_class_get_field_count (MonoClass *klass);
 void
 mono_class_set_field_count (MonoClass *klass, guint32 count);
 
+MonoMarshalType*
+mono_class_get_marshal_info (MonoClass *class);
+
+void
+mono_class_set_marshal_info (MonoClass *class, MonoMarshalType *marshal_info);
+
 /*Now that everything has been defined, let's include the inline functions */
 #include <mono/metadata/class-inlines.h>
 

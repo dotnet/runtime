@@ -222,3 +222,15 @@ mono_class_set_field_count (MonoClass *klass, guint32 count)
 		break;
 	}
 }
+
+MonoMarshalType*
+mono_class_get_marshal_info (MonoClass *class)
+{
+	return class->marshal_info;
+}
+
+void
+mono_class_set_marshal_info (MonoClass *class, MonoMarshalType *marshal_info)
+{
+	class->marshal_info = marshal_info;
+}
