@@ -22,18 +22,22 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void SendAsync_Null_ThrowsArgumentNullException()
         {
-            var invoker = new HttpMessageInvoker(new MockHandler());
-            Assert.Throws<ArgumentNullException>(() => { Task t = invoker.SendAsync(null, CancellationToken.None); });
+            using (var invoker = new HttpMessageInvoker(new MockHandler()))
+            {
+                Assert.Throws<ArgumentNullException>(() => { Task t = invoker.SendAsync(null, CancellationToken.None); });
+            }
         }
 
         [Fact]
         public async Task SendAsync_Request_HandlerInvoked()
         {
             var handler = new MockHandler();
-            var invoker = new HttpMessageInvoker(handler);
-            HttpResponseMessage response = await invoker.SendAsync(new HttpRequestMessage(), CancellationToken.None);
-            Assert.NotNull(response);
-            Assert.Equal(1, handler.SendAsyncCount);
+            using (var invoker = new HttpMessageInvoker(handler))
+            using (HttpResponseMessage response = await invoker.SendAsync(new HttpRequestMessage(), CancellationToken.None))
+            {
+                Assert.NotNull(response);
+                Assert.Equal(1, handler.SendAsyncCount);
+            }
         }
         
         [Fact]
