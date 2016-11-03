@@ -12419,14 +12419,21 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         if (compIsForInlining())
                         {
-                            if (impInlineInfo->iciBlock->isRunRarely())
+                            // If value class has GC fields, inform the inliner. It may choose to
+                            // bail out on the inline.
+                            DWORD typeFlags = info.compCompHnd->getClassAttribs(resolvedToken.hClass);
+                            if ((typeFlags & CORINFO_FLG_CONTAINS_GC_PTR) != 0)
                             {
-                                // If value class has GC fields, inform
-                                // the inliner. It may choose to bail out
-                                // on the inline, if the call site is
-                                // rare.
-                                DWORD typeFlags = info.compCompHnd->getClassAttribs(resolvedToken.hClass);
-                                if ((typeFlags & CORINFO_FLG_CONTAINS_GC_PTR) != 0)
+                                compInlineResult->Note(InlineObservation::CALLEE_HAS_GC_STRUCT);
+                                if (compInlineResult->IsFailure())
+                                {
+                                    return;
+                                }
+
+                                // Do further notification in the case where the call site is rare;
+                                // some policies do not track the relative hotness of call sites for
+                                // "always" inline cases.
+                                if (impInlineInfo->iciBlock->isRunRarely())
                                 {
                                     compInlineResult->Note(InlineObservation::CALLSITE_RARE_GC_STRUCT);
                                     if (compInlineResult->IsFailure())
@@ -17478,20 +17485,28 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
 
         lclVarInfo[i + argCnt].lclVerTypeInfo = verParseArgSigToTypeInfo(&methInfo->locals, localsSig);
 
-        // If this local is a struct type with GC fields, inform the
-        // inliner. It may choose to bail out on the inline, if the call
-        // site is rare.
-        if (pInlineInfo->iciBlock->isRunRarely())
+        // If this local is a struct type with GC fields, inform the inliner. It may choose to bail
+        // out on the inline.
+        if (type == TYP_STRUCT)
         {
-            if (type == TYP_STRUCT)
+            CORINFO_CLASS_HANDLE lclHandle = lclVarInfo[i + argCnt].lclVerTypeInfo.GetClassHandle();
+            DWORD                typeFlags = info.compCompHnd->getClassAttribs(lclHandle);
+            if ((typeFlags & CORINFO_FLG_CONTAINS_GC_PTR) != 0)
             {
-                CORINFO_CLASS_HANDLE lclHandle = lclVarInfo[i + argCnt].lclVerTypeInfo.GetClassHandle();
-                DWORD                typeFlags = info.compCompHnd->getClassAttribs(lclHandle);
-                if ((typeFlags & CORINFO_FLG_CONTAINS_GC_PTR) != 0)
+                inlineResult->Note(InlineObservation::CALLEE_HAS_GC_STRUCT);
+                if (inlineResult->IsFailure())
+                {
+                    return;
+                }
+
+                // Do further notification in the case where the call site is rare; some policies do
+                // not track the relative hotness of call sites for "always" inline cases.
+                if (pInlineInfo->iciBlock->isRunRarely())
                 {
                     inlineResult->Note(InlineObservation::CALLSITE_RARE_GC_STRUCT);
                     if (inlineResult->IsFailure())
                     {
+
                         return;
                     }
                 }
