@@ -69,7 +69,7 @@ Daily Builds
 [win-x64-zip-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/Binaries/Latest/dotnet-win-x64.latest.zip
 
 [win-x86-build-badge]: https://mseng.visualstudio.com/_apis/public/build/definitions/d09b7a4d-0a51-4c0e-a15a-07921d5b558f/3598/badge
-[win-x86-build-badge]: https://mseng.visualstudio.com/dotnetcore/_build?_a=completed&definitionId=3598
+[win-x86-build]: https://mseng.visualstudio.com/dotnetcore/_build?_a=completed&definitionId=3598
 
 [win-x86-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_Windows_x86_Release_version_badge.svg
 [win-x86-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/dnvm/latest.sharedfx.win.x86.version
