@@ -192,6 +192,14 @@
     <Compile Include="System\Dynamic\UnaryOperationBinder.cs" />
     <Compile Include="System\Dynamic\IInvokeOnGetBinder.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.6'">
+    <Compile Include="$(CommonPath)\System\SerializableAttribute.cs">
+      <Link>Common\System\SerializableAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\NonSerializedAttribute.cs">
+      <Link>Common\System\NonSerializedAttribute.cs</Link>
+    </Compile>
+  </ItemGroup>
   <ItemGroup Condition=" '$(IsInterpreting)' != 'true' And '$(TargetGroup)' != 'net463'">
     <Compile Include="$(CommonPath)\System\Collections\Generic\ReferenceEqualityComparer.cs">
       <Link>Common\System\Collections\Generic\ReferenceEqualityComparer.cs</Link>
