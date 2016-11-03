@@ -151,7 +151,7 @@ namespace System.Net
                     throw;
                 }
 
-                request.CompleteWithError(e);
+                request.CompleteUserWithError(e);
             }
         }
     }

@@ -625,7 +625,7 @@ namespace System.Net.Security
                     throw new IOException(SR.net_io_read, (Exception)bufferResult.Result);
                 }
 
-                return (int)bufferResult.Result;
+                return bufferResult.Int32Result;
 #if DEBUG
             }
 #endif
@@ -645,7 +645,7 @@ namespace System.Net.Security
                     return InnerStream.BeginWrite(buffer, offset, count, asyncCallback, asyncState);
                 }
 
-                BufferAsyncResult bufferResult = new BufferAsyncResult(this, buffer, offset, count, true, asyncState, asyncCallback);
+                BufferAsyncResult bufferResult = new BufferAsyncResult(this, buffer, offset, count, asyncState, asyncCallback);
                 AsyncProtocolRequest asyncRequest = new AsyncProtocolRequest(bufferResult);
 
                 ProcessWrite(buffer, offset, count, asyncRequest);
