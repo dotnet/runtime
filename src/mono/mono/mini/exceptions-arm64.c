@@ -69,7 +69,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *code;
 	guint8* start;
-	int size, offset, gregs_offset, fregs_offset, ctx_offset, num_fregs, frame_size;
+	int i, size, offset, gregs_offset, fregs_offset, ctx_offset, num_fregs, frame_size;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
 
@@ -105,10 +105,17 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	arm_strx (code, ARMREG_R0, ARMREG_FP, ctx_offset);
 	/* Save gregs */
 	code = mono_arm_emit_store_regarray (code, MONO_ARCH_CALLEE_SAVED_REGS | (1 << ARMREG_FP), ARMREG_FP, gregs_offset);
+	/* Save fregs */
+	for (i = 0; i < num_fregs; ++i)
+		arm_strfpx (code, ARMREG_D8 + i, ARMREG_FP, fregs_offset + (i * 8));
+
 	/* No need to save/restore fregs, since we don't currently use them */
 
 	/* Load regs from ctx */
 	code = mono_arm_emit_load_regarray (code, MONO_ARCH_CALLEE_SAVED_REGS, ARMREG_R0, MONO_STRUCT_OFFSET (MonoContext, regs));
+	/* Load fregs */
+	for (i = 0; i < num_fregs; ++i)
+		arm_ldrfpx (code, ARMREG_D8 + i, ARMREG_R0, MONO_STRUCT_OFFSET (MonoContext, fregs) + (i * 8));
 	/* Load fp */
 	arm_ldrx (code, ARMREG_FP, ARMREG_R0, MONO_STRUCT_OFFSET (MonoContext, regs) + (ARMREG_FP * 8));
 
@@ -126,6 +133,9 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 
 	/* Restore regs */
 	code = mono_arm_emit_load_regarray (code, MONO_ARCH_CALLEE_SAVED_REGS, ARMREG_FP, gregs_offset);
+	/* Restore fregs */
+	for (i = 0; i < num_fregs; ++i)
+		arm_ldrfpx (code, ARMREG_D8 + i, ARMREG_FP, fregs_offset + (i * 8));
 	/* Destroy frame */
 	code = mono_arm_emit_destroy_frame (code, frame_size, (1 << ARMREG_IP0));
 	arm_retx (code, ARMREG_LR);
