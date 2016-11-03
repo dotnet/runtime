@@ -27,7 +27,7 @@ Build Status
 
 |Ubuntu 14.04 |Ubuntu 16.04 |Debian 8.2 |Windows x64 |Windows x86 |Mac OS X |CentOS 7.1 |RHEL 7.2 |Fedora 23 |OpenSUSE 13.2 |
 |:------:|:------:|:------:|:------:|:------:|:------:|:------:|:------:|:------:|:------:|
-|   [![][ubuntu-14.04-build-badge]][ubuntu-14.04-build]   |   [![][ubuntu-16.04-build-badge]][ubuntu-16.04-build]   |   [![][debian-8.2-build-badge]][debian-8.2-build]   |   [![][win-x64-build-badge]][win-x64-build]   |   [![][win-x86-build-badge]][win-x86-build-badge]   |   [![][osx-build-badge]][osx-build]   |   [![][centos-7.1-build-badge]][centos-7.1-build]   |   [![][rhel-build-badge]][rhel-build]   |   [![][fedora-23-build-badge]][fedora-23-build]   |   [![][opensuse-13.2-build-badge]][opensuse-13.2-build]   |
+|   [![][ubuntu-14.04-build-badge]][ubuntu-14.04-build]   |   [![][ubuntu-16.04-build-badge]][ubuntu-16.04-build]   |   [![][debian-8.2-build-badge]][debian-8.2-build]   |   [![][win-x64-build-badge]][win-x64-build]   |   [![][win-x86-build-badge]][win-x86-build]   |   [![][osx-build-badge]][osx-build]   |   [![][centos-7.1-build-badge]][centos-7.1-build]   |   [![][rhel-build-badge]][rhel-build]   |   [![][fedora-23-build-badge]][fedora-23-build]   |   [![][opensuse-13.2-build-badge]][opensuse-13.2-build]   |
 
 Officially Released Builds
 --------------------------
