@@ -7635,15 +7635,11 @@ void JitTimer::PrintCsvHeader()
 
     CritSecHolder csvLock(s_csvLock);
 
-    FILE* fp = _wfopen(jitTimeLogCsv, W("r"));
-    if (fp == nullptr)
+    FILE* fp = _wfopen(jitTimeLogCsv, W("a"));
+    if (fp != nullptr)
     {
-        // File doesn't exist, so create it and write the header
-
-        // Use write mode, so we rewrite the file, and retain only the last compiled process/dll.
-        // Ex: ngen install mscorlib won't print stats for "ngen" but for "mscorsvw"
-        fp = _wfopen(jitTimeLogCsv, W("w"));
-        if (fp != nullptr)
+        // Write the header if the file is empty
+        if (ftell(fp) == 0)
         {
             fprintf(fp, "\"Method Name\",");
             fprintf(fp, "\"Method Index\",");
@@ -7662,8 +7658,8 @@ void JitTimer::PrintCsvHeader()
             fprintf(fp, "\"Total Cycles\",");
             fprintf(fp, "\"CPS\"\n");
         }
+        fclose(fp);
     }
-    fclose(fp);
 }
 
 extern ICorJitHost* g_jitHost;
