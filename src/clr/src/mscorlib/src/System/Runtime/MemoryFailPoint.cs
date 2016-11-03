@@ -160,6 +160,7 @@ namespace System.Runtime
                 throw new ArgumentOutOfRangeException(nameof(sizeInMegabytes), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
 
+#if !FEATURE_PAL // Remove this when CheckForAvailableMemory is able to provide legitimate estimates
             ulong size = ((ulong)sizeInMegabytes) << 20;
             _reservedMemory = size;
 
@@ -302,6 +303,7 @@ namespace System.Runtime
                 SharedStatics.AddMemoryFailPointReservation((long) size);
                 _mustSubtractReservation = true;
             }
+#endif
         }
 
         [System.Security.SecurityCritical]  // auto-generated
@@ -324,9 +326,6 @@ namespace System.Runtime
         [System.Security.SecurityCritical]  // auto-generated
         private static unsafe bool CheckForFreeAddressSpace(ulong size, bool shouldThrow)
         {
-#if FEATURE_PAL // Remove this when GlobalMemoryStatusEx is able to provide legitimate estimates
-            return true;
-#endif
             // Start walking the address space at 0.  VirtualAlloc may wrap
             // around the address space.  We don't need to find the exact
             // pages that VirtualAlloc would return - we just need to
