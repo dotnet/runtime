@@ -10168,9 +10168,6 @@ void CodeGen::genCodeForTreeSmpOp(GenTreePtr tree, regMaskTP destReg, regMaskTP 
             if (op1 == NULL)
                 return;
 #endif
-            __fallthrough;
-
-        case GT_INIT_VAL:
 
             /* Generate the operand into some register */
 

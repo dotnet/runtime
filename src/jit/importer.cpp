@@ -600,9 +600,13 @@ inline void Compiler::impAppendStmt(GenTreePtr stmt, unsigned chkLevel)
     // Assignment to (unaliased) locals don't count as a side-effect as
     // we handle them specially using impSpillLclRefs(). Temp locals should
     // be fine too.
+    // TODO-1stClassStructs: The check below should apply equally to struct assignments,
+    // but previously the block ops were always being marked GTF_GLOB_REF, even if
+    // the operands could not be global refs.
 
     if ((expr->gtOper == GT_ASG) && (expr->gtOp.gtOp1->gtOper == GT_LCL_VAR) &&
-        !(expr->gtOp.gtOp1->gtFlags & GTF_GLOB_REF) && !gtHasLocalsWithAddrOp(expr->gtOp.gtOp2))
+        !(expr->gtOp.gtOp1->gtFlags & GTF_GLOB_REF) && !gtHasLocalsWithAddrOp(expr->gtOp.gtOp2) &&
+        !varTypeIsStruct(expr->gtOp.gtOp1))
     {
         unsigned op2Flags = expr->gtOp.gtOp2->gtFlags & GTF_GLOB_EFFECT;
         assert(flags == (op2Flags | GTF_ASG));
@@ -1135,13 +1139,9 @@ GenTreePtr Compiler::impAssignStructPtr(GenTreePtr           destAddr,
     if (destAddr->OperGet() == GT_ADDR)
     {
         GenTree* destNode = destAddr->gtGetOp1();
-        // If the actual destination is a local (for non-LEGACY_BACKEND), or already a block node, or is a node that
+        // If the actual destination is already a block node, or is a node that
         // will be morphed, don't insert an OBJ(ADDR).
-        if (destNode->gtOper == GT_INDEX || destNode->OperIsBlk()
-#ifndef LEGACY_BACKEND
-            || ((destNode->OperGet() == GT_LCL_VAR) && (destNode->TypeGet() == src->TypeGet()))
-#endif // !LEGACY_BACKEND
-                )
+        if (destNode->gtOper == GT_INDEX || destNode->OperIsBlk())
         {
             dest = destNode;
         }
@@ -1190,9 +1190,6 @@ GenTreePtr Compiler::impAssignStructPtr(GenTreePtr           destAddr,
                 {
                     // Mark the struct LclVar as used in a MultiReg return context
                     //  which currently makes it non promotable.
-                    // TODO-1stClassStructs: Eliminate this pessimization when we can more generally
-                    // handle multireg returns.
-                    lcl->gtFlags |= GTF_DONT_CSE;
                     lvaTable[lcl->gtLclVarCommon.gtLclNum].lvIsMultiRegRet = true;
                 }
                 else // The call result is not a multireg return
@@ -1207,20 +1204,12 @@ GenTreePtr Compiler::impAssignStructPtr(GenTreePtr           destAddr,
                 dest        = lcl;
 
 #if defined(_TARGET_ARM_)
-                // TODO-Cleanup: This should have been taken care of in the above HasMultiRegRetVal() case,
-                // but that method has not been updadted to include ARM.
                 impMarkLclDstNotPromotable(lcl->gtLclVarCommon.gtLclNum, src, structHnd);
-                lcl->gtFlags |= GTF_DONT_CSE;
 #elif defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
                 // Not allowed for FEATURE_CORCLR which is the only SKU available for System V OSs.
                 assert(!src->gtCall.IsVarargs() && "varargs not allowed for System V OSs.");
 
                 // Make the struct non promotable. The eightbytes could contain multiple fields.
-                // TODO-1stClassStructs: Eliminate this pessimization when we can more generally
-                // handle multireg returns.
-                // TODO-Cleanup: Why is this needed here? This seems that it will set this even for
-                // non-multireg returns.
-                lcl->gtFlags |= GTF_DONT_CSE;
                 lvaTable[lcl->gtLclVarCommon.gtLclNum].lvIsMultiRegRet = true;
 #endif
             }
@@ -1262,11 +1251,10 @@ GenTreePtr Compiler::impAssignStructPtr(GenTreePtr           destAddr,
             src->gtType  = genActualType(returnType);
             call->gtType = src->gtType;
 
-            // If we've changed the type, and it no longer matches a local destination,
-            // we must use an indirection.
-            if ((dest != nullptr) && (dest->OperGet() == GT_LCL_VAR) && (dest->TypeGet() != asgType))
+            // 1stClassStructToDo: We shouldn't necessarily need this.
+            if (dest != nullptr)
             {
-                dest = nullptr;
+                dest = gtNewOperNode(GT_IND, returnType, gtNewOperNode(GT_ADDR, TYP_BYREF, dest));
             }
 
             // !!! The destination could be on stack. !!!
@@ -1337,19 +1325,21 @@ GenTreePtr Compiler::impAssignStructPtr(GenTreePtr           destAddr,
     }
     else if (src->IsLocal())
     {
+        // TODO-1stClassStructs: Eliminate this; it is only here to minimize diffs in the
+        // initial implementation. Previously the source would have been under a GT_ADDR, which
+        // would cause it to be marked GTF_DONT_CSE.
         asgType = src->TypeGet();
-    }
-    else if (asgType == TYP_STRUCT)
-    {
-        asgType     = impNormStructType(structHnd);
-        src->gtType = asgType;
-#ifdef LEGACY_BACKEND
+        src->gtFlags |= GTF_DONT_CSE;
         if (asgType == TYP_STRUCT)
         {
             GenTree* srcAddr = gtNewOperNode(GT_ADDR, TYP_BYREF, src);
             src              = gtNewOperNode(GT_IND, TYP_STRUCT, srcAddr);
         }
-#endif
+    }
+    else if (asgType == TYP_STRUCT)
+    {
+        asgType     = impNormStructType(structHnd);
+        src->gtType = asgType;
     }
     if (dest == nullptr)
     {
@@ -7838,9 +7828,6 @@ GenTreePtr Compiler::impFixupStructReturnType(GenTreePtr op, CORINFO_CLASS_HANDL
             unsigned lclNum                  = op->gtLclVarCommon.gtLclNum;
             lvaTable[lclNum].lvIsMultiRegRet = true;
 
-            // TODO-1stClassStructs: Handle constant propagation and CSE-ing of multireg returns.
-            op->gtFlags |= GTF_DONT_CSE;
-
             return op;
         }
 
@@ -7865,10 +7852,6 @@ GenTreePtr Compiler::impFixupStructReturnType(GenTreePtr op, CORINFO_CLASS_HANDL
             unsigned lclNum = op->gtLclVarCommon.gtLclNum;
             // Make sure this struct type stays as struct so that we can return it as an HFA
             lvaTable[lclNum].lvIsMultiRegRet = true;
-
-            // TODO-1stClassStructs: Handle constant propagation and CSE-ing of multireg returns.
-            op->gtFlags |= GTF_DONT_CSE;
-
             return op;
         }
 
@@ -7901,10 +7884,6 @@ GenTreePtr Compiler::impFixupStructReturnType(GenTreePtr op, CORINFO_CLASS_HANDL
 
             // Make sure this struct type is not struct promoted
             lvaTable[lclNum].lvIsMultiRegRet = true;
-
-            // TODO-1stClassStructs: Handle constant propagation and CSE-ing of multireg returns.
-            op->gtFlags |= GTF_DONT_CSE;
-
             return op;
         }
 
@@ -9555,14 +9534,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 goto DECODE_OPCODE;
 
             SPILL_APPEND:
-
-                // We need to call impSpillLclRefs() for a struct type lclVar.
-                // This is done for non-block assignments in the handling of stloc.
-                if ((op1->OperGet() == GT_ASG) && varTypeIsStruct(op1->gtOp.gtOp1) &&
-                    (op1->gtOp.gtOp1->gtOper == GT_LCL_VAR))
-                {
-                    impSpillLclRefs(op1->gtOp.gtOp1->AsLclVarCommon()->gtLclNum);
-                }
 
                 /* Append 'op1' to the list of statements */
                 impAppendTree(op1, (unsigned)CHECK_SPILL_ALL, impCurStmtOffs);
@@ -14815,10 +14786,6 @@ GenTreePtr Compiler::impAssignMultiRegTypeToVar(GenTreePtr op, CORINFO_CLASS_HAN
     unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Return value temp for multireg return."));
     impAssignTempGen(tmpNum, op, hClass, (unsigned)CHECK_SPILL_NONE);
     GenTreePtr ret = gtNewLclvNode(tmpNum, op->gtType);
-
-    // TODO-1stClassStructs: Handle constant propagation and CSE-ing of multireg returns.
-    ret->gtFlags |= GTF_DONT_CSE;
-
     assert(IsMultiRegReturnedType(hClass));
 
     // Mark the var so that fields are not promoted and stay together.

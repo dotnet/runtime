@@ -2766,10 +2766,6 @@ void CodeGen::genCodeForInitBlkRepStos(GenTreeBlk* initBlkNode)
     unsigned   size    = initBlkNode->Size();
     GenTreePtr dstAddr = initBlkNode->Addr();
     GenTreePtr initVal = initBlkNode->Data();
-    if (initVal->OperIsInitVal())
-    {
-        initVal = initVal->gtGetOp1();
-    }
 
 #ifdef DEBUG
     assert(!dstAddr->isContained());
@@ -2804,10 +2800,6 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode)
     unsigned   size    = initBlkNode->Size();
     GenTreePtr dstAddr = initBlkNode->Addr();
     GenTreePtr initVal = initBlkNode->Data();
-    if (initVal->OperIsInitVal())
-    {
-        initVal = initVal->gtGetOp1();
-    }
 
     assert(!dstAddr->isContained());
     assert(!initVal->isContained() || (initVal->IsIntegralConst(0) && ((size & 0xf) == 0)));
@@ -2905,10 +2897,6 @@ void CodeGen::genCodeForInitBlk(GenTreeBlk* initBlkNode)
     unsigned   blockSize = initBlkNode->Size();
     GenTreePtr dstAddr   = initBlkNode->Addr();
     GenTreePtr initVal   = initBlkNode->Data();
-    if (initVal->OperIsInitVal())
-    {
-        initVal = initVal->gtGetOp1();
-    }
 
     assert(!dstAddr->isContained());
     assert(!initVal->isContained());
@@ -3521,7 +3509,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
     }
 #endif // DEBUG
 
-    // Consume the operands and get them into the right registers.
+    // Consume these registers.
     // They may now contain gc pointers (depending on their type; gcMarkRegPtrVal will "do the right thing").
     genConsumeBlockOp(cpObjNode, REG_RDI, REG_RSI, REG_NA);
     gcInfo.gcMarkRegPtrVal(REG_RSI, srcAddrType);
