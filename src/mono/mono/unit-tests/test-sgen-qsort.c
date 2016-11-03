@@ -72,7 +72,13 @@ compare_sorts (void *base, size_t nel, size_t width, int (*compar) (const void*,
 	qsort (b1, nel, width, compar);
 	sgen_qsort (b2, nel, width, compar);
 
-	assert (!memcmp (b1, b2, len));
+	/* We can't assert that qsort and sgen_qsort produce the same results
+	 * because qsort is not guaranteed to be stable, so they will tend to differ
+	 * in adjacent equal elements. Instead, we assert that the array is sorted
+	 * according to the comparator.
+	 */
+	for (size_t i = 0; i < nel - 1; ++i)
+		assert (compar ((char *)b2 + i * width, (char *)b2 + (i + 1) * width) <= 0);
 
 	free (b1);
 	free (b2);
@@ -81,7 +87,8 @@ compare_sorts (void *base, size_t nel, size_t width, int (*compar) (const void*,
 static void
 compare_sorts2 (void *base, size_t nel)
 {
-	size_t len = nel * sizeof (teststruct_t*);
+	size_t width = sizeof (teststruct_t*);
+	size_t len = nel * width;
 	void *b1 = malloc (len);
 	void *b2 = malloc (len);
 
@@ -91,7 +98,8 @@ compare_sorts2 (void *base, size_t nel)
 	qsort (b1, nel, sizeof (teststruct_t*), compare_teststructs2);
 	qsort_test_struct ((teststruct_t **)b2, nel);
 
-	assert (!memcmp (b1, b2, len));
+	for (size_t i = 0; i < nel - 1; ++i)
+		assert (compare_teststructs2 ((char *)b2 + i * width, (char *)b2 + (i + 1) * width) <= 0);
 
 	free (b1);
 	free (b2);

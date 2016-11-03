@@ -8,34 +8,69 @@
 #ifndef __MONO_SGENQSORT_H__
 #define __MONO_SGENQSORT_H__
 
-#define DEF_QSORT_INLINE(NAME,ARRAY_TYPE,COMPARE_FUN)	\
-static size_t partition_##NAME (ARRAY_TYPE base[], size_t nel) {	\
-	size_t pivot_idx = nel >> 1;	\
-	size_t s, i;	\
-	ARRAY_TYPE pivot = base [pivot_idx];	\
-	{ ARRAY_TYPE tmp = base [pivot_idx]; base [pivot_idx] = base [nel - 1]; base [nel - 1] = tmp; }	\
-	s = 0;	\
-	for (i = 0; i < nel - 1; ++i) {	\
-		if (COMPARE_FUN (base [i], pivot) <= 0) {	\
-			{ ARRAY_TYPE tmp = base [i]; base [i] = base [s]; base [s] = tmp; }	\
-			++s;	\
-		}	\
-	}	\
-	{ ARRAY_TYPE tmp = base [s]; base [s] = base [nel - 1]; base [nel - 1] = tmp; }	\
-	return s;	\
+/* Copied from non-inline implementation in sgen-qsort.c */
+#define DEF_QSORT_INLINE(name, type, compare) \
+static inline void \
+qsort_swap_##name (type array[], const ssize_t i, const ssize_t j, type *const swap_tmp) \
+{ \
+	*swap_tmp = array [i]; \
+	array [i] = array [j]; \
+	array [j] = *swap_tmp; \
+} \
+\
+static void \
+qsort_rec_##name ( \
+	type array[], \
+	ssize_t begin, \
+	ssize_t end, \
+	type *const pivot_tmp, \
+	type *const swap_tmp) \
+{ \
+	ssize_t left, right, middle, pivot; \
+	while (begin < end) { \
+		left = begin; \
+		right = end; \
+		middle = begin + (end - begin) / 2; \
+		if (compare (array [middle], array [left]) < 0) \
+			qsort_swap_##name (array, middle, left, swap_tmp); \
+		if (compare (array [right], array [left]) < 0) \
+			qsort_swap_##name (array, right, left, swap_tmp); \
+		if (compare (array [right], array [middle]) < 0) \
+			qsort_swap_##name (array, right, middle, swap_tmp); \
+		pivot = middle; \
+		*pivot_tmp = array [pivot]; \
+		for (;;) { \
+			while (left <= right && compare (array [left], *pivot_tmp) <= 0) \
+				++left; \
+			while (left <= right && compare (array [right], *pivot_tmp) > 0) \
+				--right; \
+			if (left > right) \
+				break; \
+			qsort_swap_##name (array, left, right, swap_tmp); \
+			if (pivot == right) \
+				pivot = left; \
+			++left; \
+			--right; \
+		} \
+		array [pivot] = array [right]; \
+		array [right] = *pivot_tmp; \
+		--right; \
+		if (right - begin < end - left) { \
+			qsort_rec_##name (array, begin, right, pivot_tmp, swap_tmp); \
+			begin = left; \
+		} else { \
+			qsort_rec_##name (array, left, end, pivot_tmp, swap_tmp); \
+			end = right; \
+		} \
+	} \
 }	\
-static void rec_##NAME (ARRAY_TYPE base[], size_t nel) {	\
-	size_t pivot_idx;	\
-	if (nel <= 1)	\
-		return; \
-	pivot_idx = partition_##NAME (base, nel); \
-	rec_##NAME (base, pivot_idx);	\
-	if (pivot_idx < nel)	\
-		rec_##NAME (&base[pivot_idx + 1], nel - pivot_idx - 1);	\
-}	\
-static void qsort_##NAME (ARRAY_TYPE base[], size_t nel) {	\
-	rec_##NAME (base, nel);	\
-}	\
-
+\
+static inline void \
+qsort_##name (type array[], size_t count) \
+{ \
+	type pivot_tmp; \
+	type swap_tmp; \
+	qsort_rec_##name (array, 0, (ssize_t)count - 1, &pivot_tmp, &swap_tmp); \
+}
 
 #endif
