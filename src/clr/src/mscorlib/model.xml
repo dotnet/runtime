@@ -4023,7 +4023,9 @@
       <Member MemberType="Property" Name="Location" />
       <Member MemberType="Property" Name="ManifestModule" />
       <Member MemberType="Property" Name="SecurityRuleSet" />
-      <Member Status="ImplRoot" MemberType="Event" Name="ModuleResolve" />
+      <Member MemberType="Event" Name="ModuleResolve" />
+      <Member Name="add_ModuleResolve(System.Reflection.ModuleResolveEventHandler)" />
+      <Member Name="remove_ModuleResolve(System.Reflection.ModuleResolveEventHandler)" />
     </Type>
     <Type Name="System.Reflection.IntrospectionExtensions">
       <Member Name="GetTypeInfo(System.Type)" />
@@ -8779,6 +8781,9 @@
       <Member Name="GetType(System.String)" />
       <Member Name="GetType(System.String,System.Boolean)" />
       <Member Name="GetType(System.String,System.Boolean,System.Boolean)" />
+      <Member Name="GetType(System.String,System.Func&lt;System.Reflection.AssemblyName,System.Reflection.Assembly&gt;,System.Func&lt;System.Reflection.Assembly,System.String,System.Boolean,System.Type&gt;)" />
+      <Member Name="GetType(System.String,System.Func&lt;System.Reflection.AssemblyName,System.Reflection.Assembly&gt;,System.Func&lt;System.Reflection.Assembly,System.String,System.Boolean,System.Type&gt;,System.Boolean)" />
+      <Member Name="GetType(System.String,System.Func&lt;System.Reflection.AssemblyName,System.Reflection.Assembly&gt;,System.Func&lt;System.Reflection.Assembly,System.String,System.Boolean,System.Type&gt;,System.Boolean,System.Boolean)" />
       <Member Name="GetTypeArray(System.Object[])" />
       <Member Name="GetTypeCode(System.Type)" />
       <Member Name="GetTypeCodeImpl" />
@@ -8801,6 +8806,9 @@
       <Member Name="IsAssignableFrom(System.Type)" />
       <Member Name="IsByRefImpl" />
       <Member Name="IsCOMObjectImpl" />
+      <Member Name="get_IsContextful" />
+      <Member MemberType="Property" Name="IsContextful" />
+      <Member Name="IsContextfulImpl" />
       <Member Name="IsInstanceOfType(System.Object)" />
       <Member Name="IsMarshalByRefImpl" />
       <Member Name="IsPointerImpl" />
