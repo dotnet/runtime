@@ -725,7 +725,7 @@ internal static partial class Interop
 
             private static Dictionary<string, int> s_hashtable = CreateTable();
 
-            static Dictionary<string, int> CreateTable()
+            private static Dictionary<string, int> CreateTable()
             {
                 var table = new Dictionary<string, int>((int)Enum.HttpHeaderResponseMaximum);
                 for (int i = 0; i < (int)Enum.HttpHeaderResponseMaximum; i++)
@@ -735,13 +735,10 @@ internal static partial class Interop
                 return table;
             }
 
-            internal static int IndexOfKnownHeader(string HeaderName)
+            internal static int IndexOfKnownHeader(string headerName)
             {
                 int index;
-                if (s_hashtable.TryGetValue(HeaderName, out index))
-                    return index;
-                else
-                    return -1;
+                return s_hashtable.TryGetValue(headerName, out index) ? index : -1;
             }
 
             internal static string ToString(int position)
