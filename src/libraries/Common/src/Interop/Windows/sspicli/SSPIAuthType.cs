@@ -72,14 +72,14 @@ namespace System.Net
             return SafeDeleteContext.InitializeSecurityContext(ref credential, ref context, targetName, inFlags, endianness, null, inputBuffers, outputBuffer, ref outFlags);
         }
 
-        public int EncryptMessage(SafeDeleteContext context, Interop.SspiCli.SecBufferDesc inputOutput, uint sequenceNumber)
+        public int EncryptMessage(SafeDeleteContext context, ref Interop.SspiCli.SecBufferDesc inputOutput, uint sequenceNumber)
         {
             try
             {
                 bool ignore = false;
 
                 context.DangerousAddRef(ref ignore);
-                return Interop.SspiCli.EncryptMessage(ref context._handle, 0, inputOutput, sequenceNumber);
+                return Interop.SspiCli.EncryptMessage(ref context._handle, 0, ref inputOutput, sequenceNumber);
             }
             finally
             {
@@ -87,7 +87,7 @@ namespace System.Net
             }
         }
 
-        public unsafe int DecryptMessage(SafeDeleteContext context, Interop.SspiCli.SecBufferDesc inputOutput, uint sequenceNumber)
+        public unsafe int DecryptMessage(SafeDeleteContext context, ref Interop.SspiCli.SecBufferDesc inputOutput, uint sequenceNumber)
         {
             int status = (int)Interop.SECURITY_STATUS.InvalidHandle;
             uint qop = 0;
@@ -96,7 +96,7 @@ namespace System.Net
             {
                 bool ignore = false;
                 context.DangerousAddRef(ref ignore);
-                status = Interop.SspiCli.DecryptMessage(ref context._handle, inputOutput, sequenceNumber, &qop);
+                status = Interop.SspiCli.DecryptMessage(ref context._handle, ref inputOutput, sequenceNumber, &qop);
             }
             finally
             {
@@ -112,7 +112,7 @@ namespace System.Net
             return status;
         }
 
-        public int MakeSignature(SafeDeleteContext context, Interop.SspiCli.SecBufferDesc inputOutput, uint sequenceNumber)
+        public int MakeSignature(SafeDeleteContext context, ref Interop.SspiCli.SecBufferDesc inputOutput, uint sequenceNumber)
         {
             try
             {
@@ -120,7 +120,7 @@ namespace System.Net
 
                 context.DangerousAddRef(ref ignore);
 
-                return Interop.SspiCli.EncryptMessage(ref context._handle, Interop.SspiCli.SECQOP_WRAP_NO_ENCRYPT, inputOutput, sequenceNumber);
+                return Interop.SspiCli.EncryptMessage(ref context._handle, Interop.SspiCli.SECQOP_WRAP_NO_ENCRYPT, ref inputOutput, sequenceNumber);
             }
             finally
             {
@@ -128,7 +128,7 @@ namespace System.Net
             }
         }
 
-        public unsafe int VerifySignature(SafeDeleteContext context, Interop.SspiCli.SecBufferDesc inputOutput, uint sequenceNumber)
+        public unsafe int VerifySignature(SafeDeleteContext context, ref Interop.SspiCli.SecBufferDesc inputOutput, uint sequenceNumber)
         {
             try
             {
@@ -136,7 +136,7 @@ namespace System.Net
                 uint qop = 0;
 
                 context.DangerousAddRef(ref ignore);
-                return Interop.SspiCli.DecryptMessage(ref context._handle, inputOutput, sequenceNumber, &qop);
+                return Interop.SspiCli.DecryptMessage(ref context._handle, ref inputOutput, sequenceNumber, &qop);
             }
             finally
             {
