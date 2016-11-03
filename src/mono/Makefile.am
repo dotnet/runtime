@@ -49,6 +49,9 @@ dist-hook:
 # Disable this for now because it is very slow and causes wrench to timeout:
 #	test ! -d $(GIT_DIR) || ./scripts/commits-to-changelog.py --root=$(distdir) last-commit-with-compulsory-changelog-entry
 
+mac-sdk-package:
+	external/bockbuild/bb MacSDK --package
+
 pkgconfigdir = $(libdir)/pkgconfig
 noinst_DATA = mono-uninstalled.pc
 DISTCLEANFILES= mono-uninstalled.pc
