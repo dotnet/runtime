@@ -109,14 +109,12 @@ namespace System.Net.Security.Tests
                 _log.WriteLine(
                     "Server disconnecting from client during authentication.  No shared SSL/TLS algorithm. ({0})",
                     authEx);
+                state.Dispose();
             }
             catch (Exception ex)
             {
                 _log.WriteLine("Server disconnecting from client during authentication.  Exception: {0}",
                     ex.Message);
-            }
-            finally
-            {
                 state.Dispose();
             }
         }
