@@ -1393,9 +1393,7 @@ DEFINE_CLASS(SAFE_PEFILE_HANDLE,    SafeHandles,            SafePEFileHandle)
 DEFINE_CLASS(SAFE_TOKENHANDLE, SafeHandles, SafeAccessTokenHandle)
 #endif
 
-#ifndef FEATURE_CORECLR
 DEFINE_CLASS(SAFE_TYPENAMEPARSER_HANDLE,    System,         SafeTypeNameParserHandle)
-#endif //!FEATURE_CORECLR
 
 #ifdef FEATURE_COMPRESSEDSTACK
 DEFINE_CLASS(SAFE_CSHANDLE, Threading, SafeCompressedStackHandle)
