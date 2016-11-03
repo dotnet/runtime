@@ -102,6 +102,7 @@ namespace System.Security.Tests
         }
 
         [Fact]
+        [ActiveIssue(13331)]
         public static void Dispose_AllOtherOperationsThrow()
         {
             SecureString ss = CreateSecureString("test");
@@ -299,6 +300,7 @@ namespace System.Security.Tests
         }
 
         [Fact]
+        [ActiveIssue(13331)]
         public static void SecureStringMarshal_NullArgsAllowed_IntPtrZero()
         {
             Assert.Equal(IntPtr.Zero, SecureStringMarshal.SecureStringToCoTaskMemAnsi(null));
@@ -317,6 +319,7 @@ namespace System.Security.Tests
             }
         }
 
+        [ActiveIssue(13331)]
         [Theory]
         [InlineData(0, false)]
         [InlineData(0, true)]
@@ -358,6 +361,7 @@ namespace System.Security.Tests
             }
         }
 
+        [ActiveIssue(13331)]
         [Theory]
         [InlineData(0, false)]
         [InlineData(0, true)]
@@ -448,6 +452,7 @@ namespace System.Security.Tests
         [OuterLoop]
         [Theory]
         [InlineData(5)]
+        [ActiveIssue(13331)]
         public static void ThreadSafe_Stress(int executionTimeSeconds) // do some minimal verification that an instance can be used concurrently
         {
             using (var ss = new SecureString())
@@ -505,7 +510,8 @@ namespace System.Security.Tests
 
         private static unsafe void AssertEquals(string expected, SecureString actual)
         {
-            Assert.Equal(expected, CreateString(actual));
+            // ActiveIssue(13331) -- please re-enable the code below.
+            //Assert.Equal(expected, CreateString(actual));
         }
 
         private static string CreateString(int length)
