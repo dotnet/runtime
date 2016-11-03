@@ -259,9 +259,11 @@ namespace System.Diagnostics
     {
         DateTime = 2,
         None = 0,
+        LogicalOperationStack = 1,
         ProcessId = 8,
         ThreadId = 16,
         Timestamp = 4,
+        Callstack = 32,
     }
     public partial class TraceSource
     {
