@@ -70,7 +70,7 @@ custom_attr_visible (MonoImage *image, MonoReflectionCustomAttr *cattr)
 
 	/* FIXME: Need to do more checks */
 	if (cattr->ctor->method && (cattr->ctor->method->klass->image != image)) {
-		int visibility = cattr->ctor->method->klass->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK;
+		int visibility = mono_class_get_flags (cattr->ctor->method->klass) & TYPE_ATTRIBUTE_VISIBILITY_MASK;
 
 		if ((visibility != TYPE_ATTRIBUTE_PUBLIC) && (visibility != TYPE_ATTRIBUTE_NESTED_PUBLIC))
 			return FALSE;
@@ -1211,8 +1211,8 @@ mono_custom_attrs_from_class_checked (MonoClass *klass, MonoError *error)
 
 	mono_error_init (error);
 
-	if (klass->generic_class)
-		klass = klass->generic_class->container_class;
+	if (mono_class_is_ginst (klass))
+		klass = mono_class_get_generic_class (klass)->container_class;
 
 	if (image_is_dynamic (klass->image))
 		return lookup_custom_attr (klass->image, klass);

@@ -72,10 +72,10 @@ ldvirtfn_internal (MonoObject *obj, MonoMethod *method, gboolean gshared)
 	if (gshared && method->is_inflated && mono_method_get_context (method)->method_inst) {
 		MonoGenericContext context = { NULL, NULL };
 
-		if (res->klass->generic_class)
-			context.class_inst = res->klass->generic_class->context.class_inst;
-		else if (res->klass->generic_container)
-			context.class_inst = res->klass->generic_container->context.class_inst;
+		if (mono_class_is_ginst (res->klass))
+			context.class_inst = mono_class_get_generic_class (res->klass)->context.class_inst;
+		else if (mono_class_is_gtd (res->klass))
+			context.class_inst = mono_class_get_generic_container (res->klass)->context.class_inst;
 		context.method_inst = mono_method_get_context (method)->method_inst;
 
 		res = mono_class_inflate_generic_method_checked (res, &context, &error);
@@ -1108,8 +1108,8 @@ mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, gpointe
 		return NULL;
 	}
 	vmethod = mono_object_get_virtual_method (obj, method);
-	g_assert (!vmethod->klass->generic_container);
-	g_assert (!vmethod->klass->generic_class || !vmethod->klass->generic_class->context.class_inst->is_open);
+	g_assert (!mono_class_is_gtd (vmethod->klass));
+	g_assert (!mono_class_is_ginst (vmethod->klass) || !mono_class_get_generic_class (vmethod->klass)->context.class_inst->is_open);
 	g_assert (!context->method_inst || !context->method_inst->is_open);
 
 	addr = mono_compile_method_checked (vmethod, &error);
@@ -1334,7 +1334,7 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
 
 	mono_error_init (error);
 
-	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+	if (mono_class_is_interface (klass)) {
 		MonoObject *this_obj;
 
 		/* Have to use the receiver's type instead of klass, the receiver is a ref type */
@@ -1352,7 +1352,7 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
 		mono_class_setup_vtable (klass);
 		g_assert (klass->vtable);
 		vt_slot = mono_method_get_vtable_slot (cmethod);
-		if (cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+		if (mono_class_is_interface (cmethod->klass)) {
 			iface_offset = mono_class_interface_offset (klass, cmethod->klass);
 			g_assert (iface_offset != -1);
 			vt_slot += iface_offset;
@@ -1608,10 +1608,10 @@ resolve_vcall (MonoVTable *vt, int slot, MonoMethod *imt_method, gpointer *out_a
 		else
 			declaring = m;
 
-		if (m->klass->generic_class)
-			context.class_inst = m->klass->generic_class->context.class_inst;
+		if (mono_class_is_ginst (m->klass))
+			context.class_inst = mono_class_get_generic_class (m->klass)->context.class_inst;
 		else
-			g_assert (!m->klass->generic_container);
+			g_assert (!mono_class_is_gtd (m->klass));
 
 		generic_virtual = imt_method;
 		g_assert (generic_virtual);
@@ -1692,10 +1692,10 @@ mono_resolve_generic_virtual_call (MonoVTable *vt, int slot, MonoMethod *generic
 	else
 		declaring = m;
 
-	if (m->klass->generic_class)
-		context.class_inst = m->klass->generic_class->context.class_inst;
+	if (mono_class_is_ginst (m->klass))
+		context.class_inst = mono_class_get_generic_class (m->klass)->context.class_inst;
 	else
-		g_assert (!m->klass->generic_container);
+		g_assert (!mono_class_is_gtd (m->klass));
 
 	g_assert (generic_virtual->is_inflated);
 	context.method_inst = ((MonoMethodInflated*)generic_virtual)->context.method_inst;

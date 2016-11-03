@@ -46,6 +46,7 @@
 #include <mono/utils/mono-string.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/checked-build.h>
+#include <mono/utils/mono-counters.h>
 
 static void get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types);
 static MonoType* mono_reflection_get_type_with_rootimage (MonoImage *rootimage, MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve, MonoError *error);
@@ -66,10 +67,17 @@ static GENERATE_GET_CLASS_WITH_CACHE (exception_handling_clause, System.Reflecti
 static GENERATE_GET_CLASS_WITH_CACHE (type_builder, System.Reflection.Emit, TypeBuilder);
 static GENERATE_GET_CLASS_WITH_CACHE (dbnull, System, DBNull);
 
+
+static int class_ref_info_handle_count;
+
 void
 mono_reflection_init (void)
 {
 	mono_reflection_emit_init ();
+
+	mono_counters_register ("MonoClass::ref_info_handle count",
+							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_ref_info_handle_count);
+
 }
 
 /*
@@ -94,6 +102,7 @@ mono_class_set_ref_info (MonoClass *klass, gpointer obj)
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	klass->ref_info_handle = mono_gchandle_new ((MonoObject*)obj, FALSE);
+	++class_ref_info_handle_count;
 	g_assert (klass->ref_info_handle != 0);
 }
 
@@ -343,7 +352,7 @@ mono_type_normalize (MonoType *type)
 		return type;
 
 	gtd = gclass->container_class;
-	gcontainer = gtd->generic_container;
+	gcontainer = mono_class_get_generic_container (gtd);
 	argv = g_newa (MonoType*, ginst->type_argc);
 
 	for (i = 0; i < ginst->type_argc; ++i) {
@@ -2147,7 +2156,7 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc
 	}
 
 	klass = mono_class_from_mono_type (t);
-	if (!klass->generic_container) {
+	if (!mono_class_is_gtd (klass)) {
 		mono_loader_unlock ();
 		mono_error_set_type_load_class (error, klass, "Cannot bind generic parameters of a non-generic type");
 		return NULL;
@@ -2169,7 +2178,7 @@ mono_class_bind_generic_parameters (MonoClass *klass, int type_argc, MonoType **
 	MonoGenericClass *gclass;
 	MonoGenericInst *inst;
 
-	g_assert (klass->generic_container);
+	g_assert (mono_class_is_gtd (klass));
 
 	inst = mono_metadata_get_generic_inst (type_argc, types);
 	gclass = mono_metadata_lookup_generic_class (klass, inst, is_dynamic);
@@ -2215,7 +2224,7 @@ reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, MonoAr
 	ginst = mono_metadata_get_generic_inst (count, type_argv);
 	g_free (type_argv);
 
-	tmp_context.class_inst = klass->generic_class ? klass->generic_class->context.class_inst : NULL;
+	tmp_context.class_inst = mono_class_is_ginst (klass) ? mono_class_get_generic_class (klass)->context.class_inst : NULL;
 	tmp_context.method_inst = ginst;
 
 	inflated = mono_class_inflate_generic_method_checked (method, &tmp_context, error);
@@ -2345,7 +2354,7 @@ mono_declsec_flags_from_method (MonoMethod *method)
 guint32
 mono_declsec_flags_from_class (MonoClass *klass)
 {
-	if (klass->flags & TYPE_ATTRIBUTE_HAS_SECURITY) {
+	if (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_HAS_SECURITY) {
 		if (!klass->ext || !klass->ext->declsec_flags) {
 			guint32 idx;
 

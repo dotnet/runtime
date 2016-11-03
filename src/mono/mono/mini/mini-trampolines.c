@@ -198,8 +198,8 @@ mini_resolve_imt_method (MonoVTable *vt, gpointer *vtable_slot, MonoMethod *imt_
 		/* imt_method->slot might not be set */
 		impl = mono_class_get_vtable_entry (vt->klass, interface_offset + mono_method_get_declaring_generic_method (imt_method)->slot);
 
-		if (impl->klass->generic_class)
-			context.class_inst = impl->klass->generic_class->context.class_inst;
+		if (mono_class_is_ginst (impl->klass))
+			context.class_inst = mono_class_get_generic_class (impl->klass)->context.class_inst;
 		context.method_inst = ((MonoMethodInflated*)imt_method)->context.method_inst;
 		impl = mono_class_inflate_generic_method_checked (impl, &context, error);
 		mono_error_assert_ok (error);
@@ -591,10 +591,10 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTable *
 		else
 			declaring = m;
 
-		if (m->klass->generic_class)
-			context.class_inst = m->klass->generic_class->context.class_inst;
+		if (mono_class_is_ginst (m->klass))
+			context.class_inst = mono_class_get_generic_class (m->klass)->context.class_inst;
 		else
-			g_assert (!m->klass->generic_container);
+			g_assert (!mono_class_is_gtd (m->klass));
 
 		generic_virtual = mono_arch_find_imt_method (regs, code);
 		g_assert (generic_virtual);
@@ -662,10 +662,10 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTable *
 			else
 				declaring = m;
 
-			if (klass->generic_class)
-				context.class_inst = klass->generic_class->context.class_inst;
-			else if (klass->generic_container)
-				context.class_inst = klass->generic_container->context.class_inst;
+			if (mono_class_is_ginst (klass))
+				context.class_inst = mono_class_get_generic_class (klass)->context.class_inst;
+			else if (mono_class_is_gtd (klass))
+				context.class_inst = mono_class_get_generic_container (klass)->context.class_inst;
 			context.method_inst = method_inst;
 
 			actual_method = mono_class_inflate_generic_method_checked (declaring, &context, error);
@@ -935,10 +935,10 @@ mono_generic_virtual_remoting_trampoline (mgreg_t *regs, guint8 *code, MonoMetho
 	else
 		declaring = m;
 
-	if (m->klass->generic_class)
-		context.class_inst = m->klass->generic_class->context.class_inst;
+	if (mono_class_is_ginst (m->klass))
+		context.class_inst = mono_class_get_generic_class (m->klass)->context.class_inst;
 	else
-		g_assert (!m->klass->generic_container);
+		g_assert (!mono_class_is_gtd (m->klass));
 
 	imt_method = mono_arch_find_imt_method (regs, code);
 	if (imt_method->is_inflated)
@@ -1188,7 +1188,7 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *arg, guint8* tr
 			 * If the call doesn't return a valuetype, then the vcall uses the same calling
 			 * convention as a normal call.
 			 */
-			if (((method->klass->flags & TYPE_ATTRIBUTE_SEALED) || !(method->flags & METHOD_ATTRIBUTE_VIRTUAL)) && !MONO_TYPE_ISSTRUCT (sig->ret)) {
+			if (((mono_class_get_flags (method->klass) & TYPE_ATTRIBUTE_SEALED) || !(method->flags & METHOD_ATTRIBUTE_VIRTUAL)) && !MONO_TYPE_ISSTRUCT (sig->ret)) {
 				callvirt = FALSE;
 				enable_caching = FALSE;
 			}
@@ -1197,7 +1197,7 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *arg, guint8* tr
 		if (delegate->target && 
 			method->flags & METHOD_ATTRIBUTE_VIRTUAL && 
 			method->flags & METHOD_ATTRIBUTE_ABSTRACT &&
-			method->klass->flags & TYPE_ATTRIBUTE_ABSTRACT) {
+			mono_class_is_abstract (method->klass)) {
 			method = mono_object_get_virtual_method (delegate->target, method);
 			enable_caching = FALSE;
 		}

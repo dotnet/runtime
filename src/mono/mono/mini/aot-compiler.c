@@ -2769,7 +2769,7 @@ encode_klass_ref_inner (MonoAotCompile *acfg, MonoClass *klass, guint8 *buf, gui
 	 * information.
 	 */
 
-	if (klass->generic_class) {
+	if (mono_class_is_ginst (klass)) {
 		guint32 token;
 		g_assert (klass->type_token);
 
@@ -2779,8 +2779,8 @@ encode_klass_ref_inner (MonoAotCompile *acfg, MonoClass *klass, guint8 *buf, gui
 			encode_value (MONO_AOT_TYPEREF_TYPESPEC_TOKEN, p, &p);
 			encode_value (token, p, &p);
 		} else {
-			MonoClass *gclass = klass->generic_class->container_class;
-			MonoGenericInst *inst = klass->generic_class->context.class_inst;
+			MonoClass *gclass = mono_class_get_generic_class (klass)->container_class;
+			MonoGenericInst *inst = mono_class_get_generic_class (klass)->context.class_inst;
 			static int count = 0;
 			guint8 *p1 = p;
 
@@ -2854,7 +2854,7 @@ encode_klass_ref (MonoAotCompile *acfg, MonoClass *klass, guint8 *buf, guint8 **
 	/* 
 	 * The encoding of generic instances is large so emit them only once.
 	 */
-	if (klass->generic_class) {
+	if (mono_class_is_ginst (klass)) {
 		guint32 token;
 		g_assert (klass->type_token);
 
@@ -3615,7 +3615,7 @@ can_marshal_struct (MonoClass *klass)
 	MonoMarshalType *info;
 	int i;
 
-	if ((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_AUTO_LAYOUT)
+	if ((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_AUTO_LAYOUT)
 		return FALSE;
 
 	info = mono_marshal_load_type_info (klass);
@@ -3687,8 +3687,8 @@ create_gsharedvt_inst (MonoAotCompile *acfg, MonoMethod *method, MonoGenericCont
 
 	memset (ctx, 0, sizeof (MonoGenericContext));
 
-	if (method->klass->generic_container) {
-		shared_context = method->klass->generic_container->context;
+	if (mono_class_is_gtd (method->klass)) {
+		shared_context = mono_class_get_generic_container (method->klass)->context;
 		inst = shared_context.class_inst;
 
 		args = g_new0 (MonoType*, inst->type_argc);
@@ -3967,7 +3967,7 @@ add_wrappers (MonoAotCompile *acfg)
 		if (!klass->delegate || klass == mono_defaults.delegate_class || klass == mono_defaults.multicastdelegate_class)
 			continue;
 
-		if (!klass->generic_container) {
+		if (!mono_class_is_gtd (klass)) {
 			method = mono_get_delegate_invoke (klass);
 
 			m = mono_marshal_get_delegate_invoke (method, NULL);
@@ -4007,7 +4007,7 @@ add_wrappers (MonoAotCompile *acfg)
 					add_method (acfg, del_invoke);
 				}
 			}
-		} else if ((acfg->opts & MONO_OPT_GSHAREDVT) && klass->generic_container) {
+		} else if ((acfg->opts & MONO_OPT_GSHAREDVT) && mono_class_is_gtd (klass)) {
 			MonoError error;
 			MonoGenericContext ctx;
 			MonoMethod *inst, *gshared;
@@ -4101,7 +4101,7 @@ add_wrappers (MonoAotCompile *acfg)
 		if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) {
 			if (method->is_generic) {
 				// FIXME:
-			} else if ((acfg->opts & MONO_OPT_GSHAREDVT) && method->klass->generic_container) {
+			} else if ((acfg->opts & MONO_OPT_GSHAREDVT) && mono_class_is_gtd (method->klass)) {
 				MonoError error;
 				MonoGenericContext ctx;
 				MonoMethod *inst, *gshared, *m;
@@ -4275,7 +4275,7 @@ add_wrappers (MonoAotCompile *acfg)
 			continue;
 		}
 
-		if (klass->valuetype && !klass->generic_container && can_marshal_struct (klass) &&
+		if (klass->valuetype && !mono_class_is_gtd (klass) && can_marshal_struct (klass) &&
 			!(klass->nested_in && strstr (klass->nested_in->name, "<PrivateImplementationDetails>") == klass->nested_in->name)) {
 			add_method (acfg, mono_marshal_get_struct_to_ptr (klass));
 			add_method (acfg, mono_marshal_get_ptr_to_struct (klass));
@@ -4290,8 +4290,8 @@ has_type_vars (MonoClass *klass)
 		return TRUE;
 	if (klass->rank)
 		return has_type_vars (klass->element_class);
-	if (klass->generic_class) {
-		MonoGenericContext *context = &klass->generic_class->context;
+	if (mono_class_is_ginst (klass)) {
+		MonoGenericContext *context = &mono_class_get_generic_class (klass)->context;
 		if (context->class_inst) {
 			int i;
 
@@ -4300,7 +4300,7 @@ has_type_vars (MonoClass *klass)
 					return TRUE;
 		}
 	}
-	if (klass->generic_container)
+	if (mono_class_is_gtd (klass))
 		return TRUE;
 	return FALSE;
 }
@@ -4410,13 +4410,13 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 
 	mono_class_init (klass);
 
-	if (klass->generic_class && klass->generic_class->context.class_inst->is_open)
+	if (mono_class_is_ginst (klass) && mono_class_get_generic_class (klass)->context.class_inst->is_open)
 		return;
 
 	if (has_type_vars (klass))
 		return;
 
-	if (!klass->generic_class && !klass->rank)
+	if (!mono_class_is_ginst (klass) && !klass->rank)
 		return;
 
 	if (mono_class_has_failure (klass))
@@ -4440,7 +4440,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 	 * Use gsharedvt for generic collections with vtype arguments to avoid code blowup.
 	 * Enable this only for some classes since gsharedvt might not support all methods.
 	 */
-	if ((acfg->opts & MONO_OPT_GSHAREDVT) && klass->image == mono_defaults.corlib && klass->generic_class && klass->generic_class->context.class_inst && is_vt_inst (klass->generic_class->context.class_inst) &&
+	if ((acfg->opts & MONO_OPT_GSHAREDVT) && klass->image == mono_defaults.corlib && mono_class_is_ginst (klass) && mono_class_get_generic_class (klass)->context.class_inst && is_vt_inst (mono_class_get_generic_class (klass)->context.class_inst) &&
 		(!strcmp (klass->name, "Dictionary`2") || !strcmp (klass->name, "List`1") || !strcmp (klass->name, "ReadOnlyCollection`1")))
 		use_gsharedvt = TRUE;
 
@@ -4497,7 +4497,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 	 */
 	if (klass->image == mono_defaults.corlib && !strcmp (klass->name_space, "System.Collections.Generic") &&
 		(!strcmp(klass->name, "ICollection`1") || !strcmp (klass->name, "IEnumerable`1") || !strcmp (klass->name, "IList`1") || !strcmp (klass->name, "IEnumerator`1") || !strcmp (klass->name, "IReadOnlyList`1"))) {
-		MonoClass *tclass = mono_class_from_mono_type (klass->generic_class->context.class_inst->type_argv [0]);
+		MonoClass *tclass = mono_class_from_mono_type (mono_class_get_generic_class (klass)->context.class_inst->type_argv [0]);
 		MonoClass *array_class = mono_bounded_array_class_get (tclass, 1, FALSE);
 		gpointer iter;
 		char *name_prefix;
@@ -4518,7 +4518,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 					break;
 			}
 			g_assert (nclass);
-			nclass = mono_class_inflate_generic_class_checked (nclass, mono_generic_class_get_context (klass->generic_class), &error);
+			nclass = mono_class_inflate_generic_class_checked (nclass, mono_generic_class_get_context (mono_class_get_generic_class (klass)), &error);
 			mono_error_assert_ok (&error); /* FIXME don't swallow the error */
 			add_generic_class (acfg, nclass, FALSE, "ICollection<T>");
 		}
@@ -4538,7 +4538,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 	/* Add an instance of GenericComparer<T> which is created dynamically by Comparer<T> */
 	if (klass->image == mono_defaults.corlib && !strcmp (klass->name_space, "System.Collections.Generic") && !strcmp (klass->name, "Comparer`1")) {
 		MonoError error;
-		MonoClass *tclass = mono_class_from_mono_type (klass->generic_class->context.class_inst->type_argv [0]);
+		MonoClass *tclass = mono_class_from_mono_type (mono_class_get_generic_class (klass)->context.class_inst->type_argv [0]);
 		MonoClass *icomparable, *gcomparer, *icomparable_inst;
 		MonoGenericContext ctx;
 		MonoType *args [16];
@@ -4566,7 +4566,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 	/* Add an instance of GenericEqualityComparer<T> which is created dynamically by EqualityComparer<T> */
 	if (klass->image == mono_defaults.corlib && !strcmp (klass->name_space, "System.Collections.Generic") && !strcmp (klass->name, "EqualityComparer`1")) {
 		MonoError error;
-		MonoClass *tclass = mono_class_from_mono_type (klass->generic_class->context.class_inst->type_argv [0]);
+		MonoClass *tclass = mono_class_from_mono_type (mono_class_get_generic_class (klass)->context.class_inst->type_argv [0]);
 		MonoClass *iface, *gcomparer, *iface_inst;
 		MonoGenericContext ctx;
 		MonoType *args [16];
@@ -4595,7 +4595,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 	/* Add an instance of EnumComparer<T> which is created dynamically by EqualityComparer<T> for enums */
 	if (klass->image == mono_defaults.corlib && !strcmp (klass->name_space, "System.Collections.Generic") && !strcmp (klass->name, "EqualityComparer`1")) {
 		MonoClass *enum_comparer;
-		MonoClass *tclass = mono_class_from_mono_type (klass->generic_class->context.class_inst->type_argv [0]);
+		MonoClass *tclass = mono_class_from_mono_type (mono_class_get_generic_class (klass)->context.class_inst->type_argv [0]);
 		MonoGenericContext ctx;
 		MonoType *args [16];
 
@@ -4617,7 +4617,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 	/* Add an instance of ObjectComparer<T> which is created dynamically by Comparer<T> for enums */
 	if (klass->image == mono_defaults.corlib && !strcmp (klass->name_space, "System.Collections.Generic") && !strcmp (klass->name, "Comparer`1")) {
 		MonoClass *comparer;
-		MonoClass *tclass = mono_class_from_mono_type (klass->generic_class->context.class_inst->type_argv [0]);
+		MonoClass *tclass = mono_class_from_mono_type (mono_class_get_generic_class (klass)->context.class_inst->type_argv [0]);
 		MonoGenericContext ctx;
 		MonoType *args [16];
 
@@ -4793,7 +4793,7 @@ add_generic_instances (MonoAotCompile *acfg)
 				g_free (type_argv);
 			}
 
-			if (method->is_generic || method->klass->generic_container)
+			if (method->is_generic || mono_class_is_gtd (method->klass))
 				declaring_method = method;
 			else
 				declaring_method = mono_method_get_declaring_generic_method (method);
@@ -5012,7 +5012,7 @@ is_direct_callable (MonoAotCompile *acfg, MonoMethod *method, MonoJumpInfo *patc
 		if (callee_cfg) {
 			gboolean direct_callable = TRUE;
 
-			if (direct_callable && !(!callee_cfg->has_got_slots && (callee_cfg->method->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT)))
+			if (direct_callable && !(!callee_cfg->has_got_slots && (mono_class_get_flags (callee_cfg->method->klass) & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT)))
 				direct_callable = FALSE;
 			if ((callee_cfg->method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) && (!method || method->wrapper_type != MONO_WRAPPER_SYNCHRONIZED))
 				// FIXME: Maybe call the wrapper directly ?
@@ -6272,11 +6272,11 @@ emit_klass_info (MonoAotCompile *acfg, guint32 token)
 
 	mono_class_has_finalizer (klass);
 
-	if (klass->generic_container || cant_encode) {
+	if (mono_class_is_gtd (klass) || cant_encode) {
 		encode_value (-1, p, &p);
 	} else {
 		encode_value (klass->vtable_size, p, &p);
-		encode_value ((klass->generic_container ? (1 << 8) : 0) | (no_special_static << 7) | (klass->has_static_refs << 6) | (klass->has_references << 5) | ((klass->blittable << 4) | ((klass->ext && klass->ext->nested_classes) ? 1 : 0) << 3) | (klass->has_cctor << 2) | (klass->has_finalize << 1) | klass->ghcimpl, p, &p);
+		encode_value ((mono_class_is_gtd (klass) ? (1 << 8) : 0) | (no_special_static << 7) | (klass->has_static_refs << 6) | (klass->has_references << 5) | ((klass->blittable << 4) | ((klass->ext && klass->ext->nested_classes) ? 1 : 0) << 3) | (klass->has_cctor << 2) | (klass->has_finalize << 1) | klass->ghcimpl, p, &p);
 		if (klass->has_cctor)
 			encode_method_ref (acfg, mono_class_get_cctor (klass), p, &p);
 		if (klass->has_finalize)
@@ -7329,7 +7329,7 @@ is_concrete_type (MonoType *t)
 		if (!MONO_TYPE_ISSTRUCT (t))
 			return TRUE;
 		klass = mono_class_from_mono_type (t);
-		orig_ctx = &klass->generic_class->context;
+		orig_ctx = &mono_class_get_generic_class (klass)->context;
 
 		inst = orig_ctx->class_inst;
 		if (inst) {
@@ -7466,7 +7466,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	InterlockedIncrement (&acfg->stats.mcount);
 
 #if 0
-	if (method->is_generic || method->klass->generic_container) {
+	if (method->is_generic || mono_class_is_gtd (method->klass)) {
 		InterlockedIncrement (&acfg->stats.genericcount);
 		return;
 	}
@@ -7645,7 +7645,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 			case MONO_PATCH_INFO_VTABLE: {
 				MonoClass *klass = patch_info->data.klass;
 
-				if (klass->generic_class && !mini_class_is_generic_sharable (klass))
+				if (mono_class_is_ginst (klass) && !mini_class_is_generic_sharable (klass))
 					add_generic_class_with_depth (acfg, klass, depth + 5, "vtable");
 				break;
 			}
@@ -7653,7 +7653,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 				MonoClass *klass = patch_info->data.field->parent;
 
 				/* The .cctor needs to run at runtime. */
-				if (klass->generic_class && !mono_generic_context_is_sharable_full (&klass->generic_class->context, FALSE, FALSE) && mono_class_get_cctor (klass))
+				if (mono_class_is_ginst (klass) && !mono_generic_context_is_sharable_full (&mono_class_get_generic_class (klass)->context, FALSE, FALSE) && mono_class_get_cctor (klass))
 					add_extra_method_with_depth (acfg, mono_class_get_cctor (klass), depth + 1);
 				break;
 			}
@@ -8630,8 +8630,8 @@ mono_aot_method_hash (MonoMethod *method)
 
 	sig = mono_method_signature (method);
 
-	if (method->klass->generic_class)
-		class_ginst = method->klass->generic_class->context.class_inst;
+	if (mono_class_is_ginst (method->klass))
+		class_ginst = mono_class_get_generic_class (method->klass)->context.class_inst;
 	if (method->is_inflated)
 		ginst = ((MonoMethodInflated*)method)->context.method_inst;
 
@@ -8648,8 +8648,8 @@ mono_aot_method_hash (MonoMethod *method)
 	if (!method->wrapper_type) {
 		char *full_name;
 
-		if (klass->generic_class)
-			full_name = mono_type_full_name (&klass->generic_class->container_class->byval_arg);
+		if (mono_class_is_ginst (klass))
+			full_name = mono_type_full_name (&mono_class_get_generic_class (klass)->container_class->byval_arg);
 		else
 			full_name = mono_type_full_name (&klass->byval_arg);
 
@@ -9746,7 +9746,7 @@ collect_methods (MonoAotCompile *acfg)
 		}
 		*/
 
-		if (method->is_generic || method->klass->generic_container)
+		if (method->is_generic || mono_class_is_gtd (method->klass))
 			/* Compile the ref shared version instead */
 			method = mini_get_shared_method (method);
 
@@ -9767,7 +9767,7 @@ collect_methods (MonoAotCompile *acfg)
 		method = mono_get_method_checked (acfg->image, token, NULL, NULL, &error);
 		report_loader_error (acfg, &error, "Failed to load method token 0x%x due to %s\n", i, mono_error_get_message (&error));
 
-		if (method->is_generic || method->klass->generic_container) {
+		if (method->is_generic || mono_class_is_gtd (method->klass)) {
 			MonoMethod *gshared;
 
 			gshared = mini_get_shared_method_full (method, TRUE, TRUE);

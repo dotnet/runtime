@@ -96,7 +96,7 @@ type_get_qualified_name (MonoType *type, MonoAssembly *ass)
 		return mono_type_get_name_full (type, MONO_TYPE_NAME_FORMAT_REFLECTION);
 	ta = klass->image->assembly;
 	if (assembly_is_dynamic (ta) || (ta == ass)) {
-		if (klass->generic_class || klass->generic_container)
+		if (mono_class_is_ginst (klass) || mono_class_is_gtd (klass))
 			/* For generic type definitions, we want T, while REFLECTION returns T<K> */
 			return mono_type_get_name_full (type, MONO_TYPE_NAME_FORMAT_FULL_NAME);
 		else
@@ -704,7 +704,7 @@ mono_image_get_varargs_method_token (MonoDynamicImage *assembly, guint32 origina
 static gboolean
 is_field_on_inst (MonoClassField *field)
 {
-	return field->parent->generic_class && field->parent->generic_class->is_dynamic;
+	return mono_class_is_ginst (field->parent) && mono_class_get_generic_class (field->parent)->is_dynamic;
 }
 
 #ifndef DISABLE_REFLECTION_EMIT
@@ -721,9 +721,9 @@ mono_image_get_fieldref_token (MonoDynamicImage *assembly, MonoObject *f, MonoCl
 	if (token)
 		return token;
 
-	if (field->parent->generic_class && field->parent->generic_class->container_class && field->parent->generic_class->container_class->fields) {
+	if (mono_class_is_ginst (field->parent) && mono_class_get_generic_class (field->parent)->container_class && mono_class_get_generic_class (field->parent)->container_class->fields) {
 		int index = field - field->parent->fields;
-		type = mono_field_get_type (&field->parent->generic_class->container_class->fields [index]);
+		type = mono_field_get_type (&mono_class_get_generic_class (field->parent)->container_class->fields [index]);
 	} else {
 		type = mono_field_get_type (field);
 	}
@@ -1138,7 +1138,7 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj,
 		return_val_if_nok (error, 0);
 		MonoClass *mc = mono_class_from_mono_type (type);
 		token = mono_metadata_token_from_dor (
-			mono_dynimage_encode_typedef_or_ref_full (assembly, type, mc->generic_container == NULL || create_open_instance));
+			mono_dynimage_encode_typedef_or_ref_full (assembly, type, !mono_class_is_gtd (mc) || create_open_instance));
 	} else if (strcmp (klass->name, "MonoCMethod") == 0 ||
 			   strcmp (klass->name, "MonoMethod") == 0) {
 		MonoReflectionMethod *m = (MonoReflectionMethod *)obj;
@@ -1148,7 +1148,7 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj,
 			else
 				token = mono_image_get_inflated_method_token (assembly, m->method);
 		} else if ((m->method->klass->image == &assembly->image) &&
-			 !m->method->klass->generic_class) {
+			 !mono_class_is_ginst (m->method->klass)) {
 			static guint32 method_table_idx = 0xffffff;
 			if (m->method->klass->wastypebuilder) {
 				/* we use the same token as the one that was assigned
@@ -1583,8 +1583,8 @@ mono_reflection_type_get_handle (MonoReflectionType* ref, MonoError *error)
 			MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType*)(gparam->tbuilder), error);
 			mono_error_assert_ok (error);
 			MonoClass *owner = mono_class_from_mono_type (type);
-			g_assert (owner->generic_container);
-			param->param.owner = owner->generic_container;
+			g_assert (mono_class_is_gtd (owner));
+			param->param.owner = mono_class_get_generic_container (owner);
 		}
 
 		pklass = mono_class_from_generic_parameter_internal ((MonoGenericParam *) param);
@@ -2298,7 +2298,13 @@ reflection_setup_internal_class (MonoReflectionTypeBuilder *tb, MonoError *error
 		return TRUE;
 	}
 
-	klass = (MonoClass *)mono_image_alloc0 (&tb->module->dynamic_image->image, sizeof (MonoClass));
+	/*
+	 * The size calculation here warrants some explaining. 
+	 * reflection_setup_internal_class is called too early, well before we know whether the type will be a GTD or DEF,
+	 * meaning we need to alloc enough space to morth a def into a gtd.
+	 */
+	klass = (MonoClass *)mono_image_alloc0 (&tb->module->dynamic_image->image, MAX (sizeof (MonoClassDef), sizeof (MonoClassGtd)));
+	klass->class_kind = MONO_CLASS_DEF;
 
 	klass->image = &tb->module->dynamic_image->image;
 
@@ -2310,7 +2316,7 @@ reflection_setup_internal_class (MonoReflectionTypeBuilder *tb, MonoError *error
 	if (!is_ok (error))
 		goto failure;
 	klass->type_token = MONO_TOKEN_TYPE_DEF | tb->table_idx;
-	klass->flags = tb->attrs;
+	mono_class_set_flags (klass, tb->attrs);
 	
 	mono_profiler_class_event (klass, MONO_PROFILE_START_LOAD);
 
@@ -2410,29 +2416,31 @@ reflection_create_generic_class (MonoReflectionTypeBuilder *tb, MonoError *error
 	if (count == 0)
 		return TRUE;
 
-	klass->generic_container = (MonoGenericContainer *)mono_image_alloc0 (klass->image, sizeof (MonoGenericContainer));
+	MonoGenericContainer *generic_container = (MonoGenericContainer *)mono_image_alloc0 (klass->image, sizeof (MonoGenericContainer));
 
-	klass->generic_container->owner.klass = klass;
-	klass->generic_container->type_argc = count;
-	klass->generic_container->type_params = (MonoGenericParamFull *)mono_image_alloc0 (klass->image, sizeof (MonoGenericParamFull) * count);
+	generic_container->owner.klass = klass;
+	generic_container->type_argc = count;
+	generic_container->type_params = (MonoGenericParamFull *)mono_image_alloc0 (klass->image, sizeof (MonoGenericParamFull) * count);
 
-	klass->is_generic = 1;
+	klass->class_kind = MONO_CLASS_GTD;
+	mono_class_set_generic_container (klass, generic_container);
+
 
 	for (i = 0; i < count; i++) {
 		MonoReflectionGenericParam *gparam = (MonoReflectionGenericParam *)mono_array_get (tb->generic_params, gpointer, i);
 		MonoType *param_type = mono_reflection_type_get_handle ((MonoReflectionType*)gparam, error);
 		return_val_if_nok (error, FALSE);
 		MonoGenericParamFull *param = (MonoGenericParamFull *) param_type->data.generic_param;
-		klass->generic_container->type_params [i] = *param;
+		generic_container->type_params [i] = *param;
 		/*Make sure we are a diferent type instance */
-		klass->generic_container->type_params [i].param.owner = klass->generic_container;
-		klass->generic_container->type_params [i].info.pklass = NULL;
-		klass->generic_container->type_params [i].info.flags = gparam->attrs;
+		generic_container->type_params [i].param.owner = generic_container;
+		generic_container->type_params [i].info.pklass = NULL;
+		generic_container->type_params [i].info.flags = gparam->attrs;
 
-		g_assert (klass->generic_container->type_params [i].param.owner);
+		g_assert (generic_container->type_params [i].param.owner);
 	}
 
-	klass->generic_container->context.class_inst = mono_get_shared_generic_inst (klass->generic_container);
+	generic_container->context.class_inst = mono_get_shared_generic_inst (generic_container);
 	return TRUE;
 }
 
@@ -2573,7 +2581,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 	image = dynamic ? NULL : klass->image;
 
 	if (!dynamic)
-		g_assert (!klass->generic_class);
+		g_assert (!mono_class_is_ginst (klass));
 
 	mono_loader_lock ();
 
@@ -2724,9 +2732,9 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 			}
 		}
 
-		if (klass->generic_container) {
-			container->parent = klass->generic_container;
-			container->context.class_inst = klass->generic_container->context.class_inst;
+		if (mono_class_is_gtd (klass)) {
+			container->parent = mono_class_get_generic_container (klass);
+			container->context.class_inst = mono_class_get_generic_container (klass)->context.class_inst;
 		}
 		container->context.method_inst = mono_get_shared_generic_inst (container);
 	}
@@ -2903,7 +2911,7 @@ methodbuilder_to_mono_method (MonoClass *klass, MonoReflectionMethodBuilder* mb,
 static gboolean
 fix_partial_generic_class (MonoClass *klass, MonoError *error)
 {
-	MonoClass *gklass = klass->generic_class->container_class;
+	MonoClass *gklass = mono_class_get_generic_class (klass)->container_class;
 	int i;
 
 	mono_error_init (error);
@@ -2912,7 +2920,7 @@ fix_partial_generic_class (MonoClass *klass, MonoError *error)
 		return TRUE;
 
 	if (klass->parent != gklass->parent) {
-		MonoType *parent_type = mono_class_inflate_generic_type_checked (&gklass->parent->byval_arg, &klass->generic_class->context, error);
+		MonoType *parent_type = mono_class_inflate_generic_type_checked (&gklass->parent->byval_arg, &mono_class_get_generic_class (klass)->context, error);
 		if (mono_error_ok (error)) {
 			MonoClass *parent = mono_class_from_mono_type (parent_type);
 			mono_metadata_free_type (parent_type);
@@ -2928,7 +2936,7 @@ fix_partial_generic_class (MonoClass *klass, MonoError *error)
 		}
 	}
 
-	if (!klass->generic_class->need_sync)
+	if (!mono_class_get_generic_class (klass)->need_sync)
 		return TRUE;
 
 	if (klass->method.count != gklass->method.count) {
@@ -2989,7 +2997,7 @@ fix_partial_generic_class (MonoClass *klass, MonoError *error)
 static gboolean
 ensure_generic_class_runtime_vtable (MonoClass *klass, MonoError *error)
 {
-	MonoClass *gklass = klass->generic_class->container_class;
+	MonoClass *gklass = mono_class_get_generic_class (klass)->container_class;
 
 	mono_error_init (error);
 
@@ -3015,7 +3023,7 @@ ensure_runtime_vtable (MonoClass *klass, MonoError *error)
 
 	mono_error_init (error);
 
-	if (!image_is_dynamic (klass->image) || (!tb && !klass->generic_class) || klass->wastypebuilder)
+	if (!image_is_dynamic (klass->image) || (!tb && !mono_class_is_ginst (klass)) || klass->wastypebuilder)
 		return TRUE;
 	if (klass->parent)
 		if (!ensure_runtime_vtable (klass->parent, error))
@@ -3054,14 +3062,14 @@ ensure_runtime_vtable (MonoClass *klass, MonoError *error)
 			}
 			klass->interfaces_inited = 1;
 		}
-	} else if (klass->generic_class){
+	} else if (mono_class_is_ginst (klass)){
 		if (!ensure_generic_class_runtime_vtable (klass, error)) {
 			mono_class_set_type_load_failure (klass, "Could not initialize vtable for generic class due to: %s", mono_error_get_message (error));
 			return FALSE;
 		}
 	}
 
-	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+	if (mono_class_is_interface (klass)) {
 		int slot_num = 0;
 		for (i = 0; i < klass->method.count; ++i) {
 			MonoMethod *im = klass->methods [i];
@@ -3428,7 +3436,7 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	 * Fields to set in klass:
 	 * the various flags: delegate/unicode/contextbound etc.
 	 */
-	klass->flags = tb->attrs;
+	mono_class_set_flags (klass, tb->attrs);
 	klass->has_cctor = 1;
 
 	mono_class_setup_parent (klass, klass->parent);
@@ -3490,7 +3498,7 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	 *
 	 * Together with this we must ensure the contents of all instances to match the created type.
 	 */
-	if (domain->type_hash && klass->generic_container) {
+	if (domain->type_hash && mono_class_is_gtd (klass)) {
 		struct remove_instantiations_user_data data;
 		data.klass = klass;
 		data.error = &error;
@@ -3741,8 +3749,8 @@ ensure_complete_type (MonoClass *klass, MonoError *error)
 		//g_assert (klass->wastypebuilder);
 	}
 
-	if (klass->generic_class) {
-		MonoGenericInst *inst = klass->generic_class->context.class_inst;
+	if (mono_class_is_ginst (klass)) {
+		MonoGenericInst *inst = mono_class_get_generic_class (klass)->context.class_inst;
 		int i;
 
 		for (i = 0; i < inst->type_argc; ++i) {

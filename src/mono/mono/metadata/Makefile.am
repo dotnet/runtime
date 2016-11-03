@@ -125,6 +125,8 @@ common_sources = \
 	cil-coff.h		\
 	class.c			\
 	class-internals.h	\
+	class-inlines.h		\
+	class-accessors.c	\
 	cominterop.c		\
 	cominterop.h		\
 	console-io.h		\

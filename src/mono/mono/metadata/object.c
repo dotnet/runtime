@@ -1406,14 +1406,14 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer*
 		for (method_slot_in_interface = 0; method_slot_in_interface < iface->method.count; method_slot_in_interface++) {
 			MonoMethod *method;
 
-			if (slot_num >= 0 && iface->is_inflated) {
+			if (slot_num >= 0 && mono_class_is_ginst (iface)) {
 				/*
 				 * The imt slot of the method is the same as for its declaring method,
 				 * see the comment in mono_method_get_imt_slot (), so we can
 				 * avoid inflating methods which will be discarded by 
 				 * add_imt_builder_entry anyway.
 				 */
-				method = mono_class_get_method_by_index (iface->generic_class->container_class, method_slot_in_interface);
+				method = mono_class_get_method_by_index (mono_class_get_generic_class (iface)->container_class, method_slot_in_interface);
 				if (mono_method_get_imt_slot (method) != slot_num) {
 					vt_slot ++;
 					continue;
@@ -1905,7 +1905,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 	if (!klass->vtable_size)
 		mono_class_setup_vtable (klass);
 
-	if (klass->generic_class && !klass->vtable)
+	if (mono_class_is_ginst (klass) && !klass->vtable)
 		mono_class_check_vtable_constraints (klass, NULL);
 
 	/* Initialize klass->has_finalize */
@@ -2290,7 +2290,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 			pvt->vtable [i] = NULL;
 	}
 
-	if (klass->flags & TYPE_ATTRIBUTE_ABSTRACT) {
+	if (mono_class_is_abstract (klass)) {
 		/* create trampolines for abstract methods */
 		for (k = klass; k; k = k->parent) {
 			MonoMethod* m;
@@ -2448,7 +2448,7 @@ create_remote_class_key (MonoRemoteClass *remote_class, MonoClass *extra_class)
 	int i, j;
 	
 	if (remote_class == NULL) {
-		if (extra_class->flags & TYPE_ATTRIBUTE_INTERFACE) {
+		if (mono_class_is_interface (extra_class)) {
 			key = (void **)g_malloc (sizeof(gpointer) * 3);
 			key [0] = GINT_TO_POINTER (2);
 			key [1] = mono_defaults.marshalbyrefobject_class;
@@ -2459,7 +2459,7 @@ create_remote_class_key (MonoRemoteClass *remote_class, MonoClass *extra_class)
 			key [1] = extra_class;
 		}
 	} else {
-		if (extra_class != NULL && (extra_class->flags & TYPE_ATTRIBUTE_INTERFACE)) {
+		if (extra_class != NULL && mono_class_is_interface (extra_class)) {
 			key = (void **)g_malloc (sizeof(gpointer) * (remote_class->interface_count + 3));
 			key [0] = GINT_TO_POINTER (remote_class->interface_count + 2);
 			key [1] = remote_class->proxy_class;
@@ -2548,7 +2548,7 @@ mono_remote_class (MonoDomain *domain, MonoString *class_name, MonoClass *proxy_
 	g_free (key);
 	key = mp_key;
 
-	if (proxy_class->flags & TYPE_ATTRIBUTE_INTERFACE) {
+	if (mono_class_is_interface (proxy_class)) {
 		rc = (MonoRemoteClass *)mono_domain_alloc (domain, MONO_SIZEOF_REMOTE_CLASS + sizeof(MonoClass*));
 		rc->interface_count = 1;
 		rc->interfaces [0] = proxy_class;
@@ -2595,7 +2595,7 @@ clone_remote_class (MonoDomain *domain, MonoRemoteClass* remote_class, MonoClass
 	g_free (key);
 	key = mp_key;
 
-	if (extra_class->flags & TYPE_ATTRIBUTE_INTERFACE) {
+	if (mono_class_is_interface (extra_class)) {
 		int i,j;
 		rc = (MonoRemoteClass *)mono_domain_alloc (domain, MONO_SIZEOF_REMOTE_CLASS + sizeof(MonoClass*) * (remote_class->interface_count + 1));
 		rc->proxy_class = remote_class->proxy_class;
@@ -2696,7 +2696,7 @@ mono_upgrade_remote_class (MonoDomain *domain, MonoObject *proxy_object, MonoCla
 	tproxy = (MonoTransparentProxy*) proxy_object;
 	remote_class = tproxy->remote_class;
 	
-	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+	if (mono_class_is_interface (klass)) {
 		int i;
 		redo_vtable = TRUE;
 		for (i = 0; i < remote_class->interface_count && redo_vtable; i++)
@@ -2767,7 +2767,7 @@ mono_object_get_virtual_method (MonoObject *obj, MonoMethod *method)
 
 	/* check method->slot is a valid index: perform isinstance? */
 	if (method->slot != -1) {
-		if (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+		if (mono_class_is_interface (method->klass)) {
 			if (!is_proxy) {
 				gboolean variance_used = FALSE;
 				int iface_offset = mono_class_interface_offset_with_variance (klass, method->klass, &variance_used);
@@ -6487,7 +6487,7 @@ mono_object_isinst_checked (MonoObject *obj, MonoClass *klass, MonoError *error)
 	if (!klass->inited)
 		mono_class_init (klass);
 
-	if (mono_class_is_marshalbyref (klass) || (klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
+	if (mono_class_is_marshalbyref (klass) || mono_class_is_interface (klass)) {
 		result = mono_object_isinst_mbyref_checked (obj, klass, error);
 		return result;
 	}
@@ -6523,7 +6523,7 @@ mono_object_isinst_mbyref_checked (MonoObject *obj, MonoClass *klass, MonoError 
 
 	vt = obj->vtable;
 	
-	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+	if (mono_class_is_interface (klass)) {
 		if (MONO_VTABLE_IMPLEMENTS_INTERFACE (vt, klass->interface_id)) {
 			return obj;
 		}
@@ -7843,7 +7843,7 @@ mono_delegate_ctor (MonoObject *this_obj, MonoObject *target, gpointer addr, Mon
 		ji = mono_jit_info_table_find (mono_get_root_domain (), (char *)mono_get_addr_from_ftnptr (addr));
 	if (ji) {
 		method = mono_jit_info_get_method (ji);
-		g_assert (!method->klass->generic_container);
+		g_assert (!mono_class_is_gtd (method->klass));
 	}
 
 	return mono_delegate_ctor_with_method (this_obj, target, addr, method, error);
