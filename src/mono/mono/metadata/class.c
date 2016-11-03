@@ -6717,7 +6717,7 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	mono_profiler_class_event (klass, MONO_PROFILE_START_LOAD);
 
 	classes_size += sizeof (MonoClassArray);
-	++class_array_count;\
+	++class_array_count;
 
 	klass->type_token = 0;
 	klass->parent = parent;
