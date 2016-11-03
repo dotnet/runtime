@@ -7,8 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Dynamic.Runtime.cs" />
-    <!-- ToDo: Remove this P2P Reference once packages are updated -->
-    <ProjectReference Include="..\..\System.Linq.Expressions\ref\System.Linq.Expressions.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

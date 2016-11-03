@@ -15,8 +15,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
     <None Include="project.json" />
-    <!-- ToDo: Remove this P2P Reference once packages updates -->
-    <ProjectReference Include="..\..\System.Linq.Expressions\pkg\System.Linq.Expressions.pkgproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="mscorlib" />
