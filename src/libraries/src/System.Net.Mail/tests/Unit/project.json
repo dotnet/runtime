@@ -21,6 +21,7 @@
     "System.Text.Encoding": "4.4.0-beta-24703-01",
     "System.Security.Permissions": "4.4.0-beta-24703-01",
     "System.Net.Requests": "4.4.0-beta-24703-01",
+    "System.Net.Security": "4.4.0-beta-24703-01",
     "test-runtime": {
       "target": "project",
       "exclude": "compile"

@@ -59,11 +59,11 @@ namespace System.Net.Mail
                         {
                             _supportedAuth |= SupportedAuth.Login;
                         }
-                        else if (string.Compare(authType, AuthNtlm, StringComparison.OrdinalIgnoreCase) == 0)
+                        else if (string.Equals(authType, AuthNtlm, StringComparison.OrdinalIgnoreCase))
                         {
                             _supportedAuth |= SupportedAuth.NTLM;
                         }
-                        else if (string.Compare(authType, AuthGssapi, StringComparison.OrdinalIgnoreCase) == 0)
+                        else if (string.Equals(authType, AuthGssapi, StringComparison.OrdinalIgnoreCase))
                         {
                             _supportedAuth |= SupportedAuth.GSSAPI;
                         }

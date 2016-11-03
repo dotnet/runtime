@@ -212,7 +212,7 @@ namespace System.Net.Security
             if (offset < 0 || offset > (buffer == null ? 0 : buffer.Length))
             {
                 NetEventSource.Info("Argument 'offset' out of range.");
-                throw new ArgumentOutOfRangeException("offset");
+                throw new ArgumentOutOfRangeException(nameof(offset));
             }
 
             // validate count within offset and end of buffer
@@ -220,7 +220,7 @@ namespace System.Net.Security
                 count > (buffer == null ? 0 : buffer.Length - offset))
             {
                 NetEventSource.Info("Argument 'count' out of range.");
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
 
             // setup security buffers for ssp call

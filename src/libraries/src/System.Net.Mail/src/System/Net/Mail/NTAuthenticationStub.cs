@@ -2,69 +2,107 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Reflection;
-using System.Net.Security;
-using System.Security.Authentication.ExtendedProtection;
 using System.Diagnostics;
+using System.Net.Security;
+using System.Reflection;
+using System.Security.Authentication.ExtendedProtection;
 
 namespace System.Net
 {
     internal class NTAuthentication
     {
-        private static readonly Type s_type = typeof(NegotiateStream).Assembly.GetType("System.Net.NTAuthentication");
         private const BindingFlags NonPublicInstance = BindingFlags.NonPublic | BindingFlags.Instance;
 
-        private readonly ConstructorInfo _ntAuthentication;
-        private readonly MethodInfo _getOutgoingBlogString;
-        private readonly MethodInfo _getOutgoingBlobBytes;
-        private readonly MethodInfo _verifySignature;
-        private readonly MethodInfo _makeSignature;
-        private readonly MethodInfo _closeContext;
-        private readonly MethodInfo _isCompleted;
+        internal static readonly Type s_type;
+        internal static readonly ConstructorInfo s_ntAuthentication;
+        internal static readonly MethodInfo s_getOutgoingBlogString;
+        internal static readonly MethodInfo s_getOutgoingBlobBytes;
+        internal static readonly MethodInfo s_verifySignature;
+        internal static readonly MethodInfo s_makeSignature;
+        internal static readonly MethodInfo s_closeContext;
+        internal static readonly MethodInfo s_isCompleted;
+
+        private delegate int MakeSignatureDelegate(byte[] buffer, int offset, int count, ref byte[] output);
+
         private object _instance;
 
-        internal NTAuthentication(bool isServer, string package, NetworkCredential credential, string spn, ContextFlags requestedContextFlags, ChannelBinding channelBinding)
+        private Func<string, string> _getOutgoingBlobString;
+        private Func<byte[], bool, byte[]> _getOutgoingBlobBytes;
+        private Func<byte[], int, int, int> _verifySignature;
+        private Func<bool> _isCompleted;
+        private MakeSignatureDelegate _makeSignature;
+        private Action _closeContext;
+
+        static NTAuthentication()
         {
+            s_type = typeof(NegotiateStream).Assembly.GetType("System.Net.NTAuthentication");
             ConstructorInfo[] ctors = s_type.GetConstructors(NonPublicInstance & ~BindingFlags.Default);
             Debug.Assert(ctors.Length == 1);
 
-            _ntAuthentication = ctors[0];
-            _getOutgoingBlogString = s_type.GetMethod("GetOutgoingBlob", NonPublicInstance, null, new Type[] { typeof(string)}, null);
-            _getOutgoingBlobBytes = s_type.GetMethod("GetOutgoingBlob", NonPublicInstance, null, new Type[] { typeof(byte[]), typeof(bool) }, null);
-            _verifySignature = s_type.GetMethod("VerifySignature", NonPublicInstance);
-            _makeSignature = s_type.GetMethod("MakeSignature", NonPublicInstance);
-            _closeContext = s_type.GetMethod("CloseContext", NonPublicInstance);
-            _isCompleted = s_type.GetProperty("IsCompleted", NonPublicInstance).GetMethod;
+            s_ntAuthentication = ctors[0];
+            s_getOutgoingBlogString = s_type.GetMethod("GetOutgoingBlob", NonPublicInstance, null, new Type[] { typeof(string) }, null);
+            s_getOutgoingBlobBytes = s_type.GetMethod("GetOutgoingBlob", NonPublicInstance, null, new Type[] { typeof(byte[]), typeof(bool) }, null);
+            s_verifySignature = s_type.GetMethod("VerifySignature", NonPublicInstance);
+            s_makeSignature = s_type.GetMethod("MakeSignature", NonPublicInstance);
+            s_closeContext = s_type.GetMethod("CloseContext", NonPublicInstance);
+            s_isCompleted = s_type.GetProperty("IsCompleted", NonPublicInstance).GetMethod;
+        }
 
-            _instance = _ntAuthentication.Invoke(new object[] { isServer, package, credential, spn, requestedContextFlags, channelBinding });
+        internal NTAuthentication(bool isServer, string package, NetworkCredential credential, string spn, ContextFlags requestedContextFlags, ChannelBinding channelBinding)
+        {
+            _instance = s_ntAuthentication.Invoke(new object[] { isServer, package, credential, spn, requestedContextFlags, channelBinding });
+        }
+
+        private void EnsureDelegateInitialized<TFunc>(ref TFunc delegateType, MethodInfo method)
+        {
+            if (delegateType == null)
+            {
+                delegateType = (TFunc)(object)method.CreateDelegate(typeof(TFunc), _instance);
+            }
         }
 
         internal string GetOutgoingBlob(string challenge)
         {
-            return (string)_getOutgoingBlogString.Invoke(_instance, new object[] { challenge });
+            EnsureDelegateInitialized(ref _getOutgoingBlobString, s_getOutgoingBlogString);
+            return _getOutgoingBlobString(challenge);
         }
 
         internal byte[] GetOutgoingBlob(byte[] incomingBlob, bool throwOnError)
         {
-            return (byte[])_getOutgoingBlobBytes.Invoke(_instance, new object[] { incomingBlob, throwOnError });
+            EnsureDelegateInitialized(ref _getOutgoingBlobBytes, s_getOutgoingBlobBytes);
+            return _getOutgoingBlobBytes(incomingBlob, throwOnError);
         }
 
         internal int VerifySignature(byte[] buffer, int offset, int count)
         {
-            return (int)_verifySignature.Invoke(_instance, new object[] { buffer, offset, count });
+            EnsureDelegateInitialized(ref _verifySignature, s_verifySignature);
+            return _verifySignature(buffer, offset, count);
         }
 
         internal int MakeSignature(byte[] buffer, int offset, int count, ref byte[] output)
         {
-            return (int)_makeSignature.Invoke(_instance, new object[] { buffer, offset, count, output });
+            if (_makeSignature == null)
+            {
+                _makeSignature = (MakeSignatureDelegate)s_makeSignature.CreateDelegate(typeof(MakeSignatureDelegate), _instance);
+            }
+
+            return _makeSignature(buffer, offset, count, ref output);
         }
 
         internal void CloseContext()
         {
-            _closeContext.Invoke(_instance, null);
+            EnsureDelegateInitialized(ref _closeContext, s_closeContext);
+            _closeContext();
         }
 
-        internal bool IsCompleted => (bool)_isCompleted.Invoke(_instance, null);
+        internal bool IsCompleted
+        {
+            get
+            {
+                EnsureDelegateInitialized(ref _isCompleted, s_isCompleted);
+                return _isCompleted();
+            }
+        }
     }
 
     [Flags]
