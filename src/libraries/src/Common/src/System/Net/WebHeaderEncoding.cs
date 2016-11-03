@@ -14,7 +14,7 @@ namespace System.Net
     internal static class WebHeaderEncoding
     {
         // We don't want '?' replacement characters, just fail.
-        static readonly Encoding s_utf8Decoder = Encoding.GetEncoding("utf-8", EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
+        private static readonly Encoding s_utf8Decoder = Encoding.GetEncoding("utf-8", EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
 
         internal static unsafe string GetString(byte[] bytes, int byteIndex, int byteCount)
         {
