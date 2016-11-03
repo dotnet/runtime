@@ -13,6 +13,9 @@ namespace System.Net
     // It doesn't work for string -> byte[] because of best-fit-mapping problems.
     internal static class WebHeaderEncoding
     {
+        // We don't want '?' replacement characters, just fail.
+        static readonly Encoding s_utf8Decoder = Encoding.GetEncoding("utf-8", EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
+
         internal static unsafe string GetString(byte[] bytes, int byteIndex, int byteCount)
         {
             fixed (byte* pBytes = bytes)
@@ -118,10 +121,7 @@ namespace System.Net
                 }
                 try
                 {
-                    // We don't want '?' replacement characters, just fail.
-                    Encoding decoder = Encoding.GetEncoding("utf-8", EncoderFallback.ExceptionFallback,
-                        DecoderFallback.ExceptionFallback);
-                    return decoder.GetString(rawBytes);
+                    return s_utf8Decoder.GetString(rawBytes);
                 }
                 catch (ArgumentException) { } // Not actually Utf-8
             }

@@ -45,7 +45,7 @@ namespace System.Net
         // 0.5 seconds per request.  Respond with a 400 Bad Request.
         private const int UnknownHeaderLimit = 1000;
 
-        private static byte[] s_WwwAuthenticateBytes = new byte[]
+        private static readonly byte[] s_WwwAuthenticateBytes = new byte[]
         {
             (byte) 'W', (byte) 'W', (byte) 'W', (byte) '-', (byte) 'A', (byte) 'u', (byte) 't', (byte) 'h',
             (byte) 'e', (byte) 'n', (byte) 't', (byte) 'i', (byte) 'c', (byte) 'a', (byte) 't', (byte) 'e'
@@ -336,7 +336,7 @@ namespace System.Net
             {
                 if (uriPrefix == null)
                 {
-                    throw new ArgumentNullException("uriPrefix");
+                    throw new ArgumentNullException(nameof(uriPrefix));
                 }
                 CheckDisposed();
                 //GlobalLog.Print("HttpListener#" + LoggingHash.HashString(this) + "::AddPrefix() uriPrefix:" + uriPrefix);
