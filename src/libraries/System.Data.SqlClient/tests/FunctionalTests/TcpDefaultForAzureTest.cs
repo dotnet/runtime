@@ -65,6 +65,7 @@ namespace System.Data.SqlClient.Tests
 
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void AzureNoProtocolConnectionTest()
         {
             foreach (string extension in AzureExtensions)
