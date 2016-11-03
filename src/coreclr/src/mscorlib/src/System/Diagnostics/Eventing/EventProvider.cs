@@ -175,16 +175,31 @@ namespace System.Diagnostics.Tracing
             // Disable the provider.  
             m_enabled = false;
 
-            // Do most of the work under a lock to avoid shutdown race.  
+            // Do most of the work under a lock to avoid shutdown race.
+
+            long registrationHandle = 0;  
             lock (EventListener.EventListenersLock)
             {
                 // Double check
                 if (m_disposed)
                     return;
 
-                Deregister();
+                registrationHandle = m_regHandle;
+                m_regHandle = 0;
                 m_disposed = true;
             }
+
+            // We do the Unregistration outside the EventListenerLock because there is a lock
+            // inside the ETW routines.   This lock is taken before ETW issues commands
+            // Thus the ETW lock gets taken first and then our EventListenersLock gets taken
+            // in SendCommand(), and also here.  If we called EventUnregister after taking
+            // the EventListenersLock then the take-lock order is reversed and we can have
+            // deadlocks in race conditions (dispose racing with an ETW command).   
+            // 
+            // We solve by Unregistering after releasing the EventListenerLock.     
+            if (registrationHandle != 0)
+                EventUnregister(registrationHandle);
+
         }
 
         /// <summary>
@@ -199,28 +214,6 @@ namespace System.Diagnostics.Tracing
         ~EventProvider()
         {
             Dispose(false);
-        }
-
-        /// <summary>
-        /// This method un-registers from ETW.
-        /// </summary>
-        // <SecurityKernel Critical="True" Ring="0">
-        // <CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.ManifestEtw.EventUnregister(System.Int64):System.Int32" />
-        // </SecurityKernel>
-        // TODO Check return code from UnsafeNativeMethods.ManifestEtw.EventUnregister
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1806:DoNotIgnoreMethodResults", MessageId = "Microsoft.Win32.UnsafeNativeMethods.ManifestEtw.EventUnregister(System.Int64)"), System.Security.SecurityCritical]
-        private unsafe void Deregister()
-        {
-            //
-            // Unregister from ETW using the RegHandle saved from
-            // the register call.
-            //
-
-            if (m_regHandle != 0)
-            {
-                EventUnregister();
-                m_regHandle = 0;
-            }
         }
 
         // <SecurityKernel Critical="True" Ring="0">
@@ -1192,11 +1185,9 @@ namespace System.Diagnostics.Tracing
         }
 
         [SecurityCritical]
-        private uint EventUnregister()
+        private uint EventUnregister(long registrationHandle)
         {
-            uint status = UnsafeNativeMethods.ManifestEtw.EventUnregister(m_regHandle);
-            m_regHandle = 0;
-            return status;
+            return UnsafeNativeMethods.ManifestEtw.EventUnregister(registrationHandle);
         }
 
         static int[] nibblebits = { 0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4 };
