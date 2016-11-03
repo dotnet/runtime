@@ -520,14 +520,17 @@ namespace System.Net.Security
                 throw new ArgumentNullException(nameof(inCredentials));
             }
 
-            Interop.SspiCli.SecBufferDesc inSecurityBufferDescriptor = null;
+            Interop.SspiCli.SecBufferDesc inSecurityBufferDescriptor = default(Interop.SspiCli.SecBufferDesc);
+            bool haveInSecurityBufferDescriptor = false;
             if (inSecBuffer != null)
             {
                 inSecurityBufferDescriptor = new Interop.SspiCli.SecBufferDesc(1);
+                haveInSecurityBufferDescriptor = true;
             }
             else if (inSecBuffers != null)
             {
                 inSecurityBufferDescriptor = new Interop.SspiCli.SecBufferDesc(inSecBuffers.Length);
+                haveInSecurityBufferDescriptor = true;
             }
 
             Interop.SspiCli.SecBufferDesc outSecurityBufferDescriptor = new Interop.SspiCli.SecBufferDesc(1);
@@ -552,10 +555,10 @@ namespace System.Net.Security
             try
             {
                 pinnedOutBytes = GCHandle.Alloc(outSecBuffer.token, GCHandleType.Pinned);
-                Interop.SspiCli.SecBuffer[] inUnmanagedBuffer = new Interop.SspiCli.SecBuffer[inSecurityBufferDescriptor == null ? 1 : inSecurityBufferDescriptor.cBuffers];
+                Interop.SspiCli.SecBuffer[] inUnmanagedBuffer = new Interop.SspiCli.SecBuffer[haveInSecurityBufferDescriptor ? inSecurityBufferDescriptor.cBuffers : 1];
                 fixed (void* inUnmanagedBufferPtr = inUnmanagedBuffer)
                 {
-                    if (inSecurityBufferDescriptor != null)
+                    if (haveInSecurityBufferDescriptor)
                     {
                         // Fix Descriptor pointer that points to unmanaged SecurityBuffers.
                         inSecurityBufferDescriptor.pBuffers = inUnmanagedBufferPtr;
@@ -630,9 +633,9 @@ namespace System.Net.Security
                                             (byte*)(((object)targetName == (object)dummyStr) ? null : namePtr),
                                             inFlags,
                                             endianness,
-                                            inSecurityBufferDescriptor,
+                                            haveInSecurityBufferDescriptor ? &inSecurityBufferDescriptor : null,
                                             refContext,
-                                            outSecurityBufferDescriptor,
+                                            ref outSecurityBufferDescriptor,
                                             ref outFlags,
                                             outFreeContextBuffer);
                         }
@@ -691,9 +694,9 @@ namespace System.Net.Security
             byte* targetName,
             Interop.SspiCli.ContextFlags inFlags,
             Interop.SspiCli.Endianness endianness,
-            Interop.SspiCli.SecBufferDesc inputBuffer,
+            Interop.SspiCli.SecBufferDesc* inputBuffer,
             SafeDeleteContext outContext,
-            Interop.SspiCli.SecBufferDesc outputBuffer,
+            ref Interop.SspiCli.SecBufferDesc outputBuffer,
             ref Interop.SspiCli.ContextFlags attributes,
             SafeFreeContextBuffer handleTemplate)
         {
@@ -719,7 +722,7 @@ namespace System.Net.Security
                                 inputBuffer,
                                 0,
                                 ref outContext._handle,
-                                outputBuffer,
+                                ref outputBuffer,
                                 ref attributes,
                                 out timeStamp);
             }
@@ -808,14 +811,17 @@ namespace System.Net.Security
                 throw new ArgumentNullException(nameof(inCredentials));
             }
 
-            Interop.SspiCli.SecBufferDesc inSecurityBufferDescriptor = null;
+            Interop.SspiCli.SecBufferDesc inSecurityBufferDescriptor = default(Interop.SspiCli.SecBufferDesc);
+            bool haveInSecurityBufferDescriptor = false;
             if (inSecBuffer != null)
             {
                 inSecurityBufferDescriptor = new Interop.SspiCli.SecBufferDesc(1);
+                haveInSecurityBufferDescriptor = true;
             }
             else if (inSecBuffers != null)
             {
                 inSecurityBufferDescriptor = new Interop.SspiCli.SecBufferDesc(inSecBuffers.Length);
+                haveInSecurityBufferDescriptor = true;
             }
 
             Interop.SspiCli.SecBufferDesc outSecurityBufferDescriptor = new Interop.SspiCli.SecBufferDesc(1);
@@ -840,10 +846,10 @@ namespace System.Net.Security
             try
             {
                 pinnedOutBytes = GCHandle.Alloc(outSecBuffer.token, GCHandleType.Pinned);
-                var inUnmanagedBuffer = new Interop.SspiCli.SecBuffer[inSecurityBufferDescriptor == null ? 1 : inSecurityBufferDescriptor.cBuffers];
+                var inUnmanagedBuffer = new Interop.SspiCli.SecBuffer[haveInSecurityBufferDescriptor ? inSecurityBufferDescriptor.cBuffers : 1];
                 fixed (void* inUnmanagedBufferPtr = inUnmanagedBuffer)
                 {
-                    if (inSecurityBufferDescriptor != null)
+                    if (haveInSecurityBufferDescriptor)
                     {
                         // Fix Descriptor pointer that points to unmanaged SecurityBuffers.
                         inSecurityBufferDescriptor.pBuffers = inUnmanagedBufferPtr;
@@ -910,11 +916,11 @@ namespace System.Net.Security
                         errorCode = MustRunAcceptSecurityContext_SECURITY(
                                         ref inCredentials,
                                         contextHandle.IsZero ? null : &contextHandle,
-                                        inSecurityBufferDescriptor,
+                                        haveInSecurityBufferDescriptor ? &inSecurityBufferDescriptor : null,
                                         inFlags,
                                         endianness,
                                         refContext,
-                                        outSecurityBufferDescriptor,
+                                        ref outSecurityBufferDescriptor,
                                         ref outFlags,
                                         outFreeContextBuffer);
 
@@ -970,11 +976,11 @@ namespace System.Net.Security
         private static unsafe int MustRunAcceptSecurityContext_SECURITY(
             ref SafeFreeCredentials inCredentials,
             void* inContextPtr,
-            Interop.SspiCli.SecBufferDesc inputBuffer,
+            Interop.SspiCli.SecBufferDesc* inputBuffer,
             Interop.SspiCli.ContextFlags inFlags,
             Interop.SspiCli.Endianness endianness,
             SafeDeleteContext outContext,
-            Interop.SspiCli.SecBufferDesc outputBuffer,
+            ref Interop.SspiCli.SecBufferDesc outputBuffer,
             ref Interop.SspiCli.ContextFlags outFlags,
             SafeFreeContextBuffer handleTemplate)
         {
@@ -998,7 +1004,7 @@ namespace System.Net.Security
                                 inFlags,
                                 endianness,
                                 ref outContext._handle,
-                                outputBuffer,
+                                ref outputBuffer,
                                 ref outFlags,
                                 out timeStamp);
             }
@@ -1120,7 +1126,7 @@ namespace System.Net.Security
                     {
                         bool ignore = false;
                         refContext.DangerousAddRef(ref ignore);
-                        errorCode = Interop.SspiCli.CompleteAuthToken(contextHandle.IsZero ? null : &contextHandle, inSecurityBufferDescriptor);
+                        errorCode = Interop.SspiCli.CompleteAuthToken(contextHandle.IsZero ? null : &contextHandle, ref inSecurityBufferDescriptor);
                     }
                     finally
                     {
@@ -1223,7 +1229,7 @@ namespace System.Net.Security
                     {
                         bool ignore = false;
                         refContext.DangerousAddRef(ref ignore);
-                        errorCode = Interop.SspiCli.ApplyControlToken(contextHandle.IsZero ? null : &contextHandle, inSecurityBufferDescriptor);
+                        errorCode = Interop.SspiCli.ApplyControlToken(contextHandle.IsZero ? null : &contextHandle, ref inSecurityBufferDescriptor);
                     }
                     finally
                     {
