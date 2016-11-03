@@ -14,6 +14,7 @@ namespace System.Collections.ObjectModel
     /// implementing INotifyCollectionChanged to notify listeners
     /// when items get added, removed or the whole list is refreshed.
     /// </summary>
+    [Serializable]
     [DebuggerTypeProxy(typeof(CollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
     public class ObservableCollection<T> : Collection<T>, INotifyCollectionChanged, INotifyPropertyChanged
@@ -120,6 +121,7 @@ namespace System.Collections.ObjectModel
         /// <remarks>
         /// see <seealso cref="INotifyCollectionChanged"/>
         /// </remarks>
+        [field: NonSerialized]
         public virtual event NotifyCollectionChangedEventHandler CollectionChanged;
 
         #endregion Public Events
@@ -219,6 +221,7 @@ namespace System.Collections.ObjectModel
         /// <summary>
         /// PropertyChanged event (per <see cref="INotifyPropertyChanged" />).
         /// </summary>
+        [field: NonSerialized]
         protected virtual event PropertyChangedEventHandler PropertyChanged;
 
         /// <summary>
@@ -347,6 +350,7 @@ namespace System.Collections.ObjectModel
 
         #region Private Types
 
+        [Serializable]
         private struct BlockReentrancyDisposable : IDisposable
         {
             private readonly ObservableCollection<T> _collection;

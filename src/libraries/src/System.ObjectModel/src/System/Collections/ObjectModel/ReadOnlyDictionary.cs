@@ -10,13 +10,17 @@ using System.Diagnostics.Contracts;
 
 namespace System.Collections.ObjectModel
 {
+    [Serializable]
     [DebuggerTypeProxy(typeof(DictionaryDebugView<,>))]
     [DebuggerDisplay("Count = {Count}")]
     public class ReadOnlyDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary, IReadOnlyDictionary<TKey, TValue>
     {
         private readonly IDictionary<TKey, TValue> _dictionary;
+        [NonSerialized]
         private Object _syncRoot;
+        [NonSerialized]
         private KeyCollection _keys;
+        [NonSerialized]
         private ValueCollection _values;
 
         public ReadOnlyDictionary(IDictionary<TKey, TValue> dictionary)
@@ -350,6 +354,7 @@ namespace System.Collections.ObjectModel
             }
         }
 
+        [Serializable]
         private struct DictionaryEnumerator : IDictionaryEnumerator
         {
             private readonly IDictionary<TKey, TValue> _dictionary;
@@ -414,11 +419,13 @@ namespace System.Collections.ObjectModel
 
         #endregion IReadOnlyDictionary members
 
+        [Serializable]
         [DebuggerTypeProxy(typeof(CollectionDebugView<>))]
         [DebuggerDisplay("Count = {Count}")]
         public sealed class KeyCollection : ICollection<TKey>, ICollection, IReadOnlyCollection<TKey>
         {
             private readonly ICollection<TKey> _collection;
+            [NonSerialized]
             private Object _syncRoot;
 
             internal KeyCollection(ICollection<TKey> collection)
@@ -521,11 +528,13 @@ namespace System.Collections.ObjectModel
             #endregion
         }
 
+        [Serializable]
         [DebuggerTypeProxy(typeof(CollectionDebugView<>))]
         [DebuggerDisplay("Count = {Count}")]
         public sealed class ValueCollection : ICollection<TValue>, ICollection, IReadOnlyCollection<TValue>
         {
             private readonly ICollection<TValue> _collection;
+            [NonSerialized]
             private Object _syncRoot;
 
             internal ValueCollection(ICollection<TValue> collection)

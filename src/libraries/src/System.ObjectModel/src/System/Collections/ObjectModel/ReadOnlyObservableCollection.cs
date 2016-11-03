@@ -15,6 +15,7 @@ namespace System.Collections.ObjectModel
     /// <summary>
     /// Read-only wrapper around an ObservableCollection.
     /// </summary>
+    [Serializable]
     [DebuggerTypeProxy(typeof(CollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
     public class ReadOnlyObservableCollection<T> : ReadOnlyCollection<T>, INotifyCollectionChanged, INotifyPropertyChanged
@@ -64,6 +65,7 @@ namespace System.Collections.ObjectModel
         /// <remarks>
         /// see <seealso cref="INotifyCollectionChanged"/>
         /// </remarks>
+        [field: NonSerialized]
         protected virtual event NotifyCollectionChangedEventHandler CollectionChanged;
 
         /// <summary>
@@ -96,6 +98,7 @@ namespace System.Collections.ObjectModel
         /// <remarks>
         /// see <seealso cref="INotifyPropertyChanged"/>
         /// </remarks>
+        [field: NonSerialized]
         protected virtual event PropertyChangedEventHandler PropertyChanged;
 
         /// <summary>
