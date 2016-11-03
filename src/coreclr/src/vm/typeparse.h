@@ -311,14 +311,14 @@ public:
     virtual ~TypeName();
     
 public:
-#ifndef FEATURE_CORECLR
+#ifndef CROSSGEN_COMPILE
     static void QCALLTYPE QCreateTypeNameParser (LPCWSTR wszTypeName, QCall::ObjectHandleOnStack pNames, BOOL throwOnError);
     static void QCALLTYPE QReleaseTypeNameParser(TypeName * pTypeName);
     static void QCALLTYPE QGetNames             (TypeName * pTypeName, QCall::ObjectHandleOnStack pNames);
     static void QCALLTYPE QGetTypeArguments     (TypeName * pTypeName, QCall::ObjectHandleOnStack pTypeArguments);
     static void QCALLTYPE QGetModifiers         (TypeName * pTypeName, QCall::ObjectHandleOnStack pModifiers);
     static void QCALLTYPE QGetAssemblyName      (TypeName * pTypeName, QCall::StringHandleOnStack pAssemblyName);
-#endif //!FEATURE_CORECLR
+#endif //CROSSGEN_COMPILE
 
     //-------------------------------------------------------------------------------------------
     // Retrieves a type from an assembly. It requires the caller to know which assembly
@@ -451,10 +451,7 @@ private:
         return GetTypeHaveAssemblyHelper(pAssembly, bThrowIfNotFound, bIgnoreCase, pKeepAlive, TRUE);
     }
     TypeHandle GetTypeHaveAssemblyHelper(Assembly* pAssembly, BOOL bThrowIfNotFound, BOOL bIgnoreCase, OBJECTREF *pKeepAlive, BOOL bRecurse);
-
-#ifndef FEATURE_CORECLR
     SAFEHANDLE GetSafeHandle();
-#endif //!FEATURE_CORECLR
 
 private:
     BOOL m_bIsGenericArgument;
