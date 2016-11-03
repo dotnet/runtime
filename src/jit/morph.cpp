@@ -7748,12 +7748,34 @@ GenTreePtr Compiler::fgMorphCall(GenTreeCall* call)
 #ifdef DEBUG
         // Tail call needs to be in one of the following IR forms
         //    Either a call stmt or
-        //    GT_RETURN(GT_CALL(..)) or
-        //    var = call
-        noway_assert((stmtExpr->gtOper == GT_CALL && stmtExpr == call) ||
-                     (stmtExpr->gtOper == GT_RETURN &&
-                      (stmtExpr->gtOp.gtOp1 == call || stmtExpr->gtOp.gtOp1->gtOp.gtOp1 == call)) ||
-                     (stmtExpr->gtOper == GT_ASG && stmtExpr->gtOp.gtOp2 == call));
+        //    GT_RETURN(GT_CALL(..)) or GT_RETURN(GT_CAST(GT_CALL(..)))
+        //    var = GT_CALL(..) or var = (GT_CAST(GT_CALL(..)))
+        genTreeOps stmtOper = stmtExpr->gtOper;
+        if (stmtOper == GT_CALL)
+        {
+            noway_assert(stmtExpr == call);
+        }
+        else
+        {
+            noway_assert(stmtOper == GT_RETURN || stmtOper == GT_ASG);
+            GenTreePtr treeWithCall;
+            if (stmtOper == GT_RETURN)
+            {
+                treeWithCall = stmtExpr->gtGetOp1();
+            }
+            else
+            {
+                treeWithCall = stmtExpr->gtGetOp2();
+            }
+            if (treeWithCall->gtOper == GT_CAST)
+            {
+                noway_assert(treeWithCall->gtGetOp1() == call && !treeWithCall->gtOverflow());
+            }
+            else
+            {
+                noway_assert(treeWithCall == call);
+            }
+        }
 #endif
 
         // For void calls, we would have created a GT_CALL in the stmt list.
