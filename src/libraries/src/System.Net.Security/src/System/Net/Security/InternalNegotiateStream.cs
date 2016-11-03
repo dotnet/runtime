@@ -216,10 +216,7 @@ namespace System.Net.Security
                         Buffer.BlockCopy(InternalBuffer, InternalOffset, buffer, offset, copyBytes);
                         DecrementInternalBufferCount(copyBytes);
                     }
-                    if (asyncRequest != null)
-                    {
-                        asyncRequest.CompleteUser((object)copyBytes);
-                    }
+                    asyncRequest?.CompleteUser(copyBytes);
                     return copyBytes;
                 }
 
@@ -283,10 +280,7 @@ namespace System.Net.Security
             if (readBytes == 0)
             {
                 //EOF
-                if (asyncRequest != null)
-                {
-                    asyncRequest.CompleteUser((object)0);
-                }
+                asyncRequest?.CompleteUser(0);
                 return 0;
             }
 
@@ -368,10 +362,7 @@ namespace System.Net.Security
             // This will adjust both the remaining internal buffer count and the offset.
             DecrementInternalBufferCount(readBytes);
 
-            if (asyncRequest != null)
-            {
-                asyncRequest.CompleteUser((object)readBytes);
-            }
+            asyncRequest?.CompleteUser(readBytes);
 
             return readBytes;
         }
@@ -410,7 +401,7 @@ namespace System.Net.Security
                     throw;
                 }
 
-                asyncRequest.CompleteWithError(e);
+                asyncRequest.CompleteUserWithError(e);
             }
         }
 
@@ -444,7 +435,7 @@ namespace System.Net.Security
                     throw;
                 }
 
-                asyncRequest.CompleteWithError(e);
+                asyncRequest.CompleteUserWithError(e);
             }
         }
     }
