@@ -143,16 +143,16 @@ namespace System.Tests
             // Test the ambiguous date
             DateTime utcAmbiguous = new DateTime(2016, 10, 30, 0, 14, 49, DateTimeKind.Utc);
             DateTime convertedAmbiguous = TimeZoneInfo.ConvertTimeFromUtc(utcAmbiguous, london);
-            Assert.Equal(convertedAmbiguous.Kind, DateTimeKind.Unspecified);
+            Assert.Equal(DateTimeKind.Unspecified, convertedAmbiguous.Kind);
             Assert.True(london.IsAmbiguousTime(convertedAmbiguous), $"Expected to have {convertedAmbiguous} is ambiguous");
 
             // convert to London time and back
             DateTime utc = DateTime.UtcNow;
             Assert.Equal(DateTimeKind.Utc, utc.Kind);
             DateTime converted = TimeZoneInfo.ConvertTimeFromUtc(utc, london);
-            Assert.Equal(converted.Kind, DateTimeKind.Unspecified);
+            Assert.Equal(DateTimeKind.Unspecified, converted.Kind);
             DateTime back = TimeZoneInfo.ConvertTimeToUtc(converted, london);
-            Assert.Equal(back.Kind, DateTimeKind.Utc);
+            Assert.Equal(DateTimeKind.Utc, back.Kind);
 
             if (london.IsAmbiguousTime(converted))
             {
