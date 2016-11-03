@@ -338,9 +338,9 @@ namespace Microsoft.DotNet.Host.Build
             msbuildProps.AppendLine("  <PropertyGroup>");
             msbuildProps.AppendLine($"    <Platform>{platform}</Platform>");
             msbuildProps.AppendLine($"    <DotNetHostBinDir>{Dirs.CorehostLatest}</DotNetHostBinDir>");
-            msbuildProps.AppendLine($"    <HostVersion>{hostVersion.LatestHostPolicyVersion.WithoutSuffix}</HostVersion>");
+            msbuildProps.AppendLine($"    <HostVersion>{hostVersion.LatestHostVersion.WithoutSuffix}</HostVersion>");
             msbuildProps.AppendLine($"    <HostResolverVersion>{hostVersion.LatestHostFxrVersion.WithoutSuffix}</HostResolverVersion>");
-            msbuildProps.AppendLine($"    <HostPolicyVersion>{hostVersion.LatestHostVersion.WithoutSuffix}</HostPolicyVersion>");
+            msbuildProps.AppendLine($"    <HostPolicyVersion>{hostVersion.LatestHostPolicyVersion.WithoutSuffix}</HostPolicyVersion>");
             msbuildProps.AppendLine($"    <BuildNumberMajor>{hostVersion.LatestHostBuildMajor}</BuildNumberMajor>");
             msbuildProps.AppendLine($"    <BuildNumberMinor>{hostVersion.LatestHostBuildMinor}</BuildNumberMinor>");
             msbuildProps.AppendLine($"    <PreReleaseLabel>{hostVersion.ReleaseSuffix}</PreReleaseLabel>");
