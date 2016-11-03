@@ -364,7 +364,7 @@ HRESULT __stdcall TypeName::GetAssemblyName(BSTR* pszAssemblyName)
     return hr;
 }
 
-#if !defined(FEATURE_CORECLR) && !defined(CROSSGEN_COMPILE)
+#if!defined(CROSSGEN_COMPILE)
 SAFEHANDLE TypeName::GetSafeHandle()
 {
     CONTRACTL
@@ -588,7 +588,7 @@ void QCALLTYPE TypeName::QGetAssemblyName(TypeName * pTypeName, QCall::StringHan
 
     END_QCALL;
 }
-#endif //!FEATURE_CORECLR && !CROSSGEN_COMPILE
+#endif//!CROSSGEN_COMPILE
 
 //
 // TypeName::TypeNameParser
