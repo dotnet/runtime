@@ -4,7 +4,7 @@
   <PropertyGroup>
     <ProjectGuid>{DF73E985-E143-4BF5-9FA4-E199E7D36235}</ProjectGuid>
     <AssemblyName>System.Security.Cryptography.Primitives</AssemblyName>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net463'">None</ResourcesSourceOutputDirectory>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
@@ -18,7 +18,6 @@
     </ContractProject>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
-    <Compile Include="System.Security.Cryptography.Primitives.TypeForwards.cs" />
     <Compile Include="System\Security\Cryptography\AsymmetricAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\CipherMode.cs" />
     <Compile Include="System\Security\Cryptography\CryptographicUnexpectedOperationException.cs" />

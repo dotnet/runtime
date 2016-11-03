@@ -9,7 +9,7 @@
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="System.Security.SecureString.csproj">
-      <TargetGroup>net46</TargetGroup>
+      <TargetGroup>net463</TargetGroup>
       <OSGroup>Windows_NT</OSGroup>     
     </Project>
   </ItemGroup>

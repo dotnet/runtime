@@ -33,5 +33,11 @@
       <Link>CommonTest\System\IO\PositionValueStream.cs</Link>
     </Compile>
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- TODO: Remove this when the package reference is ready -->
+    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
+  </ItemGroup>
+
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
