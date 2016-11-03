@@ -214,8 +214,18 @@ namespace Microsoft.DotNet.Host.Build
                 {
                     if ((name.StartsWith($"{img}")) && (name.EndsWith(".svg")))
                     {
-                        key = img;
-                        break;
+                        bool fFound = true;
+
+                        if (name.StartsWith("sharedfx_Windows_arm64") && (!img.StartsWith("sharedfx_Windows_arm64")))
+                        {
+                            fFound = false;
+                        }
+
+                        if (fFound)
+                        {
+                            key = img;
+                            break;
+                        }
                     }
                 }
 
