@@ -208,7 +208,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\System.Xml.XPath.XDocument\pkg\System.Xml.XPath.XDocument.pkgproj" />
+    <ProjectReference Include="..\..\..\pkg\System.Private.Xml.Linq.pkgproj" />
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
