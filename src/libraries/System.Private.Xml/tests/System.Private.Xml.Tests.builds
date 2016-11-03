@@ -84,7 +84,6 @@
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="XmlSerializer\System.Xml.XmlSerializer.Tests.csproj" />
-    <Project Include="XmlSerializer\Performance\System.Xml.XmlSerializer.Performance.Tests.csproj" />
     <Project Include="XmlWriter\System.Xml.RW.XmlWriter.Tests.csproj" />
     <Project Include="XmlWriter\System.Xml.RW.XmlWriter.Tests.csproj">
       <TargetGroup>netstandard1.3</TargetGroup>
