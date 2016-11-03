@@ -15,7 +15,7 @@ internal static partial class Interop
 {
     internal unsafe static partial class HttpApi
     {
-        internal static HTTPAPI_VERSION Version = new HTTPAPI_VERSION() { HttpApiMajorVersion = 2, HttpApiMinorVersion = 0 };
+        internal static readonly HTTPAPI_VERSION Version = new HTTPAPI_VERSION() { HttpApiMajorVersion = 2, HttpApiMinorVersion = 0 };
 
         internal static readonly bool Supported = InitHttpApi(Version);
 
@@ -428,7 +428,7 @@ internal static partial class Interop
                 return s_strings[position];
             }
 
-            private static string[] s_strings = {
+            private static readonly string[] s_strings = {
                     "Cache-Control",
                     "Connection",
                     "Date",
@@ -643,28 +643,6 @@ internal static partial class Interop
 
         internal static class HTTP_RESPONSE_HEADER_ID
         {
-            private static Dictionary<string, int> s_hashtable;
-
-            static HTTP_RESPONSE_HEADER_ID()
-            {
-                s_hashtable = new Dictionary<string, int>((int)Enum.HttpHeaderResponseMaximum);
-                for (int i = 0; i < (int)Enum.HttpHeaderResponseMaximum; i++)
-                {
-                    s_hashtable.Add(s_strings[i], i);
-                }
-            }
-
-            internal static int IndexOfKnownHeader(string HeaderName)
-            {
-                object index = s_hashtable[HeaderName];
-                return index == null ? -1 : (int)index;
-            }
-
-            internal static string ToString(int position)
-            {
-                return s_strings[position];
-            }
-
             internal enum Enum
             {
                 HttpHeaderCacheControl = 0,    // general-header [section 4.5]
@@ -709,48 +687,72 @@ internal static partial class Interop
                 HttpHeaderMaximum = 41
             }
 
-            private static string[] s_strings = {
-                    "Cache-Control",
-                    "Connection",
-                    "Date",
-                    "Keep-Alive",
-                    "Pragma",
-                    "Trailer",
-                    "Transfer-Encoding",
-                    "Upgrade",
-                    "Via",
-                    "Warning",
+            private static readonly string[] s_strings =
+            {
+                "Cache-Control",
+                "Connection",
+                "Date",
+                "Keep-Alive",
+                "Pragma",
+                "Trailer",
+                "Transfer-Encoding",
+                "Upgrade",
+                "Via",
+                "Warning",
 
-                    "Allow",
-                    "Content-Length",
-                    "Content-Type",
-                    "Content-Encoding",
-                    "Content-Language",
-                    "Content-Location",
-                    "Content-MD5",
-                    "Content-Range",
-                    "Expires",
-                    "Last-Modified",
+                "Allow",
+                "Content-Length",
+                "Content-Type",
+                "Content-Encoding",
+                "Content-Language",
+                "Content-Location",
+                "Content-MD5",
+                "Content-Range",
+                "Expires",
+                "Last-Modified",
 
-                    "Accept-Ranges",
-                    "Age",
-                    "ETag",
-                    "Location",
-                    "Proxy-Authenticate",
-                    "Retry-After",
-                    "Server",
-                    "Set-Cookie",
-                    "Vary",
-                    "WWW-Authenticate",
-                };
+                "Accept-Ranges",
+                "Age",
+                "ETag",
+                "Location",
+                "Proxy-Authenticate",
+                "Retry-After",
+                "Server",
+                "Set-Cookie",
+                "Vary",
+                "WWW-Authenticate",
+            };
+
+            private static Dictionary<string, int> s_hashtable = CreateTable();
+
+            static Dictionary<string, int> CreateTable()
+            {
+                var table = new Dictionary<string, int>((int)Enum.HttpHeaderResponseMaximum);
+                for (int i = 0; i < (int)Enum.HttpHeaderResponseMaximum; i++)
+                {
+                    table.Add(s_strings[i], i);
+                }
+                return table;
+            }
+
+            internal static int IndexOfKnownHeader(string HeaderName)
+            {
+                int index;
+                if (s_hashtable.TryGetValue(HeaderName, out index))
+                    return index;
+                else
+                    return -1;
+            }
+
+            internal static string ToString(int position)
+            {
+                return s_strings[position];
+            }
         }
 
         private static string GetKnownHeader(HTTP_REQUEST* request, long fixup, int headerIndex)
         {
-            if (NetEventSource.IsEnabled)
-            {
-                NetEventSource.Enter(null);
-            }
+            if (NetEventSource.IsEnabled) { NetEventSource.Enter(null); }
 
             string header = null;
 
@@ -758,8 +760,8 @@ internal static partial class Interop
 
             if (NetEventSource.IsEnabled)
             {
-                NetEventSource.Info(null, $"HttpApi::GetKnownHeader() pKnownHeader:0x{(IntPtr)pKnownHeader:x}");
-                NetEventSource.Info(null, $"HttpApi::GetKnownHeader() pRawValue:0x{(IntPtr)pKnownHeader->pRawValue:x} RawValueLength:{pKnownHeader->RawValueLength}");
+                NetEventSource.Info(null, $"HttpApi::GetKnownHeader() pKnownHeader:0x{(IntPtr)pKnownHeader}");
+                NetEventSource.Info(null, $"HttpApi::GetKnownHeader() pRawValue:0x{(IntPtr)pKnownHeader->pRawValue} RawValueLength:{pKnownHeader->RawValueLength}");
             }
 
             // For known headers, when header value is empty, RawValueLength will be 0 and 
@@ -769,10 +771,7 @@ internal static partial class Interop
                 header = new string(pKnownHeader->pRawValue + fixup, 0, pKnownHeader->RawValueLength);
             }
 
-            if (NetEventSource.IsEnabled)
-            {
-                NetEventSource.Exit(null, $"HttpApi::GetKnownHeader() return:{header}");
-            }
+            if (NetEventSource.IsEnabled) { NetEventSource.Exit(null, $"HttpApi::GetKnownHeader() return:{header}"); }
             return header;
         }
 
