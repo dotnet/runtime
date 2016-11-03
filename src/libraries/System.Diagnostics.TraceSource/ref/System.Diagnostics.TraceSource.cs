@@ -170,6 +170,11 @@ namespace System.Diagnostics
         Information = 8,
         Verbose = 16,
         Warning = 4,
+        Resume = 2048,
+        Start = 256,
+        Stop = 512,
+        Suspend = 1024,
+        Transfer = 4096,
     }
     public abstract partial class TraceFilter
     {
