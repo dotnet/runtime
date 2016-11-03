@@ -18,9 +18,9 @@
     </ContractProject>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
+    <Compile Include="System.Security.Cryptography.Primitives.TypeForwards.cs" />
     <Compile Include="System\Security\Cryptography\AsymmetricAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\CipherMode.cs" />
-    <Compile Include="System\Security\Cryptography\CryptographicException.cs" />
     <Compile Include="System\Security\Cryptography\CryptographicUnexpectedOperationException.cs" />
     <Compile Include="System\Security\Cryptography\CryptoStream.cs" />
     <Compile Include="System\Security\Cryptography\CryptoStreamMode.cs" />
@@ -39,6 +39,11 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="mscorlib" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- TODO: Remove this when the package reference is ready -->
+    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
