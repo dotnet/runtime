@@ -3660,7 +3660,11 @@ namespace System
         [System.Security.SecuritySafeCritical]  // auto-generated
         protected override bool IsContextfulImpl() 
         {
+#if FEATURE_REMOTING
             return RuntimeTypeHandle.IsContextful(this);
+#else
+            return false;
+#endif
         }
 
         /*
