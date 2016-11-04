@@ -7632,6 +7632,7 @@ public:
         bool altJit;     // True if we are an altjit and are compiling this method
 
 #ifdef DEBUG
+        bool optRepeat;                // Repeat optimizer phases k times
         bool compProcedureSplittingEH; // Separate cold code from hot code for functions with EH
         bool dspCode;                  // Display native code generated
         bool dspEHTable;               // Display the EH table reported to the VM
@@ -8355,6 +8356,12 @@ protected:
     bool compRsvdRegCheck(FrameLayoutState curState);
 #endif
     void compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags* compileFlags);
+
+    // Clear annotations produced during optimizations; to be used between iterations when repeating opts.
+    void ResetOptAnnotations();
+
+    // Regenerate loop descriptors; to be used between iterations when repeating opts.
+    void RecomputeLoopInfo();
 
 #ifdef PROFILING_SUPPORTED
     // Data required for generating profiler Enter/Leave/TailCall hooks

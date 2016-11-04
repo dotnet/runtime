@@ -154,10 +154,12 @@ CONFIG_METHODSET(JitNoProcedureSplittingEH, W("JitNoProcedureSplittingEH")) // D
                                                                             // exception handling
 CONFIG_METHODSET(JitStressOnly, W("JitStressOnly")) // Internal Jit stress mode: stress only the specified method(s)
 CONFIG_METHODSET(JitUnwindDump, W("JitUnwindDump")) // Dump the unwind codes for the method
-CONFIG_METHODSET(NgenDisasm, W("NgenDisasm"))       // Same as JitDisasm, but for ngen
-CONFIG_METHODSET(NgenDump, W("NgenDump"))           // Same as JitDump, but for ngen
-CONFIG_METHODSET(NgenDumpIR, W("NgenDumpIR"))       // Same as JitDumpIR, but for ngen
-CONFIG_METHODSET(NgenEHDump, W("NgenEHDump"))       // Dump the EH table for the method, as reported to the VM
+CONFIG_METHODSET(JitOptRepeat, W("JitOptRepeat"))   // Runs optimizer multiple times on the method
+CONFIG_INTEGER(JitOptRepeatCount, W("JitOptRepeatCount"), 2) // Number of times to repeat opts when repeating
+CONFIG_METHODSET(NgenDisasm, W("NgenDisasm"))                // Same as JitDisasm, but for ngen
+CONFIG_METHODSET(NgenDump, W("NgenDump"))                    // Same as JitDump, but for ngen
+CONFIG_METHODSET(NgenDumpIR, W("NgenDumpIR"))                // Same as JitDumpIR, but for ngen
+CONFIG_METHODSET(NgenEHDump, W("NgenEHDump"))                // Dump the EH table for the method, as reported to the VM
 CONFIG_METHODSET(NgenGCDump, W("NgenGCDump"))
 CONFIG_METHODSET(NgenUnwindDump, W("NgenUnwindDump")) // Dump the unwind codes for the method
 CONFIG_STRING(JitDumpFg, W("JitDumpFg"))              // Dumps Xml/Dot Flowgraph for specified method
