@@ -8,10 +8,11 @@
  * Copyright 2011 Xamarin Inc.  http://www.xamarin.com
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
- #include "mini.h"
 
+#include "config.h"
 #ifndef DISABLE_JIT
- 
+
+#include "mini.h"
 
 /*
  * Returns true if @bb is a basic block which falls through the next block.

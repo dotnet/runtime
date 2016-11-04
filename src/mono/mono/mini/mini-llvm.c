@@ -6,7 +6,8 @@
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
-#include "mini.h"
+#include "config.h"
+
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/debug-mono-symfile.h>
 #include <mono/metadata/mempool-internals.h>
@@ -32,6 +33,8 @@
 #include "llvm-jit.h"
 #include "aot-compiler.h"
 #include "mini-llvm.h"
+
+#ifndef DISABLE_JIT
 
 #ifdef __MINGW32__
 
@@ -9200,3 +9203,27 @@ default_mono_llvm_unhandled_exception (void)
  *   code.
  * - use pointer types to help optimizations.
  */
+
+#else /* DISABLE_JIT */
+
+void
+mono_llvm_cleanup (void)
+{
+}
+
+void
+mono_llvm_free_domain_info (MonoDomain *domain)
+{
+}
+
+void
+mono_llvm_init (void)
+{
+}
+
+void
+default_mono_llvm_unhandled_exception (void)
+{
+}
+
+#endif /* DISABLE_JIT */

@@ -4,6 +4,9 @@
  * (C) 2003 Ximian, Inc.
  */
 
+#include "config.h"
+#ifndef DISABLE_JIT
+
 #include <string.h>
 #include <math.h>
 #ifdef HAVE_UNISTD_H
@@ -28,7 +31,6 @@
 #define MONO_ARCH_CALLEE_XREGS 0
 
 #endif
- 
 
 #define MONO_ARCH_BANK_MIRRORED -2
 
@@ -411,47 +413,7 @@ typedef struct {
 	regmask_t preferred_mask; /* the hreg where the register should be allocated, or 0 */
 } RegTrack;
 
-#if !defined(DISABLE_LOGGING) && !defined(DISABLE_JIT)
-
-static const char* const patch_info_str[] = {
-#define PATCH_INFO(a,b) "" #a,
-#include "patch-info.h"
-#undef PATCH_INFO
-};
-
-const char*
-mono_ji_type_to_string (MonoJumpInfoType type)
-{
-	return patch_info_str [type];
-}
-
-void
-mono_print_ji (const MonoJumpInfo *ji)
-{
-	switch (ji->type) {
-	case MONO_PATCH_INFO_RGCTX_FETCH: {
-		MonoJumpInfoRgctxEntry *entry = ji->data.rgctx_entry;
-
-		printf ("[RGCTX_FETCH ");
-		mono_print_ji (entry->data);
-		printf (" - %s]", mono_rgctx_info_type_to_str (entry->info_type));
-		break;
-	}
-	case MONO_PATCH_INFO_METHODCONST: {
-		char *s = mono_method_full_name (ji->data.method, TRUE);
-		printf ("[METHODCONST - %s]", s);
-		g_free (s);
-		break;
-	}
-	case MONO_PATCH_INFO_INTERNAL_METHOD: {
-		printf ("[INTERNAL_METHOD - %s]", ji->data.name);
-		break;
-	}
-	default:
-		printf ("[%s]", patch_info_str [ji->type]);
-		break;
-	}
-}
+#if !defined(DISABLE_LOGGING)
 
 void
 mono_print_ins_index (int i, MonoInst *ins)
@@ -785,22 +747,11 @@ print_regtrack (RegTrack *t, int num)
 }
 #else
 
-const char*
-mono_ji_type_to_string (MonoJumpInfoType type)
-{
-	return "";
-}
-
-void
-mono_print_ji (const MonoJumpInfo *ji)
-{
-}
-
 void
 mono_print_ins_index (int i, MonoInst *ins)
 {
 }
-#endif /* !defined(DISABLE_LOGGING) && !defined(DISABLE_JIT) */
+#endif /* !defined(DISABLE_LOGGING) */
 
 void
 mono_print_ins (MonoInst *ins)
@@ -1150,8 +1101,6 @@ get_callee_mask (const char spec)
 
 static gint8 desc_to_fixed_reg [256];
 static gboolean desc_to_fixed_reg_inited = FALSE;
-
-#ifndef DISABLE_JIT
 
 /*
  * Local register allocation.
@@ -2844,3 +2793,4 @@ mono_regstate_free (MonoRegState *rs) {
 }
 
 #endif /* DISABLE_JIT */
+
