@@ -4809,7 +4809,7 @@
     </project>
     <project dir="tools/mono-api-html" library="mono-api-html-net_4_x">
       <boot></boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll -debug -optimize /noconfig -r:Mono.Cecil -r:System.Xml -r:System.Core -r:System -r:System.Xml.Linq</flags>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll -debug -optimize /noconfig -r:System.Xml -r:System.Core -r:System -r:System.Xml.Linq</flags>
       <output>mono-api-html.exe</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_x/mono-api-html.exe</library_output>
