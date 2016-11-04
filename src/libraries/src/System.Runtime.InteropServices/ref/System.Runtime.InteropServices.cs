@@ -1777,4 +1777,12 @@ namespace System.Security
         public void RemoveAt(int index) { }
         public void SetAt(int index, char c) { }
     }
+
+    [System.CLSCompliant(false)]
+    public static class SecureStringMarshal {
+        public static IntPtr SecureStringToCoTaskMemAnsi(System.Security.SecureString s) { throw null; }
+        public static IntPtr SecureStringToCoTaskMemUnicode(System.Security.SecureString s) { throw null; }
+        public static IntPtr SecureStringToGlobalAllocAnsi(System.Security.SecureString s) { throw null; }
+        public static IntPtr SecureStringToGlobalAllocUnicode(System.Security.SecureString s) { throw null; }
+    }
 }

@@ -6,14 +6,4 @@
 // ------------------------------------------------------------------------------
 
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.SecureString))]
-
-namespace System.Security
-{
-    [System.CLSCompliant(false)]
-    public static class SecureStringMarshal {
-        public static IntPtr SecureStringToCoTaskMemAnsi(System.Security.SecureString s) { throw null; }
-        public static IntPtr SecureStringToCoTaskMemUnicode(System.Security.SecureString s) { throw null; }
-        public static IntPtr SecureStringToGlobalAllocAnsi(System.Security.SecureString s) { throw null; }
-        public static IntPtr SecureStringToGlobalAllocUnicode(System.Security.SecureString s) { throw null; }
-    }
-}
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.SecureStringMarshal))]
