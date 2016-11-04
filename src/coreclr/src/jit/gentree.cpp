@@ -12638,9 +12638,6 @@ GenTreePtr Compiler::gtFoldExprConst(GenTreePtr tree)
                             case TYP_ULONG:
                                 if (!(tree->gtFlags & GTF_UNSIGNED) && tree->gtOverflow() && i1 < 0)
                                 {
-                                    op1->ChangeOperConst(GT_CNS_NATIVELONG); // need type of oper to be same as tree
-                                    op1->gtType = TYP_LONG;
-                                    // We don't care about the value as we are throwing an exception
                                     goto LNG_OVF;
                                 }
                                 lval1 = UINT64(UINT32(i1));
