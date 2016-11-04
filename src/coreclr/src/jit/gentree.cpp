@@ -7275,32 +7275,17 @@ GenTree* Compiler::gtNewBlockVal(GenTreePtr addr, unsigned size)
 {
     // By default we treat this as an opaque struct type with known size.
     var_types blkType = TYP_STRUCT;
+#if FEATURE_SIMD
     if ((addr->gtOper == GT_ADDR) && (addr->gtGetOp1()->OperGet() == GT_LCL_VAR))
     {
         GenTree* val = addr->gtGetOp1();
-#if FEATURE_SIMD
-        if (varTypeIsSIMD(val))
+        if (varTypeIsSIMD(val) && (genTypeSize(val->TypeGet()) == size))
         {
-            if (genTypeSize(val->TypeGet()) == size)
-            {
-                blkType = val->TypeGet();
-                return addr->gtGetOp1();
-            }
+            blkType = val->TypeGet();
+            return addr->gtGetOp1();
         }
-        else
-#endif // FEATURE_SIMD
-#ifndef LEGACY_BACKEND
-            if (val->TypeGet() == TYP_STRUCT)
-        {
-            GenTreeLclVarCommon* lcl    = addr->gtGetOp1()->AsLclVarCommon();
-            LclVarDsc*           varDsc = &(lvaTable[lcl->gtLclNum]);
-            if ((varDsc->TypeGet() == TYP_STRUCT) && (varDsc->lvExactSize == size))
-            {
-                return addr->gtGetOp1();
-            }
-        }
-#endif // !LEGACY_BACKEND
     }
+#endif // FEATURE_SIMD
     return new (this, GT_BLK) GenTreeBlk(GT_BLK, blkType, addr, size);
 }
 
@@ -7383,10 +7368,10 @@ void GenTreeIntCon::FixupInitBlkValue(var_types asgType)
             }
 #endif // _TARGET_64BIT_
 
-            // Make the type match for evaluation types.
+            // Make the type used in the GT_IND node match for evaluation types.
             gtType = asgType;
 
-            // if we are initializing a GC type the value being assigned must be zero (null).
+            // if we are using an GT_INITBLK on a GC type the value being assigned has to be zero (null).
             assert(!varTypeIsGC(asgType) || (cns == 0));
         }
 
@@ -7493,6 +7478,9 @@ void Compiler::gtBlockOpInit(GenTreePtr result, GenTreePtr dst, GenTreePtr srcOr
     result->gtFlags |= dst->gtFlags & GTF_ALL_EFFECT;
     result->gtFlags |= result->gtOp.gtOp2->gtFlags & GTF_ALL_EFFECT;
 
+    // TODO-1stClassStructs: This should be done only if the destination is non-local.
+    result->gtFlags |= (GTF_GLOB_REF | GTF_ASG);
+
     // REVERSE_OPS is necessary because the use must occur before the def
     result->gtFlags |= GTF_REVERSE_OPS;
 
@@ -7563,20 +7551,12 @@ GenTree* Compiler::gtNewBlkOpNode(
             srcOrFillVal = srcOrFillVal->gtGetOp1()->gtGetOp1();
         }
     }
-    else
-    {
-        // InitBlk
-        assert(varTypeIsIntegral(srcOrFillVal));
-        if (varTypeIsStruct(dst))
-        {
-            if (!srcOrFillVal->IsIntegralConst(0))
-            {
-                srcOrFillVal = gtNewOperNode(GT_INIT_VAL, TYP_INT, srcOrFillVal);
-            }
-        }
-    }
 
     GenTree* result = gtNewAssignNode(dst, srcOrFillVal);
+    if (!isCopyBlock)
+    {
+        result->gtFlags |= GTF_BLK_INIT;
+    }
     gtBlockOpInit(result, dst, srcOrFillVal, isVolatile);
     return result;
 }
