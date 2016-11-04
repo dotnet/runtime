@@ -148,8 +148,7 @@ namespace System.Diagnostics
         {
             try
             {
-                if (_writer != null)
-                    _writer.Flush();
+                _writer?.Flush();
             }
             catch (ObjectDisposedException) { }
         }
