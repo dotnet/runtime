@@ -515,7 +515,11 @@ namespace System.Reflection.Internal
         internal int IndexOf(byte b, int start)
         {
             CheckBounds(start, 0);
+            return IndexOfUnchecked(b, start);
+        }
 
+        internal int IndexOfUnchecked(byte b, int start)
+        {
             byte* p = Pointer + start;
             byte* end = Pointer + Length;
             while (p < end)

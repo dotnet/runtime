@@ -1,26 +1,42 @@
 {
   "frameworks": {
-    "netstandard1.0": {
+    "netstandard1.7": {
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.1",
-        "System.Collections": "4.0.0",
-        "System.Diagnostics.Debug": "4.0.0",
-        "System.Diagnostics.Tools": "4.0.0",
-        "System.Globalization": "4.0.0",
-        "System.IO": "4.0.0",
-        "System.Resources.ResourceManager": "4.0.0",
-        "System.Runtime": "4.0.0",
-        "System.Runtime.Extensions": "4.0.0",
-        "System.Text.RegularExpressions": "4.0.0",
-        "System.Threading.Tasks": "4.0.0"
-      },
-      "imports": [
-        "dotnet5.1"
-      ]
+        "System.Collections": "4.4.0-beta-24703-01",
+        "System.Collections.Concurrent": "4.4.0-beta-24703-01",
+        "System.Collections.NonGeneric": "4.4.0-beta-24703-01",
+        "System.ComponentModel": "4.4.0-beta-24703-01",
+        "System.ComponentModel.Primitives": "4.4.0-beta-24703-01",
+        "System.ComponentModel.TypeConverter": "4.4.0-beta-24703-01",
+        "System.Diagnostics.Debug": "4.4.0-beta-24703-01",
+        "System.Diagnostics.Tools": "4.4.0-beta-24703-01",
+        "System.Diagnostics.TraceSource": "4.4.0-beta-24703-01",
+        "System.Diagnostics.Tracing": "4.4.0-beta-24703-01",
+        "System.Dynamic.Runtime": "4.4.0-beta-24703-01",
+        "System.Globalization": "4.4.0-beta-24703-01",
+        "System.IO": "4.4.0-beta-24703-01",
+        "System.IO.FileSystem": "4.4.0-beta-24703-01",
+        "System.Linq": "4.4.0-beta-24703-01",
+        "System.ObjectModel": "4.4.0-beta-24703-01",
+        "System.Reflection": "4.4.0-beta-24703-01",
+        "System.Runtime": "4.4.0-beta-24703-01",
+        "System.Runtime.Extensions": "4.4.0-beta-24703-01",
+        "System.Runtime.Numerics": "4.4.0-beta-24703-01",
+        "System.Runtime.Serialization.Formatters": "4.4.0-beta-24703-01",
+        "System.Text.Encoding": "4.4.0-beta-24703-01",
+        "System.Text.Encoding.Extensions": "4.4.0-beta-24703-01",
+        "System.Text.RegularExpressions": "4.4.0-beta-24703-01",
+        "System.Threading": "4.4.0-beta-24703-01",
+        "System.Threading.Thread": "4.4.0-beta-24703-01",
+        "System.Transactions": "4.4.0-beta-24703-01",
+        "System.Xml.ReaderWriter": "4.4.0-beta-24703-01",
+        "System.Xml.XmlSerializer": "4.4.0-beta-24703-01"
+      }
     },
-    "net451": {
+    "net463": {
       "dependencies": {
-        "Microsoft.TargetingPack.NETFramework.v4.5.1": "1.0.1"
+        "Microsoft.TargetingPack.NETFramework.v4.6.2": "1.0.1"
       }
     }
   }

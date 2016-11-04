@@ -228,7 +228,9 @@ namespace System.Collections.Generic
         public T Dequeue()
         {
             if (_size == 0)
-                throw new InvalidOperationException(SR.InvalidOperation_EmptyQueue);
+            {
+                ThrowForEmptyQueue();
+            }
 
             T removed = _array[_head];
             _array[_head] = default(T);
@@ -238,35 +240,65 @@ namespace System.Collections.Generic
             return removed;
         }
 
+        public bool TryDequeue(out T result)
+        {
+            if (_size == 0)
+            {
+            	result = default(T);
+            	return false;
+            }
+
+            result = _array[_head];
+            _array[_head] = default(T);
+            MoveNext(ref _head);
+            _size--;
+            _version++;
+            return true;
+        }
+
         // Returns the object at the head of the queue. The object remains in the
         // queue. If the queue is empty, this method throws an 
         // InvalidOperationException.
         public T Peek()
         {
             if (_size == 0)
-                throw new InvalidOperationException(SR.InvalidOperation_EmptyQueue);
-
+            {
+                ThrowForEmptyQueue();
+            }
+            
             return _array[_head];
         }
 
-        // Returns true if the queue contains at least one object equal to item.
-        // Equality is determined using item.Equals().
-        public bool Contains(T item)
+        public bool TryPeek(out T result)
         {
-            int index = _head;
-            int count = _size;
-
-            EqualityComparer<T> c = EqualityComparer<T>.Default;
-            while (count-- > 0)
+            if (_size == 0)
             {
-                if (c.Equals(_array[index], item))
-                {
-                    return true;
-                }
-                MoveNext(ref index);
+            	result = default(T);
+            	return false;
             }
 
-            return false;
+            result = _array[_head];
+            return true;
+        }
+
+        // Returns true if the queue contains at least one object equal to item.
+        // Equality is determined using EqualityComparer<T>.Default.Equals().
+        public bool Contains(T item)
+        {
+            if (_size == 0)
+            {
+                return false;
+            }
+
+            if (_head < _tail)
+            {
+                return Array.IndexOf(_array, item, _head, _size) >= 0;
+            }
+
+            // We've wrapped around. Check both partitions, the least recently enqueued first.
+            return
+                Array.IndexOf(_array, item, _head, _array.Length - _head) >= 0 ||
+                Array.IndexOf(_array, item, 0, _tail) >= 0;
         }
 
         // Iterates over the objects in the queue, returning an array of the
@@ -326,6 +358,12 @@ namespace System.Collections.Generic
             // than a simple comparison and a rarely taken branch.   
             int tmp = index + 1;
             index = (tmp == _array.Length) ? 0 : tmp;
+        }
+
+        private void ThrowForEmptyQueue()
+        {
+            Debug.Assert(_size == 0);
+            throw new InvalidOperationException(SR.InvalidOperation_EmptyQueue);
         }
 
         public void TrimExcess()

@@ -19,13 +19,24 @@ namespace System.Net.NetworkInformation
 
         public override NetBiosNodeType NodeType { get { return NetBiosNodeType.Unknown; } }
 
+        public override IAsyncResult BeginGetUnicastAddresses(AsyncCallback callback, object state)
+        {
+            Task<UnicastIPAddressInformationCollection> t = GetUnicastAddressesAsync();
+            return TaskToApm.Begin(t, callback, state);
+        }
+
+        public override UnicastIPAddressInformationCollection EndGetUnicastAddresses(IAsyncResult asyncResult)
+        {
+            return TaskToApm.End<UnicastIPAddressInformationCollection>(asyncResult);
+        }
+
         public sealed override Task<UnicastIPAddressInformationCollection> GetUnicastAddressesAsync()
         {
             return Task.Factory.StartNew(s => ((UnixIPGlobalProperties)s).GetUnicastAddresses(), this,
                 CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
-        private unsafe UnicastIPAddressInformationCollection GetUnicastAddresses()
+        public unsafe override UnicastIPAddressInformationCollection GetUnicastAddresses()
         {
             UnicastIPAddressInformationCollection collection = new UnicastIPAddressInformationCollection();
 

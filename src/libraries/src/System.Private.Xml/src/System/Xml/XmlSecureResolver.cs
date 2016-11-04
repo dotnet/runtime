@@ -13,14 +13,19 @@ namespace System.Xml
     {
         private XmlResolver _resolver;
 
-        public XmlSecureResolver(XmlResolver resolver, string securityUrl) : this(resolver, CreateEvidenceForUrl(securityUrl)) { }
+        public XmlSecureResolver(XmlResolver resolver, string securityUrl)
+        {
+            _resolver = resolver;
+        }
 
+#if CAS
         internal XmlSecureResolver(XmlResolver resolver, Evidence evidence) : this(resolver, SecurityManager.GetStandardSandbox(evidence)) { }
 
         internal XmlSecureResolver(XmlResolver resolver, PermissionSet permissionSet)
         {
             _resolver = resolver;
         }
+#endif
 
         public override ICredentials Credentials
         {
@@ -37,14 +42,14 @@ namespace System.Xml
             return _resolver.ResolveUri(baseUri, relativeUri);
         }
 
+#if CAS
         internal static Evidence CreateEvidenceForUrl(string securityUrl)
         {
             return new Evidence();
         }
-
-#if SERIALIZABLE_DEFINED
-        [Serializable]
 #endif
+
+        [Serializable]
         private class UncDirectory
         {
             private string _uncDir;

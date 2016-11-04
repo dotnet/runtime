@@ -11,6 +11,8 @@ using Xunit;
 
 namespace System.Net.Security.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     public class CertificateValidationRemoteServer
     {
         [Fact]

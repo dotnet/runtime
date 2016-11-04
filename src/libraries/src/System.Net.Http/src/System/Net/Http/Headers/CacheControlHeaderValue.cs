@@ -640,7 +640,7 @@ namespace System.Net.Http.Headers
 
         private static void CheckIsValidToken(string item)
         {
-            HeaderUtilities.CheckValidToken(item, "item");
+            HeaderUtilities.CheckValidToken(item, nameof(item));
         }
 
         object ICloneable.Clone()

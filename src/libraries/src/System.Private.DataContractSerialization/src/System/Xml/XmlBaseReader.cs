@@ -122,7 +122,7 @@ namespace System.Xml
         protected void MoveToInitial(XmlDictionaryReaderQuotas quotas)
         {
             if (quotas == null)
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("quotas");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(quotas));
 
             quotas.InternalCopyTo(_quotas);
             _quotas.MakeReadOnly();
@@ -992,14 +992,14 @@ namespace System.Xml
         public override bool IsNamespaceUri(string namespaceUri)
         {
             if (namespaceUri == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("namespaceUri");
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(namespaceUri));
             return _node.IsNamespaceUri(namespaceUri);
         }
 
         public override bool IsNamespaceUri(XmlDictionaryString namespaceUri)
         {
             if (namespaceUri == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("namespaceUri");
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(namespaceUri));
             return _node.IsNamespaceUri(namespaceUri);
         }
         public override sealed bool IsStartElement()
@@ -1050,18 +1050,18 @@ namespace System.Xml
         public override bool IsStartElement(XmlDictionaryString localName, XmlDictionaryString namespaceUri)
         {
             if (localName == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("localName");
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(localName));
             if (namespaceUri == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("namespaceUri");
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(namespaceUri));
             return (_node.NodeType == XmlNodeType.Element || IsStartElement()) && _node.LocalName == localName && _node.IsNamespaceUri(namespaceUri);
         }
 
         public override int IndexOfLocalName(string[] localNames, string namespaceUri)
         {
             if (localNames == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("localNames");
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(localNames));
             if (namespaceUri == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("namespaceUri");
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(namespaceUri));
             QNameType qnameType = _node.QNameType;
             if (_node.IsNamespaceUri(namespaceUri))
             {
@@ -1101,9 +1101,9 @@ namespace System.Xml
         public override int IndexOfLocalName(XmlDictionaryString[] localNames, XmlDictionaryString namespaceUri)
         {
             if (localNames == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("localNames");
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(localNames));
             if (namespaceUri == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("namespaceUri");
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(namespaceUri));
             QNameType qnameType = _node.QNameType;
             if (_node.IsNamespaceUri(namespaceUri))
             {
@@ -1532,7 +1532,7 @@ namespace System.Xml
             return XmlConverter.ToInt32(ReadContentAsString());
         }
 
-        public DateTime ReadContentAsDateTime()
+        public override DateTime ReadContentAsDateTime()
         {
             XmlNode node = this.Node;
             if (_value == null && node.IsAtomicValue)

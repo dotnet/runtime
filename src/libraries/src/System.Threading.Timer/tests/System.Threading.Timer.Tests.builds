@@ -1,13 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <Project Include="System.Threading.Timer.Tests.csproj"/>
+    <Project Include="System.Threading.Timer.Tests.csproj" />
     <Project Include="System.Threading.Timer.Tests.csproj">
-      <TestTFMs>netcore50;net46</TestTFMs>
+      <TargetGroup>netstandard1.3</TargetGroup>
+      <TestTFMs>netcoreapp1.0</TestTFMs>
+    </Project>
+    <Project Include="System.Threading.Timer.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>netcore50;net46</TestTFMs>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
-

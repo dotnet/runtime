@@ -31,6 +31,16 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
         }
 
         [Fact]
+        public void Sha256_Fips180_MultiBlock()
+        {
+            VerifyMultiBlock(
+                "ab",
+                "c",
+                "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+                "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+        }
+
+        [Fact]
         public void Sha256_Fips180_2()
         {
             Verify(

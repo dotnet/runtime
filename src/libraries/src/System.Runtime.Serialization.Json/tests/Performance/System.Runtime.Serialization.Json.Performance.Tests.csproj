@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <MinimumVisualStudioVersion>11.0</MinimumVisualStudioVersion>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>System.Runtime.Serialization.Json.Performance.Tests</RootNamespace>
     <AssemblyName>System.Runtime.Serialization.Json.Performance.Tests</AssemblyName>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker>.NETStandard,Version=v1.7</NugetTargetMoniker>
     <KeepAllProjectReferences>true</KeepAllProjectReferences>
   </PropertyGroup>
   <PropertyGroup Condition="'$(UseContractReferences)' == 'true'" >
@@ -23,6 +23,8 @@
   </ItemGroup>
   <ItemGroup Condition="'$(UseContractReferences)' == ''" >
     <ProjectReference Include="..\..\..\System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj" />
+    <ProjectReference Include="..\..\..\System.Runtime.Serialization.Xml\src\System.Runtime.Serialization.Xml.csproj" />
+    <ProjectReference Include="..\..\..\System.Runtime.Serialization.Json\src\System.Runtime.Serialization.Json.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

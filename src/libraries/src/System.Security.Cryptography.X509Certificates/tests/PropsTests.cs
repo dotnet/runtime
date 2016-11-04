@@ -233,13 +233,24 @@ Wry5FNNo
         }
 
         [Fact]
-        public static void TestPrivateKey()
+        public static void TestHasPrivateKey()
         {
             using (var c = new X509Certificate2(TestData.MsCertificate))
             {
                 Assert.False(c.HasPrivateKey);
             }
         }
+
+#if netcoreapp11
+        [Fact]
+        public static void TestPrivateKey()
+        {
+            using (var c = new X509Certificate2(TestData.MsCertificate))
+            {
+                Assert.Null(c.PrivateKey);
+            }
+        }
+#endif
 
         [Fact]
         public static void TestVersion()
@@ -258,7 +269,7 @@ Wry5FNNo
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public static void TestArchive_Windows()
         {
             using (var c = new X509Certificate2(TestData.MsCertificate))
@@ -274,7 +285,7 @@ Wry5FNNo
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void TestArchive_Unix()
         {
             using (var c = new X509Certificate2(TestData.MsCertificate))
@@ -290,7 +301,7 @@ Wry5FNNo
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public static void TestFriendlyName_Windows()
         {
             using (var c = new X509Certificate2(TestData.MsCertificate))
@@ -306,7 +317,7 @@ Wry5FNNo
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void TestFriendlyName_Unix()
         {
             using (var c = new X509Certificate2(TestData.MsCertificate))

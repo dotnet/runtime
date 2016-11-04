@@ -42,7 +42,7 @@ namespace System.Drawing
                     MethodInfo method = prop.GetGetMethod();
                     if (method != null && (method.Attributes & attrs) == attrs)
                     {
-                        colors[prop.Name] = (Color) prop.GetValue(null, null);
+                        colors[prop.Name] = (Color)prop.GetValue(null, null);
                     }
                 }
             }

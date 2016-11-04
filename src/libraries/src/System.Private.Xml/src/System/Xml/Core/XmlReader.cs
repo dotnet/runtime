@@ -1000,7 +1000,7 @@ namespace System.Xml
         {
             if (name == null || name.Length == 0)
             {
-                throw XmlConvert.CreateInvalidNameArgumentException(name, "name");
+                throw XmlConvert.CreateInvalidNameArgumentException(name, nameof(name));
             }
             // atomize name
             name = NameTable.Add(name);
@@ -1021,7 +1021,7 @@ namespace System.Xml
         {
             if (localName == null || localName.Length == 0)
             {
-                throw XmlConvert.CreateInvalidNameArgumentException(localName, "localName");
+                throw XmlConvert.CreateInvalidNameArgumentException(localName, nameof(localName));
             }
             if (namespaceURI == null)
             {
@@ -1048,7 +1048,7 @@ namespace System.Xml
         {
             if (name == null || name.Length == 0)
             {
-                throw XmlConvert.CreateInvalidNameArgumentException(name, "name");
+                throw XmlConvert.CreateInvalidNameArgumentException(name, nameof(name));
             }
             // save the element or root depth
             int parentDepth = Depth;
@@ -1090,7 +1090,7 @@ namespace System.Xml
         {
             if (localName == null || localName.Length == 0)
             {
-                throw XmlConvert.CreateInvalidNameArgumentException(localName, "localName");
+                throw XmlConvert.CreateInvalidNameArgumentException(localName, nameof(localName));
             }
             if (namespaceURI == null)
             {
@@ -1137,7 +1137,7 @@ namespace System.Xml
         {
             if (name == null || name.Length == 0)
             {
-                throw XmlConvert.CreateInvalidNameArgumentException(name, "name");
+                throw XmlConvert.CreateInvalidNameArgumentException(name, nameof(name));
             }
 
             // atomize name
@@ -1165,7 +1165,7 @@ namespace System.Xml
         {
             if (localName == null || localName.Length == 0)
             {
-                throw XmlConvert.CreateInvalidNameArgumentException(localName, "localName");
+                throw XmlConvert.CreateInvalidNameArgumentException(localName, nameof(localName));
             }
             if (namespaceURI == null)
             {
@@ -1541,7 +1541,7 @@ namespace System.Xml
         {
             if (localName == null || localName.Length == 0)
             {
-                throw XmlConvert.CreateInvalidNameArgumentException(localName, "localName");
+                throw XmlConvert.CreateInvalidNameArgumentException(localName, nameof(localName));
             }
             if (namespaceURI == null)
             {
@@ -1884,7 +1884,7 @@ namespace System.Xml
             if (byteCount >= 2 && (bytes[0] == 0xdf && bytes[1] == 0xff))
             {
                 if (inputContext != null)
-                    throw new ArgumentException(SR.XmlBinary_NoParserContext, "inputContext");
+                    throw new ArgumentException(SR.XmlBinary_NoParserContext, nameof(inputContext));
                 reader = new XmlSqlBinaryReader(input, bytes, byteCount, string.Empty, settings.CloseInput, settings);
             }
             else

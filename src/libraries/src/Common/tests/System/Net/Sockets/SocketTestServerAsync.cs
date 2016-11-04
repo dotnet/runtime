@@ -140,7 +140,10 @@ namespace System.Net.Sockets.Tests
             }
 
             _log.WriteLine(this.GetHashCode() + " StartAccept(_numConnectedSockets={0})", _numConnectedSockets);
-            Assert.True(_maxNumberAcceptedClientsSemaphore.WaitOne(TestSettings.PassingTestTimeout), "Timeout waiting for client connection.");
+            if (!_maxNumberAcceptedClientsSemaphore.WaitOne(TestSettings.PassingTestTimeout))
+            {
+                throw new TimeoutException("Timeout waiting for client connection.");
+            }
 
             if (_listenSocket == null)
             {
@@ -188,8 +191,7 @@ namespace System.Net.Sockets.Tests
 
                 if (Interlocked.Decrement(ref _acceptRetryCount) <= 0)
                 {
-                    Assert.True(false, "accept retry limit exceeded.");
-                    return;
+                    throw new InvalidOperationException("accept retry limit exceeded.");
                 }
 
                 Task.Delay(500).Wait();

@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <PackageRid>alpine.3.4.3-$(PackagePlatform)</PackageRid>
+    <IdPrefix>runtime.$(PackageRid).</IdPrefix>
+    <!-- only build for x64 -->
+    <PackagePlatforms>x64;</PackagePlatforms>
+  </PropertyGroup>
+  <ItemGroup>
+    <NativeFile Include="$(Alpine343NativePath)System.Security.Cryptography.Native.so">
+      <TargetPath>runtimes/$(PackageRid)/native</TargetPath>
+    </NativeFile>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

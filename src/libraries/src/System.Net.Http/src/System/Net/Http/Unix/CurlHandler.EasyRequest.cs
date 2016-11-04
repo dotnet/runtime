@@ -702,7 +702,7 @@ namespace System.Net.Http
                         ref _callbackHandle);
                 }
 
-                if (EventSourceTracingEnabled)
+                if (NetEventSource.IsEnabled)
                 {
                     SetCurlOption(CURLoption.CURLOPT_VERBOSE, 1L);
                     CURLcode curlResult = Interop.Http.RegisterDebugCallback(

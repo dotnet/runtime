@@ -43,7 +43,7 @@ namespace System.Runtime.Serialization
                         mi.Add(m);
                     }
                 }
-                baseType = baseType.GetTypeInfo().BaseType;
+                baseType = baseType.BaseType;
             }
             mi?.Reverse(); // We should invoke the methods starting from base
 

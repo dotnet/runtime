@@ -29,6 +29,7 @@ namespace System.Diagnostics
         internal long PageFileBytes { get; set; }
         internal long PrivateBytes { get; set; }
         internal int SessionId { get; set; }
+        internal int HandleCount { get; set; }
 
         internal ProcessInfo()
         {
@@ -45,6 +46,7 @@ namespace System.Diagnostics
             PageFileBytesPeak = 0;
             PrivateBytes = 0;
             SessionId = 0;
+            HandleCount = 0;
         }
     }
 }

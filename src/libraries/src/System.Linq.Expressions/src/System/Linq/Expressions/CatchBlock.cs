@@ -9,63 +9,43 @@ namespace System.Linq.Expressions
 {
     /// <summary>
     /// Represents a catch statement in a try block. 
-    /// This must have the same return type (i.e., the type of <see cref="P:CatchBlock.Body"/>) as the try block it is associated with.
+    /// This must have the same return type (i.e., the type of <see cref="Body"/>) as the try block it is associated with.
     /// </summary>
     [DebuggerTypeProxy(typeof(Expression.CatchBlockProxy))]
     public sealed class CatchBlock
     {
-        private readonly Type _test;
-        private readonly ParameterExpression _var;
-        private readonly Expression _body;
-        private readonly Expression _filter;
-
         internal CatchBlock(Type test, ParameterExpression variable, Expression body, Expression filter)
         {
-            _test = test;
-            _var = variable;
-            _body = body;
-            _filter = filter;
+            Test = test;
+            Variable = variable;
+            Body = body;
+            Filter = filter;
         }
 
         /// <summary>
         /// Gets a reference to the <see cref="Exception"/> object caught by this handler.
         /// </summary>
-        public ParameterExpression Variable
-        {
-            get { return _var; }
-        }
+        public ParameterExpression Variable { get; }
 
         /// <summary>
         /// Gets the type of <see cref="Exception"/> this handler catches.
         /// </summary>
-        public Type Test
-        {
-            get { return _test; }
-        }
+        public Type Test { get; }
 
         /// <summary>
         /// Gets the body of the catch block.
         /// </summary>
-        public Expression Body
-        {
-            get { return _body; }
-        }
+        public Expression Body { get; }
 
         /// <summary>
         /// Gets the body of the <see cref="CatchBlock"/>'s filter.
         /// </summary>
-        public Expression Filter
-        {
-            get
-            {
-                return _filter;
-            }
-        }
+        public Expression Filter { get; }
 
         /// <summary>
         /// Returns a <see cref="String"/> that represents the current <see cref="Object"/>. 
         /// </summary>
-        /// <returns>A <see cref="String"/> that represents the current <see cref="Object"/>. </returns>
+        /// <returns>A <see cref="String"/> that represents the current <see cref="Object"/>.</returns>
         public override string ToString()
         {
             return ExpressionStringBuilder.CatchBlockToString(this);
@@ -76,9 +56,9 @@ namespace System.Linq.Expressions
         /// supplied children. If all of the children are the same, it will
         /// return this expression.
         /// </summary>
-        /// <param name="variable">The <see cref="Variable" /> property of the result.</param>
-        /// <param name="filter">The <see cref="Filter" /> property of the result.</param>
-        /// <param name="body">The <see cref="Body" /> property of the result.</param>
+        /// <param name="variable">The <see cref="Variable"/> property of the result.</param>
+        /// <param name="filter">The <see cref="Filter"/> property of the result.</param>
+        /// <param name="body">The <see cref="Body"/> property of the result.</param>
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public CatchBlock Update(ParameterExpression variable, Expression filter, Expression body)
         {
@@ -102,7 +82,7 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="CatchBlock"/>.</returns>
         public static CatchBlock Catch(Type type, Expression body)
         {
-            return MakeCatchBlock(type, null, body, null);
+            return MakeCatchBlock(type, null, body, filter: null);
         }
 
         /// <summary>
@@ -114,7 +94,7 @@ namespace System.Linq.Expressions
         public static CatchBlock Catch(ParameterExpression variable, Expression body)
         {
             ContractUtils.RequiresNotNull(variable, nameof(variable));
-            return MakeCatchBlock(variable.Type, variable, body, null);
+            return MakeCatchBlock(variable.Type, variable, body, filter: null);
         }
 
         /// <summary>

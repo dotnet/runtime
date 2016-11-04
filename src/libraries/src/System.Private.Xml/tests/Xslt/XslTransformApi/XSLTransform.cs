@@ -7,7 +7,6 @@ using Xunit.Abstractions;
 using System;
 using System.IO;
 using System.Net;
-using System.Security.Policy;
 using System.Text;
 using System.Xml;
 using System.Xml.XmlDiff;

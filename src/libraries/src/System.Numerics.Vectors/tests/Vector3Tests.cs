@@ -62,7 +62,6 @@ namespace System.Numerics.Tests
             Assert.NotEqual(v4.GetHashCode(), v8.GetHashCode());
             Assert.NotEqual(v7.GetHashCode(), v6.GetHashCode());
             Assert.NotEqual(v8.GetHashCode(), v6.GetHashCode());
-            Assert.NotEqual(v8.GetHashCode(), v7.GetHashCode());
             Assert.NotEqual(v8.GetHashCode(), v9.GetHashCode());
             Assert.NotEqual(v7.GetHashCode(), v9.GetHashCode());
         }

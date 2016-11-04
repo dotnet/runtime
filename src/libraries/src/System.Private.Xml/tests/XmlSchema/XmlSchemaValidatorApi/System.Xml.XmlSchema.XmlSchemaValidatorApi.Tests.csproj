@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -7,9 +7,8 @@
     <ProjectGuid>{B0F53AAA-4ABC-44B2-9331-D3802340DD20}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Xml.XmlSchema.XmlSchemaValidatorApi.Tests</AssemblyName>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
     <RootNamespace>System.Xml.Tests</RootNamespace>
-    <KeepAllProjectReferences>true</KeepAllProjectReferences>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -33,18 +32,14 @@
     <Compile Include="ValidatorModule.cs" />
     <Compile Include="XmlTestSettings.cs" />
     <Compile Include="CXmlTestResolver.cs" />
-    <Content Include="..\TestFiles\**\*.*">
+    <SupplementalTestData Include="..\TestFiles\**\*.*">
       <Link>TestFiles\%(RecursiveDir)%(Filename)%(Extension)</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+      <DestinationDir>TestFiles\%(RecursiveDir)</DestinationDir>
+    </SupplementalTestData>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\System.Private.Xml.csproj" />
-    <ProjectReference Include="..\..\..\..\System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj" />
+    <ProjectReference Include="..\..\..\..\System.Private.Xml\pkg\System.Private.Xml.pkgproj" />
     <ProjectReference Include="..\..\..\..\Microsoft.Win32.Registry\pkg\Microsoft.Win32.Registry.pkgproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

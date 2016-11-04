@@ -38,13 +38,13 @@ public class CancelKeyPressTests : RemoteExecutorTestBase
         }).Dispose();
     }
 
-    [PlatformSpecific(PlatformID.AnyUnix)]
+    [PlatformSpecific(TestPlatforms.AnyUnix)]
     public void HandlerInvokedForSigInt()
     {
         HandlerInvokedForSignal(SIGINT);
     }
 
-    [PlatformSpecific(PlatformID.AnyUnix & ~PlatformID.OSX)] // Jenkins blocks SIGQUIT on OS X, causing the test to fail in CI
+    [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.OSX)] // Jenkins blocks SIGQUIT on OS X, causing the test to fail in CI
     public void HandlerInvokedForSigQuit()
     {
         HandlerInvokedForSignal(SIGQUIT);

@@ -242,13 +242,15 @@ namespace System.Net.Sockets
 
         internal void LogBuffer(int size)
         {
+            if (!NetEventSource.IsEnabled) return;
+
             if (_buffer != null)
             {
-                SocketsEventSource.Dump(_buffer, _offset, size);
+                NetEventSource.DumpBuffer(this, _buffer, _offset, size);
             }
             else if (_acceptBuffer != null)
             {
-                SocketsEventSource.Dump(_acceptBuffer, 0, size);
+                NetEventSource.DumpBuffer(this, _acceptBuffer, 0, size);
             }
         }
 

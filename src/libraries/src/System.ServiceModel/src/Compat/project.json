@@ -1,17 +1,15 @@
 {
   "dependencies": {
-    "System.Runtime": "4.3.0-beta-24522-03",
+    "System.Runtime": "4.4.0-beta-24703-01",
     "System.ServiceModel.Duplex": "4.0.2-beta-24318-01",
     "System.ServiceModel.Http": "4.1.1-beta-24318-01",
     "System.ServiceModel.NetTcp": "4.1.1-beta-24318-01",
     "System.ServiceModel.Primitives": "4.1.1-beta-24318-01",
     "System.ServiceModel.Security": "4.0.2-beta-24318-01",
-    "System.Runtime.Serialization.Primitives": "4.3.0-beta-24522-03",
-    "System.Runtime.Serialization.Xml": "4.3.0-beta-24522-03"
+    "System.Runtime.Serialization.Primitives": "4.4.0-beta-24703-01",
+    "System.Runtime.Serialization.Xml": "4.4.0-beta-24703-01"
   },
   "frameworks": {
-    "netstandard1.6": {
-      "imports": "dnxcore50"
-    }
+    "netstandard1.6": {}
   }
 }

@@ -2,99 +2,77 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-
-//------------------------------------------------------------------------------
-
-using System;
-using System.Data;
+using System.ComponentModel;
 
 namespace System.Data.Common
 {
-    public abstract class DbParameter : 
-        IDbDataParameter
+    public abstract class DbParameter : MarshalByRefObject, IDbDataParameter
     {
-        protected DbParameter() : base()
-        {
-        }
+        protected DbParameter() : base() { }
 
-        abstract public DbType DbType
-        {
-            get;
-            set;
-        }
+        [Browsable(false)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        [RefreshProperties(RefreshProperties.All)]
+        public abstract DbType DbType { get; set; }
 
+        [EditorBrowsable(EditorBrowsableState.Advanced)]
         public abstract void ResetDbType();
 
-        abstract public ParameterDirection Direction
+        [DefaultValue(ParameterDirection.Input)]
+        [RefreshProperties(RefreshProperties.All)]
+        public abstract ParameterDirection Direction { get; set; }
+
+        [Browsable(false)]
+        [DesignOnly(true)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public abstract bool IsNullable { get; set; }
+
+        [DefaultValue("")]
+        public abstract string ParameterName { get; set; }
+
+        byte IDbDataParameter.Precision
         {
-            get;
-            set;
+            get { return 0; }
+            set { }
         }
 
-        abstract public Boolean IsNullable
+        byte IDbDataParameter.Scale
         {
-            get;
-            set;
+            get { return 0; }
+            set { }
         }
 
-        abstract public String ParameterName
+        public virtual byte Precision
         {
-            get;
-            set;
+            get { return ((IDbDataParameter)this).Precision; }
+            set { ((IDbDataParameter)this).Precision = value; }
         }
 
-        virtual public byte Precision
+        public virtual byte Scale
         {
-            get
-            {
-                return 0;
-            }
-            set
-            {
-            }
+            get { return ((IDbDataParameter)this).Scale; }
+            set { ((IDbDataParameter)this).Scale = value; }
         }
 
-        virtual public byte Scale
-        {
-            get
-            {
-                return 0;
-            }
-            set
-            {
-            }
-        }
+        public abstract int Size { get; set; }
 
-        abstract public int Size
-        {
-            get;
-            set;
-        }
+        [DefaultValue("")]
+        public abstract string SourceColumn { get; set; }
 
-        abstract public String SourceColumn
-        {
-            get;
-            set;
-        }
+        [DefaultValue(false)]
+        [EditorBrowsable(EditorBrowsableState.Advanced)]
+        [RefreshProperties(RefreshProperties.All)]
+        public abstract bool SourceColumnNullMapping { get; set; }
 
-        abstract public bool SourceColumnNullMapping
-        {
-            get;
-            set;
-        }
-
-        abstract public object Value
-        {
-            get;
-            set;
-        }
-
+        [DefaultValue(DataRowVersion.Current)]
         public virtual DataRowVersion SourceVersion
         {
             get { return DataRowVersion.Default; }
             set { }
         }
+
+        [DefaultValue(null)]
+        [RefreshProperties(RefreshProperties.All)]
+        public abstract object Value { get; set; }
     }
 }
-

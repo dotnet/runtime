@@ -10,9 +10,8 @@ if %1=="/?" GOTO :USAGE
 
 setlocal
 set __sourceDir=%~dp0
-:: Default to vs2013 unless vs2015 is specified
-set __VSString=12 2013
-if /i "%2" == "vs2015" (set __VSString=14 2015)
+:: VS 2015 is the minimum supported toolset
+set __VSString=14 2015
 
 :: Set the target architecture to a format cmake understands. ANYCPU defaults to x64
 if /i "%3" == "x86"     (set __VSString=%__VSString%)
@@ -28,7 +27,7 @@ for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy RemoteSigned "&
 popd
 
 :DoGen
-"%CMakePath%" "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%" "-DCMAKE_INSTALL_PREFIX=%__CMakeBinDir%" -G "Visual Studio %__VSString%" -B. -H%1
+"%CMakePath%" %__SDKVersion% "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%" "-DCMAKE_INSTALL_PREFIX=%__CMakeBinDir%" -G "Visual Studio %__VSString%" -B. -H%1
 endlocal
 GOTO :DONE
 

@@ -10,7 +10,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.NetworkInformation.Tests
 {
-    [PlatformSpecific(PlatformID.OSX)]
+    [PlatformSpecific(TestPlatforms.OSX)]
     public class IPInterfacePropertiesTest_OSX
     {
         private readonly ITestOutputHelper _log;

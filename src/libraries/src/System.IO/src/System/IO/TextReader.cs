@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Text;
-using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
@@ -18,7 +17,8 @@ namespace System.IO
     //
     // This class is intended for character input, not bytes.  
     // There are methods on the Stream class for reading bytes. 
-    public abstract class TextReader : IDisposable
+    [Serializable]
+    public abstract partial class TextReader : MarshalByRefObject, IDisposable
     {
         public static readonly TextReader Null = new NullTextReader();
 
@@ -189,7 +189,7 @@ namespace System.IO
             }
             if (index < 0 || count < 0)
             {
-                throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((index < 0 ? nameof(index): nameof(count)), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             if (buffer.Length - index < count)
             {
@@ -223,7 +223,7 @@ namespace System.IO
             }
             if (index < 0 || count < 0)
             {
-                throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((index < 0 ? nameof(index): nameof(count)), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             if (buffer.Length - index < count)
             {
@@ -251,11 +251,11 @@ namespace System.IO
         }
         #endregion
 
+        [Serializable]
         private sealed class NullTextReader : TextReader
         {
             public NullTextReader() { }
 
-            [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
             public override int Read(char[] buffer, int index, int count)
             {
                 return 0;

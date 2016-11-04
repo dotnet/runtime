@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
@@ -13,31 +12,23 @@ namespace System.Linq.Expressions
     /// <summary>
     /// Represents accessing a field or property.
     /// </summary>
-    [DebuggerTypeProxy(typeof(Expression.MemberExpressionProxy))]
+    [DebuggerTypeProxy(typeof(MemberExpressionProxy))]
     public class MemberExpression : Expression
     {
-        private readonly Expression _expression;
-
         /// <summary>
         /// Gets the field or property to be accessed.
         /// </summary>
-        public MemberInfo Member
-        {
-            get { return GetMember(); }
-        }
+        public MemberInfo Member => GetMember();
 
         /// <summary>
         /// Gets the containing object of the field or property.
         /// </summary>
-        public Expression Expression
-        {
-            get { return _expression; }
-        }
+        public Expression Expression { get; }
 
         // param order: factories args in order, then other args
         internal MemberExpression(Expression expression)
         {
-            _expression = expression;
+            Expression = expression;
         }
 
         internal static PropertyExpression Make(Expression expression, PropertyInfo property)
@@ -59,13 +50,10 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Returns the node type of this <see cref="Expression" />. (Inherited from <see cref="Expression" />.)
+        /// Returns the node type of this <see cref="Expression"/>. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
-        public sealed override ExpressionType NodeType
-        {
-            get { return ExpressionType.MemberAccess; }
-        }
+        public sealed override ExpressionType NodeType => ExpressionType.MemberAccess;
 
         [ExcludeFromCodeCoverage] // Unreachable
         internal virtual MemberInfo GetMember()
@@ -86,7 +74,7 @@ namespace System.Linq.Expressions
         /// supplied children. If all of the children are the same, it will
         /// return this expression.
         /// </summary>
-        /// <param name="expression">The <see cref="Expression" /> property of the result.</param>
+        /// <param name="expression">The <see cref="Expression"/> property of the result.</param>
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public MemberExpression Update(Expression expression)
         {
@@ -98,7 +86,7 @@ namespace System.Linq.Expressions
         }
     }
 
-    internal class FieldExpression : MemberExpression
+    internal sealed class FieldExpression : MemberExpression
     {
         private readonly FieldInfo _field;
 
@@ -108,18 +96,12 @@ namespace System.Linq.Expressions
             _field = member;
         }
 
-        internal override MemberInfo GetMember()
-        {
-            return _field;
-        }
+        internal override MemberInfo GetMember() => _field;
 
-        public sealed override Type Type
-        {
-            get { return _field.FieldType; }
-        }
+        public sealed override Type Type => _field.FieldType;
     }
 
-    internal class PropertyExpression : MemberExpression
+    internal sealed class PropertyExpression : MemberExpression
     {
         private readonly PropertyInfo _property;
         public PropertyExpression(Expression expression, PropertyInfo member)
@@ -128,15 +110,9 @@ namespace System.Linq.Expressions
             _property = member;
         }
 
-        internal override MemberInfo GetMember()
-        {
-            return _property;
-        }
+        internal override MemberInfo GetMember() => _property;
 
-        public sealed override Type Type
-        {
-            get { return _property.PropertyType; }
-        }
+        public sealed override Type Type => _property.PropertyType;
     }
 
     public partial class Expression
@@ -220,6 +196,7 @@ namespace System.Linq.Expressions
             }
             return Expression.Field(expression, fi);
         }
+
         #endregion
 
         #region Property
@@ -282,11 +259,11 @@ namespace System.Linq.Expressions
         {
             ContractUtils.RequiresNotNull(property, nameof(property));
 
-            MethodInfo mi = property.GetGetMethod(true);
+            MethodInfo mi = property.GetGetMethod(nonPublic: true);
 
             if (mi == null)
             {
-                mi = property.GetSetMethod(true);
+                mi = property.GetSetMethod(nonPublic: true);
 
                 if (mi == null)
                 {
@@ -337,14 +314,14 @@ namespace System.Linq.Expressions
             Type type = mi.DeclaringType;
             BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic;
             flags |= (mi.IsStatic) ? BindingFlags.Static : BindingFlags.Instance;
-            var props = type.GetProperties(flags);
+            PropertyInfo[] props = type.GetProperties(flags);
             foreach (PropertyInfo pi in props)
             {
-                if (pi.CanRead && CheckMethod(mi, pi.GetGetMethod(true)))
+                if (pi.CanRead && CheckMethod(mi, pi.GetGetMethod(nonPublic: true)))
                 {
                     return pi;
                 }
-                if (pi.CanWrite && CheckMethod(mi, pi.GetSetMethod(true)))
+                if (pi.CanWrite && CheckMethod(mi, pi.GetSetMethod(nonPublic: true)))
                 {
                     return pi;
                 }

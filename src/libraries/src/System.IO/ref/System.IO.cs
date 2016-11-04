@@ -5,7 +5,53 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-
+namespace System.CodeDom.Compiler
+{
+    public class IndentedTextWriter : System.IO.TextWriter
+    {
+        public const string DefaultTabString = "    ";
+        public IndentedTextWriter(System.IO.TextWriter writer) { }
+        public IndentedTextWriter(System.IO.TextWriter writer, string tabString) { }
+        public override System.Text.Encoding Encoding { get { throw null; } }
+        public override string NewLine { get { throw null; } set { } }
+        public int Indent { get { throw null; } set { } }
+        public System.IO.TextWriter InnerWriter { get { throw null; } }
+        internal string TabString { get { throw null; } }
+        public override void Close() { }
+        public override void Flush() { }
+        protected virtual void OutputTabs() { }
+        public override void Write(string s) { }
+        public override void Write(bool value) { }
+        public override void Write(char value) { }
+        public override void Write(char[] buffer) { }
+        public override void Write(char[] buffer, int index, int count) { }
+        public override void Write(double value) { }
+        public override void Write(float value) { }
+        public override void Write(int value) { }
+        public override void Write(long value) { }
+        public override void Write(object value) { }
+        public override void Write(string format, object arg0) { }
+        public override void Write(string format, object arg0, object arg1) { }
+        public override void Write(string format, params object[] arg) { }
+        public void WriteLineNoTabs(string s) { }
+        public override void WriteLine(string s) { }
+        public override void WriteLine() { }
+        public override void WriteLine(bool value) { }
+        public override void WriteLine(char value) { }
+        public override void WriteLine(char[] buffer) { }
+        public override void WriteLine(char[] buffer, int index, int count) { }
+        public override void WriteLine(double value) { }
+        public override void WriteLine(float value) { }
+        public override void WriteLine(int value) { }
+        public override void WriteLine(long value) { }
+        public override void WriteLine(object value) { }
+        public override void WriteLine(string format, object arg0) { }
+        public override void WriteLine(string format, object arg0, object arg1) { }
+        public override void WriteLine(string format, params object[] arg) { }
+        [CLSCompliant(false)]
+        public override void WriteLine(uint value) { }
+    }
+}
 namespace System.IO
 {
     public partial class BinaryReader : System.IDisposable
@@ -13,36 +59,36 @@ namespace System.IO
         public BinaryReader(System.IO.Stream input) { }
         public BinaryReader(System.IO.Stream input, System.Text.Encoding encoding) { }
         public BinaryReader(System.IO.Stream input, System.Text.Encoding encoding, bool leaveOpen) { }
-        public virtual System.IO.Stream BaseStream { get { return default(System.IO.Stream); } }
+        public virtual System.IO.Stream BaseStream { get { throw null; } }
         public virtual void Close() { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         protected virtual void FillBuffer(int numBytes) { }
-        public virtual int PeekChar() { return default(int); }
-        public virtual int Read() { return default(int); }
-        public virtual int Read(byte[] buffer, int index, int count) { return default(int); }
-        public virtual int Read(char[] buffer, int index, int count) { return default(int); }
-        protected internal int Read7BitEncodedInt() { return default(int); }
-        public virtual bool ReadBoolean() { return default(bool); }
-        public virtual byte ReadByte() { return default(byte); }
-        public virtual byte[] ReadBytes(int count) { return default(byte[]); }
-        public virtual char ReadChar() { return default(char); }
-        public virtual char[] ReadChars(int count) { return default(char[]); }
-        public virtual decimal ReadDecimal() { return default(decimal); }
-        public virtual double ReadDouble() { return default(double); }
-        public virtual short ReadInt16() { return default(short); }
-        public virtual int ReadInt32() { return default(int); }
-        public virtual long ReadInt64() { return default(long); }
+        public virtual int PeekChar() { throw null; }
+        public virtual int Read() { throw null; }
+        public virtual int Read(byte[] buffer, int index, int count) { throw null; }
+        public virtual int Read(char[] buffer, int index, int count) { throw null; }
+        protected internal int Read7BitEncodedInt() { throw null; }
+        public virtual bool ReadBoolean() { throw null; }
+        public virtual byte ReadByte() { throw null; }
+        public virtual byte[] ReadBytes(int count) { throw null; }
+        public virtual char ReadChar() { throw null; }
+        public virtual char[] ReadChars(int count) { throw null; }
+        public virtual decimal ReadDecimal() { throw null; }
+        public virtual double ReadDouble() { throw null; }
+        public virtual short ReadInt16() { throw null; }
+        public virtual int ReadInt32() { throw null; }
+        public virtual long ReadInt64() { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public virtual sbyte ReadSByte() { return default(sbyte); }
-        public virtual float ReadSingle() { return default(float); }
-        public virtual string ReadString() { return default(string); }
+        public virtual sbyte ReadSByte() { throw null; }
+        public virtual float ReadSingle() { throw null; }
+        public virtual string ReadString() { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public virtual ushort ReadUInt16() { return default(ushort); }
+        public virtual ushort ReadUInt16() { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public virtual uint ReadUInt32() { return default(uint); }
+        public virtual uint ReadUInt32() { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public virtual ulong ReadUInt64() { return default(ulong); }
+        public virtual ulong ReadUInt64() { throw null; }
     }
     public partial class BinaryWriter : System.IDisposable
     {
@@ -52,12 +98,12 @@ namespace System.IO
         public BinaryWriter(System.IO.Stream output) { }
         public BinaryWriter(System.IO.Stream output, System.Text.Encoding encoding) { }
         public BinaryWriter(System.IO.Stream output, System.Text.Encoding encoding, bool leaveOpen) { }
-        public virtual System.IO.Stream BaseStream { get { return default(System.IO.Stream); } }
+        public virtual System.IO.Stream BaseStream { get { throw null; } }
         public virtual void Close() { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public virtual void Flush() { }
-        public virtual long Seek(int offset, System.IO.SeekOrigin origin) { return default(long); }
+        public virtual long Seek(int offset, System.IO.SeekOrigin origin) { throw null; }
         public virtual void Write(bool value) { }
         public virtual void Write(byte value) { }
         public virtual void Write(byte[] buffer) { }
@@ -82,38 +128,43 @@ namespace System.IO
         public virtual void Write(ulong value) { }
         protected void Write7BitEncodedInt(int value) { }
     }
-    public sealed partial class BufferedStream : System.IO.Stream 
+    public sealed partial class BufferedStream : System.IO.Stream
     {
         public BufferedStream(Stream stream) { }
         public BufferedStream(Stream stream, int bufferSize) { }
-        public override bool CanRead { get { return default(bool); } }
-        public override bool CanSeek { get { return default(bool); } }
-        public override bool CanWrite { get { return default(bool); } }
-        public override long Length { get { return default(long); } }
-        public override long Position { get { return default(long); } set { } }
-        public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback callback, object state) { return default(System.IAsyncResult); }
-        public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback callback, object state) { return default(System.IAsyncResult); }
+        public override bool CanRead { get { throw null; } }
+        public override bool CanSeek { get { throw null; } }
+        public override bool CanWrite { get { throw null; } }
+        public override long Length { get { throw null; } }
+        public override long Position { get { throw null; } set { } }
+        public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback callback, object state) { throw null; }
+        public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback callback, object state) { throw null; }
         protected override void Dispose(bool disposing) { }
-        public override int EndRead(System.IAsyncResult asyncResult) { return 0; }
-        public override void EndWrite(System.IAsyncResult asyncResult) { return; }
+        public override int EndRead(System.IAsyncResult asyncResult) { throw null; }
+        public override void EndWrite(System.IAsyncResult asyncResult) { throw null; }
         public override void Flush() { }
-        public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
-        public override int Read(byte[] array, int offset, int count) { return default(int); }
-        public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task<int>); }
-        public override int ReadByte() { return default(int); }
-        public override long Seek(long offset, SeekOrigin origin) { return default(long); }
+        public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override int Read(byte[] array, int offset, int count) { throw null; }
+        public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override int ReadByte() { throw null; }
+        public override long Seek(long offset, SeekOrigin origin) { throw null; }
         public override void SetLength(long value) { }
         public override void Write(byte[] array, int offset, int count) { }
-        public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
+        public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override void WriteByte(byte value) { }
+#if netcoreapp11
+        public Stream UnderlyingStream { get { return default(Stream); } }
+        public int BufferSize { get { return 0; } }
+#endif
     }
     public partial class EndOfStreamException : System.IO.IOException
     {
         public EndOfStreamException() { }
         public EndOfStreamException(string message) { }
         public EndOfStreamException(string message, System.Exception innerException) { }
+        protected EndOfStreamException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
-    public sealed partial class InvalidDataException : System.Exception
+    public sealed partial class InvalidDataException : System.SystemException
     {
         public InvalidDataException() { }
         public InvalidDataException(string message) { }
@@ -128,30 +179,33 @@ namespace System.IO
         public MemoryStream(byte[] buffer, int index, int count, bool writable) { }
         public MemoryStream(byte[] buffer, int index, int count, bool writable, bool publiclyVisible) { }
         public MemoryStream(int capacity) { }
-        public override bool CanRead { get { return default(bool); } }
-        public override bool CanSeek { get { return default(bool); } }
-        public override bool CanWrite { get { return default(bool); } }
-        public virtual int Capacity { get { return default(int); } set { } }
-        public override long Length { get { return default(long); } }
-        public override long Position { get { return default(long); } set { } }
-        public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback callback, object state) { return default(System.IAsyncResult); }
-        public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback callback, object state) { return default(System.IAsyncResult); }
-        public override System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
+        public override bool CanRead { get { throw null; } }
+        public override bool CanSeek { get { throw null; } }
+        public override bool CanWrite { get { throw null; } }
+        public virtual int Capacity { get { throw null; } set { } }
+        public override long Length { get { throw null; } }
+        public override long Position { get { throw null; } set { } }
+        public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback callback, object state) { throw null; }
+        public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback callback, object state) { throw null; }
+#if netcoreapp11
+        public override void CopyTo(System.IO.Stream destination, int bufferSize) { }
+#endif
+        public override System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected override void Dispose(bool disposing) { }
-        public override int EndRead(System.IAsyncResult asyncResult) { return 0; }
-        public override void EndWrite(System.IAsyncResult asyncResult) { return; }
+        public override int EndRead(System.IAsyncResult asyncResult) { throw null; }
+        public override void EndWrite(System.IAsyncResult asyncResult) { throw null; }
         public override void Flush() { }
-        public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
-        public virtual byte[] GetBuffer() { return default(byte[]); }
-        public override int Read(byte[] buffer, int offset, int count) { buffer = default(byte[]); return default(int); }
-        public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task<int>); }
-        public override int ReadByte() { return default(int); }
-        public override long Seek(long offset, System.IO.SeekOrigin loc) { return default(long); }
+        public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
+        public virtual byte[] GetBuffer() { throw null; }
+        public override int Read(byte[] buffer, int offset, int count) { throw null; }
+        public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override int ReadByte() { throw null; }
+        public override long Seek(long offset, System.IO.SeekOrigin loc) { throw null; }
         public override void SetLength(long value) { }
-        public virtual byte[] ToArray() { return default(byte[]); }
-        public virtual bool TryGetBuffer(out System.ArraySegment<byte> buffer) { buffer = default(System.ArraySegment<byte>); return default(bool); }
+        public virtual byte[] ToArray() { throw null; }
+        public virtual bool TryGetBuffer(out System.ArraySegment<byte> buffer) { throw null; }
         public override void Write(byte[] buffer, int offset, int count) { }
-        public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
+        public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override void WriteByte(byte value) { }
         public virtual void WriteTo(System.IO.Stream stream) { }
     }
@@ -164,22 +218,27 @@ namespace System.IO
         public StreamReader(System.IO.Stream stream, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks) { }
         public StreamReader(System.IO.Stream stream, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize) { }
         public StreamReader(System.IO.Stream stream, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize, bool leaveOpen) { }
-        public virtual System.IO.Stream BaseStream { get { return default(System.IO.Stream); } }
-        public virtual System.Text.Encoding CurrentEncoding { get { return default(System.Text.Encoding); } }
-        public bool EndOfStream { get { return default(bool); } }
+        public StreamReader(string path) { }
+        public StreamReader(string path, bool detectEncodingFromByteOrderMarks) { }
+        public StreamReader(string path, System.Text.Encoding encoding) { }
+        public StreamReader(string path, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks) { }
+        public StreamReader(string path, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize) { }
+        public virtual System.IO.Stream BaseStream { get { throw null; } }
+        public virtual System.Text.Encoding CurrentEncoding { get { throw null; } }
+        public bool EndOfStream { get { throw null; } }
         public void DiscardBufferedData() { }
         public override void Close() { }
         protected override void Dispose(bool disposing) { }
-        public override int Peek() { return default(int); }
-        public override int Read() { return default(int); }
-        public override int Read(char[] buffer, int index, int count) { buffer = default(char[]); return default(int); }
-        public override System.Threading.Tasks.Task<int> ReadAsync(char[] buffer, int index, int count) { return default(System.Threading.Tasks.Task<int>); }
-        public override int ReadBlock(char[] buffer, int index, int count) { buffer = default(char[]); return default(int); }
-        public override System.Threading.Tasks.Task<int> ReadBlockAsync(char[] buffer, int index, int count) { return default(System.Threading.Tasks.Task<int>); }
-        public override string ReadLine() { return default(string); }
-        public override System.Threading.Tasks.Task<string> ReadLineAsync() { return default(System.Threading.Tasks.Task<string>); }
-        public override string ReadToEnd() { return default(string); }
-        public override System.Threading.Tasks.Task<string> ReadToEndAsync() { return default(System.Threading.Tasks.Task<string>); }
+        public override int Peek() { throw null; }
+        public override int Read() { throw null; }
+        public override int Read(char[] buffer, int index, int count) { throw null; }
+        public override System.Threading.Tasks.Task<int> ReadAsync(char[] buffer, int index, int count) { throw null; }
+        public override int ReadBlock(char[] buffer, int index, int count) { throw null; }
+        public override System.Threading.Tasks.Task<int> ReadBlockAsync(char[] buffer, int index, int count) { throw null; }
+        public override string ReadLine() { throw null; }
+        public override System.Threading.Tasks.Task<string> ReadLineAsync() { throw null; }
+        public override string ReadToEnd() { throw null; }
+        public override System.Threading.Tasks.Task<string> ReadToEndAsync() { throw null; }
     }
     public partial class StreamWriter : System.IO.TextWriter
     {
@@ -188,39 +247,43 @@ namespace System.IO
         public StreamWriter(System.IO.Stream stream, System.Text.Encoding encoding) { }
         public StreamWriter(System.IO.Stream stream, System.Text.Encoding encoding, int bufferSize) { }
         public StreamWriter(System.IO.Stream stream, System.Text.Encoding encoding, int bufferSize, bool leaveOpen) { }
-        public virtual bool AutoFlush { get { return default(bool); } set { } }
-        public virtual System.IO.Stream BaseStream { get { return default(System.IO.Stream); } }
-        public override System.Text.Encoding Encoding { get { return default(System.Text.Encoding); } }
+        public StreamWriter(string path) { }
+        public StreamWriter(string path, bool append) { }
+        public StreamWriter(string path, bool append, System.Text.Encoding encoding) { }
+        public StreamWriter(string path, bool append, System.Text.Encoding encoding, int bufferSize) { }
+        public virtual bool AutoFlush { get { throw null; } set { } }
+        public virtual System.IO.Stream BaseStream { get { throw null; } }
+        public override System.Text.Encoding Encoding { get { throw null; } }
         public override void Close() { }
         protected override void Dispose(bool disposing) { }
         public override void Flush() { }
-        public override System.Threading.Tasks.Task FlushAsync() { return default(System.Threading.Tasks.Task); }
+        public override System.Threading.Tasks.Task FlushAsync() { throw null; }
         public override void Write(char value) { }
         public override void Write(char[] buffer) { }
         public override void Write(char[] buffer, int index, int count) { }
         public override void Write(string value) { }
-        public override System.Threading.Tasks.Task WriteAsync(char value) { return default(System.Threading.Tasks.Task); }
-        public override System.Threading.Tasks.Task WriteAsync(char[] buffer, int index, int count) { return default(System.Threading.Tasks.Task); }
-        public override System.Threading.Tasks.Task WriteAsync(string value) { return default(System.Threading.Tasks.Task); }
-        public override System.Threading.Tasks.Task WriteLineAsync() { return default(System.Threading.Tasks.Task); }
-        public override System.Threading.Tasks.Task WriteLineAsync(char value) { return default(System.Threading.Tasks.Task); }
-        public override System.Threading.Tasks.Task WriteLineAsync(char[] buffer, int index, int count) { return default(System.Threading.Tasks.Task); }
-        public override System.Threading.Tasks.Task WriteLineAsync(string value) { return default(System.Threading.Tasks.Task); }
+        public override System.Threading.Tasks.Task WriteAsync(char value) { throw null; }
+        public override System.Threading.Tasks.Task WriteAsync(char[] buffer, int index, int count) { throw null; }
+        public override System.Threading.Tasks.Task WriteAsync(string value) { throw null; }
+        public override System.Threading.Tasks.Task WriteLineAsync() { throw null; }
+        public override System.Threading.Tasks.Task WriteLineAsync(char value) { throw null; }
+        public override System.Threading.Tasks.Task WriteLineAsync(char[] buffer, int index, int count) { throw null; }
+        public override System.Threading.Tasks.Task WriteLineAsync(string value) { throw null; }
     }
     public partial class StringReader : System.IO.TextReader
     {
         public StringReader(string s) { }
         public override void Close() { }
         protected override void Dispose(bool disposing) { }
-        public override int Peek() { return default(int); }
-        public override int Read() { return default(int); }
-        public override int Read(char[] buffer, int index, int count) { buffer = default(char[]); return default(int); }
-        public override System.Threading.Tasks.Task<int> ReadAsync(char[] buffer, int index, int count) { return default(System.Threading.Tasks.Task<int>); }
-        public override System.Threading.Tasks.Task<int> ReadBlockAsync(char[] buffer, int index, int count) { return default(System.Threading.Tasks.Task<int>); }
-        public override string ReadLine() { return default(string); }
-        public override System.Threading.Tasks.Task<string> ReadLineAsync() { return default(System.Threading.Tasks.Task<string>); }
-        public override string ReadToEnd() { return default(string); }
-        public override System.Threading.Tasks.Task<string> ReadToEndAsync() { return default(System.Threading.Tasks.Task<string>); }
+        public override int Peek() { throw null; }
+        public override int Read() { throw null; }
+        public override int Read(char[] buffer, int index, int count) { throw null; }
+        public override System.Threading.Tasks.Task<int> ReadAsync(char[] buffer, int index, int count) { throw null; }
+        public override System.Threading.Tasks.Task<int> ReadBlockAsync(char[] buffer, int index, int count) { throw null; }
+        public override string ReadLine() { throw null; }
+        public override System.Threading.Tasks.Task<string> ReadLineAsync() { throw null; }
+        public override string ReadToEnd() { throw null; }
+        public override System.Threading.Tasks.Task<string> ReadToEndAsync() { throw null; }
     }
     public partial class StringWriter : System.IO.TextWriter
     {
@@ -228,54 +291,56 @@ namespace System.IO
         public StringWriter(System.IFormatProvider formatProvider) { }
         public StringWriter(System.Text.StringBuilder sb) { }
         public StringWriter(System.Text.StringBuilder sb, System.IFormatProvider formatProvider) { }
-        public override System.Text.Encoding Encoding { get { return default(System.Text.Encoding); } }
+        public override System.Text.Encoding Encoding { get { throw null; } }
         public override void Close() { }
         protected override void Dispose(bool disposing) { }
-        public override System.Threading.Tasks.Task FlushAsync() { return default(System.Threading.Tasks.Task); }
-        public virtual System.Text.StringBuilder GetStringBuilder() { return default(System.Text.StringBuilder); }
-        public override string ToString() { return default(string); }
+        public override System.Threading.Tasks.Task FlushAsync() { throw null; }
+        public virtual System.Text.StringBuilder GetStringBuilder() { throw null; }
+        public override string ToString() { throw null; }
         public override void Write(char value) { }
         public override void Write(char[] buffer, int index, int count) { }
         public override void Write(string value) { }
-        public override System.Threading.Tasks.Task WriteAsync(char value) { return default(System.Threading.Tasks.Task); }
-        public override System.Threading.Tasks.Task WriteAsync(char[] buffer, int index, int count) { return default(System.Threading.Tasks.Task); }
-        public override System.Threading.Tasks.Task WriteAsync(string value) { return default(System.Threading.Tasks.Task); }
-        public override System.Threading.Tasks.Task WriteLineAsync(char value) { return default(System.Threading.Tasks.Task); }
-        public override System.Threading.Tasks.Task WriteLineAsync(char[] buffer, int index, int count) { return default(System.Threading.Tasks.Task); }
-        public override System.Threading.Tasks.Task WriteLineAsync(string value) { return default(System.Threading.Tasks.Task); }
+        public override System.Threading.Tasks.Task WriteAsync(char value) { throw null; }
+        public override System.Threading.Tasks.Task WriteAsync(char[] buffer, int index, int count) { throw null; }
+        public override System.Threading.Tasks.Task WriteAsync(string value) { throw null; }
+        public override System.Threading.Tasks.Task WriteLineAsync(char value) { throw null; }
+        public override System.Threading.Tasks.Task WriteLineAsync(char[] buffer, int index, int count) { throw null; }
+        public override System.Threading.Tasks.Task WriteLineAsync(string value) { throw null; }
     }
-    public abstract partial class TextReader : System.IDisposable
+    public abstract partial class TextReader : System.MarshalByRefObject,  System.IDisposable
     {
         public static readonly System.IO.TextReader Null;
         protected TextReader() { }
         public virtual void Close() { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
-        public virtual int Peek() { return default(int); }
-        public virtual int Read() { return default(int); }
-        public virtual int Read(char[] buffer, int index, int count) { buffer = default(char[]); return default(int); }
-        public virtual System.Threading.Tasks.Task<int> ReadAsync(char[] buffer, int index, int count) { return default(System.Threading.Tasks.Task<int>); }
-        public virtual int ReadBlock(char[] buffer, int index, int count) { buffer = default(char[]); return default(int); }
-        public virtual System.Threading.Tasks.Task<int> ReadBlockAsync(char[] buffer, int index, int count) { return default(System.Threading.Tasks.Task<int>); }
-        public virtual string ReadLine() { return default(string); }
-        public virtual System.Threading.Tasks.Task<string> ReadLineAsync() { return default(System.Threading.Tasks.Task<string>); }
-        public virtual string ReadToEnd() { return default(string); }
-        public virtual System.Threading.Tasks.Task<string> ReadToEndAsync() { return default(System.Threading.Tasks.Task<string>); }
+        public virtual int Peek() { throw null; }
+        public virtual int Read() { throw null; }
+        public virtual int Read(char[] buffer, int index, int count) { throw null; }
+        public virtual System.Threading.Tasks.Task<int> ReadAsync(char[] buffer, int index, int count) { throw null; }
+        public virtual int ReadBlock(char[] buffer, int index, int count) { throw null; }
+        public virtual System.Threading.Tasks.Task<int> ReadBlockAsync(char[] buffer, int index, int count) { throw null; }
+        public virtual string ReadLine() { throw null; }
+        public virtual System.Threading.Tasks.Task<string> ReadLineAsync() { throw null; }
+        public virtual string ReadToEnd() { throw null; }
+        public virtual System.Threading.Tasks.Task<string> ReadToEndAsync() { throw null; }
+        public static System.IO.TextReader Synchronized(System.IO.TextReader reader) { throw null; }
     }
-    public abstract partial class TextWriter : System.IDisposable
+    public abstract partial class TextWriter : System.MarshalByRefObject ,System.IDisposable
     {
         protected char[] CoreNewLine;
         public static readonly System.IO.TextWriter Null;
         protected TextWriter() { }
         protected TextWriter(System.IFormatProvider formatProvider) { }
         public abstract System.Text.Encoding Encoding { get; }
-        public virtual System.IFormatProvider FormatProvider { get { return default(System.IFormatProvider); } }
-        public virtual string NewLine { get { return default(string); } set { } }
+        public virtual System.IFormatProvider FormatProvider { get { throw null; } }
+        public virtual string NewLine { get { throw null; } set { } }
         public virtual void Close() { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public virtual void Flush() { }
-        public virtual System.Threading.Tasks.Task FlushAsync() { return default(System.Threading.Tasks.Task); }
+        public virtual System.Threading.Tasks.Task FlushAsync() { throw null; }
+        public static System.IO.TextWriter Synchronized(System.IO.TextWriter writer) { throw null; }
         public virtual void Write(bool value) { }
         public abstract void Write(char value);
         public virtual void Write(char[] buffer) { }
@@ -295,10 +360,10 @@ namespace System.IO
         public virtual void Write(uint value) { }
         [System.CLSCompliantAttribute(false)]
         public virtual void Write(ulong value) { }
-        public virtual System.Threading.Tasks.Task WriteAsync(char value) { return default(System.Threading.Tasks.Task); }
-        public System.Threading.Tasks.Task WriteAsync(char[] buffer) { return default(System.Threading.Tasks.Task); }
-        public virtual System.Threading.Tasks.Task WriteAsync(char[] buffer, int index, int count) { return default(System.Threading.Tasks.Task); }
-        public virtual System.Threading.Tasks.Task WriteAsync(string value) { return default(System.Threading.Tasks.Task); }
+        public virtual System.Threading.Tasks.Task WriteAsync(char value) { throw null; }
+        public System.Threading.Tasks.Task WriteAsync(char[] buffer) { throw null; }
+        public virtual System.Threading.Tasks.Task WriteAsync(char[] buffer, int index, int count) { throw null; }
+        public virtual System.Threading.Tasks.Task WriteAsync(string value) { throw null; }
         public virtual void WriteLine() { }
         public virtual void WriteLine(bool value) { }
         public virtual void WriteLine(char value) { }
@@ -319,10 +384,10 @@ namespace System.IO
         public virtual void WriteLine(uint value) { }
         [System.CLSCompliantAttribute(false)]
         public virtual void WriteLine(ulong value) { }
-        public virtual System.Threading.Tasks.Task WriteLineAsync() { return default(System.Threading.Tasks.Task); }
-        public virtual System.Threading.Tasks.Task WriteLineAsync(char value) { return default(System.Threading.Tasks.Task); }
-        public System.Threading.Tasks.Task WriteLineAsync(char[] buffer) { return default(System.Threading.Tasks.Task); }
-        public virtual System.Threading.Tasks.Task WriteLineAsync(char[] buffer, int index, int count) { return default(System.Threading.Tasks.Task); }
-        public virtual System.Threading.Tasks.Task WriteLineAsync(string value) { return default(System.Threading.Tasks.Task); }
+        public virtual System.Threading.Tasks.Task WriteLineAsync() { throw null; }
+        public virtual System.Threading.Tasks.Task WriteLineAsync(char value) { throw null; }
+        public System.Threading.Tasks.Task WriteLineAsync(char[] buffer) { throw null; }
+        public virtual System.Threading.Tasks.Task WriteLineAsync(char[] buffer, int index, int count) { throw null; }
+        public virtual System.Threading.Tasks.Task WriteLineAsync(string value) { throw null; }
     }
 }

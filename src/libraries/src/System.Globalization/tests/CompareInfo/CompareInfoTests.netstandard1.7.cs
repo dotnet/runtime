@@ -102,7 +102,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "\u30FC", "\u2010", ignoreKanaIgnoreWidthIgnoreCase, 1 };
 
             yield return new object[] { s_invariantCompare, "/", "\uFF0F", ignoreKanaIgnoreWidthIgnoreCase, 0 };
-            yield return new object[] { s_invariantCompare, "'", "\uFF07", ignoreKanaIgnoreWidthIgnoreCase, 0 };
+            yield return new object[] { s_invariantCompare, "'", "\uFF07", ignoreKanaIgnoreWidthIgnoreCase, PlatformDetection.IsWindows7 ? -1 : 0};
             yield return new object[] { s_invariantCompare, "\"", "\uFF02", ignoreKanaIgnoreWidthIgnoreCase, 0 };
 
             yield return new object[] { s_invariantCompare, "\u3042", "\u30A1", CompareOptions.None, s_expectedHiraganaToKatakanaCompare };
@@ -238,9 +238,7 @@ namespace System.Globalization.Tests
         }
 
         [Theory]
-        
         [MemberData(nameof(CompareInfo_TestData))]
-        [ActiveIssue(11608, Xunit.PlatformID.AnyUnix)]
         public static void LcidTest(string cultureName, int lcid)
         {
             var ci = CompareInfo.GetCompareInfo(lcid);
@@ -260,7 +258,6 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(SortKey_TestData))]
-        [ActiveIssue(11608, Xunit.PlatformID.AnyUnix)]
         public void SortKeyTest(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expected)
         {
             SortKey sk1 = compareInfo.GetSortKey(string1, options);
@@ -272,7 +269,6 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(11608, Xunit.PlatformID.AnyUnix)]
         public void SortKeyMiscTest()
         {
             CompareInfo ci = new CultureInfo("en-US").CompareInfo;
@@ -284,6 +280,7 @@ namespace System.Globalization.Tests
 
             SortKey sk3 = ci.GetSortKey(s2);
             SortKey sk4 = ci.GetSortKey(s2, CompareOptions.IgnoreCase);
+            SortKey sk5 = ci.GetSortKey(s1, CompareOptions.IgnoreCase);
 
             Assert.Equal(sk2, sk1);
             Assert.Equal(sk2.GetHashCode(), sk1.GetHashCode());
@@ -297,9 +294,9 @@ namespace System.Globalization.Tests
             Assert.NotEqual(sk4.GetHashCode(), sk3.GetHashCode());
             Assert.NotEqual(sk4.KeyData, sk3.KeyData);
 
-            Assert.Equal(sk4, sk1);
-            Assert.Equal(sk4.GetHashCode(), sk1.GetHashCode());
-            Assert.Equal(sk4.KeyData, sk1.KeyData);
+            Assert.Equal(sk4, sk5);
+            Assert.Equal(sk4.GetHashCode(), sk5.GetHashCode());
+            Assert.Equal(sk4.KeyData, sk5.KeyData);
 
             Assert.Throws<ArgumentNullException>("source", () => ci.GetSortKey(null));
             Assert.Throws<ArgumentException>("options", () => ci.GetSortKey(s1, CompareOptions.Ordinal));
@@ -307,7 +304,6 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(IndexOf_TestData))]
-        [ActiveIssue(11608, Xunit.PlatformID.AnyUnix)]
         public void IndexOfTest(CompareInfo compareInfo, string source, string value, int startIndex, int indexOfExpected, int lastIndexOfExpected)
         {
             Assert.Equal(indexOfExpected, compareInfo.IndexOf(source, value, startIndex));
@@ -325,8 +321,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(IsSortable_TestData))]
-        [ActiveIssue(11608, Xunit.PlatformID.AnyUnix)]
-        public void IndexOfTest(string source, bool hasSurrogate, bool expected)
+        public void IsSortableTest(string source, bool hasSurrogate, bool expected)
         {
             Assert.Equal(expected, CompareInfo.IsSortable(source));
 

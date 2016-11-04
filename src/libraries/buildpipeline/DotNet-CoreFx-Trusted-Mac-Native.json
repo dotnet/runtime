@@ -1,0 +1,341 @@
+{
+  "build": [
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Delete files from $(Agent.BuildDirectory)/s",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "b7e8b412-0437-4065-9371-edc5881de25b",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "SourceFolder": "$(Agent.BuildDirectory)/s",
+        "Contents": "**\n.gitignore"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "git clone",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "git",
+        "arguments": "clone $(VsoCorefxGitUrl) $(Agent.BuildDirectory)/s/corefx",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "git checkout",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "git",
+        "arguments": "checkout $(SourceVersion)",
+        "workingFolder": "$(Agent.BuildDirectory)/s/corefx",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Run $(Agent.BuildDirectory)/s/corefx/clean.sh",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "$(Agent.BuildDirectory)/s/corefx/clean.sh",
+        "arguments": "-all",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Generate Native Version Assets",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "$(Agent.BuildDirectory)/s/corefx/build-managed.sh",
+        "arguments": "-OfficialBuildId=$(OfficialBuildId) -- /t:GenerateVersionSourceFile /p:GenerateVersionSourceFile=true",
+        "workingFolder": "$(Agent.BuildDirectory)/s/corefx",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Run $(Agent.BuildDirectory)/s/corefx/build-native.sh",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "$(Agent.BuildDirectory)/s/corefx/build-native.sh",
+        "arguments": "-buildArch=$(Platform) -$(ConfigurationGroup) -- generateversion",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Run $(Agent.BuildDirectory)/s/corefx/build-packages.sh",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "$(Agent.BuildDirectory)/s/corefx/build-packages.sh",
+        "arguments": "-$(ConfigurationGroup) -DisableManagedPackage -FilterToOSGroup=osx.10",
+        "workingFolder": "$(Agent.BuildDirectory)/s/corefx",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Run $(Agent.BuildDirectory)/s/corefx/publish-packages.sh",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "$(Agent.BuildDirectory)/s/corefx/publish-packages.sh",
+        "arguments": "-AzureAccount=$(CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(Label) -- /p:OverwriteOnPublish=true",
+        "workingFolder": "$(Agent.BuildDirectory)/s/corefx",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": true,
+      "displayName": "Copy Publish Artifact: BuildLogs",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "CopyRoot": "",
+        "Contents": "*.log\n$(Agent.BuildDirectory)/s/corefx/*.log",
+        "ArtifactName": "BuildLogs",
+        "ArtifactType": "Container",
+        "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": false,
+      "displayName": "Compress the bin directory",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "tar",
+        "arguments": "-zcvf $(Agent.BuildDirectory)/s/corefx/bin.tar.gz bin",
+        "workingFolder": "$(Agent.BuildDirectory)/s/corefx",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": false,
+      "displayName": "Copy Publish Artifact: bin",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
+        "versionSpec": "*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "CopyRoot": "$(Agent.BuildDirectory)/s/corefx/bin",
+        "Contents": "bin.tar.gz",
+        "ArtifactName": "bin",
+        "ArtifactType": "Container",
+        "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)"
+      }
+    }
+  ],
+  "options": [
+    {
+      "enabled": false,
+      "definition": {
+        "id": "7c555368-ca64-4199-add6-9ebaf0b0137d"
+      },
+      "inputs": {
+        "multipliers": "[]",
+        "parallel": "false",
+        "continueOnError": "true",
+        "additionalFields": "{}"
+      }
+    },
+    {
+      "enabled": false,
+      "definition": {
+        "id": "a9db38f9-9fdc-478c-b0f9-464221e58316"
+      },
+      "inputs": {
+        "workItemType": "234347",
+        "assignToRequestor": "true",
+        "additionalFields": "{}"
+      }
+    },
+    {
+      "enabled": false,
+      "definition": {
+        "id": "57578776-4c22-4526-aeb0-86b6da17ee9c"
+      },
+      "inputs": {
+        "additionalFields": "{}"
+      }
+    }
+  ],
+  "variables": {
+    "system.debug": {
+      "value": "false",
+      "allowOverride": true
+    },
+    "Platform": {
+      "value": "x64",
+      "allowOverride": true
+    },
+    "ConfigurationGroup": {
+      "value": "Release",
+      "allowOverride": true
+    },
+    "CloudDropAccountName": {
+      "value": "dotnetbuildoutput"
+    },
+    "CloudDropAccessToken": {
+      "value": null,
+      "isSecret": true
+    },
+    "OfficialBuildId": {
+      "value": "$(Build.BuildNumber)",
+      "allowOverride": true
+    },
+    "Label": {
+      "value": "$(Build.BuildNumber)",
+      "allowOverride": true
+    },
+    "SourceVersion": {
+      "value": "HEAD",
+      "allowOverride": true
+    },
+    "VsoAccountName": {
+      "value": "dn-bot"
+    },
+    "VsoPassword": {
+      "value": null,
+      "isSecret": true
+    },
+    "VsoRepositoryName": {
+      "value": "DotNet-CoreFX-Trusted",
+      "allowOverride": true
+    },
+    "VsoCorefxGitUrl": {
+      "value": "https://$(VsoAccountName):$(VsoPassword)@devdiv.visualstudio.com/DevDiv/_git/$(VsoRepositoryName)/"
+    }
+  },
+  "demands": [
+    "Agent.OS -equals darwin"
+  ],
+  "retentionRules": [
+    {
+      "branches": [
+        "+refs/heads/*"
+      ],
+      "artifacts": [
+        "build.SourceLabel"
+      ],
+      "artifactTypesToDelete": [],
+      "daysToKeep": 10,
+      "minimumToKeep": 1,
+      "deleteBuildRecord": true,
+      "deleteTestResults": true
+    }
+  ],
+  "buildNumberFormat": "$(date:yyyyMMdd)$(rev:-rr)",
+  "jobAuthorizationScope": "projectCollection",
+  "jobTimeoutInMinutes": 60,
+  "repository": {
+    "properties": {
+      "labelSources": "0",
+      "reportBuildStatus": "true",
+      "fetchDepth": "0",
+      "gitLfsSupport": "false"
+    },
+    "id": "0a2b2664-c1be-429c-9b40-8a24dee27a4a",
+    "type": "TfsGit",
+    "name": "DotNet-BuildPipeline",
+    "url": "https://devdiv.visualstudio.com/DevDiv/_git/DotNet-BuildPipeline",
+    "defaultBranch": "refs/heads/master",
+    "clean": "true",
+    "checkoutSubmodules": false
+  },
+  "quality": "definition",
+  "defaultBranch": "refs/heads/master",
+  "queue": {
+    "pool": {
+      "id": 39,
+      "name": "DotNet-Build"
+    },
+    "id": 36,
+    "name": "DotNet-Build"
+  },
+  "path": "\\",
+  "type": "build",
+  "id": 1053,
+  "name": "DotNet-CoreFx-Trusted-Mac-Native",
+  "project": {
+    "id": "0bdbc590-a062-4c3f-b0f6-9383f67865ee",
+    "name": "DevDiv",
+    "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
+    "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
+    "state": "wellFormed",
+    "revision": 418097399
+  }
+}

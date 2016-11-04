@@ -479,11 +479,7 @@ namespace System.IO
             return asyncResult;
         }
 
-#if netstandard
         public override Int32 EndRead(IAsyncResult asyncResult)
-#else
-        public Int32 EndRead(IAsyncResult asyncResult)
-#endif
         {
             if (asyncResult == null)
                 throw new ArgumentNullException(nameof(asyncResult));
@@ -589,11 +585,7 @@ namespace System.IO
         #region Writing
 
 
-#if netstandard
         public override IAsyncResult BeginWrite(Byte[] buffer, Int32 offset, Int32 count, AsyncCallback callback, Object state)
-#else
-        public IAsyncResult BeginWrite(Byte[] buffer, Int32 offset, Int32 count, AsyncCallback callback, Object state)
-#endif
         {
             return BeginWrite(buffer, offset, count, callback, state, usedByBlockingWrapper: false);
         }
@@ -640,11 +632,7 @@ namespace System.IO
             return asyncResult;
         }
 
-#if netstandard
         public override void EndWrite(IAsyncResult asyncResult)
-#else
-        public void EndWrite(IAsyncResult asyncResult)
-#endif
         {
             if (asyncResult == null)
                 throw new ArgumentNullException(nameof(asyncResult));

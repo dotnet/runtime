@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -15,74 +14,56 @@ namespace System.Linq.Expressions
     /// <summary>
     /// Represents a constructor call.
     /// </summary>
-    [DebuggerTypeProxy(typeof(Expression.NewExpressionProxy))]
+    [DebuggerTypeProxy(typeof(NewExpressionProxy))]
     public class NewExpression : Expression, IArgumentProvider
     {
-        private readonly ConstructorInfo _constructor;
-        private IList<Expression> _arguments;
-        private readonly ReadOnlyCollection<MemberInfo> _members;
+        private IReadOnlyList<Expression> _arguments;
 
-        internal NewExpression(ConstructorInfo constructor, IList<Expression> arguments, ReadOnlyCollection<MemberInfo> members)
+        internal NewExpression(ConstructorInfo constructor, IReadOnlyList<Expression> arguments, ReadOnlyCollection<MemberInfo> members)
         {
-            _constructor = constructor;
+            Constructor = constructor;
             _arguments = arguments;
-            _members = members;
+            Members = members;
         }
 
         /// <summary>
-        /// Gets the static type of the expression that this <see cref="Expression" /> represents. (Inherited from <see cref="Expression"/>.)
+        /// Gets the static type of the expression that this <see cref="Expression"/> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
-        /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        public override Type Type
-        {
-            get { return _constructor.DeclaringType; }
-        }
+        /// <returns>The <see cref="System.Type"/> that represents the static type of the expression.</returns>
+        public override Type Type => Constructor.DeclaringType;
 
         /// <summary>
-        /// Returns the node type of this <see cref="Expression" />. (Inherited from <see cref="Expression" />.)
+        /// Returns the node type of this <see cref="Expression"/>. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
-        public sealed override ExpressionType NodeType
-        {
-            get { return ExpressionType.New; }
-        }
+        public sealed override ExpressionType NodeType => ExpressionType.New;
 
         /// <summary>
         /// Gets the called constructor.
         /// </summary>
-        public ConstructorInfo Constructor
-        {
-            get { return _constructor; }
-        }
+        public ConstructorInfo Constructor { get; }
 
         /// <summary>
         /// Gets the arguments to the constructor.
         /// </summary>
-        public ReadOnlyCollection<Expression> Arguments
-        {
-            get { return ReturnReadOnly(ref _arguments); }
-        }
+        public ReadOnlyCollection<Expression> Arguments => ReturnReadOnly(ref _arguments);
 
-        public Expression GetArgument(int index)
-        {
-            return _arguments[index];
-        }
+        /// <summary>
+        /// Gets the argument expression with the specified <paramref name="index"/>.
+        /// </summary>
+        /// <param name="index">The index of the argument expression to get.</param>
+        /// <returns>The expression representing the argument at the specified <paramref name="index"/>.</returns>
+        public Expression GetArgument(int index) => _arguments[index];
 
-        public int ArgumentCount
-        {
-            get
-            {
-                return _arguments.Count;
-            }
-        }
+        /// <summary>
+        /// Gets the number of argument expressions of the node.
+        /// </summary>
+        public int ArgumentCount => _arguments.Count;
 
         /// <summary>
         /// Gets the members that can retrieve the values of the fields that were initialized with constructor arguments.
         /// </summary>
-        public ReadOnlyCollection<MemberInfo> Members
-        {
-            get { return _members; }
-        }
+        public ReadOnlyCollection<MemberInfo> Members { get; }
 
         /// <summary>
         /// Dispatches to the specific visit method for this node type.
@@ -97,7 +78,7 @@ namespace System.Linq.Expressions
         /// supplied children. If all of the children are the same, it will
         /// return this expression.
         /// </summary>
-        /// <param name="arguments">The <see cref="Arguments" /> property of the result.</param>
+        /// <param name="arguments">The <see cref="NewExpression.Arguments"/> property of the result.</param>
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public NewExpression Update(IEnumerable<Expression> arguments)
         {
@@ -113,104 +94,94 @@ namespace System.Linq.Expressions
         }
     }
 
-    internal class NewValueTypeExpression : NewExpression
+    internal sealed class NewValueTypeExpression : NewExpression
     {
-        private readonly Type _valueType;
-
         internal NewValueTypeExpression(Type type, ReadOnlyCollection<Expression> arguments, ReadOnlyCollection<MemberInfo> members)
             : base(null, arguments, members)
         {
-            _valueType = type;
+            Type = type;
         }
 
-        public sealed override Type Type
-        {
-            get { return _valueType; }
-        }
+        public sealed override Type Type { get; }
     }
 
     public partial class Expression
     {
         /// <summary>
-        /// Creates a new <see cref="NewExpression"/> that represents calling the specified constructor that takes no arguments. 
+        /// Creates a new <see cref="NewExpression"/> that represents calling the specified constructor that takes no arguments.
         /// </summary>
-        /// <param name="constructor">The <see cref="ConstructorInfo"/> to set the <see cref="P:Constructor"/> property equal to.</param>
-        /// <returns>A <see cref="NewExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="P:New"/> and the <see cref="P:Constructor"/> property set to the specified value.</returns>
+        /// <param name="constructor">The <see cref="ConstructorInfo"/> to set the <see cref="NewExpression.Constructor"/> property equal to.</param>
+        /// <returns>A <see cref="NewExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.New"/> and the <see cref="NewExpression.Constructor"/> property set to the specified value.</returns>
         public static NewExpression New(ConstructorInfo constructor)
         {
             return New(constructor, (IEnumerable<Expression>)null);
         }
-
-
+        
         /// <summary>
-        /// Creates a new <see cref="NewExpression"/> that represents calling the specified constructor that takes no arguments. 
+        /// Creates a new <see cref="NewExpression"/> that represents calling the specified constructor that takes no arguments.
         /// </summary>
-        /// <param name="constructor">The <see cref="ConstructorInfo"/> to set the <see cref="P:Constructor"/> property equal to.</param>
+        /// <param name="constructor">The <see cref="ConstructorInfo"/> to set the <see cref="NewExpression.Constructor"/> property equal to.</param>
         /// <param name="arguments">An array of <see cref="Expression"/> objects to use to populate the Arguments collection.</param>
-        /// <returns>A <see cref="NewExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="P:New"/> and the <see cref="P:Constructor"/> and <see cref="P:Arguments"/> properties set to the specified value.</returns>
+        /// <returns>A <see cref="NewExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.New"/> and the <see cref="NewExpression.Constructor"/> and <see cref="NewExpression.Arguments"/> properties set to the specified value.</returns>
         public static NewExpression New(ConstructorInfo constructor, params Expression[] arguments)
         {
             return New(constructor, (IEnumerable<Expression>)arguments);
         }
-
-
+        
         /// <summary>
-        /// Creates a new <see cref="NewExpression"/> that represents calling the specified constructor that takes no arguments. 
+        /// Creates a new <see cref="NewExpression"/> that represents calling the specified constructor that takes no arguments.
         /// </summary>
-        /// <param name="constructor">The <see cref="ConstructorInfo"/> to set the <see cref="P:Constructor"/> property equal to.</param>
-        /// <param name="arguments">An <see cref="IEnumerable{T}"/> of <see cref="Expression"/> objects to use to populate the Arguments collection.</param>
-        /// <returns>A <see cref="NewExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="P:New"/> and the <see cref="P:Constructor"/> and <see cref="P:Arguments"/> properties set to the specified value.</returns>
+        /// <param name="constructor">The <see cref="ConstructorInfo"/> to set the <see cref="NewExpression.Constructor"/> property equal to.</param>
+        /// <param name="arguments">An <see cref="IEnumerable{T}"/> of <see cref="Expression"/> objects to use to populate the <see cref="NewExpression.Arguments"/> collection.</param>
+        /// <returns>A <see cref="NewExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.New"/> and the <see cref="NewExpression.Constructor"/> and <see cref="NewExpression.Arguments"/> properties set to the specified value.</returns>
         public static NewExpression New(ConstructorInfo constructor, IEnumerable<Expression> arguments)
         {
             ContractUtils.RequiresNotNull(constructor, nameof(constructor));
             ContractUtils.RequiresNotNull(constructor.DeclaringType, nameof(constructor) + "." + nameof(constructor.DeclaringType));
             TypeUtils.ValidateType(constructor.DeclaringType, nameof(constructor));
             ValidateConstructor(constructor, nameof(constructor));
-            var argList = arguments.ToReadOnly();
+            ReadOnlyCollection<Expression> argList = arguments.ToReadOnly();
             ValidateArgumentTypes(constructor, ExpressionType.New, ref argList, nameof(constructor));
 
             return new NewExpression(constructor, argList, null);
         }
-
-
+        
         /// <summary>
-        /// Creates a new <see cref="NewExpression"/> that represents calling the specified constructor with the specified arguments. The members that access the constructor initialized fields are specified. 
+        /// Creates a new <see cref="NewExpression"/> that represents calling the specified constructor with the specified arguments. The members that access the constructor initialized fields are specified.
         /// </summary>
-        /// <param name="constructor">The <see cref="ConstructorInfo"/> to set the <see cref="P:Constructor"/> property equal to.</param>
-        /// <param name="arguments">An <see cref="IEnumerable{T}"/> of <see cref="Expression"/> objects to use to populate the Arguments collection.</param>
-        /// <param name="members">An <see cref="IEnumerable{T}"/> of <see cref="MemberInfo"/> objects to use to populate the Members collection.</param>
-        /// <returns>A <see cref="NewExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="P:New"/> and the <see cref="P:Constructor"/>, <see cref="P:Arguments"/> and <see cref="P:Members"/> properties set to the specified value.</returns>
+        /// <param name="constructor">The <see cref="ConstructorInfo"/> to set the <see cref="NewExpression.Constructor"/> property equal to.</param>
+        /// <param name="arguments">An <see cref="IEnumerable{T}"/> of <see cref="Expression"/> objects to use to populate the <see cref="NewExpression.Arguments"/> collection.</param>
+        /// <param name="members">An <see cref="IEnumerable{T}"/> of <see cref="MemberInfo"/> objects to use to populate the <see cref="NewExpression.Members"/> collection.</param>
+        /// <returns>A <see cref="NewExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.New"/> and the <see cref="NewExpression.Constructor"/>, <see cref="NewExpression.Arguments"/> and <see cref="NewExpression.Members"/> properties set to the specified value.</returns>
         public static NewExpression New(ConstructorInfo constructor, IEnumerable<Expression> arguments, IEnumerable<MemberInfo> members)
         {
             ContractUtils.RequiresNotNull(constructor, nameof(constructor));
             ContractUtils.RequiresNotNull(constructor.DeclaringType, nameof(constructor) + "." + nameof(constructor.DeclaringType));
             TypeUtils.ValidateType(constructor.DeclaringType, nameof(constructor));
             ValidateConstructor(constructor, nameof(constructor));
-            var memberList = members.ToReadOnly();
-            var argList = arguments.ToReadOnly();
+            ReadOnlyCollection<MemberInfo> memberList = members.ToReadOnly();
+            ReadOnlyCollection<Expression> argList = arguments.ToReadOnly();
             ValidateNewArgs(constructor, ref argList, ref memberList);
             return new NewExpression(constructor, argList, memberList);
         }
 
-
         /// <summary>
-        /// Creates a new <see cref="NewExpression"/> that represents calling the specified constructor with the specified arguments. The members that access the constructor initialized fields are specified. 
+        /// Creates a new <see cref="NewExpression"/> that represents calling the specified constructor with the specified arguments. The members that access the constructor initialized fields are specified.
         /// </summary>
-        /// <param name="constructor">The <see cref="ConstructorInfo"/> to set the <see cref="P:Constructor"/> property equal to.</param>
-        /// <param name="arguments">An <see cref="IEnumerable{T}"/> of <see cref="Expression"/> objects to use to populate the Arguments collection.</param>
-        /// <param name="members">An Array of <see cref="MemberInfo"/> objects to use to populate the Members collection.</param>
-        /// <returns>A <see cref="NewExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="P:New"/> and the <see cref="P:Constructor"/>, <see cref="P:Arguments"/> and <see cref="P:Members"/> properties set to the specified value.</returns>
+        /// <param name="constructor">The <see cref="ConstructorInfo"/> to set the <see cref="NewExpression.Constructor"/> property equal to.</param>
+        /// <param name="arguments">An <see cref="IEnumerable{T}"/> of <see cref="Expression"/> objects to use to populate the <see cref="NewExpression.Arguments"/> collection.</param>
+        /// <param name="members">An Array of <see cref="MemberInfo"/> objects to use to populate the <see cref="NewExpression.Members"/> collection.</param>
+        /// <returns>A <see cref="NewExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.New"/> and the <see cref="NewExpression.Constructor"/>, <see cref="NewExpression.Arguments"/> and <see cref="NewExpression.Members"/> properties set to the specified value.</returns>
         public static NewExpression New(ConstructorInfo constructor, IEnumerable<Expression> arguments, params MemberInfo[] members)
         {
             return New(constructor, arguments, (IEnumerable<MemberInfo>)members);
         }
-
-
+        
         /// <summary>
-        /// Creates a <see cref="NewExpression"/> that represents calling the parameterless constructor of the specified type. 
+        /// Creates a <see cref="NewExpression"/> that represents calling the parameterless constructor of the specified type.
         /// </summary>
-        /// <param name="type">A <see cref="Type"/> that has a constructor that takes no arguments. </param>
-        /// <returns>A <see cref="NewExpression"/> that has the <see cref="NodeType"/> property equal to New and the Constructor property set to the ConstructorInfo that represents the parameterless constructor of the specified type.</returns>
+        /// <param name="type">A <see cref="Type"/> that has a constructor that takes no arguments.</param>
+        /// <returns>A <see cref="NewExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.New"/> and the <see cref="NewExpression.Constructor"/> property set to the <see cref="ConstructorInfo"/> that represents the parameterless constructor of the specified type.</returns>
         public static NewExpression New(Type type)
         {
             ContractUtils.RequiresNotNull(type, nameof(type));
@@ -230,9 +201,7 @@ namespace System.Linq.Expressions
             }
             return new NewValueTypeExpression(type, EmptyReadOnlyCollection<Expression>.Instance, null);
         }
-
-
-
+        
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private static void ValidateNewArgs(ConstructorInfo constructor, ref ReadOnlyCollection<Expression> arguments, ref ReadOnlyCollection<MemberInfo> members)
         {
@@ -325,7 +294,6 @@ namespace System.Linq.Expressions
                 throw Error.IncorrectNumberOfMembersForGivenConstructor();
             }
         }
-
 
         private static void ValidateAnonymousTypeMember(ref MemberInfo member, out Type memberType, string paramName, int index)
         {

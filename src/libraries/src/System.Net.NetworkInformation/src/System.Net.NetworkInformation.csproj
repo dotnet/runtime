@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
   </PropertyGroup>
@@ -9,9 +9,9 @@
     <OutputType>Library</OutputType>
     <ProjectGuid>{3CA89D6C-F8D1-4813-9775-F8D249686E31}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <EnableWinRT Condition="'$(TargetGroup)' == 'netcore50'">true</EnableWinRT>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <EnableWinRT Condition="'$(TargetGroup)' == 'uap101'">true</EnableWinRT>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(EnableWinRT)' != 'true'">
     <DefineConstants>$(DefineConstants);FEATURE_CORECLR</DefineConstants>
@@ -26,10 +26,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_uap101_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_uap101_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="System\Net\NetworkInformation\DuplicateAddressDetectionState.cs" />
     <Compile Include="System\Net\NetworkInformation\GatewayIPAddressInformation.cs" />
@@ -43,10 +43,12 @@
     <Compile Include="System\Net\NetworkInformation\IPInterfaceProperties.cs" />
     <Compile Include="System\Net\NetworkInformation\IPInterfaceStatistics.cs" />
     <Compile Include="System\Net\NetworkInformation\IPv4InterfaceProperties.cs" />
+    <Compile Include="System\Net\NetworkInformation\Ipv4InterfaceStatistics.cs" />
     <Compile Include="System\Net\NetworkInformation\IPv6InterfaceProperties.cs" />
     <Compile Include="System\Net\NetworkInformation\MulticastIPAddressInformation.cs" />
     <Compile Include="System\Net\NetworkInformation\MulticastIPAddressInformationCollection.cs" />
     <Compile Include="System\Net\NetworkInformation\NetBiosNodeType.cs" />
+    <Compile Include="System\Net\NetworkInformation\NetEventSource.NetworkInformation.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkAvailabilityEventArgs.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkChangeDelegates.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkInterface.cs" />
@@ -79,17 +81,11 @@
     <Compile Include="$(CommonPath)\System\Net\Shims\TraceSource.cs">
       <Link>Common\System\Net\Shims\TraceSource.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\LoggingHash.cs">
-      <Link>Common\System\Net\Logging\LoggingHash.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\Logging\DebugThreadTracking.cs">
+      <Link>Common\System\Net\Logging\DebugThreadTracking.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\GlobalLog.cs">
-      <Link>Common\System\Net\Logging\GlobalLog.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\EventSourceLogging.cs">
-      <Link>Common\System\Net\Logging\EventSourceLogging.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.cs">
-      <Link>Common\System\Net\Logging\NetEventSource.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
+      <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
       <Link>Common\System\Net\InternalException.cs</Link>
@@ -118,6 +114,7 @@
     <Compile Include="System\Net\NetworkInformation\SystemIPInterfaceProperties.cs" />
     <Compile Include="System\Net\NetworkInformation\SystemIPInterfaceStatistics.cs" />
     <Compile Include="System\Net\NetworkInformation\SystemIPv4InterfaceProperties.cs" />
+    <Compile Include="System\Net\NetworkInformation\SystemIPv4InterfaceStatistics.cs" />
     <Compile Include="System\Net\NetworkInformation\SystemIPv6InterfaceProperties.cs" />
     <Compile Include="System\Net\NetworkInformation\SystemMulticastIPAddressInformation.cs" />
     <Compile Include="System\Net\NetworkInformation\SystemNetworkInterface.cs" />
@@ -147,9 +144,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\LazyAsyncResult.cs">
       <Link>Common\System\Net\LazyAsyncResult.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Shims\DBNull.cs">
-      <Link>Common\System\Net\Shims\DBNull.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\ByteOrder.cs">
       <Link>Common\System\Net\ByteOrder.cs</Link>
@@ -182,12 +176,6 @@
       <Link>Common\System\Net\NetworkInformation\HostInformationPal.Windows.cs</Link>
     </Compile>
     <!-- Common -->
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleMinusOneIsInvalid.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeHandleMinusOneIsInvalid.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs</Link>
     </Compile>
@@ -283,7 +271,7 @@
       <Link>Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.EnumerateInterfaceAddresses.cs">
-      <Link>Interop\Unix\System.Native\Interop.EnumerateInterfaceAddresses.cs"</Link>
+      <Link>Interop\Unix\System.Native\Interop.EnumerateInterfaceAddresses.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\NetworkInformation\HostInformationPal.Unix.cs">
       <Link>System\Net\NetworkInformation\HostInformationPal.Unix.cs</Link>
@@ -324,6 +312,7 @@
     <Compile Include="System\Net\NetworkInformation\NetworkInterfacePal.Linux.cs" />
     <Compile Include="System\Net\NetworkInformation\LinuxNetworkInterface.cs" />
     <Compile Include="System\Net\NetworkInformation\LinuxIPv4InterfaceProperties.cs" />
+    <Compile Include="System\Net\NetworkInformation\LinuxIPv4InterfaceStatistics.cs" />
     <Compile Include="System\Net\NetworkInformation\LinuxIPv6InterfaceProperties.cs" />
     <Compile Include="System\Net\NetworkInformation\StringParsingHelpers.Addresses.cs" />
     <Compile Include="System\Net\NetworkInformation\StringParsingHelpers.Connections.cs" />
@@ -351,6 +340,7 @@
     <Compile Include="System\Net\NetworkInformation\OsxIPv4GlobalStatistics.cs" />
     <Compile Include="System\Net\NetworkInformation\OsxIpInterfaceStatistics.cs" />
     <Compile Include="System\Net\NetworkInformation\OsxIPv4InterfaceProperties.cs" />
+    <Compile Include="System\Net\NetworkInformation\OsxIPv4InterfaceStatistics.cs" />
     <Compile Include="System\Net\NetworkInformation\OsxIPv6InterfaceProperties.cs" />
     <Compile Include="System\Net\NetworkInformation\OsxIpInterfaceProperties.cs" />
     <Compile Include="System\Net\NetworkInformation\OsxNetworkInterface.cs" />
@@ -385,12 +375,15 @@
     <Compile Include="System\Net\NetworkInformation\NetworkInterfacePal.UnknownUnix.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.UnknownUnix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'uap101'">
     <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" />
+    <!-- remove once we have a package update https://github.com/dotnet/corefx/issues/12838 -->
+    <ProjectReference Include="$(SourceDir)/Microsoft.Win32.Primitives/ref/Microsoft.Win32.Primitives.csproj" />
+    <ProjectReference Include="$(SourceDir)/System.Runtime.InteropServices/ref/System.Runtime.InteropServices.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

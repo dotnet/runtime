@@ -4,8 +4,10 @@
 
 using System.Collections;
 using System.ComponentModel;
+using System.ComponentModel.Design.Serialization;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Reflection;
 
 namespace System.Drawing
 {
@@ -22,12 +24,10 @@ namespace System.Drawing
 
         public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
         {
-#if FEATURE_INSTANCEDESCRIPTOR
             if (destinationType == typeof(InstanceDescriptor))
             {
                 return true;
             }
-#endif
             return base.CanConvertTo(context, destinationType);
         }
 
@@ -106,7 +106,7 @@ namespace System.Drawing
 
                     return string.Join(sep, args);
                 }
-#if FEATURE_INSTANCEDESCRIPTOR
+                
                 if (destinationType == typeof(InstanceDescriptor))
                 {
                     Size size = (Size)value;
@@ -117,7 +117,6 @@ namespace System.Drawing
                         return new InstanceDescriptor(ctor, new object[] { size.Width, size.Height });
                     }
                 }
-#endif
             }
 
             return base.ConvertTo(context, culture, value, destinationType);
@@ -149,7 +148,7 @@ namespace System.Drawing
             return true;
         }
 
-        private static readonly string[] s_propertySort = {"Width", "Height"};
+        private static readonly string[] s_propertySort = { "Width", "Height" };
 
         public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
         {

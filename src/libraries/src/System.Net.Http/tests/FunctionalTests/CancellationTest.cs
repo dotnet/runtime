@@ -22,6 +22,7 @@ namespace System.Net.Http.Functional.Tests
             _output = output;
         }
 
+        [ActiveIssue(10504)]
         [OuterLoop] // includes seconds of delay
         [Theory]
         [InlineData(false, false)]
@@ -76,7 +77,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(9075, PlatformID.AnyUnix)] // recombine this test into the subsequent one when issue is fixed
+        [ActiveIssue(9075, TestPlatforms.AnyUnix)] // recombine this test into the subsequent one when issue is fixed
         [OuterLoop] // includes seconds of delay
         [Fact]
         public Task ReadAsStreamAsync_ReadAsync_Cancel_BodyNeverStarted_TaskCanceledQuickly()

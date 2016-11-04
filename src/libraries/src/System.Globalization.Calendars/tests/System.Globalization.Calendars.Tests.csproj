@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -8,7 +8,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Globalization.Calendars.Tests</AssemblyName>
     <RootNamespace>System.Globalization.Calendars.Tests</RootNamespace>
-    <NugetTargetMoniker Condition="'$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -121,13 +121,8 @@
       <Link>Common\System\PlatformDetection.cs</Link>
     </Compile>
   </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.7'">
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
     <Compile Include="Misc\Calendars.netstandard1.7.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="project.json" />
   </ItemGroup>
   <PropertyGroup Condition="'$(TargetGroup)' == 'net46'">
     <DefineConstants>$(DefineConstants);net46</DefineConstants>
@@ -139,17 +134,7 @@
     <TargetingPackReference Include="System.Runtime" />
   </ItemGroup>
   <ItemGroup>
-    <!-- Compile tests against the contract, but copy our local-built implementation for testing -->
-    <ProjectReference Include="..\pkg\System.Globalization.Calendars.pkgproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
-    </ProjectReference>
-    <!-- ToDo: Remove this reference to the live package of System.Globalization once prerelease gets updated again -->
-    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj">
-      <Name>System.Runtime</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\pkg\System.Globalization.Calendars.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -4,26 +4,18 @@
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
-    ///    <para>[To be supplied.]</para>
-    /// </devdoc>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum | AttributeTargets.Constructor | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Event | AttributeTargets.Delegate | AttributeTargets.Interface)]
     public sealed class EditorBrowsableAttribute : Attribute
     {
         private EditorBrowsableState browsableState;
 
-
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public EditorBrowsableAttribute(EditorBrowsableState state)
         {
             browsableState = state;
         }
 
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+        public EditorBrowsableAttribute () : this(EditorBrowsableState.Always) { }
+
         public EditorBrowsableState State
         {
             get { return browsableState; }
@@ -47,22 +39,10 @@ namespace System.ComponentModel
         }
     }
 
-    /// <devdoc>
-    ///    <para>[To be supplied.]</para>
-    /// </devdoc>
     public enum EditorBrowsableState
     {
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         Always,
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         Never,
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         Advanced
     }
 }

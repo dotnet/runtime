@@ -72,7 +72,7 @@ namespace System.Linq.Expressions.Compiler
                 indexes.Add(vars[i], i);
             }
 
-            SelfVariable = Expression.Variable(typeof(object[]), null);
+            SelfVariable = Expression.Variable(typeof(object[]), name: null);
             Parent = parent;
             Variables = vars;
             Indexes = new ReadOnlyDictionary<Expression, int>(indexes);

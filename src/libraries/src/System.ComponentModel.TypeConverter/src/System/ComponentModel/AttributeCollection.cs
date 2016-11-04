@@ -12,7 +12,7 @@ namespace System.ComponentModel
     /// <summary>
     ///     Represents a collection of attributes.
     /// </summary>
-    public class AttributeCollection : ICollection
+    public class AttributeCollection : ICollection, IEnumerable
     {
         /// <summary>
         ///     An empty AttributeCollection that can used instead of creating a new one.
@@ -90,7 +90,7 @@ namespace System.ComponentModel
                 bool match = false;
                 for (int existingIdx = 0; existingIdx < existing.Count; existingIdx++)
                 {
-                    if (newArray[existingIdx].GetTypeId().Equals(newAttributes[idx].GetTypeId()))
+                    if (newArray[existingIdx].TypeId.Equals(newAttributes[idx].TypeId))
                     {
                         match = true;
                         newArray[existingIdx] = newAttributes[idx];
@@ -376,6 +376,19 @@ namespace System.ComponentModel
             {
                 return null;
             }
+        }
+
+        int ICollection.Count 
+        { 
+            get
+            {
+                return Count;
+            }
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
 
         /// <summary>

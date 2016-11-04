@@ -26,11 +26,20 @@ namespace System.IO.IsolatedStorage
             'y', 'z', '0', '1', '2', '3', '4', '5'
         };
 
+        /// <summary>
+        /// The full root directory is the relevant special folder from Environment.GetFolderPath() plus "IsolatedStorage"
+        /// and a set of random directory names if not roaming.
+        /// 
+        /// Examples:
+        /// 
+        ///     User: @"C:\Users\jerem\AppData\Local\IsolatedStorage\10v31ho4.bo2\eeolfu22.f2w\"
+        ///     User|Roaming: @"C:\Users\jerem\AppData\Roaming\IsolatedStorage\"
+        ///     Machine: @"C:\ProgramData\IsolatedStorage\nin03cyc.wr0\o3j0urs3.0sn\"
+        /// 
+        /// Identity for the current store gets tacked on after this.
+        /// </summary>
         internal static string GetRootDirectory(IsolatedStorageScope scope)
         {
-            // The full root directory is the relevant special folder from Environment.GetFolderPath() plus "IsolatedStorage"
-            // and a set of random directory names if not roaming. The current identity gets tacked on after this.
-
             if (IsRoaming(scope))
             {
                 if (string.IsNullOrEmpty(s_roamingUserRootDirectory))
@@ -44,18 +53,18 @@ namespace System.IO.IsolatedStorage
             {
                 if (string.IsNullOrEmpty(s_machineRootDirectory))
                 {
-                    s_machineRootDirectory = GetDataDirectory(scope);
+                    s_machineRootDirectory = GetRandomDirectory(GetDataDirectory(scope), scope);
                 }
                 return s_machineRootDirectory;
             }
 
             if (string.IsNullOrEmpty(s_userRootDirectory))
-                s_userRootDirectory = GetDataDirectory(scope);
+                s_userRootDirectory = GetRandomDirectory(GetDataDirectory(scope), scope);
 
             return s_userRootDirectory;
         }
 
-        private static string GetRandomDirectory(string rootDirectory, IsolatedStorageScope scope)
+        internal static string GetRandomDirectory(string rootDirectory, IsolatedStorageScope scope)
         {
             string randomDirectory = GetExistingRandomDirectory(rootDirectory);
             if (string.IsNullOrEmpty(randomDirectory))
@@ -87,20 +96,24 @@ namespace System.IO.IsolatedStorage
             return randomDirectory;
         }
 
-        private static string GetExistingRandomDirectory(string rootDirectory)
+        internal static string GetExistingRandomDirectory(string rootDirectory)
         {
             // Look for an existing random directory at the given root
             // (a set of nested directories that were created via Path.GetRandomFileName())
 
             // Older versions of the desktop framework created longer (24 character) random paths and would
             // migrate them if they could not find the new style directory.
+
+            if (!Directory.Exists(rootDirectory))
+                return null;
+
             foreach (string directory in Directory.GetDirectories(rootDirectory))
             {
-                if (Path.GetDirectoryName(directory)?.Length == 12)
+                if (Path.GetFileName(directory)?.Length == 12)
                 {
                     foreach (string subdirectory in Directory.GetDirectories(directory))
                     {
-                        if (Path.GetDirectoryName(subdirectory)?.Length == 12)
+                        if (Path.GetFileName(subdirectory)?.Length == 12)
                         {
                             return subdirectory;
                         }
@@ -160,6 +173,7 @@ namespace System.IO.IsolatedStorage
             }
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "Compat: Used to generate an 8.3 filename.")]
         internal static string GetStrongHashSuitableForObjectName(Stream stream)
         {
             using (SHA1 sha1 = SHA1.Create())

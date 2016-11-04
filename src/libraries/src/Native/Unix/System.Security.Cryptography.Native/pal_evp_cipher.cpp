@@ -13,6 +13,12 @@
 extern "C" EVP_CIPHER_CTX*
 CryptoNative_EvpCipherCreate(const EVP_CIPHER* type, uint8_t* key, unsigned char* iv, int32_t enc)
 {
+    return CryptoNative_EvpCipherCreate2(type, key, 0, 0, iv, enc);
+}
+
+extern "C" EVP_CIPHER_CTX*
+CryptoNative_EvpCipherCreate2(const EVP_CIPHER* type, uint8_t* key, int32_t keyLength, int32_t effectiveKeyLength, unsigned char* iv, int32_t enc)
+{
     std::unique_ptr<EVP_CIPHER_CTX> ctx(new (std::nothrow) EVP_CIPHER_CTX);
     if (ctx == nullptr)
     {
@@ -21,8 +27,36 @@ CryptoNative_EvpCipherCreate(const EVP_CIPHER* type, uint8_t* key, unsigned char
     }
 
     EVP_CIPHER_CTX_init(ctx.get());
-    int ret = EVP_CipherInit_ex(ctx.get(), type, nullptr, key, iv, enc);
 
+    // Perform partial initialization so we can set the key lengths
+    int ret = EVP_CipherInit_ex(ctx.get(), type, nullptr, nullptr, nullptr, 0);
+    if (!ret)
+    {
+        return nullptr;
+    }
+
+    if (keyLength > 0)
+    {
+        // Necessary when the default key size is different than current
+        ret = EVP_CIPHER_CTX_set_key_length(ctx.get(), keyLength / 8);
+        if (!ret)
+        {
+            return nullptr;
+        }
+    }
+
+    if (effectiveKeyLength > 0)
+    {
+        // Necessary for RC2
+        ret = EVP_CIPHER_CTX_ctrl(ctx.get(), EVP_CTRL_SET_RC2_KEY_BITS, effectiveKeyLength, nullptr);
+        if (ret <= 0)
+        {
+            return nullptr;
+        }
+    }
+
+    // Perform final initialization specifying the remaining arguments
+    ret = EVP_CipherInit_ex(ctx.get(), nullptr, nullptr, key, iv, enc);
     if (!ret)
     {
         return nullptr;
@@ -114,6 +148,16 @@ extern "C" const EVP_CIPHER* CryptoNative_EvpAes256Cbc()
     return EVP_aes_256_cbc();
 }
 
+extern "C" const EVP_CIPHER* CryptoNative_EvpDesEcb()
+{
+    return EVP_des_ecb();
+}
+
+extern "C" const EVP_CIPHER* CryptoNative_EvpDesCbc()
+{
+    return EVP_des_cbc();
+}
+
 extern "C" const EVP_CIPHER* CryptoNative_EvpDes3Ecb()
 {
     return EVP_des_ede3();
@@ -122,4 +166,14 @@ extern "C" const EVP_CIPHER* CryptoNative_EvpDes3Ecb()
 extern "C" const EVP_CIPHER* CryptoNative_EvpDes3Cbc()
 {
     return EVP_des_ede3_cbc();
+}
+
+extern "C" const EVP_CIPHER* CryptoNative_EvpRC2Ecb()
+{
+    return EVP_rc2_ecb();
+}
+
+extern "C" const EVP_CIPHER* CryptoNative_EvpRC2Cbc()
+{
+    return EVP_rc2_cbc();
 }

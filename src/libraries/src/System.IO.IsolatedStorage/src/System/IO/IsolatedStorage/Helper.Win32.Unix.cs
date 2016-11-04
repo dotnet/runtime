@@ -3,6 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Security.AccessControl;
+using System.Security.Principal;
 
 namespace System.IO.IsolatedStorage
 {
@@ -21,6 +24,7 @@ namespace System.IO.IsolatedStorage
             {
                 // SpecialFolder.CommonApplicationData -> C:\ProgramData
                 dataDirectory = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+                    dataDirectory = @"/usr/local/share";
             }
             else if (IsRoaming(scope))
             {
@@ -34,25 +38,67 @@ namespace System.IO.IsolatedStorage
             }
 
             dataDirectory = Path.Combine(dataDirectory, IsolatedStorageDirectoryName);
-            CreateDirectory(dataDirectory, scope);
+
             return dataDirectory;
         }
 
         internal static void CreateDirectory(string path, IsolatedStorageScope scope)
         {
-            if (!IsMachine(scope))
+            if (Directory.Exists(path))
+                return;
+
+            DirectoryInfo info = Directory.CreateDirectory(path);
+
+            if (IsMachine(scope) && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                Directory.CreateDirectory(path);
-            }
-            else
-            {
-                // TODO: https://github.com/dotnet/corefx/issues/11124
-                // Machine scope, we need to ACL
-                throw new NotImplementedException();
+                // Need to emulate COMIsolatedStorage::CreateDirectoryWithDacl(), which gives the following rights:
+                //
+                //  World / Everyone (S-1-1-0 / SECURITY_WORLD_RID) -> (FILE_GENERIC_WRITE | FILE_GENERIC_READ) & (~WRITE_DAC)
+                //  Creator Owner (S-1-3-0 / SECURITY_CREATOR_OWNER_RID) -> FILE_ALL_ACCESS
+                //  Local Admins (S-1-5-32 / SECURITY_BUILTIN_DOMAIN_RID & DOMAIN_ALIAS_RID_ADMINS) -> FILE_ALL_ACCESS
+                // 
+                // When looking at rights through the GUI it looks like this:
+                //
+                //  "Everyone" -> Read, Write
+                //  "Administrators" -> Full control
+                //  "CREATOR OWNER" -> Full control
+                //
+                // With rights applying to "This folder, subfolders, and files". No inheritance from the parent folder.
+                //
+                // Note that trying to reset the rules for CREATOR OWNER leaves the current directory with the actual creator's SID.
+                // (But applies CREATOR OWNER as expected for items and subdirectories.) Setting up front when creating the directory
+                // doesn't exhibit this behavior, but as we can't currently do that we'll take the rough equivalent for now.
+
+                DirectorySecurity security = new DirectorySecurity();
+
+                // Don't inherit the existing rules
+                security.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
+                security.AddAccessRule(new FileSystemAccessRule(
+                    identity: new SecurityIdentifier(WellKnownSidType.WorldSid, null),
+                    fileSystemRights: FileSystemRights.Read | FileSystemRights.Write,
+                    inheritanceFlags: InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
+                    propagationFlags: PropagationFlags.None,
+                    type: AccessControlType.Allow));
+
+                security.AddAccessRule(new FileSystemAccessRule(
+                    identity: new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null),
+                    fileSystemRights: FileSystemRights.FullControl,
+                    inheritanceFlags: InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
+                    propagationFlags: PropagationFlags.None,
+                    type: AccessControlType.Allow));
+
+                security.AddAccessRule(new FileSystemAccessRule(
+                    identity: new SecurityIdentifier(WellKnownSidType.CreatorOwnerSid, null),
+                    fileSystemRights: FileSystemRights.FullControl,
+                    inheritanceFlags: InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
+                    propagationFlags: PropagationFlags.None,
+                    type: AccessControlType.Allow));
+
+                info.SetAccessControl(security);
             }
         }
 
-        internal static void GetDefaultIdentityAndHash(ref object identity, ref string hash, char separator)
+        internal static void GetDefaultIdentityAndHash(out object identity, out string hash, char separator)
         {
             // NetFX (desktop CLR) IsolatedStorage uses identity from System.Security.Policy.Evidence to build
             // the folder structure on disk. It would use the "best" available evidence in this order:
@@ -63,11 +109,20 @@ namespace System.IO.IsolatedStorage
             //  4. Site
             //  5. Zone
             //
-            // For CoreFx StrongName and Url are the only relevant types. By default evidence for the Domain comes
+            // For CoreFX StrongName and Url are the only relevant types. By default evidence for the Domain comes
             // from the Assembly which comes from the EntryAssembly(). We'll emulate the legacy default behavior
             // by pulling directly from EntryAssembly.
+            //
+            // Note that it is possible that there won't be an EntryAssembly, which is something NetFX doesn't
+            // have to deal with and shouldn't be likely on CoreFX due to a single AppDomain. Without Evidence
+            // to pull from we'd have to dig into the use case to try and find a reasonable solution should we
+            // run into this in the wild.
 
             Assembly assembly = Assembly.GetEntryAssembly();
+
+            if (assembly == null)
+                throw new IsolatedStorageException(SR.IsolatedStorage_Init);
+
             AssemblyName assemblyName = assembly.GetName();
             Uri codeBase = new Uri(assembly.CodeBase);
 

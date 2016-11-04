@@ -11,54 +11,59 @@ namespace System.Collections.Generic.Tests
     // On .NET Native EqualityComparer is specialized for all of the primitive
     // types and a few more
     // Cover all of those cases
-    public class SByteComparerTests : ComparersGenericTests<sbyte> { }
-    public class ByteComparerTests : ComparersGenericTests<byte> { }
-    public class ShortComparerTests : ComparersGenericTests<short> { }
-    public class UShortComparerTests : ComparersGenericTests<ushort> { }
-    public class IntComparerTests : ComparersGenericTests<int> { }
-    public class UIntComparerTests : ComparersGenericTests<uint> { }
-    public class LongComparerTests : ComparersGenericTests<long> { }
-    public class ULongComparerTests : ComparersGenericTests<ulong> { }
-    public class IntPtrComparerTests : ComparersGenericTests<IntPtr> { }
-    public class UIntPtrComparerTests : ComparersGenericTests<UIntPtr> { }
-    public class FloatComparerTests : ComparersGenericTests<float> { }
-    public class DoubleComparerTests : ComparersGenericTests<double> { }
-    public class DecimalComparerTests : ComparersGenericTests<decimal> { }
-    public class StringComparerTests : ComparersGenericTests<string> { }
+    public class SByteComparersTests : ComparersGenericTests<sbyte> { }
+    public class ByteComparersTests : ComparersGenericTests<byte> { }
+    public class Int16ComparersTests : ComparersGenericTests<short> { }
+    public class UInt16ComparersTests : ComparersGenericTests<ushort> { }
+    public class Int32ComparersTests : ComparersGenericTests<int> { }
+    public class UInt32ComparersTests : ComparersGenericTests<uint> { }
+    public class Int64ComparersTests : ComparersGenericTests<long> { }
+    public class UInt64ComparersTests : ComparersGenericTests<ulong> { }
+    public class IntPtrComparersTests : ComparersGenericTests<IntPtr> { }
+    public class UIntPtrComparersTests : ComparersGenericTests<UIntPtr> { }
+    public class SingleComparersTests : ComparersGenericTests<float> { }
+    public class DoubleComparersTests : ComparersGenericTests<double> { }
+    public class DecimalComparersTests : ComparersGenericTests<decimal> { }
+    public class StringComparersTests : ComparersGenericTests<string> { }
 
     // Nullables are handled specially
-    public class NullableIntComparerTests : ComparersGenericTests<int?> { }
-    public class NullableUIntComparerTests : ComparersGenericTests<uint?> { }
+    public class NullableInt32ComparersTests : ComparersGenericTests<int?> { }
+    public class NullableUInt32ComparersTests : ComparersGenericTests<uint?> { }
+    public class NullableIntPtrComparersTests : ComparersGenericTests<IntPtr?> { }
+    public class NullableUIntPtrComparersTests : ComparersGenericTests<UIntPtr?> { }
 
     // Currently the Default properties are special-cased for enums depending
     // on their underlying type (byte, short, ulong, etc.)
     // We should cover all of those.
-    public class SByteEnumComparerTests : ComparersGenericTests<SByteEnum> { }
-    public class ByteEnumComparerTests : ComparersGenericTests<ByteEnum> { }
-    public class ShortEnumComparerTests : ComparersGenericTests<ShortEnum> { }
-    public class UShortEnumComparerTests : ComparersGenericTests<UShortEnum> { }
-    public class IntEnumComparerTests : ComparersGenericTests<IntEnum> { }
-    public class UIntEnumComparerTests : ComparersGenericTests<UIntEnum> { }
-    public class LongEnumComparerTests : ComparersGenericTests<LongEnum> { }
-    public class ULongEnumComparerTests : ComparersGenericTests<ULongEnum> { }
+    public class SByteEnumComparersTests : ComparersGenericTests<SByteEnum> { }
+    public class ByteEnumComparersTests : ComparersGenericTests<ByteEnum> { }
+    public class Int16EnumComparersTests : ComparersGenericTests<Int16Enum> { }
+    public class UInt16EnumComparersTests : ComparersGenericTests<UInt16Enum> { }
+    public class Int32EnumComparersTests : ComparersGenericTests<Int32Enum> { }
+    public class UInt32EnumComparersTests : ComparersGenericTests<UInt32Enum> { }
+    public class Int64EnumComparersTests : ComparersGenericTests<Int64Enum> { }
+    public class UInt64EnumComparersTests : ComparersGenericTests<UInt64Enum> { }
 
     // Default properties currently will be special-cased for T : enum and
     // T : U? where U : {IComparable,IEquatable}<U>, but not if T : U? where U : enum
     // So let's cover those cases as well
-    public class NullableSByteEnumComparerTests : ComparersGenericTests<SByteEnum?> { }
-    public class NullableByteEnumComparerTests : ComparersGenericTests<ByteEnum?> { }
-    public class NullableShortEnumComparerTests : ComparersGenericTests<ShortEnum?> { }
-    public class NullableUShortEnumComparerTests : ComparersGenericTests<UShortEnum?> { }
-    public class NullableIntEnumComparerTests : ComparersGenericTests<IntEnum?> { }
-    public class NullableUIntEnumComparerTests : ComparersGenericTests<UIntEnum?> { }
-    public class NullableLongEnumComparerTests : ComparersGenericTests<LongEnum?> { }
-    public class NullableULongEnumComparerTests : ComparersGenericTests<ULongEnum?> { }
+    public class NullableSByteEnumComparersTests : ComparersGenericTests<SByteEnum?> { }
+    public class NullableByteEnumComparersTests : ComparersGenericTests<ByteEnum?> { }
+    public class NullableInt16EnumComparersTests : ComparersGenericTests<Int16Enum?> { }
+    public class NullableUInt16EnumComparersTests : ComparersGenericTests<UInt16Enum?> { }
+    public class NullableInt32EnumComparersTests : ComparersGenericTests<Int32Enum?> { }
+    public class NullableUInt32EnumComparersTests : ComparersGenericTests<UInt32Enum?> { }
+    public class NullableInt64EnumComparersTests : ComparersGenericTests<Int64Enum?> { }
+    public class NullableUInt64EnumComparersTests : ComparersGenericTests<UInt64Enum?> { }
 
     // Comparer<T>.Default should still work OK with non-IComparables
-    public class ObjectComparerTests : ComparersGenericTests<object> { }
+    public class ObjectComparersTests : ComparersGenericTests<object> { }
 
     // Other cases: IComparable<T>, IComparable, and both
-    public class GenericComparableComparerTests : ComparersGenericTests<GenericComparable> { }
-    public class NonGenericComparableComparerTests : ComparersGenericTests<NonGenericComparable> { }
-    public class BadlyBehavingComparableComparerTests : ComparersGenericTests<BadlyBehavingComparable> { }
+    public class GenericComparableComparersTests : ComparersGenericTests<GenericComparable> { }
+    public class NonGenericComparableComparersTests : ComparersGenericTests<NonGenericComparable> { }
+    public class BadlyBehavingComparableComparersTests : ComparersGenericTests<BadlyBehavingComparable> { }
+
+    // IEquatable<T>
+    public class EquatableComparersTests : ComparersGenericTests<Equatable> { }
 }

@@ -55,7 +55,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // Unix implementation uses bidirectional sockets
+        [PlatformSpecific(TestPlatforms.Windows)] // Unix implementation uses bidirectional sockets
         public void ConnectWithConflictingDirections_Throws_UnauthorizedAccessException()
         {
             string serverName1 = GetUniquePipeName();
@@ -78,7 +78,7 @@ namespace System.IO.Pipes.Tests
         [Theory]
         [InlineData(PipeOptions.None)]
         [InlineData(PipeOptions.Asynchronous)]
-        [PlatformSpecific(PlatformID.Windows)] // Unix currently doesn't support message mode
+        [PlatformSpecific(TestPlatforms.Windows)] // Unix currently doesn't support message mode
         public async Task Windows_MessagePipeTransissionMode(PipeOptions serverOptions)
         {
             byte[] msg1 = new byte[] { 5, 7, 9, 10 };
@@ -167,7 +167,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // Unix doesn't support MaxNumberOfServerInstances
+        [PlatformSpecific(TestPlatforms.Windows)] // Unix doesn't support MaxNumberOfServerInstances
         public async Task Windows_Get_NumberOfServerInstances_Succeed()
         {
             string pipeName = GetUniquePipeName();
@@ -189,7 +189,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // Win32 P/Invokes to verify the user name
+        [PlatformSpecific(TestPlatforms.Windows)] // Win32 P/Invokes to verify the user name
         public async Task Windows_GetImpersonationUserName_Succeed()
         {
             string pipeName = GetUniquePipeName();
@@ -211,7 +211,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/1011
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public async Task Unix_GetImpersonationUserName_Succeed()
         {
             string pipeName = GetUniquePipeName();
@@ -231,7 +231,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void Unix_MessagePipeTransissionMode()
         {
             Assert.Throws<PlatformNotSupportedException>(() => new NamedPipeServerStream(GetUniquePipeName(), PipeDirection.InOut, 1, PipeTransmissionMode.Message));
@@ -241,7 +241,7 @@ namespace System.IO.Pipes.Tests
         [InlineData(PipeDirection.In)]
         [InlineData(PipeDirection.Out)]
         [InlineData(PipeDirection.InOut)]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void Unix_BufferSizeRoundtripping(PipeDirection direction)
         {
             int desiredBufferSize = 0;
@@ -276,7 +276,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public static void Windows_BufferSizeRoundtripping()
         {
             int desiredBufferSize = 10;
@@ -315,7 +315,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // Unix doesn't currently support message mode
+        [PlatformSpecific(TestPlatforms.Windows)] // Unix doesn't currently support message mode
         public void Windows_SetReadModeTo__PipeTransmissionModeByte()
         {
             string pipeName = GetUniquePipeName();
@@ -356,7 +356,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void Unix_SetReadModeTo__PipeTransmissionModeByte()
         {
             string pipeName = GetUniquePipeName();
@@ -413,7 +413,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void NameTooLong_MaxLengthPerPlatform()
         {
             // Increase a name's length until it fails

@@ -5,6 +5,7 @@
 #pragma once
 
 #include "pal_types.h"
+#include <sys/types.h>
 
 /**
 * Passwd struct
@@ -45,3 +46,12 @@ extern "C" uint32_t SystemNative_GetEUid();
 * Always succeeds.
 */
 extern "C" uint32_t SystemNative_GetEGid();
+
+/**
+* Sets the effective user ID of the calling process
+* Implemented as a shim to seteuid(2).
+*
+* Returns 0 for success. On error, -1 is returned and errno is set.
+*/
+extern "C" int32_t SystemNative_SetEUid(uid_t euid);
+

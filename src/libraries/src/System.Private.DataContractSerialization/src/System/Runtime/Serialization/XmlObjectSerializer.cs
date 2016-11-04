@@ -22,7 +22,7 @@ namespace System.Runtime.Serialization
 
         public virtual void WriteObject(Stream stream, object graph)
         {
-            CheckNull(stream, "stream");
+            CheckNull(stream, nameof(stream));
             XmlDictionaryWriter writer = XmlDictionaryWriter.CreateTextWriter(stream, Encoding.UTF8, false /*ownsStream*/);
             WriteObject(writer, graph);
             writer.Flush();
@@ -30,25 +30,25 @@ namespace System.Runtime.Serialization
 
         public virtual void WriteObject(XmlWriter writer, object graph)
         {
-            CheckNull(writer, "writer");
+            CheckNull(writer, nameof(writer));
             WriteObject(XmlDictionaryWriter.CreateDictionaryWriter(writer), graph);
         }
 
         public virtual void WriteStartObject(XmlWriter writer, object graph)
         {
-            CheckNull(writer, "writer");
+            CheckNull(writer, nameof(writer));
             WriteStartObject(XmlDictionaryWriter.CreateDictionaryWriter(writer), graph);
         }
 
         public virtual void WriteObjectContent(XmlWriter writer, object graph)
         {
-            CheckNull(writer, "writer");
+            CheckNull(writer, nameof(writer));
             WriteObjectContent(XmlDictionaryWriter.CreateDictionaryWriter(writer), graph);
         }
 
         public virtual void WriteEndObject(XmlWriter writer)
         {
-            CheckNull(writer, "writer");
+            CheckNull(writer, nameof(writer));
             WriteEndObject(XmlDictionaryWriter.CreateDictionaryWriter(writer));
         }
 
@@ -66,7 +66,7 @@ namespace System.Runtime.Serialization
         {
             try
             {
-                CheckNull(writer, "writer");
+                CheckNull(writer, nameof(writer));
                 {
                     InternalWriteObject(writer, graph, dataContractResolver);
                 }
@@ -121,7 +121,7 @@ namespace System.Runtime.Serialization
         {
             try
             {
-                CheckNull(writer, "writer");
+                CheckNull(writer, nameof(writer));
                 InternalWriteStartObject(writer, graph);
             }
             catch (XmlException ex)
@@ -138,7 +138,7 @@ namespace System.Runtime.Serialization
         {
             try
             {
-                CheckNull(writer, "writer");
+                CheckNull(writer, nameof(writer));
                 {
                     if (writer.WriteState != WriteState.Element)
                         throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.XmlWriterMustBeInElement, writer.WriteState)));
@@ -159,7 +159,7 @@ namespace System.Runtime.Serialization
         {
             try
             {
-                CheckNull(writer, "writer");
+                CheckNull(writer, nameof(writer));
                 InternalWriteEndObject(writer);
             }
             catch (XmlException ex)
@@ -220,13 +220,13 @@ namespace System.Runtime.Serialization
 
         public virtual object ReadObject(Stream stream)
         {
-            CheckNull(stream, "stream");
+            CheckNull(stream, nameof(stream));
             return ReadObject(XmlDictionaryReader.CreateTextReader(stream, XmlDictionaryReaderQuotas.Max));
         }
 
         public virtual object ReadObject(XmlReader reader)
         {
-            CheckNull(reader, "reader");
+            CheckNull(reader, nameof(reader));
             return ReadObject(XmlDictionaryReader.CreateDictionaryReader(reader));
         }
 
@@ -237,7 +237,7 @@ namespace System.Runtime.Serialization
 
         public virtual object ReadObject(XmlReader reader, bool verifyObjectName)
         {
-            CheckNull(reader, "reader");
+            CheckNull(reader, nameof(reader));
             return ReadObject(XmlDictionaryReader.CreateDictionaryReader(reader), verifyObjectName);
         }
 
@@ -245,7 +245,7 @@ namespace System.Runtime.Serialization
 
         public virtual bool IsStartObject(XmlReader reader)
         {
-            CheckNull(reader, "reader");
+            CheckNull(reader, nameof(reader));
             return IsStartObject(XmlDictionaryReader.CreateDictionaryReader(reader));
         }
 
@@ -276,7 +276,7 @@ namespace System.Runtime.Serialization
         {
             try
             {
-                CheckNull(reader, "reader");
+                CheckNull(reader, nameof(reader));
                 return InternalReadObject(reader, verifyObjectName, dataContractResolver);
             }
             catch (XmlException ex)
@@ -293,7 +293,7 @@ namespace System.Runtime.Serialization
         {
             try
             {
-                CheckNull(reader, "reader");
+                CheckNull(reader, nameof(reader));
                 return InternalIsStartObject(reader);
             }
             catch (XmlException ex)
@@ -395,10 +395,18 @@ namespace System.Runtime.Serialization
             return null;
         }
 
-        /// <SecurityNote>
-        /// Critical - Static fields are marked SecurityCritical or readonly to prevent
-        ///            data from being modified or leaked to other components in appdomain.
-        /// </SecurityNote>
+        private static IFormatterConverter s_formatterConverter;
+        internal static IFormatterConverter FormatterConverter
+        {
+            get
+            {
+                if (s_formatterConverter == null)
+                {
+                    s_formatterConverter = new FormatterConverter();
+                }
 
+                return s_formatterConverter;
+            }
+        }
     }
 }

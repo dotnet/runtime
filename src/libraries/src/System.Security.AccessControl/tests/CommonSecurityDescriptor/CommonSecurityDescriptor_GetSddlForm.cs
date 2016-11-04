@@ -42,7 +42,6 @@ namespace System.Security.AccessControl.Tests
 
         [Theory]
         [MemberData(nameof(CommonSecurityDescriptor_GetSddlForm_TestData))]
-        [ActiveIssue(15)]
         public static void TestGetSddlForm(bool isContainer, bool isDS, int flags, string ownerStr, string groupStr, string saclStr, string daclStr, bool getOwner, bool getGroup, bool getSacl, bool getDacl, string expectedSddl)
         {
             CommonSecurityDescriptor commonSecurityDescriptor = null;

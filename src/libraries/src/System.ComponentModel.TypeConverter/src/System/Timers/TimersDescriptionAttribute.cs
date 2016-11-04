@@ -15,7 +15,7 @@ namespace System.Timers
     [AttributeUsage(AttributeTargets.All)]
     public class TimersDescriptionAttribute : DescriptionAttribute
     {
-        private bool replaced = false;
+        private bool _replaced = false;
 
         /// <summary>
         ///     Constructs a new sys description.
@@ -34,9 +34,9 @@ namespace System.Timers
         {
             get
             {
-                if (!replaced)
+                if (!_replaced)
                 {
-                    replaced = true;
+                    _replaced = true;
                     DescriptionValue = SR.Format(base.Description);
                 }
                 return base.Description;

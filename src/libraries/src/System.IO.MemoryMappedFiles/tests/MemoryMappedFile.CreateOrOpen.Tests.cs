@@ -29,7 +29,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test to verify that map names are left unsupported on Unix.
         /// </summary>
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [Theory]
         [MemberData(nameof(CreateValidMapNames))]
         public void MapNamesNotSupported_Unix(string mapName)
@@ -105,7 +105,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// Test various combinations of arguments to CreateOrOpen, validating the created maps each time they're created,
         /// focusing on accesses that don't involve execute permissions.
         /// </summary>
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [Theory]
         [MemberData(nameof(MemberData_ValidArgumentCombinations),
             new string[] { "CreateUniqueMapName()" },
@@ -166,7 +166,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// Test various combinations of arguments to CreateOrOpen, validating the created maps each time they're created,
         /// focusing on accesses that involve execute permissions.
         /// </summary>
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [Theory]
         [MemberData(nameof(MemberData_ValidArgumentCombinations),
             new string[] { "CreateUniqueMapName()" },
@@ -251,7 +251,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test to validate behavior with MemoryMappedFileAccess.Write.
         /// </summary>
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [Fact]
         public void OpenWrite()
         {
@@ -272,7 +272,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test the exceptional behavior when attempting to create a map so large it's not supported.
         /// </summary>
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [Fact]
         public void TooLargeCapacity()
         {
@@ -290,7 +290,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// Test that the capacity of a view matches the original capacity, not that specified when opening the new map,
         /// and that the original capacity doesn't change from opening another map with a different capacity.
         /// </summary>
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [Fact]
         public void OpenedCapacityMatchesOriginal()
         {
@@ -328,7 +328,7 @@ namespace System.IO.MemoryMappedFiles.Tests
             }
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [Fact]
         public void OpenedAccessibilityLimitedToOriginal()
         {
@@ -348,7 +348,7 @@ namespace System.IO.MemoryMappedFiles.Tests
             }
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [Fact]
         public void OpenedAccessibilityLimitedBeyondOriginal()
         {

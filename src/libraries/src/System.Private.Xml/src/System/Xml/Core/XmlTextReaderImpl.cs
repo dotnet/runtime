@@ -2,18 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.IO;
 using System.Text;
-using System.Security;
-using System.Threading;
 using System.Xml.Schema;
-using System.Collections;
 using System.Diagnostics;
 using System.Globalization;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
 
 namespace System.Xml
 {
@@ -568,7 +563,7 @@ namespace System.Xml
             }
             if (url.Length == 0)
             {
-                throw new ArgumentException(SR.Xml_EmptyUrl, "url");
+                throw new ArgumentException(SR.Xml_EmptyUrl, nameof(url));
             }
             _namespaceManager = new XmlNamespaceManager(nt);
 
@@ -2579,7 +2574,7 @@ namespace System.Xml
         {
             get
             {
-                return _xmlResolver == null || (LocalAppContextSwitches.ProhibitDefaultUrlResolver && !_xmlResolverIsSet);
+                return _xmlResolver == null || !_xmlResolverIsSet;
             }
         }
 
@@ -8250,19 +8245,19 @@ namespace System.Xml
         {
             if (array == null)
             {
-                throw new ArgumentNullException((_incReadDecoder is IncrementalReadCharsDecoder) ? "buffer" : "array");
+                throw new ArgumentNullException((_incReadDecoder is IncrementalReadCharsDecoder) ? "buffer" : nameof(array));
             }
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException((_incReadDecoder is IncrementalReadCharsDecoder) ? "count" : "len");
+                throw new ArgumentOutOfRangeException((_incReadDecoder is IncrementalReadCharsDecoder) ? nameof(count): "len");
             }
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException((_incReadDecoder is IncrementalReadCharsDecoder) ? "index" : "offset");
+                throw new ArgumentOutOfRangeException((_incReadDecoder is IncrementalReadCharsDecoder) ? nameof(index): "offset");
             }
             if (array.Length - index < count)
             {
-                throw new ArgumentException((_incReadDecoder is IncrementalReadCharsDecoder) ? "count" : "len");
+                throw new ArgumentException((_incReadDecoder is IncrementalReadCharsDecoder) ? nameof(count): "len");
             }
 
             if (count == 0)

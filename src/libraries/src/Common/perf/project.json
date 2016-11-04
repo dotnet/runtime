@@ -1,0 +1,28 @@
+{
+  "dependencies": {
+    "Microsoft.DotNet.xunit.performance.analysis": "1.0.0-alpha-build0040",
+    "Microsoft.DotNet.xunit.performance.analysis.cli": "1.0.0-alpha-build0040",
+    "Microsoft.DotNet.xunit.performance.runner.cli": "1.0.0-alpha-build0040",
+    "Microsoft.DotNet.xunit.performance.runner.Windows": "1.0.0-alpha-build0040"
+  },
+  "frameworks": {
+    "netstandard1.3": {}
+  },
+  "supports": {
+    "coreFx.Test.netcoreapp1.0": {
+      "netcoreapp1.0": [
+        "win7-x86",
+        "win7-x64",
+        "osx.10.10-x64",
+        "centos.7-x64",
+        "debian.8-x64",
+        "rhel.7-x64",
+        "ubuntu.14.04-x64",
+        "ubuntu.16.04-x64",
+        "fedora.23-x64",
+        "linux-x64",
+        "opensuse.13.2-x64"
+      ]
+    }
+  }
+}

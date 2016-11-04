@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Dynamic.Utils;
 using System.Reflection;
 
@@ -14,6 +13,7 @@ namespace System.Linq.Expressions
     public sealed class MemberAssignment : MemberBinding
     {
         private Expression _expression;
+
         internal MemberAssignment(MemberInfo member, Expression expression)
 #pragma warning disable 618
             : base(MemberBindingType.Assignment, member)
@@ -21,20 +21,18 @@ namespace System.Linq.Expressions
 #pragma warning restore 618
             _expression = expression;
         }
+
         /// <summary>
         /// Gets the <see cref="Expression"/> which represents the object whose member is being assigned to.
         /// </summary>
-        public Expression Expression
-        {
-            get { return _expression; }
-        }
+        public Expression Expression => _expression;
 
         /// <summary>
         /// Creates a new expression that is like this one, but using the
         /// supplied children. If all of the children are the same, it will
         /// return this expression.
         /// </summary>
-        /// <param name="expression">The <see cref="Expression" /> property of the result.</param>
+        /// <param name="expression">The <see cref="Expression"/> property of the result.</param>
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public MemberAssignment Update(Expression expression)
         {
@@ -45,7 +43,6 @@ namespace System.Linq.Expressions
             return Expression.Bind(Member, expression);
         }
     }
-
 
     public partial class Expression
     {
@@ -81,7 +78,6 @@ namespace System.Linq.Expressions
             ValidateMethodInfo(propertyAccessor, nameof(propertyAccessor));
             return Bind(GetProperty(propertyAccessor, nameof(propertyAccessor)), expression);
         }
-
 
         private static void ValidateSettableFieldOrPropertyMember(MemberInfo member, out Type memberType)
         {

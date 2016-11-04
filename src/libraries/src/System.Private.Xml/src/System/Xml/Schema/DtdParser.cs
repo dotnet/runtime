@@ -288,7 +288,7 @@ namespace System.Xml
 
             if (docTypeName == null || docTypeName.Length == 0)
             {
-                throw XmlConvert.CreateInvalidNameArgumentException(docTypeName, "docTypeName");
+                throw XmlConvert.CreateInvalidNameArgumentException(docTypeName, nameof(docTypeName));
             }
 
             // check doctype name

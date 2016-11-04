@@ -2,775 +2,221 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using Microsoft.CSharp.RuntimeBinder;
 using Xunit;
 
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Inheritance.helper.helper
+namespace Dynamic.Tests
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Inheritance.helper.helper;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Inheritance.method002.method002;
-    using System;
-
-    public static class Helper
+    public class ExplicitlyImplementedInheritedInterfaceTests
     {
-        public static T Cast<T>(dynamic d)
+        [Fact]
+        public void SubInterface_BaseInterface()
         {
-            return (T)d;
+            dynamic d = new ExplicitlyImplementedBaseAndSubInterface();
+            Assert.Throws<RuntimeBinderException>(() => d.Foo());
+
+            var x = Helpers.Cast<BaseInterfaceWithOneMember1>(d);
+            var y = Helpers.Cast<SubInterfaceWithOneMember1>(d);
+        }
+
+        [Fact]
+        public void SubInterfaceOnly()
+        {
+            dynamic d = new ExplicitlyImplementedSubInterface();
+            Assert.Throws<RuntimeBinderException>(() => d.Foo());
+
+            var x = Helpers.Cast<BaseInterfaceWithOneMember1>(d);
+            var y = Helpers.Cast<SubInterfaceWithOneMember1>(d);
+        }
+
+        [Fact]
+        public void BaseInterfaceOnly()
+        {
+            dynamic d = new ExplicitlyImplementedBaseInterfaceWithTwoMembers();
+            Assert.Throws<RuntimeBinderException>(() => d.Foo());
+            Assert.Throws<InvalidCastException>(() => Helpers.Cast<SubInterfaceWithNoMembers>(d));
+        }
+
+        [Fact]
+        public void SubInterface_WithNewMember()
+        {
+            dynamic d = new ExplicitlyImplementedSubInterfaceWithNewMember();
+            Assert.Throws<RuntimeBinderException>(() => d.Foo());
+
+            Assert.Throws<InvalidCastException>(() => Helpers.Cast<SubInterfaceWithNoMembers>(d));
+            Assert.Throws<InvalidCastException>(() => ((SubInterfaceWithNoMembers)d).Foo());
+        }
+
+        [Fact]
+        public void SubInterfaceWithNewMember_SubInterfaceWithNoMembers()
+        {
+            dynamic d = new ExplicitlyImplementedSubInterfaceWithNewMemberAndSubInterfaceWithNoMembers();
+            Assert.Throws<RuntimeBinderException>(() => d.Foo());
+
+            var x = Helpers.Cast<SubInterfaceWithNoMembers>(d);
+        }
+
+        [Fact]
+        public void InterfaceWithTwoMembers_InSubClass()
+        {
+            dynamic d = new EmptyClass();
+            Assert.Throws<RuntimeBinderException>(() => d.Foo());
+
+            Assert.Throws<InvalidCastException>(() => Helpers.Cast<BaseInterfaceWithTwoMembers>(d));
+            Assert.Throws<InvalidCastException>(() => ((BaseInterfaceWithTwoMembers)d).Foo());
+        }
+
+        [Fact]
+        public void InterfaceWithTwoMembers_InBaseClass()
+        {
+            dynamic d = new SubClassOfExplicitlyImplementedInterfaceWithTwoMembersAndEmptySubClass();
+            Assert.Throws<RuntimeBinderException>(() => d.Foo());
+
+            var x = Helpers.Cast<BaseInterfaceWithTwoMembers>(d);
+        }
+
+        [Fact]
+        public void NonGenericInterface_Interface_WithTwoMembers_PartialClass()
+        {
+            dynamic d = new ExplicitlyImplementedInterfaceInPartialClass();
+            Assert.Throws<RuntimeBinderException>(() => d.Foo());
+
+            var x = Helpers.Cast<BaseInterfaceWithTwoMembers>(d);
+        }
+
+        [Fact]
+        public void PartialInterfaceWithTwoMembers()
+        {
+            dynamic d = new ExplicitlyImlementedPartialInterface();
+            Assert.Throws<RuntimeBinderException>(() => d.Foo());
+
+            var x = Helpers.Cast<PartialInterfaceWithTwoMembers>(d);
+        }
+
+        [Fact]
+        public void SubInterfaceWithOneMember_BaseClassWithOneVirtualMethod()
+        {
+            dynamic d = new ExplicitlyImplementedSubInterfaceWithOneMemberAndVirtualBaseClass();
+            Assert.Equal(1, d.Foo());
+            Assert.Equal(-1, ((SubInterfaceWithOneMember2)d).Foo());
         }
     }
-}
 
-
-
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Inheritance.method002.method002
-{
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Inheritance.helper.helper;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Inheritance.method002.method002;
-    // <Area> Dynamic -- explicitly implemented interface member</Area>
-    // <Title> inheritance </Title>
-    // <Description>
-    // cast to I's base interface
-    // </Description>
-    // <RelatedBugs></RelatedBugs>
-    // <Expects Status=success></Expects>
-    // <Code>
-    using System;
-
-    public interface IF0
+    public interface BaseInterfaceWithOneMember1
     {
         int Foo();
     }
 
-    public interface IF1 : IF0
+    public interface SubInterfaceWithOneMember1 : BaseInterfaceWithOneMember1
     {
         int Bar();
     }
 
-    public class C : IF1, IF0
+    public class ExplicitlyImplementedBaseAndSubInterface : BaseInterfaceWithOneMember1, SubInterfaceWithOneMember1
     {
-        int IF0.Foo()
-        {
-            return 0;
-        }
-
-        public int Bar()
-        {
-            return 1;
-        }
-
-        [Fact]
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod(null));
-        }
-
-        public static int MainMethod(string[] args)
-        {
-            dynamic d = new C();
-            int result = 0;
-            int error = 0;
-            try
-            {
-                result = d.Foo();
-                System.Console.WriteLine("Should have thrown out runtime exception!");
-                error++;
-            }
-            catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
-            {
-                if (!ErrorVerifier.Verify(ErrorMessageId.NoSuchMember, ex.Message, "C", "Foo"))
-                {
-                    error++;
-                }
-            }
-
-            var x = Helper.Cast<IF0>(d);
-            var y = Helper.Cast<IF1>(d);
-            return error;
-        }
-    }
-    // </Code>
-}
-
-
-
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Inheritance.method003.method003
-{
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Inheritance.helper.helper;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Inheritance.method003.method003;
-    // <Area> Dynamic -- explicitly implemented interface member</Area>
-    // <Title> inheritance </Title>
-    // <Description>
-    // cast to I's base interface
-    // </Description>
-    // <RelatedBugs></RelatedBugs>
-    // <Expects Status=success></Expects>
-    // <Code>
-    using System;
-
-    public interface IF0
-    {
-        int Bar();
+        int BaseInterfaceWithOneMember1.Foo() => 0;
+        public int Bar() => 1;
     }
 
-    public interface IF1 : IF0
+    public class ExplicitlyImplementedSubInterface : SubInterfaceWithOneMember1
     {
-        int Foo();
+        int BaseInterfaceWithOneMember1.Foo() => 0;
+        public int Bar() => 1;
     }
 
-    public class C : IF1
-    {
-        int IF1.Foo()
-        {
-            return 0;
-        }
-
-        public int Bar()
-        {
-            return 1;
-        }
-
-        [Fact]
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod(null));
-        }
-
-        public static int MainMethod(string[] args)
-        {
-            dynamic d = new C();
-            int result = 0;
-            int error = 0;
-            try
-            {
-                result = d.Foo();
-                System.Console.WriteLine("Should have thrown out runtime exception!");
-                error++;
-            }
-            catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
-            {
-                if (!ErrorVerifier.Verify(ErrorMessageId.NoSuchMember, ex.Message, "C", "Foo"))
-                {
-                    error++;
-                }
-            }
-
-            var x = Helper.Cast<IF0>(d);
-            var y = Helper.Cast<IF1>(d);
-            return error;
-        }
-    }
-    // </Code>
-}
-
-
-
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Inheritance.method004.method004
-{
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Inheritance.helper.helper;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Inheritance.method004.method004;
-    // <Area> Dynamic -- explicitly implemented interface member</Area>
-    // <Title> inheritance </Title>
-    // <Description>
-    // cast to I's derived interface
-    // </Description>
-    // <RelatedBugs></RelatedBugs>
-    // <Expects Status=success></Expects>
-    // <Code>
-    using System;
-
-    public interface IF2 : IF1
-    {
-    }
-
-    public interface IF1
+    public interface BaseInterfaceWithTwoMembers
     {
         int Foo();
         int Bar();
     }
 
-    public class C : IF1
-    {
-        int IF1.Foo()
-        {
-            return 0;
-        }
+    public interface SubInterfaceWithNoMembers : BaseInterfaceWithTwoMembers { }
 
-        public int Bar()
-        {
-            return 1;
-        }
-
-        [Fact]
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod(null));
-        }
-
-        public static int MainMethod(string[] args)
-        {
-            dynamic d = new C();
-            int result = 0;
-            int error = 0;
-            try
-            {
-                result = d.Foo();
-                System.Console.WriteLine("Should have thrown out runtime exception!");
-                error++;
-            }
-            catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
-            {
-                if (!ErrorVerifier.Verify(ErrorMessageId.NoSuchMember, ex.Message, "C", "Foo"))
-                {
-                    error++;
-                }
-            }
-
-            try
-            {
-                var x = Helper.Cast<IF2>(d);
-            }
-            catch (InvalidCastException)
-            {
-            }
-
-            return error;
-        }
-    }
-    // </Code>
-}
-
-
-
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Inheritance.method005.method005
-{
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Inheritance.helper.helper;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Inheritance.method005.method005;
-    // <Area> Dynamic -- explicitly implemented interface member</Area>
-    // <Title> inheritance </Title>
-    // <Description>
-    // cast to I's derived interface
-    // </Description>
-    // <RelatedBugs></RelatedBugs>
-    // <Expects Status=success></Expects>
-    // <Code>
-    using System;
-
-    public interface IF2 : IF0
-    {
-    }
-
-    public interface IF1 : IF0
+    public interface SubInterfaceWithNewMember : BaseInterfaceWithTwoMembers
     {
         new int Foo();
     }
 
-    public interface IF0
+    public class ExplicitlyImplementedBaseInterfaceWithTwoMembers : BaseInterfaceWithTwoMembers
     {
-        int Foo();
-        int Bar();
+        int BaseInterfaceWithTwoMembers.Foo() => 0;
+        public int Bar() => 1;
     }
 
-    public class C : IF1
+    public class ExplicitlyImplementedSubInterfaceWithNewMember : SubInterfaceWithNewMember
     {
-        int IF1.Foo()
-        {
-            return 0;
-        }
-
-        int IF0.Foo()
-        {
-            return 2;
-        }
-
-        public int Bar()
-        {
-            return 1;
-        }
-
-        [Fact]
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod(null));
-        }
-
-        public static int MainMethod(string[] args)
-        {
-            dynamic d = new C();
-            int result = 0;
-            int error = 0;
-            try
-            {
-                result = d.Foo();
-                System.Console.WriteLine("Should have thrown out runtime exception!");
-                error++;
-            }
-            catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
-            {
-                if (!ErrorVerifier.Verify(ErrorMessageId.NoSuchMember, ex.Message, "C", "Foo"))
-                {
-                    error++;
-                }
-            }
-
-            try
-            {
-                var x = Helper.Cast<IF2>(d);
-            }
-            catch (InvalidCastException)
-            {
-            }
-
-            try
-            {
-                result = ((IF2)d).Foo();
-            }
-            catch (InvalidCastException)
-            {
-            }
-
-            return error;
-        }
-    }
-    // </Code>
-}
-
-
-
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Inheritance.method006.method006
-{
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Inheritance.helper.helper;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Inheritance.method006.method006;
-    // <Area> Dynamic -- explicitly implemented interface member</Area>
-    // <Title> inheritance </Title>
-    // <Description>
-    // cast to I's derived interface
-    // </Description>
-    // <RelatedBugs></RelatedBugs>
-    // <Expects Status=success></Expects>
-    // <Code>
-    using System;
-
-    public interface IF2 : IF0
-    {
+        int SubInterfaceWithNewMember.Foo() => 0;
+        int BaseInterfaceWithTwoMembers.Foo() => 2;
+        public int Bar() => 1;
     }
 
-    public interface IF1 : IF0
+    public class ExplicitlyImplementedSubInterfaceWithNewMemberAndSubInterfaceWithNoMembers : SubInterfaceWithNewMember, SubInterfaceWithNoMembers
     {
-        new int Foo();
+        int SubInterfaceWithNewMember.Foo() => 0;
+        int BaseInterfaceWithTwoMembers.Foo() => 2;
+        public int Bar() => 1;
     }
 
-    public interface IF0
+    public class EmptyClass { }
+
+    public class ExplicitlyImplementedInterfaceWithTwoMembersAndEmptyBaseClass : EmptyClass, BaseInterfaceWithTwoMembers
     {
-        int Foo();
-        int Bar();
+        int BaseInterfaceWithTwoMembers.Foo() => 0;
+        public int Bar() => 1;
     }
 
-    public class C : IF1, IF2
+    public class ExplicitlyImplementedInterfaceWithTwoMembersAndEmptySubClass : BaseInterfaceWithTwoMembers
     {
-        int IF1.Foo()
-        {
-            return 0;
-        }
-
-        int IF0.Foo()
-        {
-            return 2;
-        }
-
-        public int Bar()
-        {
-            return 1;
-        }
-
-        [Fact]
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod(null));
-        }
-
-        public static int MainMethod(string[] args)
-        {
-            dynamic d = new C();
-            int result = 0;
-            int error = 0;
-            try
-            {
-                result = d.Foo();
-                System.Console.WriteLine("Should have thrown out runtime exception!");
-                error++;
-            }
-            catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
-            {
-                if (!ErrorVerifier.Verify(ErrorMessageId.NoSuchMember, ex.Message, "C", "Foo"))
-                {
-                    error++;
-                }
-            }
-
-            var x = Helper.Cast<IF2>(d);
-            return error;
-        }
-    }
-    // </Code>
-}
-
-
-
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Inheritance.method007.method007
-{
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Inheritance.helper.helper;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Inheritance.method007.method007;
-    // <Area> Dynamic -- explicitly implemented interface member</Area>
-    // <Title> inheritance </Title>
-    // <Description>
-    // cast to I's derived interface
-    // </Description>
-    // <RelatedBugs></RelatedBugs>
-    // <Expects Status=success></Expects>
-    // <Code>
-    using System;
-
-    public interface IF1
-    {
-        int Foo();
-        int Bar();
+        int BaseInterfaceWithTwoMembers.Foo() => 0;
+        public int Bar() => 1;
     }
 
-    public class C : D, IF1
+    public class SubClassOfExplicitlyImplementedInterfaceWithTwoMembersAndEmptySubClass : ExplicitlyImplementedInterfaceWithTwoMembersAndEmptySubClass { }
+
+    public partial class ExplicitlyImplementedInterfaceInPartialClass { }
+
+    public partial class ExplicitlyImplementedInterfaceInPartialClass : BaseInterfaceWithTwoMembers
     {
-        int IF1.Foo()
-        {
-            return 0;
-        }
-
-        public int Bar()
-        {
-            return 1;
-        }
-
-        [Fact]
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod(null));
-        }
-
-        public static int MainMethod(string[] args)
-        {
-            dynamic d = new D();
-            int result = 0;
-            int error = 0;
-            try
-            {
-                result = d.Foo();
-                System.Console.WriteLine("Should have thrown out runtime exception!");
-                error++;
-            }
-            catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
-            {
-                if (!ErrorVerifier.Verify(ErrorMessageId.NoSuchMember, ex.Message, "D", "Foo"))
-                {
-                    error++;
-                }
-            }
-
-            try
-            {
-                var x = Helper.Cast<IF1>(d);
-            }
-            catch (InvalidCastException)
-            {
-            }
-
-            try
-            {
-                result = ((IF1)d).Foo();
-            }
-            catch (InvalidCastException)
-            {
-            }
-
-            return error;
-        }
+        int BaseInterfaceWithTwoMembers.Foo() => 0;
+        public int Bar() => 1;
     }
 
-    public class D
-    {
-    }
-    // </Code>
-}
-
-
-
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Inheritance.method008.method008
-{
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Inheritance.helper.helper;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Inheritance.method008.method008;
-    // <Area> Dynamic -- explicitly implemented interface member</Area>
-    // <Title> inheritance </Title>
-    // <Description>
-    // d is a instance of C's derived class
-    // </Description>
-    // <RelatedBugs></RelatedBugs>
-    // <Expects Status=success></Expects>
-    // <Code>
-    using System;
-
-    public interface IF1
-    {
-        int Foo();
-        int Bar();
-    }
-
-    public class C : IF1
-    {
-        int IF1.Foo()
-        {
-            return 0;
-        }
-
-        public int Bar()
-        {
-            return 1;
-        }
-
-        [Fact]
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod(null));
-        }
-
-        public static int MainMethod(string[] args)
-        {
-            dynamic d = new D();
-            int result = 0;
-            int error = 0;
-            try
-            {
-                result = d.Foo();
-                System.Console.WriteLine("Should have thrown out runtime exception!");
-                error++;
-            }
-            catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
-            {
-                if (!ErrorVerifier.Verify(ErrorMessageId.NoSuchMember, ex.Message, "D", "Foo"))
-                {
-                    error++;
-                }
-            }
-
-            var x = Helper.Cast<IF1>(d);
-            return error;
-        }
-    }
-
-    public class D : C
-    {
-    }
-    // </Code>
-}
-
-
-
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Inheritance.partialclass003.partialclass003
-{
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Inheritance.helper.helper;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Inheritance.partialclass003.partialclass003;
-    // <Area> Dynamic -- explicitly implemented interface member</Area>
-    // <Title> partial class </Title>
-    // <Description>
-    // absolutely no implemented member
-    // </Description>
-    // <RelatedBugs></RelatedBugs>
-    // <Expects Status=success></Expects>
-    // <Code>
-    //<Expects Status=warning>\(37,13\).*CS0219</Expects>
-    using System;
-
-    public interface IF1
-    {
-        void Foo();
-        int Bar();
-    }
-
-    public partial class C
-    {
-    }
-
-    public partial class C : IF1
-    {
-        void IF1.Foo()
-        {
-            System.Console.WriteLine("IF1.Foo");
-        }
-
-        public int Bar()
-        {
-            return 1;
-        }
-
-        [Fact]
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod(null));
-        }
-
-        public static int MainMethod(string[] args)
-        {
-            dynamic d = new C();
-            int result = 0;
-            int error = 0;
-            try
-            {
-                d.Foo();
-                System.Console.WriteLine("Should have thrown out runtime exception!");
-                error++;
-            }
-            catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
-            {
-                if (!ErrorVerifier.Verify(ErrorMessageId.NoSuchMember, ex.Message, "C", "Foo"))
-                {
-                    error++;
-                }
-            }
-
-            var x = Helper.Cast<IF1>(d);
-            return error;
-        }
-    }
-    // </Code>
-}
-
-
-
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Inheritance.partialintegeregererface001.partialintegeregererface001
-{
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Inheritance.helper.helper;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Inheritance.partialintegeregererface001.partialintegeregererface001;
-    // <Area> Dynamic -- explicitly implemented interface member</Area>
-    // <Title> partial interface </Title>
-    // <Description>
-    // </Description>
-    // <RelatedBugs></RelatedBugs>
-    // <Expects Status=success></Expects>
-    // <Code>
-    using System;
-
-    public partial interface IF1
+    public partial interface PartialInterfaceWithTwoMembers
     {
         int Foo();
     }
 
-    public partial interface IF1
+    public partial interface PartialInterfaceWithTwoMembers
     {
         int Bar();
     }
 
-    public class C : IF1
+    public class ExplicitlyImlementedPartialInterface : PartialInterfaceWithTwoMembers
     {
-        int IF1.Foo()
-        {
-            return 0;
-        }
-
-        public int Bar()
-        {
-            return 1;
-        }
-
-        [Fact]
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod(null));
-        }
-
-        public static int MainMethod(string[] args)
-        {
-            dynamic d = new C();
-            int result = 0;
-            int error = 0;
-            try
-            {
-                result = d.Foo();
-                System.Console.WriteLine("Should have thrown out runtime exception!");
-                error++;
-            }
-            catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
-            {
-                if (!ErrorVerifier.Verify(ErrorMessageId.NoSuchMember, ex.Message, "C", "Foo"))
-                {
-                    error++;
-                }
-            }
-
-            var x = Helper.Cast<IF1>(d);
-            return error;
-        }
+        int PartialInterfaceWithTwoMembers.Foo() => 0;
+        public int Bar() => 1;
     }
-    // </Code>
-}
 
+    public class BaseClassWithVirtualMethod
+    {
+        public virtual int Foo() => -1;
+    }
 
-
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Inheritance.method003a.method003a
-{
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Inheritance.method003a.method003a;
-    // <Area> Dynamic -- explicitly implemented interface member</Area>
-    // <Title> inheritance </Title>
-    // <Description>
-    // cast to I's base interface
-    // </Description>
-    // <RelatedBugs></RelatedBugs>
-    // <Expects Status=success></Expects>
-    // <Code>
-    using System;
-
-    public interface IF0
+    public interface BaseInterfaceWithOneMember2
     {
         int Bar();
     }
 
-    public interface IF1 : IF0
+    public interface SubInterfaceWithOneMember2 : BaseInterfaceWithOneMember2
     {
         int Foo();
     }
 
-    public class F2
+    public class ExplicitlyImplementedSubInterfaceWithOneMemberAndVirtualBaseClass : BaseClassWithVirtualMethod, SubInterfaceWithOneMember2
     {
-        public virtual int Foo()
-        {
-            return -1;
-        }
+        int SubInterfaceWithOneMember2.Foo() => -1;
+        public override int Foo() => 1;
+        public int Bar() => 1;
     }
-
-    public class C : F2, IF1
-    {
-        int IF1.Foo()
-        {
-            return -1;
-        }
-
-        public override int Foo()
-        {
-            return 1;
-        }
-
-        public int Bar()
-        {
-            return 1;
-        }
-
-        [Fact]
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod(null));
-        }
-
-        public static int MainMethod(string[] args)
-        {
-            dynamic d = new C();
-            int result = 0;
-            result = d.Foo() - ((IF1)d).Foo();
-            return result - 2;
-        }
-    }
-    // </Code>
 }

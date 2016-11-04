@@ -28,7 +28,7 @@
 
 namespace System
 {
-    public partial class OperationCanceledException : System.Exception
+    public partial class OperationCanceledException : System.SystemException
     {
         public OperationCanceledException() { }
         public OperationCanceledException(string message) { }
@@ -36,7 +36,8 @@ namespace System
         public OperationCanceledException(string message, System.Exception innerException, System.Threading.CancellationToken token) { }
         public OperationCanceledException(string message, System.Threading.CancellationToken token) { }
         public OperationCanceledException(System.Threading.CancellationToken token) { }
-        public System.Threading.CancellationToken CancellationToken { get { return default(System.Threading.CancellationToken); } }
+        protected OperationCanceledException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public System.Threading.CancellationToken CancellationToken { get { throw null; } }
     }
 }
 namespace System.Runtime.CompilerServices
@@ -44,10 +45,10 @@ namespace System.Runtime.CompilerServices
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct AsyncTaskMethodBuilder
     {
-        public System.Threading.Tasks.Task Task { get { return default(System.Threading.Tasks.Task); } }
+        public System.Threading.Tasks.Task Task { get { throw null; } }
         public void AwaitOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.INotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
         public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
-        public static System.Runtime.CompilerServices.AsyncTaskMethodBuilder Create() { return default(System.Runtime.CompilerServices.AsyncTaskMethodBuilder); }
+        public static System.Runtime.CompilerServices.AsyncTaskMethodBuilder Create() { throw null; }
         public void SetException(System.Exception exception) { }
         public void SetResult() { }
         public void SetStateMachine(System.Runtime.CompilerServices.IAsyncStateMachine stateMachine) { }
@@ -56,10 +57,10 @@ namespace System.Runtime.CompilerServices
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct AsyncTaskMethodBuilder<TResult>
     {
-        public System.Threading.Tasks.Task<TResult> Task { get { return default(System.Threading.Tasks.Task<TResult>); } }
+        public System.Threading.Tasks.Task<TResult> Task { get { throw null; } }
         public void AwaitOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.INotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
         public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
-        public static System.Runtime.CompilerServices.AsyncTaskMethodBuilder<TResult> Create() { return default(System.Runtime.CompilerServices.AsyncTaskMethodBuilder<TResult>); }
+        public static System.Runtime.CompilerServices.AsyncTaskMethodBuilder<TResult> Create() { throw null; }
         public void SetException(System.Exception exception) { }
         public void SetResult(TResult result) { }
         public void SetStateMachine(System.Runtime.CompilerServices.IAsyncStateMachine stateMachine) { }
@@ -70,7 +71,7 @@ namespace System.Runtime.CompilerServices
     {
         public void AwaitOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.INotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
         public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
-        public static System.Runtime.CompilerServices.AsyncVoidMethodBuilder Create() { return default(System.Runtime.CompilerServices.AsyncVoidMethodBuilder); }
+        public static System.Runtime.CompilerServices.AsyncVoidMethodBuilder Create() { throw null; }
         public void SetException(System.Exception exception) { }
         public void SetResult() { }
         public void SetStateMachine(System.Runtime.CompilerServices.IAsyncStateMachine stateMachine) { }
@@ -89,14 +90,14 @@ namespace System.Threading
         public CancellationTokenSource() { }
         public CancellationTokenSource(int millisecondsDelay) { }
         public CancellationTokenSource(System.TimeSpan delay) { }
-        public bool IsCancellationRequested { get { return default(bool); } }
-        public System.Threading.CancellationToken Token { get { return default(System.Threading.CancellationToken); } }
+        public bool IsCancellationRequested { get { throw null; } }
+        public System.Threading.CancellationToken Token { get { throw null; } }
         public void Cancel() { }
         public void Cancel(bool throwOnFirstException) { }
         public void CancelAfter(int millisecondsDelay) { }
         public void CancelAfter(System.TimeSpan delay) { }
-        public static System.Threading.CancellationTokenSource CreateLinkedTokenSource(System.Threading.CancellationToken token1, System.Threading.CancellationToken token2) { return default(System.Threading.CancellationTokenSource); }
-        public static System.Threading.CancellationTokenSource CreateLinkedTokenSource(params System.Threading.CancellationToken[] tokens) { return default(System.Threading.CancellationTokenSource); }
+        public static System.Threading.CancellationTokenSource CreateLinkedTokenSource(System.Threading.CancellationToken token1, System.Threading.CancellationToken token2) { throw null; }
+        public static System.Threading.CancellationTokenSource CreateLinkedTokenSource(params System.Threading.CancellationToken[] tokens) { throw null; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
     }
@@ -109,9 +110,9 @@ namespace System.Threading.Tasks
         public ConcurrentExclusiveSchedulerPair(System.Threading.Tasks.TaskScheduler taskScheduler) { }
         public ConcurrentExclusiveSchedulerPair(System.Threading.Tasks.TaskScheduler taskScheduler, int maxConcurrencyLevel) { }
         public ConcurrentExclusiveSchedulerPair(System.Threading.Tasks.TaskScheduler taskScheduler, int maxConcurrencyLevel, int maxItemsPerTask) { }
-        public System.Threading.Tasks.Task Completion { get { return default(System.Threading.Tasks.Task); } }
-        public System.Threading.Tasks.TaskScheduler ConcurrentScheduler { get { return default(System.Threading.Tasks.TaskScheduler); } }
-        public System.Threading.Tasks.TaskScheduler ExclusiveScheduler { get { return default(System.Threading.Tasks.TaskScheduler); } }
+        public System.Threading.Tasks.Task Completion { get { throw null; } }
+        public System.Threading.Tasks.TaskScheduler ConcurrentScheduler { get { throw null; } }
+        public System.Threading.Tasks.TaskScheduler ExclusiveScheduler { get { throw null; } }
         public void Complete() { }
     }
     public partial class TaskCanceledException : System.OperationCanceledException
@@ -121,7 +122,7 @@ namespace System.Threading.Tasks
         public TaskCanceledException(string message, System.Exception innerException) { }
         public TaskCanceledException(System.Threading.Tasks.Task task) { }
         protected TaskCanceledException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public System.Threading.Tasks.Task Task { get { return default(System.Threading.Tasks.Task); } }
+        public System.Threading.Tasks.Task Task { get { throw null; } }
     }
     public partial class TaskCompletionSource<TResult>
     {
@@ -129,21 +130,21 @@ namespace System.Threading.Tasks
         public TaskCompletionSource(object state) { }
         public TaskCompletionSource(object state, System.Threading.Tasks.TaskCreationOptions creationOptions) { }
         public TaskCompletionSource(System.Threading.Tasks.TaskCreationOptions creationOptions) { }
-        public System.Threading.Tasks.Task<TResult> Task { get { return default(System.Threading.Tasks.Task<TResult>); } }
+        public System.Threading.Tasks.Task<TResult> Task { get { throw null; } }
         public void SetCanceled() { }
         public void SetException(System.Collections.Generic.IEnumerable<System.Exception> exceptions) { }
         public void SetException(System.Exception exception) { }
         public void SetResult(TResult result) { }
-        public bool TrySetCanceled() { return default(bool); }
-        public bool TrySetCanceled(System.Threading.CancellationToken cancellationToken) { return default(bool); }
-        public bool TrySetException(System.Collections.Generic.IEnumerable<System.Exception> exceptions) { return default(bool); }
-        public bool TrySetException(System.Exception exception) { return default(bool); }
-        public bool TrySetResult(TResult result) { return default(bool); }
+        public bool TrySetCanceled() { throw null; }
+        public bool TrySetCanceled(System.Threading.CancellationToken cancellationToken) { throw null; }
+        public bool TrySetException(System.Collections.Generic.IEnumerable<System.Exception> exceptions) { throw null; }
+        public bool TrySetException(System.Exception exception) { throw null; }
+        public bool TrySetResult(TResult result) { throw null; }
     }
     public static partial class TaskExtensions
     {
-        public static System.Threading.Tasks.Task Unwrap(this System.Threading.Tasks.Task<System.Threading.Tasks.Task> task) { return default(System.Threading.Tasks.Task); }
-        public static System.Threading.Tasks.Task<TResult> Unwrap<TResult>(this System.Threading.Tasks.Task<System.Threading.Tasks.Task<TResult>> task) { return default(System.Threading.Tasks.Task<TResult>); }
+        public static System.Threading.Tasks.Task Unwrap(this System.Threading.Tasks.Task<System.Threading.Tasks.Task> task) { throw null; }
+        public static System.Threading.Tasks.Task<TResult> Unwrap<TResult>(this System.Threading.Tasks.Task<System.Threading.Tasks.Task<TResult>> task) { throw null; }
     }
     public partial class TaskSchedulerException : System.Exception
     {

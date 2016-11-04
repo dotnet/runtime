@@ -174,11 +174,6 @@ namespace System.Collections.Immutable
             /// <returns>An immutable array.</returns>
             public ImmutableArray<T> ToImmutable()
             {
-                if (Count == 0)
-                {
-                    return Empty;
-                }
-
                 return new ImmutableArray<T>(this.ToArray());
             }
 
@@ -408,6 +403,11 @@ namespace System.Collections.Immutable
             /// </summary>
             public T[] ToArray()
             {
+                if (this.Count == 0)
+                {
+                    return Empty.array;
+                }
+
                 T[] result = new T[this.Count];
                 Array.Copy(_elements, 0, result, 0, this.Count);
                 return result;

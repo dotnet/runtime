@@ -10,6 +10,14 @@ namespace Test.Cryptography
 {
     internal abstract partial class CertLoader
     {
+        // Prefer ephemeral when available
+        protected X509KeyStorageFlags KeyStorageFlags =
+#if netcoreapp11
+            X509KeyStorageFlags.EphemeralKeySet;
+#else
+            X509KeyStorageFlags.DefaultKeySet;
+#endif
+
         /// <summary>
         /// Returns a freshly allocated X509Certificate2 instance that has a public key only. 
         /// 
@@ -52,7 +60,7 @@ namespace Test.Cryptography
                     return null;
 
                 case CertLoadMode.LoadFromPfx:
-                    return new X509Certificate2(PfxData, Password);
+                    return new X509Certificate2(PfxData, Password, KeyStorageFlags);
 
                 case CertLoadMode.LoadFromStore:
                     {
@@ -115,6 +123,9 @@ namespace Test.Cryptography
             }
         }
 
+        internal abstract CertLoader CloneAsEphemeralLoader();
+        internal abstract CertLoader CloneAsPerphemeralLoader();
+
         private bool _alreadySearchedMyStore = false;
     }
 
@@ -130,6 +141,26 @@ namespace Test.Cryptography
         public sealed override byte[] CerData { get; }
         public sealed override byte[] PfxData { get; }
         public sealed override string Password { get; }
+
+        internal override CertLoader CloneAsEphemeralLoader()
+        {
+#if netcoreapp11
+            return new CertLoaderFromRawData(CerData, PfxData, Password)
+            {
+                KeyStorageFlags = X509KeyStorageFlags.EphemeralKeySet,
+            };
+#else
+            throw new PlatformNotSupportedException();
+#endif
+        }
+
+        internal override CertLoader CloneAsPerphemeralLoader()
+        {
+            return new CertLoaderFromRawData(CerData, PfxData, Password)
+            {
+                KeyStorageFlags = X509KeyStorageFlags.DefaultKeySet,
+            };
+        }
     }
 
     internal enum CertLoadMode

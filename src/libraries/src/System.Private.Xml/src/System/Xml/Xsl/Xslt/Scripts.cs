@@ -130,7 +130,7 @@ namespace System.Xml.Xsl.Xslt
                 compilerInfo = CodeDomProvider.GetCompilerInfo(language);
                 Debug.Assert(compilerInfo != null);
             }
-            catch (ConfigurationException)
+            catch (SystemException)
             {
                 // There is no CodeDom provider defined for this language
                 errorHelper.ReportError(/*[XT_010]*/SR.Xslt_ScriptInvalidLanguage, language);
@@ -226,7 +226,7 @@ namespace System.Xml.Xsl.Xslt
             {
                 provider = lastScript.compilerInfo.CreateProvider();
             }
-            catch (ConfigurationException e)
+            catch (SystemException e)
             {
                 // The CodeDom provider type could not be located, or some error in machine.config
                 allErrors.Add(_compiler.CreateError(lastScript.EndLineInfo, /*[XT_041]*/SR.Xslt_ScriptCompileException, e.Message));
@@ -283,20 +283,6 @@ namespace System.Xml.Xsl.Xslt
                         // them explicitly in the msxsl:script element.
                         unit.UserData["AllowLateBound"] = true;   // Allow variables to be declared untyped
                         unit.UserData["RequireVariableDeclaration"] = false;  // Allow variables to be undeclared
-                    }
-
-                    // Put SecurityTransparentAttribute and SecurityRulesAttribute on the first CodeCompileUnit only
-                    if (idx == 0)
-                    {
-                        unit.AssemblyCustomAttributes.Add(new CodeAttributeDeclaration("System.Security.SecurityTransparentAttribute"));
-
-                        // We want the assemblies generated for scripts to stick to the old security model
-                        unit.AssemblyCustomAttributes.Add(
-                            new CodeAttributeDeclaration(
-                                new CodeTypeReference(typeof(System.Security.SecurityRulesAttribute)),
-                                new CodeAttributeArgument(
-                                    new CodeFieldReferenceExpression(
-                                        new CodeTypeReferenceExpression(typeof(System.Security.SecurityRuleSet)), "Level1"))));
                     }
                 }
 
@@ -358,7 +344,7 @@ namespace System.Xml.Xsl.Xslt
                 }
                 else
                 {
-                    throw e;
+                    throw;
                 }
             }
 

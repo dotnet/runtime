@@ -1,5 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <PropertyGroup>
+	<Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
+  </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{C427CE0D-0740-41F3-9C3A-552BEA3DDB0D}</ProjectGuid>
@@ -9,16 +12,15 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn),649</NoWarn>
     <DefineConstants>ASYNC;ASTORIA_LIGHT</DefineConstants><!-- TODO: this should be prepended with $(DefineConstants); - otherwise DEBUG and TRACE are not being passed -->
-    <DefineConstants Condition="'$(TargetGroup)' == 'netcore50aot'">$(DefineConstants);NET_NATIVE</DefineConstants>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <!--<DefineConstants Condition="'$(TargetGroup)' == 'uap101aot'">$(DefineConstants);NET_NATIVE</DefineConstants> TODO: Bring this back when uap101aot support is added -->
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
     <Compile Include="$(CommonPath)\System\ValueTuple.cs">
       <Link>Common\System\ValueTuple.cs</Link>
     </Compile>
@@ -72,7 +74,6 @@
     <Compile Include="System\Xml\XmlSecureResolverAsync.cs" />
     <Compile Include="System\Xml\XmlUrlResolver.cs" />
     <Compile Include="System\Xml\XmlUrlResolverAsync.cs" />
-    <Compile Include="System\Xml\XmlXapResolver.cs" />
     <Compile Include="System\Xml\Core\CharEntityEncoderFallback.cs" />
     <Compile Include="System\Xml\Core\ConformanceLevel.cs" />
     <Compile Include="System\Xml\Core\DtdProcessing.cs" />
@@ -111,7 +112,6 @@
     <Compile Include="System\Xml\Core\XmlCharCheckingReaderAsync.cs" />
     <Compile Include="System\Xml\Core\XmlCharCheckingWriter.cs" />
     <Compile Include="System\Xml\Core\XmlCharCheckingWriterAsync.cs" />
-    <Compile Include="System\Xml\Core\XmlConfiguration.cs" />
     <Compile Include="System\Xml\Core\XmlEncodedRawTextWriter.cs" />
     <Compile Include="System\Xml\Core\XmlEncodedRawTextWriterAsync.cs" />
     <Compile Include="System\Xml\Core\XmlEventCache.cs" />
@@ -484,9 +484,7 @@
     <Compile Include="System\Xml\Serialization\Configuration\ConfigurationStrings.cs" />
     <Compile Include="System\Xml\Serialization\Configuration\DateTimeSerializationSection.cs" />
     <Compile Include="System\Xml\Serialization\Configuration\SchemaImporterExtensionElement.cs" />
-    <Compile Include="System\Xml\Serialization\Configuration\SchemaImporterExtensionElementCollection.cs" />
     <Compile Include="System\Xml\Serialization\Configuration\SchemaImporterExtensionsSection.cs" />
-    <Compile Include="System\Xml\Serialization\Configuration\SerializationSectionGroup.cs" />
     <Compile Include="System\Xml\Serialization\Configuration\XmlSerializerSection.cs" />
     <Compile Include="System\Xml\Resolvers\XmlSystemPathResolver.cs" />
     <Compile Include="System\Xml\Extensions\ExtensionMethods.cs" />
@@ -518,7 +516,7 @@
       <LogicalName>rss-0.91.dtd</LogicalName>
     </EmbeddedResource>-->
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
   <ItemGroup>
@@ -730,103 +728,15 @@
     <Compile Include="System\Xml\Xsl\Xslt\XsltLoader.cs" />
     <Compile Include="System\Xml\Xsl\Xslt\XsltQilFactory.cs" />
     <Compile Include="System\Xml\Xsl\Xslt\XslVisitor.cs" />
-    <Compile Include="Workarounds\Attributes.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeArgumentReferenceExpression.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeArrayCreateExpression.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeAssignStatement.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeAttributeArgument.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeAttributeArgumentCollection.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeAttributeDeclaration.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeAttributeDeclarationCollection.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeBinaryOperatorExpression.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeBinaryOperatorType.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeCastExpression.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeComment.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeCommentStatement.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeCommentStatementCollection.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeCompileUnit.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeConditionStatement.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeConstructor.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeDelegateInvokeExpression.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeDirective.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeDirectiveCollection.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeEventReferenceExpression.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeExpression.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeExpressionCollection.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeExpressionStatement.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeFieldReferenceExpression.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeLinePragma.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeMemberEvent.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeMemberField.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeMemberMethod.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeMemberProperty.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeMethodInvokeExpression.cs" />
-    <Compile Include="Workarounds\CodeDom\codemethodreferenceexpression.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeMethodReturnStatement.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeNamespace.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeNamespaceCollection.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeNamespaceImport.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeNamespaceImportCollection.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeObject.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeObjectCreateExpression.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeParameterDeclarationExpression.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeParameterDeclarationExpressionCollection.cs" />
-    <Compile Include="Workarounds\CodeDom\CodePrimitiveExpression.cs" />
-    <Compile Include="Workarounds\CodeDom\CodePropertySetValueReferenceExpression.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeSnippetTypeMember.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeStatement.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeStatementCollection.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeThisReferenceExpression.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeTypeDeclaration.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeTypeDeclarationCollection.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeTypeMember.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeTypeMemberCollection.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeTypeOfExpression.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeTypeParameter.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeTypeParameterCollection.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeTypeReference.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeTypeReferenceCollection.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeTypeReferenceExpression.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeVariableDeclarationStatement.cs" />
-    <Compile Include="Workarounds\CodeDom\CodeVariableReferenceExpression.cs" />
-    <Compile Include="Workarounds\CodeDom\Compiler\CodeDomConfigurationHandler.cs" />
-    <Compile Include="Workarounds\CodeDom\Compiler\CodeDomProvider.cs" />
-    <Compile Include="Workarounds\CodeDom\Compiler\CodeGenerator.cs" />
-    <Compile Include="Workarounds\CodeDom\Compiler\CompilerError.cs" />
-    <Compile Include="Workarounds\CodeDom\Compiler\CompilerErrorCollection.cs" />
-    <Compile Include="Workarounds\CodeDom\Compiler\CompilerInfo.cs" />
-    <Compile Include="Workarounds\CodeDom\Compiler\CompilerParameters.cs" />
-    <Compile Include="Workarounds\CodeDom\Compiler\CompilerResults.cs" />
-    <Compile Include="Workarounds\CodeDom\Compiler\GeneratorSupport.cs" />
-    <Compile Include="Workarounds\CodeDom\Compiler\ICodeCompiler.cs" />
-    <Compile Include="Workarounds\CodeDom\Compiler\ICodeGenerator.cs" />
-    <Compile Include="Workarounds\CodeDom\Compiler\TempFiles.cs" />
-    <Compile Include="Workarounds\CodeDom\MemberAttributes.cs" />
-    <Compile Include="Workarounds\CodeDom\RedistVersionInfo.cs" />
-    <Compile Include="Workarounds\ConfigurationValidatorBase.cs" />
-    <Compile Include="Workarounds\DummyTypes\AppDomain.cs" />
-    <Compile Include="Workarounds\DummyTypes\ConfigurationElement.cs" />
-    <Compile Include="Workarounds\DummyTypes\ConfigurationElementCollection.cs" />
-    <Compile Include="Workarounds\DummyTypes\ConfigurationErrorsException.cs" />
-    <Compile Include="Workarounds\DummyTypes\ConfigurationException.cs" />
-    <Compile Include="Workarounds\DummyTypes\ConfigurationPropertyCollection.cs" />
-    <Compile Include="Workarounds\DummyTypes\ConfigurationSection.cs" />
-    <Compile Include="Workarounds\DummyTypes\ConfigurationSectionGroup.cs" />
-    <Compile Include="Workarounds\DummyTypes\ConnectionStringSettingsCollection.cs" />
-    <Compile Include="Workarounds\DummyTypes\Evidence.cs" />
-    <Compile Include="Workarounds\DummyTypes\PermissionSet.cs" />
-    <Compile Include="Workarounds\DummyTypes\RequestCachePolicy.cs" />
-    <Compile Include="Workarounds\DummyTypes\SecurityManger.cs" />
-    <Compile Include="Workarounds\SerializationEntry.cs" />
-    <Compile Include="Workarounds\ICloneable.cs" />
-    <Compile Include="Workarounds\LocalAppContextSwitches.cs" />
-    <Compile Include="Workarounds\SecurityElement.cs" />
-    <Compile Include="Workarounds\SerializationInfo.cs" />
-    <Compile Include="Workarounds\StreamingContext.cs" />
-    <Compile Include="Workarounds\DummyTypes\SystemException.cs" />
-    <Compile Include="Workarounds\ThisAssembly.cs" />
-    <Compile Include="Workarounds\VBCodeProvider.cs" />
-    <Compile Include="Workarounds\__HResults.cs" />
+    <Compile Include="$(CommonPath)\System\LocalAppContext.cs" />
+    <Compile Include="System\Xml\Core\LocalAppContextSwitches.cs" />
+    <Compile Include="Misc\ThisAssembly.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)'=='true'">
+    <Compile Include="System\Xml\Xsl\Runtime\XmlCollation.Windows.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)'=='true'">
+    <Compile Include="System\Xml\Xsl\Runtime\XmlCollation.Unix.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

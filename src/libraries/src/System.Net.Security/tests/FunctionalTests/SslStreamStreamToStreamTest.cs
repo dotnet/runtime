@@ -14,6 +14,8 @@ using Xunit;
 
 namespace System.Net.Security.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     public abstract class SslStreamStreamToStreamTest
     {
         private readonly byte[] _sampleMsg = Encoding.UTF8.GetBytes("Sample Test Message");
@@ -84,6 +86,38 @@ namespace System.Net.Security.Tests
                 Assert.True(VerifyOutput(recvBuf, _sampleMsg), "verify first read data is as expected.");
 
                 clientSslStream.Write(_sampleMsg);
+
+                serverSslStream.Read(recvBuf, 0, _sampleMsg.Length);
+
+                Assert.True(VerifyOutput(recvBuf, _sampleMsg), "verify second read data is as expected.");
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Fact]
+        public void SslStream_StreamToStream_Successive_ClientWrite_Sync_WithZeroBytes_Success()
+        {
+            byte[] recvBuf = new byte[_sampleMsg.Length];
+            VirtualNetwork network = new VirtualNetwork();
+
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
+            using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))
+            using (var serverSslStream = new SslStream(serverStream))
+            {
+                bool result = DoHandshake(clientSslStream, serverSslStream);
+
+                Assert.True(result, "Handshake completed.");
+
+                clientSslStream.Write(Array.Empty<byte>());
+                clientSslStream.Write(_sampleMsg);
+
+                serverSslStream.Read(recvBuf, 0, _sampleMsg.Length);
+
+                Assert.True(VerifyOutput(recvBuf, _sampleMsg), "verify first read data is as expected.");
+
+                clientSslStream.Write(_sampleMsg);
+                clientSslStream.Write(Array.Empty<byte>());
 
                 serverSslStream.Read(recvBuf, 0, _sampleMsg.Length);
 

@@ -178,7 +178,7 @@ namespace System.Data.SqlClient
             }
             set
             {
-                Debug.Assert((value & SqlString.x_iValidSqlCompareOptionMask) == value, "invalid set_SqlCompareOptions value");
+                Debug.Assert((value & SqlTypeWorkarounds.SqlStringValidSqlCompareOptionMask) == value, "invalid set_SqlCompareOptions value");
                 uint tmp = 0;
                 if (0 != (value & SqlCompareOptions.IgnoreCase))
                     tmp |= IgnoreCase;
@@ -472,6 +472,14 @@ namespace System.Data.SqlClient
         internal Encoding encoding;
         internal bool isNullable;
 
+        // UDT specific metadata
+        // server metadata info
+        // additional temporary UDT meta data
+        internal string udtDatabaseName;
+        internal string udtSchemaName;
+        internal string udtTypeName;
+        internal string udtAssemblyQualifiedName;
+        
         // Xml specific metadata
         internal string xmlSchemaCollectionDatabase;
         internal string xmlSchemaCollectionOwningSchema;
@@ -494,6 +502,10 @@ namespace System.Data.SqlClient
             this.codePage = original.codePage;
             this.encoding = original.encoding;
             this.isNullable = original.isNullable;
+            this.udtDatabaseName = original.udtDatabaseName;
+            this.udtSchemaName = original.udtSchemaName;
+            this.udtTypeName = original.udtTypeName;
+            this.udtAssemblyQualifiedName = original.udtAssemblyQualifiedName;
             this.xmlSchemaCollectionDatabase = original.xmlSchemaCollectionDatabase;
             this.xmlSchemaCollectionOwningSchema = original.xmlSchemaCollectionOwningSchema;
             this.xmlSchemaCollectionName = original.xmlSchemaCollectionName;

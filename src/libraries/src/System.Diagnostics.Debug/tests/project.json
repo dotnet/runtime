@@ -1,26 +1,22 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.2-beta-24522-03",
-    "Microsoft.TargetingPack.Private.CoreCLR": "1.2.0-beta-24522-04",
-    "System.Linq.Expressions": "4.3.0-beta-24522-03",
-    "System.ObjectModel": "4.3.0-beta-24522-03",
-    "System.Text.RegularExpressions": "4.3.0-beta-24522-03",
+    "Microsoft.NETCore.Platforms": "1.2.0-beta-24703-01",
+    "Microsoft.TargetingPack.Private.CoreCLR": "1.2.0-beta-24628-03",
+    "System.Linq.Expressions": "4.4.0-beta-24703-01",
+    "System.ObjectModel": "4.4.0-beta-24703-01",
+    "System.Text.RegularExpressions": "4.4.0-beta-24703-01",
     "test-runtime": {
       "target": "project",
       "exclude": "compile"
     },
-    "Microsoft.xunit.netcore.extensions": "1.0.0-prerelease-00807-03",
-    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00807-03"
+    "Microsoft.xunit.netcore.extensions": "1.0.1-prerelease-01001-04",
+    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.1-prerelease-01001-04"
   },
   "frameworks": {
-    "netstandard1.3": {}
+    "netstandard1.7": {}
   },
   "supports": {
-    "coreFx.Test.netcore50": {},
-    "coreFx.Test.netcoreapp1.0": {},
-    "coreFx.Test.net46": {},
-    "coreFx.Test.net461": {},
-    "coreFx.Test.net462": {},
+    "coreFx.Test.netcoreapp1.1": {},
     "coreFx.Test.net463": {}
   }
 }

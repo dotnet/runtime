@@ -168,4 +168,13 @@
   <data name="ResourceReaderIsClosed" xml:space="preserve">
     <value>ResourceReader is closed.</value>
   </data>
+  <data name="NotSupported_UnseekableStream" xml:space="preserve">
+    <value>Stream does not support seeking.</value>
+  </data>
+  <data name="NotSupported_BinarySerializedResources" xml:space="preserve">
+    <value>This platform does not support binary serialized resources.</value>
+  </data>
+  <data name="ArgumentOutOfRange_StreamLength" xml:space="preserve">
+    <value>Stream length must be non-negative and less than 2^31 - 1 - origin.</value>
+  </data>
 </root>

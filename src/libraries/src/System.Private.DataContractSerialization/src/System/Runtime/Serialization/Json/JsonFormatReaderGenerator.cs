@@ -406,7 +406,15 @@ namespace System.Runtime.Serialization.Json
 
             private void ReadISerializable(ClassDataContract classContract)
             {
-                // ISerializable is not supported
+                ConstructorInfo ctor = classContract.UnderlyingType.GetConstructor(Globals.ScanAllMembers, null, JsonFormatGeneratorStatics.SerInfoCtorArgs, null);
+                if (ctor == null)
+                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.SerializationInfo_ConstructorNotFound, DataContract.GetClrTypeFullName(classContract.UnderlyingType))));
+                _ilg.LoadAddress(_objectLocal);
+                _ilg.ConvertAddress(_objectLocal.LocalType, _objectType);
+                _ilg.Call(_contextArg, XmlFormatGeneratorStatics.ReadSerializationInfoMethod, _xmlReaderArg, classContract.UnderlyingType);
+                _ilg.Load(_contextArg);
+                _ilg.LoadMember(XmlFormatGeneratorStatics.GetStreamingContextMethod);
+                _ilg.Call(ctor);
             }
 
             private LocalBuilder ReadValue(Type type, string name)

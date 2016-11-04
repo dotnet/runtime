@@ -1,0 +1,3 @@
+Compat issues with assembly System.Net.Sockets:
+CannotRemoveBaseTypeOrInterface : Type 'System.Net.Sockets.NetworkStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
+Total Issues: 1

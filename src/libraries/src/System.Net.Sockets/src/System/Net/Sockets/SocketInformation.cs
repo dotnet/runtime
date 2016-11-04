@@ -3,16 +3,23 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+#if !netcore50
+using System.Runtime.Serialization;
+#endif
 
 namespace System.Net.Sockets
 {
-    //[Serializable]
+#if !netcore50
+    [Serializable]
+#endif
     public struct SocketInformation
     {
         private byte[] _protocolInformation;
         private SocketInformationOptions _options;
 
-        //[OptionalField]
+#if !netcore50
+        [OptionalField]
+#endif
         private EndPoint _remoteEndPoint;
 
         public byte[] ProtocolInformation

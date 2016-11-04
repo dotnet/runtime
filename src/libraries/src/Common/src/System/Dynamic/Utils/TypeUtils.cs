@@ -84,7 +84,7 @@ namespace System.Dynamic.Utils
             // that allows mscorlib types to be specialized by types in other
             // assemblies.
 
-            var asm = t.GetTypeInfo().Assembly;
+            Assembly asm = t.GetTypeInfo().Assembly;
             if (asm != _mscorlib)
             {
                 // Not in mscorlib or our assembly

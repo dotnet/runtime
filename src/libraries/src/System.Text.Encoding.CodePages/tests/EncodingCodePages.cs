@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Text.Tests
 {
-    public class EncodingTest : IClassFixture<CultureSetup>
+    public partial class EncodingTest : IClassFixture<CultureSetup>
     {
         public EncodingTest(CultureSetup setup)
         {
@@ -480,10 +480,15 @@ namespace System.Text.Tests
             foreach (object[] mapping in CodePageInfo())
             {
                 Encoding encoding = Encoding.GetEncoding((int)mapping[0]);
+
                 Encoding codePageEncoding = CodePagesEncodingProvider.Instance.GetEncoding((int)mapping[0]);
                 Assert.Equal(encoding, codePageEncoding);
                 Assert.Equal(encoding.CodePage, (int)mapping[0]);
                 Assert.Equal(encoding.WebName, (string)mapping[1]);
+
+                // If available, validate serializing and deserializing with BinaryFormatter
+                ValidateSerializeDeserialize(encoding);
+
                 // Get encoding via query string.
                 Assert.Equal(Encoding.GetEncoding((string)mapping[2]), CodePagesEncodingProvider.Instance.GetEncoding((string)mapping[2]));
             }
@@ -500,6 +505,8 @@ namespace System.Text.Tests
             mappedEncoding = Map(defaultEncoding.CodePage, defaultEncoding.WebName);
             Assert.Contains(mappedEncoding, CrossplatformDefaultEncodings().Union(CodePageInfo().Select(i => Map((int)i[0], (string)i[1]))));
         }
+
+        static partial void ValidateSerializeDeserialize(Encoding e);
 
         private static void ValidateDefaultEncodings()
         {

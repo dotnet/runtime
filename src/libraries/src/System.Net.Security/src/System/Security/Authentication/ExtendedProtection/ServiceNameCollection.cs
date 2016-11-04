@@ -10,6 +10,7 @@ using System.Net;
 
 namespace System.Security.Authentication.ExtendedProtection
 {
+    [Serializable]
     public class ServiceNameCollection : ICollection
     {
         // Ideally this would be List<string>, but we want the behavior of members like

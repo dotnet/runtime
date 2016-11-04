@@ -74,6 +74,14 @@ namespace System.ComponentModel
         {
             return _propertyName.GetHashCode() ^ _receiverTypeName.GetHashCode();
         }
+
+        public override object TypeId
+        {
+            get
+            {
+                return base.GetType().FullName + _propertyName;
+            }
+        }
     }
 }
 

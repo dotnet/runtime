@@ -136,6 +136,16 @@ namespace System.PrivateUri.Tests
         }
 
         [Fact]
+        public void Uri_Relative_SimplePartialPathWithUnknownScheme_Unicode_ReturnsPartialPathWithScheme()
+        {
+            string schemeAndRelative = "scheme:\u011E";
+            Uri resolved = new Uri(schemeAndRelative, UriKind.RelativeOrAbsolute);
+
+            String expectedResult = schemeAndRelative;
+            Assert.Equal(expectedResult, resolved.ToString());
+        }
+
+        [Fact]
         public void Uri_Relative_SimplePartialPathWithScheme_Unicode_ReturnsPartialPathWithScheme()
         {
             string schemeAndRelative = "http:\u00C7";

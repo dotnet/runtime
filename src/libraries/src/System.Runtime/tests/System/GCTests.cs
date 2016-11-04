@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public static class GCTests
+    public static partial class GCTests
     {
         private static bool s_is32Bits = IntPtr.Size == 4; // Skip IntPtr tests on 32-bit platforms
 
@@ -398,7 +398,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [PlatformSpecific(Xunit.PlatformID.Windows)] //Concurent GC is not enabled on Unix. Recombine to TestLatencyRoundTrips once addressed.
+        [PlatformSpecific(TestPlatforms.Windows)] //Concurent GC is not enabled on Unix. Recombine to TestLatencyRoundTrips once addressed.
         [InlineData(GCLatencyMode.LowLatency)]
         [InlineData(GCLatencyMode.SustainedLowLatency)]
         public static void LatencyRoundtrips_LowLatency(GCLatencyMode value) => LatencyRoundtrips(value);

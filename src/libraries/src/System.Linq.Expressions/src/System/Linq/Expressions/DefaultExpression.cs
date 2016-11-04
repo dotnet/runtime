@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
 using System.Dynamic.Utils;
 
@@ -11,34 +10,26 @@ namespace System.Linq.Expressions
     /// <summary>
     /// Represents the default value of a type or an empty expression.
     /// </summary>
-    [DebuggerTypeProxy(typeof(Expression.DefaultExpressionProxy))]
+    [DebuggerTypeProxy(typeof(DefaultExpressionProxy))]
     public sealed class DefaultExpression : Expression
     {
-        private readonly Type _type;
-
         internal DefaultExpression(Type type)
         {
-            _type = type;
+            Type = type;
         }
 
         /// <summary>
-        /// Gets the static type of the expression that this <see cref="Expression" /> represents.
+        /// Gets the static type of the expression that this <see cref="Expression"/> represents.
         /// </summary>
-        /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        public sealed override Type Type
-        {
-            get { return _type; }
-        }
+        /// <returns>The <see cref="System.Type"/> that represents the static type of the expression.</returns>
+        public sealed override Type Type { get; }
 
         /// <summary>
         /// Returns the node type of this Expression. Extension nodes should return
         /// ExpressionType.Extension when overriding this method.
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> of the expression.</returns>
-        public sealed override ExpressionType NodeType
-        {
-            get { return ExpressionType.Default; }
-        }
+        public sealed override ExpressionType NodeType => ExpressionType.Default;
 
         /// <summary>
         /// Dispatches to the specific visit method for this node type.
@@ -52,11 +43,11 @@ namespace System.Linq.Expressions
     public partial class Expression
     {
         /// <summary>
-        /// Creates an empty expression that has <see cref="System.Void"/> type.
+        /// Creates an empty expression that has <see cref="Void"/> type.
         /// </summary>
         /// <returns>
-        /// A <see cref="DefaultExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to 
-        /// <see cref="F:ExpressionType.Default"/> and the <see cref="P:Expression.Type"/> property set to <see cref="System.Void"/>.
+        /// A <see cref="DefaultExpression"/> that has the <see cref="NodeType"/> property equal to 
+        /// <see cref="ExpressionType.Default"/> and the <see cref="Type"/> property set to <see cref="Void"/>.
         /// </returns>
         public static DefaultExpression Empty()
         {
@@ -64,12 +55,12 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Creates a <see cref="DefaultExpression"/> that has the <see cref="P:Expression.Type"/> property set to the specified type.
+        /// Creates a <see cref="DefaultExpression"/> that has the <see cref="Type"/> property set to the specified type.
         /// </summary>
-        /// <param name="type">A <see cref="System.Type"/> to set the <see cref="P:Expression.Type"/> property equal to.</param>
+        /// <param name="type">A <see cref="Type"/> to set the <see cref="Type"/> property equal to.</param>
         /// <returns>
-        /// A <see cref="DefaultExpression"/> that has the <see cref="P:Expression.NodeType"/> property equal to 
-        /// <see cref="F:ExpressionType.Default"/> and the <see cref="P:Expression.Type"/> property set to the specified type.
+        /// A <see cref="DefaultExpression"/> that has the <see cref="NodeType"/> property equal to 
+        /// <see cref="ExpressionType.Default"/> and the <see cref="Type"/> property set to the specified type.
         /// </returns>
         public static DefaultExpression Default(Type type)
         {

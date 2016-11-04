@@ -3,9 +3,6 @@ project(System.Security.Cryptography.Native)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-# Issue 2546 - Many deprecation warnings in System.Security.Cryptography.Native on Mac OS X
-add_compile_options(-Wno-deprecated-declarations)
-
 # These are happening inside of OpenSSL-defined macros out of our control
 add_compile_options(-Wno-cast-align)
 
@@ -16,9 +13,10 @@ if(CMAKE_STATIC_LIB_LINK)
 endif(CMAKE_STATIC_LIB_LINK)
 
 find_package(OpenSSL REQUIRED)
+include_directories(SYSTEM ${OPENSSL_INCLUDE_DIR})
 
 set(NATIVECRYPTO_SOURCES
-    openssl.c
+    openssl.cpp
     pal_asn1.cpp
     pal_asn1_print.cpp
     pal_bignum.cpp

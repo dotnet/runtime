@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -27,12 +27,7 @@
     <Compile Include="FieldInfoTests.cs" />
     <Compile Include="MemberInfoTests.cs" />
     <Compile Include="MethodBaseTests.cs" />
-    <Compile Include="Module\ModuleVersionId.cs" />
-    <Compile Include="Nullable\NullableMisc.cs" />
-    <Compile Include="PropertyCompat\PropertyCompat.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
+    <Compile Include="ModuleTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.Reflection.TypeExtensions.pkgproj">

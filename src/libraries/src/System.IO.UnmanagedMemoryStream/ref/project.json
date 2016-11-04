@@ -1,16 +1,9 @@
 {
   "dependencies": {
-    "System.IO.FileSystem.Primitives": "4.0.0",
-    "System.IO": "4.0.0",
-    "System.Runtime.InteropServices": "4.0.0",
-    "System.Runtime": "4.0.0",
-    "System.Threading.Tasks": "4.0.0"
+    "System.Runtime.InteropServices": "4.4.0-beta-24703-01",
+    "System.Runtime": "4.4.0-beta-24703-01"
   },
   "frameworks": {
-    "netstandard1.3": {
-      "imports": [
-        "dotnet5.4"
-      ]
-    }
+    "netstandard1.7": {}
   }
 }

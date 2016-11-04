@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -8,7 +8,7 @@
     <RootNamespace>System.Runtime.InteropServices</RootNamespace>
     <AssemblyName>System.Runtime.InteropServices.Tests</AssemblyName>
     <ProjectGuid>{A824F4CD-935B-4496-A1B2-C3664936DA7B}</ProjectGuid>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TargetGroup)'==''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -18,17 +18,33 @@
     <Compile Include="System\Runtime\InteropServices\HandleCollectorTests.cs" />
     <Compile Include="System\Runtime\InteropServices\MarshalTests.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
+    <Compile Include="System\Runtime\InteropServices\RuntimeEnvironmentTest.netstandard1.7.cs" />
+    <Compile Include="System\Runtime\InteropServices\AllowReversePInvokeCallsAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\CallingConventionTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComAliasNameAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComCompatibleVersionAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComConversionLossAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\COMExceptionTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComRegisterFunctionAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComUnregisterFunctionAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComVisibleAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\HandleRefTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\InvalidComObjectExceptionTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\InvalidOleVariantTypeExceptionTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\LCIDConversionAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\MarshalDirectiveExceptionTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\PrimaryInteropAssemblyAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\ProgIdAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\SafeArrayRankMismatchExceptionTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\SafeArrayTypeMismatchExceptionTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\SEHExceptionTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
+      <Link>System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
-    <!-- Compile tests against the contract, but copy our local-built implementation for testing -->
-    <ProjectReference Include="..\pkg\System.Runtime.InteropServices.pkgproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
-    </ProjectReference>
+    <ProjectReference Include="..\pkg\System.Runtime.InteropServices.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

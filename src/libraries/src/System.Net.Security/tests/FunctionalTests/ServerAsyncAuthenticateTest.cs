@@ -15,6 +15,8 @@ using Xunit.Abstractions;
 
 namespace System.Net.Security.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     public class ServerAsyncAuthenticateTest : IDisposable
     {
         private readonly ITestOutputHelper _log;
@@ -88,6 +90,7 @@ namespace System.Net.Security.Tests
             });
         }
 
+        [ActiveIssue(8744)]
         [OuterLoop] // TODO: Issue #11345
         [Theory]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]

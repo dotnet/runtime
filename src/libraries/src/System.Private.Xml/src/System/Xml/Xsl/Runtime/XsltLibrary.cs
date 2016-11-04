@@ -249,11 +249,11 @@ namespace System.Xml.Xsl.Runtime
                     {
                         if (errorHelper != null)
                         {
-                            errorHelper.ReportError(/*[XT_032]*/SR.Xslt_InvalidAttrValue, "lang", lang);
+                            errorHelper.ReportError(/*[XT_032]*/SR.Xslt_InvalidAttrValue, nameof(lang), lang);
                         }
                         else
                         {
-                            throw new XslTransformException(SR.Xslt_InvalidAttrValue, "lang", lang);
+                            throw new XslTransformException(SR.Xslt_InvalidAttrValue, nameof(lang), lang);
                         }
                     }
                 }

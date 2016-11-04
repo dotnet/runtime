@@ -25,7 +25,7 @@ namespace Internal.Cryptography
 
         public override ICryptoTransform CreateDecryptor()
         {
-            return CreateTransform(this.Key, this.IV, encrypting: false);
+            return CreateTransform(Key, IV, encrypting: false);
         }
 
         public override ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] rgbIV)
@@ -35,7 +35,7 @@ namespace Internal.Cryptography
 
         public override ICryptoTransform CreateEncryptor()
         {
-            return CreateTransform(this.Key, this.IV, encrypting: true);
+            return CreateTransform(Key, IV, encrypting: true);
         }
 
         public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV)
@@ -65,7 +65,7 @@ namespace Internal.Cryptography
                 throw new ArgumentNullException(nameof(rgbKey));
 
             long keySize = rgbKey.Length * (long)BitsPerByte;
-            if (keySize > int.MaxValue || !((int)keySize).IsLegalSize(this.LegalKeySizes))
+            if (keySize > int.MaxValue || !((int)keySize).IsLegalSize(LegalKeySizes))
                 throw new ArgumentException(SR.Cryptography_InvalidKeySize, nameof(rgbKey));
 
             if (rgbIV != null)

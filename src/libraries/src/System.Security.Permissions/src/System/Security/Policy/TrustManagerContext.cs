@@ -7,12 +7,12 @@ namespace System.Security.Policy
     public partial class TrustManagerContext
     {
         public TrustManagerContext() { }
-        public TrustManagerContext(System.Security.Policy.TrustManagerUIContext uiContext) { }
+        public TrustManagerContext(TrustManagerUIContext uiContext) { }
         public virtual bool IgnorePersistedDecision { get; set; }
         public virtual bool KeepAlive { get; set; }
         public virtual bool NoPrompt { get; set; }
         public virtual bool Persist { get; set; }
-        public virtual System.Security.Policy.TrustManagerUIContext UIContext { get; set; }
+        public virtual TrustManagerUIContext UIContext { get; set; }
     }
     public enum TrustManagerUIContext
     {

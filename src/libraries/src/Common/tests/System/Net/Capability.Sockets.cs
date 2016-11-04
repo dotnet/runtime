@@ -25,7 +25,7 @@ namespace System.Net.Test.Common
             internal char[] szCSDVersion;
         }
 
-        public static bool SocketsReuseUnicastPortSupport()
+        public static bool? SocketsReuseUnicastPortSupport()
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
@@ -33,7 +33,21 @@ namespace System.Net.Test.Common
                 v.dwOSVersionInfoSize = (uint)Marshal.SizeOf<RTL_OSVERSIONINFOW>();
                 RtlGetVersion(ref v);
 
-                return (v.dwMajorVersion == 10);
+                if (v.dwMajorVersion == 10)
+                {
+                    return true;
+                }
+                else if (v.dwMajorVersion == 6 && (v.dwMinorVersion == 2 || v.dwMinorVersion == 3))
+                {
+                    // On Windows 8/Windows Server 2012 (major=6, minor=2) or Windows 8.1/Windows Server 2012 R2
+                    // (major=6, minor=3), this feature is not present unless a servicing patch is installed.
+                    // So, we return null to indicate that it is indeterminate whether the feature is active.
+                    return null;
+                }
+                else
+                {
+                    return false;
+                }
             }
 
             return false;

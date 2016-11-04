@@ -8,7 +8,6 @@ using Microsoft.Win32;
 using System.Globalization;
 using System.Security;
 using System.Xml.Schema;
-using System.Xml.XmlConfiguration;
 using System.Runtime.Versioning;
 
 namespace System.Xml
@@ -66,14 +65,6 @@ namespace System.Xml
         public XmlReaderSettings()
         {
             Initialize();
-        }
-
-        // introduced for supporting design-time loading of phone assemblies
-        [Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        public XmlReaderSettings(XmlResolver resolver)
-        {
-            Initialize(resolver);
         }
 
         //
@@ -134,7 +125,7 @@ namespace System.Xml
         //notice we must keep GetXmlResolver() to avoid dead lock when init System.Config.ConfigurationManager
         internal XmlResolver GetXmlResolver_CheckConfig()
         {
-            if (LocalAppContextSwitches.ProhibitDefaultUrlResolver && !IsXmlResolverSet)
+            if (!IsXmlResolverSet)
                 return null;
             else
                 return _xmlResolver;

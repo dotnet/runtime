@@ -169,7 +169,7 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(FilterTypes))]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void FileSystemWatcher_File_NotifyFilter_Security(NotifyFilters filter)
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))

@@ -47,7 +47,7 @@ namespace System.Dynamic.Utils
         // We could probably improve the hashing here
         public static int ListHashCode<T>(this IEnumerable<T> list)
         {
-            var cmp = EqualityComparer<T>.Default;
+            EqualityComparer<T> cmp = EqualityComparer<T>.Default;
             int h = 6551;
             foreach (T t in list)
             {
@@ -71,7 +71,7 @@ namespace System.Dynamic.Utils
                 return false;
             }
 
-            var cmp = EqualityComparer<T>.Default;
+            EqualityComparer<T> cmp = EqualityComparer<T>.Default;
             for(int i = 0; i != count; ++i)
             {
                 if (!cmp.Equals(first[i], second[i]))

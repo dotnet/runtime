@@ -10,15 +10,11 @@ namespace System.Net.Security
     {
         public LazyAsyncResult(SslState sslState, object asyncState, AsyncCallback asyncCallback)
         {
+            AsyncState = asyncState;
+            asyncCallback?.Invoke(this);
         }
 
-        public object AsyncState
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public object AsyncState { get; }
 
         public WaitHandle AsyncWaitHandle
         {

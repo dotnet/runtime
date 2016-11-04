@@ -12,23 +12,23 @@ namespace System.Diagnostics
     public partial struct CounterSample
     {
         public static System.Diagnostics.CounterSample Empty;
-        public CounterSample(long rawValue, long baseValue, long counterFrequency, long systemFrequency, long timeStamp, long timeStamp100nSec, System.Diagnostics.PerformanceCounterType counterType) { throw new System.NotImplementedException(); }
-        public CounterSample(long rawValue, long baseValue, long counterFrequency, long systemFrequency, long timeStamp, long timeStamp100nSec, System.Diagnostics.PerformanceCounterType counterType, long counterTimeStamp) { throw new System.NotImplementedException(); }
-        public long BaseValue { get { return default(long); } }
-        public long CounterFrequency { get { return default(long); } }
-        public long CounterTimeStamp { get { return default(long); } }
-        public System.Diagnostics.PerformanceCounterType CounterType { get { return default(System.Diagnostics.PerformanceCounterType); } }
-        public long RawValue { get { return default(long); } }
-        public long SystemFrequency { get { return default(long); } }
-        public long TimeStamp { get { return default(long); } }
-        public long TimeStamp100nSec { get { return default(long); } }
-        public static float Calculate(System.Diagnostics.CounterSample counterSample) { return default(float); }
-        public static float Calculate(System.Diagnostics.CounterSample counterSample, System.Diagnostics.CounterSample nextCounterSample) { return default(float); }
-        public bool Equals(System.Diagnostics.CounterSample sample) { return default(bool); }
-        public override bool Equals(object o) { return default(bool); }
-        public override int GetHashCode() { return default(int); }
-        public static bool operator ==(System.Diagnostics.CounterSample a, System.Diagnostics.CounterSample b) { return default(bool); }
-        public static bool operator !=(System.Diagnostics.CounterSample a, System.Diagnostics.CounterSample b) { return default(bool); }
+        public CounterSample(long rawValue, long baseValue, long counterFrequency, long systemFrequency, long timeStamp, long timeStamp100nSec, System.Diagnostics.PerformanceCounterType counterType) { throw null; }
+        public CounterSample(long rawValue, long baseValue, long counterFrequency, long systemFrequency, long timeStamp, long timeStamp100nSec, System.Diagnostics.PerformanceCounterType counterType, long counterTimeStamp) { throw null; }
+        public long BaseValue { get { throw null; } }
+        public long CounterFrequency { get { throw null; } }
+        public long CounterTimeStamp { get { throw null; } }
+        public System.Diagnostics.PerformanceCounterType CounterType { get { throw null; } }
+        public long RawValue { get { throw null; } }
+        public long SystemFrequency { get { throw null; } }
+        public long TimeStamp { get { throw null; } }
+        public long TimeStamp100nSec { get { throw null; } }
+        public static float Calculate(System.Diagnostics.CounterSample counterSample) { throw null; }
+        public static float Calculate(System.Diagnostics.CounterSample counterSample, System.Diagnostics.CounterSample nextCounterSample) { throw null; }
+        public bool Equals(System.Diagnostics.CounterSample sample) { throw null; }
+        public override bool Equals(object o) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static bool operator ==(System.Diagnostics.CounterSample a, System.Diagnostics.CounterSample b) { throw null; }
+        public static bool operator !=(System.Diagnostics.CounterSample a, System.Diagnostics.CounterSample b) { throw null; }
     }
     public sealed partial class PerformanceCounter
     {
@@ -41,27 +41,27 @@ namespace System.Diagnostics
         public PerformanceCounter(string categoryName, string counterName, string instanceName, bool readOnly) { }
         public PerformanceCounter(string categoryName, string counterName, string instanceName, string machineName) { }
         [System.ComponentModel.DefaultValueAttribute("")]
-        public string CategoryName { get { return default(string); } set { } }
-        public string CounterHelp { get { return default(string); } }
+        public string CategoryName { get { throw null; } set { } }
+        public string CounterHelp { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute("")]
-        public string CounterName { get { return default(string); } set { } }
-        public System.Diagnostics.PerformanceCounterType CounterType { get { return default(System.Diagnostics.PerformanceCounterType); } }
+        public string CounterName { get { throw null; } set { } }
+        public System.Diagnostics.PerformanceCounterType CounterType { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute((System.Diagnostics.PerformanceCounterInstanceLifetime)(0))]
-        public System.Diagnostics.PerformanceCounterInstanceLifetime InstanceLifetime { get { return default(System.Diagnostics.PerformanceCounterInstanceLifetime); } set { } }
+        public System.Diagnostics.PerformanceCounterInstanceLifetime InstanceLifetime { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
-        public string InstanceName { get { return default(string); } set { } }
+        public string InstanceName { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(".")]
-        public string MachineName { get { return default(string); } set { } }
-        public long RawValue { get { return default(long); } set { } }
+        public string MachineName { get { throw null; } set { } }
+        public long RawValue { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(true)]
-        public bool ReadOnly { get { return default(bool); } set { } }
+        public bool ReadOnly { get { throw null; } set { } }
         public void BeginInit() { }
         public void Close() { }
         public void EndInit() { }
-        public long Increment() { return default(long); }
-        public long IncrementBy(long value) { return default(long); }
-        public System.Diagnostics.CounterSample NextSample() { return default(System.Diagnostics.CounterSample); }
-        public float NextValue() { return default(float); }
+        public long Increment() { throw null; }
+        public long IncrementBy(long value) { throw null; }
+        public System.Diagnostics.CounterSample NextSample() { throw null; }
+        public float NextValue() { throw null; }
         public void RemoveInstance() { }
     }
     public enum PerformanceCounterInstanceLifetime

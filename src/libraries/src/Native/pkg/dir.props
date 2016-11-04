@@ -1,4 +1,4 @@
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory)\.., dir.props))\dir.props" />
 
   <!-- coalesce RIDs into the correct build output directory -->
@@ -10,6 +10,7 @@
     <OSGroupPath Condition="$(OSGroup.StartsWith('rhel'))">Linux</OSGroupPath>
     <OSGroupPath Condition="$(OSGroup.StartsWith('ubuntu'))">Linux</OSGroupPath>
     <OSGroupPath Condition="$(OSGroup.StartsWith('opensuse'))">Linux</OSGroupPath>
+    <OSGroupPath Condition="$(OSGroup.StartsWith('alpine'))">Linux</OSGroupPath>
   </PropertyGroup>
 
   <!-- Determine extensions of binary and symbol files on this OS. -->
@@ -26,6 +27,7 @@
     <!-- common properties that point to output of native build.  Can be overriden in case of 
          a coordinating build that produces all packages from OS-specific native builds -->
     <BuildNativePath Condition="'$(BuildNativePath)' == ''">$(BinDir)$(OSGroupPath).$(PackagePlatform).$(ConfigurationGroup)\Native\</BuildNativePath>
+    <WinNativeAOTPath Condition="'$(WinNativeAOTPath)' == ''">$(BinDir)$(OSGroupPath).$(PackagePlatform).$(ConfigurationGroup)\Native_aot\</WinNativeAOTPath>
     <WinNativePath Condition="'$(WinNativePath)' == ''">$(BuildNativePath)</WinNativePath>
     <RHELNativePath Condition="'$(RHELNativePath)' == ''">$(BuildNativePath)</RHELNativePath>
     <DebianNativePath Condition="'$(DebianNativePath)' == ''">$(BuildNativePath)</DebianNativePath>
@@ -37,6 +39,7 @@
     <Ubuntu1404NativePath Condition="'$(Ubuntu1404NativePath)' == ''">$(BuildNativePath)</Ubuntu1404NativePath>
     <Ubuntu1604NativePath Condition="'$(Ubuntu1604NativePath)' == ''">$(BuildNativePath)</Ubuntu1604NativePath>
     <Ubuntu1610NativePath Condition="'$(Ubuntu1610NativePath)' == ''">$(BuildNativePath)</Ubuntu1610NativePath>
+    <Alpine343NativePath Condition="'$(Alpine343NativePath)' == ''">$(BuildNativePath)</Alpine343NativePath>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
   </PropertyGroup>
 

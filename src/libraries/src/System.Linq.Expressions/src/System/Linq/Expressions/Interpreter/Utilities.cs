@@ -2,12 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic.Utils;
-using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -88,14 +85,14 @@ namespace System.Linq.Expressions.Interpreter
     }
 #endif
 
-    internal class ScriptingRuntimeHelpers
+    internal static class ScriptingRuntimeHelpers
     {
         public static object Int32ToObject(int i)
         {
             switch (i)
             {
                 case -1:
-                    return Int32_m;
+                    return Int32_M1;
                 case 0:
                     return Int32_0;
                 case 1:
@@ -107,66 +104,65 @@ namespace System.Linq.Expressions.Interpreter
             return i;
         }
 
-        private static readonly object Int32_m = -1;
+        private static readonly object Int32_M1 = -1;
         private static readonly object Int32_0 = 0;
         private static readonly object Int32_1 = 1;
         private static readonly object Int32_2 = 2;
 
         public static object BooleanToObject(bool b)
         {
-            return b ? True : False;
+            return b ? Boolean_True : Boolean_False;
         }
 
-        internal static readonly object True = true;
-        internal static readonly object False = false;
+        internal static readonly object Boolean_True = true;
+        internal static readonly object Boolean_False = false;
 
         internal static object GetPrimitiveDefaultValue(Type type)
         {
             object result;
 
-            switch (System.Dynamic.Utils.TypeExtensions.GetTypeCode(type))
+            switch (type.GetTypeCode())
             {
                 case TypeCode.Boolean:
-                    result = ScriptingRuntimeHelpers.False;
+                    result = Boolean_False;
                     break;
                 case TypeCode.SByte:
-                    result = default(SByte);
+                    result = default(sbyte);
                     break;
                 case TypeCode.Byte:
-                    result = default(Byte);
+                    result = default(byte);
                     break;
                 case TypeCode.Char:
-                    result = default(Char);
+                    result = default(char);
                     break;
                 case TypeCode.Int16:
-                    result = default(Int16);
+                    result = default(short);
                     break;
                 case TypeCode.Int32:
-                    result = ScriptingRuntimeHelpers.Int32_0;
+                    result = Int32_0;
                     break;
                 case TypeCode.Int64:
-                    result = default(Int64);
+                    result = default(long);
                     break;
                 case TypeCode.UInt16:
-                    result = default(UInt16);
+                    result = default(ushort);
                     break;
                 case TypeCode.UInt32:
-                    result = default(UInt32);
+                    result = default(uint);
                     break;
                 case TypeCode.UInt64:
-                    result = default(UInt64);
+                    result = default(ulong);
                     break;
-
                 case TypeCode.Single:
-                    return default(Single);
+                    return default(float);
                 case TypeCode.Double:
-                    return default(Double);
-                //            case TypeCode.DBNull: 
-                //                  return default(DBNull); 
+                    return default(double);
+                //case TypeCode.DBNull: 
+                //    return default(DBNull); 
                 case TypeCode.DateTime:
                     return default(DateTime);
                 case TypeCode.Decimal:
-                    return default(Decimal);
+                    return default(decimal);
                 default:
                     return null;
             }

@@ -6,16 +6,15 @@ using System.Collections.Generic;
 
 namespace System.Data.Common
 {
-
     internal class DataRowDbColumn : DbColumn
     {
-        private DataColumnCollection schemaColumns;
-        private DataRow schemaRow;
+        private DataColumnCollection _schemaColumns;
+        private DataRow _schemaRow;
 
         public DataRowDbColumn(DataRow readerSchemaRow, DataColumnCollection readerSchemaColumns)
         {
-            this.schemaRow = readerSchemaRow;
-            this.schemaColumns = readerSchemaColumns;
+            _schemaRow = readerSchemaRow;
+            _schemaColumns = readerSchemaColumns;
             populateFields();
         }
 
@@ -48,11 +47,12 @@ namespace System.Data.Common
 
         private T GetDbColumnValue<T>(string columnName)
         {
-            if (!schemaColumns.Contains(columnName))
+            if (!_schemaColumns.Contains(columnName))
             {
                 return default(T);
             }
-            object schemaObject = schemaRow[columnName];
+
+            object schemaObject = _schemaRow[columnName];
             if (schemaObject is T)
             {
                 return (T)schemaObject;

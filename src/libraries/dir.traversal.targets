@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Target Name="FilterProjects">
     <PropertyGroup>
       <FilterToOSGroup Condition="'$(FilterToOSGroup)'=='' and '$(OSGroup)'!='' and '$(OSGroup)'!='AnyOS'">$(OSGroup)</FilterToOSGroup>
@@ -141,31 +141,19 @@
           BeforeTargets="TestAllProjects"
           Condition="$(MSBuildProjectName.EndsWith('.Tests'))">
 
-    <PropertyGroup>
-      <TestTFMSupportSet>$(FilterToTestTFM)</TestTFMSupportSet>
-      <TestTFMSupportSet Condition="'$(FilterToTestTFM)'=='netcoreapp1.1'">$(TestTFMSupportSet)|netcoreapp1.0</TestTFMSupportSet>
-      <TestTFMSupportSet Condition="'$(FilterToTestTFM)'=='net461'">$(TestTFMSupportSet)|net46</TestTFMSupportSet>
-      <TestTFMSupportSet Condition="'$(FilterToTestTFM)'=='net462'">$(TestTFMSupportSet)|net461|net46</TestTFMSupportSet>
-      <TestTFMSupportSet Condition="'$(FilterToTestTFM)'=='net463'">$(TestTFMSupportSet)|net462|net461|net46</TestTFMSupportSet>
-    </PropertyGroup>
-
     <ItemGroup>
       <Project>
-        <!-- default to netcoreapp1.0.0 if TestTFMs aren't set on the project -->
-        <TestTFMs Condition="'%(Project.TestTFMs)'==''">netcoreapp1.0</TestTFMs>
+        <!-- default to DefaultTestTFM defined in root dir.props if TestTFMs aren't set on the project -->
+        <TestTFMs Condition="'%(Project.TestTFMs)'==''">$(DefaultTestTFM)</TestTFMs>
       </Project>
       <Project>
         <!-- make sure every defined TestTFM value are surrounded by semicolons for easier search, e.g. ";net46;"" -->
         <TestTFMs>;%(Project.TestTFMs);</TestTFMs>
       </Project>
-      <Project>
-        <!-- Use the supported set to find a match and replace it with that match (i.e. $1) -->
-        <FilteredTestTFM>$([System.Text.RegularExpressions.Regex]::Replace('%(Project.TestTFMs)', '.*;($(TestTFMSupportSet));.*', '$1'))</FilteredTestTFM>
-      </Project>
 
       <!-- Include all projects which have TestTFM from the supported set -->
-      <ProjectsToTest Include="@(Project)" Condition="'%(Project.Extension)'=='.csproj' And '%(Project.FilteredTestTFM)'!='%(Project.TestTFMs)'">
-        <TestTFM>%(Project.FilteredTestTFM)</TestTFM>
+      <ProjectsToTest Include="@(Project)" Condition="'%(Project.Extension)'=='.csproj' And $([System.String]::new('%(Project.TestTFMs)').Contains(';$(FilterToTestTFM);'))">
+        <TestTFM>$(FilterToTestTFM)</TestTFM>
       </ProjectsToTest>
 
       <ProjectsToTest>
@@ -190,13 +178,13 @@
     <!-- To Serialize we use msbuild's batching functionality '%' to force it to batch all similar projects with the same identity
          however since the project names are unique it will essentially force each to run in its own batch -->
 
-    <MSBuild Targets="PrepareForRun;Test"
+    <MSBuild Targets="Test"
              Projects="@(ProjectsToTest)"
              Condition="'$(SerializeProjects)'=='true' AND '%(Identity)' != ''"
              Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true"
              ContinueOnError="ErrorAndContinue" />
 
-    <MSBuild Targets="PrepareForRun;Test"
+    <MSBuild Targets="Test"
              Projects="@(ProjectsToTest)"
              Condition="'$(SerializeProjects)'!='true'"
              Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true"
@@ -211,7 +199,7 @@
           Returns="@(FilesToPackage)">
     <MSBuild Targets="GetFilesToPackage"
              Projects="@(Project)"
-             BuildInParallel="$(BuildInParallel)"
+             BuildInParallel="true"
              Properties="$(ProjectProperties)"
              ContinueOnError="ErrorAndContinue" >
       <Output TaskParameter="TargetOutputs"

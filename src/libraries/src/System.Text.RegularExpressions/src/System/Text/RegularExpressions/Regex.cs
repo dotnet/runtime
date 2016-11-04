@@ -9,8 +9,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Threading;
 using System.Runtime.Serialization;
+using System.Threading;
 
 namespace System.Text.RegularExpressions
 {
@@ -29,7 +29,7 @@ namespace System.Text.RegularExpressions
 
         // We need this because time is queried using Environment.TickCount for performance reasons
         // (Environment.TickCount returns milliseconds as an int and cycles):
-        private static readonly TimeSpan MaximumMatchTimeout = TimeSpan.FromMilliseconds(Int32.MaxValue - 1);
+        private static readonly TimeSpan MaximumMatchTimeout = TimeSpan.FromMilliseconds(int.MaxValue - 1);
 
         // InfiniteMatchTimeout specifies that match timeout is switched OFF. It allows for faster code paths
         // compared to simply having a very large timeout.
@@ -51,8 +51,8 @@ namespace System.Text.RegularExpressions
 
         protected internal RegexRunnerFactory factory;
 
-        protected internal Hashtable caps;            // if captures are sparse, this is the hashtable capnum->index
-        protected internal Hashtable capnames;     // if named captures are used, this maps names->index
+        protected internal Hashtable caps;          // if captures are sparse, this is the hashtable capnum->index
+        protected internal Hashtable capnames;      // if named captures are used, this maps names->index
 
         protected internal string[] capslist;              // if captures are sparse or named captures are used, this is the sorted list of names
         protected internal int capsize;                    // the size of the capture array
@@ -68,7 +68,7 @@ namespace System.Text.RegularExpressions
             {
                 if (value == null)
                     throw new ArgumentNullException(nameof(value));
-                
+
                 caps = value as Hashtable;
                 if (caps == null)
                 {
@@ -88,7 +88,7 @@ namespace System.Text.RegularExpressions
             {
                 if (value == null)
                     throw new ArgumentNullException(nameof(value));
-                
+
                 capnames = value as Hashtable;
                 if (capnames == null)
                 {
@@ -137,7 +137,7 @@ namespace System.Text.RegularExpressions
         }
 
         protected Regex(SerializationInfo info, StreamingContext context)
-            : this(info.GetString("pattern"), (RegexOptions) info.GetInt32("options"))
+            : this(info.GetString("pattern"), (RegexOptions)info.GetInt32("options"))
         {
             try
             {
@@ -236,7 +236,7 @@ namespace System.Text.RegularExpressions
         /// The valid range is <code>TimeSpan.Zero &lt; matchTimeout &lt;= Regex.MaximumMatchTimeout</code>.
         /// </summary>
         /// <param name="matchTimeout">The timeout value to validate.</param>
-        /// <exception cref="System.ArgumentOutOfRangeException">If the specified timeout is not within a valid range.
+        /// <exception cref="ArgumentOutOfRangeException">If the specified timeout is not within a valid range.
         /// </exception>
         protected internal static void ValidateMatchTimeout(TimeSpan matchTimeout)
         {
@@ -367,7 +367,7 @@ namespace System.Text.RegularExpressions
             {
                 result = new string[capslist.Length];
 
-                System.Array.Copy(capslist, 0, result, 0, capslist.Length);
+                Array.Copy(capslist, 0, result, 0, capslist.Length);
             }
 
             return result;
@@ -400,9 +400,11 @@ namespace System.Text.RegularExpressions
             {
                 result = new int[caps.Count];
 
-                foreach (DictionaryEntry kvp in caps)
+                // Manual use of IDictionaryEnumerator instead of foreach to avoid DictionaryEntry box allocations.
+                IDictionaryEnumerator de = caps.GetEnumerator();
+                while (de.MoveNext())
                 {
-                    result[(int) kvp.Value] = (int) kvp.Key;
+                    result[(int)de.Value] = (int)de.Key;
                 }
             }
 
@@ -896,7 +898,7 @@ namespace System.Text.RegularExpressions
             RegexRunner runner = null;
 
             if (startat < 0 || startat > input.Length)
-                throw new ArgumentOutOfRangeException("start", SR.BeginIndexNotNegative);
+                throw new ArgumentOutOfRangeException(nameof(startat), SR.BeginIndexNotNegative);
 
             if (length < 0 || length > input.Length)
                 throw new ArgumentOutOfRangeException(nameof(length), SR.LengthNotNegative);
@@ -1103,7 +1105,7 @@ namespace System.Text.RegularExpressions
     internal sealed class ExclusiveReference
     {
         private RegexRunner _ref;
-        private Object _obj;
+        private object _obj;
         private int _locked;
 
         /*
@@ -1113,7 +1115,7 @@ namespace System.Text.RegularExpressions
          * if the object can't be returned, the lock is released.
          *
          */
-        internal Object Get()
+        internal object Get()
         {
             // try to obtain the lock
 
@@ -1122,7 +1124,7 @@ namespace System.Text.RegularExpressions
                 // grab reference
 
 
-                Object obj = _ref;
+                object obj = _ref;
 
                 // release the lock and return null if no reference
 
@@ -1151,7 +1153,7 @@ namespace System.Text.RegularExpressions
          * and the object is placed in the cache.
          *
          */
-        internal void Release(Object obj)
+        internal void Release(object obj)
         {
             if (obj == null)
                 throw new ArgumentNullException(nameof(obj));
@@ -1203,11 +1205,11 @@ namespace System.Text.RegularExpressions
          * Note that _ref.Target is referenced only under the protection
          * of the lock. (Is this necessary?)
          */
-        internal Object Get()
+        internal object Get()
         {
             if (0 == Interlocked.Exchange(ref _locked, 1))
             {
-                Object obj = _ref.Target;
+                object obj = _ref.Target;
                 _locked = 0;
                 return obj;
             }
@@ -1221,7 +1223,7 @@ namespace System.Text.RegularExpressions
          * Note that _ref.Target is referenced only under the protection
          * of the lock. (Is this necessary?)
          */
-        internal void Cache(Object obj)
+        internal void Cache(object obj)
         {
             if (0 == Interlocked.Exchange(ref _locked, 1))
             {

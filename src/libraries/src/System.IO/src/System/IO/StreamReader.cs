@@ -13,7 +13,7 @@ namespace System.IO
     // This class implements a TextReader for reading characters to a Stream.
     // This is designed for character input in a particular Encoding, 
     // whereas the Stream class is designed for byte input and output.  
-    // 
+    [Serializable]
     public class StreamReader : TextReader
     {
         // StreamReader.Null is threadsafe.
@@ -78,6 +78,7 @@ namespace System.IO
         // We don't guarantee thread safety on StreamReader, but we should at 
         // least prevent users from trying to read anything while an Async
         // read from the same thread is in progress.
+        [NonSerialized]
         private volatile Task _asyncReadTask;
 
         private void CheckAsyncTaskInProgress()
@@ -153,6 +154,41 @@ namespace System.IO
             }
 
             Init(stream, encoding, detectEncodingFromByteOrderMarks, bufferSize, leaveOpen);
+        }
+
+        public StreamReader(string path)
+            : this(path, true)
+        {
+        }
+
+        public StreamReader(string path, bool detectEncodingFromByteOrderMarks)
+            : this(path, Encoding.UTF8, detectEncodingFromByteOrderMarks, DefaultBufferSize)
+        {
+        }
+
+        public StreamReader(string path, Encoding encoding)
+            : this(path, encoding, true, DefaultBufferSize)
+        {
+        }
+
+        public StreamReader(string path, Encoding encoding, bool detectEncodingFromByteOrderMarks)
+            : this(path, encoding, detectEncodingFromByteOrderMarks, DefaultBufferSize)
+        {
+        }
+
+        public StreamReader(string path, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
+        {
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+            if (encoding == null)
+                throw new ArgumentNullException(nameof(encoding));
+            if (path.Length == 0)
+                throw new ArgumentException(SR.Argument_EmptyPath);
+            if (bufferSize <= 0)
+                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
+
+            Stream stream = FileStreamHelpers.CreateFileStream(path, write: false, append: false);
+            Init(stream, encoding, detectEncodingFromByteOrderMarks, bufferSize, leaveOpen: false);
         }
 
         private void Init(Stream stream, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize, bool leaveOpen)
@@ -471,6 +507,12 @@ namespace System.IO
                     CompressBuffer(2);
                     changedEncoding = true;
                 }
+                else
+                {
+                    _encoding = Encoding.UTF32;
+                    CompressBuffer(4);
+                    changedEncoding = true;
+                }
             }
 
             else if (_byteLen >= 3 && _byteBuffer[0] == 0xEF && _byteBuffer[1] == 0xBB && _byteBuffer[2] == 0xBF)
@@ -478,6 +520,14 @@ namespace System.IO
                 // UTF-8
                 _encoding = Encoding.UTF8;
                 CompressBuffer(3);
+                changedEncoding = true;
+            }
+            else if (_byteLen >= 4 && _byteBuffer[0] == 0 && _byteBuffer[1] == 0 &&
+                _byteBuffer[2] == 0xFE && _byteBuffer[3] == 0xFF)
+            {
+                // Big Endian UTF32
+                _encoding = new UTF32Encoding(bigEndian: true, byteOrderMark: true);
+                CompressBuffer(4);
                 changedEncoding = true;
             }
             else if (_byteLen == 2)
@@ -1170,7 +1220,7 @@ namespace System.IO
             return task;
         }
 
-        #region Private properties for async method performance
+#region Private properties for async method performance
         // Access to instance fields of MarshalByRefObject-derived types requires special JIT helpers that check
         // if the instance operated on is remote. This is optimised for fields on 'this' but if a method is Async
         // and is thus lifted to a state machine type, access will be slow.
@@ -1247,7 +1297,7 @@ namespace System.IO
         {
             get { return _maxCharsPerBuffer; }
         }
-        #endregion Private properties for async method performance
+#endregion Private properties for async method performance
         private async Task<int> ReadBufferAsync()
         {
             CharLen_Prop = 0;
@@ -1321,7 +1371,7 @@ namespace System.IO
 
             return CharLen_Prop;
         }
-        #endregion
+#endregion
 
 
         // No data, class doesn't need to be serializable.

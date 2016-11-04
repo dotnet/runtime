@@ -192,12 +192,6 @@
       "values": [],
       "defaultValue": ""
     },
-    "ExtraParameters": {
-      "description": "Extra parameters will be passed to the selected command.",
-      "valueType": "passThrough",
-      "values": [],
-      "defaultValue": ""
-    },
     "BatchGenerateTestProjectJsons": {
       "description": "MsBuild target that generates the project.json files to build tests against packages.",
       "valueType": "target",
@@ -261,8 +255,9 @@
           }
         },
         "tests": {
-          "description": "Builds the tests that are in the repository.",
+          "description": "Builds the tests that are in the repository, doesn't restore packages.",
           "settings": {
+            "RestoreDuringBuild": "false",
             "Project": "src/tests.builds",
             "MsBuildLogging":"/flp:v=normal;LogFile=build-tests.log"
           }
@@ -395,6 +390,7 @@
         }
       },
       "defaultValues": {
+	    "defaultAlias": "b",
         "toolName": "msbuild",
         "settings": {
           "MsBuildLogging":"/flp:v=normal;LogFile=clean.log"
@@ -508,6 +504,7 @@
         }
       },
       "defaultValues": {
+	  	"defaultAlias": "p",
         "toolName": "msbuild",
         "settings": {
           "MsBuildLogging":"/flp:v=normal;LogFile=sync.log"

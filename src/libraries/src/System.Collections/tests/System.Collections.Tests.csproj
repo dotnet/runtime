@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -8,8 +8,8 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Collections.Tests</AssemblyName>
     <RootNamespace>System.Collections.Tests</RootNamespace>
-    <DefineConstants Condition="'$(TargetGroup)'=='netstandard1.7'">$(DefineConstants);netstandard17</DefineConstants>
-    <NugetTargetMoniker Condition="'$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <DefineConstants Condition="'$(TargetGroup)'==''">$(DefineConstants);netstandard17</DefineConstants>
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -17,14 +17,8 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <!-- Compile tests against the contract, but copy our local-built implementation for testing -->
-    <ProjectReference Include="..\pkg\System.Collections.pkgproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
-      <OSGroup>$(InputOSGroup)</OSGroup>
-    </ProjectReference>
+    <ProjectReference Include="..\pkg\System.Collections.pkgproj" />
+    <ProjectReference Include="..\..\System.Diagnostics.Debug\pkg\System.Diagnostics.Debug.pkgproj" />
   </ItemGroup>
   <ItemGroup>
     <!-- Common Collections tests -->
@@ -73,6 +67,9 @@
     <Compile Include="$(CommonTestPath)\System\Collections\TestingTypes.cs" >
       <Link>Common\System\Collections\TestingTypes.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\EnumTypes.cs" >
+      <Link>Common\System\EnumTypes.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\ObjectCloner.cs" >
       <Link>Common\System\ObjectCloner.cs</Link>
     </Compile>
@@ -87,6 +84,8 @@
     <Compile Include="Generic\Comparers\Comparer.Generic.Tests.cs" />
     <Compile Include="Generic\Comparers\Comparer.Tests.cs" />
     <Compile Include="Generic\Comparers\Comparers.Generic.cs" />
+    <Compile Include="Generic\Comparers\EqualityComparer.Generic.Tests.cs" />
+    <Compile Include="Generic\Comparers\EqualityComparer.Tests.cs" />
     <Compile Include="Generic\Dictionary\Dictionary.Tests.cs" />
     <Compile Include="Generic\Dictionary\HashCollisionScenarios\InputData.cs" />
     <Compile Include="Generic\Dictionary\HashCollisionScenarios\OutOfBoundsRegression.cs" />
@@ -96,6 +95,7 @@
     <Compile Include="Generic\Dictionary\Dictionary.Generic.Tests.Values.cs" />
     <Compile Include="Generic\HashSet\HashSet.Generic.cs" />
     <Compile Include="Generic\HashSet\HashSet.Generic.Tests.cs" />
+    <Compile Include="Generic\HashSet\HashSet.Generic.Tests.netcoreapp1.1.cs" Condition="'$(TargetGroup)'=='netcoreapp1.1'" />
     <Compile Include="Generic\HashSet\HashSet.Generic.Tests.AsNonGenericIEnumerable.cs" />
     <Compile Include="Generic\LinkedList\LinkedList.Generic.cs" />
     <Compile Include="Generic\LinkedList\LinkedList.Generic.Tests.AddAfter.cs" />
@@ -121,12 +121,13 @@
     <Compile Include="Generic\List\List.Generic.Tests.AddRange.cs" />
     <Compile Include="Generic\List\List.Generic.Tests.BinarySearch.cs" />
     <Compile Include="Generic\List\List.Generic.Tests.Constructor.cs" />
-    <Compile Include="Generic\List\List.Generic.Tests.ConvertAll.cs" Condition="'$(TargetGroup)'=='netstandard1.7'" />
+    <Compile Include="Generic\List\List.Generic.Tests.ConvertAll.cs" Condition="'$(TargetGroup)'==''" />
     <Compile Include="Generic\List\List.Generic.Tests.Find.cs" />
     <Compile Include="Generic\List\List.Generic.Tests.Remove.cs" />
     <Compile Include="Generic\List\List.Generic.Tests.Sort.cs" />
     <Compile Include="Generic\Queue\Queue.Generic.cs" />
     <Compile Include="Generic\Queue\Queue.Generic.Tests.cs" />
+    <Compile Include="Generic\Queue\Queue.Generic.Tests.netcoreapp1.1.cs" Condition="'$(TargetGroup)'=='netcoreapp1.1'" />
     <Compile Include="Generic\Queue\Queue.Tests.cs" />
     <Compile Include="Generic\SortedDictionary\SortedDictionary.Generic.cs" />
     <Compile Include="Generic\SortedDictionary\SortedDictionary.Generic.Tests.cs" />
@@ -144,25 +145,23 @@
     <Compile Include="Generic\Stack\Stack.Tests.cs" />
     <Compile Include="Generic\Stack\Stack.Generic.cs" />
     <Compile Include="Generic\Stack\Stack.Generic.Tests.cs" />
+    <Compile Include="Generic\Stack\Stack.Generic.Tests.netcoreapp1.1.cs" Condition="'$(TargetGroup)'=='netcoreapp1.1'" />
     <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
       <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'!='netstandard1.7'">
+  <ItemGroup Condition="'$(TargetGroup)'!='' and '$(TargetGroup)'!='netcoreapp1.1'">
     <Compile Include="$(CommonPath)\System\SerializableAttribute.cs">
       <Link>Common\System\SerializableAttribute.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.7'">
+  <ItemGroup Condition="'$(TargetGroup)'==''">
     <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs" >
       <Link>Common\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.Generic.Serialization.Tests.cs" >
       <Link>Common\System\Collections\IEnumerable.Generic.Serialization.Tests.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

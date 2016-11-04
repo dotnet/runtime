@@ -1,101 +1,119 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <Project Include="Readers\CharCheckingReader\System.Xml.RW.CharCheckingReader.Tests.csproj" >
+    <Project Include="Readers\CharCheckingReader\System.Xml.RW.CharCheckingReader.Tests.csproj" />
+    <Project Include="Readers\CharCheckingReader\System.Xml.RW.CharCheckingReader.Tests.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
       <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="Readers\CustomReader\System.Xml.RW.CustomReader.Tests.csproj" >
+    <Project Include="Readers\CustomReader\System.Xml.RW.CustomReader.Tests.csproj" />
+    <Project Include="Readers\CustomReader\System.Xml.RW.CustomReader.Tests.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
       <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="Readers\FactoryReader\System.Xml.RW.FactoryReader.Tests.csproj" >
+    <Project Include="Readers\FactoryReader\System.Xml.RW.FactoryReader.Tests.csproj" />
+    <Project Include="Readers\FactoryReader\System.Xml.RW.FactoryReader.Tests.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
       <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="Readers\NameTable\System.Xml.RW.NameTable.Tests.csproj" >
+    <Project Include="Readers\NameTable\System.Xml.RW.NameTable.Tests.csproj" />
+    <Project Include="Readers\NameTable\System.Xml.RW.NameTable.Tests.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
       <TestTFMs>netcoreapp1.0;net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="Readers\ReaderSettings\System.Xml.RW.ReaderSettings.Tests.csproj" >
+    <Project Include="Readers\ReaderSettings\System.Xml.RW.ReaderSettings.Tests.csproj" />
+    <Project Include="Readers\ReaderSettings\System.Xml.RW.ReaderSettings.Tests.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
       <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="Readers\SubtreeReader\System.Xml.RW.SubtreeReader.Tests.csproj" >
+    <Project Include="Readers\SubtreeReader\System.Xml.RW.SubtreeReader.Tests.csproj" />
+    <Project Include="Readers\SubtreeReader\System.Xml.RW.SubtreeReader.Tests.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
       <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="Readers\WrappedReader\System.Xml.RW.WrappedReader.Tests.csproj" >
+    <Project Include="Readers\WrappedReader\System.Xml.RW.WrappedReader.Tests.csproj" />
+    <Project Include="Readers\WrappedReader\System.Xml.RW.WrappedReader.Tests.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
       <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="Writers\RwFactory\System.Xml.RW.RwFactory.Tests.csproj" >
+    <Project Include="Writers\RwFactory\System.Xml.RW.RwFactory.Tests.csproj" />
+    <Project Include="Writers\RwFactory\System.Xml.RW.RwFactory.Tests.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
       <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="Writers\XmlWriterApi\System.Xml.RW.XmlWriterApi.Tests.csproj" >
+    <Project Include="Writers\XmlWriterApi\System.Xml.RW.XmlWriterApi.Tests.csproj" />
+    <Project Include="Writers\XmlWriterApi\System.Xml.RW.XmlWriterApi.Tests.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
       <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="XmlConvert\System.Xml.RW.XmlConvert.Tests.csproj" >
+    <Project Include="XmlConvert\System.Xml.RW.XmlConvert.Tests.csproj" />
+    <Project Include="XmlConvert\System.Xml.RW.XmlConvert.Tests.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
       <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="XmlReader\ReadContentAs\System.Xml.RW.XmlReader.ReadContentAs.Tests.csproj" >
+    <Project Include="XmlDocument\System.Xml.XmlDocument.Tests.csproj" />
+    <Project Include="XmlDocument\System.Xml.XmlDocument.Tests.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
       <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="XmlReader\Tests\System.Xml.RW.XmlReader.Tests.csproj" >
+    <Project Include="XmlReaderLib\System.Xml.RW.XmlReaderLib.csproj" />
+    <Project Include="XmlReaderLib\System.Xml.RW.XmlReaderLib.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
       <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="XmlReader\XmlResolver\System.Xml.RW.XmlSystemPathResolver.Tests.csproj" >
+    <Project Include="XmlReader\ReadContentAs\System.Xml.RW.XmlReader.ReadContentAs.Tests.csproj" />
+    <Project Include="XmlReader\ReadContentAs\System.Xml.RW.XmlReader.ReadContentAs.Tests.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
       <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="XmlReaderLib\System.Xml.RW.XmlReaderLib.csproj" >
+    <Project Include="XmlReader\Tests\System.Xml.RW.XmlReader.Tests.csproj" />
+    <Project Include="XmlReader\Tests\System.Xml.RW.XmlReader.Tests.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
       <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="XmlWriter\System.Xml.RW.XmlWriter.Tests.csproj" >
+    <Project Include="XmlReader\XmlResolver\System.Xml.RW.XmlSystemPathResolver.Tests.csproj" />
+    <Project Include="XmlReader\XmlResolver\System.Xml.RW.XmlSystemPathResolver.Tests.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
       <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
+    </Project>
+    <Project Include="XmlSchema\XmlSchemaSet\System.Xml.XmlSchemaSet.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="XmlSchema\XmlSchemaSet\System.Xml.XmlSchemaSet.Tests.csproj" >
+    <Project Include="XmlSchema\XmlSchemaValidatorApi\System.Xml.XmlSchema.XmlSchemaValidatorApi.Tests.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+    </Project>
+    <Project Include="XmlSerializer\System.Xml.XmlSerializer.Tests.csproj" />
+    <Project Include="XmlWriter\System.Xml.RW.XmlWriter.Tests.csproj" />
+    <Project Include="XmlWriter\System.Xml.RW.XmlWriter.Tests.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
+      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
+    </Project>
+    <Project Include="XPath\XmlDocument\System.Xml.XPath.XmlDocument.Tests.csproj" />
+    <Project Include="XPath\XmlDocument\System.Xml.XPath.XmlDocument.Tests.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
+      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
+    </Project>
+    <Project Include="XPath\XPathDocument\System.Xml.XPath.Tests.csproj" />
+    <Project Include="XPath\XPathDocument\System.Xml.XPath.Tests.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
       <TestTFMs>netcoreapp1.0;net46</TestTFMs>
+    </Project>
+    <Project Include="Xslt\XslCompiledTransformApi\System.Xml.Xsl.XslCompiledTransformApi.Tests.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TestTFMs>netcoreapp1.1</TestTFMs>
+    </Project>
+    <Project Include="Xslt\XsltCompiler\XsltCompiler.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="XmlSchema\XmlSchemaValidatorApi\System.Xml.XmlSchema.XmlSchemaValidatorApi.Tests.csproj" >
-      <TestTFMs>netcoreapp1.0;net46</TestTFMs>
+    <Project Include="Xslt\XslTransformApi\System.Xml.Xsl.XslTransformApi.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="Xslt\XslTransformApi\System.Xml.Xsl.XslTransformApi.Tests.csproj" >
-      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
+    <Project Include="XmlDocument\Performance\System.Xml.XmlDocument.Performance.Tests.csproj">
+      <TargetGroup>netstandard1.3</TargetGroup>
+      <TestTFMs>netcoreapp1.0</TestTFMs>
     </Project>
-    <Project Include="Xslt\XslCompiledTransformApi\System.Xml.Xsl.XslCompiledTransformApi.Tests.csproj" >
-      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
-    </Project>
-    <Project Include="XPath\XPathDocument\System.Xml.XPath.Tests.csproj" >
-      <TestTFMs>netcoreapp1.0;net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
-    </Project>
-    <Project Include="XPath\XmlDocument\System.Xml.XPath.XmlDocument.Tests.csproj" >
-      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
-    </Project>
-    <Project Include="XmlDocument\System.Xml.XmlDocument.Tests.csproj" >
-      <TestTFMs>netcoreapp1.0;netcore50;net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
-    </Project>
-    <Project Include="XmlSerializer\System.Xml.XmlSerializer.Tests.csproj" >
-      <TestTFMs>netcoreapp1.0;uap101;uap101aot;netcore50;netcore50aot;net46</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
-    </Project>
-
-    <Project Include="XmlDocument\Performance\System.Xml.XmlDocument.Performance.Tests.csproj"/>
+    <Project Include="XmlDocument\Performance\System.Xml.XmlDocument.Performance.Tests.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>

@@ -6,9 +6,14 @@ namespace System.IO.Tests
 {
     public static class HResults
     {
+        // DirectoryNotFoundException
         public const int COR_E_DIRECTORYNOTFOUND = unchecked((int)0x80070003);
         public const int STG_E_PATHNOTFOUND = unchecked((int)0x80030003);
         public const int CTL_E_PATHNOTFOUND = unchecked((int)0x800A004C);
+
+        // FileNotFoundException
+        public const int COR_E_FILENOTFOUND = unchecked((int)0x80070002);
+        public const int CTL_E_FILENOTFOUND = unchecked((int)0x800A0035);
 
         public const int COR_E_EXCEPTION = unchecked((int)0x80131500);
 

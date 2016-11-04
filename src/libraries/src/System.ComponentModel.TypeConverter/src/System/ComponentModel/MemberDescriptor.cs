@@ -428,7 +428,7 @@ namespace System.ComponentModel
 
                 for (int i = 0; i < list.Count;)
                 {
-                    if (set.Add(list[i].GetTypeId()))
+                    if (set.Add(list[i].TypeId))
                     {
                         ++i;
                     }
@@ -478,11 +478,7 @@ namespace System.ComponentModel
                 // The original impementation requires the method https://msdn.microsoft.com/en-us/library/5fed8f59(v=vs.110).aspx which is not 
                 // available on .NET Core. The replacement will use the default BindingFlags, which may miss some methods that had been found
                 // on .NET Framework.
-#if FEATURE_GETMETHOD_WITHTYPES
                 result = componentClass.GetTypeInfo().GetMethod(name, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, args, null);
-#else
-                result = componentClass.GetTypeInfo().GetMethod(name, args);
-#endif
             }
             if (result != null && !result.ReturnType.GetTypeInfo().IsEquivalentTo(returnType))
             {
@@ -535,6 +531,22 @@ namespace System.ComponentModel
             }
 
             return ((IComponent)component).Site;
+        }
+
+        [Obsolete("This method has been deprecated. Use GetInvocationTarget instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
+        protected static object GetInvokee(Type componentClass, object component) {
+
+            if (componentClass == null)
+            {
+                throw new ArgumentNullException(nameof(componentClass));
+            }
+
+            if (component == null)
+            {
+                throw new ArgumentNullException(nameof(component));
+            }
+
+            return TypeDescriptor.GetAssociation(componentClass, component);
         }
     }
 }

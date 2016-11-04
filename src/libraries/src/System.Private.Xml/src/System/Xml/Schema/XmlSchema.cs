@@ -128,7 +128,7 @@ namespace System.Xml.Schema
                 }
                 else
                 {
-                    throw e;
+                    throw;
                 }
                 return null;
             }
@@ -244,7 +244,7 @@ namespace System.Xml.Schema
         {
             SchemaInfo sInfo = new SchemaInfo();
             sInfo.SchemaType = SchemaType.XSD;
-            CompileSchema(null, System.Xml.XmlConfiguration.XmlReaderSection.CreateDefaultResolver(), sInfo, null, validationEventHandler, NameTable, false);
+            CompileSchema(null, null, sInfo, null, validationEventHandler, NameTable, false);
         }
 
         /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema.Compileq"]/*' />

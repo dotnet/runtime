@@ -2,36 +2,34 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.Win32.SafeHandles;
 using System;
 using System.IO;
-using System.Text;
 using System.Diagnostics;
-using System.Globalization;
 using System.Runtime.InteropServices;
-
-using Internal.Cryptography;
-using Internal.Cryptography.Pal.Native;
-
-using System.Security.Cryptography;
+using System.Security;
 using System.Security.Cryptography.X509Certificates;
+
+using Internal.Cryptography.Pal.Native;
 
 namespace Internal.Cryptography.Pal
 {
     internal sealed partial class CertificatePal : IDisposable, ICertificatePal
     {
-        public static ICertificatePal FromBlob(byte[] rawData, string password, X509KeyStorageFlags keyStorageFlags)
+        public static ICertificatePal FromBlob(byte[] rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
             return FromBlobOrFile(rawData, null, password, keyStorageFlags);
         }
 
-        public static ICertificatePal FromFile(string fileName, string password, X509KeyStorageFlags keyStorageFlags)
+        public static ICertificatePal FromFile(string fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
             return FromBlobOrFile(null, fileName, password, keyStorageFlags);
         }
 
-        private static ICertificatePal FromBlobOrFile(byte[] rawData, string fileName, string password, X509KeyStorageFlags keyStorageFlags)
+        private static ICertificatePal FromBlobOrFile(byte[] rawData, string fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
             Debug.Assert(rawData != null || fileName != null);
+            Debug.Assert(password != null);
 
             bool loadFromFile = (fileName != null);
 
@@ -145,7 +143,7 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        private static SafeCertContextHandle FilterPFXStore(byte[] rawData, string password, PfxCertStoreFlags pfxCertStoreFlags)
+        private static SafeCertContextHandle FilterPFXStore(byte[] rawData, SafePasswordHandle password, PfxCertStoreFlags pfxCertStoreFlags)
         {
             SafeCertStoreHandle hStore;
             unsafe
@@ -155,7 +153,7 @@ namespace Internal.Cryptography.Pal
                     CRYPTOAPI_BLOB certBlob = new CRYPTOAPI_BLOB(rawData.Length, pbRawData);
                     hStore = Interop.crypt32.PFXImportCertStore(ref certBlob, password, pfxCertStoreFlags);
                     if (hStore.IsInvalid)
-                        throw Marshal.GetHRForLastWin32Error().ToCryptographicException();;
+                        throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
                 }
             }
 
@@ -172,7 +170,13 @@ namespace Internal.Cryptography.Pal
                         if ((!pCertContext.IsInvalid) && pCertContext.ContainsPrivateKey)
                         {
                             // We already found our chosen one. Free up this one's key and move on.
-                            SafeCertContextHandleWithKeyContainerDeletion.DeleteKeyContainer(pEnumContext);
+
+                            // If this one has a persisted private key, clean up the key file.
+                            // If it was an ephemeral private key no action is required.
+                            if (pEnumContext.HasPersistedPrivateKey)
+                            {
+                                SafeCertContextHandleWithKeyContainerDeletion.DeleteKeyContainer(pEnumContext);
+                            }
                         }
                         else
                         {
@@ -205,7 +209,7 @@ namespace Internal.Cryptography.Pal
 
         private static PfxCertStoreFlags MapKeyStorageFlags(X509KeyStorageFlags keyStorageFlags)
         {
-            if ((keyStorageFlags & (X509KeyStorageFlags)~0x1F) != 0)
+            if ((keyStorageFlags & X509Certificate.KeyStorageFlagsAll) != keyStorageFlags)
                 throw new ArgumentException(SR.Argument_InvalidFlag, nameof(keyStorageFlags));
 
             PfxCertStoreFlags pfxCertStoreFlags = 0;
@@ -218,6 +222,13 @@ namespace Internal.Cryptography.Pal
                 pfxCertStoreFlags |= PfxCertStoreFlags.CRYPT_EXPORTABLE;
             if ((keyStorageFlags & X509KeyStorageFlags.UserProtected) == X509KeyStorageFlags.UserProtected)
                 pfxCertStoreFlags |= PfxCertStoreFlags.CRYPT_USER_PROTECTED;
+
+            // If a user is asking for an Ephemeral key they should be willing to test their code to find out
+            // that it will no longer import into CAPI. This solves problems of legacy CSPs being
+            // difficult to do SHA-2 RSA signatures with, simplifies the story for UWP, and reduces the
+            // complexity of pointer interpretation.
+            if ((keyStorageFlags & X509KeyStorageFlags.EphemeralKeySet) == X509KeyStorageFlags.EphemeralKeySet)
+                pfxCertStoreFlags |= PfxCertStoreFlags.PKCS12_NO_PERSIST_KEY | PfxCertStoreFlags.PKCS12_ALWAYS_CNG_KSP;
 
             // In the full .NET Framework loading a PFX then adding the key to the Windows Certificate Store would
             // enable a native application compiled against CAPI to find that private key and interoperate with it.

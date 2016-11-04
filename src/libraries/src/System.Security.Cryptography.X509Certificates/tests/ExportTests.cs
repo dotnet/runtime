@@ -20,7 +20,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public static void ExportAsSerializedCert_Windows()
         {
             using (X509Certificate2 c1 = new X509Certificate2(TestData.MsCertificate))
@@ -38,7 +38,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void ExportAsSerializedCert_Unix()
         {
             using (X509Certificate2 c1 = new X509Certificate2(TestData.MsCertificate))

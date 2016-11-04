@@ -10,7 +10,7 @@ using System.Collections.Generic;
 namespace System.Security.Principal
 {
     [System.Runtime.InteropServices.ComVisible(true)]
-
+    [Serializable]
     public class GenericIdentity : ClaimsIdentity
     {
         private string m_name;

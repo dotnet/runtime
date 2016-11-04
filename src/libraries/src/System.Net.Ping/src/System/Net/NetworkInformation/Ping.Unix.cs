@@ -17,6 +17,8 @@ namespace System.Net.NetworkInformation
     {
         private const int IcmpHeaderLengthInBytes = 8;
         private const int IpHeaderLengthInBytes = 20;
+        [ThreadStatic]
+        private static Random t_idGenerator;
 
         private async Task<PingReply> SendPingAsyncCore(IPAddress address, byte[] buffer, int timeout, PingOptions options)
         {
@@ -44,8 +46,12 @@ namespace System.Net.NetworkInformation
 
             bool isIpv4 = address.AddressFamily == AddressFamily.InterNetwork;
             ProtocolType protocolType = isIpv4 ? ProtocolType.Icmp : ProtocolType.IcmpV6;
-            // Use the current thread's ID as the identifier.
-            ushort identifier = (ushort)Environment.CurrentManagedThreadId;
+
+            // Use a random value as the identifier.  This doesn't need to be perfectly random
+            // or very unpredictable, rather just good enough to avoid unexpected conflicts.
+            Random rand = t_idGenerator ?? (t_idGenerator = new Random());
+            ushort identifier = (ushort)rand.Next((int)ushort.MaxValue + 1);
+
             IcmpHeader header = new IcmpHeader()
             {
                 Type = isIpv4 ? (byte)IcmpV4MessageType.EchoRequest : (byte)IcmpV6MessageType.EchoRequest,

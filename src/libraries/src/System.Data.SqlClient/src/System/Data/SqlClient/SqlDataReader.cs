@@ -497,7 +497,7 @@ namespace System.Data.SqlClient
             base.Dispose(disposing);
         }
 
-        internal void Close()
+        public override void Close()
         {
             SqlStatistics statistics = null;
             try
@@ -866,7 +866,7 @@ namespace System.Data.SqlClient
 
                 if (metaData.type == SqlDbType.Udt)
                 {
-                    throw UdtNotSupportedException();
+                    dataTypeName = metaData.udtDatabaseName + "." + metaData.udtSchemaName + "." + metaData.udtTypeName;
                 }
                 else
                 { // For all other types, including Xml - use data in MetaType.
@@ -939,7 +939,7 @@ namespace System.Data.SqlClient
 
                 if (metaData.type == SqlDbType.Udt)
                 {
-                    throw UdtNotSupportedException();
+                    fieldType = MetaType.MetaMaxVarBinary.ClassType;
                 }
                 else
                 { // For all other types, including Xml - use data in MetaType.
@@ -1020,7 +1020,7 @@ namespace System.Data.SqlClient
 
                 if (metaData.type == SqlDbType.Udt)
                 {
-                    throw UdtNotSupportedException();
+                    throw ADP.DbTypeNotSupported(SqlDbType.Udt.ToString());
                 }
                 else
                 { // For all other types, including Xml - use data in MetaType.
@@ -1093,7 +1093,7 @@ namespace System.Data.SqlClient
                 // Wrap the sequential stream in an XmlReader
                 _currentStream = new SqlSequentialStream(this, i);
                 _lastColumnWithDataChunkRead = i;
-                return SqlXml.CreateSqlXmlReader(_currentStream, closeInput: true);
+                return SqlTypeWorkarounds.SqlXmlCreateSqlXmlReader(_currentStream, closeInput: true);
             }
             else
             {
@@ -1103,7 +1103,7 @@ namespace System.Data.SqlClient
                 if (_data[i].IsNull)
                 {
                     // A 'null' stream
-                    return SqlXml.CreateSqlXmlReader(new MemoryStream(Array.Empty<byte>(), writable: false), closeInput: true);
+                    return SqlTypeWorkarounds.SqlXmlCreateSqlXmlReader(new MemoryStream(Array.Empty<byte>(), writable: false), closeInput: true);
                 }
                 else
                 {
@@ -2058,7 +2058,7 @@ namespace System.Data.SqlClient
                     var connection = _connection;
                     if (connection != null)
                     {
-                        throw UdtNotSupportedException();
+                        throw ADP.DbTypeNotSupported(SqlDbType.Udt.ToString());
                     }
                     else
                     {
@@ -2248,7 +2248,7 @@ namespace System.Data.SqlClient
                     var connection = _connection;
                     if (connection != null)
                     {
-                        throw UdtNotSupportedException();
+                        throw ADP.DbTypeNotSupported(SqlDbType.Udt.ToString());
                     }
                     else
                     {
@@ -2388,7 +2388,11 @@ namespace System.Data.SqlClient
 
             MetaType metaType = null;
 
-            if (actualMetaType == MetaType.MetaXml)
+            if (actualMetaType == MetaType.MetaUdt)
+            {
+                metaType = MetaType.MetaVarBinary;
+            }
+            else if (actualMetaType == MetaType.MetaXml)
             {
                 metaType = MetaType.MetaNText;
             }

@@ -117,7 +117,6 @@
     <Compile Include="Utilities\MemoryBlockTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
     <None Include="Resources\Namespace\NamespaceForwardedCS.cs" />
     <None Include="Resources\Namespace\NamespaceTests.cs" />
     <EmbeddedResource Include="Resources\Namespace\NamespaceForwardedCS.dll" />
@@ -154,6 +153,9 @@
     <EmbeddedResource Include="Resources\PortablePdbs\Documents.Embedded.dll" />
     <None Include="Resources\PortablePdbs\Documents.cmd" />
     <None Include="Resources\PortablePdbs\Documents.cs" />
+    <None Include="Resources\Misc\Signed.cmd" />
+    <None Include="Resources\Misc\Signed.cs" />
+    <EmbeddedResource Include="Resources\Misc\Signed.exe" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />

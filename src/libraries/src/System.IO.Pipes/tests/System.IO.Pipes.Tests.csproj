@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
   </PropertyGroup>
@@ -14,14 +14,18 @@
     <ProjectGuid>{142469EC-D665-4FE2-845A-FDA69F9CC557}</ProjectGuid>
     <NuGetPackageImportStamp>d2615b94</NuGetPackageImportStamp>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <!-- Compiled Source Files -->
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
+    <Compile Include="NamedPipeTests\NamedPipeTest.RunAsClient.cs" />
+    <Compile Include="NamedPipeTests\NamedPipeTest.Read.netstandard17.cs" />
+    <Compile Include="PipeTest.netstandard17.cs" />
+    <Compile Include="PipeTest.Read.netstandard17.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.CreateServer.cs" />
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.CreateClient.cs" />
@@ -44,9 +48,6 @@
     <Compile Include="PipeTest.Read.cs" />
     <Compile Include="PipeTest.Write.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
-    <Compile Include="$(CommonTestPath)\System\Diagnostics\AssertWithCallerAttributes.cs">
-      <Link>Common\tests\System\Diagnostics\AssertWithCallerAttributes.cs</Link>
-    </Compile>
     <Compile Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorTestBase.cs">
       <Link>Common\System\Diagnostics\RemoteExecutorTestBase.cs</Link>
     </Compile>
@@ -61,9 +62,6 @@
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">

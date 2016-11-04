@@ -1,27 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
+    <Project Include="System.ComponentModel.TypeConverter.Tests.csproj" />
     <Project Include="System.ComponentModel.TypeConverter.Tests.csproj">
-      <TargetGroup>netstandard1.7</TargetGroup>
-      <TestTFMs>netcoreapp1.1</TestTFMs>
-    </Project>
-    <Project Include="System.ComponentModel.TypeConverter.Tests.csproj">
-      <TargetGroup>netstandard1.7</TargetGroup>
+      <OSGroup>Windows_NT</OSGroup>
       <TestTFMs>net463</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="System.ComponentModel.TypeConverter.Tests.csproj"/>
     <Project Include="System.ComponentModel.TypeConverter.Tests.csproj">
+      <TargetGroup>netstandard1.5</TargetGroup>
+      <TestTFMs>netcoreapp1.0</TestTFMs>
+    </Project>
+    <Project Include="System.ComponentModel.TypeConverter.Tests.csproj">
+      <TargetGroup>netstandard1.5</TargetGroup>
+      <OSGroup>Windows_NT</OSGroup>
       <TestTFMs>net462</TestTFMs>
-      <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="System.ComponentModel.TypeConverter.Tests.csproj">
-      <TargetGroup>netstandard1.7</TargetGroup>
-      <TestTFMs>netcoreapp1.1</TestTFMs>
-    </Project>
-    <Project Include="Performance\System.ComponentModel.TypeConverter.Performance.Tests.csproj"/>
+    <Project Include="Performance\System.ComponentModel.TypeConverter.Performance.Tests.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
-

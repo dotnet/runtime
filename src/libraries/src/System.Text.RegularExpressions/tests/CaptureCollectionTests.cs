@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
 {
-    public class CaptureCollectionTests
+    public static partial class CaptureCollectionTests
     {
         [Fact]
         public static void GetEnumerator()
@@ -48,6 +48,16 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Fact]
+        public static void Item_Get()
+        {
+            CaptureCollection collection = CreateCollection();
+            Assert.Equal("This ", collection[0].ToString());
+            Assert.Equal("is ", collection[1].ToString());
+            Assert.Equal("a ", collection[2].ToString());
+            Assert.Equal("sentence", collection[3].ToString());
+        }
+
+        [Fact]
         public static void Item_Get_InvalidIndex_ThrowsArgumentOutOfRangeException()
         {
             Regex regex = new Regex(@"(?<A1>a*)(?<A2>b*)(?<A3>c*)");
@@ -58,26 +68,27 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Fact]
-        public void ICollection_Properties()
+        public static void ICollection_Properties()
         {
             Regex regex = new Regex(@"(?<A1>a*)(?<A2>b*)(?<A3>c*)");
             CaptureCollection captures = regex.Match("aaabbccccccccccaaaabc").Captures;
             ICollection collection = captures;
 
             Assert.False(collection.IsSynchronized);
+            Assert.NotNull(collection.SyncRoot);
             Assert.Same(collection.SyncRoot, collection.SyncRoot);
         }
-        
+
         [Theory]
         [InlineData(0)]
         [InlineData(5)]
-        public void ICollection_CopyTo(int index)
+        public static void ICollection_CopyTo(int index)
         {
             Regex regex = new Regex(@"(?<A1>a*)(?<A2>b*)(?<A3>c*)");
             CaptureCollection captures = regex.Match("aaabbccccccccccaaaabc").Captures;
             ICollection collection = captures;
 
-            RegularExpressions.Capture[] copy = new RegularExpressions.Capture[collection.Count + index];
+            Capture[] copy = new Capture[collection.Count + index];
             collection.CopyTo(copy, index);
 
             for (int i = 0; i < index; i++)
@@ -91,7 +102,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Fact]
-        public void ICollection_CopyTo_Invalid()
+        public static void ICollection_CopyTo_Invalid()
         {
             Regex regex = new Regex(@"(?<A1>a*)(?<A2>b*)(?<A3>c*)");
             ICollection collection = regex.Match("aaabbccccccccccaaaabc").Captures;
@@ -112,6 +123,13 @@ namespace System.Text.RegularExpressions.Tests
             // Invalid index + length
             Assert.Throws<IndexOutOfRangeException>(() => collection.CopyTo(new object[collection.Count], 1));
             Assert.Throws<IndexOutOfRangeException>(() => collection.CopyTo(new object[collection.Count + 1], 2));
+        }
+
+        private static CaptureCollection CreateCollection()
+        {
+            Regex regex = new Regex(@"\b(\w+\s*)+\.");
+            Match match = regex.Match("This is a sentence.");
+            return match.Groups[1].Captures;
         }
     }
 }

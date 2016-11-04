@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using static System.Linq.Utilities;
 
 namespace System.Linq
 {
@@ -27,27 +28,7 @@ namespace System.Linq
             }
 
             UnionIterator<TSource> union = first as UnionIterator<TSource>;
-            return union != null && EquivalentEqualityComparers(comparer, union._comparer) ? union.Union(second) : new UnionIterator2<TSource>(first, second, comparer);
-        }
-
-        private static bool EquivalentEqualityComparers<TSource>(IEqualityComparer<TSource> x, IEqualityComparer<TSource> y)
-        {
-            if (ReferenceEquals(x, y))
-            {
-                return true;
-            }
-
-            if (x == null)
-            {
-                return y.Equals(EqualityComparer<TSource>.Default);
-            }
-
-            if (y == null)
-            {
-                return x.Equals(EqualityComparer<TSource>.Default);
-            }
-
-            return x.Equals(y);
+            return union != null && AreEqualityComparersEqual(comparer, union._comparer) ? union.Union(second) : new UnionIterator2<TSource>(first, second, comparer);
         }
 
         private abstract class UnionIterator<TSource> : Iterator<TSource>, IIListProvider<TSource>
@@ -261,7 +242,7 @@ namespace System.Linq
                     if (union == null)
                     {
                         Debug.Assert(index == 0 || index == 1);
-                        Debug.Assert(EquivalentEqualityComparers(_comparer, previous._comparer));
+                        Debug.Assert(AreEqualityComparersEqual(_comparer, previous._comparer));
                         return previous.GetEnumerable(index);
                     }
                 }

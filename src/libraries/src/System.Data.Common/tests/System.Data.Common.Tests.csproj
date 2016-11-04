@@ -1,26 +1,125 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{82B54697-0251-47A1-8546-FC507D0F3B08}</ProjectGuid>
     <AssemblyName>System.Data.Common.Tests</AssemblyName>
     <RootNamespace>System.Data.Common.Tests</RootNamespace>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <DefineConstants Condition="'$(TargetGroup)'==''">$(DefineConstants);netstandard17</DefineConstants>
+    <NugetTargetMoniker Condition="'$(TargetGroup)'==''">.NETStandard,Version=v1.7</NugetTargetMoniker>
+    <NoWarn>0168,0169,0414,0219,0649</NoWarn>
   </PropertyGroup>
+  <ItemGroup>
+    <TestNugetTargetMoniker Include="$(NugetTargetMoniker)">
+      <Folder>netcoreapp1.1</Folder>
+    </TestNugetTargetMoniker>
+  </ItemGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="DbCommandTests.cs" />
-    <Compile Include="DbConnectionTests.cs" />
-    <Compile Include="DbExceptionTests.cs" />
+    <Compile Include="System\Data\Common\DbCommandTests.cs" />
+    <Compile Include="System\Data\Common\DbConnectionTests.cs" />
+    <Compile Include="System\Data\Common\DbExceptionTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'==''">
+    <Compile Include="DataProvider.cs" />
+    <Compile Include="System\Data\Common\DataAdapterTest.cs" />
+    <Compile Include="System\Data\Common\DataColumnMappingCollectionTest.cs" />
+    <Compile Include="System\Data\Common\DataTableMappingCollectionTest.cs" />
+    <Compile Include="System\Data\Common\DbCommandBuilderTest.cs" />
+    <Compile Include="System\Data\Common\DbConnectionStringBuilderTest.cs" />
+    <Compile Include="System\Data\Common\DbDataAdapterTest.cs" />
+    <Compile Include="System\Data\Common\DbDataReaderMock.cs" />
+    <Compile Include="System\Data\Common\DbDataReaderTest.cs" />
+    <Compile Include="System\Data\Common\DbTransactionTest.cs" />
+    <Compile Include="System\Data\ConstraintCollectionTest.cs" />
+    <Compile Include="System\Data\ConstraintCollectionTest2.cs" />
+    <Compile Include="System\Data\ConstraintExceptionTest.cs" />
+    <Compile Include="System\Data\ConstraintTest.cs" />
+    <Compile Include="System\Data\DataColumnCollectionTest.cs" />
+    <Compile Include="System\Data\DataColumnCollectionTest2.cs" />
+    <Compile Include="System\Data\DataColumnTest.cs" />
+    <Compile Include="System\Data\DataColumnTest2.cs" />
+    <Compile Include="System\Data\DataCommonEventSourceTest.cs" />
+    <Compile Include="System\Data\DataRelationCollectionTest.cs" />
+    <Compile Include="System\Data\DataRelationCollectionTest2.cs" />
+    <Compile Include="System\Data\DataRelationTest.cs" />
+    <Compile Include="System\Data\DataRelationTest2.cs" />
+    <Compile Include="System\Data\DataRowCollectionTest.cs" />
+    <Compile Include="System\Data\DataRowCollectionTest2.cs" />
+    <Compile Include="System\Data\DataRowTest.cs" />
+    <Compile Include="System\Data\DataRowTest2.cs" />
+    <Compile Include="System\Data\DataRowViewTest.cs" />
+    <Compile Include="System\Data\DataRowViewTest2.cs" />
+    <Compile Include="System\Data\DataSet1.Designer.cs" />
+    <Compile Include="System\Data\DataSetAssertion.cs" />
+    <Compile Include="System\Data\DataSetInferXmlSchemaTest.cs" />
+    <Compile Include="System\Data\DataSetReadXmlSchemaTest.cs" />
+    <Compile Include="System\Data\DataSetReadXmlTest.cs" />
+    <Compile Include="System\Data\DataSetTest.cs" />
+    <Compile Include="System\Data\DataSetTest2.cs" />
+    <Compile Include="System\Data\DataSetTypedDataSetTest.cs" />
+    <Compile Include="System\Data\DataTableCollectionTest.cs" />
+    <Compile Include="System\Data\DataTableCollectionTest2.cs" />
+    <Compile Include="System\Data\DataTableLoadRowTest.cs" />
+    <Compile Include="System\Data\DataTableReaderTest.cs" />
+    <Compile Include="System\Data\DataTableReadWriteXmlTest.cs" />
+    <Compile Include="System\Data\DataTableReadXmlSchemaTest.cs" />
+    <Compile Include="System\Data\DataTableTest.cs" />
+    <Compile Include="System\Data\DataTableTest2.cs" />
+    <Compile Include="System\Data\DataTableTest3.cs" />
+    <Compile Include="System\Data\DataTableTest4.cs" />
+    <Compile Include="System\Data\DataTableTest5.cs" />
+    <Compile Include="System\Data\DataViewManagerTest.cs" />
+    <Compile Include="System\Data\DataViewTest.cs" />
+    <Compile Include="System\Data\DataViewTest_IBindingList.cs" />
+    <Compile Include="System\Data\DataViewTest_IBindingListView.cs" />
+    <Compile Include="System\Data\DataViewTest2.cs" />
+    <Compile Include="System\Data\DBConcurrencyExceptionTest.cs" />
+    <Compile Include="System\Data\DeletedRowInaccessibleExceptionTest.cs" />
+    <Compile Include="System\Data\DuplicateNameExceptionTest.cs" />
+    <Compile Include="System\Data\EvaluateExceptionTest.cs" />
+    <Compile Include="System\Data\ForeignKeyConstraintTest.cs" />
+    <Compile Include="System\Data\ForeignKeyConstraintTest2.cs" />
+    <Compile Include="System\Data\InRowChangingEventExceptionTest.cs" />
+    <Compile Include="System\Data\InvalidConstraintExceptionTest.cs" />
+    <Compile Include="System\Data\MissingPrimaryKeyExceptionTest.cs" />
+    <Compile Include="System\Data\MonkeyDataSet.cs" />
+    <Compile Include="System\Data\NoNullAllowedExceptionTest.cs" />
+    <Compile Include="System\Data\ReadOnlyExceptionTest.cs" />
+    <Compile Include="System\Data\RowNotInTableExceptionTest.cs" />
+    <Compile Include="System\Data\SqlTypes\SqlBinaryTest.cs" />
+    <Compile Include="System\Data\SqlTypes\SqlBooleanTest.cs" />
+    <Compile Include="System\Data\SqlTypes\SqlBytesTest.cs" />
+    <Compile Include="System\Data\SqlTypes\SqlByteTest.cs" />
+    <Compile Include="System\Data\SqlTypes\SqlCharsTest.cs" />
+    <Compile Include="System\Data\SqlTypes\SqlDateTimeTest.cs" />
+    <Compile Include="System\Data\SqlTypes\SqlDecimalTest.cs" />
+    <Compile Include="System\Data\SqlTypes\SqlDoubleTest.cs" />
+    <Compile Include="System\Data\SqlTypes\SqlGuidTest.cs" />
+    <Compile Include="System\Data\SqlTypes\SqlInt16Test.cs" />
+    <Compile Include="System\Data\SqlTypes\SqlInt32Test.cs" />
+    <Compile Include="System\Data\SqlTypes\SqlInt64Test.cs" />
+    <Compile Include="System\Data\SqlTypes\SqlMoneyTest.cs" />
+    <Compile Include="System\Data\SqlTypes\SqlSingleTest.cs" />
+    <Compile Include="System\Data\SqlTypes\SqlStringTest.cs" />
+    <Compile Include="System\Data\SqlTypes\SqlStringSortingTest.cs" />
+    <Compile Include="System\Data\SqlTypes\SqlXmlTest.cs" />
+    <Compile Include="System\Data\SyntaxErrorExceptionTest.cs" />
+    <Compile Include="System\Data\TrailingSpaceTest.cs" />
+    <Compile Include="System\Data\UniqueConstraintTest.cs" />
+    <Compile Include="System\Data\UniqueConstraintTest2.cs" />
+    <Compile Include="System\Data\VersionNotFoundException.cs" />
+    <Compile Include="System\Data\XmlDataLoaderTest.cs" />
+    <Compile Include="System\Data\XmlDataReaderTest.cs" />
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\Tracing\TestEventListener.cs">
+      <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Data.Common.csproj">
+    <ProjectReference Include="..\pkg\System.Data.Common.pkgproj">
       <Name>System.Data.Common</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

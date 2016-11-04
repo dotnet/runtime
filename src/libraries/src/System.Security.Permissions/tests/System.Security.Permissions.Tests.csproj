@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <MinimumVisualStudioVersion>11.0</MinimumVisualStudioVersion>
@@ -12,13 +12,8 @@
     <NugetTargetMoniker>.NETStandard,Version=v1.7</NugetTargetMoniker>
     <TestTFM>netcoreapp1.1</TestTFM>
     <ProjectGuid>{492EC54D-D2C4-4B3F-AC1F-646B3F7EBB02}</ProjectGuid>
-    <NugetTargetMoniker Condition="'$(NugetTargetMoniker)'==''">.NETStandard,Version=v1.7</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
-  <ItemGroup>
-    <TestNugetTargetMoniker Include="$(NugetTargetMoniker)">
-      <Folder>netcoreapp1.1</Folder>
-    </TestNugetTargetMoniker>
-  </ItemGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
@@ -30,21 +25,22 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="ApplicationTrustTests.cs" />
     <Compile Include="CodeConnectAccessTests.cs" />
     <Compile Include="EvidenceTests.cs" />
     <Compile Include="CodeGroupTests.cs" />
     <Compile Include="MembershipConditionTests.cs" />
     <Compile Include="EvidenceBaseTests.cs" />
+    <Compile Include="SerializationTests.cs" />
     <Compile Include="PolicyTests.cs" />
     <Compile Include="TrustManagerContextTests.cs" />
     <Compile Include="PermissionSetTests.cs" />
     <Compile Include="PermissionTests.cs" />
     <Compile Include="HostSecurityManagerTests.cs" />
     <Compile Include="HostProtectionTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
+      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
+    </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

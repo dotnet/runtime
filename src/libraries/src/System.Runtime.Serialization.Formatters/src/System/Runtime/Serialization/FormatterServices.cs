@@ -19,18 +19,18 @@ namespace System.Runtime.Serialization
 
         private static FieldInfo[] GetSerializableFields(Type type)
         {
-            if (type.GetTypeInfo().IsInterface)
+            if (type.IsInterface)
             {
                 return Array.Empty<FieldInfo>();
             }
 
-            if (!type.GetTypeInfo().IsSerializable)
+            if (!type.IsSerializable)
             {
-                throw new SerializationException(SR.Format(SR.Serialization_NonSerType, type.GetTypeInfo().FullName, type.GetTypeInfo().Assembly.FullName));
+                throw new SerializationException(SR.Format(SR.Serialization_NonSerType, type.FullName, type.Assembly.FullName));
             }
 
             var results = new List<FieldInfo>();
-            for (Type t = type; t != typeof(object); t = t.GetTypeInfo().BaseType)
+            for (Type t = type; t != typeof(object); t = t.BaseType)
             {
                 foreach (FieldInfo field in t.GetFields(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
                 {
@@ -69,7 +69,7 @@ namespace System.Runtime.Serialization
 
         // TODO #8133: Fix this to avoid reflection
         private static readonly Func<Type, object> s_getUninitializedObjectDelegate = (Func<Type, object>)
-            typeof(string).GetTypeInfo().Assembly
+            typeof(string).Assembly
             .GetType("System.Runtime.Serialization.FormatterServices")
             .GetMethod("GetUninitializedObject", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static)
             .CreateDelegate(typeof(Func<Type, object>));
@@ -222,14 +222,14 @@ namespace System.Runtime.Serialization
                 throw new ArgumentNullException(nameof(type));
             }
 
-            foreach (Attribute first in type.GetTypeInfo().GetCustomAttributes(typeof(TypeForwardedFromAttribute), false))
+            foreach (Attribute first in type.GetCustomAttributes(typeof(TypeForwardedFromAttribute), false))
             {
                 hasTypeForwardedFrom = true;
                 return ((TypeForwardedFromAttribute)first).AssemblyFullName;
             }
 
             hasTypeForwardedFrom = false;
-            return type.GetTypeInfo().Assembly.FullName;
+            return type.Assembly.FullName;
         }
 
         internal static string GetClrTypeFullName(Type type)
@@ -251,7 +251,7 @@ namespace System.Runtime.Serialization
 
         private static string GetClrTypeFullNameForNonArrayTypes(Type type)
         {
-            if (!type.GetTypeInfo().IsGenericType)
+            if (!type.IsGenericType)
             {
                 return type.FullName;
             }

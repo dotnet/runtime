@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{F8C21EE8-B271-4014-B9D9-B2C31520AF3F}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
+    <NugetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
 
   <!-- Help VS understand available configurations -->
@@ -15,6 +15,14 @@
     <Compile Include="WebHeaderCollectionTest.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
+    <Compile Include="LoggingTest.cs" />
+    <Compile Include="WebHeaderCollectionTest.netstandard17.cs" />
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
+      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
+    </Compile>
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.Net.WebHeaderCollection.pkgproj">
       <Project>{5EE76DCC-9FD5-47FD-AB45-BD0F0857740F}</Project>
@@ -22,8 +30,5 @@
     </ProjectReference>
   </ItemGroup>
 
-  <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -8,7 +8,7 @@
 
 namespace System.Threading
 {
-    public partial class AbandonedMutexException : System.Exception
+    public partial class AbandonedMutexException : System.SystemException
     {
         public AbandonedMutexException() { }
         public AbandonedMutexException(int location, System.Threading.WaitHandle handle) { }
@@ -16,22 +16,23 @@ namespace System.Threading
         public AbandonedMutexException(string message, System.Exception inner) { }
         public AbandonedMutexException(string message, System.Exception inner, int location, System.Threading.WaitHandle handle) { }
         public AbandonedMutexException(string message, int location, System.Threading.WaitHandle handle) { }
-        public System.Threading.Mutex Mutex { get { return default(System.Threading.Mutex); } }
-        public int MutexIndex { get { return default(int); } }
+        protected AbandonedMutexException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public System.Threading.Mutex Mutex { get { throw null; } }
+        public int MutexIndex { get { throw null; } }
     }
     public sealed partial class AsyncLocal<T>
     {
         public AsyncLocal() { }
         [System.Security.SecurityCriticalAttribute]
         public AsyncLocal(System.Action<System.Threading.AsyncLocalValueChangedArgs<T>> valueChangedHandler) { }
-        public T Value { get { return default(T); } set { } }
+        public T Value { get { throw null; } set { } }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct AsyncLocalValueChangedArgs<T>
     {
-        public T CurrentValue { get { return default(T); } }
-        public T PreviousValue { get { return default(T); } }
-        public bool ThreadContextChanged { get { return default(bool); } }
+        public T CurrentValue { get { throw null; } }
+        public T PreviousValue { get { throw null; } }
+        public bool ThreadContextChanged { get { throw null; } }
     }
     public sealed partial class AutoResetEvent : System.Threading.EventWaitHandle
     {
@@ -41,21 +42,21 @@ namespace System.Threading
     {
         public Barrier(int participantCount) { }
         public Barrier(int participantCount, System.Action<System.Threading.Barrier> postPhaseAction) { }
-        public long CurrentPhaseNumber { get { return default(long); } }
-        public int ParticipantCount { get { return default(int); } }
-        public int ParticipantsRemaining { get { return default(int); } }
-        public long AddParticipant() { return default(long); }
-        public long AddParticipants(int participantCount) { return default(long); }
+        public long CurrentPhaseNumber { get { throw null; } }
+        public int ParticipantCount { get { throw null; } }
+        public int ParticipantsRemaining { get { throw null; } }
+        public long AddParticipant() { throw null; }
+        public long AddParticipants(int participantCount) { throw null; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public void RemoveParticipant() { }
         public void RemoveParticipants(int participantCount) { }
         public void SignalAndWait() { }
-        public bool SignalAndWait(int millisecondsTimeout) { return default(bool); }
-        public bool SignalAndWait(int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { return default(bool); }
+        public bool SignalAndWait(int millisecondsTimeout) { throw null; }
+        public bool SignalAndWait(int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { throw null; }
         public void SignalAndWait(System.Threading.CancellationToken cancellationToken) { }
-        public bool SignalAndWait(System.TimeSpan timeout) { return default(bool); }
-        public bool SignalAndWait(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { return default(bool); }
+        public bool SignalAndWait(System.TimeSpan timeout) { throw null; }
+        public bool SignalAndWait(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public partial class BarrierPostPhaseException : System.Exception
     {
@@ -63,31 +64,32 @@ namespace System.Threading
         public BarrierPostPhaseException(System.Exception innerException) { }
         public BarrierPostPhaseException(string message) { }
         public BarrierPostPhaseException(string message, System.Exception innerException) { }
+        protected BarrierPostPhaseException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public delegate void ContextCallback(object state);
     public partial class CountdownEvent : System.IDisposable
     {
         public CountdownEvent(int initialCount) { }
-        public int CurrentCount { get { return default(int); } }
-        public int InitialCount { get { return default(int); } }
-        public bool IsSet { get { return default(bool); } }
-        public System.Threading.WaitHandle WaitHandle { get { return default(System.Threading.WaitHandle); } }
+        public int CurrentCount { get { throw null; } }
+        public int InitialCount { get { throw null; } }
+        public bool IsSet { get { throw null; } }
+        public System.Threading.WaitHandle WaitHandle { get { throw null; } }
         public void AddCount() { }
         public void AddCount(int signalCount) { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public void Reset() { }
         public void Reset(int count) { }
-        public bool Signal() { return default(bool); }
-        public bool Signal(int signalCount) { return default(bool); }
-        public bool TryAddCount() { return default(bool); }
-        public bool TryAddCount(int signalCount) { return default(bool); }
+        public bool Signal() { throw null; }
+        public bool Signal(int signalCount) { throw null; }
+        public bool TryAddCount() { throw null; }
+        public bool TryAddCount(int signalCount) { throw null; }
         public void Wait() { }
-        public bool Wait(int millisecondsTimeout) { return default(bool); }
-        public bool Wait(int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { return default(bool); }
+        public bool Wait(int millisecondsTimeout) { throw null; }
+        public bool Wait(int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { throw null; }
         public void Wait(System.Threading.CancellationToken cancellationToken) { }
-        public bool Wait(System.TimeSpan timeout) { return default(bool); }
-        public bool Wait(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { return default(bool); }
+        public bool Wait(System.TimeSpan timeout) { throw null; }
+        public bool Wait(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public enum EventResetMode
     {
@@ -100,58 +102,59 @@ namespace System.Threading
         [System.Security.SecurityCriticalAttribute]
         public EventWaitHandle(bool initialState, System.Threading.EventResetMode mode, string name) { }
         [System.Security.SecurityCriticalAttribute]
-        public EventWaitHandle(bool initialState, System.Threading.EventResetMode mode, string name, out bool createdNew) { createdNew = default(bool); }
+        public EventWaitHandle(bool initialState, System.Threading.EventResetMode mode, string name, out bool createdNew) { throw null; }
         [System.Security.SecurityCriticalAttribute]
-        public static System.Threading.EventWaitHandle OpenExisting(string name) { return default(System.Threading.EventWaitHandle); }
-        public bool Reset() { return default(bool); }
-        public bool Set() { return default(bool); }
+        public static System.Threading.EventWaitHandle OpenExisting(string name) { throw null; }
+        public bool Reset() { throw null; }
+        public bool Set() { throw null; }
         [System.Security.SecurityCriticalAttribute]
-        public static bool TryOpenExisting(string name, out System.Threading.EventWaitHandle result) { result = default(System.Threading.EventWaitHandle); return default(bool); }
+        public static bool TryOpenExisting(string name, out System.Threading.EventWaitHandle result) { throw null; }
     }
     public sealed partial class ExecutionContext
     {
         internal ExecutionContext() { }
-        public static System.Threading.ExecutionContext Capture() { return default(System.Threading.ExecutionContext); }
+        public static System.Threading.ExecutionContext Capture() { throw null; }
         [System.Security.SecurityCriticalAttribute]
         public static void Run(System.Threading.ExecutionContext executionContext, System.Threading.ContextCallback callback, object state) { }
     }
     public static partial class Interlocked
     {
-        public static int Add(ref int location1, int value) { return default(int); }
-        public static long Add(ref long location1, long value) { return default(long); }
-        public static double CompareExchange(ref double location1, double value, double comparand) { return default(double); }
-        public static int CompareExchange(ref int location1, int value, int comparand) { return default(int); }
-        public static long CompareExchange(ref long location1, long value, long comparand) { return default(long); }
-        public static System.IntPtr CompareExchange(ref System.IntPtr location1, System.IntPtr value, System.IntPtr comparand) { return default(System.IntPtr); }
-        public static object CompareExchange(ref object location1, object value, object comparand) { return default(object); }
-        public static float CompareExchange(ref float location1, float value, float comparand) { return default(float); }
-        public static T CompareExchange<T>(ref T location1, T value, T comparand) where T : class { return default(T); }
-        public static int Decrement(ref int location) { return default(int); }
-        public static long Decrement(ref long location) { return default(long); }
-        public static double Exchange(ref double location1, double value) { return default(double); }
-        public static int Exchange(ref int location1, int value) { return default(int); }
-        public static long Exchange(ref long location1, long value) { return default(long); }
-        public static System.IntPtr Exchange(ref System.IntPtr location1, System.IntPtr value) { return default(System.IntPtr); }
-        public static object Exchange(ref object location1, object value) { return default(object); }
-        public static float Exchange(ref float location1, float value) { return default(float); }
-        public static T Exchange<T>(ref T location1, T value) where T : class { return default(T); }
-        public static int Increment(ref int location) { return default(int); }
-        public static long Increment(ref long location) { return default(long); }
+        public static int Add(ref int location1, int value) { throw null; }
+        public static long Add(ref long location1, long value) { throw null; }
+        public static double CompareExchange(ref double location1, double value, double comparand) { throw null; }
+        public static int CompareExchange(ref int location1, int value, int comparand) { throw null; }
+        public static long CompareExchange(ref long location1, long value, long comparand) { throw null; }
+        public static System.IntPtr CompareExchange(ref System.IntPtr location1, System.IntPtr value, System.IntPtr comparand) { throw null; }
+        public static object CompareExchange(ref object location1, object value, object comparand) { throw null; }
+        public static float CompareExchange(ref float location1, float value, float comparand) { throw null; }
+        public static T CompareExchange<T>(ref T location1, T value, T comparand) where T : class { throw null; }
+        public static int Decrement(ref int location) { throw null; }
+        public static long Decrement(ref long location) { throw null; }
+        public static double Exchange(ref double location1, double value) { throw null; }
+        public static int Exchange(ref int location1, int value) { throw null; }
+        public static long Exchange(ref long location1, long value) { throw null; }
+        public static System.IntPtr Exchange(ref System.IntPtr location1, System.IntPtr value) { throw null; }
+        public static object Exchange(ref object location1, object value) { throw null; }
+        public static float Exchange(ref float location1, float value) { throw null; }
+        public static T Exchange<T>(ref T location1, T value) where T : class { throw null; }
+        public static int Increment(ref int location) { throw null; }
+        public static long Increment(ref long location) { throw null; }
         public static void MemoryBarrier() { }
-        public static long Read(ref long location) { return default(long); }
+        public static long Read(ref long location) { throw null; }
     }
     public static partial class LazyInitializer
     {
-        public static T EnsureInitialized<T>(ref T target) where T : class { return default(T); }
-        public static T EnsureInitialized<T>(ref T target, ref bool initialized, ref object syncLock) { return default(T); }
-        public static T EnsureInitialized<T>(ref T target, ref bool initialized, ref object syncLock, System.Func<T> valueFactory) { return default(T); }
-        public static T EnsureInitialized<T>(ref T target, System.Func<T> valueFactory) where T : class { return default(T); }
+        public static T EnsureInitialized<T>(ref T target) where T : class { throw null; }
+        public static T EnsureInitialized<T>(ref T target, ref bool initialized, ref object syncLock) { throw null; }
+        public static T EnsureInitialized<T>(ref T target, ref bool initialized, ref object syncLock, System.Func<T> valueFactory) { throw null; }
+        public static T EnsureInitialized<T>(ref T target, System.Func<T> valueFactory) where T : class { throw null; }
     }
     public partial class LockRecursionException : System.Exception
     {
         public LockRecursionException() { }
         public LockRecursionException(string message) { }
         public LockRecursionException(string message, System.Exception innerException) { }
+        protected LockRecursionException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public enum LockRecursionPolicy
     {
@@ -167,37 +170,39 @@ namespace System.Threading
         public ManualResetEventSlim() { }
         public ManualResetEventSlim(bool initialState) { }
         public ManualResetEventSlim(bool initialState, int spinCount) { }
-        public bool IsSet { get { return default(bool); } }
-        public int SpinCount { get { return default(int); } }
-        public System.Threading.WaitHandle WaitHandle { get { return default(System.Threading.WaitHandle); } }
+        public bool IsSet { get { throw null; } }
+        public int SpinCount { get { throw null; } }
+        public System.Threading.WaitHandle WaitHandle { get { throw null; } }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public void Reset() { }
         public void Set() { }
         public void Wait() { }
-        public bool Wait(int millisecondsTimeout) { return default(bool); }
-        public bool Wait(int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { return default(bool); }
+        public bool Wait(int millisecondsTimeout) { throw null; }
+        public bool Wait(int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { throw null; }
         public void Wait(System.Threading.CancellationToken cancellationToken) { }
-        public bool Wait(System.TimeSpan timeout) { return default(bool); }
-        public bool Wait(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { return default(bool); }
+        public bool Wait(System.TimeSpan timeout) { throw null; }
+        public bool Wait(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public static partial class Monitor
     {
         public static void Enter(object obj) { }
         public static void Enter(object obj, ref bool lockTaken) { }
         public static void Exit(object obj) { }
-        public static bool IsEntered(object obj) { return default(bool); }
+        public static bool IsEntered(object obj) { throw null; }
         public static void Pulse(object obj) { }
         public static void PulseAll(object obj) { }
-        public static bool TryEnter(object obj) { return default(bool); }
+        public static bool TryEnter(object obj) { throw null; }
         public static void TryEnter(object obj, ref bool lockTaken) { }
-        public static bool TryEnter(object obj, int millisecondsTimeout) { return default(bool); }
+        public static bool TryEnter(object obj, int millisecondsTimeout) { throw null; }
         public static void TryEnter(object obj, int millisecondsTimeout, ref bool lockTaken) { }
-        public static bool TryEnter(object obj, System.TimeSpan timeout) { return default(bool); }
+        public static bool TryEnter(object obj, System.TimeSpan timeout) { throw null; }
         public static void TryEnter(object obj, System.TimeSpan timeout, ref bool lockTaken) { }
-        public static bool Wait(object obj) { return default(bool); }
-        public static bool Wait(object obj, int millisecondsTimeout) { return default(bool); }
-        public static bool Wait(object obj, System.TimeSpan timeout) { return default(bool); }
+        public static bool Wait(object obj) { throw null; }
+        public static bool Wait(object obj, int millisecondsTimeout) { throw null; }
+        public static bool Wait(object obj, int millisecondsTimeout, bool exitContext) { throw null; }
+        public static bool Wait(object obj, System.TimeSpan timeout) { throw null; }
+        public static bool Wait(object obj, System.TimeSpan timeout, bool exitContext) { throw null; }
     }
     public sealed partial class Mutex : System.Threading.WaitHandle
     {
@@ -206,28 +211,28 @@ namespace System.Threading
         [System.Security.SecurityCriticalAttribute]
         public Mutex(bool initiallyOwned, string name) { }
         [System.Security.SecurityCriticalAttribute]
-        public Mutex(bool initiallyOwned, string name, out bool createdNew) { createdNew = default(bool); }
+        public Mutex(bool initiallyOwned, string name, out bool createdNew) { throw null; }
         [System.Security.SecurityCriticalAttribute]
-        public static System.Threading.Mutex OpenExisting(string name) { return default(System.Threading.Mutex); }
+        public static System.Threading.Mutex OpenExisting(string name) { throw null; }
         public void ReleaseMutex() { }
         [System.Security.SecurityCriticalAttribute]
-        public static bool TryOpenExisting(string name, out System.Threading.Mutex result) { result = default(System.Threading.Mutex); return default(bool); }
+        public static bool TryOpenExisting(string name, out System.Threading.Mutex result) { throw null; }
     }
     public partial class ReaderWriterLockSlim : System.IDisposable
     {
         public ReaderWriterLockSlim() { }
         public ReaderWriterLockSlim(System.Threading.LockRecursionPolicy recursionPolicy) { }
-        public int CurrentReadCount { get { return default(int); } }
-        public bool IsReadLockHeld { get { return default(bool); } }
-        public bool IsUpgradeableReadLockHeld { get { return default(bool); } }
-        public bool IsWriteLockHeld { get { return default(bool); } }
-        public System.Threading.LockRecursionPolicy RecursionPolicy { get { return default(System.Threading.LockRecursionPolicy); } }
-        public int RecursiveReadCount { get { return default(int); } }
-        public int RecursiveUpgradeCount { get { return default(int); } }
-        public int RecursiveWriteCount { get { return default(int); } }
-        public int WaitingReadCount { get { return default(int); } }
-        public int WaitingUpgradeCount { get { return default(int); } }
-        public int WaitingWriteCount { get { return default(int); } }
+        public int CurrentReadCount { get { throw null; } }
+        public bool IsReadLockHeld { get { throw null; } }
+        public bool IsUpgradeableReadLockHeld { get { throw null; } }
+        public bool IsWriteLockHeld { get { throw null; } }
+        public System.Threading.LockRecursionPolicy RecursionPolicy { get { throw null; } }
+        public int RecursiveReadCount { get { throw null; } }
+        public int RecursiveUpgradeCount { get { throw null; } }
+        public int RecursiveWriteCount { get { throw null; } }
+        public int WaitingReadCount { get { throw null; } }
+        public int WaitingUpgradeCount { get { throw null; } }
+        public int WaitingWriteCount { get { throw null; } }
         public void Dispose() { }
         public void EnterReadLock() { }
         public void EnterUpgradeableReadLock() { }
@@ -235,60 +240,61 @@ namespace System.Threading
         public void ExitReadLock() { }
         public void ExitUpgradeableReadLock() { }
         public void ExitWriteLock() { }
-        public bool TryEnterReadLock(int millisecondsTimeout) { return default(bool); }
-        public bool TryEnterReadLock(System.TimeSpan timeout) { return default(bool); }
-        public bool TryEnterUpgradeableReadLock(int millisecondsTimeout) { return default(bool); }
-        public bool TryEnterUpgradeableReadLock(System.TimeSpan timeout) { return default(bool); }
-        public bool TryEnterWriteLock(int millisecondsTimeout) { return default(bool); }
-        public bool TryEnterWriteLock(System.TimeSpan timeout) { return default(bool); }
+        public bool TryEnterReadLock(int millisecondsTimeout) { throw null; }
+        public bool TryEnterReadLock(System.TimeSpan timeout) { throw null; }
+        public bool TryEnterUpgradeableReadLock(int millisecondsTimeout) { throw null; }
+        public bool TryEnterUpgradeableReadLock(System.TimeSpan timeout) { throw null; }
+        public bool TryEnterWriteLock(int millisecondsTimeout) { throw null; }
+        public bool TryEnterWriteLock(System.TimeSpan timeout) { throw null; }
     }
     public sealed partial class Semaphore : System.Threading.WaitHandle
     {
         public Semaphore(int initialCount, int maximumCount) { }
         public Semaphore(int initialCount, int maximumCount, string name) { }
-        public Semaphore(int initialCount, int maximumCount, string name, out bool createdNew) { createdNew = default(bool); }
-        public static System.Threading.Semaphore OpenExisting(string name) { return default(System.Threading.Semaphore); }
-        public int Release() { return default(int); }
-        public int Release(int releaseCount) { return default(int); }
-        public static bool TryOpenExisting(string name, out System.Threading.Semaphore result) { result = default(System.Threading.Semaphore); return default(bool); }
+        public Semaphore(int initialCount, int maximumCount, string name, out bool createdNew) { throw null; }
+        public static System.Threading.Semaphore OpenExisting(string name) { throw null; }
+        public int Release() { throw null; }
+        public int Release(int releaseCount) { throw null; }
+        public static bool TryOpenExisting(string name, out System.Threading.Semaphore result) { throw null; }
     }
-    public partial class SemaphoreFullException : System.Exception
+    public partial class SemaphoreFullException : System.SystemException
     {
         public SemaphoreFullException() { }
         public SemaphoreFullException(string message) { }
         public SemaphoreFullException(string message, System.Exception innerException) { }
+        protected SemaphoreFullException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public partial class SemaphoreSlim : System.IDisposable
     {
         public SemaphoreSlim(int initialCount) { }
         public SemaphoreSlim(int initialCount, int maxCount) { }
-        public System.Threading.WaitHandle AvailableWaitHandle { get { return default(System.Threading.WaitHandle); } }
-        public int CurrentCount { get { return default(int); } }
+        public System.Threading.WaitHandle AvailableWaitHandle { get { throw null; } }
+        public int CurrentCount { get { throw null; } }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
-        public int Release() { return default(int); }
-        public int Release(int releaseCount) { return default(int); }
+        public int Release() { throw null; }
+        public int Release(int releaseCount) { throw null; }
         public void Wait() { }
-        public bool Wait(int millisecondsTimeout) { return default(bool); }
-        public bool Wait(int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { return default(bool); }
+        public bool Wait(int millisecondsTimeout) { throw null; }
+        public bool Wait(int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { throw null; }
         public void Wait(System.Threading.CancellationToken cancellationToken) { }
-        public bool Wait(System.TimeSpan timeout) { return default(bool); }
-        public bool Wait(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { return default(bool); }
-        public System.Threading.Tasks.Task WaitAsync() { return default(System.Threading.Tasks.Task); }
-        public System.Threading.Tasks.Task<bool> WaitAsync(int millisecondsTimeout) { return default(System.Threading.Tasks.Task<bool>); }
-        public System.Threading.Tasks.Task<bool> WaitAsync(int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task<bool>); }
-        public System.Threading.Tasks.Task WaitAsync(System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
-        public System.Threading.Tasks.Task<bool> WaitAsync(System.TimeSpan timeout) { return default(System.Threading.Tasks.Task<bool>); }
-        public System.Threading.Tasks.Task<bool> WaitAsync(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task<bool>); }
+        public bool Wait(System.TimeSpan timeout) { throw null; }
+        public bool Wait(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task WaitAsync() { throw null; }
+        public System.Threading.Tasks.Task<bool> WaitAsync(int millisecondsTimeout) { throw null; }
+        public System.Threading.Tasks.Task<bool> WaitAsync(int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task WaitAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task<bool> WaitAsync(System.TimeSpan timeout) { throw null; }
+        public System.Threading.Tasks.Task<bool> WaitAsync(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public delegate void SendOrPostCallback(object state);
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct SpinLock
     {
-        public SpinLock(bool enableThreadOwnerTracking) { throw new System.NotImplementedException(); }
-        public bool IsHeld { get { return default(bool); } }
-        public bool IsHeldByCurrentThread { get { return default(bool); } }
-        public bool IsThreadOwnerTrackingEnabled { get { return default(bool); } }
+        public SpinLock(bool enableThreadOwnerTracking) { throw null; }
+        public bool IsHeld { get { throw null; } }
+        public bool IsHeldByCurrentThread { get { throw null; } }
+        public bool IsThreadOwnerTrackingEnabled { get { throw null; } }
         public void Enter(ref bool lockTaken) { }
         public void Exit() { }
         public void Exit(bool useMemoryBarrier) { }
@@ -299,19 +305,19 @@ namespace System.Threading
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct SpinWait
     {
-        public int Count { get { return default(int); } }
-        public bool NextSpinWillYield { get { return default(bool); } }
+        public int Count { get { throw null; } }
+        public bool NextSpinWillYield { get { throw null; } }
         public void Reset() { }
         public void SpinOnce() { }
         public static void SpinUntil(System.Func<bool> condition) { }
-        public static bool SpinUntil(System.Func<bool> condition, int millisecondsTimeout) { return default(bool); }
-        public static bool SpinUntil(System.Func<bool> condition, System.TimeSpan timeout) { return default(bool); }
+        public static bool SpinUntil(System.Func<bool> condition, int millisecondsTimeout) { throw null; }
+        public static bool SpinUntil(System.Func<bool> condition, System.TimeSpan timeout) { throw null; }
     }
     public partial class SynchronizationContext
     {
         public SynchronizationContext() { }
-        public static System.Threading.SynchronizationContext Current { get { return default(System.Threading.SynchronizationContext); } }
-        public virtual System.Threading.SynchronizationContext CreateCopy() { return default(System.Threading.SynchronizationContext); }
+        public static System.Threading.SynchronizationContext Current { get { throw null; } }
+        public virtual System.Threading.SynchronizationContext CreateCopy() { throw null; }
         public virtual void OperationCompleted() { }
         public virtual void OperationStarted() { }
         public virtual void Post(System.Threading.SendOrPostCallback d, object state) { }
@@ -319,11 +325,12 @@ namespace System.Threading
         [System.Security.SecurityCriticalAttribute]
         public static void SetSynchronizationContext(System.Threading.SynchronizationContext syncContext) { }
     }
-    public partial class SynchronizationLockException : System.Exception
+    public partial class SynchronizationLockException : System.SystemException
     {
         public SynchronizationLockException() { }
         public SynchronizationLockException(string message) { }
         public SynchronizationLockException(string message, System.Exception innerException) { }
+        protected SynchronizationLockException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public partial class ThreadLocal<T> : System.IDisposable
     {
@@ -331,35 +338,35 @@ namespace System.Threading
         public ThreadLocal(bool trackAllValues) { }
         public ThreadLocal(System.Func<T> valueFactory) { }
         public ThreadLocal(System.Func<T> valueFactory, bool trackAllValues) { }
-        public bool IsValueCreated { get { return default(bool); } }
-        public T Value { get { return default(T); } set { } }
-        public System.Collections.Generic.IList<T> Values { get { return default(System.Collections.Generic.IList<T>); } }
+        public bool IsValueCreated { get { throw null; } }
+        public T Value { get { throw null; } set { } }
+        public System.Collections.Generic.IList<T> Values { get { throw null; } }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         ~ThreadLocal() { }
-        public override string ToString() { return default(string); }
+        public override string ToString() { throw null; }
     }
     public static partial class Volatile
     {
-        public static bool Read(ref bool location) { return default(bool); }
-        public static byte Read(ref byte location) { return default(byte); }
-        public static double Read(ref double location) { return default(double); }
-        public static short Read(ref short location) { return default(short); }
-        public static int Read(ref int location) { return default(int); }
-        public static long Read(ref long location) { return default(long); }
-        public static System.IntPtr Read(ref System.IntPtr location) { return default(System.IntPtr); }
+        public static bool Read(ref bool location) { throw null; }
+        public static byte Read(ref byte location) { throw null; }
+        public static double Read(ref double location) { throw null; }
+        public static short Read(ref short location) { throw null; }
+        public static int Read(ref int location) { throw null; }
+        public static long Read(ref long location) { throw null; }
+        public static System.IntPtr Read(ref System.IntPtr location) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static sbyte Read(ref sbyte location) { return default(sbyte); }
-        public static float Read(ref float location) { return default(float); }
+        public static sbyte Read(ref sbyte location) { throw null; }
+        public static float Read(ref float location) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static ushort Read(ref ushort location) { return default(ushort); }
+        public static ushort Read(ref ushort location) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static uint Read(ref uint location) { return default(uint); }
+        public static uint Read(ref uint location) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static ulong Read(ref ulong location) { return default(ulong); }
+        public static ulong Read(ref ulong location) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.UIntPtr Read(ref System.UIntPtr location) { return default(System.UIntPtr); }
-        public static T Read<T>(ref T location) where T : class { return default(T); }
+        public static System.UIntPtr Read(ref System.UIntPtr location) { throw null; }
+        public static T Read<T>(ref T location) where T : class { throw null; }
         public static void Write(ref bool location, bool value) { }
         public static void Write(ref byte location, byte value) { }
         public static void Write(ref double location, double value) { }
@@ -380,10 +387,11 @@ namespace System.Threading
         public static void Write(ref System.UIntPtr location, System.UIntPtr value) { }
         public static void Write<T>(ref T location, T value) where T : class { }
     }
-    public partial class WaitHandleCannotBeOpenedException : System.Exception
+    public partial class WaitHandleCannotBeOpenedException : System.ApplicationException
     {
         public WaitHandleCannotBeOpenedException() { }
         public WaitHandleCannotBeOpenedException(string message) { }
         public WaitHandleCannotBeOpenedException(string message, System.Exception innerException) { }
+        protected WaitHandleCannotBeOpenedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
 }

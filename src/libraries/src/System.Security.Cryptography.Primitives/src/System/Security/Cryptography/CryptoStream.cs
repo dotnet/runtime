@@ -25,23 +25,30 @@ namespace System.Security.Cryptography
         private bool _canWrite;
         private bool _finalBlockTransformed;
         private SemaphoreSlim _lazyAsyncActiveSemaphore;
-        
+        private readonly bool _leaveOpen;
+
         // Constructors
 
         public CryptoStream(Stream stream, ICryptoTransform transform, CryptoStreamMode mode)
+            : this(stream, transform, mode, false)
+        {
+        }
+
+        public CryptoStream(Stream stream, ICryptoTransform transform, CryptoStreamMode mode, bool leaveOpen)
         {
 
             _stream = stream;
             _transformMode = mode;
             _transform = transform;
+            _leaveOpen = leaveOpen;
             switch (_transformMode)
             {
                 case CryptoStreamMode.Read:
-                    if (!(_stream.CanRead)) throw new ArgumentException(SR.Format(SR.Argument_StreamNotReadable, "stream"));
+                    if (!(_stream.CanRead)) throw new ArgumentException(SR.Format(SR.Argument_StreamNotReadable, nameof(stream)));
                     _canRead = true;
                     break;
                 case CryptoStreamMode.Write:
-                    if (!(_stream.CanWrite)) throw new ArgumentException(SR.Format(SR.Argument_StreamNotWritable, "stream"));
+                    if (!(_stream.CanWrite)) throw new ArgumentException(SR.Format(SR.Argument_StreamNotWritable, nameof(stream)));
                     _canWrite = true;
                     break;
                 default:
@@ -523,7 +530,10 @@ namespace System.Security.Cryptography
                     {
                         FlushFinalBlock();
                     }
-                    _stream.Dispose();
+                    if (!_leaveOpen)
+                    {
+                        _stream.Dispose();
+                    }
                 }
             }
             finally

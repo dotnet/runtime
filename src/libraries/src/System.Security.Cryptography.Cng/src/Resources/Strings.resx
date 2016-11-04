@@ -120,6 +120,9 @@
   <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
     <value>Non-negative number required.</value>
   </data>
+  <data name="Argument_Invalid_SafeHandleInvalidOrClosed" xml:space="preserve">
+    <value>The method cannot be called with an invalid or closed SafeHandle.</value>
+  </data>
   <data name="Argument_InvalidOffLen" xml:space="preserve">
     <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
   </data>

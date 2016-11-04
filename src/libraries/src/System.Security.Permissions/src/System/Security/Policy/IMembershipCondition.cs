@@ -4,10 +4,10 @@
 
 namespace System.Security.Policy
 {
-    public partial interface IMembershipCondition : System.Security.ISecurityEncodable, System.Security.ISecurityPolicyEncodable
+    public partial interface IMembershipCondition : ISecurityEncodable, ISecurityPolicyEncodable
     {
-        bool Check(System.Security.Policy.Evidence evidence);
-        System.Security.Policy.IMembershipCondition Copy();
+        bool Check(Evidence evidence);
+        IMembershipCondition Copy();
         bool Equals(object obj);
         string ToString();
     }

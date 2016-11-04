@@ -167,7 +167,7 @@ namespace System.Net.Http
             s_supportsAutomaticDecompression = (features & Interop.Http.CurlFeatures.CURL_VERSION_LIBZ) != 0;
             s_supportsHttp2Multiplexing = (features & Interop.Http.CurlFeatures.CURL_VERSION_HTTP2) != 0 && Interop.Http.GetSupportsHttp2Multiplexing();
 
-            if (HttpEventSource.Log.IsEnabled())
+            if (NetEventSource.IsEnabled)
             {
                 EventSourceTrace($"libcurl: {CurlVersionDescription} {CurlSslVersionDescription} {features}");
             }
@@ -680,18 +680,16 @@ namespace System.Net.Http
                 string.Equals(credential1.Password, credential2.Password, StringComparison.Ordinal);
         }
 
-        private static bool EventSourceTracingEnabled { get { return HttpEventSource.Log.IsEnabled(); } }
-
         // PERF NOTE:
         // These generic overloads of EventSourceTrace (and similar wrapper methods in some of the other CurlHandler
         // nested types) exist to allow call sites to call EventSourceTrace without boxing and without checking
-        // EventSourceTracingEnabled.  Do not remove these without fixing the call sites accordingly.
+        // NetEventSource.IsEnabled.  Do not remove these without fixing the call sites accordingly.
 
         private static void EventSourceTrace<TArg0>(
             string formatMessage, TArg0 arg0,
             MultiAgent agent = null, EasyRequest easy = null, [CallerMemberName] string memberName = null)
         {
-            if (EventSourceTracingEnabled)
+            if (NetEventSource.IsEnabled)
             {
                 EventSourceTraceCore(string.Format(formatMessage, arg0), agent, easy, memberName);
             }
@@ -701,7 +699,7 @@ namespace System.Net.Http
             (string formatMessage, TArg0 arg0, TArg1 arg1, TArg2 arg2,
             MultiAgent agent = null, EasyRequest easy = null, [CallerMemberName] string memberName = null)
         {
-            if (EventSourceTracingEnabled)
+            if (NetEventSource.IsEnabled)
             {
                 EventSourceTraceCore(string.Format(formatMessage, arg0, arg1, arg2), agent, easy, memberName);
             }
@@ -711,7 +709,7 @@ namespace System.Net.Http
             string message, 
             MultiAgent agent = null, EasyRequest easy = null, [CallerMemberName] string memberName = null)
         {
-            if (EventSourceTracingEnabled)
+            if (NetEventSource.IsEnabled)
             {
                 EventSourceTraceCore(message, agent, easy, memberName);
             }
@@ -725,7 +723,7 @@ namespace System.Net.Http
                 agent = easy._associatedMultiAgent;
             }
 
-            HttpEventSource.Log.HandlerMessage(
+            if (NetEventSource.IsEnabled) NetEventSource.Log.HandlerMessage(
                 (agent?.RunningWorkerId).GetValueOrDefault(),
                 easy != null ? easy.Task.Id : 0,
                 memberName,

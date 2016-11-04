@@ -66,7 +66,7 @@ namespace System.Runtime.Serialization
             _depth--;
         }
 
-        public void Close()
+        public override void Close()
         {
             throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.IXmlSerializableIllegalOperation)));
         }

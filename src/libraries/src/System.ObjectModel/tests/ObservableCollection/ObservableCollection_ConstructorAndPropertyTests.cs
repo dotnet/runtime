@@ -12,7 +12,7 @@ namespace System.Collections.ObjectModel.Tests
     /// <summary>
     /// Tests the public properties and constructor in ObservableCollection<T>.
     /// </summary>
-    public class ConstructorAndPropertyTests
+    public partial class ConstructorAndPropertyTests
     {
         /// <summary>
         /// Tests that the parameterless constructor works.
@@ -34,6 +34,15 @@ namespace System.Collections.ObjectModel.Tests
         {
             var actual = new ObservableCollection<string>(collection);
             Assert.Equal(collection, actual);
+        }
+
+        [Theory]
+        [MemberData(nameof(Collections))]
+        public static void IEnumerableConstructorTest_MakesCopy(IEnumerable<string> collection)
+        {
+            var oc = new ObservableCollectionSubclass<string>(collection);
+            Assert.NotNull(oc.InnerList);
+            Assert.NotSame(collection, oc.InnerList);
         }
 
         public static readonly object[][] Collections =
@@ -69,7 +78,7 @@ namespace System.Collections.ObjectModel.Tests
         [Fact]
         public static void IEnumerableConstructorTest_Negative()
         {
-            Assert.Throws<ArgumentNullException>("collection", () => new ObservableCollection<string>(null));
+            Assert.Throws<ArgumentNullException>("collection", () => new ObservableCollection<string>((IEnumerable<string>)null));
         }
 
         /// <summary>
@@ -113,6 +122,13 @@ namespace System.Collections.ObjectModel.Tests
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(new ObservableCollection<int>());
             DebuggerAttributes.ValidateDebuggerTypeProxyProperties(new ObservableCollection<int>());
+        }
+
+        private partial class ObservableCollectionSubclass<T> : ObservableCollection<T>
+        {
+            public ObservableCollectionSubclass(IEnumerable<T> collection) : base(collection) { }
+
+            public List<T> InnerList => (List<T>)base.Items;
         }
     }
 }

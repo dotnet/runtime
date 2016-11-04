@@ -6,7 +6,6 @@
     <RootNamespace>Stress.Data.SqlClient</RootNamespace>
     <AssemblyName>System.Data.SqlClient.Stress.Tests</AssemblyName>
     <OutputType>Library</OutputType>
-    <KeepAllProjectReferences>true</KeepAllProjectReferences>
     <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
@@ -27,13 +26,7 @@
   </ItemGroup>
   <!--Import the targets-->
   <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\src\System.Data.SqlClient.csproj">
-      <Name>System.Data.SqlClient</Name>
-      <OSGroup>$(InputOSGroup)</OSGroup>
-    </ProjectReference>
+    <ProjectReference Include="..\..\pkg\System.Data.SqlClient.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

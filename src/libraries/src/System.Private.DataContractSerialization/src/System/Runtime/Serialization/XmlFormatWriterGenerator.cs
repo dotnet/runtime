@@ -227,6 +227,11 @@ namespace System.Runtime.Serialization
             {
                 InvokeOnSerializing(classContract);
 
+                if (classContract.IsISerializable)
+                {
+                    _ilg.Call(_contextArg, XmlFormatGeneratorStatics.WriteISerializableMethod, _xmlWriterArg, _objectLocal);
+                }
+                else
                 {
                     if (classContract.ContractNamespaces.Length > 1)
                     {

@@ -122,7 +122,7 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.Null(cc.GetCredential(uriPrefix1, "invalid-authentication-type")); //No such authenticationType
 
             Assert.Throws<ArgumentNullException>("uriPrefix", () => cc.Add(null, "some", new NetworkCredential())); //Null uriPrefix
-            Assert.Throws<ArgumentNullException>("authenticationType", () => cc.Add(new Uri("http://microsoft:80"), null, new NetworkCredential())); //Null authenticationType
+            Assert.Throws<ArgumentNullException>("authType", () => cc.Add(new Uri("http://microsoft:80"), null, new NetworkCredential())); //Null authenticationType
         }
 
         [Fact]
@@ -233,7 +233,7 @@ namespace System.Net.Primitives.Functional.Tests
             CredentialCache cc = new CredentialCache();
 
             Assert.Throws<ArgumentNullException>("uriPrefix", () => cc.GetCredential(null, "authenticationType")); //Null uriPrefix
-            Assert.Throws<ArgumentNullException>("authenticationType", () => cc.GetCredential(new Uri("http://microsoft:80"), null)); //Null authenticationType
+            Assert.Throws<ArgumentNullException>("authType", () => cc.GetCredential(new Uri("http://microsoft:80"), null)); //Null authenticationType
         }
 
         [Fact]

@@ -52,6 +52,7 @@ namespace System.Net
 
         private static unsafe void HtmlEncode(string value, int index, StringBuilder output)
         {
+            Debug.Assert(value != null);
             Debug.Assert(output != null);
             Debug.Assert(0 <= index && index <= value.Length, "0 <= index && index <= value.Length");
 

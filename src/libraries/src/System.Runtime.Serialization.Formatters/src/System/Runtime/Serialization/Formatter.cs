@@ -155,7 +155,7 @@ namespace System.Runtime.Serialization
             {
                 WriteArray(data, memberName, varType);
             }
-            else if (varType.GetTypeInfo().IsValueType)
+            else if (varType.IsValueType)
             {
                 WriteValueType(data, memberName, varType);
             }

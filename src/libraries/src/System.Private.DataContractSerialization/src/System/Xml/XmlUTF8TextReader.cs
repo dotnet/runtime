@@ -575,7 +575,7 @@ namespace System.Xml
         public void SetInput(Stream stream, Encoding encoding, XmlDictionaryReaderQuotas quotas, OnXmlDictionaryReaderClose onClose)
         {
             if (stream == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("stream");
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(stream));
             MoveToInitial(quotas, onClose);
             stream = new EncodingStreamWrapper(stream, encoding);
             BufferReader.SetBuffer(stream, null, null);

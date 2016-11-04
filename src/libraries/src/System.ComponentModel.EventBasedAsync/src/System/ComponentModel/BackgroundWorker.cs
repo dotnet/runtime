@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.ComponentModel
 {
-    public class BackgroundWorker : IDisposable
+    public class BackgroundWorker : Component
     {
         // Private instance members
         private bool _canCancelWorker = false;
@@ -23,11 +24,6 @@ namespace System.ComponentModel
         {
             _operationCompleted = new SendOrPostCallback(AsyncOperationCompleted);
             _progressReporter = new SendOrPostCallback(ProgressReporter);
-        }
-
-        ~BackgroundWorker() // exists for backwards compatibility
-        {
-            Dispose(false);
         }
 
         private void AsyncOperationCompleted(object arg)
@@ -209,13 +205,7 @@ namespace System.ComponentModel
             _asyncOperation.PostOperationCompleted(_operationCompleted, e);
         }
 
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
+        protected override void Dispose(bool disposing)
         {
         }
     }

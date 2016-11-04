@@ -91,7 +91,7 @@ namespace System.Xml.Tests
         //[InlineData("/document- sft50.xsl", "sft50.dll", "no", "sft50", "sft50.pdb", "no", "sft50.txt")] //Skipping this, it tries to load System.dll
         //[Variation("51", Desc = "Regression: Basic /settings test cases, two stylesheet with the same script block", Pri = 0, Params = new object[] { "/settings:script+ sft3.xsl sft4.xsl", "sft3.dll", "yes", "", "sft3.pdb", "no", "sft3.txt" })]
         [InlineData("/settings:script+ sft3.xsl sft4.xsl", "sft3.dll", "yes", "", "sft3.pdb", "no", "sft3.txt")]
-        [Theory]
+        [ConditionalTheory(nameof(xsltcExeFound))]
         public void Var1(object param0, object param1, object param2, object param3, object param4, object param5, object param6)
         {
             String cmdLine = param0.ToString();

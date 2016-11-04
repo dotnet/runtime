@@ -43,9 +43,9 @@ namespace System.Diagnostics
         /// <summary>Gets an array of module infos for the specified process.</summary>
         /// <param name="processId">The ID of the process whose modules should be enumerated.</param>
         /// <returns>The array of modules.</returns>
-        internal static ModuleInfo[] GetModuleInfos(int processId)
+        internal static ProcessModuleCollection GetModules(int processId)
         {
-            var modules = new List<ModuleInfo>();
+            var modules = new ProcessModuleCollection(0);
 
             // Process from the parsed maps file each entry representing a module
             foreach (Interop.procfs.ParsedMapsModule entry in Interop.procfs.ParseMapsModules(processId))
@@ -56,12 +56,12 @@ namespace System.Diagnostics
                 // the name and address ranges of sequential entries.
                 if (modules.Count > 0)
                 {
-                    ModuleInfo mi = modules[modules.Count - 1];
-                    if (mi._fileName == entry.FileName && 
-                        ((long)mi._baseOfDll + mi._sizeOfImage == entry.AddressRange.Key))
+                    ProcessModule module = modules[modules.Count - 1];
+                    if (module.FileName == entry.FileName &&
+                        ((long)module.BaseAddress + module.ModuleMemorySize == entry.AddressRange.Key))
                     {
                         // Merge this entry with the previous one
-                        modules[modules.Count - 1]._sizeOfImage += sizeOfImage;
+                        module.ModuleMemorySize += sizeOfImage;
                         continue;
                     }
                 }
@@ -69,19 +69,19 @@ namespace System.Diagnostics
                 // It's not a continuation of a previous entry but a new one: add it.
                 unsafe
                 {
-                    modules.Add(new ModuleInfo()
+                    modules.Add(new ProcessModule()
                     {
-                        _fileName = entry.FileName,
-                        _baseName = Path.GetFileName(entry.FileName),
-                        _baseOfDll = new IntPtr((void *)entry.AddressRange.Key),
-                        _sizeOfImage = sizeOfImage,
-                        _entryPoint = IntPtr.Zero // unknown
+                        FileName = entry.FileName,
+                        ModuleName = Path.GetFileName(entry.FileName),
+                        BaseAddress = new IntPtr((void*)entry.AddressRange.Key),
+                        ModuleMemorySize = sizeOfImage,
+                        EntryPointAddress = IntPtr.Zero // unknown
                     });
                 }
             }
 
             // Return the set of modules found
-            return modules.ToArray();
+            return modules;
         }
 
         // -----------------------------

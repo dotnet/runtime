@@ -17,7 +17,8 @@ namespace System.Reflection.PortableExecutable
         public bool IsDeterministic { get; }
 
         private readonly Lazy<ImmutableArray<Section>> _lazySections;
-        
+        private Blob _lazyChecksum;
+
         protected struct Section
         {
             public readonly string Name;
@@ -124,7 +125,7 @@ namespace System.Reflection.PortableExecutable
         {
             var sections = GetSections();
             var result = ImmutableArray.CreateBuilder<SerializedSection>(sections.Length);
-            int sizeOfPeHeaders = Header.ComputeSizeOfPeHeaders(sections.Length);
+            int sizeOfPeHeaders = Header.ComputeSizeOfPEHeaders(sections.Length);
 
             var nextRva = BitArithmetic.Align(sizeOfPeHeaders, Header.SectionAlignment);
             var nextPointer = BitArithmetic.Align(sizeOfPeHeaders, Header.FileAlignment);
@@ -156,7 +157,7 @@ namespace System.Reflection.PortableExecutable
             builder.WriteBytes(s_dosHeader);
 
             // PE Signature "PE\0\0" 
-            builder.WriteUInt32(0x00004550);
+            builder.WriteUInt32(PEHeaders.PESignature);
         }
 
         private static readonly byte[] s_dosHeader = new byte[]
@@ -168,7 +169,10 @@ namespace System.Reflection.PortableExecutable
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+
+            0x80, 0x00, 0x00, 0x00, // NT Header offset (0x80 == s_dosHeader.Length)
+
             0x0e, 0x1f, 0xba, 0x0e, 0x00, 0xb4, 0x09, 0xcd,
             0x21, 0xb8, 0x01, 0x4c, 0xcd, 0x21, 0x54, 0x68,
             0x69, 0x73, 0x20, 0x70, 0x72, 0x6f, 0x67, 0x72,
@@ -178,6 +182,8 @@ namespace System.Reflection.PortableExecutable
             0x6d, 0x6f, 0x64, 0x65, 0x2e, 0x0d, 0x0d, 0x0a,
             0x24, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
         };
+
+        internal static int DosHeaderSize = s_dosHeader.Length;
 
         private void WriteCoffHeader(BlobBuilder builder, ImmutableArray<SerializedSection> sections, out Blob stampFixup)
         {
@@ -203,7 +209,7 @@ namespace System.Reflection.PortableExecutable
             // SizeOfOptionalHeader:
             // The size of the optional header, which is required for executable files but not for object files. 
             // This value should be zero for an object file (TODO).
-            builder.WriteUInt16((ushort)(Header.Is32Bit ? 224 : 240));
+            builder.WriteUInt16((ushort)PEHeader.Size(Header.Is32Bit));
 
             // Characteristics
             builder.WriteUInt16((ushort)Header.ImageCharacteristics);
@@ -262,11 +268,12 @@ namespace System.Reflection.PortableExecutable
             builder.WriteUInt32((uint)BitArithmetic.Align(lastSection.RelativeVirtualAddress + lastSection.VirtualSize, Header.SectionAlignment));
 
             // SizeOfHeaders:
-            builder.WriteUInt32((uint)BitArithmetic.Align(Header.ComputeSizeOfPeHeaders(sections.Length), Header.FileAlignment));
+            builder.WriteUInt32((uint)BitArithmetic.Align(Header.ComputeSizeOfPEHeaders(sections.Length), Header.FileAlignment));
 
             // Checksum:
             // Shall be zero for strong name signing. 
-            builder.WriteUInt32(0);
+            _lazyChecksum = builder.ReserveBytes(sizeof(uint));
+            new BlobWriter(_lazyChecksum).WriteUInt32(0);
 
             builder.WriteUInt16((ushort)Header.Subsystem);
             builder.WriteUInt16((ushort)Header.DllCharacteristics);
@@ -403,6 +410,163 @@ namespace System.Reflection.PortableExecutable
             }
 
             return result;
+        }
+
+        // internal for testing
+        internal static IEnumerable<Blob> GetContentToSign(BlobBuilder peImage, int peHeadersSize, int peHeaderAlignment, Blob strongNameSignatureFixup)
+        {
+            // Signed content includes 
+            // - PE header without its alignment padding
+            // - all sections including their alignment padding and excluding strong name signature blob
+
+            // PE specification: 
+            //   To calculate the PE image hash, Authenticode orders the sections that are specified in the section table 
+            //   by address range, then hashes the resulting sequence of bytes, passing over the exclusion ranges.
+            // 
+            // Note that sections are by construction ordered by their address, so there is no need to reorder.
+
+            int remainingHeaderToSign = peHeadersSize;
+            int remainingHeader = BitArithmetic.Align(peHeadersSize, peHeaderAlignment);
+            foreach (var blob in peImage.GetBlobs())
+            {
+                int blobStart = blob.Start;
+                int blobLength = blob.Length;
+                while (blobLength > 0)
+                {
+                    if (remainingHeader > 0)
+                    {
+                        int length;
+
+                        if (remainingHeaderToSign > 0)
+                        {
+                            length = Math.Min(remainingHeaderToSign, blobLength);
+                            yield return new Blob(blob.Buffer, blobStart, length);
+                            remainingHeaderToSign -= length;
+                        }
+                        else
+                        {
+                            length = Math.Min(remainingHeader, blobLength);
+                        }
+
+                        remainingHeader -= length;
+                        blobStart += length;
+                        blobLength -= length;
+                    }
+                    else if (blob.Buffer == strongNameSignatureFixup.Buffer)
+                    {
+                        yield return GetPrefixBlob(new Blob(blob.Buffer, blobStart, blobLength), strongNameSignatureFixup);
+                        yield return GetSuffixBlob(new Blob(blob.Buffer, blobStart, blobLength), strongNameSignatureFixup);
+                        break;
+                    }
+                    else
+                    {
+                        yield return new Blob(blob.Buffer, blobStart, blobLength);
+                        break;
+                    }
+                }
+            }
+        }
+
+        // internal for testing
+        internal static Blob GetPrefixBlob(Blob container, Blob blob) => new Blob(container.Buffer, container.Start, blob.Start - container.Start);
+        internal static Blob GetSuffixBlob(Blob container, Blob blob) => new Blob(container.Buffer, blob.Start + blob.Length, container.Start + container.Length - blob.Start - blob.Length);
+
+        // internal for testing
+        internal static IEnumerable<Blob> GetContentToChecksum(BlobBuilder peImage, Blob checksumFixup)
+        {
+            foreach (var blob in peImage.GetBlobs())
+            {
+                if (blob.Buffer == checksumFixup.Buffer)
+                {
+                    yield return GetPrefixBlob(blob, checksumFixup);
+                    yield return GetSuffixBlob(blob, checksumFixup);
+                }
+                else
+                {
+                    yield return blob;
+                }
+            }
+        }
+
+        internal void Sign(BlobBuilder peImage, Blob strongNameSignatureFixup, Func<IEnumerable<Blob>, byte[]> signatureProvider)
+        {
+            Debug.Assert(peImage != null);
+            Debug.Assert(signatureProvider != null);
+
+            int peHeadersSize = Header.ComputeSizeOfPEHeaders(GetSections().Length);
+            byte[] signature = signatureProvider(GetContentToSign(peImage, peHeadersSize, Header.FileAlignment, strongNameSignatureFixup));
+
+            // signature may be shorter (the rest of the reserved space is padding):
+            if (signature == null || signature.Length > strongNameSignatureFixup.Length)
+            {
+                throw new InvalidOperationException(SR.SignatureProviderReturnedInvalidSignature);
+            }
+
+            uint checksum = CalculateChecksum(peImage, _lazyChecksum);
+            new BlobWriter(_lazyChecksum).WriteUInt32(checksum);
+
+            var writer = new BlobWriter(strongNameSignatureFixup);
+            writer.WriteBytes(signature);
+        }
+
+        // internal for testing
+        internal static uint CalculateChecksum(BlobBuilder peImage, Blob checksumFixup)
+        {
+            return CalculateChecksum(GetContentToChecksum(peImage, checksumFixup)) + (uint)peImage.Count;
+        }
+
+        private unsafe static uint CalculateChecksum(IEnumerable<Blob> blobs)
+        {
+            uint checksum = 0;
+            int pendingByte = -1;
+
+            foreach (var blob in blobs)
+            {
+                var segment = blob.GetBytes();
+                fixed (byte* arrayPtr = segment.Array)
+                {
+                    Debug.Assert(segment.Count > 0);
+
+                    byte* ptr = arrayPtr + segment.Offset;
+                    byte* end = ptr + segment.Count;
+
+                    if (pendingByte >= 0)
+                    {
+                        // little-endian encoding:
+                        checksum = AggregateChecksum(checksum, (ushort)(*ptr << 8 | pendingByte));
+                        ptr++;
+                    }
+
+                    if ((end - ptr) % 2 != 0)
+                    {
+                        end--;
+                        pendingByte = *end;
+                    }
+                    else
+                    {
+                        pendingByte = -1;
+                    }
+                    
+                    while (ptr < end)
+                    {
+                        checksum = AggregateChecksum(checksum, *(ushort*)ptr);
+                        ptr += sizeof(ushort);
+                    }
+                }
+            }
+
+            if (pendingByte >= 0)
+            {
+                checksum = AggregateChecksum(checksum, (ushort)pendingByte);
+            }
+
+            return checksum;
+        }
+
+        private static uint AggregateChecksum(uint checksum, ushort value)
+        {
+            uint sum = checksum + value;
+            return (sum >> 16) + unchecked((ushort)sum);
         }
     }
 }

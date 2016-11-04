@@ -421,14 +421,7 @@ namespace System.IO
                 }
 
                 Debug.Assert(byteBuffer != null, "expected byteBuffer to be non-null");
-                unsafe
-                {
-                    fixed (byte* pBytes = byteBuffer)
-                    fixed (char* pChars = buffer)
-                    {
-                        charsRead = _decoder.GetChars(byteBuffer, position, numBytes, buffer, index, false);
-                    }
-                }
+                charsRead = _decoder.GetChars(byteBuffer, position, numBytes, buffer, index, flush: false);
 
                 charsRemaining -= charsRead;
                 index += charsRead;

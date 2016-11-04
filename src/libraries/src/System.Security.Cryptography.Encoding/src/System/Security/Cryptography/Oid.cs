@@ -11,6 +11,8 @@ namespace System.Security.Cryptography
 {
     public sealed class Oid
     {
+        public Oid() { }
+
         public Oid(String oid)
         {
             // If we were passed the friendly name, retrieve the value String.

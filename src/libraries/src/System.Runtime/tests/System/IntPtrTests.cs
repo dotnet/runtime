@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public static class IntPtrTests
+    public static partial class IntPtrTests
     {
         private static unsafe bool Is64Bit => sizeof(void*) == 8;
 

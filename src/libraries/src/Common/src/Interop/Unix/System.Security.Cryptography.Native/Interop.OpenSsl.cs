@@ -185,7 +185,7 @@ internal static partial class Interop
         {
             Debug.Assert(input != null);
             Debug.Assert(offset >= 0);
-            Debug.Assert(count >= 0);
+            Debug.Assert(count > 0);
             Debug.Assert(offset <= input.Length);
             Debug.Assert(input.Length - offset >= count);
 
@@ -339,8 +339,10 @@ internal static partial class Interop
         {
             Debug.Assert(protocols != SslProtocols.None, "All protocols are disabled");
 
+#pragma warning disable 0618 // Ssl2, Ssl3 are deprecated.
             bool ssl2 = (protocols & SslProtocols.Ssl2) == SslProtocols.Ssl2;
             bool ssl3 = (protocols & SslProtocols.Ssl3) == SslProtocols.Ssl3;
+#pragma warning restore
             bool tls10 = (protocols & SslProtocols.Tls) == SslProtocols.Tls;
             bool tls11 = (protocols & SslProtocols.Tls11) == SslProtocols.Tls11;
             bool tls12 = (protocols & SslProtocols.Tls12) == SslProtocols.Tls12;

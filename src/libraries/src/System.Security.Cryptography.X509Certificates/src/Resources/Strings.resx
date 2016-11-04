@@ -195,6 +195,9 @@
   <data name="Cryptography_X509_InvalidFindValue" xml:space="preserve">
     <value>Invalid find value.</value>
   </data>
+  <data name="Cryptography_X509_InvalidFlagCombination" xml:space="preserve">
+    <value>The flags '{0}' may not be specified together.</value>
+  </data>
   <data name="Cryptography_X509_KeyMismatch" xml:space="preserve">
     <value>The public key of the certificate does not match the value specified.</value>
   </data>

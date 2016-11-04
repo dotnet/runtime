@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -20,73 +19,49 @@ namespace System.Linq.Expressions
     /// Only one of fault or finally can be supplied.
     /// The return type of the try block must match the return type of any associated catch statements.
     /// </summary>
-    [DebuggerTypeProxy(typeof(Expression.TryExpressionProxy))]
+    [DebuggerTypeProxy(typeof(TryExpressionProxy))]
     public sealed class TryExpression : Expression
     {
-        private readonly Type _type;
-        private readonly Expression _body;
-        private readonly ReadOnlyCollection<CatchBlock> _handlers;
-        private readonly Expression _finally;
-        private readonly Expression _fault;
-
         internal TryExpression(Type type, Expression body, Expression @finally, Expression fault, ReadOnlyCollection<CatchBlock> handlers)
         {
-            _type = type;
-            _body = body;
-            _handlers = handlers;
-            _finally = @finally;
-            _fault = fault;
+            Type = type;
+            Body = body;
+            Handlers = handlers;
+            Finally = @finally;
+            Fault = fault;
         }
 
         /// <summary>
-        /// Gets the static type of the expression that this <see cref="Expression" /> represents. (Inherited from <see cref="Expression"/>.)
+        /// Gets the static type of the expression that this <see cref="Expression"/> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
-        /// <returns>The <see cref="Type"/> that represents the static type of the expression.</returns>
-        public sealed override Type Type
-        {
-            get { return _type; }
-        }
+        /// <returns>The <see cref="System.Type"/> that represents the static type of the expression.</returns>
+        public sealed override Type Type { get; }
 
         /// <summary>
-        /// Returns the node type of this <see cref="Expression" />. (Inherited from <see cref="Expression" />.)
+        /// Returns the node type of this <see cref="Expression"/>. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="ExpressionType"/> that represents this expression.</returns>
-        public sealed override ExpressionType NodeType
-        {
-            get { return ExpressionType.Try; }
-        }
+        public sealed override ExpressionType NodeType => ExpressionType.Try;
 
         /// <summary>
         /// Gets the <see cref="Expression"/> representing the body of the try block.
         /// </summary>
-        public Expression Body
-        {
-            get { return _body; }
-        }
+        public Expression Body { get; }
 
         /// <summary>
         /// Gets the collection of <see cref="CatchBlock"/>s associated with the try block.
         /// </summary>
-        public ReadOnlyCollection<CatchBlock> Handlers
-        {
-            get { return _handlers; }
-        }
+        public ReadOnlyCollection<CatchBlock> Handlers { get; }
 
         /// <summary>
         /// Gets the <see cref="Expression"/> representing the finally block.
         /// </summary>
-        public Expression Finally
-        {
-            get { return _finally; }
-        }
+        public Expression Finally { get; }
 
         /// <summary>
         /// Gets the <see cref="Expression"/> representing the fault block.
         /// </summary>
-        public Expression Fault
-        {
-            get { return _fault; }
-        }
+        public Expression Fault { get; }
 
         /// <summary>
         /// Dispatches to the specific visit method for this node type.
@@ -101,10 +76,10 @@ namespace System.Linq.Expressions
         /// supplied children. If all of the children are the same, it will
         /// return this expression.
         /// </summary>
-        /// <param name="body">The <see cref="Body" /> property of the result.</param>
-        /// <param name="handlers">The <see cref="Handlers" /> property of the result.</param>
-        /// <param name="finally">The <see cref="Finally" /> property of the result.</param>
-        /// <param name="fault">The <see cref="Fault" /> property of the result.</param>
+        /// <param name="body">The <see cref="Body"/> property of the result.</param>
+        /// <param name="handlers">The <see cref="Handlers"/> property of the result.</param>
+        /// <param name="finally">The <see cref="Finally"/> property of the result.</param>
+        /// <param name="fault">The <see cref="Fault"/> property of the result.</param>
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public TryExpression Update(Expression body, IEnumerable<CatchBlock> handlers, Expression @finally, Expression fault)
         {
@@ -126,7 +101,7 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="TryExpression"/>.</returns>
         public static TryExpression TryFault(Expression body, Expression fault)
         {
-            return MakeTry(null, body, null, fault, null);
+            return MakeTry(null, body, null, fault, handlers: null);
         }
 
         /// <summary>
@@ -137,7 +112,7 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="TryExpression"/>.</returns>
         public static TryExpression TryFinally(Expression body, Expression @finally)
         {
-            return MakeTry(null, body, @finally, null, null);
+            return MakeTry(null, body, @finally, fault: null, handlers: null);
         }
 
         /// <summary>
@@ -176,7 +151,7 @@ namespace System.Linq.Expressions
         {
             RequiresCanRead(body, nameof(body));
 
-            var @catch = handlers.ToReadOnly();
+            ReadOnlyCollection<CatchBlock> @catch = handlers.ToReadOnly();
             ContractUtils.RequiresNotNullItems(@catch, nameof(handlers));
             ValidateTryAndCatchHaveSameType(type, body, @catch);
 
@@ -213,7 +188,7 @@ namespace System.Linq.Expressions
                     {
                         throw Error.ArgumentTypesMustMatch();
                     }
-                    foreach (var cb in handlers)
+                    foreach (CatchBlock cb in handlers)
                     {
                         if (!TypeUtils.AreReferenceAssignable(type, cb.Body.Type))
                         {

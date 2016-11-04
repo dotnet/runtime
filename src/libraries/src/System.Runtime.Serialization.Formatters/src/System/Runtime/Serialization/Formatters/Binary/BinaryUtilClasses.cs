@@ -491,7 +491,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             {
                 if (!_sealedStatusChecked)
                 {
-                    _isSealed = _type.GetTypeInfo().IsSealed;
+                    _isSealed = _type.IsSealed;
                     _sealedStatusChecked = true;
                 }
                 return _isSealed;

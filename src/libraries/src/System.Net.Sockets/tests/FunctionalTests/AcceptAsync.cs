@@ -118,7 +118,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void AcceptAsync_WithReceiveBuffer_Success()
         {
             Assert.True(Capability.IPv4Support());
@@ -169,7 +169,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void AcceptAsync_WithReceiveBuffer_Failure()
         {
             //

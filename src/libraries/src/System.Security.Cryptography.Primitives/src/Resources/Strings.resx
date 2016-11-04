@@ -135,8 +135,14 @@
   <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
     <value>Non-negative number required.</value>
   </data>
+  <data name="Cryptography_BadHashState" xml:space="preserve">
+    <value>Hash not valid for use in specified state.</value>
+  </data>
   <data name="Cryptography_CryptoStream_FlushFinalBlockTwice" xml:space="preserve">
     <value>FlushFinalBlock() method was called twice on a CryptoStream. It can only be called once.</value>
+  </data>
+  <data name="Cryptography_HashNotYetFinalized" xml:space="preserve">
+    <value>Hash must be finalized before the hash value is retrieved.</value>
   </data>
   <data name="Cryptography_InvalidBlockSize" xml:space="preserve">
     <value>Specified block size is not valid for this algorithm.</value>

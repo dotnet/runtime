@@ -15,7 +15,7 @@ namespace System.Linq.Expressions.Compiler
     /// in order to guarantee some properties of code generation, for
     /// example that we always enter try block on empty stack.
     /// </summary>
-    internal partial class StackSpiller
+    internal sealed partial class StackSpiller
     {
         // Is the evaluation stack empty?
         private enum Stack
@@ -271,7 +271,7 @@ namespace System.Linq.Expressions.Compiler
             Result right = RewriteExpression(node.Right, stack);
             if (right.Action != RewriteAction.None)
             {
-                node = Expression.Assign(node.Left, right.Node);
+                node = new AssignBinaryExpression(node.Left, right.Node);
             }
             return new Result(right.Action, node);
         }
@@ -297,7 +297,7 @@ namespace System.Linq.Expressions.Compiler
 
         private Result RewriteExtensionAssignment(BinaryExpression node, Stack stack)
         {
-            node = Expression.Assign(node.Left.ReduceExtensions(), node.Right);
+            node = new AssignBinaryExpression(node.Left.ReduceExtensions(), node.Right);
             Result result = RewriteAssignBinaryExpression(node, stack);
             // it's at least Copy because we reduced the node
             return new Result(result.Action | RewriteAction.Copy, result.Node);
@@ -333,7 +333,7 @@ namespace System.Linq.Expressions.Compiler
             RewriteAction action = test.Action | ifTrue.Action | ifFalse.Action;
             if (action != RewriteAction.None)
             {
-                expr = Expression.Condition(test.Node, ifTrue.Node, ifFalse.Node, node.Type);
+                expr = ConditionalExpression.Make(test.Node, ifTrue.Node, ifFalse.Node, node.Type);
             }
 
             return new Result(action, expr);
@@ -439,7 +439,19 @@ namespace System.Linq.Expressions.Compiler
                 RequireNoRefArgs(node.Method);
             }
 
-            return cr.Finish(cr.Rewrite ? node.Rewrite(cr[0], cr[1, -1]) : expr);
+            if (cr.Rewrite)
+            {
+                if (node.Object != null)
+                {
+                    expr = new InstanceMethodCallExpressionN(node.Method, cr[0], cr[1, -1]);
+                }
+                else
+                {
+                    expr = new MethodCallExpressionN(node.Method, cr[1, -1]);
+                }
+            }
+
+            return cr.Finish(expr);
         }
 
         // NewArrayExpression
@@ -465,15 +477,7 @@ namespace System.Linq.Expressions.Compiler
 
             if (cr.Rewrite)
             {
-                Type element = node.Type.GetElementType();
-                if (node.NodeType == ExpressionType.NewArrayInit)
-                {
-                    expr = Expression.NewArrayInit(element, cr[0, -1]);
-                }
-                else
-                {
-                    expr = Expression.NewArrayBounds(element, cr[0, -1]);
-                }
+                expr = NewArrayExpression.Make(node.NodeType, node.Type, new TrueReadOnlyCollection<Expression>(cr[0, -1]));
             }
 
             return cr.Finish(expr);
@@ -505,7 +509,7 @@ namespace System.Linq.Expressions.Compiler
 
                 if (cr.Rewrite || spiller._lambdaRewrite != RewriteAction.None)
                 {
-                    node = node.Rewrite(lambda, cr[0, -1]);
+                    node = new InvocationExpressionN(lambda, cr[0, -1], node.Type);
                 }
 
                 Result result = cr.Finish(node);
@@ -525,7 +529,7 @@ namespace System.Linq.Expressions.Compiler
                 RequireNoRefArgs(Expression.GetInvokeMethod(node.Expression));
             }
 
-            return cr.Finish(cr.Rewrite ? node.Rewrite(cr[0], cr[1, -1]) : expr);
+            return cr.Finish(cr.Rewrite ? new InvocationExpressionN(cr[0], cr[1, -1], node.Type) : expr);
         }
 
         // NewExpression
@@ -554,14 +558,7 @@ namespace System.Linq.Expressions.Compiler
             Result expression = RewriteExpression(node.Expression, stack);
             if (expression.Action != RewriteAction.None)
             {
-                if (node.NodeType == ExpressionType.TypeIs)
-                {
-                    expr = Expression.TypeIs(expression.Node, node.TypeOperand);
-                }
-                else
-                {
-                    expr = Expression.TypeEqual(expression.Node, node.TypeOperand);
-                }
+                expr = new TypeBinaryExpression(expression.Node, node.TypeOperand, node.NodeType);
             }
             return new Result(expression.Action, expr);
         }
@@ -586,7 +583,7 @@ namespace System.Linq.Expressions.Compiler
 
             if (action != RewriteAction.None)
             {
-                expr = Expression.Throw(value.Node, node.Type);
+                expr = new UnaryExpression(ExpressionType.Throw, value.Node, node.Type, null);
             }
 
             return new Result(action, expr);
@@ -656,22 +653,22 @@ namespace System.Linq.Expressions.Compiler
                         }
                         else
                         {
-                            newInits[i] = Expression.ElementInit(inits[i].AddMethod, cr[0, -1]);
+                            newInits[i] = new ElementInit(inits[i].AddMethod, new TrueReadOnlyCollection<Expression>(cr[0, -1]));
                         }
                     }
-                    expr = Expression.ListInit((NewExpression)rewrittenNew, new TrueReadOnlyCollection<ElementInit>(newInits));
+                    expr = new ListInitExpression((NewExpression)rewrittenNew, new TrueReadOnlyCollection<ElementInit>(newInits));
                     break;
                 case RewriteAction.SpillStack:
                     RequireNotRefInstance(node.NewExpression);
 
                     ParameterExpression tempNew = MakeTemp(rewrittenNew.Type);
                     Expression[] comma = new Expression[inits.Count + 2];
-                    comma[0] = Expression.Assign(tempNew, rewrittenNew);
+                    comma[0] = new AssignBinaryExpression(tempNew, rewrittenNew);
 
                     for (int i = 0; i < inits.Count; i++)
                     {
                         ChildRewriter cr = cloneCrs[i];
-                        Result add = cr.Finish(Expression.Call(tempNew, inits[i].AddMethod, cr[0, -1]));
+                        Result add = cr.Finish(new InstanceMethodCallExpressionN(inits[i].AddMethod, tempNew, cr[0, -1]));
                         comma[i + 1] = add.Node;
                     }
                     comma[inits.Count + 1] = tempNew;
@@ -715,14 +712,14 @@ namespace System.Linq.Expressions.Compiler
                     {
                         newBindings[i] = bindingRewriters[i].AsBinding();
                     }
-                    expr = Expression.MemberInit((NewExpression)rewrittenNew, new TrueReadOnlyCollection<MemberBinding>(newBindings));
+                    expr = new MemberInitExpression((NewExpression)rewrittenNew, new TrueReadOnlyCollection<MemberBinding>(newBindings));
                     break;
                 case RewriteAction.SpillStack:
                     RequireNotRefInstance(node.NewExpression);
 
                     ParameterExpression tempNew = MakeTemp(rewrittenNew.Type);
                     Expression[] comma = new Expression[bindings.Count + 2];
-                    comma[0] = Expression.Assign(tempNew, rewrittenNew);
+                    comma[0] = new AssignBinaryExpression(tempNew, rewrittenNew);
                     for (int i = 0; i < bindings.Count; i++)
                     {
                         BindingRewriter cr = bindingRewriters[i];
@@ -785,7 +782,7 @@ namespace System.Linq.Expressions.Compiler
             Result expression = RewriteExpression(node.DefaultValue, stack);
             if (expression.Action != RewriteAction.None)
             {
-                expr = Expression.Label(node.Target, expression.Node);
+                expr = new LabelExpression(node.Target, expression.Node);
             }
             return new Result(expression.Action, expr);
         }

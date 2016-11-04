@@ -162,11 +162,38 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
         public static void MultipleDispose()
         {
             ICryptoTransform encryptor = new IdentityTransform(1, 1, true);
+
             using (MemoryStream output = new MemoryStream())
-            using (CryptoStream encryptStream = new CryptoStream(output, encryptor, CryptoStreamMode.Write))
             {
-                encryptStream.Dispose();
+                using (CryptoStream encryptStream = new CryptoStream(output, encryptor, CryptoStreamMode.Write))
+                {
+                    encryptStream.Dispose();
+                }
+
+                Assert.Equal(false, output.CanRead);
             }
+
+#if netcoreapp11
+            using (MemoryStream output = new MemoryStream())
+            {
+                using (CryptoStream encryptStream = new CryptoStream(output, encryptor, CryptoStreamMode.Write, leaveOpen: false))
+                {
+                    encryptStream.Dispose();
+                }
+
+                Assert.Equal(false, output.CanRead);
+            }
+
+            using (MemoryStream output = new MemoryStream())
+            {
+                using (CryptoStream encryptStream = new CryptoStream(output, encryptor, CryptoStreamMode.Write, leaveOpen: true))
+                {
+                    encryptStream.Dispose();
+                }
+
+                Assert.Equal(true, output.CanRead);
+            }
+#endif
         }
 
         private const string LoremText =

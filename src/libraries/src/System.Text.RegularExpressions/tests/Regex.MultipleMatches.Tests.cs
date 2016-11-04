@@ -54,76 +54,76 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[]
             {
                 "[0-9]", "12345asdfasdfasdfljkhsda67890", RegexOptions.None,
-                new Capture[]
+                new CaptureData[]
                 {
-                    new Capture("1", 0, 1),
-                    new Capture("2", 1, 1),
-                    new Capture("3", 2, 1),
-                    new Capture("4", 3, 1),
-                    new Capture("5", 4, 1),
-                    new Capture("6", 24, 1),
-                    new Capture("7", 25, 1),
-                    new Capture("8", 26, 1),
-                    new Capture("9", 27, 1),
-                    new Capture("0", 28, 1),
+                    new CaptureData("1", 0, 1),
+                    new CaptureData("2", 1, 1),
+                    new CaptureData("3", 2, 1),
+                    new CaptureData("4", 3, 1),
+                    new CaptureData("5", 4, 1),
+                    new CaptureData("6", 24, 1),
+                    new CaptureData("7", 25, 1),
+                    new CaptureData("8", 26, 1),
+                    new CaptureData("9", 27, 1),
+                    new CaptureData("0", 28, 1),
                 }
             };
 
             yield return new object[]
             {
                 "[a-z0-9]+", "[token1]? GARBAGEtoken2GARBAGE ;token3!", RegexOptions.None,
-                new Capture[]
+                new CaptureData[]
                 {
-                    new Capture("token1", 1, 6),
-                    new Capture("token2", 17, 6),
-                    new Capture("token3", 32, 6)
+                    new CaptureData("token1", 1, 6),
+                    new CaptureData("token2", 17, 6),
+                    new CaptureData("token3", 32, 6)
                 }
             };
 
             yield return new object[]
             {
                 "(abc){2}", " !abcabcasl  dkfjasiduf 12343214-//asdfjzpiouxoifzuoxpicvql23r\\` #$3245,2345278 :asdfas & 100% @daeeffga (ryyy27343) poiweurwabcabcasdfalksdhfaiuyoiruqwer{234}/[(132387 + x)]'aaa''?", RegexOptions.None,
-                new Capture[]
+                new CaptureData[]
                 {
-                    new Capture("abcabc", 2, 6),
-                    new Capture("abcabc", 125, 6)
+                    new CaptureData("abcabc", 2, 6),
+                    new CaptureData("abcabc", 125, 6)
                 }
             };
 
             yield return new object[]
             {
                 @"foo\d+", "0123456789foo4567890foo1foo  0987", RegexOptions.RightToLeft,
-                new Capture[]
+                new CaptureData[]
                 {
-                    new Capture("foo1", 20, 4),
-                    new Capture("foo4567890", 10, 10),
+                    new CaptureData("foo1", 20, 4),
+                    new CaptureData("foo4567890", 10, 10),
                 }
             };
 
             yield return new object[]
             {
                 "[a-z]", "a", RegexOptions.None,
-                new Capture[]
+                new CaptureData[]
                 {
-                    new Capture("a", 0, 1)
+                    new CaptureData("a", 0, 1)
                 }
             };
 
             yield return new object[]
             {
                 "[a-z]", "a1bc", RegexOptions.None,
-                new Capture[]
+                new CaptureData[]
                 {
-                    new Capture("a", 0, 1),
-                    new Capture("b", 2, 1),
-                    new Capture("c", 3, 1)
+                    new CaptureData("a", 0, 1),
+                    new CaptureData("b", 2, 1),
+                    new CaptureData("c", 3, 1)
                 }
             };
         }
 
         [Theory]
         [MemberData(nameof(Matches_TestData))]
-        public void Matches(string pattern, string input, RegexOptions options, Capture[] expected)
+        public void Matches(string pattern, string input, RegexOptions options, CaptureData[] expected)
         {
             if (options == RegexOptions.None)
             {
@@ -143,7 +143,7 @@ namespace System.Text.RegularExpressions.Tests
             VerifyMatches(Regex.Match(input, pattern, options), expected);
         }
 
-        public static void VerifyMatches(Match match, Capture[] expected)
+        public static void VerifyMatches(Match match, CaptureData[] expected)
         {
             for (int i = 0; match.Success; i++, match = match.NextMatch())
             {
@@ -151,7 +151,7 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        public static void VerifyMatches(MatchCollection matches, Capture[] expected)
+        public static void VerifyMatches(MatchCollection matches, CaptureData[] expected)
         {
             Assert.Equal(expected.Length, matches.Count);
             for (int i = 0; i < matches.Count; i++)
@@ -160,7 +160,7 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        public static void VerifyMatch(Match match, Capture expected)
+        public static void VerifyMatch(Match match, CaptureData expected)
         {
             Assert.True(match.Success);
             Assert.Equal(expected.Value, match.Value);

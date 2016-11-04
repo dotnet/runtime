@@ -22,7 +22,7 @@ namespace System.Diagnostics.Tests
         private const string TestNotFoundFileName = "notfound.dll";
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // native PE files only supported on Windows
+        [PlatformSpecific(TestPlatforms.Windows)] // native PE files only supported on Windows
         public void FileVersionInfo_Normal()
         {
             // NativeConsoleApp (English)
@@ -59,7 +59,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // native PE files only supported on Windows
+        [PlatformSpecific(TestPlatforms.Windows)] // native PE files only supported on Windows
         public void FileVersionInfo_Chinese()
         {
             // NativeLibrary.dll (Chinese)
@@ -97,7 +97,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // native PE files only supported on Windows
+        [PlatformSpecific(TestPlatforms.Windows)] // native PE files only supported on Windows
         public void FileVersionInfo_DifferentFileVersionAndProductVersion()
         {
             // Mtxex.dll

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -44,6 +45,53 @@ namespace System.Net.Sockets.Tests
             new object[] { CancellationToken.None },             // CanBeCanceled == false
             new object[] { new CancellationTokenSource().Token } // CanBeCanceled == true
         };
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(1024)]
+        [InlineData(4096)]
+        [InlineData(4095)]
+        [InlineData(1024*1024)]
+        public async Task CopyToAsync_AllDataCopied(int byteCount)
+        {
+            await RunWithConnectedNetworkStreamsAsync(async (server, client) =>
+            {
+                var results = new MemoryStream();
+                byte[] dataToCopy = new byte[byteCount];
+                new Random().NextBytes(dataToCopy);
+
+                Task copyTask = client.CopyToAsync(results);
+                await server.WriteAsync(dataToCopy, 0, dataToCopy.Length);
+                server.Dispose();
+                await copyTask;
+
+                Assert.Equal(dataToCopy, results.ToArray());
+            });
+        }
+
+        [Fact]
+        public async Task CopyToAsync_InvalidArguments_Throws()
+        {
+            await RunWithConnectedNetworkStreamsAsync((stream, _) =>
+            {
+                // Null destination
+                Assert.Throws<ArgumentNullException>("destination", () => { stream.CopyToAsync(null); });
+
+                // Buffer size out-of-range
+                Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () => { stream.CopyToAsync(new MemoryStream(), 0); });
+                Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () => { stream.CopyToAsync(new MemoryStream(), -1, CancellationToken.None); });
+
+                // Copying to non-writable stream
+                Assert.Throws<NotSupportedException>(() => { stream.CopyToAsync(new MemoryStream(new byte[0], writable: false)); });
+
+                // Copying after disposing the stream
+                stream.Dispose();
+                Assert.Throws<ObjectDisposedException>(() => { stream.CopyToAsync(new MemoryStream()); });
+
+                return Task.CompletedTask;
+            });
+        }
 
         /// <summary>
         /// Creates a pair of connected NetworkStreams and invokes the provided <paramref name="func"/>

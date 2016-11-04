@@ -88,14 +88,13 @@ namespace System.Xml.Serialization
                 return;
             }
 
-            IEnumerable<Attribute> typeForwardedFromAttribute = type.GetTypeInfo().GetCustomAttributes(typeof(TypeForwardedFromAttribute), false);
-            if (typeForwardedFromAttribute.Count() > 0)
+            object[] typeForwardedFromAttribute = type.GetCustomAttributes(typeof(TypeForwardedFromAttribute), false);
+            if (typeForwardedFromAttribute.Length > 0)
             {
-                TypeForwardedFromAttribute originalAssemblyInfo = typeForwardedFromAttribute.First() as TypeForwardedFromAttribute;
+                TypeForwardedFromAttribute originalAssemblyInfo = typeForwardedFromAttribute[0] as TypeForwardedFromAttribute;
                 Assembly originalAssembly = Assembly.Load(new AssemblyName(originalAssemblyInfo.AssemblyFullName));
                 //_imports[originalAssembly] = originalAssembly.Location;
             }
-
             //_imports[assembly] = assembly.Location;
         }
 

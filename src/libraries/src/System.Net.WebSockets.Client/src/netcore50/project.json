@@ -2,30 +2,26 @@
   "frameworks": {
     "netcore50": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1",
-        "Microsoft.TargetingPack.Private.WinRT": "1.0.1",
-        "System.Collections": "4.0.10",
-        "System.Diagnostics.Debug": "4.0.10",
-        "System.Diagnostics.Tools": "4.0.0",
-        "System.Diagnostics.Tracing": "4.0.20",
-        "System.Globalization": "4.0.10",
-        "System.Net.Primitives": "4.0.10",
-        "System.Net.WebHeaderCollection": "4.0.0",
+        "Microsoft.TargetingPack.Private.WinRT": "1.0.2",
+        "System.Collections": "4.0.11",
+        "System.Diagnostics.Debug": "4.0.11",
+        "System.Diagnostics.Tools": "4.0.1",
+        "System.Diagnostics.Tracing": "4.1.0",
+        "System.Globalization": "4.0.11",
+        "System.Net.Primitives": "4.0.11",
+        "System.Net.WebHeaderCollection": "4.0.1",
         "System.Net.WebSockets": "4.0.0",
-        "System.ObjectModel": "4.0.10",
-        "System.Resources.ResourceManager": "4.0.0",
-        "System.Runtime": "4.0.20",
-        "System.Runtime.InteropServices.WindowsRuntime": "4.0.0",
-        "System.Runtime.WindowsRuntime": "4.0.10",
+        "System.ObjectModel": "4.0.12",
+        "System.Resources.ResourceManager": "4.0.1",
+        "System.Runtime": "4.1.0",
+        "System.Runtime.Extensions": "4.1.0",
+        "System.Runtime.InteropServices.WindowsRuntime": "4.0.1",
+        "System.Runtime.WindowsRuntime": "4.0.11",
         "System.Security.Cryptography.X509Certificates": "4.1.0",
-        "System.Text.Encoding": "4.0.10",
-        "System.Threading": "4.0.10",
-        "System.Threading.Tasks": "4.0.10"
+        "System.Text.Encoding": "4.0.11",
+        "System.Threading": "4.0.11",
+        "System.Threading.Tasks": "4.0.11"
       }
     }
-  },
-  "runtimes": {
-    "win8-x86": {},
-    "win8-x64": {}
   }
 }

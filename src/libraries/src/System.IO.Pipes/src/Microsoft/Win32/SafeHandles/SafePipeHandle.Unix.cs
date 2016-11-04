@@ -11,7 +11,7 @@ using System.Security;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    public sealed partial class SafePipeHandle : SafeHandle
+    public sealed partial class SafePipeHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         private const int DefaultInvalidHandle = -1;
 
@@ -26,7 +26,7 @@ namespace Microsoft.Win32.SafeHandles
         private SafeHandle _namedPipeSocketHandle;
         private static PropertyInfo s_safeHandleProperty;
 
-        internal SafePipeHandle(Socket namedPipeSocket) : base((IntPtr)DefaultInvalidHandle, ownsHandle: true)
+        internal SafePipeHandle(Socket namedPipeSocket) : base(ownsHandle: true)
         {
             Debug.Assert(namedPipeSocket != null);
             _namedPipeSocket = namedPipeSocket;

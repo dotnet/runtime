@@ -11,28 +11,28 @@ namespace System.IO
     public partial class ErrorEventArgs : System.EventArgs
     {
         public ErrorEventArgs(System.Exception exception) { }
-        public virtual System.Exception GetException() { return default(System.Exception); }
+        public virtual System.Exception GetException() { throw null; }
     }
     public delegate void ErrorEventHandler(object sender, System.IO.ErrorEventArgs e);
     public partial class FileSystemEventArgs : System.EventArgs
     {
         public FileSystemEventArgs(System.IO.WatcherChangeTypes changeType, string directory, string name) { }
-        public System.IO.WatcherChangeTypes ChangeType { get { return default(System.IO.WatcherChangeTypes); } }
-        public string FullPath { get { return default(string); } }
-        public string Name { get { return default(string); } }
+        public System.IO.WatcherChangeTypes ChangeType { get { throw null; } }
+        public string FullPath { get { throw null; } }
+        public string Name { get { throw null; } }
     }
     public delegate void FileSystemEventHandler(object sender, System.IO.FileSystemEventArgs e);
-    public partial class FileSystemWatcher
+    public partial class FileSystemWatcher : System.ComponentModel.Component
     {
         public FileSystemWatcher() { }
         public FileSystemWatcher(string path) { }
         public FileSystemWatcher(string path, string filter) { }
-        public bool EnableRaisingEvents { get { return default(bool); } set { } }
-        public string Filter { get { return default(string); } set { } }
-        public bool IncludeSubdirectories { get { return default(bool); } set { } }
-        public int InternalBufferSize { get { return default(int); } set { } }
-        public System.IO.NotifyFilters NotifyFilter { get { return default(System.IO.NotifyFilters); } set { } }
-        public string Path { get { return default(string); } set { } }
+        public bool EnableRaisingEvents { get { throw null; } set { } }
+        public string Filter { get { throw null; } set { } }
+        public bool IncludeSubdirectories { get { throw null; } set { } }
+        public int InternalBufferSize { get { throw null; } set { } }
+        public System.IO.NotifyFilters NotifyFilter { get { throw null; } set { } }
+        public string Path { get { throw null; } set { } }
         public event System.IO.FileSystemEventHandler Changed { add { } remove { } }
         public event System.IO.FileSystemEventHandler Created { add { } remove { } }
         public event System.IO.FileSystemEventHandler Deleted { add { } remove { } }
@@ -43,8 +43,16 @@ namespace System.IO
         protected void OnDeleted(System.IO.FileSystemEventArgs e) { }
         protected void OnError(System.IO.ErrorEventArgs e) { }
         protected void OnRenamed(System.IO.RenamedEventArgs e) { }
-        public System.IO.WaitForChangedResult WaitForChanged(System.IO.WatcherChangeTypes changeType) { return default(System.IO.WaitForChangedResult); }
-        public System.IO.WaitForChangedResult WaitForChanged(System.IO.WatcherChangeTypes changeType, int timeout) { return default(System.IO.WaitForChangedResult); }
+        public System.IO.WaitForChangedResult WaitForChanged(System.IO.WatcherChangeTypes changeType) { throw null; }
+        public System.IO.WaitForChangedResult WaitForChanged(System.IO.WatcherChangeTypes changeType, int timeout) { throw null; }
+    }
+    [Serializable]
+    public partial class InternalBufferOverflowException : System.SystemException
+    {
+        public InternalBufferOverflowException() { }
+        public InternalBufferOverflowException(string message) { }
+        public InternalBufferOverflowException(string message, System.Exception inner) { }
+        protected InternalBufferOverflowException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     [System.FlagsAttribute]
     public enum NotifyFilters
@@ -61,16 +69,16 @@ namespace System.IO
     public partial class RenamedEventArgs : System.IO.FileSystemEventArgs
     {
         public RenamedEventArgs(System.IO.WatcherChangeTypes changeType, string directory, string name, string oldName) : base(default(System.IO.WatcherChangeTypes), default(string), default(string)) { }
-        public string OldFullPath { get { return default(string); } }
-        public string OldName { get { return default(string); } }
+        public string OldFullPath { get { throw null; } }
+        public string OldName { get { throw null; } }
     }
     public delegate void RenamedEventHandler(object sender, System.IO.RenamedEventArgs e);
     public struct WaitForChangedResult
     {
-        public System.IO.WatcherChangeTypes ChangeType { get { return default(System.IO.WatcherChangeTypes); } set { } }
-        public string Name { get { return default(string); } set { } }
-        public string OldName { get { return default(string); } set { } }
-        public bool TimedOut { get { return false; } set { } }
+        public System.IO.WatcherChangeTypes ChangeType { get { throw null; } set { } }
+        public string Name { get { throw null; } set { } }
+        public string OldName { get { throw null; } set { } }
+        public bool TimedOut { get { throw null; } set { } }
     }
     [System.FlagsAttribute]
     public enum WatcherChangeTypes

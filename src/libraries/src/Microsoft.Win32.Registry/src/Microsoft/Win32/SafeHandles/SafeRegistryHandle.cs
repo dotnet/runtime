@@ -12,15 +12,13 @@ namespace Microsoft.Win32.SafeHandles
 #else
     internal
 #endif
-    sealed partial class SafeRegistryHandle : SafeHandle
+    sealed partial class SafeRegistryHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        internal SafeRegistryHandle() : base(IntPtr.Zero, true) { }
+        internal SafeRegistryHandle() : base(true) { }
 
-        public SafeRegistryHandle(IntPtr preexistingHandle, bool ownsHandle) : base(IntPtr.Zero, ownsHandle)
+        public SafeRegistryHandle(IntPtr preexistingHandle, bool ownsHandle) : base(ownsHandle)
         {
             SetHandle(preexistingHandle);
         }
-
-        public override bool IsInvalid => handle == IntPtr.Zero || handle == new IntPtr(-1);
     }
 }

@@ -148,13 +148,14 @@ namespace System.Data.SqlClient
                 {
                     _collation = collation = new SqlCollation();
                 }
-                if ((value & SqlString.x_iValidSqlCompareOptionMask) != value)
+                if ((value & SqlTypeWorkarounds.SqlStringValidSqlCompareOptionMask) != value)
                 {
                     throw ADP.ArgumentOutOfRange(nameof(CompareInfo));
                 }
                 collation.SqlCompareOptions = value;
             }
         }
+
 
         public string XmlSchemaCollectionDatabase
         {

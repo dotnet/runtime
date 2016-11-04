@@ -52,9 +52,9 @@ namespace System.Reflection.Metadata
             }
         }
 
-        public MethodSignature<TType> DecodeSignature<TType>(ISignatureTypeProvider<TType> provider)
+        public MethodSignature<TType> DecodeSignature<TType, TGenericContext>(ISignatureTypeProvider<TType, TGenericContext> provider, TGenericContext genericContext)
         {
-            var decoder = new SignatureDecoder<TType>(provider, _reader);
+            var decoder = new SignatureDecoder<TType, TGenericContext>(provider, _reader, genericContext);
             var blobReader = _reader.GetBlobReader(Signature);
             return decoder.DecodeMethodSignature(ref blobReader);
         }

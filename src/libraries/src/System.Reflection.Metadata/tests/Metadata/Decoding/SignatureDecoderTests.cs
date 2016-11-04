@@ -35,7 +35,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
             {
                 var signatureBlob = new BlobReader(testSignaturePtr, testSignature.Length);
                 var provider = new OpaqueTokenTypeProvider();
-                var decoder = new SignatureDecoder<string>(provider);
+                var decoder = new SignatureDecoder<string, DisassemblingGenericContext>(provider, metadataReader: null, genericContext: null);
 
                 foreach (string typeString in types)
                 {
@@ -56,7 +56,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
             {
                 var signatureBlob = new BlobReader(testSignaturePtr, testSignature.Length);
                 var provider = new OpaqueTokenTypeProvider();
-                var decoder = new SignatureDecoder<string>(provider);
+                var decoder = new SignatureDecoder<string, DisassemblingGenericContext>(provider, metadataReader: null, genericContext: null);
 
                 IEnumerable<string> actualTypes = decoder.DecodeMethodSpecificationSignature(ref signatureBlob);
                 Assert.Equal(expectedTypes, actualTypes);
@@ -74,8 +74,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
             {
                 var signatureBlob = new BlobReader(testSignaturePtr, testSignature.Length);
                 var provider = new OpaqueTokenTypeProvider();
-                var decoder = new SignatureDecoder<string>(provider);
-                Assert.Throws<BadImageFormatException>(() => decoder.DecodeMethodSpecificationSignature(ref signatureBlob));
+                var decoder = new SignatureDecoder<string, DisassemblingGenericContext>(provider, metadataReader: null, genericContext: null);
             }
         }
 
@@ -93,7 +92,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
                 Assert.Equal("VarArgsCallee", metadataReader.GetString(methodDef.Name));
                 var provider = new OpaqueTokenTypeProvider();
 
-                MethodSignature<string> defSignature = methodDef.DecodeSignature(provider);
+                MethodSignature<string> defSignature = methodDef.DecodeSignature(provider, null);
                 Assert.Equal(SignatureCallingConvention.VarArgs, defSignature.Header.CallingConvention);
                 Assert.Equal(1, defSignature.RequiredParameterCount);
                 Assert.Equal(new[] { "int32" }, defSignature.ParameterTypes);
@@ -106,7 +105,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
                     if (metadataReader.StringComparer.Equals(memberRef.Name, "VarArgsCallee"))
                     {
                         Assert.Equal(MemberReferenceKind.Method, memberRef.GetKind());
-                        MethodSignature<string> refSignature = memberRef.DecodeMethodSignature(provider);
+                        MethodSignature<string> refSignature = memberRef.DecodeMethodSignature(provider, null);
                         Assert.Equal(SignatureCallingConvention.VarArgs, refSignature.Header.CallingConvention);
                         Assert.Equal(1, refSignature.RequiredParameterCount);
                         Assert.Equal(new[] { "int32", "bool", "string", "float64" }, refSignature.ParameterTypes);
@@ -137,30 +136,39 @@ namespace System.Reflection.Metadata.Decoding.Tests
             using (FileStream stream = File.OpenRead(typeof(SignaturesToDecode<>).GetTypeInfo().Assembly.Location))
             using (var peReader = new PEReader(stream))
             {
+
                 MetadataReader reader = peReader.GetMetadataReader();
                 var provider = new DisassemblingTypeProvider();
                 TypeDefinitionHandle typeHandle = TestMetadataResolver.FindTestType(reader, typeof(SignaturesToDecode<>));
-                Assert.Equal("System.Reflection.Metadata.Decoding.Tests.SignatureDecoderTests/SignaturesToDecode`1", provider.GetTypeFromHandle(reader, typeHandle));
+                Assert.Equal("System.Reflection.Metadata.Decoding.Tests.SignatureDecoderTests/SignaturesToDecode`1", provider.GetTypeFromHandle(reader, genericContext: null, handle: typeHandle));
 
                 TypeDefinition type = reader.GetTypeDefinition(typeHandle);
                 Dictionary<string, string> expectedFields = GetExpectedFieldSignatures();
+                ImmutableArray<string> genericTypeParameters = type.GetGenericParameters().Select(h => reader.GetString(reader.GetGenericParameter(h).Name)).ToImmutableArray();
+
+                var genericTypeContext = new DisassemblingGenericContext(genericTypeParameters, ImmutableArray<string>.Empty);
+
                 foreach (var fieldHandle in type.GetFields())
                 {
                     FieldDefinition field = reader.GetFieldDefinition(fieldHandle);
                     string fieldName = reader.GetString(field.Name);
                     string expected;
                     Assert.True(expectedFields.TryGetValue(fieldName, out expected), "Unexpected field: " + fieldName);
-                    Assert.Equal(expected, field.DecodeSignature(provider));
+                    Assert.Equal(expected, field.DecodeSignature(provider, genericTypeContext));
                 }
 
                 Dictionary<string, string> expectedMethods = GetExpectedMethodSignatures();
                 foreach (var methodHandle in type.GetMethods())
                 {
                     MethodDefinition method = reader.GetMethodDefinition(methodHandle);
+
+                    ImmutableArray<string> genericMethodParameters = method.GetGenericParameters().Select(h => reader.GetString(reader.GetGenericParameter(h).Name)).ToImmutableArray();
+                    var genericMethodContext = new DisassemblingGenericContext(genericTypeParameters, genericMethodParameters);
+
                     string methodName = reader.GetString(method.Name);
                     string expected;
                     Assert.True(expectedMethods.TryGetValue(methodName, out expected), "Unexpected method: " + methodName);
-                    MethodSignature<string> signature = method.DecodeSignature(provider);
+                    MethodSignature<string> signature = method.DecodeSignature(provider, genericMethodContext);
                     Assert.True(signature.Header.Kind == SignatureKind.Method);
 
                     if (methodName.StartsWith("Generic"))
@@ -183,7 +191,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
                     string propertyName = reader.GetString(property.Name);
                     string expected;
                     Assert.True(expectedProperties.TryGetValue(propertyName, out expected), "Unexpected property: " + propertyName);
-                    MethodSignature<string> signature = property.DecodeSignature(provider);
+                    MethodSignature<string> signature = property.DecodeSignature(provider, genericTypeContext);
                     Assert.True(signature.Header.Kind == SignatureKind.Property);
                     Assert.Equal(expected, provider.GetFunctionPointerType(signature));
                 }
@@ -195,10 +203,11 @@ namespace System.Reflection.Metadata.Decoding.Tests
                     string eventName = reader.GetString(@event.Name);
                     string expected;
                     Assert.True(expectedEvents.TryGetValue(eventName, out expected), "Unexpected event: " + eventName);
-                    Assert.Equal(expected, provider.GetTypeFromHandle(reader, @event.Type));
+
+                    Assert.Equal(expected, provider.GetTypeFromHandle(reader, genericTypeContext, @event.Type));
                 }
 
-                Assert.Equal("[System.Collections]System.Collections.Generic.List`1<!0>", provider.GetTypeFromHandle(reader, type.BaseType));
+                Assert.Equal("[System.Collections]System.Collections.Generic.List`1<!T>", provider.GetTypeFromHandle(reader, genericTypeContext, handle: type.BaseType));
             }
         }
 
@@ -227,7 +236,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
             public void ByReference(ref int i) { }
             public T GenericTypeParameter;
             public U GenericMethodParameter<U>() { throw null; }
-            public List<int> GenericInstance;
+            public List<int> GenericInstantiation;
             public struct Nested { }
             public Nested Property { get { throw null; } }
             public event EventHandler<EventArgs> Event { add { } remove { } }
@@ -251,7 +260,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
                 MethodBodyBlock body = peReader.GetMethodBody(methodDef.RelativeVirtualAddress);
                 StandaloneSignature localSignature = reader.GetStandaloneSignature(body.LocalSignature);
 
-                ImmutableArray<string> localTypes = localSignature.DecodeLocalSignature(provider);
+                ImmutableArray<string> localTypes = localSignature.DecodeLocalSignature(provider, genericContext: null);
 
                 // Compiler can generate temporaries or re-order so just check the ones we expect are there.
                 // (They could get optimized away too. If that happens in practice, change this test to use hard-coded signatures.)
@@ -280,7 +289,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
             {
                 MetadataReader reader = peReader.GetMetadataReader();
                 var provider = new DisassemblingTypeProvider();
-                var decoder = new SignatureDecoder<string>(provider, reader);
+                var decoder = new SignatureDecoder<string, DisassemblingGenericContext>(provider, reader, genericContext: null);
 
                 BlobReader fieldSignature = reader.GetBlobReader(reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1)).Signature);
                 BlobReader methodSignature = reader.GetBlobReader(reader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(1)).Signature);
@@ -317,8 +326,8 @@ namespace System.Reflection.Metadata.Decoding.Tests
                 { "Pointer", "int32*"  },
                 { "SZArray", "int32[]" },
                 { "Array", "int32[0...,0...]" },
-                { "GenericTypeParameter", "!0" },
-                { "GenericInstance", "[System.Collections]System.Collections.Generic.List`1<int32>" },
+                { "GenericTypeParameter", "!T" },
+                { "GenericInstantiation", "[System.Collections]System.Collections.Generic.List`1<int32>" },
             };
         }
 
@@ -328,9 +337,9 @@ namespace System.Reflection.Metadata.Decoding.Tests
             return new Dictionary<string, string>()
             {
                 { "ByReference", "method void *(int32&)" },
-                { "GenericMethodParameter", "method !!0 *()" },
+                { "GenericMethodParameter", "method !!U *()" },
                 { ".ctor", "method void *()" },
-                { "get_Property", "method System.Reflection.Metadata.Decoding.Tests.SignatureDecoderTests/SignaturesToDecode`1/Nested<!0> *()"  },
+                { "get_Property", "method System.Reflection.Metadata.Decoding.Tests.SignatureDecoderTests/SignaturesToDecode`1/Nested<!T> *()"  },
                 { "add_Event",  "method void *([System.Runtime]System.EventHandler`1<[System.Runtime]System.EventArgs>)" },
                 { "remove_Event", "method void *([System.Runtime]System.EventHandler`1<[System.Runtime]System.EventArgs>)" },
             };
@@ -341,7 +350,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
             // field name -> signature
             return new Dictionary<string, string>()
             {
-                { "Property", "method System.Reflection.Metadata.Decoding.Tests.SignatureDecoderTests/SignaturesToDecode`1/Nested<!0> *()" },
+                { "Property", "method System.Reflection.Metadata.Decoding.Tests.SignatureDecoderTests/SignaturesToDecode`1/Nested<!T> *()" },
             };
         }
 
@@ -363,7 +372,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
             fixed (byte* bytes = signature)
             {
                 BlobReader reader = new BlobReader(bytes, signature.Length);
-                Assert.Throws<BadImageFormatException>(() => new SignatureDecoder<string>(new OpaqueTokenTypeProvider()).DecodeType(ref reader));
+                Assert.Throws<BadImageFormatException>(() => new SignatureDecoder<string, DisassemblingGenericContext>(new OpaqueTokenTypeProvider(), metadataReader: null, genericContext: null).DecodeType(ref reader));
             }
         }
 
@@ -378,14 +387,14 @@ namespace System.Reflection.Metadata.Decoding.Tests
             fixed (byte* bytes = signature)
             {
                 BlobReader reader = new BlobReader(bytes, signature.Length);
-                Assert.Equal(expected, new SignatureDecoder<string>(new OpaqueTokenTypeProvider()).DecodeType(ref reader));
+                Assert.Equal(expected, new SignatureDecoder<string, DisassemblingGenericContext>(new OpaqueTokenTypeProvider(), metadataReader: null, genericContext: null).DecodeType(ref reader));
             }
         }
 
         [Fact]
         public void ProviderCannotBeNull()
         {
-            Assert.Throws<ArgumentNullException>(() => new SignatureDecoder<int>(null));
+            Assert.Throws<ArgumentNullException>("provider", () => new SignatureDecoder<int, object>(provider: null, metadataReader: null, genericContext: null));
         }
     }
 }

@@ -190,6 +190,8 @@ namespace System.Security.Cryptography
             return new IncrementalHash(hashAlgorithm, GetHMAC(hashAlgorithm, key));
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "MD5 is used when the user asks for it.")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 is used when the user asks for it.")]
         private static HashAlgorithm GetHashAlgorithm(HashAlgorithmName hashAlgorithm)
         {
             if (hashAlgorithm == HashAlgorithmName.MD5)
@@ -206,7 +208,8 @@ namespace System.Security.Cryptography
             throw new CryptographicException(NTE_BAD_ALGID);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351")] // We are providing the implementations for these algorithms
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "MD5 is used when the user asks for it.")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 is used when the user asks for it.")]
         private static HashAlgorithm GetHMAC(HashAlgorithmName hashAlgorithm, byte[] key)
         {
             if (hashAlgorithm == HashAlgorithmName.MD5)

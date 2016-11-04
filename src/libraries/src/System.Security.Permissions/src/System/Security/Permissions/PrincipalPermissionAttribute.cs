@@ -4,13 +4,14 @@
 
 namespace System.Security.Permissions
 {
-    [System.AttributeUsageAttribute((System.AttributeTargets)(68), AllowMultiple = true, Inherited = false)]
-    public sealed partial class PrincipalPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
+    [Serializable]
+    [AttributeUsage((AttributeTargets)(68), AllowMultiple = true, Inherited = false)]
+    public sealed partial class PrincipalPermissionAttribute : CodeAccessSecurityAttribute
     {
-        public PrincipalPermissionAttribute(System.Security.Permissions.SecurityAction action) : base(default(System.Security.Permissions.SecurityAction)) { }
+        public PrincipalPermissionAttribute(SecurityAction action) : base(default(SecurityAction)) { }
         public bool Authenticated { get; set; }
         public string Name { get; set; }
         public string Role { get; set; }
-        public override System.Security.IPermission CreatePermission() { return default(System.Security.IPermission); }
+        public override IPermission CreatePermission() { return default(IPermission); }
     }
 }

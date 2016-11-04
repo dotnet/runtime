@@ -1,17 +1,13 @@
 {
   "dependencies": {
-    "System.Collections.NonGeneric": "4.0.0",
-    "System.IO": "4.0.10",
-    "System.Reflection": "4.1.0",
-    "System.Runtime": "4.0.20",
-    "System.Runtime.Extensions": "4.0.10",
-    "System.Runtime.Serialization.Primitives": "4.1.1"
+    "System.Collections.NonGeneric": "4.4.0-beta-24703-01",
+    "System.IO": "4.4.0-beta-24703-01",
+    "System.Reflection": "4.4.0-beta-24703-01",
+    "System.Runtime": "4.4.0-beta-24703-01",
+    "System.Runtime.Extensions": "4.4.0-beta-24703-01",
+    "System.Runtime.Serialization.Primitives": "4.4.0-beta-24703-01"
   },
   "frameworks": {
-    "netstandard1.7": {
-      "imports": [
-        "dotnet5.8"
-      ]
-    }
+    "netstandard1.7": {}
   }
 }

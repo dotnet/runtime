@@ -1,9 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <ProjectReference Include="..\ref\System.Collections.csproj">
-      <SupportedFramework>netcoreapp1.1;net463;$(AllXamarinFrameworks)</SupportedFramework>
+    <ProjectReference Include="..\ref\System.Collections.builds">
+      <SupportedFramework>netcoreapp1.1;net463;uap10.1;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Collections.csproj">
       <TargetGroup>net463</TargetGroup>

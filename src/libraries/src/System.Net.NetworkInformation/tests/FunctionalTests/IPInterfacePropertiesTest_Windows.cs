@@ -10,7 +10,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.NetworkInformation.Tests
 {
-    [PlatformSpecific(PlatformID.Windows)]
+    [PlatformSpecific(TestPlatforms.Windows)]
     public class IPInterfacePropertiesTest_Windows
     {
         private readonly ITestOutputHelper _log;

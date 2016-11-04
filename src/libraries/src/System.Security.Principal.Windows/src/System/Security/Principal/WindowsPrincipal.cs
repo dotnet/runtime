@@ -6,10 +6,12 @@ using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
 using System.Security.Claims;
 
 namespace System.Security.Principal
 {
+    [Serializable]
     public enum WindowsBuiltInRole
     {
         Administrator = 0x220,
@@ -23,6 +25,7 @@ namespace System.Security.Principal
         Replicator = 0x228
     }
 
+    [Serializable]
     public class WindowsPrincipal : ClaimsPrincipal
     {
         private WindowsIdentity _identity = null;
@@ -41,6 +44,26 @@ namespace System.Security.Principal
             Contract.EndContractBlock();
 
             _identity = ntIdentity;
+        }
+
+        [OnDeserialized]
+        private void OnDeserializedMethod(StreamingContext context)
+        {
+            ClaimsIdentity firstNonNullIdentity = null;
+
+            foreach (ClaimsIdentity identity in base.Identities)
+            {
+                if (identity != null)
+                {
+                    firstNonNullIdentity = identity;
+                    break;
+                }
+            }
+
+            if (firstNonNullIdentity == null)
+            {
+                base.AddIdentity(_identity);
+            }
         }
 
         //

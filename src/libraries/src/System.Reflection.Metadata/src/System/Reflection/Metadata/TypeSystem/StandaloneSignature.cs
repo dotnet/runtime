@@ -37,16 +37,16 @@ namespace System.Reflection.Metadata
             get { return _reader.StandAloneSigTable.GetSignature(_rowId); }
         }
 
-        public MethodSignature<TType> DecodeMethodSignature<TType>(ISignatureTypeProvider<TType> provider)
+        public MethodSignature<TType> DecodeMethodSignature<TType, TGenericContext>(ISignatureTypeProvider<TType, TGenericContext> provider, TGenericContext genericContext)
         {
-            var decoder = new SignatureDecoder<TType>(provider, _reader);
+            var decoder = new SignatureDecoder<TType, TGenericContext>(provider, _reader, genericContext);
             var blobReader = _reader.GetBlobReader(Signature);
             return decoder.DecodeMethodSignature(ref blobReader);
         }
 
-        public ImmutableArray<TType> DecodeLocalSignature<TType>(ISignatureTypeProvider<TType> provider)
+        public ImmutableArray<TType> DecodeLocalSignature<TType, TGenericContext>(ISignatureTypeProvider<TType, TGenericContext> provider, TGenericContext genericContext)
         {
-            var decoder = new SignatureDecoder<TType>(provider, _reader);
+            var decoder = new SignatureDecoder<TType, TGenericContext>(provider, _reader, genericContext);
             var blobReader = _reader.GetBlobReader(Signature);
             return decoder.DecodeLocalSignature(ref blobReader);
         }

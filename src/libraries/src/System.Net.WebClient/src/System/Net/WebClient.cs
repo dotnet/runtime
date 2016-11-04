@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Net.Cache;
 using System.Net.Http;
 using System.Security;
 using System.Text;
@@ -15,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace System.Net
 {
-    public class WebClient // TODO #11271: Make WebClient inherit from Component once it's available
+    public class WebClient : Component
     {
         private const int DefaultCopyBufferLength = 8192;
         private const int DefaultDownloadBufferLength = 65536;
@@ -37,7 +38,6 @@ namespace System.Net
         private ProgressData _progress;
         private IWebProxy _proxy;
         private bool _proxySet;
-        //private RequestCachePolicy _cachePolicy;
         private int _callNesting; // > 0 if we're in a Read/Write call
         private AsyncOperation _asyncOp;
 
@@ -77,10 +77,12 @@ namespace System.Net
         protected virtual void OnDownloadStringCompleted(DownloadStringCompletedEventArgs e) => DownloadStringCompleted?.Invoke(this, e);
         protected virtual void OnDownloadDataCompleted(DownloadDataCompletedEventArgs e) => DownloadDataCompleted?.Invoke(this, e);
         protected virtual void OnDownloadFileCompleted(AsyncCompletedEventArgs e) => DownloadFileCompleted?.Invoke(this, e);
+        protected virtual void OnDownloadProgressChanged(DownloadProgressChangedEventArgs e) => DownloadProgressChanged?.Invoke(this, e);
         protected virtual void OnUploadStringCompleted(UploadStringCompletedEventArgs e) => UploadStringCompleted?.Invoke(this, e);
         protected virtual void OnUploadDataCompleted(UploadDataCompletedEventArgs e) => UploadDataCompleted?.Invoke(this, e);
         protected virtual void OnUploadFileCompleted(UploadFileCompletedEventArgs e) => UploadFileCompleted?.Invoke(this, e);
         protected virtual void OnUploadValuesCompleted(UploadValuesCompletedEventArgs e) => UploadValuesCompleted?.Invoke(this, e);
+        protected virtual void OnUploadProgressChanged(UploadProgressChangedEventArgs e) => UploadProgressChanged?.Invoke(this, e);
         protected virtual void OnOpenReadCompleted(OpenReadCompletedEventArgs e) => OpenReadCompleted?.Invoke(this, e);
         protected virtual void OnOpenWriteCompleted(OpenWriteCompletedEventArgs e) => OpenWriteCompleted?.Invoke(this, e);
 
@@ -106,18 +108,21 @@ namespace System.Net
             if (!_initWebClientAsync)
             {
                 // Set up the async delegates
+
                 _openReadOperationCompleted = arg => OnOpenReadCompleted((OpenReadCompletedEventArgs)arg);
                 _openWriteOperationCompleted = arg => OnOpenWriteCompleted((OpenWriteCompletedEventArgs)arg);
+
                 _downloadStringOperationCompleted = arg => OnDownloadStringCompleted((DownloadStringCompletedEventArgs)arg);
                 _downloadDataOperationCompleted = arg => OnDownloadDataCompleted((DownloadDataCompletedEventArgs)arg);
                 _downloadFileOperationCompleted = arg => OnDownloadFileCompleted((AsyncCompletedEventArgs)arg);
+
                 _uploadStringOperationCompleted = arg => OnUploadStringCompleted((UploadStringCompletedEventArgs)arg);
                 _uploadDataOperationCompleted = arg => OnUploadDataCompleted((UploadDataCompletedEventArgs)arg);
                 _uploadFileOperationCompleted = arg => OnUploadFileCompleted((UploadFileCompletedEventArgs)arg);
                 _uploadValuesOperationCompleted = arg => OnUploadValuesCompleted((UploadValuesCompletedEventArgs)arg);
 
-                _reportDownloadProgressChanged = arg => DownloadProgressChanged?.Invoke(this, (DownloadProgressChangedEventArgs)arg);
-                _reportUploadProgressChanged = arg => UploadProgressChanged?.Invoke(this, (UploadProgressChangedEventArgs)arg);
+                _reportDownloadProgressChanged = arg => OnDownloadProgressChanged((DownloadProgressChangedEventArgs)arg);
+                _reportUploadProgressChanged = arg => OnUploadProgressChanged((UploadProgressChangedEventArgs)arg);
 
                 _progress = new ProgressData();
                 _initWebClientAsync = true;
@@ -202,11 +207,7 @@ namespace System.Net
             }
         }
 
-        //public RequestCachePolicy CachePolicy
-        //{
-        //    get { return _cachePolicy; }
-        //    set { _cachePolicy = value; }
-        //}
+        public RequestCachePolicy CachePolicy { get; set; }
 
         public bool IsBusy => _asyncOp != null;
 
@@ -235,11 +236,10 @@ namespace System.Net
                 request.Proxy = _proxy;
             }
 
-            // TODO #11881: Uncomment once member is available
-            //if (_cachePolicy != null)
-            //{
-            //    request.CachePolicy = _cachePolicy;
-            //}
+            if (CachePolicy != null)
+            {
+                request.CachePolicy = CachePolicy;
+            }
 
             return request;
         }

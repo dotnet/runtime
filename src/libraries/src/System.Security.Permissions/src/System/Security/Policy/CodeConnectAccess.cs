@@ -4,6 +4,7 @@
 
 namespace System.Security.Policy
 {
+    [Serializable]
     public partial class CodeConnectAccess
     {
         public static readonly string AnyScheme;
@@ -13,8 +14,8 @@ namespace System.Security.Policy
         public CodeConnectAccess(string allowScheme, int allowPort) { }
         public int Port { get { return 0; } }
         public string Scheme { get { return null; } }
-        public static System.Security.Policy.CodeConnectAccess CreateAnySchemeAccess(int allowPort) { return default(System.Security.Policy.CodeConnectAccess); }
-        public static System.Security.Policy.CodeConnectAccess CreateOriginSchemeAccess(int allowPort) { return default(System.Security.Policy.CodeConnectAccess); }
+        public static CodeConnectAccess CreateAnySchemeAccess(int allowPort) { return default(CodeConnectAccess); }
+        public static CodeConnectAccess CreateOriginSchemeAccess(int allowPort) { return default(CodeConnectAccess); }
         public override bool Equals(object o) => base.Equals(o);
         public override int GetHashCode() => base.GetHashCode();
     }

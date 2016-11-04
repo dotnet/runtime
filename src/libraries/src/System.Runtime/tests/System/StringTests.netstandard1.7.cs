@@ -36,7 +36,7 @@ namespace System.Tests
             yield return new object[] { "latin i",          "LATIN I",      "en-US" };
             yield return new object[] { "turky \u0131",     "TURKY I",      "tr-TR" };
             yield return new object[] { "turky i",          "TURKY \u0130", "tr-TR" };
-            yield return new object[] { "\ud801\udc29",     "\ud801\udc01", "en-US" };
+            yield return new object[] { "\ud801\udc29",     PlatformDetection.IsWindows7 ? "\ud801\udc29" : "\ud801\udc01", "en-US" };
         }
 
         public static IEnumerable<object[]> StartEndWith_TestData()
@@ -52,7 +52,6 @@ namespace System.Tests
         }
 
         [Theory]
-        [ActiveIssue(11617, Xunit.PlatformID.AnyUnix)]
         [MemberData(nameof(Compare_TestData))]
         public static void CompareTest(string s1, string s2, string cultureName, bool ignoreCase, int expected)
         {
@@ -80,7 +79,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue(11617, Xunit.PlatformID.AnyUnix)]
         public static void CompareNegativeTest()
         {
             Assert.Throws<ArgumentNullException>("culture", () => String.Compare("a", "b", false, null));
@@ -97,7 +95,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(UpperLowerCasing_TestData))]
-        [ActiveIssue(11617, Xunit.PlatformID.AnyUnix)]
         public static void CasingTest(string lowerForm, string upperForm, string cultureName)
         {
             CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);
@@ -106,7 +103,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue(11617, Xunit.PlatformID.AnyUnix)]
         public static void CasingNegativeTest()
         {
             Assert.Throws<ArgumentNullException>("culture", () => "".ToLower(null));
@@ -115,7 +111,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(StartEndWith_TestData))]
-        [ActiveIssue(11617, Xunit.PlatformID.AnyUnix)]
         public static void StartEndWithTest(string source, string start, string end, string cultureName, bool ignoreCase, bool expected)
         {
              CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);
@@ -124,7 +119,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue(11617, Xunit.PlatformID.AnyUnix)]
         public static void StartEndNegativeTest()
         {
             Assert.Throws<ArgumentNullException>("value", () => "".StartsWith(null, true, null));
@@ -132,7 +126,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue(11617, Xunit.PlatformID.AnyUnix)]
         public static unsafe void ConstructorsTest()
         {
             string s = "This is a string constructor test";
@@ -155,7 +148,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue(11617, Xunit.PlatformID.AnyUnix)]
         public static unsafe void CloneTest()
         {
             string s = "some string to clone";
@@ -165,7 +157,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue(11617, Xunit.PlatformID.AnyUnix)]
         public static unsafe void CopyTest()
         {
             string s = "some string to copy";
@@ -175,7 +166,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue(11617, Xunit.PlatformID.AnyUnix)]
         public static unsafe void InternTest()
         {
             String s1 = "MyTest";
@@ -191,7 +181,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue(11617, Xunit.PlatformID.AnyUnix)]
         public static unsafe void NormalizationTest()
         {
             // U+0063  LATIN SMALL LETTER C
@@ -225,7 +214,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue(11617, Xunit.PlatformID.AnyUnix)]
         public static unsafe void GetEnumeratorTest()
         {
             string s = "This is some string to enumerate its characters using String.GetEnumerator";

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="System.Diagnostics.Debug.csproj">
@@ -8,13 +8,8 @@
     <Project Include="System.Diagnostics.Debug.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <!-- Net46 facade is currently inbox for 4.0 
     <Project Include="System.Diagnostics.Debug.csproj">
-      <TargetGroup>net46</TargetGroup>
-    </Project> -->
-    <Project Include="System.Diagnostics.Debug.csproj">
-      <OSGroup>Windows_NT</OSGroup>
-      <TargetGroup>netcore50aot</TargetGroup>
+      <TargetGroup>net463</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

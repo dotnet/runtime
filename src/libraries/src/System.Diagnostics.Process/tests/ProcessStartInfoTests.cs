@@ -231,7 +231,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [PlatformSpecific(PlatformID.Windows)] // UseShellExecute currently not supported on Windows
+        [PlatformSpecific(TestPlatforms.Windows)] // UseShellExecute currently not supported on Windows
         [Fact]
         public void TestUseShellExecuteProperty_SetAndGet_Windows()
         {
@@ -246,7 +246,7 @@ namespace System.Diagnostics.Tests
             Assert.False(psi.UseShellExecute, "UseShellExecute=true is not supported on onecore.");
         }
 
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [Fact]
         public void TestUseShellExecuteProperty_SetAndGet_Unix()
         {
@@ -260,7 +260,7 @@ namespace System.Diagnostics.Tests
             Assert.False(psi.UseShellExecute);
         }
 
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [Theory]
         [InlineData(0)]
         [InlineData(1)]
@@ -314,7 +314,7 @@ namespace System.Diagnostics.Tests
         }
 
 
-        [Fact, PlatformSpecific(PlatformID.AnyUnix)]
+        [Fact, PlatformSpecific(TestPlatforms.AnyUnix)]
         public void TestUserCredentialsPropertiesOnUnix()
         {
             Assert.Throws<PlatformNotSupportedException>(() => _process.StartInfo.Domain);
@@ -346,7 +346,8 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact, PlatformSpecific(PlatformID.Windows), OuterLoop] // Requires admin privileges
+        [ActiveIssue(12696)]
+        [Fact, PlatformSpecific(TestPlatforms.Windows), OuterLoop] // Requires admin privileges
         public void TestUserCredentialsPropertiesOnWindows()
         {
             string username = "test", password = "PassWord123!!";

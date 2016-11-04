@@ -4,6 +4,7 @@
 
 namespace System.IO.MemoryMappedFiles
 {
+    [Serializable]
     [Flags]
     public enum MemoryMappedFileOptions
     {

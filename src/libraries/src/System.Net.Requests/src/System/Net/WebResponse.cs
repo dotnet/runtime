@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Runtime.Serialization;
 
 namespace System.Net
 {
@@ -12,7 +13,8 @@ namespace System.Net
     ///       response from a Uniform Resource Identifier (Uri). This is an abstract class.
     ///    </para>
     /// </devdoc>
-    public abstract class WebResponse : IDisposable
+    [Serializable]
+    public abstract class WebResponse : MarshalByRefObject, ISerializable, IDisposable
     {
         /// <devdoc>
         ///    <para>Initializes a new
@@ -20,6 +22,23 @@ namespace System.Net
         ///       class.</para>
         /// </devdoc>
         protected WebResponse()
+        {
+        }
+
+        protected WebResponse(SerializationInfo serializationInfo, StreamingContext streamingContext)
+        {
+        }
+
+        void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
+        {
+            GetObjectData(serializationInfo, streamingContext);
+        }
+
+        protected virtual void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
+        {
+        }
+
+        public virtual void Close()
         {
         }
 
@@ -31,17 +50,31 @@ namespace System.Net
 
         protected virtual void Dispose(bool disposing)
         {
+            if (disposing)
+            {
+                try
+                {
+                    Close();
+                }
+                catch { }
+            }
         }
-
 
         /// <devdoc>
         ///    <para>When overridden in a derived class, gets or
         ///       sets
         ///       the content length of data being received.</para>
         /// </devdoc>
-        public abstract long ContentLength
+        public virtual long ContentLength
         {
-            get;
+            get
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
+            set
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
         }
 
 
@@ -50,26 +83,42 @@ namespace System.Net
         ///       gets
         ///       or sets the content type of the data being received.</para>
         /// </devdoc>
-        public abstract string ContentType
+        public virtual string ContentType
         {
-            get;
+            get
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
+            set
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
         }
+
+        public virtual bool IsFromCache => false;
+
+        public virtual bool IsMutuallyAuthenticated => false;
 
         /// <devdoc>
         /// <para>When overridden in a derived class, returns the <see cref='System.IO.Stream'/> object used
         ///    for reading data from the resource referenced in the <see cref='System.Net.WebRequest'/>
         ///    object.</para>
         /// </devdoc>
-        public abstract Stream GetResponseStream();
-
+        public virtual Stream GetResponseStream()
+        {
+             throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
+        }
 
         /// <devdoc>
         ///    <para>When overridden in a derived class, gets the Uri that
         ///       actually responded to the request.</para>
         /// </devdoc>
-        public abstract Uri ResponseUri
+        public virtual Uri ResponseUri
         {
-            get;
+            get
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
         }
 
         /// <devdoc>

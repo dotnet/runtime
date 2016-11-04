@@ -47,7 +47,7 @@ namespace System.Xml
             set { _proxy = value; }
         }
 
-        internal RequestCachePolicy CachePolicy
+        public RequestCachePolicy CachePolicy
         {
             set { _cachePolicy = value; }
         }

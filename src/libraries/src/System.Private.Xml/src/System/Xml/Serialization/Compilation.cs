@@ -169,8 +169,8 @@ namespace System.Xml.Serialization
             }*/
 
             // check to see if we loading explicit pre-generated assembly
-            IEnumerable<Attribute> attrs = type.GetTypeInfo().GetCustomAttributes(typeof(XmlSerializerAssemblyAttribute), false);
-            if (attrs.Count() == 0)
+            object[] attrs = type.GetCustomAttributes(typeof(XmlSerializerAssemblyAttribute), false);
+            if (attrs.Length == 0)
             {
                 // Guess serializer name: if parent assembly signed use strong name 
                 AssemblyName name = type.GetTypeInfo().Assembly.GetName();
@@ -200,7 +200,7 @@ namespace System.Xml.Serialization
                     throw new NotImplementedException(string.Format("Could not load assembly ", name));
                     /*#pragma warning disable 618
                                         serializer = Assembly.LoadWithPartialName(serializerName, null);
-                    #pragma warning restore 618*/
+#pragma warning restore 618*/
                 }
                 if (serializer == null)
                 {
@@ -209,7 +209,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                XmlSerializerAssemblyAttribute assemblyAttribute = (XmlSerializerAssemblyAttribute)attrs.First();
+                XmlSerializerAssemblyAttribute assemblyAttribute = (XmlSerializerAssemblyAttribute)attrs[0];
                 if (assemblyAttribute.AssemblyName != null && assemblyAttribute.CodeBase != null)
                     throw new InvalidOperationException(SR.Format(SR.XmlPregenInvalidXmlSerializerAssemblyAttribute, "AssemblyName", "CodeBase"));
 
@@ -221,7 +221,7 @@ namespace System.Xml.Serialization
                     throw new NotImplementedException(string.Format("Could not load assembly ", serializerName));
                     /*#pragma warning disable 618
                                         serializer = Assembly.LoadWithPartialName(serializerName, null);
-                    #pragma warning restore 618*/
+#pragma warning restore 618*/
                 }
                 else if (assemblyAttribute.CodeBase != null && assemblyAttribute.CodeBase.Length > 0)
                 {
@@ -304,11 +304,6 @@ namespace System.Xml.Serialization
 
                 IndentedWriter writer = new IndentedWriter(compiler.Source, false);
 
-                writer.WriteLine("#if _DYNAMIC_XMLSERIALIZER_COMPILATION");
-                writer.WriteLine("[assembly:System.Security.AllowPartiallyTrustedCallers()]");
-                writer.WriteLine("[assembly:System.Security.SecurityTransparent()]");
-                writer.WriteLine("[assembly:System.Security.SecurityRules(System.Security.SecurityRuleSet.Level1)]");
-                writer.WriteLine("#endif");
                 // Add AssemblyVersion attribute to match parent accembly version
                 if (types != null && types.Length > 0 && types[0] != null)
                 {
@@ -418,19 +413,6 @@ namespace System.Xml.Serialization
 
             string assemblyName = "Microsoft.GeneratedCode";
             AssemblyBuilder assemblyBuilder = CodeGenerator.CreateAssemblyBuilder(assemblyName);
-            ConstructorInfo SecurityTransparentAttribute_ctor = typeof(SecurityTransparentAttribute).GetConstructor(
-                CodeGenerator.InstanceBindingFlags,
-                Array.Empty<Type>()
-                );
-            assemblyBuilder.SetCustomAttribute(new CustomAttributeBuilder(SecurityTransparentAttribute_ctor, Array.Empty<object>()));
-            ConstructorInfo AllowPartiallyTrustedCallersAttribute_ctor = typeof(AllowPartiallyTrustedCallersAttribute).GetConstructor(
-                CodeGenerator.EmptyTypeArray
-                );
-            assemblyBuilder.SetCustomAttribute(new CustomAttributeBuilder(AllowPartiallyTrustedCallersAttribute_ctor, new Object[0]));
-            ConstructorInfo SecurityRulesAttribute_ctor = typeof(SecurityRulesAttribute).GetConstructor(
-                new Type[] { typeof(SecurityRuleSet) }
-                );
-            assemblyBuilder.SetCustomAttribute(new CustomAttributeBuilder(SecurityRulesAttribute_ctor, new Object[] { SecurityRuleSet.Level1 }));
             // Add AssemblyVersion attribute to match parent accembly version
             if (types != null && types.Length > 0 && types[0] != null)
             {

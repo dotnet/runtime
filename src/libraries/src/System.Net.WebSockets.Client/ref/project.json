@@ -1,16 +1,12 @@
 {
   "dependencies": {
-    "System.Net.Primitives": "4.0.10",
+    "System.Net.Primitives": "4.0.11",
     "System.Net.WebSockets": "4.0.0",
-    "System.Runtime": "4.0.0",
+    "System.Runtime": "4.1.0",
     "System.Security.Cryptography.X509Certificates": "4.1.0",
-    "System.Threading.Tasks": "4.0.0"
+    "System.Threading.Tasks": "4.0.11"
   },
   "frameworks": {
-    "netstandard1.3": {
-      "imports": [
-        "dotnet5.4"
-      ]
-    }
+    "netstandard1.3": {}
   }
 }

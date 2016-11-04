@@ -4,6 +4,7 @@
 
 namespace System
 {
+    [Serializable]
     public enum PlatformID
     {
         Win32S = 0,

@@ -5,7 +5,7 @@
 using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
+using System.Net.Cache;
 using System.Net.Test.Common;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,7 +22,7 @@ namespace System.Net.Tests
             var wc = new WebClient();
 
             Assert.Empty(wc.BaseAddress);
-            //Assert.Null(wc.CachePolicy); // TODO: Uncomment when member added
+            Assert.Null(wc.CachePolicy);
             Assert.Null(wc.Credentials);
             Assert.Equal(Encoding.Default, wc.Encoding);
             Assert.Empty(wc.Headers);
@@ -261,15 +261,14 @@ namespace System.Net.Tests
             Assert.Equal(string.Empty, wc.BaseAddress);
         }
 
-        // TODO: Uncomment when member added
-        //[Fact]
-        //public static void CachePolicy_Roundtrips()
-        //{
-        //    var wc = new WebClient();
-        //    var c = new RequestCachePolicy(RequestCacheLevel.BypassCache);
-        //    wc.CachePolicy = c;
-        //    Assert.Same(c, wc.CachePolicy);
-        //}
+        [Fact]
+        public static void CachePolicy_Roundtrips()
+        {
+            var wc = new WebClient();
+            var c = new RequestCachePolicy(RequestCacheLevel.BypassCache);
+            wc.CachePolicy = c;
+            Assert.Same(c, wc.CachePolicy);
+        }
 
         [Fact]
         public static void Credentials_Roundtrips()
@@ -585,6 +584,7 @@ namespace System.Net.Tests
             });
         }
 
+        [OuterLoop("Networking test talking to remote server: issue #11345")]
         [Theory]
         [MemberData(nameof(EchoServers))]
         public async Task OpenWrite_Success(Uri echoServer)
@@ -597,6 +597,7 @@ namespace System.Net.Tests
             }
         }
 
+        [OuterLoop("Networking test talking to remote server: issue #11345")]
         [Theory]
         [MemberData(nameof(EchoServers))]
         public async Task UploadData_Success(Uri echoServer)
@@ -611,6 +612,7 @@ namespace System.Net.Tests
             Assert.True(!IsAsync || await uploadProgressInvoked.Task, "Expected upload progress callback to be invoked");
         }
 
+        [OuterLoop("Networking test talking to remote server: issue #11345")]
         [Theory]
         [MemberData(nameof(EchoServers))]
         public async Task UploadData_LargeData_Success(Uri echoServer)
@@ -627,6 +629,7 @@ namespace System.Net.Tests
             return new string(Enumerable.Range(0, 512 * 1024).Select(_ => (char)('a' + rand.Next(0, 26))).ToArray());
         }
 
+        [OuterLoop("Networking test talking to remote server: issue #11345")]
         [Theory]
         [MemberData(nameof(EchoServers))]
         public async Task UploadFile_Success(Uri echoServer)
@@ -645,6 +648,7 @@ namespace System.Net.Tests
             }
         }
 
+        [OuterLoop("Networking test talking to remote server: issue #11345")]
         [Theory]
         [MemberData(nameof(EchoServers))]
         public async Task UploadString_Success(Uri echoServer)
@@ -654,6 +658,7 @@ namespace System.Net.Tests
             Assert.Contains(ExpectedText, result);
         }
 
+        [OuterLoop("Networking test talking to remote server: issue #11345")]
         [Theory]
         [MemberData(nameof(EchoServers))]
         public async Task UploadValues_Success(Uri echoServer)

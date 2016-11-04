@@ -3,10 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Globalization;
+using System.Runtime.Serialization;
 
 namespace System.Security.Cryptography
 {
-    public class CryptographicException : Exception
+    [Serializable]
+    public class CryptographicException : SystemException
     {
         public CryptographicException()
             : base(SR.Arg_CryptographyException)
@@ -31,6 +33,11 @@ namespace System.Security.Cryptography
 
         public CryptographicException(string format, string insert)
             : base(string.Format(CultureInfo.CurrentCulture, format, insert))
+        {
+        }
+
+        protected CryptographicException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
         {
         }
     }

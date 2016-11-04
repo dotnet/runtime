@@ -415,7 +415,7 @@ namespace System.Xml.Schema
             _SchemaNames = schemaNames;
             _CurState = s_schemaEntries[0];
             _positionInfo = PositionInfo.GetPositionInfo(_reader);
-            _xmlResolver = System.Xml.XmlConfiguration.XmlReaderSection.CreateDefaultResolver();
+            _xmlResolver = null;
         }
 
         internal override bool ProcessElement(string prefix, string name, string ns)

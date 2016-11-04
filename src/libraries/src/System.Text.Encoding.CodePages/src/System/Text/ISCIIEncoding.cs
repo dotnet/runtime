@@ -11,6 +11,7 @@ using System;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Globalization;
+using System.Runtime.Serialization;
 
 namespace System.Text
 {
@@ -27,8 +28,8 @@ namespace System.Text
     //      Forms D & KD have things like 0934, which decomposes to 0933 + 093C, so not normal.
     //      Form IDNA has the above problems plus case mapping, so false (like most encodings)
     //
-
-    internal class ISCIIEncoding : EncodingNLS
+    [Serializable]
+    internal class ISCIIEncoding : EncodingNLS, ISerializable
     {
         // Constants
         private const int CodeDefault = 0;    // 0x40       Default
@@ -77,6 +78,12 @@ namespace System.Text
             // This shouldn't really be possible
             if (_defaultCodePage < CodeDevanagari || _defaultCodePage > CodePunjabi)
                 throw new ArgumentException(SR.Format(SR.Argument_CodepageNotSupported, codePage), nameof(codePage));
+        }
+
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            CodePageEncodingSurrogate.SerializeEncoding(this, info, context);
+            info.SetType(typeof(CodePageEncodingSurrogate));
         }
 
         // Our MaxByteCount is 4 times the input size.  That could be because
@@ -710,6 +717,7 @@ namespace System.Text
             return _defaultCodePage + EncoderFallback.GetHashCode() + DecoderFallback.GetHashCode();
         }
 
+        [Serializable]
         internal class ISCIIEncoder : EncoderNLS
         {
             // Need to remember the default code page (for HasState)
@@ -748,6 +756,7 @@ namespace System.Text
             }
         }
 
+        [Serializable]
         internal class ISCIIDecoder : DecoderNLS
         {
             // Need a place to store any our current code page and last ATR flag

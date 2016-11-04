@@ -8,9 +8,7 @@ namespace System
     using System.Collections;
     using System.Globalization;
 
-#if SERIALIZABLE_DEFINED
     [Serializable]
-#endif
     internal class InvariantComparer : IComparer
     {
         private CompareInfo _compareInfo;

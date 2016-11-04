@@ -1,38 +1,38 @@
 {
   "frameworks": {
-    "netstandard1.3": {
+    "netstandard1.7": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1",
-        "System.Collections": "4.0.10",
-        "System.Collections.Concurrent": "4.0.10",
-        "System.Diagnostics.Debug": "4.0.10",
-        "System.Diagnostics.Tools": "4.0.0",
-        "System.Globalization": "4.0.10",
-        "System.IO": "4.0.10",
-        "System.Linq": "4.0.0",
-        "System.Reflection": "4.0.10",
-        "System.Reflection.Emit.ILGeneration": "4.0.0",
-        "System.Reflection.Emit.Lightweight": "4.0.0",
-        "System.Reflection.Extensions": "4.0.0",
-        "System.Reflection.Primitives": "4.0.0",
-        "System.Reflection.TypeExtensions": "4.0.0",
-        "System.Resources.ResourceManager": "4.0.0",
-        "System.Runtime": "4.0.20",
-        "System.Runtime.Extensions": "4.0.10",
-        "System.Runtime.Serialization.Primitives": "4.1.1",
-        "System.Text.Encoding": "4.0.10",
-        "System.Text.Encoding.Extensions": "4.0.10",
-        "System.Text.RegularExpressions": "4.0.10",
-        "System.Threading": "4.0.10",
-        "System.Threading.Tasks": "4.0.10",
-        "System.Xml.ReaderWriter": "4.0.10",
-        "System.Xml.XDocument": "4.0.10",
-        "System.Xml.XmlDocument": "4.0.0",
-        "System.Xml.XmlSerializer": "4.0.10"
-      },
-      "imports": [
-        "dotnet5.4"
-      ]
+        "Microsoft.NETCore.Platforms": "1.2.0-beta-24703-01",
+        "System.CodeDom": "4.4.0-beta-24703-01",
+        "System.Collections": "4.4.0-beta-24703-01",
+        "System.Collections.Concurrent": "4.4.0-beta-24703-01",
+        "System.Diagnostics.Debug": "4.4.0-beta-24703-01",
+        "System.Diagnostics.Tools": "4.4.0-beta-24703-01",
+        "System.Globalization": "4.4.0-beta-24703-01",
+        "System.IO": "4.4.0-beta-24703-01",
+        "System.Linq": "4.4.0-beta-24703-01",
+        "System.Reflection": "4.4.0-beta-24703-01",
+        "System.Reflection.Emit": "4.4.0-beta-24703-01",
+        "System.Reflection.Emit.ILGeneration": "4.4.0-beta-24703-01",
+        "System.Reflection.Emit.Lightweight": "4.4.0-beta-24703-01",
+        "System.Reflection.Extensions": "4.4.0-beta-24703-01",
+        "System.Reflection.Primitives": "4.4.0-beta-24703-01",
+        "System.Reflection.TypeExtensions": "4.4.0-beta-24703-01",
+        "System.Resources.ResourceManager": "4.4.0-beta-24703-01",
+        "System.Runtime": "4.4.0-beta-24703-01",
+        "System.Runtime.Extensions": "4.4.0-beta-24703-01",
+        "System.Runtime.Serialization.Primitives": "4.4.0-beta-24703-01",
+        "System.Runtime.Serialization.Formatters": "4.4.0-beta-24703-01",
+        "System.Text.Encoding": "4.4.0-beta-24703-01",
+        "System.Text.Encoding.Extensions": "4.4.0-beta-24703-01",
+        "System.Text.RegularExpressions": "4.4.0-beta-24703-01",
+        "System.Threading": "4.4.0-beta-24703-01",
+        "System.Threading.Tasks": "4.4.0-beta-24703-01",
+        "System.Xml.ReaderWriter": "4.4.0-beta-24703-01",
+        "System.Xml.XDocument": "4.4.0-beta-24703-01",
+        "System.Xml.XmlDocument": "4.4.0-beta-24703-01",
+        "System.Xml.XmlSerializer": "4.4.0-beta-24703-01"
+      }
     }
   }
 }

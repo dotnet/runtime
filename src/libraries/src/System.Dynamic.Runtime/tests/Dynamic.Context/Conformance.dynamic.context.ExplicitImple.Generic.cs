@@ -2,686 +2,184 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using Microsoft.CSharp.RuntimeBinder;
 using Xunit;
 
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Generic.helper.helper
+namespace Dynamic.Tests
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Generic.helper.helper;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Generic.method001.method001;
-    using System;
-
-    public static class Helper
+    public class ExplicitlyImplementedGenericInterfaceTests
     {
-        public static T Cast<T>(dynamic d)
+        [Fact]
+        public void NonGenericInterface_WithGenericMember1()
         {
-            return (T)d;
+            dynamic d = new ExplicitlyImplementedInterface1();
+            Assert.Throws<RuntimeBinderException>(() => d.Foo<int>());
+
+            var x = Helpers.Cast<InterfaceWithGenericMember>(d);
+        }
+
+        [Fact]
+        public void NonGenericInterface_WithGenericMember2()
+        {
+            dynamic d = new ExplicitlyImplementedInterface2();
+            Assert.Throws<RuntimeBinderException>(() => d.Foo<int>());
+        }
+
+        [Fact]
+        public void GenericInterface_WithNonGenericMember()
+        {
+            dynamic d = new ExplicitlyImplementedGenericInterface();
+            Assert.Equal(2, d.Foo());
+            var x = Helpers.Cast<GenericInterfaceWithNonGenericMember<int>>(d);
+
+            Assert.Throws<InvalidCastException>(() => Helpers.Cast<GenericInterfaceWithNonGenericMember<double>>(d));
+        }
+
+        [Fact]
+        public void GenericInterface_WithGenericMember1()
+        {
+            dynamic d = new ExplicitlyImplementedGenericInterfaceWithGenericMember1();
+            Assert.Throws<RuntimeBinderException>(() => d.Foo(1));
+
+            var x = Helpers.Cast<GenericInterfaceWithGenericMember1<int>>(d);
+
+            Assert.Throws<InvalidCastException>(() => Helpers.Cast<GenericInterfaceWithGenericMember1<double>>(d));
+        }
+
+        [Fact]
+        public void GenericInterface_WithGenericMember2()
+        {
+            dynamic d = new ExplicitlyImplementedGenericInterfaceWithGenericMember2();
+            Assert.Throws<RuntimeBinderException>(() => d.Foo<int>());
+
+            var x = Helpers.Cast<GenericInterfaceWithGenericMember2<int>>(d);
+
+            Assert.Throws<InvalidCastException>(() => Helpers.Cast<GenericInterfaceWithGenericMember2<double>>(d));
+        }
+
+        [Fact]
+        public void GenericInterface_WithInGenericParameter_BaseClass()
+        {
+            dynamic d = new ExplicitlyImplementedGenericInInterface<BaseClass>();
+            Assert.Throws<RuntimeBinderException>(() => d.Foo());
+
+            var x = Helpers.Cast<GenericInInterface<SubClass>>(d);
+            var y = Helpers.Cast<GenericInInterface<BaseClass>>(d);
+        }
+
+        [Fact]
+        public void GenericInterface_WithInGenericParameter_SubClass()
+        {
+            dynamic d = new ExplicitlyImplementedGenericInInterface<SubClass>();
+            Assert.Throws<RuntimeBinderException>(() => d.Foo());
+
+            Assert.Throws<InvalidCastException>(() => Helpers.Cast<GenericInInterface<BaseClass>>(d));
+
+            var y = Helpers.Cast<GenericInInterface<SubClass>>(d);
+            Assert.Throws<InvalidCastException>(() => ((GenericInInterface<BaseClass>)d).Foo(new BaseClass()));
+        }
+
+        [Fact]
+        public void GenericInterface_WithOutGenericParameter_BaseClass()
+        {
+            dynamic d = new ExplicitlyImplementedGenericOutInterface<BaseClass>();
+            Assert.Throws<RuntimeBinderException>(() => d.Foo());
+
+            Assert.Throws<InvalidCastException>(() => Helpers.Cast<GenericOutInterface<SubClass>>(d));
+
+            var y = Helpers.Cast<GenericOutInterface<BaseClass>>(d);
+
+            Assert.Throws<InvalidCastException>(() => ((GenericOutInterface<SubClass>)d).Foo());
+        }
+
+        [Fact]
+        public void GenericInterface_WithOutGenericParameter_SubClass()
+        {
+            dynamic d = new ExplicitlyImplementedGenericOutInterface<SubClass>();
+            Assert.Throws<RuntimeBinderException>(() => d.Foo());
+
+            var x = Helpers.Cast<GenericOutInterface<SubClass>>(d);
+            var y = Helpers.Cast<GenericOutInterface<BaseClass>>(d);
         }
     }
-}
 
-
-
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Generic.method001.method001
-{
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Generic.helper.helper;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Generic.method001.method001;
-    // <Area> Dynamic -- explicitly implemented interface member</Area>
-    // <Title> Generic </Title>
-    // <Description>
-    // non-generic interface with generic member
-    // </Description>
-    // <RelatedBugs></RelatedBugs>
-    // <Expects Status=success></Expects>
-    // <Code>
-    using System;
-
-    public interface IF1
+    public interface InterfaceWithGenericMember
     {
         int Foo<T>();
         int Bar();
     }
 
-    public class C : IF1
+    public class ExplicitlyImplementedInterface1 : InterfaceWithGenericMember
     {
-        int IF1.Foo<T>()
-        {
-            return 0;
-        }
-
-        public int Bar()
-        {
-            return 1;
-        }
-
-        [Fact]
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod(null));
-        }
-
-        public static int MainMethod(string[] args)
-        {
-            dynamic d = new C();
-            int result = 0;
-            int error = 0;
-            try
-            {
-                result = d.Foo<int>();
-                System.Console.WriteLine("Should have thrown out runtime exception!");
-                error++;
-            }
-            catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
-            {
-                if (!ErrorVerifier.Verify(ErrorMessageId.NoSuchMember, ex.Message, "C", "Foo"))
-                {
-                    error++;
-                }
-            }
-
-            var x = Helper.Cast<IF1>(d);
-            return error;
-        }
-    }
-    // </Code>
-}
-
-
-
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Generic.method002.method002
-{
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Generic.helper.helper;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Generic.method002.method002;
-    // <Area> Dynamic -- explicitly implemented interface member</Area>
-    // <Title> Generic </Title>
-    // <Description>
-    // non-generic interface with generic member
-    // </Description>
-    // <RelatedBugs></RelatedBugs>
-    // <Expects Status=success></Expects>
-    // <Code>
-    using System;
-
-    public class TestClass
-    {
-        [Fact]
-        public void RunTest()
-        {
-            C.DynamicCSharpRunTest();
-        }
+        int InterfaceWithGenericMember.Foo<T>() => 0;
+        public int Bar() => 1;
     }
 
-    public interface IF1
+    public class ExplicitlyImplementedInterface2 : InterfaceWithGenericMember
     {
-        int Foo<T>();
-        int Bar();
+        int InterfaceWithGenericMember.Foo<T>() => 0;
+        public int Foo() => 2;
+        public int Bar() => 1;
     }
 
-    public struct C : IF1
-    {
-        int IF1.Foo<T>()
-        {
-            return 0;
-        }
-
-        public int Foo()
-        {
-            return 2;
-        }
-
-        public int Bar()
-        {
-            return 1;
-        }
-
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod(null));
-        }
-
-        public static int MainMethod(string[] args)
-        {
-            dynamic d = new C();
-            int result = 0;
-            int error = 0;
-            try
-            {
-                result = d.Foo<int>();
-                System.Console.WriteLine("Should have thrown out runtime exception!");
-                error++;
-            }
-            catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
-            {
-                if (!ErrorVerifier.Verify(ErrorMessageId.HasNoTypeVars, ex.Message, "C.Foo()", ErrorVerifier.GetErrorElement(ErrorElementId.SK_METHOD)))
-                {
-                    error++;
-                }
-            }
-
-            return error;
-        }
-    }
-    // </Code>
-}
-
-
-
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Generic.method003.method003
-{
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Generic.helper.helper;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Generic.method003.method003;
-    // <Area> Dynamic -- explicitly implemented interface member</Area>
-    // <Title> Generic </Title>
-    // <Description>
-    // generic interface with non-generic member
-    // </Description>
-    // <RelatedBugs></RelatedBugs>
-    // <Expects Status=success></Expects>
-    // <Code>
-    using System;
-
-    public interface IF1<T>
+    public interface GenericInterfaceWithNonGenericMember<T>
     {
         int Foo();
         int Bar();
     }
 
-    public class C : IF1<int>
+    public class ExplicitlyImplementedGenericInterface : GenericInterfaceWithNonGenericMember<int>
     {
-        int IF1<int>.Foo()
-        {
-            return 0;
-        }
-
-        public int Foo()
-        {
-            return 2;
-        }
-
-        public int Bar()
-        {
-            return 1;
-        }
-
-        [Fact]
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod(null));
-        }
-
-        public static int MainMethod(string[] args)
-        {
-            dynamic d = new C();
-            int result = 0;
-            int error = 0;
-            result = d.Foo();
-            if (result != 2)
-                error++;
-            var x = Helper.Cast<IF1<int>>(d);
-            try
-            {
-                Helper.Cast<IF1<double>>(d);
-                error++;
-            }
-            catch (InvalidCastException)
-            {
-            }
-
-            return error;
-        }
+        int GenericInterfaceWithNonGenericMember<int>.Foo() => 0;
+        public int Foo() => 2;
+        public int Bar() => 1;
     }
-    // </Code>
-}
 
-
-
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Generic.method004.method004
-{
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Generic.helper.helper;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Generic.method004.method004;
-    // <Area> Dynamic -- explicitly implemented interface member</Area>
-    // <Title> Generic </Title>
-    // <Description>
-    // generic interface with generic member
-    // </Description>
-    // <RelatedBugs></RelatedBugs>
-    // <Expects Status=success></Expects>
-    // <Code>
-    using System;
-
-    public interface IF1<T>
+    public interface GenericInterfaceWithGenericMember1<T>
     {
         int Foo(T t);
         int Bar();
     }
 
-    public class C : IF1<int>
+    public class ExplicitlyImplementedGenericInterfaceWithGenericMember1 : GenericInterfaceWithGenericMember1<int>
     {
-        int IF1<int>.Foo(int i)
-        {
-            return 0;
-        }
-
-        public int Bar()
-        {
-            return 1;
-        }
-
-        [Fact]
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod(null));
-        }
-
-        public static int MainMethod(string[] args)
-        {
-            dynamic d = new C();
-            int result = 0;
-            int error = 0;
-            try
-            {
-                result = d.Foo(1);
-                error++;
-            }
-            catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
-            {
-                if (!ErrorVerifier.Verify(ErrorMessageId.NoSuchMember, ex.Message, "C", "Foo"))
-                {
-                    error++;
-                }
-            }
-
-            var x = Helper.Cast<IF1<int>>(d);
-            try
-            {
-                Helper.Cast<IF1<double>>(d);
-                error++;
-            }
-            catch (InvalidCastException)
-            {
-            }
-
-            return error;
-        }
+        int GenericInterfaceWithGenericMember1<int>.Foo(int i) => 0;
+        public int Bar() => 1;
     }
-    // </Code>
-}
 
-
-
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Generic.method005.method005
-{
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Generic.helper.helper;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Generic.method005.method005;
-    // <Area> Dynamic -- explicitly implemented interface member</Area>
-    // <Title> Generic </Title>
-    // <Description>
-    // generic interface with generic member
-    // </Description>
-    // <RelatedBugs></RelatedBugs>
-    // <Expects Status=success></Expects>
-    // <Code>
-    using System;
-
-    public interface IF1<T>
+    public interface GenericInterfaceWithGenericMember2<T>
     {
         int Foo<U>();
         int Bar();
     }
 
-    public class C : IF1<int>
+    public class ExplicitlyImplementedGenericInterfaceWithGenericMember2 : GenericInterfaceWithGenericMember2<int>
     {
-        int IF1<int>.Foo<U>()
-        {
-            return 0;
-        }
-
-        public int Bar()
-        {
-            return 1;
-        }
-
-        [Fact]
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod(null));
-        }
-
-        public static int MainMethod(string[] args)
-        {
-            dynamic d = new C();
-            int result = 0;
-            int error = 0;
-            try
-            {
-                result = d.Foo<int>();
-                error++;
-            }
-            catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
-            {
-                if (!ErrorVerifier.Verify(ErrorMessageId.NoSuchMember, ex.Message, "C", "Foo"))
-                {
-                    error++;
-                }
-            }
-
-            var x = Helper.Cast<IF1<int>>(d);
-            try
-            {
-                Helper.Cast<IF1<double>>(d);
-                error++;
-            }
-            catch (InvalidCastException)
-            {
-            }
-
-            return error;
-        }
-    }
-    // </Code>
-}
-
-
-
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Generic.contravariance001.contravariance001
-{
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Generic.helper.helper;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Generic.contravariance001.contravariance001;
-    // <Area> Dynamic -- explicitly implemented interface member</Area>
-    // <Title> Generic : variance</Title>
-    // <Description>
-    // contra-variance (negative)
-    // </Description>
-    // <RelatedBugs></RelatedBugs>
-    // <Expects Status=success></Expects>
-    // <Code>
-    using System;
-
-    public class Animal
-    {
+        int GenericInterfaceWithGenericMember2<int>.Foo<U>() => 0;
+        public int Bar() => 1;
     }
 
-    public class Tiger : Animal
-    {
-    }
+    public class BaseClass { }
+    public class SubClass : BaseClass { }
 
-    public interface IF<in T>
+    public interface GenericInInterface<in T>
     {
         int Foo(T t);
     }
 
-    public class ContraVar<T> : IF<T>
+    public class ExplicitlyImplementedGenericInInterface<T> : GenericInInterface<T>
     {
-        int IF<T>.Foo(T t)
-        {
-            return 0;
-        }
+        int GenericInInterface<T>.Foo(T t) => 0;
     }
 
-    public class Test
-    {
-        [Fact]
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod(null));
-        }
-
-        public static int MainMethod(string[] args)
-        {
-            dynamic d = new ContraVar<Animal>();
-            int error = 0;
-            try
-            {
-                d.Foo();
-                error++;
-            }
-            catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
-            {
-                if (!ErrorVerifier.Verify(ErrorMessageId.NoSuchMember, ex.Message, "ContraVar<Animal>", "Foo"))
-                {
-                    error++;
-                }
-            }
-
-            var x = Helper.Cast<IF<Tiger>>(d);
-            var y = Helper.Cast<IF<Animal>>(d);
-            return error;
-        }
-    }
-    // </Code>
-}
-
-
-
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Generic.contravariance002.contravariance002
-{
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Generic.helper.helper;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Generic.contravariance002.contravariance002;
-    // <Area> Dynamic -- explicitly implemented interface member</Area>
-    // <Title> Generic : variance</Title>
-    // <Description>
-    // contra-variance (negative)
-    // </Description>
-    // <RelatedBugs></RelatedBugs>
-    // <Expects Status=success></Expects>
-    // <Code>
-    using System;
-
-    public class Animal
-    {
-    }
-
-    public class Tiger : Animal
-    {
-    }
-
-    public interface IF<in T>
-    {
-        int Foo(T t);
-    }
-
-    public class ContraVar<T> : IF<T>
-    {
-        int IF<T>.Foo(T t)
-        {
-            return 0;
-        }
-    }
-
-    public class Test
-    {
-        [Fact]
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod(null));
-        }
-
-        public static int MainMethod(string[] args)
-        {
-            dynamic d = new ContraVar<Tiger>();
-            int error = 0;
-            try
-            {
-                d.Foo();
-                error++;
-            }
-            catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
-            {
-                if (!ErrorVerifier.Verify(ErrorMessageId.NoSuchMember, ex.Message, "ContraVar<Tiger>", "Foo"))
-                {
-                    error++;
-                }
-            }
-
-            try
-            {
-                var x = Helper.Cast<IF<Animal>>(d);
-                error++;
-            }
-            catch (InvalidCastException ex)
-            {
-            }
-
-            var y = Helper.Cast<IF<Tiger>>(d);
-            try
-            {
-                var z = ((IF<Animal>)d).Foo(new Animal());
-                error++;
-            }
-            catch (InvalidCastException ex)
-            {
-            }
-
-            return error;
-        }
-    }
-    // </Code>
-}
-
-
-
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Generic.covariance001.covariance001
-{
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Generic.helper.helper;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Generic.covariance001.covariance001;
-    // <Area> Dynamic -- explicitly implemented interface member</Area>
-    // <Title> Generic : variance</Title>
-    // <Description>
-    // co-variance
-    // </Description>
-    // <RelatedBugs></RelatedBugs>
-    // <Expects Status=success></Expects>
-    // <Code>
-    using System;
-
-    public class Animal
-    {
-    }
-
-    public class Tiger : Animal
-    {
-    }
-
-    public interface IF<out T>
+    public interface GenericOutInterface<out T>
     {
         T Foo();
     }
 
-    public class CoVar<T> : IF<T> where T : new()
+    public class ExplicitlyImplementedGenericOutInterface<T> : GenericOutInterface<T> where T : new()
     {
-        T IF<T>.Foo()
-        {
-            return new T();
-        }
+        T GenericOutInterface<T>.Foo() => new T();
     }
-
-    public class Test
-    {
-        [Fact]
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod(null));
-        }
-
-        public static int MainMethod(string[] args)
-        {
-            dynamic d = new CoVar<Tiger>();
-            int error = 0;
-            try
-            {
-                d.Foo();
-            }
-            catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
-            {
-                if (!ErrorVerifier.Verify(ErrorMessageId.NoSuchMember, ex.Message, "CoVar<Tiger>", "Foo"))
-                {
-                    error++;
-                }
-            }
-
-            var x = Helper.Cast<IF<Tiger>>(d);
-            var y = Helper.Cast<IF<Animal>>(d);
-            return 0;
-        }
-    }
-    // </Code>
-}
-
-
-
-namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Generic.covariance002.covariance002
-{
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Generic.helper.helper;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.ExplicitImple.Generic.covariance002.covariance002;
-    // <Area> Dynamic -- explicitly implemented interface member</Area>
-    // <Title> Generic : variance</Title>
-    // <Description>
-    // co-variance
-    // </Description>
-    // <RelatedBugs></RelatedBugs>
-    // <Expects Status=success></Expects>
-    // <Code>
-    using System;
-
-    public class Animal
-    {
-    }
-
-    public class Tiger : Animal
-    {
-    }
-
-    public interface IF<out T>
-    {
-        T Foo();
-    }
-
-    public class CoVar<T> : IF<T> where T : new()
-    {
-        T IF<T>.Foo()
-        {
-            return new T();
-        }
-    }
-
-    public class Test
-    {
-        [Fact]
-        public static void DynamicCSharpRunTest()
-        {
-            Assert.Equal(0, MainMethod(null));
-        }
-
-        public static int MainMethod(string[] args)
-        {
-            dynamic d = new CoVar<Animal>();
-            int error = 0;
-            try
-            {
-                d.Foo();
-            }
-            catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
-            {
-            }
-
-            try
-            {
-                var x = Helper.Cast<IF<Tiger>>(d);
-            }
-            catch (InvalidCastException ex)
-            {
-            }
-
-            var y = Helper.Cast<IF<Animal>>(d);
-            try
-            {
-                var z = ((IF<Tiger>)d).Foo();
-            }
-            catch (InvalidCastException ex)
-            {
-            }
-
-            return error;
-        }
-    }
-    // </Code>
 }

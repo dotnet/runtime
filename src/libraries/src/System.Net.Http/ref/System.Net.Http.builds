@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <ItemGroup>
+    <Project Include="System.Net.Http.csproj" />
+    <Project Include="System.Net.Http.csproj">
+      <!-- needed to build a ref for net46 without depending on assembly versions not supported
+           by net46, nor copying the implementation dll into the ref folder. -->
+      <TargetGroup>net46</TargetGroup>
+    </Project>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
+</Project>
+

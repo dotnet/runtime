@@ -8,47 +8,47 @@ using Xunit;
 
 namespace System.Runtime.Serialization.Formatters.Tests
 {
-    internal static class BinaryFormatterHelpers
-    {
-        internal static T Clone<T>(T obj)
-        {
-            var f = new BinaryFormatter();
-            using (var s = new MemoryStream())
-            {
-                f.Serialize(s, obj);
-                s.Position = 0;
-                return (T)f.Deserialize(s);
-            }
-        }
+	public static class BinaryFormatterHelpers
+	{
+		internal static T Clone<T>(T obj)
+		{
+			var f = new BinaryFormatter();
+			using (var s = new MemoryStream())
+			{
+				f.Serialize(s, obj);
+				s.Position = 0;
+				return (T)f.Deserialize(s);
+			}
+		}
 
-        internal static void AssertRoundtrips<T>(T expected, params Func<T, object>[] additionalGetters)
-            where T : Exception
-        {
-            for (int i = 0; i < 2; i++)
-            {
-                if (i > 0) // first time without stack trace, second time with
-                {
-                    try { throw expected; }
-                    catch { }
-                }
+		public static void AssertRoundtrips<T>(T expected, params Func<T, object>[] additionalGetters)
+			where T : Exception
+		{
+			for (int i = 0; i < 2; i++)
+			{
+				if (i > 0) // first time without stack trace, second time with
+				{
+					try { throw expected; }
+					catch { }
+				}
 
-                // Serialize/deserialize the exception
-                T actual = Clone(expected);
+				// Serialize/deserialize the exception
+				T actual = Clone(expected);
 
-                // Verify core state
-                Assert.Equal(expected.StackTrace, actual.StackTrace);
-                Assert.Equal(expected.Data, actual.Data);
-                Assert.Equal(expected.Message, actual.Message);
-                Assert.Equal(expected.Source, actual.Source);
-                Assert.Equal(expected.ToString(), actual.ToString());
-                Assert.Equal(expected.HResult, actual.HResult);
+				// Verify core state
+				Assert.Equal(expected.StackTrace, actual.StackTrace);
+				Assert.Equal(expected.Data, actual.Data);
+				Assert.Equal(expected.Message, actual.Message);
+				Assert.Equal(expected.Source, actual.Source);
+				Assert.Equal(expected.ToString(), actual.ToString());
+				Assert.Equal(expected.HResult, actual.HResult);
 
-                // Verify optional additional state
-                foreach (Func<T, object> getter in additionalGetters)
-                {
-                    Assert.Equal(getter(expected), getter(actual));
-                }
-            }
-        }
-    }
+				// Verify optional additional state
+				foreach (Func<T, object> getter in additionalGetters)
+				{
+					Assert.Equal(getter(expected), getter(actual));
+				}
+			}
+		}
+	}
 }

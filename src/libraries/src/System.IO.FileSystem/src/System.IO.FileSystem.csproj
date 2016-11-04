@@ -1,29 +1,26 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <PropertyGroup>
-    <Configuration Condition="'$(Configuration)'=='' AND ('$(TargetGroup)' == '' Or '$(TargetGroup)' == 'netstandard1.3')">Windows_Debug</Configuration>
+    <Configuration Condition="'$(Configuration)'=='' AND '$(TargetGroup)' == ''">Windows_Debug</Configuration>
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{879C23DC-D828-4DFB-8E92-ABBC11B71035}</ProjectGuid>
     <AssemblyName>System.IO.FileSystem</AssemblyName>
-    <AssemblyVersion Condition="'$(TargetGroup)'=='netstandard1.3' Or '$(TargetGroup)'=='net46' Or '$(TargetGroup)'=='netcore50'">4.0.2.0</AssemblyVersion>
-    <ContractProject Condition="'$(AssemblyVersion)'=='4.0.2.0'">../ref/4.0.1/System.IO.FileSystem.depproj</ContractProject>
     <!--
       Disabling APICompat for the older builds because we are hitting
       bug https://github.com/dotnet/buildtools/issues/1056
     -->
     <RunApiCompat Condition="'$(AssemblyVersion)'=='4.0.2.0'">false</RunApiCompat>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <EnableWinRT Condition="'$(PackageTargetFramework)' == 'netcore50'">true</EnableWinRT>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46' or '$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
-    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net46' or '$(TargetGroup)' == 'net463'">None</ResourcesSourceOutputDirectory>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
+    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net463'">None</ResourcesSourceOutputDirectory>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
     <NoWarn>$(NoWarn);414</NoWarn>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetsWindows)' == 'true' AND ('$(TargetGroup)' == '' Or '$(TargetGroup)' == 'netstandard1.3')">
+  <PropertyGroup Condition="'$(TargetsWindows)' == 'true' AND '$(TargetGroup)' == ''">
     <ProjectJson>win/project.json</ProjectJson>
     <ProjectLockJson>win/project.lock.json</ProjectLockJson>
   </PropertyGroup>
@@ -32,24 +29,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_netstandard1.3_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_netstandard1.3_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netstandard1.3_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netstandard1.3_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.3'">
-    <AdditionalFiles Include="$(ToolsDir)PinvokeAnalyzer_OneCoreApis.txt" />
-  </ItemGroup>
   <ItemGroup Condition="'$(EnableWinRT)' == 'true'">
     <TargetingPackReference Include="Windows" />
     <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net46' and '$(TargetGroup)' != 'net463'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'net463'">
     <Compile Include="System\IO\Error.cs" />
     <Compile Include="System\IO\Directory.cs" />
     <Compile Include="System\IO\DirectoryInfo.cs" />
@@ -57,7 +43,6 @@
     <Compile Include="System\IO\FileInfo.cs" />
     <Compile Include="System\IO\FileOptions.cs" />
     <Compile Include="System\IO\FileStream.cs" />
-    <Compile Include="System\IO\FileStreamBase.cs" />
     <Compile Include="System\IO\FileSystem.cs" />
     <Compile Include="System\IO\FileSystemInfo.cs" />
     <Compile Include="System\IO\IFileSystemObject.cs" />
@@ -67,6 +52,9 @@
     <Compile Include="System\IO\ReadLinesIterator.cs" />
     <Compile Include="System\IO\SearchOption.cs" />
     <Compile Include="System\IO\SearchTarget.cs" />
+    <Compile Include="$(CommonPath)\System\Collections\Generic\ArrayBuilder.cs">
+      <Link>Common\System\Collections\Generic\ArrayBuilder.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Collections\Generic\EnumerableHelpers.cs">
       <Link>Common\System\Collections\Generic\EnumerableHelpers.cs</Link>
     </Compile>
@@ -82,25 +70,24 @@
     <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
       <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\IO\StreamHelpers.cs">
-      <Link>Common\System\IO\StreamHelpers.cs</Link>
+    <Compile Include="$(CommonPath)\System\IO\StreamHelpers.CopyValidation.cs">
+      <Link>Common\System\IO\StreamHelpers.CopyValidation.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- .NET Standard 1.7 -->
-  <ItemGroup Condition="'$(PackageTargetFramework)' == 'netstandard1.7' and '$(TargetGroup)' != 'net46' and '$(TargetGroup)' != 'net463'" >
-    <Compile Include="System\IO\FileStreamBase.NetStandard17.cs" />
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
+    <Compile Include="System\IO\FileStream.NetStandard17.cs" />
   </ItemGroup>
   <!-- Windows -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'net46' and '$(TargetGroup)' != 'net463'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'net463'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeFileHandle.Windows.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeFindHandle.Windows.cs" />
     <Compile Include="System\IO\DirectoryInfo.Windows.cs" />
     <Compile Include="System\IO\FileInfo.Windows.cs" />
-    <Compile Include="System\IO\FileStream.Win32.cs" />
     <Compile Include="System\IO\FileSystemInfo.Windows.cs" />
     <Compile Include="System\IO\PathHelpers.Windows.cs" />
-    <Compile Include="System\IO\Win32FileStream.cs" />
-    <Compile Include="System\IO\Win32FileStreamCompletionSource.cs" />
+    <Compile Include="System\IO\FileStream.Win32.cs" />
+    <Compile Include="System\IO\FileStreamCompletionSource.Win32.cs" />
     <Compile Include="System\IO\Win32FileSystem.cs" />
     <Compile Include="System\IO\Win32FileSystemEnumerable.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
@@ -225,7 +212,7 @@
     </Compile>
   </ItemGroup>
   <!-- Windows : Win32 only -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(EnableWinRT)' != 'true' and '$(TargetGroup)' != 'net46' and '$(TargetGroup)' != 'net463'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(EnableWinRT)' != 'true' and '$(TargetGroup)' != 'net463'">
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.UnsafeCreateFile.cs">
       <Link>Common\Interop\Windows\Interop.UnsafeCreateFile.cs</Link>
     </Compile>
@@ -293,11 +280,10 @@
   <!-- Unix -->
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs" />
-    <Compile Include="System\IO\FileStream.Unix.cs" />
     <Compile Include="System\IO\FileSystem.Current.Unix.cs" />
     <Compile Include="System\IO\FileSystemInfo.Unix.cs" />
     <Compile Include="System\IO\PathHelpers.Unix.cs" />
-    <Compile Include="System\IO\UnixFileStream.cs" />
+    <Compile Include="System\IO\FileStream.Unix.cs" />
     <Compile Include="System\IO\UnixFileSystem.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
@@ -398,9 +384,6 @@
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeDirectoryHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeDirectoryHandle.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\IO\PathInternal.Unix.cs">
       <Link>Common\System\IO\PathInternal.Unix.cs</Link>
     </Compile>
@@ -408,7 +391,7 @@
       <Link>Common\System\IO\DriveInfoInternal.Unix.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net46' Or '$(TargetGroup)' == 'net463'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
     <TargetingPackReference Include="mscorlib" />
   </ItemGroup>
   <ItemGroup>

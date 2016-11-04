@@ -103,6 +103,11 @@ namespace System.Net.NetworkInformation
             throw NotImplemented.ByDesign;
         }
 
+        public override IPv4InterfaceStatistics GetIPv4Statistics()
+        {
+            throw NotImplemented.ByDesign;
+        }
+
         public override PhysicalAddress GetPhysicalAddress()
         {
             throw NotImplemented.ByDesign;

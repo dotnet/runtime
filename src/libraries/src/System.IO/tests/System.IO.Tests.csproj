@@ -1,5 +1,5 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -8,21 +8,33 @@
     <RootNamespace>System.IO</RootNamespace>
     <AssemblyName>System.IO.Tests</AssemblyName>
     <ProjectGuid>{492EC54D-D2C4-4B3F-AC1F-646B3F7EBB02}</ProjectGuid>
-    <DefineConstants Condition="'$(TargetGroup)'=='netstandard1.7'">$(DefineConstants);netstandard17</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)'==''">$(DefineConstants);netstandard17</DefineConstants>
+    <NugetTargetMoniker Condition="'$(TargetGroup)'==''">.NETStandard,Version=v1.7</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)'==''" >
+    <Compile Include="IndentedTextWriter.cs"/>
+    <Compile Include="BinaryReader\BinaryReaderTests.cs" />
+    <Compile Include="MemoryStream\MemoryStream.GetBufferTests.cs" />
+    <Compile Include="Stream\Stream.netstandard17.cs" />
+    <Compile Include="StreamReader\StreamReader.netstandard17.cs" />
+    <Compile Include="StreamReader\StreamReader.StringCtorTests.cs" />
+    <Compile Include="StreamWriter\StreamWriter.netstandard17.cs" />
+    <Compile Include="StreamWriter\StreamWriter.StringCtorTests.cs" />
+	<Compile Include="Stream\Stream.APMMethodsTests.cs" />
+    <Compile Include="BufferedStream\BufferedStreamTests.netstandard1.7.cs" />
+  </ItemGroup>
   <ItemGroup>
-    <Compile Include="BinaryReader\BinaryReaderTests.cs" Condition="'$(TargetGroup)'=='netstandard1.7'" />
     <Compile Include="BinaryWriter\BinaryWriter.WriteByteCharTests.cs" />
     <Compile Include="BinaryWriter\BinaryWriter.WriteTests.cs" />
     <Compile Include="BinaryWriter\BinaryWriterTests.cs" />
     <Compile Include="BufferedStream\BufferedStream.InvalidParameters.cs" />
     <Compile Include="BufferedStream\BufferedStreamTests.cs" />
+    <Compile Include="BufferedStream\BufferedStreamTests.netcoreapp1.1.cs" Condition="'$(TargetGroup)' == 'netcoreapp1.1'" />
     <Compile Include="InvalidDataException\InvalidDataExceptionTests.cs" />
     <Compile Include="MemoryStream\MemoryStream.ConstructorTests.cs" />
-    <Compile Include="MemoryStream\MemoryStream.GetBufferTests.cs" Condition="'$(TargetGroup)'=='netstandard1.7'" />
     <Compile Include="MemoryStream\MemoryStream.TryGetBufferTests.cs" />
     <Compile Include="MemoryStream\MemoryStreamTests.cs" />
     <Compile Include="StreamReader\StreamReader.CtorTests.cs" />
@@ -51,16 +63,8 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\pkg\System.IO.pkgproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
-      <OSGroup>$(InputOSGroup)</OSGroup>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
+    <ProjectReference Include="..\pkg\System.IO.pkgproj" />
+    <ProjectReference Include="..\..\System.Diagnostics.Debug\pkg\System.Diagnostics.Debug.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

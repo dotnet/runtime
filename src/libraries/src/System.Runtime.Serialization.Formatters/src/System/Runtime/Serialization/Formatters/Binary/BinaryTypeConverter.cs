@@ -48,7 +48,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                         string assembly = null;
                         if (objectInfo == null)
                         {
-                            assembly = type.GetTypeInfo().Assembly.FullName;
+                            assembly = type.Assembly.FullName;
                             typeInformation = type.FullName;
                         }
                         else
@@ -115,7 +115,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 switch (primitiveTypeEnum)
                 {
                     case InternalPrimitiveTypeE.Invalid:
-                        binaryTypeEnum = type.GetTypeInfo().Assembly == Converter.s_urtAssembly ?
+                        binaryTypeEnum = type.Assembly == Converter.s_urtAssembly ?
                             BinaryTypeEnum.ObjectUrt :
                             BinaryTypeEnum.ObjectUser;
                         typeInformation = type.FullName;

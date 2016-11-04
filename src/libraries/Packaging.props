@@ -1,4 +1,4 @@
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <PreReleaseLabel>beta</PreReleaseLabel>
     <PackageDescriptionFile>$(ProjectDir)pkg/descriptions.json</PackageDescriptionFile>
@@ -16,16 +16,15 @@
     <XmlDocFileRoot>$(PackagesDir)Microsoft.Private.Intellisense/1.0.0-rc4-24206-00/xmldocs</XmlDocFileRoot>
     <!-- We're currently not building a "live" baseline, instead we're using .NETCore 1.0 RTM stable versions as the baseline -->
     <SkipBaseLineCheck>true</SkipBaseLineCheck>
-    <!-- temporary change until buildtools can be updated https://github.com/dotnet/buildtools/issues/831 -->
-    <LineupPackageVersion Condition="'$(LineupPackageVersion)' == ''">1.0.3</LineupPackageVersion>
-    <PlatformPackageVersion Condition="'$(PlatformPackageVersion)' == ''">1.0.2</PlatformPackageVersion>
+    <LineupPackageVersion Condition="'$(LineupPackageVersion)' == ''">1.2.0</LineupPackageVersion>
+    <PlatformPackageVersion Condition="'$(PlatformPackageVersion)' == ''">1.2.0</PlatformPackageVersion>
 
     <!-- by default all packages will use the same version which revs with respect to product version -->
-    <PackageVersion Condition="'$(PackageVersion)' == ''">4.3.0</PackageVersion>
+    <PackageVersion Condition="'$(PackageVersion)' == ''">4.4.0</PackageVersion>
     <SkipValidatePackageTargetFramework>true</SkipValidatePackageTargetFramework>
   </PropertyGroup>
 
-  <Import Condition="Exists('pkg/baseline/baseline.props')" Project="pkg/baseline/baseline.props" />
+  <Import Condition="Exists('pkg/baseline/baseline.props') AND '$(MSBuildProjectExtension)' == '.pkgproj'" Project="pkg/baseline/baseline.props" />
 
   <PropertyGroup Condition="'$(OsEnvironment)'=='Unix'">
     <!--
@@ -36,14 +35,20 @@
     <SkipBuildPackages>true</SkipBuildPackages>
   </PropertyGroup>
 
-  <!-- Add required legal files to packages -->
   <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.pkgproj'">
+    <!-- Add required legal files to packages -->
     <File Condition="Exists('$(PackageLicenseFile)')"
           Include="$(PackageLicenseFile)" >
         <SkipPackageFileCheck>true</SkipPackageFileCheck>
     </File>
     <File Condition="Exists('$(PackageThirdPartyNoticesFile)')"
           Include="$(PackageThirdPartyNoticesFile)" >
+        <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    </File>
+
+    <!-- Add version file to packages -->
+    <File Condition="Exists('$(SyncInfoFile)')"
+          Include="$(SyncInfoFile)" >
         <SkipPackageFileCheck>true</SkipPackageFileCheck>
     </File>
   </ItemGroup>

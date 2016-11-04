@@ -214,7 +214,7 @@ namespace System.IO.Pipes
         // override because named pipe clients can't get/set properties when waiting to connect
         // or broken
         [SecurityCritical]
-        internal override void CheckPipePropertyOperations()
+        protected internal override void CheckPipePropertyOperations()
         {
             base.CheckPipePropertyOperations();
 

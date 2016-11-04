@@ -134,7 +134,7 @@ namespace System.Xml.Xsl
             set
             {
                 if (!IsCompatibleType(value.GetType()))
-                    throw new ArgumentException(SR.Arg_IncompatibleParamType, "value");
+                    throw new ArgumentException(SR.Arg_IncompatibleParamType, nameof(value));
 
                 this[index] = (T)value;
             }
@@ -143,7 +143,7 @@ namespace System.Xml.Xsl
         int System.Collections.IList.Add(object value)
         {
             if (!IsCompatibleType(value.GetType()))
-                throw new ArgumentException(SR.Arg_IncompatibleParamType, "value");
+                throw new ArgumentException(SR.Arg_IncompatibleParamType, nameof(value));
 
             Add((T)value);
             return Count - 1;
@@ -173,7 +173,7 @@ namespace System.Xml.Xsl
         void System.Collections.IList.Insert(int index, object value)
         {
             if (!IsCompatibleType(value.GetType()))
-                throw new ArgumentException(SR.Arg_IncompatibleParamType, "value");
+                throw new ArgumentException(SR.Arg_IncompatibleParamType, nameof(value));
 
             Insert(index, (T)value);
         }

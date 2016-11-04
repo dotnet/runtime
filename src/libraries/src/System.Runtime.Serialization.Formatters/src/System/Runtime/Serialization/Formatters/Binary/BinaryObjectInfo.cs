@@ -93,7 +93,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             if (surrogateSelector != null && (_serializationSurrogate = surrogateSelector.GetSurrogate(_objectType, context, out surrogateSelectorTemp)) != null)
             {
                 _si = new SerializationInfo(_objectType, converter);
-                if (!_objectType.GetTypeInfo().IsPrimitive)
+                if (!_objectType.IsPrimitive)
                 {
                     _serializationSurrogate.GetObjectData(obj, _si, context);
                 }
@@ -101,9 +101,9 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
             else if (obj is ISerializable)
             {
-                if (!_objectType.GetTypeInfo().IsSerializable)
+                if (!_objectType.IsSerializable)
                 {
-                    throw new SerializationException(SR.Format(SR.Serialization_NonSerType, _objectType.FullName, _objectType.GetTypeInfo().Assembly.FullName));
+                    throw new SerializationException(SR.Format(SR.Serialization_NonSerType, _objectType.FullName, _objectType.Assembly.FullName));
                 }
                 _si = new SerializationInfo(_objectType, converter);
                 ((ISerializable)obj).GetObjectData(_si, context);

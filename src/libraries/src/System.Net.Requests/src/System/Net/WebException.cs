@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
 using System.Net.Http;
+using System.Runtime.Serialization;
 
 namespace System.Net
 {
-    public partial class WebException : InvalidOperationException
+    [Serializable]
+    public partial class WebException : InvalidOperationException, ISerializable
     {
         private const WebExceptionStatus DefaultStatus = WebExceptionStatus.UnknownError;
 
@@ -49,6 +50,10 @@ namespace System.Net
             }
         }
 
+        protected WebException(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext)
+        {
+        }
+
         public WebExceptionStatus Status
         {
             get
@@ -63,6 +68,16 @@ namespace System.Net
             {
                 return _response;
             }
+        }
+
+        void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
+        {
+            GetObjectData(serializationInfo, streamingContext);
+        }
+
+        public override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
+        {
+            base.GetObjectData(serializationInfo, streamingContext);
         }
 
         internal static Exception CreateCompatibleException(Exception exception)

@@ -176,13 +176,12 @@ namespace System.Xml.Xsl.XsltOld
         //
         // The World of Compile
         //
-        internal void Compile(NavigatorInput input, XmlResolver xmlResolver, Evidence evidence)
+        internal void Compile(NavigatorInput input, XmlResolver xmlResolver)
         {
             Debug.Assert(input != null);
             Debug.Assert(xmlResolver != null);
             //            Debug.Assert(evidence    != null); -- default evidence is null now
             Debug.Assert(_input == null && _atoms == null);
-            evidence = null;
             _xmlResolver = xmlResolver;
 
             PushInputDocument(input);

@@ -21,100 +21,100 @@ namespace System.Reflection.Emit
     public partial class TypeBuilder : System.Reflection.TypeInfo
     {
         // These members override base definitions on TypeInfo.
-        public override System.Reflection.TypeAttributes Attributes { get { return default(System.Reflection.TypeAttributes); } }
-        public override Assembly Assembly { get { return null; } }
-        public override Type BaseType { get { return null; } }
-        public override MethodBase DeclaringMethod { get { return null; } }
-        public override GenericParameterAttributes GenericParameterAttributes { get { return default(GenericParameterAttributes); } }
-        public override Module Module { get { return null; } }
+        public override System.Reflection.TypeAttributes Attributes { get { throw null; } }
+        public override Assembly Assembly { get { throw null; } }
+        public override Type BaseType { get { throw null; } }
+        public override MethodBase DeclaringMethod { get { throw null; } }
+        public override GenericParameterAttributes GenericParameterAttributes { get { throw null; } }
+        public override Module Module { get { throw null; } }
 
-        public override int GetArrayRank() { return default(int); }
-        public override Type GetElementType() { return default(Type); }
-        public override System.Type[] GetGenericParameterConstraints() { return default(System.Type[]); }
-        public override System.Type[] GenericTypeArguments { get { return default(System.Type[]); } }
-        public override bool ContainsGenericParameters { get { return default(bool); } }
-        public override int GenericParameterPosition { get { return default(int); } }
-        public override Guid GUID { get { return default(Guid); } }
-        public override bool IsEnum { get { return default(bool); } }
-        public override bool IsGenericType { get { return default(bool); } }
-        public override bool IsGenericTypeDefinition { get { return default(bool); } }
-        public override bool IsSerializable { get { return default(bool); } }
-        public override string Namespace { get { return default(string); } }
+        public override int GetArrayRank() { throw null; }
+        public override Type GetElementType() { throw null; }
+        public override System.Type[] GetGenericParameterConstraints() { throw null; }
+        public override System.Type[] GenericTypeArguments { get { throw null; } }
+        public override bool ContainsGenericParameters { get { throw null; } }
+        public override int GenericParameterPosition { get { throw null; } }
+        public override Guid GUID { get { throw null; } }
+        public override bool IsEnum { get { throw null; } }
+        public override bool IsGenericType { get { throw null; } }
+        public override bool IsGenericTypeDefinition { get { throw null; } }
+        public override bool IsSerializable { get { throw null; } }
+        public override string Namespace { get { throw null; } }
 
-        public override Type DeclaringType { get { return default(Type); } }
+        public override Type DeclaringType { get { throw null; } }
     }
 
     public partial class EnumBuilder : System.Reflection.TypeInfo
     {
         // These members override base definitions on TypeInfo.
-        public override System.Reflection.TypeAttributes Attributes { get { return default(System.Reflection.TypeAttributes); } }
-        public override Assembly Assembly { get { return null; } }
-        public override Type BaseType { get { return null; } }
-        public override Module Module { get { return null; } }
+        public override System.Reflection.TypeAttributes Attributes { get { throw null; } }
+        public override Assembly Assembly { get { throw null; } }
+        public override Type BaseType { get { throw null; } }
+        public override Module Module { get { throw null; } }
 
-        public override int GetArrayRank() { return default(int); }
-        public override Type GetElementType() { return default(Type); }
-        public override System.Type[] GetGenericParameterConstraints() { return default(System.Type[]); }
-        public override System.Type[] GenericTypeArguments { get { return default(System.Type[]); } }
-        public override Type GetGenericTypeDefinition() { return default(Type); }
-        public override bool ContainsGenericParameters { get { return default(bool); } }
-        public override MethodBase DeclaringMethod { get { return default(MethodBase); } }
-        public override GenericParameterAttributes GenericParameterAttributes { get { return default(GenericParameterAttributes); } }
-        public override int GenericParameterPosition { get { return default(int); } }
-        public override Guid GUID { get { return default(Guid); } }
-        public override bool IsEnum { get { return default(bool); } }
-        public override bool IsGenericParameter { get { return default(bool); } }
-        public override bool IsGenericType { get { return default(bool); } }
-        public override bool IsGenericTypeDefinition { get { return default(bool); } }
-        public override bool IsSerializable { get { return default(bool); } }
-        public override string Namespace { get { return default(string); } }
-        public override Type MakeGenericType(params System.Type[] typeArguments) { return default(Type); }
+        public override int GetArrayRank() { throw null; }
+        public override Type GetElementType() { throw null; }
+        public override System.Type[] GetGenericParameterConstraints() { throw null; }
+        public override System.Type[] GenericTypeArguments { get { throw null; } }
+        public override Type GetGenericTypeDefinition() { throw null; }
+        public override bool ContainsGenericParameters { get { throw null; } }
+        public override MethodBase DeclaringMethod { get { throw null; } }
+        public override GenericParameterAttributes GenericParameterAttributes { get { throw null; } }
+        public override int GenericParameterPosition { get { throw null; } }
+        public override Guid GUID { get { throw null; } }
+        public override bool IsEnum { get { throw null; } }
+        public override bool IsGenericParameter { get { throw null; } }
+        public override bool IsGenericType { get { throw null; } }
+        public override bool IsGenericTypeDefinition { get { throw null; } }
+        public override bool IsSerializable { get { throw null; } }
+        public override string Namespace { get { throw null; } }
+        public override Type MakeGenericType(params System.Type[] typeArguments) { throw null; }
 
-        public override Type DeclaringType { get { return default(Type); } }
+        public override Type DeclaringType { get { throw null; } }
     }
 
     public partial class GenericTypeParameterBuilder : System.Reflection.TypeInfo
     {
         // These members override base definitions on TypeInfo.
-        public override bool IsSubclassOf(Type c) { return default(bool); }
+        public override bool IsSubclassOf(Type c) { throw null; }
 
-        public override System.Reflection.TypeAttributes Attributes { get { return default(System.Reflection.TypeAttributes); } }
-        public override Assembly Assembly { get { return null; } }
-        public override Type BaseType { get { return null; } }
-        public override MethodBase DeclaringMethod { get { return null; } }
-        public override GenericParameterAttributes GenericParameterAttributes { get { return default(GenericParameterAttributes); } }
-        public override Module Module { get { return null; } }
+        public override System.Reflection.TypeAttributes Attributes { get { throw null; } }
+        public override Assembly Assembly { get { throw null; } }
+        public override Type BaseType { get { throw null; } }
+        public override MethodBase DeclaringMethod { get { throw null; } }
+        public override GenericParameterAttributes GenericParameterAttributes { get { throw null; } }
+        public override Module Module { get { throw null; } }
 
-        public override int GetArrayRank() { return default(int); }
-        public override Type GetElementType() { return default(Type); }
-        public override System.Type[] GetGenericParameterConstraints() { return default(System.Type[]); }
-        public override System.Type[] GenericTypeArguments { get { return default(System.Type[]); } }
-        public override bool ContainsGenericParameters { get { return default(bool); } }
-        public override int GenericParameterPosition { get { return default(int); } }
-        public override Guid GUID { get { return default(Guid); } }
-        public override bool IsEnum { get { return default(bool); } }
-        public override bool IsGenericType { get { return default(bool); } }
-        public override bool IsGenericTypeDefinition { get { return default(bool); } }
-        public override bool IsSerializable { get { return default(bool); } }
-        public override string Namespace { get { return default(string); } }
+        public override int GetArrayRank() { throw null; }
+        public override Type GetElementType() { throw null; }
+        public override System.Type[] GetGenericParameterConstraints() { throw null; }
+        public override System.Type[] GenericTypeArguments { get { throw null; } }
+        public override bool ContainsGenericParameters { get { throw null; } }
+        public override int GenericParameterPosition { get { throw null; } }
+        public override Guid GUID { get { throw null; } }
+        public override bool IsEnum { get { throw null; } }
+        public override bool IsGenericType { get { throw null; } }
+        public override bool IsGenericTypeDefinition { get { throw null; } }
+        public override bool IsSerializable { get { throw null; } }
+        public override string Namespace { get { throw null; } }
 
-        public override Type DeclaringType { get { return default(Type); } }
+        public override Type DeclaringType { get { throw null; } }
     }
 
     public partial class AssemblyBuilder : System.Reflection.Assembly
     {
-        public override System.Collections.Generic.IEnumerable<TypeInfo> DefinedTypes { get { return null; } }
+        public override System.Collections.Generic.IEnumerable<TypeInfo> DefinedTypes { get { throw null; } }
 
-        public override System.Collections.Generic.IEnumerable<Module> Modules { get { return null; } }
+        public override System.Collections.Generic.IEnumerable<Module> Modules { get { throw null; } }
     }
 
     public partial class MethodBuilder : System.Reflection.MethodInfo
     {
-        public override MethodImplAttributes MethodImplementationFlags { get { return default(MethodImplAttributes); } }
+        public override MethodImplAttributes MethodImplementationFlags { get { throw null; } }
     }
 
     public partial class ConstructorBuilder : System.Reflection.ConstructorInfo
     {
-        public override MethodImplAttributes MethodImplementationFlags { get { return default(MethodImplAttributes); } }
+        public override MethodImplAttributes MethodImplementationFlags { get { throw null; } }
     }
 }

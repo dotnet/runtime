@@ -5,14 +5,4 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-
-namespace System.Resources
-{
-    public sealed partial class ResourceReader : System.IDisposable
-    {
-        [System.Security.SecurityCriticalAttribute]
-        public ResourceReader(System.IO.Stream stream) { }
-        public void Dispose() { }
-        public System.Collections.IDictionaryEnumerator GetEnumerator() { return default(System.Collections.IDictionaryEnumerator); }
-    }
-}
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Resources.ResourceReader))]

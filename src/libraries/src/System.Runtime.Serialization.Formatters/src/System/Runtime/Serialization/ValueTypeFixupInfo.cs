@@ -54,7 +54,7 @@ namespace System.Runtime.Serialization
                     throw new ArgumentException(SR.Argument_MemberAndArray);
                 }
 
-                if (member.FieldType.GetTypeInfo().IsValueType && containerID == 0)
+                if (member.FieldType.IsValueType && containerID == 0)
                 {
                     throw new ArgumentException(SR.Argument_MustSupplyContainer);
                 }

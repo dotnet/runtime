@@ -376,7 +376,7 @@ namespace System.ComponentModel
                 return;
             }
 
-            this.InternalSort(_comparer);
+            InternalSort(_comparer);
 
             if (names != null && names.Length > 0)
             {
@@ -454,6 +454,19 @@ namespace System.ComponentModel
             }
         }
 
+        int ICollection.Count 
+        {
+            get
+            {
+                return Count;
+            }
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }        
+
         /// <internalonly/>
         object IList.this[int index]
         {
@@ -489,6 +502,11 @@ namespace System.ComponentModel
             return Contains((EventDescriptor)value);
         }
 
+        void IList.Clear()
+        {
+            Clear();
+        }       
+
         /// <internalonly/>
         int IList.IndexOf(object value)
         {
@@ -506,6 +524,11 @@ namespace System.ComponentModel
         {
             Remove((EventDescriptor)value);
         }
+
+        void IList.RemoveAt(int index)
+        {
+            RemoveAt(index);
+        }        
 
         /// <internalonly/>
         bool IList.IsReadOnly

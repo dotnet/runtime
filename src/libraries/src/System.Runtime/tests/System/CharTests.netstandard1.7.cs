@@ -61,7 +61,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue(11724, Xunit.PlatformID.AnyUnix)]
         public static void LatinRangeTest()
         {
             StringBuilder sb = new StringBuilder(256);
@@ -75,7 +74,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue(11724, Xunit.PlatformID.AnyUnix)]
         public static void NonLatinRangeTest()
         {
             for (int i=256; i <= 0xFFFF; i++)
@@ -93,7 +91,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(UpperLowerCasing_TestData))]
-        [ActiveIssue(11724, Xunit.PlatformID.AnyUnix)]
         public static void CasingTest(char lowerForm, char upperForm, string cultureName)
         {
             CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);

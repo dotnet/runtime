@@ -1344,11 +1344,14 @@ namespace System.Collections.Generic
                 if (Contains(item))
                 {
                     toSave.Add(item);
-                    Remove(item);
                 }
             }
-            Clear();
-            AddAllElements(toSave);
+
+            if (toSave.Count < Count)
+            {
+                Clear();
+                AddAllElements(toSave);
+            }
         }
 
         /// <summary>
@@ -2196,23 +2199,13 @@ namespace System.Collections.Generic
                 return ret;
             }
 
+#if DEBUG
             internal override void IntersectWithEnumerable(IEnumerable<T> other)
             {
-                List<T> toSave = new List<T>(this.Count);
-                foreach (T item in other)
-                {
-                    if (Contains(item))
-                    {
-                        toSave.Add(item);
-                        Remove(item);
-                    }
-                }
-                Clear();
-                AddAllElements(toSave);
-#if DEBUG
-                Debug.Assert(this.versionUpToDate() && _root == _underlying.FindRange(_min, _max));
-#endif
+                base.IntersectWithEnumerable(other);
+                Debug.Assert(versionUpToDate() && _root == _underlying.FindRange(_min, _max));
             }
+#endif
 
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
             {

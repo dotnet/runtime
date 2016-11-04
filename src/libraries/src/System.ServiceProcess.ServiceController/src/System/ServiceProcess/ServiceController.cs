@@ -53,7 +53,7 @@ namespace System.ServiceProcess
                 throw new ArgumentException(SR.Format(SR.BadMachineName, machineName));
 
             if (string.IsNullOrEmpty(name))
-                throw new ArgumentException(SR.Format(SR.InvalidParameter, "name", name));
+                throw new ArgumentException(SR.Format(SR.InvalidParameter, nameof(name), name));
 
             _machineName = machineName;
             _eitherName = name;
@@ -456,7 +456,7 @@ namespace System.ServiceProcess
                 Interop.mincore.EnumServicesStatusEx(
                     databaseHandle,
                     Interop.mincore.ServiceControllerOptions.SC_ENUM_PROCESS_INFO,
-                    Interop.mincore.ServiceTypeOptions.SERVICE_TYPE_WIN32,
+                    Interop.mincore.ServiceTypeOptions.SERVICE_TYPE_WIN32 | Interop.mincore.ServiceTypeOptions.SERVICE_TYPE_DRIVER,
                     Interop.mincore.StatusOptions.STATUS_ALL,
                     IntPtr.Zero,
                     0,
@@ -470,7 +470,7 @@ namespace System.ServiceProcess
                 Interop.mincore.EnumServicesStatusEx(
                     databaseHandle,
                     Interop.mincore.ServiceControllerOptions.SC_ENUM_PROCESS_INFO,
-                    Interop.mincore.ServiceTypeOptions.SERVICE_TYPE_WIN32,
+                    Interop.mincore.ServiceTypeOptions.SERVICE_TYPE_WIN32 | Interop.mincore.ServiceTypeOptions.SERVICE_TYPE_DRIVER,
                     Interop.mincore.StatusOptions.STATUS_ALL,
                     memory,
                     bytesNeeded,
@@ -839,7 +839,7 @@ namespace System.ServiceProcess
         public void WaitForStatus(ServiceControllerStatus desiredStatus, TimeSpan timeout)
         {
             if (!Enum.IsDefined(typeof(ServiceControllerStatus), desiredStatus))
-                throw new ArgumentException(SR.Format(SR.InvalidEnumArgument, "desiredStatus", (int)desiredStatus, typeof(ServiceControllerStatus)));
+                throw new ArgumentException(SR.Format(SR.InvalidEnumArgument, nameof(desiredStatus), (int)desiredStatus, typeof(ServiceControllerStatus)));
 
             DateTime start = DateTime.UtcNow;
             Refresh();

@@ -15,12 +15,8 @@ namespace System.Net.Sockets
 
         internal SocketException(SocketError errorCode, uint platformError) : base((int)platformError)
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, errorCode, platformError);
             _errorCode = errorCode;
-
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print($"SocketException::.ctor(SocketError={errorCode}, uint={platformError}):{Message}");
-            }
         }
 
         private SocketException(Interop.ErrorInfo error) : this(SocketErrorPal.GetSocketErrorForNativeError(error.Error), (uint)error.RawErrno)

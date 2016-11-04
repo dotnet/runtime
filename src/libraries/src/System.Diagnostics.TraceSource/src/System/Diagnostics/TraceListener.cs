@@ -7,6 +7,7 @@ using System.Text;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Collections;
+using System.Collections.Specialized;
 
 namespace System.Diagnostics
 {
@@ -14,12 +15,13 @@ namespace System.Diagnostics
     /// <para>Provides the <see langword='abstract '/>base class for the listeners who
     ///    monitor trace and debug output.</para>
     /// </devdoc>
-    public abstract class TraceListener : IDisposable
+    public abstract class TraceListener : MarshalByRefObject, IDisposable
     {
         private int _indentLevel;
         private int _indentSize = 4;
         private TraceOptions _traceOptions = TraceOptions.None;
         private bool _needIndent = true;
+        private StringDictionary _attributes;
 
         private string _listenerName;
         private TraceFilter _filter = null;
@@ -38,6 +40,15 @@ namespace System.Diagnostics
         protected TraceListener(string name)
         {
             _listenerName = name;
+        }
+
+        public StringDictionary Attributes 
+        {
+            get {
+                if (_attributes == null)
+                    _attributes = new StringDictionary();
+                return _attributes;
+            }
         }
 
         /// <devdoc>
@@ -153,6 +164,25 @@ namespace System.Diagnostics
 
                 _traceOptions = value;
             }
+        }
+
+        /// <devdoc>
+        ///    <para>When overridden in a derived class, closes the output stream
+        ///       so that it no longer receives tracing or debugging output.</para>
+        /// </devdoc>
+        public virtual void Close() 
+        {
+            return;
+        }
+
+        protected internal virtual string[] GetSupportedAttributes() 
+        {
+            return null;
+        }
+
+        public virtual void TraceTransfer(TraceEventCache eventCache, String source, int id, string message, Guid relatedActivityId)
+        {
+            TraceEvent(eventCache, source, TraceEventType.Transfer, id, message + ", relatedActivityId=" + relatedActivityId.ToString()); 
         }
 
         /// <devdoc>
